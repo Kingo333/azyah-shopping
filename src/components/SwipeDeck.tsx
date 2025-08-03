@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { motion, useMotionValue, useTransform, PanInfo } from 'framer-motion';
+import { motion, useMotionValue, useTransform, PanInfo, useSpring } from 'framer-motion';
 import { useProducts, useSwipeProduct } from '@/hooks/useProducts';
 import { useAuth } from '@/contexts/AuthContext';
 import { Product } from '@/types';
@@ -13,10 +13,12 @@ import {
   Camera, 
   Sparkles,
   ArrowLeft,
-  MoreHorizontal 
+  MoreHorizontal,
+  Info
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { ProductDetailModal } from '@/components/ProductDetailModal';
+import { useProductAnalytics } from '@/hooks/useAnalytics';
 
 interface SwipeDeckProps {
   onBack?: () => void;
@@ -26,19 +28,32 @@ const SwipeDeck = ({ onBack }: SwipeDeckProps) => {
   const { user } = useAuth();
   const { data: products, isLoading } = useProducts({ limit: 50 });
   const swipeProduct = useSwipeProduct();
+  const { trackProductView, trackProductClick } = useProductAnalytics();
   
   const [currentIndex, setCurrentIndex] = useState(0);
   const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | 'up' | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false);
 
   const currentProduct = products?.[currentIndex];
   const remainingCount = products ? products.length - currentIndex : 0;
 
+  // Enhanced motion values with spring physics
   const x = useMotionValue(0);
   const y = useMotionValue(0);
+  const springX = useSpring(x, { stiffness: 300, damping: 30 });
+  const springY = useSpring(y, { stiffness: 300, damping: 30 });
   const rotate = useTransform(x, [-200, 200], [-30, 30]);
   const opacity = useTransform(x, [-200, -50, 0, 50, 200], [0, 1, 1, 1, 0]);
+  const scale = useTransform(x, [-200, 0, 200], [0.9, 1, 0.9]);
+
+  // Track product views
+  useEffect(() => {
+    if (currentProduct) {
+      trackProductView(currentProduct.id, 'swipe_deck');
+    }
+  }, [currentProduct, trackProductView]);
 
   const handleDragEnd = (event: any, info: PanInfo) => {
     const threshold = 100;
@@ -60,8 +75,9 @@ const SwipeDeck = ({ onBack }: SwipeDeckProps) => {
   };
 
   const handleSwipe = async (direction: 'left' | 'right' | 'up') => {
-    if (!currentProduct || !user) return;
+    if (!currentProduct || !user || isAnimating) return;
 
+    setIsAnimating(true);
     setSwipeDirection(direction);
 
     try {
@@ -71,30 +87,46 @@ const SwipeDeck = ({ onBack }: SwipeDeckProps) => {
         userId: user.id
       });
 
-      // Show feedback
+      // Enhanced feedback with haptic simulation
       const messages = {
         left: "Skipped! 👋",
         right: "Loved it! ❤️",
         up: "Added to wishlist! ⭐"
       };
 
+      // Haptic feedback simulation
+      if (navigator.vibrate) {
+        navigator.vibrate(direction === 'right' ? [50, 30, 50] : [50]);
+      }
+
       toast({
         title: messages[direction],
-        description: `${currentProduct.title} by ${currentProduct.brand?.name}`
+        description: `${currentProduct.title} by ${currentProduct.brand?.name}`,
+        duration: 2000
       });
 
-      // Move to next card
+      // Smooth transition to next card
       setTimeout(() => {
         setCurrentIndex(prev => prev + 1);
         setSwipeDirection(null);
+        setIsAnimating(false);
         x.set(0);
         y.set(0);
-      }, 300);
+      }, 400);
 
     } catch (error) {
       setSwipeDirection(null);
+      setIsAnimating(false);
       x.set(0);
       y.set(0);
+    }
+  };
+
+  const handleProductDetail = () => {
+    if (currentProduct) {
+      trackProductClick(currentProduct.id, 'swipe_deck_detail');
+      setSelectedProduct(currentProduct);
+      setIsDetailModalOpen(true);
     }
   };
 
@@ -153,15 +185,33 @@ const SwipeDeck = ({ onBack }: SwipeDeckProps) => {
           </Button>
           
           <div className="flex items-center gap-2">
+            {/* Enhanced progress dots with animation */}
             <div className="flex space-x-1">
-              {Array.from({ length: Math.min(remainingCount, 5) }).map((_, i) => (
-                <div
+              {Array.from({ length: Math.min(remainingCount, 8) }).map((_, i) => (
+                <motion.div
                   key={i}
-                  className={`w-2 h-2 rounded-full ${
-                    i === 0 ? 'bg-primary' : 'bg-muted'
+                  className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                    i === 0 
+                      ? 'bg-primary scale-125' 
+                      : i < 3 
+                      ? 'bg-primary/60' 
+                      : 'bg-muted'
                   }`}
+                  animate={{
+                    scale: i === 0 ? [1, 1.2, 1] : 1,
+                  }}
+                  transition={{
+                    duration: 2,
+                    repeat: Infinity,
+                    ease: "easeInOut"
+                  }}
                 />
               ))}
+              {remainingCount > 8 && (
+                <Badge variant="outline" className="ml-1 text-xs">
+                  +{remainingCount - 8}
+                </Badge>
+              )}
             </div>
             <Badge variant="secondary" className="ml-2">
               {remainingCount} left
@@ -184,22 +234,30 @@ const SwipeDeck = ({ onBack }: SwipeDeckProps) => {
             dragElastic={0.2}
             onDragEnd={handleDragEnd}
             style={{
-              x,
-              y,
+              x: springX,
+              y: springY,
               rotate,
-              opacity
+              opacity,
+              scale
             }}
             animate={
               swipeDirection === 'left' 
-                ? { x: -300, opacity: 0 }
+                ? { x: -400, opacity: 0, rotate: -45, scale: 0.8 }
                 : swipeDirection === 'right'
-                ? { x: 300, opacity: 0 }
+                ? { x: 400, opacity: 0, rotate: 45, scale: 0.8 }
                 : swipeDirection === 'up'
-                ? { y: -300, opacity: 0 }
+                ? { y: -400, opacity: 0, scale: 0.8 }
                 : {}
             }
-            transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+            transition={{ 
+              type: 'spring', 
+              stiffness: 400, 
+              damping: 25,
+              duration: 0.4
+            }}
             className="absolute inset-0 cursor-grab active:cursor-grabbing"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
           >
             <Card className="w-full h-full shadow-2xl border-0 overflow-hidden bg-white">
               <div className="relative h-3/5">
@@ -209,27 +267,50 @@ const SwipeDeck = ({ onBack }: SwipeDeckProps) => {
                   className="w-full h-full object-cover"
                 />
                 
-                {/* Action Indicators */}
+                 {/* Enhanced Action Indicators */}
                 <motion.div
-                  style={{ opacity: useTransform(x, [50, 150], [0, 1]) }}
-                  className="absolute top-4 right-4 bg-green-500 text-white px-3 py-1 rounded-full font-semibold"
+                  style={{ 
+                    opacity: useTransform(x, [50, 150], [0, 1]),
+                    scale: useTransform(x, [50, 150], [0.8, 1.1])
+                  }}
+                  className="absolute top-4 right-4 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-4 py-2 rounded-full font-bold shadow-lg backdrop-blur-sm"
                 >
-                  LOVE ❤️
+                  <Heart className="inline w-4 h-4 mr-1" />
+                  LOVE IT!
                 </motion.div>
                 
                 <motion.div
-                  style={{ opacity: useTransform(x, [-150, -50], [1, 0]) }}
-                  className="absolute top-4 left-4 bg-red-500 text-white px-3 py-1 rounded-full font-semibold"
+                  style={{ 
+                    opacity: useTransform(x, [-150, -50], [1, 0]),
+                    scale: useTransform(x, [-150, -50], [1.1, 0.8])
+                  }}
+                  className="absolute top-4 left-4 bg-gradient-to-r from-red-500 to-pink-500 text-white px-4 py-2 rounded-full font-bold shadow-lg backdrop-blur-sm"
                 >
-                  PASS ✖️
+                  <X className="inline w-4 h-4 mr-1" />
+                  PASS
                 </motion.div>
                 
                 <motion.div
-                  style={{ opacity: useTransform(y, [-150, -50], [1, 0]) }}
-                  className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-primary text-white px-4 py-2 rounded-full font-semibold"
+                  style={{ 
+                    opacity: useTransform(y, [-150, -50], [1, 0]),
+                    scale: useTransform(y, [-150, -50], [1.1, 0.8])
+                  }}
+                  className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-gradient-to-r from-primary to-purple-600 text-white px-6 py-3 rounded-full font-bold shadow-lg backdrop-blur-sm"
                 >
-                  WISHLIST ⭐
+                  <Bookmark className="inline w-5 h-5 mr-2" />
+                  WISHLIST
                 </motion.div>
+                
+                {/* Product Detail Button */}
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  className="absolute bottom-4 right-4 bg-background/90 backdrop-blur-sm hover:bg-background/95"
+                  onClick={handleProductDetail}
+                >
+                  <Info className="h-4 w-4 mr-1" />
+                  Details
+                </Button>
 
                 {/* AR Badge */}
                 {currentProduct.ar_mesh_url && (

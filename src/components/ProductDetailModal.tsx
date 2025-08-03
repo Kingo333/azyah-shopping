@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -7,6 +7,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Heart, ShoppingBag, Camera, Share2, Sparkles } from 'lucide-react';
 import { Product } from '@/types';
 import { toast } from '@/hooks/use-toast';
+import { EnhancedProductGallery } from '@/components/EnhancedProductGallery';
+import { AdvancedSizeColorSelector } from '@/components/AdvancedSizeColorSelector';
+import { useProductAnalytics } from '@/hooks/useAnalytics';
 
 interface ProductDetailModalProps {
   product: Product | null;
@@ -24,7 +27,15 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   onAddToBag
 }) => {
   const [selectedSize, setSelectedSize] = useState<string>('');
+  const [selectedColor, setSelectedColor] = useState<string>('');
   const [selectedImage, setSelectedImage] = useState(0);
+  const { trackProductView, trackProductClick, trackWishlistAdd, trackAddToCart } = useProductAnalytics();
+
+  useEffect(() => {
+    if (product && isOpen) {
+      trackProductView(product.id, 'product_detail_modal');
+    }
+  }, [product, isOpen, trackProductView]);
 
   if (!product) return null;
 
@@ -36,6 +47,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   };
 
   const handleAddToWishlist = () => {
+    trackWishlistAdd(product.id);
     onAddToWishlist?.(product.id);
     toast({
       title: "Added to wishlist",
@@ -53,6 +65,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
       return;
     }
     
+    trackAddToCart(product.id, selectedSize, selectedColor);
     onAddToBag?.(product.id, selectedSize);
     toast({
       title: "Added to bag",
@@ -83,7 +96,21 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
   const attributes = product.attributes as any;
   const mediaUrls = product.media_urls as string[];
-  const availableSizes = ['XS', 'S', 'M', 'L', 'XL']; // Could be derived from product data
+  
+  // Generate size and color options from product attributes
+  const availableSizes = ['XS', 'S', 'M', 'L', 'XL'].map(size => ({
+    value: size,
+    label: size,
+    inStock: Math.random() > 0.2, // Mock stock data
+    stockCount: Math.floor(Math.random() * 10) + 1
+  }));
+
+  const availableColors = [
+    { value: 'black', label: 'Black', hexCode: '#000000', inStock: true },
+    { value: 'white', label: 'White', hexCode: '#ffffff', inStock: true },
+    { value: 'navy', label: 'Navy', hexCode: '#1e3a8a', inStock: Math.random() > 0.3 },
+    { value: 'beige', label: 'Beige', hexCode: '#f5f5dc', inStock: Math.random() > 0.3 }
+  ];
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -93,51 +120,18 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
         </DialogHeader>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Image Gallery */}
-          <div className="space-y-4">
-            <div className="relative aspect-square overflow-hidden rounded-lg bg-accent">
-              <img
-                src={mediaUrls[selectedImage] || '/placeholder.svg'}
-                alt={product.title}
-                className="w-full h-full object-cover"
-              />
-              {product.ar_mesh_url && (
-                <Button
-                  size="sm"
-                  className="absolute top-4 right-4 bg-background/80 backdrop-blur-sm"
-                  onClick={() => {
-                    toast({
-                      title: "AR Try-On",
-                      description: "AR feature coming soon!",
-                    });
-                  }}
-                >
-                  <Camera className="h-4 w-4 mr-1" />
-                  Try AR
-                </Button>
-              )}
-            </div>
-            
-            {mediaUrls.length > 1 && (
-              <div className="flex gap-2 overflow-x-auto">
-                {mediaUrls.map((url, index) => (
-                  <button
-                    key={index}
-                    onClick={() => setSelectedImage(index)}
-                    className={`flex-shrink-0 w-16 h-16 rounded border-2 overflow-hidden ${
-                      selectedImage === index ? 'border-primary' : 'border-border'
-                    }`}
-                  >
-                    <img
-                      src={url}
-                      alt={`${product.title} view ${index + 1}`}
-                      className="w-full h-full object-cover"
-                    />
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          {/* Enhanced Image Gallery */}
+          <EnhancedProductGallery
+            images={mediaUrls}
+            productTitle={product.title}
+            hasARMesh={!!product.ar_mesh_url}
+            onARTryOn={() => {
+              toast({
+                title: "AR Try-On",
+                description: "AR feature coming soon!",
+              });
+            }}
+          />
 
           {/* Product Info */}
           <div className="space-y-6">
@@ -188,22 +182,22 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               </div>
             </div>
 
-            {/* Size Selection */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Size</label>
-              <Select value={selectedSize} onValueChange={setSelectedSize}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a size" />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableSizes.map(size => (
-                    <SelectItem key={size} value={size}>
-                      {size}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {/* Advanced Size & Color Selection */}
+            <AdvancedSizeColorSelector
+              sizes={availableSizes}
+              colors={availableColors}
+              selectedSize={selectedSize}
+              selectedColor={selectedColor}
+              onSizeSelect={setSelectedSize}
+              onColorSelect={setSelectedColor}
+              sizeChart={{
+                'XS': '32-34 inches',
+                'S': '34-36 inches',
+                'M': '36-38 inches',
+                'L': '38-40 inches',
+                'XL': '40-42 inches'
+              }}
+            />
 
             {/* Description */}
             <div>
