@@ -16,6 +16,7 @@ import {
   MoreHorizontal 
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { ProductDetailModal } from '@/components/ProductDetailModal';
 
 interface SwipeDeckProps {
   onBack?: () => void;
@@ -28,6 +29,8 @@ const SwipeDeck = ({ onBack }: SwipeDeckProps) => {
   
   const [currentIndex, setCurrentIndex] = useState(0);
   const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | 'up' | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
   const currentProduct = products?.[currentIndex];
   const remainingCount = products ? products.length - currentIndex : 0;
@@ -326,6 +329,30 @@ const SwipeDeck = ({ onBack }: SwipeDeckProps) => {
           Swipe left to pass • Up for wishlist • Right to love
         </div>
       </div>
+
+      {/* Product Detail Modal */}
+      <ProductDetailModal
+        product={selectedProduct}
+        isOpen={isDetailModalOpen}
+        onClose={() => {
+          setIsDetailModalOpen(false);
+          setSelectedProduct(null);
+        }}
+        onAddToWishlist={(productId) => {
+          // Handle wishlist addition
+          toast({
+            title: "Added to wishlist",
+            description: "Product has been added to your wishlist.",
+          });
+        }}
+        onAddToBag={(productId, size) => {
+          // Handle add to bag
+          toast({
+            title: "Added to bag",
+            description: `Product in size ${size} has been added to your bag.`,
+          });
+        }}
+      />
     </div>
   );
 };
