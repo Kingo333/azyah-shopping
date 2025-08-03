@@ -5,6 +5,7 @@ import { ProductDetailModal } from '@/components/ProductDetailModal';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { BackButton } from '@/components/ui/back-button';
 import { Heart, ShoppingBag, Camera } from 'lucide-react';
 import { Product } from '@/types';
 import { toast } from '@/hooks/use-toast';
@@ -122,11 +123,14 @@ const Explore: React.FC = () => {
       <div className="container mx-auto px-4 py-8">
         {/* Results Header */}
         <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-2xl font-bold">Explore Fashion</h1>
-            <p className="text-muted-foreground">
-              {filteredProducts?.length || 0} products found
-            </p>
+          <div className="flex items-center gap-3">
+            <BackButton />
+            <div>
+              <h1 className="text-2xl font-bold">Explore Fashion</h1>
+              <p className="text-muted-foreground">
+                {filteredProducts?.length || 0} products found
+              </p>
+            </div>
           </div>
         </div>
 

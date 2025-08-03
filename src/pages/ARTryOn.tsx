@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { BackButton } from '@/components/ui/back-button';
 import { useToast } from '@/hooks/use-toast';
 import { 
   Camera, 
@@ -213,11 +214,14 @@ const ARTryOn: React.FC = () => {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold">AR Try-On</h1>
-            <Badge variant="secondary" className="gap-1">
-              <Sparkles className="h-3 w-3" />
-              Beta
-            </Badge>
+            <BackButton />
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl font-bold">AR Try-On</h1>
+              <Badge variant="secondary" className="gap-1">
+                <Sparkles className="h-3 w-3" />
+                Beta
+              </Badge>
+            </div>
           </div>
           <Button variant="outline" size="sm">
             <Info className="h-4 w-4 mr-2" />

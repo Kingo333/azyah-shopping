@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
+import { BackButton } from '@/components/ui/back-button';
 import { useToast } from '@/hooks/use-toast';
 import { 
   Plus, 
@@ -170,20 +171,23 @@ const BrandPortal: React.FC = () => {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 bg-muted rounded-lg overflow-hidden">
-              <img src={brandInfo.logo} alt={brandInfo.name} className="w-full h-full object-cover" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-bold">{brandInfo.name}</h1>
-                {brandInfo.verified && (
-                  <Badge variant="secondary" className="text-xs">Verified</Badge>
-                )}
+            <BackButton />
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 bg-muted rounded-lg overflow-hidden">
+                <img src={brandInfo.logo} alt={brandInfo.name} className="w-full h-full object-cover" />
               </div>
-              <p className="text-muted-foreground">{brandInfo.description}</p>
-              <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
-                <span>{formatNumber(brandInfo.followers)} followers</span>
-                <span>{brandInfo.following} following</span>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-2xl font-bold">{brandInfo.name}</h1>
+                  {brandInfo.verified && (
+                    <Badge variant="secondary" className="text-xs">Verified</Badge>
+                  )}
+                </div>
+                <p className="text-muted-foreground">{brandInfo.description}</p>
+                <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
+                  <span>{formatNumber(brandInfo.followers)} followers</span>
+                  <span>{brandInfo.following} following</span>
+                </div>
               </div>
             </div>
           </div>

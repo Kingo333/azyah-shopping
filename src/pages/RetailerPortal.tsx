@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { BackButton } from '@/components/ui/back-button';
 import { useToast } from '@/hooks/use-toast';
 import { 
   Plus, 
@@ -206,16 +207,19 @@ const RetailerPortal: React.FC = () => {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 bg-muted rounded-lg overflow-hidden">
-              <img src={retailerInfo.logo} alt={retailerInfo.name} className="w-full h-full object-cover" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold">{retailerInfo.name}</h1>
-              <p className="text-muted-foreground">{retailerInfo.description}</p>
-              <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
-                <span>{retailerInfo.totalBrands} brands</span>
-                <span>{retailerInfo.totalProducts} products</span>
-                <span>{formatPrice(retailerInfo.totalRevenue)} revenue</span>
+            <BackButton />
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 bg-muted rounded-lg overflow-hidden">
+                <img src={retailerInfo.logo} alt={retailerInfo.name} className="w-full h-full object-cover" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold">{retailerInfo.name}</h1>
+                <p className="text-muted-foreground">{retailerInfo.description}</p>
+                <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
+                  <span>{retailerInfo.totalBrands} brands</span>
+                  <span>{retailerInfo.totalProducts} products</span>
+                  <span>{formatPrice(retailerInfo.totalRevenue)} revenue</span>
+                </div>
               </div>
             </div>
           </div>

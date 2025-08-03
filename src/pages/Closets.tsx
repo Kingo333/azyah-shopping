@@ -2,6 +2,7 @@ import React, { useState, Suspense } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { BackButton } from '@/components/ui/back-button';
 import { Grid3X3, LayoutGrid, Search, Plus } from 'lucide-react';
 
 // Lazy load the MasonryMoodBoards component
@@ -32,9 +33,12 @@ const Closets = () => {
       <div className="border-b bg-card">
         <div className="mx-auto max-w-7xl p-4">
           <div className="flex items-center justify-between mb-4">
-            <div>
-              <h1 className="text-2xl font-bold text-foreground">Closets & Mood Boards</h1>
-              <p className="text-muted-foreground">Discover and create curated fashion collections</p>
+            <div className="flex items-center gap-3">
+              <BackButton />
+              <div>
+                <h1 className="text-2xl font-bold text-foreground">Closets & Mood Boards</h1>
+                <p className="text-muted-foreground">Discover and create curated fashion collections</p>
+              </div>
             </div>
           </div>
 

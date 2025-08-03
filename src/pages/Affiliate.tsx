@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { BackButton } from '@/components/ui/back-button';
 import { Copy, Share2, TrendingUp, DollarSign, Users, Eye } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -62,7 +63,10 @@ const Affiliate = () => {
     <div className="min-h-screen bg-background p-4">
       <div className="mx-auto max-w-6xl space-y-6">
         <div className="text-center space-y-2">
-          <h1 className="text-3xl font-bold text-foreground">Affiliate Center</h1>
+          <div className="flex items-center justify-center gap-3 mb-4">
+            <BackButton />
+            <h1 className="text-3xl font-bold text-foreground">Affiliate Center</h1>
+          </div>
           <p className="text-muted-foreground">
             Share your love for fashion and earn commissions on every sale
           </p>
