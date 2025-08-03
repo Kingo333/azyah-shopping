@@ -5,14 +5,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
-import { Loader2, Sparkles, Heart, Star } from 'lucide-react';
+import { Loader2, Sparkles, Heart, Star, ShoppingBag, Store, Building2 } from 'lucide-react';
 
 const Auth = () => {
   const { user, signUp, signIn, loading } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('signin');
+  const [selectedRole, setSelectedRole] = useState<string>('');
 
   // Redirect if already authenticated
   if (user && !loading) {
@@ -39,9 +39,13 @@ const Auth = () => {
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
     const name = formData.get('name') as string;
-    const role = formData.get('role') as string;
 
-    await signUp(email, password, { name, role });
+    if (!selectedRole) {
+      setIsLoading(false);
+      return;
+    }
+
+    await signUp(email, password, { name, role: selectedRole });
     setIsLoading(false);
   };
 
@@ -182,23 +186,107 @@ const Auth = () => {
                       className="h-11"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="role">I am a...</Label>
-                    <Select name="role" required>
-                      <SelectTrigger className="h-11">
-                        <SelectValue placeholder="Select your role" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="shopper">Fashion Lover (Shopper)</SelectItem>
-                        <SelectItem value="brand">Brand Owner</SelectItem>
-                        <SelectItem value="retailer">Retailer</SelectItem>
-                      </SelectContent>
-                    </Select>
+                  <div className="space-y-3">
+                    <Label className="text-base font-medium">Choose your role</Label>
+                    <div className="grid grid-cols-1 gap-3">
+                      {/* Shopper Role */}
+                      <div
+                        className={`p-4 border-2 rounded-lg cursor-pointer transition-all duration-200 ${
+                          selectedRole === 'shopper'
+                            ? 'border-primary bg-primary/5 shadow-md'
+                            : 'border-border hover:border-primary/50 hover:bg-primary/2'
+                        }`}
+                        onClick={() => setSelectedRole('shopper')}
+                      >
+                        <div className="flex items-center space-x-3">
+                          <div className={`p-2 rounded-full ${
+                            selectedRole === 'shopper' ? 'bg-primary text-primary-foreground' : 'bg-muted'
+                          }`}>
+                            <ShoppingBag className="h-5 w-5" />
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="font-semibold text-sm">Fashion Lover</h3>
+                            <p className="text-xs text-muted-foreground">Discover, swipe, and curate your style</p>
+                          </div>
+                          <div className={`w-4 h-4 rounded-full border-2 ${
+                            selectedRole === 'shopper' 
+                              ? 'border-primary bg-primary' 
+                              : 'border-muted-foreground'
+                          }`}>
+                            {selectedRole === 'shopper' && (
+                              <div className="w-full h-full rounded-full bg-white scale-50"></div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Brand Role */}
+                      <div
+                        className={`p-4 border-2 rounded-lg cursor-pointer transition-all duration-200 ${
+                          selectedRole === 'brand'
+                            ? 'border-primary bg-primary/5 shadow-md'
+                            : 'border-border hover:border-primary/50 hover:bg-primary/2'
+                        }`}
+                        onClick={() => setSelectedRole('brand')}
+                      >
+                        <div className="flex items-center space-x-3">
+                          <div className={`p-2 rounded-full ${
+                            selectedRole === 'brand' ? 'bg-primary text-primary-foreground' : 'bg-muted'
+                          }`}>
+                            <Star className="h-5 w-5" />
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="font-semibold text-sm">Brand Owner</h3>
+                            <p className="text-xs text-muted-foreground">Showcase your fashion brand</p>
+                          </div>
+                          <div className={`w-4 h-4 rounded-full border-2 ${
+                            selectedRole === 'brand' 
+                              ? 'border-primary bg-primary' 
+                              : 'border-muted-foreground'
+                          }`}>
+                            {selectedRole === 'brand' && (
+                              <div className="w-full h-full rounded-full bg-white scale-50"></div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Retailer Role */}
+                      <div
+                        className={`p-4 border-2 rounded-lg cursor-pointer transition-all duration-200 ${
+                          selectedRole === 'retailer'
+                            ? 'border-primary bg-primary/5 shadow-md'
+                            : 'border-border hover:border-primary/50 hover:bg-primary/2'
+                        }`}
+                        onClick={() => setSelectedRole('retailer')}
+                      >
+                        <div className="flex items-center space-x-3">
+                          <div className={`p-2 rounded-full ${
+                            selectedRole === 'retailer' ? 'bg-primary text-primary-foreground' : 'bg-muted'
+                          }`}>
+                            <Building2 className="h-5 w-5" />
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="font-semibold text-sm">Retailer</h3>
+                            <p className="text-xs text-muted-foreground">Curate multi-brand collections</p>
+                          </div>
+                          <div className={`w-4 h-4 rounded-full border-2 ${
+                            selectedRole === 'retailer' 
+                              ? 'border-primary bg-primary' 
+                              : 'border-muted-foreground'
+                          }`}>
+                            {selectedRole === 'retailer' && (
+                              <div className="w-full h-full rounded-full bg-white scale-50"></div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                   <Button 
                     type="submit" 
                     className="w-full h-11 bg-gradient-to-r from-primary to-accent hover:shadow-lg transition-all duration-300"
-                    disabled={isLoading}
+                    disabled={isLoading || !selectedRole}
                   >
                     {isLoading ? (
                       <>
