@@ -206,7 +206,7 @@ const Auth = () => {
                           </div>
                           <div className="flex-1">
                             <h3 className="font-semibold text-sm">Fashion Lover</h3>
-                            <p className="text-xs text-muted-foreground">Discover, swipe, and curate your style</p>
+                            <p className="text-xs text-muted-foreground">Shop and discover new styles</p>
                           </div>
                           <div className={`w-4 h-4 rounded-full border-2 ${
                             selectedRole === 'shopper' 
@@ -237,7 +237,7 @@ const Auth = () => {
                           </div>
                           <div className="flex-1">
                             <h3 className="font-semibold text-sm">Brand Owner</h3>
-                            <p className="text-xs text-muted-foreground">Showcase your fashion brand</p>
+                            <p className="text-xs text-muted-foreground">Sell your own products</p>
                           </div>
                           <div className={`w-4 h-4 rounded-full border-2 ${
                             selectedRole === 'brand' 
@@ -268,7 +268,7 @@ const Auth = () => {
                           </div>
                           <div className="flex-1">
                             <h3 className="font-semibold text-sm">Retailer</h3>
-                            <p className="text-xs text-muted-foreground">Curate multi-brand collections</p>
+                            <p className="text-xs text-muted-foreground">Sell multiple brands</p>
                           </div>
                           <div className={`w-4 h-4 rounded-full border-2 ${
                             selectedRole === 'retailer' 
