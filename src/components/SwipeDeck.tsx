@@ -48,6 +48,14 @@ const SwipeDeck = ({ onBack }: SwipeDeckProps) => {
   const opacity = useTransform(x, [-200, -50, 0, 50, 200], [0, 1, 1, 1, 0]);
   const scale = useTransform(x, [-200, 0, 200], [0.9, 1, 0.9]);
 
+  // Action indicator transforms - moved to top level
+  const loveOpacity = useTransform(x, [50, 150], [0, 1]);
+  const loveScale = useTransform(x, [50, 150], [0.8, 1.1]);
+  const passOpacity = useTransform(x, [-150, -50], [1, 0]);
+  const passScale = useTransform(x, [-150, -50], [1.1, 0.8]);
+  const wishlistOpacity = useTransform(y, [-150, -50], [1, 0]);
+  const wishlistScale = useTransform(y, [-150, -50], [1.1, 0.8]);
+
   // Track product views
   useEffect(() => {
     if (currentProduct) {
@@ -270,8 +278,8 @@ const SwipeDeck = ({ onBack }: SwipeDeckProps) => {
                  {/* Enhanced Action Indicators */}
                 <motion.div
                   style={{ 
-                    opacity: useTransform(x, [50, 150], [0, 1]),
-                    scale: useTransform(x, [50, 150], [0.8, 1.1])
+                    opacity: loveOpacity,
+                    scale: loveScale
                   }}
                   className="absolute top-4 right-4 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-4 py-2 rounded-full font-bold shadow-lg backdrop-blur-sm"
                 >
@@ -281,8 +289,8 @@ const SwipeDeck = ({ onBack }: SwipeDeckProps) => {
                 
                 <motion.div
                   style={{ 
-                    opacity: useTransform(x, [-150, -50], [1, 0]),
-                    scale: useTransform(x, [-150, -50], [1.1, 0.8])
+                    opacity: passOpacity,
+                    scale: passScale
                   }}
                   className="absolute top-4 left-4 bg-gradient-to-r from-red-500 to-pink-500 text-white px-4 py-2 rounded-full font-bold shadow-lg backdrop-blur-sm"
                 >
@@ -292,8 +300,8 @@ const SwipeDeck = ({ onBack }: SwipeDeckProps) => {
                 
                 <motion.div
                   style={{ 
-                    opacity: useTransform(y, [-150, -50], [1, 0]),
-                    scale: useTransform(y, [-150, -50], [1.1, 0.8])
+                    opacity: wishlistOpacity,
+                    scale: wishlistScale
                   }}
                   className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-gradient-to-r from-primary to-purple-600 text-white px-6 py-3 rounded-full font-bold shadow-lg backdrop-blur-sm"
                 >
