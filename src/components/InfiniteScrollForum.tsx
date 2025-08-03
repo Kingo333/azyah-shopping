@@ -172,8 +172,8 @@ const InfiniteScrollForum = ({ onShare }: InfiniteScrollForumProps) => {
         id: `new-${Date.now()}`,
         title: newPost.title,
         content: newPost.content,
-        author_name: user.name || 'Anonymous',
-        author_avatar: user.avatar_url || null,
+        author_name: user?.email?.split('@')[0] || 'Anonymous',
+        author_avatar: null,
         created_at: new Date().toISOString(),
         likes_count: 0,
         comments_count: 0,
@@ -232,8 +232,8 @@ const InfiniteScrollForum = ({ onShare }: InfiniteScrollForumProps) => {
     const comment: ForumComment = {
       id: `comment-${Date.now()}`,
       content: newComment,
-      author_name: user?.name || 'Anonymous',
-      author_avatar: user?.avatar_url || null,
+      author_name: user?.email?.split('@')[0] || 'Anonymous',
+      author_avatar: null,
       created_at: new Date().toISOString(),
       likes_count: 0,
       parent_id: parentId
@@ -513,8 +513,8 @@ const InfiniteScrollForum = ({ onShare }: InfiniteScrollForumProps) => {
               {/* Add Comment */}
               <div className="flex gap-2 mt-4">
                 <Avatar className="h-8 w-8">
-                  <AvatarImage src={user?.avatar_url || undefined} />
-                  <AvatarFallback>{user?.name?.charAt(0) || 'U'}</AvatarFallback>
+                  <AvatarImage src={undefined} />
+                  <AvatarFallback>{user?.email?.charAt(0).toUpperCase() || 'U'}</AvatarFallback>
                 </Avatar>
                 <div className="flex-1 flex gap-2">
                   <Input

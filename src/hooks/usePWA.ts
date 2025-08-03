@@ -25,7 +25,7 @@ export const usePWA = () => {
       // Check if running in standalone mode (installed PWA)
       const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
       // Check if running in PWA context
-      const isPWA = window.navigator.standalone || isStandalone;
+      const isPWA = (window.navigator as any).standalone || isStandalone;
       setIsInstalled(isPWA);
     };
 
@@ -186,11 +186,6 @@ export const usePWA = () => {
                 toast({
                   title: "Update available",
                   description: "A new version of the app is available.",
-                  action: (
-                    <button onClick={() => updateServiceWorker(newWorker)}>
-                      Update
-                    </button>
-                  ),
                 });
               }
             });
