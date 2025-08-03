@@ -1,7 +1,7 @@
-import Dashboard from '@/components/Dashboard';
+import RoleDashboard from '@/components/RoleDashboard';
 
 const Index = () => {
-  return <Dashboard />;
+  return <RoleDashboard />;
 };
 
 export default Index;

@@ -11,6 +11,7 @@ import Swipe from "./pages/Swipe";
 import Feed from "./pages/Feed";
 import Explore from "./pages/Explore";
 import Wishlist from "./pages/Wishlist";
+import ShoppingCart from "./pages/ShoppingCart";
 import ARTryOn from "./pages/ARTryOn";
 import BrandPortal from "./pages/BrandPortal";
 import RetailerPortal from "./pages/RetailerPortal";
@@ -78,6 +79,11 @@ const App = () => (
             <Route path="/retailer-portal" element={
               <ProtectedRoute>
                 <RetailerPortal />
+              </ProtectedRoute>
+            } />
+            <Route path="/cart" element={
+              <ProtectedRoute>
+                <ShoppingCart />
               </ProtectedRoute>
             } />
             <Route path="/closets" element={
