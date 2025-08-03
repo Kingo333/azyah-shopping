@@ -15,8 +15,10 @@ import {
   Filter,
   Bookmark,
   TrendingUp,
-  ShoppingBag
+  ShoppingBag,
+  LogOut
 } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface FeedPost {
   id: string;
@@ -41,6 +43,7 @@ interface FeedPost {
 }
 
 const Feed: React.FC = () => {
+  const { signOut } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
   const [savedPosts, setSavedPosts] = useState<Set<string>>(new Set());
@@ -177,6 +180,15 @@ const Feed: React.FC = () => {
               </Button>
               <Button variant="outline" size="sm">
                 <Filter className="h-4 w-4" />
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => signOut()}
+                className="flex items-center gap-2"
+              >
+                <LogOut className="h-4 w-4" />
+                Sign Out
               </Button>
             </div>
           </div>

@@ -6,11 +6,13 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { BackButton } from '@/components/ui/back-button';
-import { Heart, ShoppingBag, Camera } from 'lucide-react';
+import { Heart, ShoppingBag, Camera, LogOut } from 'lucide-react';
 import { Product } from '@/types';
 import { toast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Explore: React.FC = () => {
+  const { signOut } = useAuth();
   const [filters, setFilters] = useState<FilterState>({
     categories: [],
     priceRange: [0, 2000],
@@ -132,6 +134,15 @@ const Explore: React.FC = () => {
               </p>
             </div>
           </div>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => signOut()}
+            className="flex items-center gap-2"
+          >
+            <LogOut className="h-4 w-4" />
+            Sign Out
+          </Button>
         </div>
 
         {/* Products Grid */}
