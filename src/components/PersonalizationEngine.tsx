@@ -3,9 +3,10 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Product, SwipeAction, User } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
+import { convertSupabaseProduct } from '@/lib/type-utils';
 
 interface PersonalizationEngineProps {
-  onRecommendationsUpdate: (products: Product[]) => void;
+  onRecommendationsUpdate: (products: Product[] | ((prev: Product[]) => Product[])) => void;
   children?: React.ReactNode;
 }
 
@@ -169,7 +170,8 @@ export const PersonalizationEngine: React.FC<PersonalizationEngineProps> = ({
       if (error) throw error;
 
       // Score and sort recommendations
-      const scoredRecommendations = (recommendations || []).map((product: Product) => {
+      const scoredRecommendations = (recommendations || []).map((rawProduct: any) => {
+        const product = convertSupabaseProduct(rawProduct);
         let score = 0;
 
         // Category match bonus
@@ -321,8 +323,8 @@ export const PersonalizationEngine: React.FC<PersonalizationEngineProps> = ({
             .filter(Boolean);
           
           // Merge with existing recommendations
-          onRecommendationsUpdate(prevRecommendations => [
-            ...collaborativeRecommendations,
+          onRecommendationsUpdate((prevRecommendations: Product[]) => [
+            ...collaborativeRecommendations.map(convertSupabaseProduct),
             ...prevRecommendations,
           ]);
         }

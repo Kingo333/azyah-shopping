@@ -7,7 +7,8 @@ import { Camera, Upload, X, Search, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { pipeline } from '@huggingface/transformers';
 import { useToast } from '@/hooks/use-toast';
-import { Product } from '@/types';
+import { Product, Brand } from '@/types';
+import { createMinimalBrand } from '@/lib/type-utils';
 
 interface VisualSearchModalProps {
   isOpen: boolean;
@@ -15,9 +16,15 @@ interface VisualSearchModalProps {
   onProductSelect: (product: Product) => void;
 }
 
-interface SearchResult extends Partial<Product> {
+interface SearchResult {
+  id: string;
+  title: string;
+  price_cents: number;
+  currency: string;
+  media_urls: string[];
   similarity_score: number;
   reason?: string;
+  brand: Brand;
 }
 
 export const VisualSearchModal: React.FC<VisualSearchModalProps> = ({
@@ -81,11 +88,10 @@ export const VisualSearchModal: React.FC<VisualSearchModalProps> = ({
         media_urls: [`https://images.unsplash.com/photo-${1500000000000 + index}?w=300&h=400&fit=crop`],
         similarity_score: result.score,
         reason: `Similar ${result.label.toLowerCase()} style`,
-        brand: {
-          id: `brand-${index}`,
-          name: ['Zara', 'H&M', 'Mango', 'ASOS'][index % 4],
-          logo_url: null,
-        },
+        brand: createMinimalBrand(
+          `brand-${index}`,
+          ['Zara', 'H&M', 'Mango', 'ASOS'][index % 4]
+        ),
       }));
 
       setSearchResults(mockResults);
@@ -291,7 +297,7 @@ export const VisualSearchModal: React.FC<VisualSearchModalProps> = ({
                       <Card
                         key={product.id}
                         className="cursor-pointer hover:shadow-md transition-shadow"
-                        onClick={() => onProductSelect(product as Product)}
+                        onClick={() => onProductSelect(product as unknown as Product)}
                       >
                         <CardContent className="p-3">
                           <div className="aspect-[3/4] mb-2">
