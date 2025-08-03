@@ -7,7 +7,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Heart, MessageCircle, Share, Plus, TrendingUp, Clock } from 'lucide-react';
+import { 
+  Heart, 
+  MessageCircle, 
+  Share, 
+  Plus, 
+  TrendingUp, 
+  Clock 
+} from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { formatDistanceToNow } from 'date-fns';
 
