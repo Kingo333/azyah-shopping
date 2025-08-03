@@ -1,0 +1,54 @@
+{
+  "name": "Azyah - Fashion Discovery",
+  "short_name": "Azyah",
+  "description": "Discover, swipe, try on, and curate fashion with AR try-on, community features, and affiliate earnings",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f0f0f",
+  "theme_color": "#ffffff",
+  "orientation": "portrait",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "48x48",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "/logo-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/logo-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "categories": ["shopping", "lifestyle", "social"],
+  "shortcuts": [
+    {
+      "name": "Swipe Products",
+      "short_name": "Swipe",
+      "description": "Discover products with Tinder-style swiping",
+      "url": "/swipe",
+      "icons": [{ "src": "/favicon.ico", "sizes": "48x48" }]
+    },
+    {
+      "name": "AR Try-On",
+      "short_name": "AR",
+      "description": "Try on products with augmented reality",
+      "url": "/ar-tryon",
+      "icons": [{ "src": "/favicon.ico", "sizes": "48x48" }]
+    },
+    {
+      "name": "My Closets",
+      "short_name": "Closets",
+      "description": "View your curated fashion collections",
+      "url": "/closets",
+      "icons": [{ "src": "/favicon.ico", "sizes": "48x48" }]
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false
+}
