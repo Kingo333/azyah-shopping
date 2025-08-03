@@ -8,8 +8,12 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Swipe from "./pages/Swipe";
+import Feed from "./pages/Feed";
 import Explore from "./pages/Explore";
 import Wishlist from "./pages/Wishlist";
+import ARTryOn from "./pages/ARTryOn";
+import BrandPortal from "./pages/BrandPortal";
+import RetailerPortal from "./pages/RetailerPortal";
 import Affiliate from "./pages/Affiliate";
 import Forum from "./pages/Forum";
 import Closets from "./pages/Closets";
@@ -54,6 +58,26 @@ const App = () => (
             <Route path="/forum" element={
               <ProtectedRoute>
                 <Forum />
+              </ProtectedRoute>
+            } />
+            <Route path="/feed" element={
+              <ProtectedRoute>
+                <Feed />
+              </ProtectedRoute>
+            } />
+            <Route path="/ar-tryOn" element={
+              <ProtectedRoute>
+                <ARTryOn />
+              </ProtectedRoute>
+            } />
+            <Route path="/brand-portal" element={
+              <ProtectedRoute>
+                <BrandPortal />
+              </ProtectedRoute>
+            } />
+            <Route path="/retailer-portal" element={
+              <ProtectedRoute>
+                <RetailerPortal />
               </ProtectedRoute>
             } />
             <Route path="/closets" element={
