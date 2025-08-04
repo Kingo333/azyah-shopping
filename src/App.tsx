@@ -24,17 +24,20 @@ import Closets from "./pages/Closets";
 import Landing from "./pages/Landing";
 import ProfileSettings from "./pages/ProfileSettings";
 import ImageSearch from "./pages/ImageSearch";
+import TrendingStyles from "./pages/TrendingStyles";
+import TopInfluencers from "./pages/TopInfluencers";
+import FeaturedBrands from "./pages/FeaturedBrands";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
 const App = () => (
-  <ErrorBoundary>
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
+  <QueryClientProvider client={queryClient}>
+    <TooltipProvider>
+      <Toaster />
+      <Sonner />
+      <BrowserRouter>
+        <ErrorBoundary>
           <AuthProvider>
             <Routes>
             <Route path="/" element={<Landing />} />
@@ -52,6 +55,21 @@ const App = () => (
             <Route path="/explore" element={
               <ProtectedRoute roles={['shopper', 'admin']}>
                 <Explore />
+              </ProtectedRoute>
+            } />
+            <Route path="/trending-styles" element={
+              <ProtectedRoute roles={['shopper', 'admin']}>
+                <TrendingStyles />
+              </ProtectedRoute>
+            } />
+            <Route path="/top-influencers" element={
+              <ProtectedRoute roles={['shopper', 'admin']}>
+                <TopInfluencers />
+              </ProtectedRoute>
+            } />
+            <Route path="/featured-brands" element={
+              <ProtectedRoute roles={['shopper', 'admin']}>
+                <FeaturedBrands />
               </ProtectedRoute>
             } />
             <Route path="/wishlist" element={
@@ -118,10 +136,10 @@ const App = () => (
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-  </ErrorBoundary>
+      </ErrorBoundary>
+    </BrowserRouter>
+  </TooltipProvider>
+</QueryClientProvider>
 );
 
 export default App;
