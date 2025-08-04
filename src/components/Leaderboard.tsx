@@ -259,7 +259,6 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ type = 'global', country }) =
                   </Badge>
                 </div>
                 <p className="font-semibold text-sm">{leaders[1]?.name}</p>
-                <p className="text-xs text-muted-foreground">{leaders[1]?.score} pts</p>
               </div>
 
               {/* 1st Place */}
@@ -275,7 +274,6 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ type = 'global', country }) =
                   <Crown className="absolute -top-6 left-1/2 transform -translate-x-1/2 h-6 w-6 text-yellow-500" />
                 </div>
                 <p className="font-bold">{leaders[0]?.name}</p>
-                <p className="text-sm text-muted-foreground">{leaders[0]?.score} pts</p>
               </div>
 
               {/* 3rd Place */}
@@ -290,7 +288,6 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ type = 'global', country }) =
                   </Badge>
                 </div>
                 <p className="font-semibold text-sm">{leaders[2]?.name}</p>
-                <p className="text-xs text-muted-foreground">{leaders[2]?.score} pts</p>
               </div>
             </div>
           </CardContent>
@@ -332,17 +329,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ type = 'global', country }) =
                   )}
                 </div>
 
-                <div className="text-right">
-                  <p className="font-bold text-lg">{leader.score}</p>
-                  <p className="text-xs text-muted-foreground">points</p>
-                </div>
-
-                <div className="hidden sm:flex items-center gap-2 text-xs text-muted-foreground">
-                  <span title="Posts">{leader.stats.posts_created}📝</span>
-                  <span title="Likes">{leader.stats.likes_given}❤️</span>
-                  <span title="Closet Items">{leader.stats.closet_items}👕</span>
-                  <span title="Closets">{leader.stats.closets_created}👗</span>
-                </div>
+                <div className="w-8"></div>
               </div>
             ))}
           </div>
