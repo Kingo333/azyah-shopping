@@ -185,8 +185,8 @@ const SwipeDeck = ({
           });
       }
 
-      // Background processing
-      SwipeAnalytics.trackSwipe(user.id, currentProduct.id, direction);
+      // Enhanced analytics tracking with product data
+      SwipeAnalytics.trackSwipe(user.id, currentProduct.id, direction, currentProduct);
       swipeProduct.mutate({
         productId: currentProduct.id,
         action: direction,

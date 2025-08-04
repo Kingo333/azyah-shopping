@@ -1,7 +1,7 @@
 // Enhanced algorithm that considers user's interaction patterns
 export const SwipeAnalytics = {
-  // Track swipe patterns
-  trackSwipe: async (userId: string, productId: string, action: 'left' | 'right' | 'up') => {
+  // Enhanced tracking with product metadata
+  trackSwipe: async (userId: string, productId: string, action: 'left' | 'right' | 'up', productData?: any) => {
     // Store in local analytics for immediate feedback
     const analytics = JSON.parse(localStorage.getItem('swipeAnalytics') || '{}');
     
@@ -10,21 +10,37 @@ export const SwipeAnalytics = {
         likes: [],
         passes: [],
         wishlists: [],
-        patterns: {}
+        patterns: {},
+        categoryPrefs: {},
+        brandPrefs: {},
+        pricePrefs: { low: 0, medium: 0, high: 0 }
       };
     }
     
     const timestamp = Date.now();
+    const swipeData = {
+      productId,
+      timestamp,
+      productData: productData ? {
+        category: productData.category_slug,
+        brand: productData.brands?.name || 'Unbranded',
+        price_cents: productData.price_cents,
+        title: productData.title
+      } : null
+    };
     
     switch (action) {
       case 'right': // Like
-        analytics[userId].likes.push({ productId, timestamp });
+        analytics[userId].likes.push(swipeData);
+        SwipeAnalytics.updatePreferences(analytics[userId], swipeData, 2);
         break;
       case 'left': // Pass
-        analytics[userId].passes.push({ productId, timestamp });
+        analytics[userId].passes.push(swipeData);
+        SwipeAnalytics.updatePreferences(analytics[userId], swipeData, -1);
         break;
       case 'up': // Wishlist
-        analytics[userId].wishlists.push({ productId, timestamp });
+        analytics[userId].wishlists.push(swipeData);
+        SwipeAnalytics.updatePreferences(analytics[userId], swipeData, 3);
         break;
     }
     
@@ -58,6 +74,30 @@ export const SwipeAnalytics = {
     localStorage.setItem('swipeAnalytics', JSON.stringify(analytics));
   },
   
+  // Update user preferences based on interaction
+  updatePreferences: (userData: any, swipeData: any, weight: number) => {
+    if (!swipeData.productData) return;
+    
+    const { category, brand, price_cents } = swipeData.productData;
+    
+    // Update category preferences
+    if (category) {
+      userData.categoryPrefs[category] = (userData.categoryPrefs[category] || 0) + weight;
+    }
+    
+    // Update brand preferences
+    if (brand) {
+      userData.brandPrefs[brand] = (userData.brandPrefs[brand] || 0) + weight;
+    }
+    
+    // Update price preferences
+    if (price_cents) {
+      const price = price_cents / 100;
+      const priceCategory = price < 50 ? 'low' : price < 200 ? 'medium' : 'high';
+      userData.pricePrefs[priceCategory] += weight;
+    }
+  },
+
   // Get user preferences for personalization
   getUserPreferences: (userId: string) => {
     const analytics = JSON.parse(localStorage.getItem('swipeAnalytics') || '{}');
@@ -71,6 +111,9 @@ export const SwipeAnalytics = {
       totalWishlists: data.wishlists.length,
       likesToPassRatio: data.likes.length / Math.max(data.passes.length, 1),
       wishlistToLikeRatio: data.wishlists.length / Math.max(data.likes.length, 1),
+      categoryPrefs: data.categoryPrefs || {},
+      brandPrefs: data.brandPrefs || {},
+      pricePrefs: data.pricePrefs || { low: 0, medium: 0, high: 0 },
       recentActivity: [...data.likes, ...data.passes, ...data.wishlists]
         .sort((a, b) => b.timestamp - a.timestamp)
         .slice(0, 50)
@@ -97,36 +140,44 @@ export const SwipeAnalytics = {
   calculatePersonalityScore: (product: any, prefs: any) => {
     let score = 0;
     
-    // Base score
-    score += Math.random() * 0.3; // Add some randomness
+    // Base randomness for variety
+    score += Math.random() * 0.3;
     
-    // Category preferences (if we had category data)
-    // This would analyze which categories the user likes/passes most
+    // Category preference scoring
+    const categoryScore = prefs.categoryPrefs[product.category_slug] || 0;
+    score += categoryScore * 0.3;
     
-    // Price preferences
+    // Brand preference scoring
+    const brandName = product.brands?.name || 'Unbranded';
+    const brandScore = prefs.brandPrefs[brandName] || 0;
+    score += brandScore * 0.25;
+    
+    // Price preference scoring
     if (product.price_cents) {
-      // Analyze price range preferences from user's liked items
-      score += 0.2;
-    }
-    
-    // Brand preferences
-    if (product.brand) {
-      // Check if user has liked this brand before
-      score += 0.1;
+      const price = product.price_cents / 100;
+      const priceCategory = price < 50 ? 'low' : price < 200 ? 'medium' : 'high';
+      const priceScore = prefs.pricePrefs[priceCategory] || 0;
+      score += priceScore * 0.2;
     }
     
     // Style tags preferences
-    if (product.attributes?.style_tags) {
-      // Analyze which style tags user prefers
-      score += 0.15;
+    if (product.tags && Array.isArray(product.tags)) {
+      product.tags.forEach((tag: string) => {
+        const tagPref = prefs.categoryPrefs[tag] || 0;
+        score += tagPref * 0.1;
+      });
     }
     
     // Recency boost for newer products
     const productAge = Date.now() - new Date(product.created_at).getTime();
     const maxAge = 30 * 24 * 60 * 60 * 1000; // 30 days
-    score += Math.max(0, (maxAge - productAge) / maxAge) * 0.1;
+    score += Math.max(0, (maxAge - productAge) / maxAge) * 0.15;
     
-    return score;
+    // Boost for user engagement patterns
+    if (prefs.likesToPassRatio > 1.5) score += 0.1; // User likes most things
+    if (prefs.wishlistToLikeRatio > 0.3) score += 0.05; // User wishlists often
+    
+    return Math.max(0, score);
   }
 };
 
