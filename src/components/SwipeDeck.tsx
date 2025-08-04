@@ -43,22 +43,16 @@ const SwipeDeck = ({ onBack }: SwipeDeckProps) => {
   const currentProduct = products?.[currentIndex];
   const remainingCount = products ? products.length - currentIndex : 0;
 
-  // Enhanced motion values with spring physics
+  // Simplified motion values
   const x = useMotionValue(0);
   const y = useMotionValue(0);
-  const springX = useSpring(x, { stiffness: 300, damping: 30 });
-  const springY = useSpring(y, { stiffness: 300, damping: 30 });
-  const rotate = useTransform(x, [-200, 200], [-30, 30]);
-  const opacity = useTransform(x, [-200, -50, 0, 50, 200], [0, 1, 1, 1, 0]);
-  const scale = useTransform(x, [-200, 0, 200], [0.9, 1, 0.9]);
+  const rotate = useTransform(x, [-150, 150], [-15, 15]);
+  const opacity = useTransform(x, [-150, 0, 150], [0.8, 1, 0.8]);
 
-  // Action indicator transforms - moved to top level
-  const loveOpacity = useTransform(x, [50, 150], [0, 1]);
-  const loveScale = useTransform(x, [50, 150], [0.8, 1.1]);
-  const passOpacity = useTransform(x, [-150, -50], [1, 0]);
-  const passScale = useTransform(x, [-150, -50], [1.1, 0.8]);
-  const wishlistOpacity = useTransform(y, [-150, -50], [1, 0]);
-  const wishlistScale = useTransform(y, [-150, -50], [1.1, 0.8]);
+  // Simplified action indicator transforms
+  const loveOpacity = useTransform(x, [50, 100], [0, 1]);
+  const passOpacity = useTransform(x, [-100, -50], [1, 0]);
+  const wishlistOpacity = useTransform(y, [-100, -50], [1, 0]);
 
   // Track product views
   useEffect(() => {
@@ -68,19 +62,17 @@ const SwipeDeck = ({ onBack }: SwipeDeckProps) => {
   }, [currentProduct, trackProductView]);
 
   const handleDragEnd = (event: any, info: PanInfo) => {
-    const threshold = 100;
+    if (isAnimating) return;
+    
+    const threshold = 80;
     const { offset, velocity } = info;
 
-    if (Math.abs(offset.x) > threshold || Math.abs(velocity.x) > 500) {
-      if (offset.x > 0) {
-        handleSwipe('right');
-      } else {
-        handleSwipe('left');
-      }
-    } else if (offset.y < -threshold || velocity.y < -500) {
+    if (Math.abs(offset.x) > threshold || Math.abs(velocity.x) > 400) {
+      handleSwipe(offset.x > 0 ? 'right' : 'left');
+    } else if (offset.y < -threshold || velocity.y < -400) {
       handleSwipe('up');
     } else {
-      // Snap back
+      // Snap back smoothly
       x.set(0);
       y.set(0);
     }
@@ -92,44 +84,44 @@ const SwipeDeck = ({ onBack }: SwipeDeckProps) => {
     setIsAnimating(true);
     setSwipeDirection(direction);
 
+    const messages = {
+      left: "Skipped! 👋",
+      right: "Loved it! ❤️",
+      up: "Added to wishlist! ⭐"
+    };
+
+    // Immediate visual feedback
+    toast({
+      title: messages[direction],
+      description: `${currentProduct.title}`,
+      duration: 1500
+    });
+
+    // Haptic feedback
+    if (navigator.vibrate) {
+      navigator.vibrate(50);
+    }
+
     try {
-      // Track analytics first
-      await SwipeAnalytics.trackSwipe(user.id, currentProduct.id, direction);
-      
-      await swipeProduct.mutateAsync({
+      // Background processing
+      SwipeAnalytics.trackSwipe(user.id, currentProduct.id, direction);
+      swipeProduct.mutate({
         productId: currentProduct.id,
         action: direction,
         userId: user.id
       });
 
-      // Enhanced feedback with haptic simulation
-      const messages = {
-        left: "Skipped! 👋",
-        right: "Loved it! ❤️ (24hr temp save)",
-        up: "Added to wishlist! ⭐"
-      };
-
-      // Haptic feedback simulation
-      if (navigator.vibrate) {
-        navigator.vibrate(direction === 'right' ? [50, 30, 50] : [50]);
-      }
-
-      toast({
-        title: messages[direction],
-        description: `${currentProduct.title} by ${currentProduct.brand?.name}`,
-        duration: 2000
-      });
-
-      // Smooth transition to next card
+      // Transition to next card after animation
       setTimeout(() => {
         setCurrentIndex(prev => prev + 1);
         setSwipeDirection(null);
         setIsAnimating(false);
         x.set(0);
         y.set(0);
-      }, 400);
+      }, 300);
 
     } catch (error) {
+      console.error('Swipe error:', error);
       setSwipeDirection(null);
       setIsAnimating(false);
       x.set(0);
@@ -244,35 +236,27 @@ const SwipeDeck = ({ onBack }: SwipeDeckProps) => {
         <div className="relative w-full max-w-sm h-[600px]">
           {/* Current Card */}
           <motion.div
-            drag
+            key={currentProduct.id}
+            drag={!isAnimating}
             dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
-            dragElastic={0.2}
+            dragElastic={0.1}
             onDragEnd={handleDragEnd}
-            style={{
-              x: springX,
-              y: springY,
-              rotate,
-              opacity,
-              scale
-            }}
+            style={{ x, y, rotate, opacity }}
             animate={
               swipeDirection === 'left' 
-                ? { x: -400, opacity: 0, rotate: -45, scale: 0.8 }
+                ? { x: -300, opacity: 0, rotate: -20 }
                 : swipeDirection === 'right'
-                ? { x: 400, opacity: 0, rotate: 45, scale: 0.8 }
+                ? { x: 300, opacity: 0, rotate: 20 }
                 : swipeDirection === 'up'
-                ? { y: -400, opacity: 0, scale: 0.8 }
-                : {}
+                ? { y: -300, opacity: 0 }
+                : { x: 0, y: 0, rotate: 0, opacity: 1 }
             }
             transition={{ 
-              type: 'spring', 
-              stiffness: 400, 
-              damping: 25,
-              duration: 0.4
+              type: 'tween', 
+              duration: 0.3,
+              ease: "easeOut"
             }}
             className="absolute inset-0 cursor-grab active:cursor-grabbing"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
           >
             <Card className="w-full h-full shadow-2xl border-0 overflow-hidden bg-white">
               <div className="relative h-3/5">
@@ -282,37 +266,28 @@ const SwipeDeck = ({ onBack }: SwipeDeckProps) => {
                   className="w-full h-full object-cover"
                 />
                 
-                 {/* Enhanced Action Indicators */}
+                 {/* Simplified Action Indicators */}
                 <motion.div
-                  style={{ 
-                    opacity: loveOpacity,
-                    scale: loveScale
-                  }}
-                  className="absolute top-4 right-4 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-4 py-2 rounded-full font-bold shadow-lg backdrop-blur-sm"
+                  style={{ opacity: loveOpacity }}
+                  className="absolute top-4 right-4 bg-green-500 text-white px-3 py-1 rounded-full font-medium shadow-lg"
                 >
                   <Heart className="inline w-4 h-4 mr-1" />
-                  LOVE IT!
+                  LOVE
                 </motion.div>
                 
                 <motion.div
-                  style={{ 
-                    opacity: passOpacity,
-                    scale: passScale
-                  }}
-                  className="absolute top-4 left-4 bg-gradient-to-r from-red-500 to-pink-500 text-white px-4 py-2 rounded-full font-bold shadow-lg backdrop-blur-sm"
+                  style={{ opacity: passOpacity }}
+                  className="absolute top-4 left-4 bg-red-500 text-white px-3 py-1 rounded-full font-medium shadow-lg"
                 >
                   <X className="inline w-4 h-4 mr-1" />
                   PASS
                 </motion.div>
                 
                 <motion.div
-                  style={{ 
-                    opacity: wishlistOpacity,
-                    scale: wishlistScale
-                  }}
-                  className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-gradient-to-r from-primary to-purple-600 text-white px-6 py-3 rounded-full font-bold shadow-lg backdrop-blur-sm"
+                  style={{ opacity: wishlistOpacity }}
+                  className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-primary text-white px-4 py-2 rounded-full font-medium shadow-lg"
                 >
-                  <Bookmark className="inline w-5 h-5 mr-2" />
+                  <Bookmark className="inline w-4 h-4 mr-1" />
                   WISHLIST
                 </motion.div>
                 
