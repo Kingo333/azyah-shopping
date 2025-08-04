@@ -202,6 +202,10 @@ const RoleDashboard: React.FC = () => {
               <Heart className="h-6 w-6" />
               <span>Swipe Deck</span>
             </Button>
+            <Button onClick={() => navigate('/fashion-feed')} variant="outline" className="h-20 flex-col gap-2">
+              <Sparkles className="h-6 w-6" />
+              <span>Fashion Feed</span>
+            </Button>
             <Button onClick={() => navigate('/explore')} variant="outline" className="h-20 flex-col gap-2">
               <Search className="h-6 w-6" />
               <span>Explore</span>
@@ -210,13 +214,9 @@ const RoleDashboard: React.FC = () => {
               <Camera className="h-6 w-6" />
               <span>AR Try-On</span>
             </Button>
-            <Button onClick={() => navigate('/wishlist')} variant="outline" className="h-20 flex-col gap-2">
+            <Button onClick={() => navigate('/likes')} variant="outline" className="h-20 flex-col gap-2">
               <Heart className="h-6 w-6" />
-              <span>Wishlist</span>
-            </Button>
-            <Button onClick={() => navigate('/image-search')} variant="outline" className="h-20 flex-col gap-2">
-              <Search className="h-6 w-6" />
-              <span>Image Search</span>
+              <span>Likes</span>
             </Button>
           </div>
         </CardContent>
@@ -243,21 +243,6 @@ const RoleDashboard: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Continue Swiping CTA */}
-      <Card className="sticky bottom-4 bg-gradient-to-r from-primary/10 to-accent/10 border-primary/20">
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-semibold">Continue Discovering</h3>
-              <p className="text-sm text-muted-foreground">Swipe through more fashion finds</p>
-            </div>
-            <Button onClick={() => navigate('/swipe')}>
-              <Heart className="h-4 w-4 mr-2" />
-              Continue Swiping
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Closets Preview */}
       <Card>

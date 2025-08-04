@@ -219,6 +219,103 @@ export type Database = {
           },
         ]
       }
+      closet_items: {
+        Row: {
+          added_at: string
+          closet_id: string
+          id: string
+          product_id: string
+          sort_order: number | null
+        }
+        Insert: {
+          added_at?: string
+          closet_id: string
+          id?: string
+          product_id: string
+          sort_order?: number | null
+        }
+        Update: {
+          added_at?: string
+          closet_id?: string
+          id?: string
+          product_id?: string
+          sort_order?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "closet_items_closet_id_fkey"
+            columns: ["closet_id"]
+            isOneToOne: false
+            referencedRelation: "closets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      closet_ratings: {
+        Row: {
+          closet_id: string
+          created_at: string
+          id: string
+          rating: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          closet_id: string
+          created_at?: string
+          id?: string
+          rating: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          closet_id?: string
+          created_at?: string
+          id?: string
+          rating?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "closet_ratings_closet_id_fkey"
+            columns: ["closet_id"]
+            isOneToOne: false
+            referencedRelation: "closets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      closets: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_public: boolean
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_public?: boolean
+          title?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_public?: boolean
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       events: {
         Row: {
           brand_id: string | null
@@ -328,6 +425,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      likes: {
+        Row: {
+          created_at: string
+          id: string
+          product_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          product_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          product_id?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       order_items: {
         Row: {
@@ -780,6 +898,7 @@ export type Database = {
           avatar_url: string | null
           billing_address: Json | null
           bio: string | null
+          country: string | null
           created_at: string
           email: string
           id: string
@@ -796,6 +915,7 @@ export type Database = {
           avatar_url?: string | null
           billing_address?: Json | null
           bio?: string | null
+          country?: string | null
           created_at?: string
           email: string
           id?: string
@@ -812,6 +932,7 @@ export type Database = {
           avatar_url?: string | null
           billing_address?: Json | null
           bio?: string | null
+          country?: string | null
           created_at?: string
           email?: string
           id?: string

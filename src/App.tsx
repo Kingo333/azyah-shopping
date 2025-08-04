@@ -12,6 +12,7 @@ import Feed from "./pages/Feed";
 import FashionFeed from "./pages/FashionFeed";
 import Explore from "./pages/Explore";
 import Wishlist from "./pages/Wishlist";
+import Likes from "./pages/Likes";
 import ShoppingCart from "./pages/ShoppingCart";
 import ARTryOn from "./pages/ARTryOn";
 import BrandPortal from "./pages/BrandPortal";
@@ -54,6 +55,11 @@ const App = () => (
             <Route path="/wishlist" element={
               <ProtectedRoute roles={['shopper', 'admin']}>
                 <Wishlist />
+              </ProtectedRoute>
+            } />
+            <Route path="/likes" element={
+              <ProtectedRoute roles={['shopper', 'admin']}>
+                <Likes />
               </ProtectedRoute>
             } />
             <Route path="/affiliate" element={

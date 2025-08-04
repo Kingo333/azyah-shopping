@@ -16,6 +16,7 @@ import {
   Info
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 import { ProductDetailModal } from '@/components/ProductDetailModal';
 import { useProductAnalytics } from '@/hooks/useAnalytics';
 
@@ -141,6 +142,49 @@ const SwipeDeck = ({
     }
 
     try {
+      // Handle different swipe actions
+      if (direction === 'right') {
+        // Right swipe = Like
+        await supabase
+          .from('likes')
+          .insert({
+            user_id: user.id,
+            product_id: currentProduct.id
+          });
+      } else if (direction === 'up') {
+        // Up swipe = Add to wishlist
+        // First get or create default wishlist
+        let { data: wishlists } = await supabase
+          .from('wishlists')
+          .select('id')
+          .eq('user_id', user.id)
+          .limit(1);
+
+        let wishlistId = wishlists?.[0]?.id;
+
+        if (!wishlistId) {
+          const { data: newWishlist, error: wishlistError } = await supabase
+            .from('wishlists')
+            .insert({
+              user_id: user.id,
+              title: 'My Wishlist'
+            })
+            .select('id')
+            .single();
+
+          if (wishlistError) throw wishlistError;
+          wishlistId = newWishlist.id;
+        }
+
+        // Add to wishlist
+        await supabase
+          .from('wishlist_items')
+          .insert({
+            wishlist_id: wishlistId,
+            product_id: currentProduct.id
+          });
+      }
+
       // Background processing
       SwipeAnalytics.trackSwipe(user.id, currentProduct.id, direction);
       swipeProduct.mutate({
@@ -235,6 +279,13 @@ const SwipeDeck = ({
               alt={currentProduct.title}
               className="w-full h-full object-cover"
             />
+            
+            {/* Brand name overlay */}
+            <div className="absolute top-4 right-4 bg-background/90 backdrop-blur-sm rounded-lg px-3 py-1.5 shadow-soft">
+              <span className="text-sm font-semibold text-foreground">
+                {currentProduct.brand?.name || 'Brand'}
+              </span>
+            </div>
             
             {/* Action Indicators */}
             <motion.div

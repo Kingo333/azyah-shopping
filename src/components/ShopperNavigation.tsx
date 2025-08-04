@@ -51,6 +51,12 @@ const ShopperNavigation: React.FC = () => {
       badge: 'Beta'
     },
     {
+      id: 'likes',
+      label: 'Likes',
+      icon: Heart,
+      path: '/likes'
+    },
+    {
       id: 'fashion-feed',
       label: 'Fashion Feed',
       icon: Sparkles,
