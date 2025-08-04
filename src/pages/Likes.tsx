@@ -53,7 +53,7 @@ const Likes: React.FC = () => {
           price_cents,
           currency,
           media_urls,
-          brands!inner (name)
+          brands (name)
         `)
         .in('id', productIds);
 
@@ -192,7 +192,7 @@ const Likes: React.FC = () => {
                     />
                     <div className="absolute top-2 right-2 bg-background/80 backdrop-blur-sm rounded-md px-2 py-1">
                       <span className="text-xs font-medium">
-                        {like.products.brands?.name}
+                        {like.products.brands?.name || 'Unbranded'}
                       </span>
                     </div>
                   </div>
