@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import ShopperNavigation from '@/components/ShopperNavigation';
 import TutorialTooltip from '@/components/TutorialTooltip';
+import { CreatePostModal } from '@/components/CreatePostModal';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -65,16 +66,19 @@ const FashionFeed: React.FC = () => {
   const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
   const [savedPosts, setSavedPosts] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
+  const [activeFilter, setActiveFilter] = useState<'all' | 'trending' | 'new'>('all');
+  const [isCreatePostModalOpen, setIsCreatePostModalOpen] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
-    loadFeedPosts();
-  }, []);
+    loadFeedPosts(activeFilter);
+  }, [activeFilter]);
 
-  const loadFeedPosts = async () => {
+  const loadFeedPosts = async (filter: 'all' | 'trending' | 'new' = 'all') => {
     try {
       setIsLoading(true);
-      const { data, error } = await supabase
+      
+      let query = supabase
         .from('posts')
         .select(`
           *,
@@ -84,12 +88,29 @@ const FashionFeed: React.FC = () => {
             products (id, title, price_cents, brand_id, media_urls)
           ),
           post_likes (user_id)
-        `)
-        .order('created_at', { ascending: false })
-        .limit(20);
+        `);
+      
+      // Apply filter
+      if (filter === 'trending') {
+        // Sort by posts with most likes in last 7 days
+        query = query
+          .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
+          .order('created_at', { ascending: false });
+      } else if (filter === 'new') {
+        query = query.order('created_at', { ascending: false });
+      } else {
+        query = query.order('created_at', { ascending: false });
+      }
+      
+      const { data, error } = await query.limit(20);
 
       if (error) {
         console.error('Error loading posts:', error);
+        toast({
+          title: "Error loading posts",
+          description: "Please try refreshing the page",
+          variant: "destructive"
+        });
         return;
       }
 
@@ -106,6 +127,11 @@ const FashionFeed: React.FC = () => {
       }
     } catch (error) {
       console.error('Error loading feed:', error);
+      toast({
+        title: "Error loading feed",
+        description: "Please try again later",
+        variant: "destructive"
+      });
     } finally {
       setIsLoading(false);
     }
@@ -177,6 +203,10 @@ const FashionFeed: React.FC = () => {
       navigator.clipboard.writeText(`${window.location.origin}/feed/${postId}`);
       toast({ description: "Link copied to clipboard!" });
     }
+  };
+
+  const handleFilterChange = (filter: 'all' | 'trending' | 'new') => {
+    setActiveFilter(filter);
   };
 
   const formatPrice = (cents: number, currency: string = 'USD'): string => {
@@ -260,14 +290,29 @@ const FashionFeed: React.FC = () => {
               <h1 className="text-2xl font-bold">Fashion Feed</h1>
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm">
+              <Button 
+                variant={activeFilter === 'trending' ? "default" : "outline"} 
+                size="sm"
+                onClick={() => handleFilterChange('trending')}
+              >
                 <TrendingUp className="h-4 w-4 mr-2" />
                 Trending
+              </Button>
+              <Button 
+                variant={activeFilter === 'new' ? "default" : "outline"} 
+                size="sm"
+                onClick={() => handleFilterChange('new')}
+              >
+                New
               </Button>
               <Button variant="outline" size="sm">
                 <Filter className="h-4 w-4" />
               </Button>
-              <Button variant="default" size="sm">
+              <Button 
+                variant="default" 
+                size="sm"
+                onClick={() => setIsCreatePostModalOpen(true)}
+              >
                 <Plus className="h-4 w-4 mr-2" />
                 Post
               </Button>
@@ -294,10 +339,18 @@ const FashionFeed: React.FC = () => {
                 <AvatarImage src={user?.user_metadata?.avatar_url} />
                 <AvatarFallback>{user?.email?.[0].toUpperCase()}</AvatarFallback>
               </Avatar>
-              <Button variant="outline" className="flex-1 justify-start text-muted-foreground">
+              <Button 
+                variant="outline" 
+                className="flex-1 justify-start text-muted-foreground"
+                onClick={() => setIsCreatePostModalOpen(true)}
+              >
                 Share your style inspiration...
               </Button>
-              <Button size="sm" variant="outline">
+              <Button 
+                size="sm" 
+                variant="outline"
+                onClick={() => setIsCreatePostModalOpen(true)}
+              >
                 <Camera className="h-4 w-4" />
               </Button>
             </div>
@@ -314,7 +367,7 @@ const FashionFeed: React.FC = () => {
                 <p className="text-muted-foreground mb-4">
                   Be the first to share your style! Follow other users to see their posts here.
                 </p>
-                <Button>
+                <Button onClick={() => setIsCreatePostModalOpen(true)}>
                   <Plus className="h-4 w-4 mr-2" />
                   Create Your First Post
                 </Button>
@@ -429,12 +482,22 @@ const FashionFeed: React.FC = () => {
         {/* Load More */}
         {filteredPosts.length > 0 && (
           <div className="text-center py-8">
-            <Button variant="outline" onClick={loadFeedPosts}>
+            <Button variant="outline" onClick={() => loadFeedPosts(activeFilter)}>
               Load More Posts
             </Button>
           </div>
         )}
       </div>
+
+      {/* Create Post Modal */}
+      {user && (
+        <CreatePostModal
+          isOpen={isCreatePostModalOpen}
+          onClose={() => setIsCreatePostModalOpen(false)}
+          onPostCreated={() => loadFeedPosts(activeFilter)}
+          userId={user.id}
+        />
+      )}
     </div>
   );
 };

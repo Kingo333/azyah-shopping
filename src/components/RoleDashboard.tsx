@@ -214,9 +214,9 @@ const RoleDashboard: React.FC = () => {
               <Heart className="h-6 w-6" />
               <span>Wishlist</span>
             </Button>
-            <Button onClick={() => navigate('/fashion-feed')} variant="outline" className="h-20 flex-col gap-2">
-              <Sparkles className="h-6 w-6" />
-              <span>Fashion Feed</span>
+            <Button onClick={() => navigate('/image-search')} variant="outline" className="h-20 flex-col gap-2">
+              <Search className="h-6 w-6" />
+              <span>Image Search</span>
             </Button>
           </div>
         </CardContent>
