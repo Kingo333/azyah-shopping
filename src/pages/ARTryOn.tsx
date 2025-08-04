@@ -22,8 +22,10 @@ import {
   Settings,
   Info,
   Upload,
-  CameraIcon
+  CameraIcon,
+  Plus
 } from 'lucide-react';
+import { useWishlistProducts } from '@/hooks/useWishlistProducts';
 
 interface ARProduct {
   id: string;
@@ -53,58 +55,21 @@ const ARTryOn: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  const { wishlistProducts, isLoading: wishlistLoading, hasWishlist } = useWishlistProducts();
 
-  // Mock AR-ready products
-  const arProducts: ARProduct[] = [
-    {
-      id: '1',
-      title: 'Elegant Black Abaya',
-      brand: 'Desert Rose',
-      price: 15900,
-      currency: 'USD',
-      image: 'https://images.unsplash.com/photo-1582562124811-c09040d0a901?w=600&h=800&fit=crop',
-      arMeshUrl: '/models/abaya-black.glb',
-      category: 'Abayas',
-      sizes: ['XS', 'S', 'M', 'L', 'XL'],
-      colors: ['Black', 'Navy', 'Burgundy']
-    },
-    {
-      id: '2',
-      title: 'Midnight Silk Evening Dress',
-      brand: 'Amara Luxury',
-      price: 24900,
-      currency: 'USD',
-      image: 'https://images.unsplash.com/photo-1649972904349-6e44c42644a7?w=600&h=800&fit=crop',
-      arMeshUrl: '/models/dress-evening.glb',
-      category: 'Dresses',
-      sizes: ['XS', 'S', 'M', 'L', 'XL'],
-      colors: ['Black', 'Navy', 'Burgundy']
-    },
-    {
-      id: '3',
-      title: 'Performance Leggings Set',
-      brand: 'Active Soul',
-      price: 8900,
-      currency: 'USD',
-      image: 'https://images.unsplash.com/photo-1439886183900-e79ec0057170?w=600&h=800&fit=crop',
-      arMeshUrl: '/models/activewear-set.glb',
-      category: 'Activewear',
-      sizes: ['XS', 'S', 'M', 'L', 'XL'],
-      colors: ['Black', 'Gray', 'Navy']
-    },
-    {
-      id: '4',
-      title: 'Statement Gold Heels',
-      brand: 'Urban Chic',
-      price: 16900,
-      currency: 'USD',
-      image: 'https://images.unsplash.com/photo-1438565434616-3ef039228b15?w=600&h=800&fit=crop',
-      arMeshUrl: '/models/heels-gold.glb',
-      category: 'Shoes',
-      sizes: ['36', '37', '38', '39', '40', '41'],
-      colors: ['Gold', 'Silver', 'Rose Gold']
-    }
-  ];
+  // Convert wishlist products to AR products format
+  const arProducts: ARProduct[] = wishlistProducts.map((item) => ({
+    id: item.product.id,
+    title: item.product.title,
+    brand: 'Fashion Brand', // You might want to fetch actual brand names
+    price: item.product.price_cents,
+    currency: item.product.currency || 'USD',
+    image: item.product.media_urls?.[0] || 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=600&h=800&fit=crop',
+    arMeshUrl: '/models/product.glb', // Default AR model
+    category: 'Fashion',
+    sizes: ['XS', 'S', 'M', 'L', 'XL'], // Default sizes - you might want to fetch actual sizes
+    colors: ['Black', 'White', 'Navy'] // Default colors - you might want to fetch actual colors
+  }));
 
   useEffect(() => {
     // Set default selections for the first product
@@ -114,7 +79,7 @@ const ARTryOn: React.FC = () => {
       setSelectedSize(firstProduct.sizes[0]);
       setSelectedColor(firstProduct.colors[0]);
     }
-  }, []);
+  }, [arProducts]);
 
   const logARError = async (errorType: string, errorMessage: string) => {
     if (!user) return;
@@ -368,49 +333,79 @@ const ARTryOn: React.FC = () => {
         </div>
 
         <div className="grid lg:grid-cols-3 gap-6">
-          {/* Product Selection */}
           <div className="lg:col-span-1 space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Select Product</CardTitle>
+                <CardTitle className="text-lg">Your Wishlist Products</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid gap-3">
-                  {arProducts.map((product) => (
-                    <div 
-                      key={product.id}
-                      className={`p-3 border rounded-lg cursor-pointer transition-colors ${
-                        selectedProduct?.id === product.id 
-                          ? 'border-primary bg-primary/5' 
-                          : 'border-border hover:border-primary/50'
-                      }`}
-                      onClick={() => {
-                        setSelectedProduct(product);
-                        setSelectedSize(product.sizes[0]);
-                        setSelectedColor(product.colors[0]);
-                      }}
-                    >
-                      <div className="flex gap-3">
-                        <div className="w-16 h-16 bg-muted rounded-lg overflow-hidden">
-                          <img 
-                            src={product.image} 
-                            alt={product.title}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-medium text-sm truncate">{product.title}</h3>
-                          <p className="text-xs text-muted-foreground">{product.brand}</p>
-                          <p className="text-sm font-semibold">{formatPrice(product.price)}</p>
-                          <Badge variant="outline" className="text-xs mt-1">
-                            <Zap className="h-2 w-2 mr-1" />
-                            AR Ready
-                          </Badge>
+                {wishlistLoading ? (
+                  <div className="text-center py-8">
+                    <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+                    <p className="text-sm text-muted-foreground">Loading your wishlist...</p>
+                  </div>
+                ) : !hasWishlist ? (
+                  <div className="text-center py-8">
+                    <Heart className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                    <h3 className="text-lg font-semibold mb-2">No Wishlist Found</h3>
+                    <p className="text-muted-foreground mb-4">
+                      Create a wishlist first to try on your favorite products in AR.
+                    </p>
+                    <Button onClick={() => window.location.href = '/wishlist'}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Create Wishlist
+                    </Button>
+                  </div>
+                ) : arProducts.length === 0 ? (
+                  <div className="text-center py-8">
+                    <ShoppingBag className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                    <h3 className="text-lg font-semibold mb-2">Empty Wishlist</h3>
+                    <p className="text-muted-foreground mb-4">
+                      Add some products to your wishlist to try them on in AR.
+                    </p>
+                    <Button onClick={() => window.location.href = '/explore'}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Browse Products
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="grid gap-3">
+                    {arProducts.map((product) => (
+                      <div 
+                        key={product.id}
+                        className={`p-3 border rounded-lg cursor-pointer transition-colors ${
+                          selectedProduct?.id === product.id 
+                            ? 'border-primary bg-primary/5' 
+                            : 'border-border hover:border-primary/50'
+                        }`}
+                        onClick={() => {
+                          setSelectedProduct(product);
+                          setSelectedSize(product.sizes[0]);
+                          setSelectedColor(product.colors[0]);
+                        }}
+                      >
+                        <div className="flex gap-3">
+                          <div className="w-16 h-16 bg-muted rounded-lg overflow-hidden">
+                            <img 
+                              src={product.image} 
+                              alt={product.title}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-medium text-sm truncate">{product.title}</h3>
+                            <p className="text-xs text-muted-foreground">{product.brand}</p>
+                            <p className="text-sm font-semibold">{formatPrice(product.price)}</p>
+                            <Badge variant="outline" className="text-xs mt-1">
+                              <Zap className="h-2 w-2 mr-1" />
+                              AR Ready
+                            </Badge>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
 
