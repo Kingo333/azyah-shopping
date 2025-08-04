@@ -306,7 +306,7 @@ const ARTryOn: React.FC = () => {
 
   const tutorialSteps = [
     {
-      title: "Welcome to AR Try-On! 📸",
+      title: "Welcome to AR Try-On!",
       description: "Experience the future of fashion shopping! Try on clothes virtually using your camera or by uploading photos.",
       icon: <CameraIcon className="h-5 w-5 text-primary" />,
       action: "Choose a product to get started"

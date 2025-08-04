@@ -245,7 +245,7 @@ const FashionFeed: React.FC = () => {
 
   const tutorialSteps = [
     {
-      title: "Welcome to Fashion Feed! ✨",
+      title: "Welcome to Fashion Feed!",
       description: "Discover curated fashion content from brands, influencers, and fellow shoppers. Scroll through personalized posts based on your style preferences.",
       icon: <Sparkles className="h-5 w-5 text-primary" />,
       action: "Scroll down to see fashion posts!"
