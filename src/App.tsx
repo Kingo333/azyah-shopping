@@ -18,6 +18,7 @@ import RetailerPortal from "./pages/RetailerPortal";
 import Affiliate from "./pages/Affiliate";
 import Forum from "./pages/Forum";
 import Closets from "./pages/Closets";
+import Landing from "./pages/Landing";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +31,7 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <Routes>
+            <Route path="/landing" element={<Landing />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/" element={
               <ProtectedRoute>

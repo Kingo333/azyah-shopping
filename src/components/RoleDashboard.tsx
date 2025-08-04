@@ -21,7 +21,8 @@ import {
   TrendingUp,
   Plus,
   Eye,
-  DollarSign
+  DollarSign,
+  Globe
 } from 'lucide-react';
 
 interface UserProfile {
@@ -228,7 +229,7 @@ const RoleDashboard: React.FC = () => {
           <CardTitle>Quick Actions</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             <Button onClick={() => navigate('/swipe')} className="h-20 flex-col gap-2">
               <Heart className="h-6 w-6" />
               <span>Swipe Deck</span>
@@ -244,6 +245,10 @@ const RoleDashboard: React.FC = () => {
             <Button onClick={() => navigate('/affiliate')} variant="outline" className="h-20 flex-col gap-2">
               <DollarSign className="h-6 w-6" />
               <span>Affiliate</span>
+            </Button>
+            <Button onClick={() => navigate('/landing')} variant="outline" className="h-20 flex-col gap-2">
+              <Globe className="h-6 w-6" />
+              <span>Landing</span>
             </Button>
           </div>
         </CardContent>
