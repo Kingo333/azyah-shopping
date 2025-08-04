@@ -13,6 +13,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Trash2, Upload, Instagram, Twitter, Globe } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Check, ChevronsUpDown } from 'lucide-react';
 import { COUNTRIES } from '@/lib/countries';
 
 interface ProfileData {
@@ -41,6 +44,7 @@ const ProfileSettings: React.FC = () => {
     avatar_url: '',
     socials: {}
   });
+  const [countryOpen, setCountryOpen] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -264,21 +268,46 @@ const ProfileSettings: React.FC = () => {
 
               <div className="space-y-2">
                 <Label htmlFor="country">Country</Label>
-                <Select 
-                  value={profileData.country} 
-                  onValueChange={(value) => handleInputChange('country', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select your country" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {COUNTRIES.map((country) => (
-                      <SelectItem key={country.code} value={country.name}>
-                        {country.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Popover open={countryOpen} onOpenChange={setCountryOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={countryOpen}
+                      className="w-full justify-between"
+                    >
+                      {profileData.country || "Select your country..."}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0">
+                    <Command>
+                      <CommandInput placeholder="Search countries..." />
+                      <CommandList>
+                        <CommandEmpty>No country found.</CommandEmpty>
+                        <CommandGroup>
+                          {COUNTRIES.map((country) => (
+                            <CommandItem
+                              key={country.code}
+                              value={country.name}
+                              onSelect={(currentValue) => {
+                                handleInputChange('country', currentValue === profileData.country ? "" : currentValue);
+                                setCountryOpen(false);
+                              }}
+                            >
+                              <Check
+                                className={`mr-2 h-4 w-4 ${
+                                  profileData.country === country.name ? "opacity-100" : "opacity-0"
+                                }`}
+                              />
+                              {country.name}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </div>
             </CardContent>
           </Card>
