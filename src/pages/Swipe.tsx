@@ -112,12 +112,35 @@ const Swipe = () => {
                       </p>
                     </div>
                     
-                    {/* Category Filter - Simplified */}
+                    {/* Category Filter */}
                     <div className="space-y-3">
                       <Label className="text-sm font-medium">Category</Label>
-                      <div className="text-sm text-muted-foreground">
-                        Currently showing: {getCurrentCategoryDisplay()}
-                      </div>
+                      <CategoryFilter
+                        selectedCategories={filter === 'all' ? [] : [filter as any]}
+                        selectedSubcategories={subcategoryFilter ? [subcategoryFilter as any] : []}
+                        onCategoryChange={(categories) => setFilter(categories[0] || 'all')}
+                        onSubcategoryChange={(subcategories) => setSubcategoryFilter(subcategories[0] || '')}
+                      />
+                    </div>
+
+                    {/* Currency Filter */}
+                    <div className="space-y-3">
+                      <Label className="text-sm font-medium">Currency</Label>
+                      <select 
+                        className="w-full h-9 px-3 rounded-md border border-border bg-background text-sm"
+                        defaultValue="USD"
+                      >
+                        <option value="USD">USD ($)</option>
+                        <option value="EUR">EUR (€)</option>
+                        <option value="GBP">GBP (£)</option>
+                        <option value="AED">AED (د.إ)</option>
+                        <option value="SAR">SAR (﷼)</option>
+                        <option value="KWD">KWD (د.ك)</option>
+                        <option value="BHD">BHD (د.ب)</option>
+                        <option value="QAR">QAR (ر.ق)</option>
+                        <option value="OMR">OMR (ر.ع.)</option>
+                        <option value="JOD">JOD (د.أ)</option>
+                      </select>
                     </div>
 
                     {/* Price Range Filter */}

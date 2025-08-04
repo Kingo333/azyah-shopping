@@ -12,6 +12,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Trash2, Upload, Instagram, Twitter, Globe } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { COUNTRIES } from '@/lib/countries';
 
 interface ProfileData {
   name: string;
@@ -66,7 +68,7 @@ const ProfileSettings: React.FC = () => {
           name: data.name || '',
           username: data.email?.split('@')[0] || '',
           bio: data.bio || '',
-          country: '',
+          country: data.country || '',
           avatar_url: data.avatar_url || '',
           socials: (typeof data.socials === 'object' && data.socials !== null) ? data.socials as any : {}
         });
@@ -103,6 +105,7 @@ const ProfileSettings: React.FC = () => {
         .update({
           name: profileData.name,
           bio: profileData.bio,
+          country: profileData.country,
           avatar_url: profileData.avatar_url,
           socials: profileData.socials,
           updated_at: new Date().toISOString()
@@ -261,12 +264,21 @@ const ProfileSettings: React.FC = () => {
 
               <div className="space-y-2">
                 <Label htmlFor="country">Country</Label>
-                <Input
-                  id="country"
-                  value={profileData.country}
-                  onChange={(e) => handleInputChange('country', e.target.value)}
-                  placeholder="Your country"
-                />
+                <Select 
+                  value={profileData.country} 
+                  onValueChange={(value) => handleInputChange('country', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select your country" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {COUNTRIES.map((country) => (
+                      <SelectItem key={country.code} value={country.name}>
+                        {country.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </CardContent>
           </Card>
