@@ -226,15 +226,27 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 <Heart className="h-4 w-4 mr-2" />
                 Wishlist
               </Button>
-              <Button 
-                size="lg" 
-                className="flex-1"
-                onClick={handleAddToBag}
-                disabled={product.stock_qty === 0}
-              >
-                <ShoppingBag className="h-4 w-4 mr-2" />
-                Add to Bag
-              </Button>
+              {product.external_url ? (
+                <Button 
+                  size="lg" 
+                  className="flex-1"
+                  onClick={() => window.open(product.external_url, '_blank')}
+                  disabled={product.stock_qty === 0}
+                >
+                  <ShoppingBag className="h-4 w-4 mr-2" />
+                  Buy Now
+                </Button>
+              ) : (
+                <Button 
+                  size="lg" 
+                  className="flex-1"
+                  onClick={handleAddToBag}
+                  disabled={product.stock_qty === 0}
+                >
+                  <ShoppingBag className="h-4 w-4 mr-2" />
+                  Add to Bag
+                </Button>
+              )}
             </div>
 
             {/* Product Details */}

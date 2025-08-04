@@ -7,6 +7,7 @@ import ShopperNavigation from '@/components/ShopperNavigation';
 import TutorialTooltip from '@/components/TutorialTooltip';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { supabase } from '@/integrations/supabase/client';
 import { 
   Camera, 
@@ -39,6 +40,7 @@ interface ARProduct {
 
 const ARTryOn: React.FC = () => {
   const { user } = useAuth();
+  const isMobile = useIsMobile();
   const [isARActive, setIsARActive] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<ARProduct | null>(null);
   const [selectedSize, setSelectedSize] = useState<string>('');
@@ -57,10 +59,10 @@ const ARTryOn: React.FC = () => {
     {
       id: '1',
       title: 'Elegant Black Abaya',
-      brand: 'Modest Elegance',
+      brand: 'Desert Rose',
       price: 15900,
       currency: 'USD',
-      image: '/placeholder.svg',
+      image: 'https://images.unsplash.com/photo-1582562124811-c09040d0a901?w=600&h=800&fit=crop',
       arMeshUrl: '/models/abaya-black.glb',
       category: 'Abayas',
       sizes: ['XS', 'S', 'M', 'L', 'XL'],
@@ -68,27 +70,39 @@ const ARTryOn: React.FC = () => {
     },
     {
       id: '2',
-      title: 'Floral Summer Dress',
-      brand: 'Bloom Fashion',
-      price: 8900,
+      title: 'Midnight Silk Evening Dress',
+      brand: 'Amara Luxury',
+      price: 24900,
       currency: 'USD',
-      image: '/placeholder.svg',
-      arMeshUrl: '/models/dress-floral.glb',
+      image: 'https://images.unsplash.com/photo-1649972904349-6e44c42644a7?w=600&h=800&fit=crop',
+      arMeshUrl: '/models/dress-evening.glb',
       category: 'Dresses',
       sizes: ['XS', 'S', 'M', 'L', 'XL'],
-      colors: ['Pink', 'Blue', 'Yellow']
+      colors: ['Black', 'Navy', 'Burgundy']
     },
     {
       id: '3',
-      title: 'Classic Blazer',
-      brand: 'Professional Wear',
-      price: 12900,
+      title: 'Performance Leggings Set',
+      brand: 'Active Soul',
+      price: 8900,
       currency: 'USD',
-      image: '/placeholder.svg',
-      arMeshUrl: '/models/blazer-classic.glb',
-      category: 'Blazers',
+      image: 'https://images.unsplash.com/photo-1439886183900-e79ec0057170?w=600&h=800&fit=crop',
+      arMeshUrl: '/models/activewear-set.glb',
+      category: 'Activewear',
       sizes: ['XS', 'S', 'M', 'L', 'XL'],
-      colors: ['Black', 'Navy', 'Gray']
+      colors: ['Black', 'Gray', 'Navy']
+    },
+    {
+      id: '4',
+      title: 'Statement Gold Heels',
+      brand: 'Urban Chic',
+      price: 16900,
+      currency: 'USD',
+      image: 'https://images.unsplash.com/photo-1438565434616-3ef039228b15?w=600&h=800&fit=crop',
+      arMeshUrl: '/models/heels-gold.glb',
+      category: 'Shoes',
+      sizes: ['36', '37', '38', '39', '40', '41'],
+      colors: ['Gold', 'Silver', 'Rose Gold']
     }
   ];
 
@@ -126,6 +140,17 @@ const ARTryOn: React.FC = () => {
   const requestCameraAccess = async () => {
     try {
       setIsLoading(true);
+      
+      // Force fallback mode on mobile devices
+      if (isMobile) {
+        await logARError('mobile_fallback', 'Mobile devices use photo upload mode');
+        setFallbackMode(true);
+        toast({ 
+          description: "Mobile devices use photo upload mode for better experience!",
+          variant: "default"
+        });
+        return;
+      }
       
       // Check for HTTPS
       if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost') {
@@ -287,10 +312,10 @@ const ARTryOn: React.FC = () => {
       action: "Choose a product to get started"
     },
     {
-      title: "Step 1: Camera Permission",
-      description: "For the best experience, allow camera access. If you're on mobile, make sure you're using HTTPS for camera functionality.",
+      title: "Step 1: Camera or Upload",
+      description: "On desktop, use live camera for real-time AR. On mobile, upload a full-body photo for the best try-on experience.",
       icon: <Camera className="h-5 w-5 text-green-500" />,
-      action: "Click 'Use Live Camera' when ready"
+      action: isMobile ? "Upload a photo" : "Click 'Use Live Camera' when ready"
     },
     {
       title: "Step 2: Choose Your Product", 
@@ -475,13 +500,13 @@ const ARTryOn: React.FC = () => {
                           )}
                           
                           <div className="space-y-3">
-                            {!fallbackMode && (
-                              <Button 
-                                onClick={requestCameraAccess}
-                                disabled={isLoading}
-                                className="gap-2 w-full"
-                              >
-                                {isLoading ? (
+                          {!fallbackMode && !isMobile && (
+                            <Button 
+                              onClick={requestCameraAccess}
+                              disabled={isLoading}
+                              className="gap-2 w-full"
+                            >
+                              {isLoading ? (
                                   <>
                                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                                     Starting Camera...

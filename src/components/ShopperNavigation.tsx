@@ -37,9 +37,16 @@ const ShopperNavigation: React.FC = () => {
       path: '/explore'
     },
     {
+      id: 'image-search',
+      label: 'Image Search',
+      icon: Camera,
+      path: '/image-search',
+      badge: 'AI'
+    },
+    {
       id: 'ar-tryOn',
       label: 'AR Try-On',
-      icon: Camera,
+      icon: Sparkles,
       path: '/ar-tryOn',
       badge: 'Beta'
     },

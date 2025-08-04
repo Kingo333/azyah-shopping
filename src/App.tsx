@@ -21,6 +21,7 @@ import Forum from "./pages/Forum";
 import Closets from "./pages/Closets";
 import Landing from "./pages/Landing";
 import ProfileSettings from "./pages/ProfileSettings";
+import ImageSearch from "./pages/ImageSearch";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -73,6 +74,11 @@ const App = () => (
             <Route path="/profile-settings" element={
               <ProtectedRoute>
                 <ProfileSettings />
+              </ProtectedRoute>
+            } />
+            <Route path="/image-search" element={
+              <ProtectedRoute roles={['shopper', 'admin']}>
+                <ImageSearch />
               </ProtectedRoute>
             } />
             <Route path="/ar-tryOn" element={

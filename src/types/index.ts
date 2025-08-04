@@ -103,6 +103,7 @@ export interface Product {
   attributes: ProductAttributes;
   media_urls: string[];
   ar_mesh_url?: string;
+  external_url?: string;
   stock_qty: number;
   min_stock_alert: number;
   status: 'active' | 'inactive' | 'archived' | 'out_of_stock';
