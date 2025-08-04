@@ -40,6 +40,8 @@ const SwipeDeck = ({ onBack }: SwipeDeckProps) => {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
 
+  console.log('SwipeDeck render:', { currentIndex, isAnimating, swipeDirection, productCount: products?.length });
+
   const currentProduct = products?.[currentIndex];
   const remainingCount = products ? products.length - currentIndex : 0;
 
@@ -62,7 +64,11 @@ const SwipeDeck = ({ onBack }: SwipeDeckProps) => {
   }, [currentProduct, trackProductView]);
 
   const handleDragEnd = (event: any, info: PanInfo) => {
-    if (isAnimating) return;
+    console.log('handleDragEnd called:', { isAnimating, offset: info.offset, velocity: info.velocity });
+    if (isAnimating) {
+      console.log('Drag end ignored - animation in progress');
+      return;
+    }
     
     const threshold = 80;
     const { offset, velocity } = info;
@@ -79,7 +85,11 @@ const SwipeDeck = ({ onBack }: SwipeDeckProps) => {
   };
 
   const handleSwipe = async (direction: 'left' | 'right' | 'up') => {
-    if (!currentProduct || !user || isAnimating) return;
+    console.log('handleSwipe called:', { direction, isAnimating, currentIndex, productId: currentProduct?.id });
+    if (!currentProduct || !user || isAnimating) {
+      console.log('Swipe ignored:', { hasProduct: !!currentProduct, hasUser: !!user, isAnimating });
+      return;
+    }
 
     setIsAnimating(true);
     setSwipeDirection(direction);
@@ -113,6 +123,7 @@ const SwipeDeck = ({ onBack }: SwipeDeckProps) => {
 
       // Transition to next card after animation
       setTimeout(() => {
+        console.log('Transitioning to next card:', { from: currentIndex, to: currentIndex + 1 });
         setCurrentIndex(prev => prev + 1);
         setSwipeDirection(null);
         setIsAnimating(false);
@@ -236,7 +247,6 @@ const SwipeDeck = ({ onBack }: SwipeDeckProps) => {
         <div className="relative w-full max-w-sm h-[600px]">
           {/* Current Card */}
           <motion.div
-            key={currentProduct.id}
             drag={!isAnimating}
             dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
             dragElastic={0.1}
