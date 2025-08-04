@@ -8,31 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import GlobalSearch from '@/components/GlobalSearch';
-import { 
-  Heart, 
-  ShoppingBag, 
-  Search, 
-  Sparkles, 
-  Camera,
-  BarChart3,
-  Users,
-  Package,
-  Settings,
-  Store,
-  TrendingUp,
-  Plus,
-  Eye,
-  DollarSign,
-  Globe,
-  Bell,
-  LogOut,
-  User,
-  Archive,
-  Trophy,
-  MapPin
-} from 'lucide-react';
+import { Heart, ShoppingBag, Search, Sparkles, Camera, BarChart3, Users, Package, Settings, Store, TrendingUp, Plus, Eye, DollarSign, Globe, Bell, LogOut, User, Archive, Trophy, MapPin } from 'lucide-react';
 import Leaderboard from '@/components/Leaderboard';
-
 interface UserProfile {
   id: string;
   name: string;
@@ -40,7 +17,6 @@ interface UserProfile {
   avatar_url?: string;
   email: string;
 }
-
 interface DashboardStats {
   totalProducts?: number;
   totalViews?: number;
@@ -49,41 +25,38 @@ interface DashboardStats {
   totalWishlistItems?: number;
   totalCartItems?: number;
 }
-
 const RoleDashboard: React.FC = () => {
-  const { user, signOut } = useAuth();
-  
+  const {
+    user,
+    signOut
+  } = useAuth();
   console.log('RoleDashboard: user state:', user);
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const {
+    toast
+  } = useToast();
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [stats, setStats] = useState<DashboardStats>({});
   const [loading, setLoading] = useState(true);
   const [searchOpen, setSearchOpen] = useState(false);
   const [activeLeaderboard, setActiveLeaderboard] = useState<'global' | 'country'>('global');
-
   useEffect(() => {
     if (user) {
       fetchUserProfile();
       fetchDashboardStats();
     }
   }, [user]);
-
   const fetchUserProfile = async () => {
     if (!user) return;
-    
     try {
-      const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', user.id)
-        .maybeSingle();
-
+      const {
+        data,
+        error
+      } = await supabase.from('users').select('*').eq('id', user.id).maybeSingle();
       if (error) {
         console.error('Error fetching user profile:', error);
         throw error;
       }
-      
       if (data) {
         setUserProfile(data);
       } else {
@@ -95,16 +68,13 @@ const RoleDashboard: React.FC = () => {
           role: 'shopper' as const,
           email: user.email!
         };
-        
-        const { error: insertError } = await supabase
-          .from('users')
-          .insert([defaultProfile]);
-          
+        const {
+          error: insertError
+        } = await supabase.from('users').insert([defaultProfile]);
         if (insertError) {
           console.error('Error creating user profile:', insertError);
           // Use the default profile even if insert fails
         }
-        
         setUserProfile(defaultProfile);
       }
     } catch (error) {
@@ -118,17 +88,11 @@ const RoleDashboard: React.FC = () => {
       });
     }
   };
-
   const fetchDashboardStats = async () => {
     if (!user) return;
-
     try {
       // Fetch basic stats for all roles
-      const [wishlistData, cartData] = await Promise.all([
-        supabase.from('wishlist_items').select('*').eq('wishlist_id', user.id),
-        supabase.from('cart_items').select('*').eq('user_id', user.id)
-      ]);
-
+      const [wishlistData, cartData] = await Promise.all([supabase.from('wishlist_items').select('*').eq('wishlist_id', user.id), supabase.from('cart_items').select('*').eq('user_id', user.id)]);
       const dashboardStats: DashboardStats = {
         totalWishlistItems: wishlistData.data?.length || 0,
         totalCartItems: cartData.data?.length || 0
@@ -136,14 +100,11 @@ const RoleDashboard: React.FC = () => {
 
       // Role-specific stats
       if (userProfile?.role === 'brand' || userProfile?.role === 'retailer') {
-        const { data: products } = await supabase
-          .from('products')
-          .select('*')
-          .eq(userProfile.role === 'brand' ? 'brand_id' : 'retailer_id', user.id);
-        
+        const {
+          data: products
+        } = await supabase.from('products').select('*').eq(userProfile.role === 'brand' ? 'brand_id' : 'retailer_id', user.id);
         dashboardStats.totalProducts = products?.length || 0;
       }
-
       setStats(dashboardStats);
     } catch (error) {
       console.error('Error fetching dashboard stats:', error);
@@ -151,76 +112,36 @@ const RoleDashboard: React.FC = () => {
       setLoading(false);
     }
   };
-
-
   const formatPrice = (cents: number): string => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'USD',
+      currency: 'USD'
     }).format(cents / 100);
   };
-
   if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+    return <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
           <p>Loading dashboard...</p>
         </div>
-      </div>
-    );
+      </div>;
   }
-
   if (!userProfile) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+    return <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <p>Error loading profile</p>
         </div>
-      </div>
-    );
+      </div>;
   }
-
-  const renderShopperDashboard = () => (
-    <div className="space-y-6">
+  const renderShopperDashboard = () => <div className="space-y-6">
       {/* Quick Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <Heart className="h-5 w-5 text-red-500" />
-              <div>
-                <p className="text-sm text-muted-foreground">Wishlist</p>
-                <p className="text-xl font-bold">{stats.totalWishlistItems}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        
 
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <ShoppingBag className="h-5 w-5 text-blue-500" />
-              <div>
-                <p className="text-sm text-muted-foreground">Cart Items</p>
-                <p className="text-xl font-bold">{stats.totalCartItems}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        
 
 
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-purple-500" />
-              <div>
-                <p className="text-sm text-muted-foreground">AR Tries</p>
-                <p className="text-xl font-bold">12</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        
       </div>
 
       {/* Quick Actions */}
@@ -311,19 +232,11 @@ const RoleDashboard: React.FC = () => {
               Fashion Leaderboards
             </CardTitle>
             <div className="flex gap-2">
-              <Button
-                variant={activeLeaderboard === 'global' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setActiveLeaderboard('global')}
-              >
+              <Button variant={activeLeaderboard === 'global' ? 'default' : 'outline'} size="sm" onClick={() => setActiveLeaderboard('global')}>
                 <Globe className="h-4 w-4 mr-2" />
                 Global
               </Button>
-              <Button
-                variant={activeLeaderboard === 'country' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setActiveLeaderboard('country')}
-              >
+              <Button variant={activeLeaderboard === 'country' ? 'default' : 'outline'} size="sm" onClick={() => setActiveLeaderboard('country')}>
                 <MapPin className="h-4 w-4 mr-2" />
                 Country
               </Button>
@@ -331,17 +244,11 @@ const RoleDashboard: React.FC = () => {
           </div>
         </CardHeader>
         <CardContent>
-          <Leaderboard 
-            type={activeLeaderboard} 
-            country={user?.user_metadata?.country}
-          />
+          <Leaderboard type={activeLeaderboard} country={user?.user_metadata?.country} />
         </CardContent>
       </Card>
-    </div>
-  );
-
-  const renderBrandDashboard = () => (
-    <div className="space-y-6">
+    </div>;
+  const renderBrandDashboard = () => <div className="space-y-6">
       {/* Quick Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
@@ -415,11 +322,8 @@ const RoleDashboard: React.FC = () => {
           </div>
         </CardContent>
       </Card>
-    </div>
-  );
-
-  const renderRetailerDashboard = () => (
-    <div className="space-y-6">
+    </div>;
+  const renderRetailerDashboard = () => <div className="space-y-6">
       {/* Quick Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
@@ -493,11 +397,8 @@ const RoleDashboard: React.FC = () => {
           </div>
         </CardContent>
       </Card>
-    </div>
-  );
-
-  return (
-    <ErrorBoundary>
+    </div>;
+  return <ErrorBoundary>
       <div className="min-h-screen bg-background">
         <div className="container mx-auto max-w-6xl p-4">
         {/* Header */}
@@ -543,8 +444,6 @@ const RoleDashboard: React.FC = () => {
         {/* Global Search Modal */}
         <GlobalSearch isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
       </div>
-    </ErrorBoundary>
-  );
+    </ErrorBoundary>;
 };
-
 export default RoleDashboard;
