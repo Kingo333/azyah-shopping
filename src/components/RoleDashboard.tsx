@@ -197,7 +197,7 @@ const RoleDashboard: React.FC = () => {
           <CardTitle>Quick Actions</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
             <Button onClick={() => navigate('/swipe')} className="h-20 flex-col gap-2">
               <Heart className="h-6 w-6" />
               <span>Swipe Deck</span>
@@ -217,6 +217,14 @@ const RoleDashboard: React.FC = () => {
             <Button onClick={() => navigate('/likes')} variant="outline" className="h-20 flex-col gap-2">
               <Heart className="h-6 w-6" />
               <span>Likes</span>
+            </Button>
+            <Button onClick={() => navigate('/wishlist')} variant="outline" className="h-20 flex-col gap-2">
+              <ShoppingBag className="h-6 w-6" />
+              <span>Wishlist</span>
+            </Button>
+            <Button onClick={() => navigate('/image-search')} variant="outline" className="h-20 flex-col gap-2">
+              <Camera className="h-6 w-6" />
+              <span>Image Search</span>
             </Button>
           </div>
         </CardContent>
