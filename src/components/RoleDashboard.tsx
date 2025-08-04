@@ -8,6 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import GlobalSearch from '@/components/GlobalSearch';
+import DashboardHeader from '@/components/DashboardHeader';
+import AffiliateHub from '@/components/AffiliateHub';
 import { Heart, ShoppingBag, Search, Sparkles, Camera, BarChart3, Users, Package, Settings, Store, TrendingUp, Plus, Eye, DollarSign, Globe, Bell, LogOut, User, Archive, Trophy, MapPin } from 'lucide-react';
 import Leaderboard from '@/components/Leaderboard';
 interface UserProfile {

@@ -85,11 +85,12 @@ const App = () => (
                 <Likes />
               </ProtectedRoute>
             } />
-            <Route path="/affiliate" element={
-              <ProtectedRoute roles={['shopper', 'admin']}>
-                <Affiliate />
-              </ProtectedRoute>
-            } />
+             <Route path="/affiliate/:userId" element={<Affiliate />} />
+             <Route path="/affiliate" element={
+               <ProtectedRoute roles={['shopper', 'admin']}>
+                 <Affiliate />
+               </ProtectedRoute>
+             } />
             <Route path="/forum" element={
               <ProtectedRoute roles={['shopper', 'admin']}>
                 <Forum />

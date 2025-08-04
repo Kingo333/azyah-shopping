@@ -17,51 +17,53 @@ export type Database = {
       affiliate_links: {
         Row: {
           active: boolean | null
+          affiliate_url: string
+          brand_name: string
           clicks: number | null
-          code: string
           commission_rate: number | null
           created_at: string
+          description: string | null
+          expiry_date: string | null
           id: string
+          is_public: boolean | null
           orders: number | null
-          product_id: string | null
           revenue_cents: number | null
           updated_at: string
           user_id: string | null
         }
         Insert: {
           active?: boolean | null
+          affiliate_url: string
+          brand_name: string
           clicks?: number | null
-          code: string
           commission_rate?: number | null
           created_at?: string
+          description?: string | null
+          expiry_date?: string | null
           id?: string
+          is_public?: boolean | null
           orders?: number | null
-          product_id?: string | null
           revenue_cents?: number | null
           updated_at?: string
           user_id?: string | null
         }
         Update: {
           active?: boolean | null
+          affiliate_url?: string
+          brand_name?: string
           clicks?: number | null
-          code?: string
           commission_rate?: number | null
           created_at?: string
+          description?: string | null
+          expiry_date?: string | null
           id?: string
+          is_public?: boolean | null
           orders?: number | null
-          product_id?: string | null
           revenue_cents?: number | null
           updated_at?: string
           user_id?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "affiliate_links_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "affiliate_links_user_id_fkey"
             columns: ["user_id"]
