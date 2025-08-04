@@ -39,57 +39,57 @@ const App = () => (
               </ProtectedRoute>
             } />
             <Route path="/swipe" element={
-              <ProtectedRoute>
+              <ProtectedRoute roles={['shopper', 'admin']}>
                 <Swipe />
               </ProtectedRoute>
             } />
             <Route path="/explore" element={
-              <ProtectedRoute>
+              <ProtectedRoute roles={['shopper', 'admin']}>
                 <Explore />
               </ProtectedRoute>
             } />
             <Route path="/wishlist" element={
-              <ProtectedRoute>
+              <ProtectedRoute roles={['shopper', 'admin']}>
                 <Wishlist />
               </ProtectedRoute>
             } />
             <Route path="/affiliate" element={
-              <ProtectedRoute>
+              <ProtectedRoute roles={['shopper', 'admin']}>
                 <Affiliate />
               </ProtectedRoute>
             } />
             <Route path="/forum" element={
-              <ProtectedRoute>
+              <ProtectedRoute roles={['shopper', 'admin']}>
                 <Forum />
               </ProtectedRoute>
             } />
             <Route path="/feed" element={
-              <ProtectedRoute>
+              <ProtectedRoute roles={['shopper', 'admin']}>
                 <Feed />
               </ProtectedRoute>
             } />
             <Route path="/ar-tryOn" element={
-              <ProtectedRoute>
+              <ProtectedRoute roles={['shopper', 'admin']}>
                 <ARTryOn />
               </ProtectedRoute>
             } />
             <Route path="/brand-portal" element={
-              <ProtectedRoute>
+              <ProtectedRoute roles={['brand', 'admin']}>
                 <BrandPortal />
               </ProtectedRoute>
             } />
             <Route path="/retailer-portal" element={
-              <ProtectedRoute>
+              <ProtectedRoute roles={['retailer', 'admin']}>
                 <RetailerPortal />
               </ProtectedRoute>
             } />
             <Route path="/cart" element={
-              <ProtectedRoute>
+              <ProtectedRoute roles={['shopper', 'admin']}>
                 <ShoppingCart />
               </ProtectedRoute>
             } />
             <Route path="/closets" element={
-              <ProtectedRoute>
+              <ProtectedRoute roles={['shopper', 'admin']}>
                 <Closets />
               </ProtectedRoute>
             } />

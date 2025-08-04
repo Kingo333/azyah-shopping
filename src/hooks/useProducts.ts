@@ -21,7 +21,7 @@ export const useProducts = (filters?: {
         .order('created_at', { ascending: false });
 
       if (filters?.category) {
-        query = query.eq('category_slug', filters.category);
+        query = query.eq('category_slug', filters.category as any);
       }
 
       if (filters?.limit) {

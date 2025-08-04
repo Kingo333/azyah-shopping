@@ -154,7 +154,7 @@ export const PersonalizationEngine: React.FC<PersonalizationEngineProps> = ({
 
       // Apply category filter
       if (topCategories.length > 0) {
-        query = query.in('category_slug', topCategories);
+        query = query.in('category_slug', topCategories as any);
       }
 
       // Apply price range based on sensitivity

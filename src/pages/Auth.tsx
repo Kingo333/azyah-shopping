@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Navigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,9 +10,19 @@ import { Loader2, Sparkles, Heart, Star, ShoppingBag, Store, Building2 } from 'l
 
 const Auth = () => {
   const { user, signUp, signIn, loading } = useAuth();
+  const [searchParams] = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('signin');
   const [selectedRole, setSelectedRole] = useState<string>('');
+
+  useEffect(() => {
+    // Pre-select role from URL params and switch to signup
+    const roleParam = searchParams.get('role');
+    if (roleParam && ['brand', 'retailer'].includes(roleParam)) {
+      setSelectedRole(roleParam);
+      setActiveTab('signup');
+    }
+  }, [searchParams]);
 
   // Redirect if already authenticated
   if (user && !loading) {

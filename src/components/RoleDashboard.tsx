@@ -4,9 +4,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
+import FeedComponent from '@/components/FeedComponent';
+import GlobalSearch from '@/components/GlobalSearch';
 import { 
   Heart, 
   ShoppingBag, 
@@ -22,7 +23,11 @@ import {
   Plus,
   Eye,
   DollarSign,
-  Globe
+  Globe,
+  Bell,
+  LogOut,
+  User,
+  Archive
 } from 'lucide-react';
 
 interface UserProfile {
@@ -44,12 +49,13 @@ interface DashboardStats {
 }
 
 const RoleDashboard: React.FC = () => {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [stats, setStats] = useState<DashboardStats>({});
   const [loading, setLoading] = useState(true);
+  const [searchOpen, setSearchOpen] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -118,29 +124,6 @@ const RoleDashboard: React.FC = () => {
     }
   };
 
-  const handleRoleSwitch = async (newRole: 'shopper' | 'brand' | 'retailer') => {
-    if (!user || !userProfile) return;
-
-    try {
-      const { error } = await supabase
-        .from('users')
-        .update({ role: newRole })
-        .eq('id', user.id);
-
-      if (error) throw error;
-
-      setUserProfile({ ...userProfile, role: newRole });
-      toast({ description: `Switched to ${newRole} mode` });
-      
-      // Refresh stats for new role
-      fetchDashboardStats();
-    } catch (error) {
-      toast({ 
-        description: "Failed to switch role", 
-        variant: "destructive" 
-      });
-    }
-  };
 
   const formatPrice = (cents: number): string => {
     return new Intl.NumberFormat('en-US', {
@@ -251,6 +234,43 @@ const RoleDashboard: React.FC = () => {
               <span>Landing</span>
             </Button>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Feed Section */}
+      <FeedComponent limit={5} showHeader />
+
+      {/* Continue Swiping CTA */}
+      <Card className="sticky bottom-4 bg-gradient-to-r from-primary/10 to-accent/10 border-primary/20">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-semibold">Continue Discovering</h3>
+              <p className="text-sm text-muted-foreground">Swipe through more fashion finds</p>
+            </div>
+            <Button onClick={() => navigate('/swipe')}>
+              <Heart className="h-4 w-4 mr-2" />
+              Continue Swiping
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Closets Preview */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            <span>My Closets</span>
+            <Button variant="outline" size="sm" onClick={() => navigate('/closets')}>
+              <Archive className="h-4 w-4 mr-2" />
+              View All
+            </Button>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-muted-foreground text-center py-8">
+            Create your first closet to organize your style discoveries
+          </p>
         </CardContent>
       </Card>
     </div>
@@ -421,18 +441,31 @@ const RoleDashboard: React.FC = () => {
             <h1 className="text-2xl font-bold">Dashboard</h1>
             <p className="text-muted-foreground">Welcome back, {userProfile.name}</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <Badge variant="secondary" className="capitalize">
               {userProfile.role}
             </Badge>
-            {/* Role Switcher */}
-            <Tabs value={userProfile.role} onValueChange={(value) => handleRoleSwitch(value as any)}>
-              <TabsList>
-                <TabsTrigger value="shopper">Shopper</TabsTrigger>
-                <TabsTrigger value="brand">Brand</TabsTrigger>
-                <TabsTrigger value="retailer">Retailer</TabsTrigger>
-              </TabsList>
-            </Tabs>
+            
+            {/* Global Search */}
+            <Button variant="outline" size="sm" onClick={() => setSearchOpen(true)}>
+              <Search className="h-4 w-4 mr-2" />
+              Search
+            </Button>
+            
+            {/* Profile & Actions */}
+            <Button variant="outline" size="sm" onClick={() => navigate('/profile-settings')}>
+              <User className="h-4 w-4 mr-2" />
+              Profile
+            </Button>
+            
+            <Button variant="outline" size="sm">
+              <Bell className="h-4 w-4" />
+            </Button>
+            
+            <Button variant="outline" size="sm" onClick={signOut}>
+              <LogOut className="h-4 w-4 mr-2" />
+              Sign Out
+            </Button>
           </div>
         </div>
 
@@ -441,6 +474,9 @@ const RoleDashboard: React.FC = () => {
         {userProfile.role === 'brand' && renderBrandDashboard()}
         {userProfile.role === 'retailer' && renderRetailerDashboard()}
       </div>
+      
+      {/* Global Search Modal */}
+      <GlobalSearch isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
     </div>
   );
 };

@@ -293,6 +293,42 @@ export type Database = {
           },
         ]
       }
+      follows: {
+        Row: {
+          created_at: string | null
+          follower_id: string | null
+          following_id: string | null
+          id: string
+        }
+        Insert: {
+          created_at?: string | null
+          follower_id?: string | null
+          following_id?: string | null
+          id?: string
+        }
+        Update: {
+          created_at?: string | null
+          follower_id?: string | null
+          following_id?: string | null
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "follows_follower_id_fkey"
+            columns: ["follower_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "follows_following_id_fkey"
+            columns: ["following_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_items: {
         Row: {
           created_at: string
@@ -406,12 +442,142 @@ export type Database = {
           },
         ]
       }
+      post_images: {
+        Row: {
+          id: string
+          image_url: string
+          post_id: string | null
+          sort_order: number | null
+        }
+        Insert: {
+          id?: string
+          image_url: string
+          post_id?: string | null
+          sort_order?: number | null
+        }
+        Update: {
+          id?: string
+          image_url?: string
+          post_id?: string | null
+          sort_order?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_images_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      post_likes: {
+        Row: {
+          created_at: string | null
+          id: string
+          post_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          post_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          post_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_likes_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_likes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      post_products: {
+        Row: {
+          id: string
+          post_id: string | null
+          product_id: string | null
+        }
+        Insert: {
+          id?: string
+          post_id?: string | null
+          product_id?: string | null
+        }
+        Update: {
+          id?: string
+          post_id?: string | null
+          product_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_products_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_products_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      posts: {
+        Row: {
+          content: string | null
+          created_at: string | null
+          id: string
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string | null
+          id?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          content?: string | null
+          created_at?: string | null
+          id?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "posts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
           ar_mesh_url: string | null
           attributes: Json | null
           brand_id: string | null
-          category_slug: string
+          category_slug: Database["public"]["Enums"]["category_type"]
           compare_at_price_cents: number | null
           created_at: string
           currency: string | null
@@ -427,7 +593,9 @@ export type Database = {
           sku: string
           status: Database["public"]["Enums"]["product_status"] | null
           stock_qty: number | null
-          subcategory_slug: string | null
+          subcategory_slug:
+            | Database["public"]["Enums"]["subcategory_type"]
+            | null
           tags: string[] | null
           title: string
           updated_at: string
@@ -437,7 +605,7 @@ export type Database = {
           ar_mesh_url?: string | null
           attributes?: Json | null
           brand_id?: string | null
-          category_slug: string
+          category_slug: Database["public"]["Enums"]["category_type"]
           compare_at_price_cents?: number | null
           created_at?: string
           currency?: string | null
@@ -453,7 +621,9 @@ export type Database = {
           sku: string
           status?: Database["public"]["Enums"]["product_status"] | null
           stock_qty?: number | null
-          subcategory_slug?: string | null
+          subcategory_slug?:
+            | Database["public"]["Enums"]["subcategory_type"]
+            | null
           tags?: string[] | null
           title: string
           updated_at?: string
@@ -463,7 +633,7 @@ export type Database = {
           ar_mesh_url?: string | null
           attributes?: Json | null
           brand_id?: string | null
-          category_slug?: string
+          category_slug?: Database["public"]["Enums"]["category_type"]
           compare_at_price_cents?: number | null
           created_at?: string
           currency?: string | null
@@ -479,7 +649,9 @@ export type Database = {
           sku?: string
           status?: Database["public"]["Enums"]["product_status"] | null
           stock_qty?: number | null
-          subcategory_slug?: string | null
+          subcategory_slug?:
+            | Database["public"]["Enums"]["subcategory_type"]
+            | null
           tags?: string[] | null
           title?: string
           updated_at?: string
@@ -740,8 +912,26 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      validate_category_subcategory: {
+        Args: {
+          cat: Database["public"]["Enums"]["category_type"]
+          subcat: Database["public"]["Enums"]["subcategory_type"]
+        }
+        Returns: boolean
+      }
     }
     Enums: {
+      category_type:
+        | "clothing"
+        | "footwear"
+        | "accessories"
+        | "jewelry"
+        | "beauty"
+        | "modestwear"
+        | "kids"
+        | "fragrance"
+        | "home"
+        | "giftcards"
       order_status:
         | "pending"
         | "confirmed"
@@ -750,6 +940,79 @@ export type Database = {
         | "cancelled"
         | "returned"
       product_status: "active" | "inactive" | "archived" | "out_of_stock"
+      subcategory_type:
+        | "dresses"
+        | "abayas"
+        | "tops"
+        | "blouses"
+        | "shirts"
+        | "t-shirts"
+        | "sweaters"
+        | "jackets"
+        | "coats"
+        | "blazers"
+        | "cardigans"
+        | "trousers"
+        | "jeans"
+        | "skirts"
+        | "shorts"
+        | "activewear"
+        | "loungewear"
+        | "sleepwear"
+        | "swimwear"
+        | "lingerie"
+        | "heels"
+        | "flats"
+        | "sandals"
+        | "sneakers"
+        | "boots"
+        | "loafers"
+        | "slippers"
+        | "handbags"
+        | "clutches"
+        | "totes"
+        | "backpacks"
+        | "wallets"
+        | "belts"
+        | "scarves"
+        | "hats"
+        | "sunglasses"
+        | "watches"
+        | "jewelry"
+        | "necklaces"
+        | "earrings"
+        | "bracelets"
+        | "rings"
+        | "anklets"
+        | "brooches"
+        | "perfume"
+        | "eau-de-toilette"
+        | "eau-de-parfum"
+        | "skincare"
+        | "makeup"
+        | "nailcare"
+        | "haircare"
+        | "hijabs"
+        | "niqabs"
+        | "jilbabs"
+        | "kaftans"
+        | "baby clothing"
+        | "girls clothing"
+        | "boys clothing"
+        | "kids footwear"
+        | "kids accessories"
+        | "oriental"
+        | "floral"
+        | "woody"
+        | "citrus"
+        | "gourmand"
+        | "oud"
+        | "scented candles"
+        | "diffusers"
+        | "room sprays"
+        | "fashion books"
+        | "digital gift card"
+        | "physical voucher"
       swipe_action: "right" | "up" | "left"
       user_role: "shopper" | "brand" | "retailer" | "admin"
     }
@@ -879,6 +1142,18 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      category_type: [
+        "clothing",
+        "footwear",
+        "accessories",
+        "jewelry",
+        "beauty",
+        "modestwear",
+        "kids",
+        "fragrance",
+        "home",
+        "giftcards",
+      ],
       order_status: [
         "pending",
         "confirmed",
@@ -888,6 +1163,80 @@ export const Constants = {
         "returned",
       ],
       product_status: ["active", "inactive", "archived", "out_of_stock"],
+      subcategory_type: [
+        "dresses",
+        "abayas",
+        "tops",
+        "blouses",
+        "shirts",
+        "t-shirts",
+        "sweaters",
+        "jackets",
+        "coats",
+        "blazers",
+        "cardigans",
+        "trousers",
+        "jeans",
+        "skirts",
+        "shorts",
+        "activewear",
+        "loungewear",
+        "sleepwear",
+        "swimwear",
+        "lingerie",
+        "heels",
+        "flats",
+        "sandals",
+        "sneakers",
+        "boots",
+        "loafers",
+        "slippers",
+        "handbags",
+        "clutches",
+        "totes",
+        "backpacks",
+        "wallets",
+        "belts",
+        "scarves",
+        "hats",
+        "sunglasses",
+        "watches",
+        "jewelry",
+        "necklaces",
+        "earrings",
+        "bracelets",
+        "rings",
+        "anklets",
+        "brooches",
+        "perfume",
+        "eau-de-toilette",
+        "eau-de-parfum",
+        "skincare",
+        "makeup",
+        "nailcare",
+        "haircare",
+        "hijabs",
+        "niqabs",
+        "jilbabs",
+        "kaftans",
+        "baby clothing",
+        "girls clothing",
+        "boys clothing",
+        "kids footwear",
+        "kids accessories",
+        "oriental",
+        "floral",
+        "woody",
+        "citrus",
+        "gourmand",
+        "oud",
+        "scented candles",
+        "diffusers",
+        "room sprays",
+        "fashion books",
+        "digital gift card",
+        "physical voucher",
+      ],
       swipe_action: ["right", "up", "left"],
       user_role: ["shopper", "brand", "retailer", "admin"],
     },
