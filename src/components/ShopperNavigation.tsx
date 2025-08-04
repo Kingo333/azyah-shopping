@@ -23,12 +23,6 @@ const ShopperNavigation: React.FC = () => {
 
   const tabs = [
     {
-      id: 'dashboard',
-      label: 'Home',
-      icon: Home,
-      path: '/dashboard'
-    },
-    {
       id: 'swipe',
       label: 'Swipe',
       icon: Heart,
@@ -52,18 +46,6 @@ const ShopperNavigation: React.FC = () => {
       label: 'Feed',
       icon: Camera,
       path: '/fashion-feed'
-    },
-    {
-      id: 'wishlist',
-      label: 'Wishlist',
-      icon: Heart,
-      path: '/wishlist'
-    },
-    {
-      id: 'cart',
-      label: 'Cart',
-      icon: ShoppingBag,
-      path: '/cart'
     }
   ];
 
@@ -74,7 +56,7 @@ const ShopperNavigation: React.FC = () => {
     return (
       <nav className="nav-mobile">
         <div className="flex items-center justify-around max-w-md mx-auto">
-          {tabs.slice(0, 5).map((tab) => {
+          {tabs.map((tab) => {
             const Icon = tab.icon;
             const active = isActive(tab.path);
             
@@ -116,7 +98,7 @@ const ShopperNavigation: React.FC = () => {
               className="hover:bg-primary/10"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Dashboard
+              Home
             </Button>
           </div>
 
@@ -153,15 +135,6 @@ const ShopperNavigation: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2">
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => navigate('/profile-settings')}
-              className="hover:bg-primary/10"
-            >
-              <User className="h-4 w-4" />
-              <span className="hidden sm:inline ml-2">Profile</span>
-            </Button>
           </div>
         </div>
       </CardContent>
