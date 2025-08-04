@@ -80,18 +80,18 @@ const SwipeDeck = ({
 
   const currentProduct = products?.[currentIndex];
 
-  // Stable motion values - created once and reused
+  // Motion values - created once and reused
   const x = useMotionValue(0);
   const y = useMotionValue(0);
   
-  // Memoized transforms to prevent recreation
-  const rotate = useMemo(() => useTransform(x, [-150, 150], [-15, 15]), [x]);
-  const opacity = useMemo(() => useTransform(x, [-150, 0, 150], [0.8, 1, 0.8]), [x]);
+  // Transforms (no need for useMemo as useTransform is already optimized)
+  const rotate = useTransform(x, [-150, 150], [-15, 15]);
+  const opacity = useTransform(x, [-150, 0, 150], [0.8, 1, 0.8]);
   
   // Action indicators
-  const loveOpacity = useMemo(() => useTransform(x, [50, 100], [0, 1]), [x]);
-  const passOpacity = useMemo(() => useTransform(x, [-100, -50], [1, 0]), [x]);
-  const wishlistOpacity = useMemo(() => useTransform(y, [-100, -50], [1, 0]), [y]);
+  const loveOpacity = useTransform(x, [50, 100], [0, 1]);
+  const passOpacity = useTransform(x, [-100, -50], [1, 0]);
+  const wishlistOpacity = useTransform(y, [-100, -50], [1, 0]);
 
   // Track product views
   useEffect(() => {
