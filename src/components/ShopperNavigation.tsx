@@ -37,13 +37,6 @@ const ShopperNavigation: React.FC = () => {
       path: '/explore'
     },
     {
-      id: 'image-search',
-      label: 'Image Search',
-      icon: Camera,
-      path: '/image-search',
-      badge: 'AI'
-    },
-    {
       id: 'ar-tryOn',
       label: 'AR Try-On',
       icon: Sparkles,
@@ -51,22 +44,10 @@ const ShopperNavigation: React.FC = () => {
       badge: 'Beta'
     },
     {
-      id: 'likes',
-      label: 'Likes',
-      icon: Heart,
-      path: '/likes'
-    },
-    {
       id: 'fashion-feed',
       label: 'Fashion Feed',
       icon: Sparkles,
       path: '/fashion-feed'
-    },
-    {
-      id: 'wishlist',
-      label: 'Wishlist',
-      icon: ShoppingBag,
-      path: '/wishlist'
     }
   ];
 
