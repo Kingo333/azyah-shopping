@@ -583,6 +583,7 @@ export type Database = {
           currency: string | null
           description: string | null
           dimensions: Json | null
+          external_url: string | null
           id: string
           media_urls: Json | null
           min_stock_alert: number | null
@@ -611,6 +612,7 @@ export type Database = {
           currency?: string | null
           description?: string | null
           dimensions?: Json | null
+          external_url?: string | null
           id?: string
           media_urls?: Json | null
           min_stock_alert?: number | null
@@ -639,6 +641,7 @@ export type Database = {
           currency?: string | null
           description?: string | null
           dimensions?: Json | null
+          external_url?: string | null
           id?: string
           media_urls?: Json | null
           min_stock_alert?: number | null

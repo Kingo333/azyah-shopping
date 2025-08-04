@@ -3,6 +3,7 @@ import { motion, useMotionValue, useTransform, PanInfo, useSpring } from 'framer
 import { useProducts, useSwipeProduct } from '@/hooks/useProducts';
 import { useAuth } from '@/contexts/AuthContext';
 import { Product } from '@/types';
+import SwipeAnalytics from '@/utils/swipeAnalytics';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -26,7 +27,10 @@ interface SwipeDeckProps {
 
 const SwipeDeck = ({ onBack }: SwipeDeckProps) => {
   const { user } = useAuth();
-  const { data: products, isLoading } = useProducts({ limit: 50 });
+  const { data: allProducts, isLoading } = useProducts({ limit: 50 });
+  
+  // Apply personalization algorithm
+  const products = allProducts ? SwipeAnalytics.getPersonalizedRecommendations(user?.id || '', allProducts) : null;
   const swipeProduct = useSwipeProduct();
   const { trackProductView, trackProductClick } = useProductAnalytics();
   
@@ -89,6 +93,9 @@ const SwipeDeck = ({ onBack }: SwipeDeckProps) => {
     setSwipeDirection(direction);
 
     try {
+      // Track analytics first
+      await SwipeAnalytics.trackSwipe(user.id, currentProduct.id, direction);
+      
       await swipeProduct.mutateAsync({
         productId: currentProduct.id,
         action: direction,
@@ -98,7 +105,7 @@ const SwipeDeck = ({ onBack }: SwipeDeckProps) => {
       // Enhanced feedback with haptic simulation
       const messages = {
         left: "Skipped! 👋",
-        right: "Loved it! ❤️",
+        right: "Loved it! ❤️ (24hr temp save)",
         up: "Added to wishlist! ⭐"
       };
 

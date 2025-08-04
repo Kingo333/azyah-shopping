@@ -44,7 +44,6 @@ interface DashboardStats {
   totalRevenue?: number;
   totalWishlistItems?: number;
   totalCartItems?: number;
-  affiliateEarnings?: number;
 }
 
 const RoleDashboard: React.FC = () => {
@@ -93,16 +92,14 @@ const RoleDashboard: React.FC = () => {
 
     try {
       // Fetch basic stats for all roles
-      const [wishlistData, cartData, affiliateData] = await Promise.all([
+      const [wishlistData, cartData] = await Promise.all([
         supabase.from('wishlist_items').select('*').eq('wishlist_id', user.id),
-        supabase.from('cart_items').select('*').eq('user_id', user.id),
-        supabase.from('affiliate_links').select('revenue_cents').eq('user_id', user.id)
+        supabase.from('cart_items').select('*').eq('user_id', user.id)
       ]);
 
       const dashboardStats: DashboardStats = {
         totalWishlistItems: wishlistData.data?.length || 0,
-        totalCartItems: cartData.data?.length || 0,
-        affiliateEarnings: affiliateData.data?.reduce((sum, item) => sum + (item.revenue_cents || 0), 0) || 0
+        totalCartItems: cartData.data?.length || 0
       };
 
       // Role-specific stats
