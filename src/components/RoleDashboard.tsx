@@ -412,11 +412,6 @@ const RoleDashboard: React.FC = () => {
               {userProfile.role}
             </Badge>
             
-            {/* Global Search */}
-            <Button variant="outline" size="sm" onClick={() => setSearchOpen(true)}>
-              <Search className="h-4 w-4 mr-2" />
-              Search
-            </Button>
             
             {/* Profile & Actions */}
             <Button variant="outline" size="sm" onClick={() => navigate('/profile-settings')}>
