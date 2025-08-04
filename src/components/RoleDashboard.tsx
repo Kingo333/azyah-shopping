@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -48,6 +49,8 @@ interface DashboardStats {
 
 const RoleDashboard: React.FC = () => {
   const { user, signOut } = useAuth();
+  
+  console.log('RoleDashboard: user state:', user);
   const navigate = useNavigate();
   const { toast } = useToast();
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
@@ -70,14 +73,39 @@ const RoleDashboard: React.FC = () => {
         .from('users')
         .select('*')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching user profile:', error);
+        throw error;
+      }
       
-      setUserProfile(data);
+      if (data) {
+        setUserProfile(data);
+      } else {
+        // User profile doesn't exist, create one
+        console.log('Creating new user profile for:', user.email);
+        const defaultProfile = {
+          id: user.id,
+          name: user.email?.split('@')[0] || 'User',
+          role: 'shopper' as const,
+          email: user.email!
+        };
+        
+        const { error: insertError } = await supabase
+          .from('users')
+          .insert([defaultProfile]);
+          
+        if (insertError) {
+          console.error('Error creating user profile:', insertError);
+          // Use the default profile even if insert fails
+        }
+        
+        setUserProfile(defaultProfile);
+      }
     } catch (error) {
-      console.error('Error fetching user profile:', error);
-      // Create default profile if none exists
+      console.error('Error with user profile:', error);
+      // Fallback profile
       setUserProfile({
         id: user.id,
         name: user.email?.split('@')[0] || 'User',
@@ -429,8 +457,9 @@ const RoleDashboard: React.FC = () => {
   );
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto max-w-6xl p-4">
+    <ErrorBoundary>
+      <div className="min-h-screen bg-background">
+        <div className="container mx-auto max-w-6xl p-4">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -465,15 +494,16 @@ const RoleDashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Role-based Dashboard Content */}
-        {userProfile.role === 'shopper' && renderShopperDashboard()}
-        {userProfile.role === 'brand' && renderBrandDashboard()}
-        {userProfile.role === 'retailer' && renderRetailerDashboard()}
+          {/* Role-based Dashboard Content */}
+          {userProfile.role === 'shopper' && renderShopperDashboard()}
+          {userProfile.role === 'brand' && renderBrandDashboard()}
+          {userProfile.role === 'retailer' && renderRetailerDashboard()}
+        </div>
+        
+        {/* Global Search Modal */}
+        <GlobalSearch isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
       </div>
-      
-      {/* Global Search Modal */}
-      <GlobalSearch isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
-    </div>
+    </ErrorBoundary>
   );
 };
 

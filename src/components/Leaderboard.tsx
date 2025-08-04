@@ -21,7 +21,7 @@ interface LeaderboardUser {
   stats: {
     likes_given: number;
     posts_created: number;
-    products_saved: number;
+    closet_items: number;
     closets_created: number;
   };
 }
@@ -57,44 +57,68 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ type = 'global', country }) =
         dateFilter = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
       }
 
-      // Build query for user stats
-      let query = supabase
-        .from('users')
-        .select(`
-          id,
-          name,
-          avatar_url,
-          country,
-          email,
-          post_likes!post_likes_user_id_fkey(id),
-          posts!posts_user_id_fkey(id),
-          wishlist_items!wishlist_items_user_id_fkey(id),
-          closets!closets_user_id_fkey(id)
-        `);
-
-      // Filter by country if specified
+      // Get user stats with proper closet item counting
+      let userQuery = supabase.from('users').select('*');
+      
       if (type === 'country' && selectedCountry) {
-        query = query.eq('country', selectedCountry);
+        userQuery = userQuery.eq('country', selectedCountry);
       }
 
-      const { data: users, error } = await query;
+      const { data: users, error: usersError } = await userQuery;
 
-      if (error) {
-        console.error('Error loading leaderboard:', error);
+      if (usersError) {
+        console.error('Error loading users:', usersError);
         return;
       }
 
-      // Calculate scores and rankings
-      const scoredUsers: LeaderboardUser[] = (users || []).map(user => {
-        const likesCount = user.post_likes?.length || 0;
-        const postsCount = user.posts?.length || 0;
-        const savedItemsCount = user.wishlist_items?.length || 0;
-        const closetsCount = user.closets?.length || 0;
+      // Calculate scores for each user
+      const scoredUsers: LeaderboardUser[] = [];
 
-        // Scoring algorithm: posts worth more, then likes, saves, closets
-        const score = (postsCount * 10) + (likesCount * 3) + (savedItemsCount * 2) + (closetsCount * 5);
+      for (const user of users || []) {
+        // Get post likes given by this user
+        const { data: postLikes } = await supabase
+          .from('post_likes')
+          .select('id')
+          .eq('user_id', user.id);
 
-        return {
+        // Get posts created by this user
+        const { data: posts } = await supabase
+          .from('posts')
+          .select('id')
+          .eq('user_id', user.id);
+
+        // Get wishlist items saved by this user
+        const { data: wishlistItems } = await supabase
+          .from('wishlist_items')
+          .select('id')
+          .eq('wishlist_id', (await supabase
+            .from('wishlists')
+            .select('id')
+            .eq('user_id', user.id)
+          ).data?.[0]?.id);
+
+        // Get closets created by this user
+        const { data: closets } = await supabase
+          .from('closets')
+          .select('id')
+          .eq('user_id', user.id);
+
+        // Get ALL closet items for this user (count products in their closets)
+        const { data: closetItems } = await supabase
+          .from('closet_items')
+          .select('id')
+          .in('closet_id', (closets || []).map(c => c.id));
+
+        const likesCount = postLikes?.length || 0;
+        const postsCount = posts?.length || 0;
+        const savedItemsCount = wishlistItems?.length || 0;
+        const closetsCount = closets?.length || 0;
+        const closetItemsCount = closetItems?.length || 0;
+
+        // Updated scoring: posts (10pts), closet items (2pts each), likes (3pts), wishlist (1pt), closets (5pts)
+        const score = (postsCount * 10) + (closetItemsCount * 2) + (likesCount * 3) + (savedItemsCount * 1) + (closetsCount * 5);
+
+        scoredUsers.push({
           id: user.id,
           name: user.name || 'Anonymous',
           avatar_url: user.avatar_url || '',
@@ -105,11 +129,11 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ type = 'global', country }) =
           stats: {
             likes_given: likesCount,
             posts_created: postsCount,
-            products_saved: savedItemsCount,
+            closet_items: closetItemsCount,
             closets_created: closetsCount
           }
-        };
-      });
+        });
+      }
 
       // Sort by score and assign ranks
       scoredUsers.sort((a, b) => b.score - a.score);
@@ -316,7 +340,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ type = 'global', country }) =
                 <div className="hidden sm:flex items-center gap-2 text-xs text-muted-foreground">
                   <span title="Posts">{leader.stats.posts_created}📝</span>
                   <span title="Likes">{leader.stats.likes_given}❤️</span>
-                  <span title="Saved">{leader.stats.products_saved}🔖</span>
+                  <span title="Closet Items">{leader.stats.closet_items}👕</span>
                   <span title="Closets">{leader.stats.closets_created}👗</span>
                 </div>
               </div>
