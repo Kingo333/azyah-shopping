@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import ShopperNavigation from '@/components/ShopperNavigation';
 import TutorialTooltip from '@/components/TutorialTooltip';
+import TrendingStyles from '@/components/TrendingStyles';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -23,7 +24,8 @@ import {
   Info,
   Upload,
   CameraIcon,
-  Plus
+  Plus,
+  TrendingUp
 } from 'lucide-react';
 import { useWishlistProducts } from '@/hooks/useWishlistProducts';
 
@@ -406,6 +408,19 @@ const ARTryOn: React.FC = () => {
                     ))}
                   </div>
                 )}
+              </CardContent>
+            </Card>
+
+            {/* Trending Styles Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5 text-blue-500" />
+                  Trending Styles
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <TrendingStyles limit={4} showMore={true} />
               </CardContent>
             </Card>
 
