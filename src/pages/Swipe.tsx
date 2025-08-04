@@ -6,6 +6,7 @@ import { ArrowLeft, Heart, Search, Menu, Sparkles, ChevronDown } from "lucide-re
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
 import SwipeDeck from '@/components/SwipeDeck';
 
@@ -13,8 +14,8 @@ const Swipe = () => {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
   
-  const [filter, setFilter] = useState<string>('all');
-  const [subcategoryFilter, setSubcategoryFilter] = useState<string>('');
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedSubcategories, setSelectedSubcategories] = useState<string[]>([]);
   const [priceRange, setPriceRange] = useState<{
     min: number;
     max: number;
@@ -24,6 +25,7 @@ const Swipe = () => {
   });
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [showFilters, setShowFilters] = useState(false);
+  const [selectedCurrency, setSelectedCurrency] = useState<string>('USD');
 
   if (loading) {
     return (
@@ -45,11 +47,11 @@ const Swipe = () => {
   }
 
   const getCurrentCategoryDisplay = () => {
-    if (!filter || filter === 'all') return 'All Categories';
-    const formatted = filter.split('_').map(word => 
-      word.charAt(0).toUpperCase() + word.slice(1)
-    ).join(' ');
-    return subcategoryFilter ? `${formatted} - ${subcategoryFilter}` : formatted;
+    if (selectedCategories.length === 0) return 'All Categories';
+    const categoryNames = selectedCategories.map(cat => 
+      cat.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
+    );
+    return categoryNames.length > 1 ? `${categoryNames[0]} +${categoryNames.length - 1}` : categoryNames[0];
   };
 
   return (
@@ -116,31 +118,33 @@ const Swipe = () => {
                     <div className="space-y-3">
                       <Label className="text-sm font-medium">Category</Label>
                       <CategoryFilter
-                        selectedCategories={filter === 'all' ? [] : [filter as any]}
-                        selectedSubcategories={subcategoryFilter ? [subcategoryFilter as any] : []}
-                        onCategoryChange={(categories) => setFilter(categories[0] || 'all')}
-                        onSubcategoryChange={(subcategories) => setSubcategoryFilter(subcategories[0] || '')}
+                        selectedCategories={selectedCategories as any}
+                        selectedSubcategories={selectedSubcategories as any}
+                        onCategoryChange={(categories) => setSelectedCategories(categories as string[])}
+                        onSubcategoryChange={(subcategories) => setSelectedSubcategories(subcategories as string[])}
                       />
                     </div>
 
                     {/* Currency Filter */}
                     <div className="space-y-3">
                       <Label className="text-sm font-medium">Currency</Label>
-                      <select 
-                        className="w-full h-9 px-3 rounded-md border border-border bg-background text-sm"
-                        defaultValue="USD"
-                      >
-                        <option value="USD">USD ($)</option>
-                        <option value="EUR">EUR (€)</option>
-                        <option value="GBP">GBP (£)</option>
-                        <option value="AED">AED (د.إ)</option>
-                        <option value="SAR">SAR (﷼)</option>
-                        <option value="KWD">KWD (د.ك)</option>
-                        <option value="BHD">BHD (د.ب)</option>
-                        <option value="QAR">QAR (ر.ق)</option>
-                        <option value="OMR">OMR (ر.ع.)</option>
-                        <option value="JOD">JOD (د.أ)</option>
-                      </select>
+                      <Select value={selectedCurrency} onValueChange={setSelectedCurrency}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select currency" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="USD">USD ($)</SelectItem>
+                          <SelectItem value="EUR">EUR (€)</SelectItem>
+                          <SelectItem value="GBP">GBP (£)</SelectItem>
+                          <SelectItem value="AED">AED (د.إ)</SelectItem>
+                          <SelectItem value="SAR">SAR (﷼)</SelectItem>
+                          <SelectItem value="KWD">KWD (د.ك)</SelectItem>
+                          <SelectItem value="BHD">BHD (د.ب)</SelectItem>
+                          <SelectItem value="QAR">QAR (ر.ق)</SelectItem>
+                          <SelectItem value="OMR">OMR (ر.ع.)</SelectItem>
+                          <SelectItem value="JOD">JOD (د.أ)</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
 
                     {/* Price Range Filter */}
@@ -207,8 +211,8 @@ const Swipe = () => {
         <div className="flex-1 flex items-center justify-center min-h-[600px]">
           <div className="relative w-full max-w-md h-[600px]">
             <SwipeDeck 
-              filter={filter} 
-              subcategory={subcategoryFilter}
+              filter={selectedCategories[0] || 'all'} 
+              subcategory={selectedSubcategories[0] || ''}
               priceRange={priceRange} 
               searchQuery={searchQuery} 
             />

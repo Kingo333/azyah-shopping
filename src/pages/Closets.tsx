@@ -1,9 +1,15 @@
 import React, { useState, Suspense } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { BackButton } from '@/components/ui/back-button';
-import { Grid3X3, LayoutGrid, Search, Plus } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
+import { useClosets, usePublicClosets, useCreateCloset } from '@/hooks/useClosets';
+import { Grid3X3, LayoutGrid, Search, Plus, Star, Lock, Globe, Heart } from 'lucide-react';
 
 // Lazy load the MasonryMoodBoards component
 const MasonryMoodBoards = React.lazy(() => import('@/components/MasonryMoodBoards'));
@@ -22,9 +28,31 @@ const LoadingFallback = () => (
 );
 
 const Closets = () => {
-  const [activeTab, setActiveTab] = useState<'explore' | 'my-closets' | 'mood-boards'>('mood-boards');
-  const [viewMode, setViewMode] = useState<'grid' | 'masonry'>('masonry');
+  const [activeTab, setActiveTab] = useState<'explore' | 'my-closets' | 'mood-boards'>('my-closets');
+  const [viewMode, setViewMode] = useState<'grid' | 'masonry'>('grid');
   const [searchQuery, setSearchQuery] = useState('');
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [newClosetData, setNewClosetData] = useState({
+    title: '',
+    description: '',
+    is_public: false
+  });
+
+  const { data: myClosets, isLoading: loadingMyClosets } = useClosets();
+  const { data: publicClosets, isLoading: loadingPublicClosets } = usePublicClosets();
+  const createClosetMutation = useCreateCloset();
+
+  const handleCreateCloset = async () => {
+    if (!newClosetData.title.trim()) return;
+    
+    try {
+      await createClosetMutation.mutateAsync(newClosetData);
+      setShowCreateModal(false);
+      setNewClosetData({ title: '', description: '', is_public: false });
+    } catch (error) {
+      console.error('Error creating closet:', error);
+    }
+  };
 
 
   return (
@@ -98,27 +126,213 @@ const Closets = () => {
       {/* Content */}
       <div className="mx-auto max-w-7xl p-4">
         {activeTab === 'explore' && (
-          <div className="text-center py-12">
-            <h3 className="text-lg font-semibold mb-4">Coming Soon</h3>
-            <p className="text-muted-foreground">Explore community closets feature coming soon!</p>
+          <div>
+            {loadingPublicClosets ? (
+              <LoadingFallback />
+            ) : publicClosets && publicClosets.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {publicClosets.map((closet: any) => (
+                  <Card key={closet.id} className="hover:shadow-lg transition-shadow">
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-lg truncate">{closet.title}</CardTitle>
+                        <div className="flex items-center gap-2">
+                          <Globe className="h-4 w-4 text-green-500" />
+                          <div className="flex items-center">
+                            <Star className="h-4 w-4 text-yellow-500" />
+                            <span className="text-sm ml-1">
+                              {closet.closet_ratings?.length > 0 
+                                ? (closet.closet_ratings.reduce((sum: number, r: any) => sum + r.rating, 0) / closet.closet_ratings.length).toFixed(1)
+                                : '0.0'
+                              }
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      {closet.description && (
+                        <p className="text-sm text-muted-foreground line-clamp-2">{closet.description}</p>
+                      )}
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-full bg-primary" />
+                          <span className="text-sm">{closet.users?.name || 'Anonymous'}</span>
+                        </div>
+                        <Button variant="outline" size="sm">
+                          <Heart className="h-4 w-4 mr-1" />
+                          View
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <h3 className="text-lg font-semibold mb-4">No public closets found</h3>
+                <p className="text-muted-foreground">Be the first to share your closet with the community!</p>
+              </div>
+            )}
           </div>
         )}
 
         {activeTab === 'my-closets' && (
-          <div className="text-center py-12">
-            <div className="max-w-md mx-auto space-y-4">
-              <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto">
-                <Grid3X3 className="h-8 w-8 text-muted-foreground" />
+          <div>
+            {loadingMyClosets ? (
+              <LoadingFallback />
+            ) : myClosets && myClosets.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {myClosets.map((closet) => (
+                  <Card key={closet.id} className="hover:shadow-lg transition-shadow">
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-lg truncate">{closet.title}</CardTitle>
+                        <div className="flex items-center gap-2">
+                          {closet.is_public ? (
+                            <Globe className="h-4 w-4 text-green-500" />
+                          ) : (
+                            <Lock className="h-4 w-4 text-gray-500" />
+                          )}
+                          <Badge variant={closet.is_public ? 'default' : 'secondary'}>
+                            {closet.is_public ? 'Public' : 'Private'}
+                          </Badge>
+                        </div>
+                      </div>
+                      {closet.description && (
+                        <p className="text-sm text-muted-foreground line-clamp-2">{closet.description}</p>
+                      )}
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-muted-foreground">
+                          Created {new Date(closet.created_at).toLocaleDateString()}
+                        </span>
+                        <Button variant="outline" size="sm">
+                          View Items
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
-              <h3 className="text-lg font-semibold">No closets yet</h3>
-              <p className="text-muted-foreground">
-                Create your first closet to start curating your fashion collection
-              </p>
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                Create Your First Closet
-              </Button>
-            </div>
+            ) : (
+              <div className="text-center py-12">
+                <div className="max-w-md mx-auto space-y-4">
+                  <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto">
+                    <Grid3X3 className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                  <h3 className="text-lg font-semibold">No closets yet</h3>
+                  <p className="text-muted-foreground">
+                    Create your first closet to start curating your fashion collection
+                  </p>
+                  <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
+                    <DialogTrigger asChild>
+                      <Button>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Create Your First Closet
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Create New Closet</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="title">Closet Name</Label>
+                          <Input
+                            id="title"
+                            value={newClosetData.title}
+                            onChange={(e) => setNewClosetData(prev => ({ ...prev, title: e.target.value }))}
+                            placeholder="My Fashion Collection"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="description">Description (optional)</Label>
+                          <Textarea
+                            id="description"
+                            value={newClosetData.description}
+                            onChange={(e) => setNewClosetData(prev => ({ ...prev, description: e.target.value }))}
+                            placeholder="Describe your closet..."
+                            rows={3}
+                          />
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Switch
+                            id="public"
+                            checked={newClosetData.is_public}
+                            onCheckedChange={(checked) => setNewClosetData(prev => ({ ...prev, is_public: checked }))}
+                          />
+                          <Label htmlFor="public">Make this closet public</Label>
+                        </div>
+                        <div className="flex justify-end gap-2">
+                          <Button variant="outline" onClick={() => setShowCreateModal(false)}>
+                            Cancel
+                          </Button>
+                          <Button onClick={handleCreateCloset} disabled={createClosetMutation.isPending}>
+                            {createClosetMutation.isPending ? 'Creating...' : 'Create Closet'}
+                          </Button>
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+              </div>
+            )}
+            {myClosets && myClosets.length > 0 && (
+              <div className="mt-6 text-center">
+                <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Create Another Closet
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Create New Closet</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="title">Closet Name</Label>
+                        <Input
+                          id="title"
+                          value={newClosetData.title}
+                          onChange={(e) => setNewClosetData(prev => ({ ...prev, title: e.target.value }))}
+                          placeholder="My Fashion Collection"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="description">Description (optional)</Label>
+                        <Textarea
+                          id="description"
+                          value={newClosetData.description}
+                          onChange={(e) => setNewClosetData(prev => ({ ...prev, description: e.target.value }))}
+                          placeholder="Describe your closet..."
+                          rows={3}
+                        />
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Switch
+                          id="public"
+                          checked={newClosetData.is_public}
+                          onCheckedChange={(checked) => setNewClosetData(prev => ({ ...prev, is_public: checked }))}
+                        />
+                        <Label htmlFor="public">Make this closet public</Label>
+                      </div>
+                      <div className="flex justify-end gap-2">
+                        <Button variant="outline" onClick={() => setShowCreateModal(false)}>
+                          Cancel
+                        </Button>
+                        <Button onClick={handleCreateCloset} disabled={createClosetMutation.isPending}>
+                          {createClosetMutation.isPending ? 'Creating...' : 'Create Closet'}
+                        </Button>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </div>
+            )}
           </div>
         )}
 
