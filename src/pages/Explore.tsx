@@ -27,6 +27,7 @@ const Explore: React.FC = () => {
   const navigate = useNavigate();
   const [activeLeaderboard, setActiveLeaderboard] = useState<'global' | 'country'>('global');
   const [activeSection, setActiveSection] = useState<'overview' | 'search'>('overview');
+  const [activeFilter, setActiveFilter] = useState<'trending' | 'influencers' | 'brands'>('brands');
 
   return (
     <div className="min-h-screen bg-background">
@@ -47,112 +48,64 @@ const Explore: React.FC = () => {
           </TabsList>
 
           <TabsContent value="overview" className="space-y-8">
-            {/* Featured Sections */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Card 
-                className="cursor-pointer hover:shadow-lg transition-all duration-300 hover:scale-105"
-                onClick={() => navigate('/trending-styles')}
+            {/* Filter Buttons */}
+            <div className="flex flex-wrap gap-3 justify-center">
+              <Button
+                variant={activeFilter === 'trending' ? 'default' : 'outline'}
+                onClick={() => setActiveFilter('trending')}
+                className="flex items-center gap-2"
               >
-                <CardContent className="p-6 text-center">
-                  <TrendingUp className="h-8 w-8 mx-auto mb-3 text-blue-500" />
-                  <h3 className="font-semibold mb-2">Trending Styles</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Discover what's popular in fashion right now
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card 
-                className="cursor-pointer hover:shadow-lg transition-all duration-300 hover:scale-105"
-                onClick={() => navigate('/top-influencers')}
+                <TrendingUp className="h-4 w-4" />
+                Trending Styles
+              </Button>
+              <Button
+                variant={activeFilter === 'influencers' ? 'default' : 'outline'}
+                onClick={() => setActiveFilter('influencers')}
+                className="flex items-center gap-2"
               >
-                <CardContent className="p-6 text-center">
-                  <Users className="h-8 w-8 mx-auto mb-3 text-green-500" />
-                  <h3 className="font-semibold mb-2">Top Influencers</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Follow the most stylish users in the community
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card 
-                className="cursor-pointer hover:shadow-lg transition-all duration-300 hover:scale-105"
-                onClick={() => navigate('/featured-brands')}
+                <Users className="h-4 w-4" />
+                Top Influencers
+              </Button>
+              <Button
+                variant={activeFilter === 'brands' ? 'default' : 'outline'}
+                onClick={() => setActiveFilter('brands')}
+                className="flex items-center gap-2"
               >
-                <CardContent className="p-6 text-center">
-                  <Star className="h-8 w-8 mx-auto mb-3 text-purple-500" />
-                  <h3 className="font-semibold mb-2">Featured Brands</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Explore collections from trending brands
-                  </p>
-                </CardContent>
-              </Card>
+                <Star className="h-4 w-4" />
+                Featured Brands
+              </Button>
             </div>
 
-            {/* Trending Styles Section */}
-            <section>
-              <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-                <TrendingUp className="h-5 w-5 text-blue-500" />
-                Trending Styles
-              </h2>
-              <TrendingStyles limit={6} />
-            </section>
+            {/* Content based on active filter */}
+            {activeFilter === 'trending' && (
+              <section>
+                <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5 text-blue-500" />
+                  Trending Styles
+                </h2>
+                <TrendingStyles limit={12} showMore={false} />
+              </section>
+            )}
 
-            {/* Top Influencers Section */}
-            <section>
-              <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-                <Users className="h-5 w-5 text-green-500" />
-                Top Influencers
-              </h2>
-              <TopInfluencers limit={6} />
-            </section>
+            {activeFilter === 'influencers' && (
+              <section>
+                <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+                  <Users className="h-5 w-5 text-green-500" />
+                  Top Influencers
+                </h2>
+                <TopInfluencers limit={12} showMore={false} />
+              </section>
+            )}
 
-            {/* Featured Brands Section */}
-            <section>
-              <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-                <Star className="h-5 w-5 text-purple-500" />
-                Featured Brands
-              </h2>
-              <FeaturedBrands limit={6} />
-            </section>
-
-            {/* Leaderboards */}
-            <section>
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="flex items-center gap-2">
-                      <Trophy className="h-5 w-5 text-yellow-500" />
-                      Fashion Leaderboards
-                    </CardTitle>
-                    <div className="flex gap-2">
-                      <Button
-                        variant={activeLeaderboard === 'global' ? 'default' : 'outline'}
-                        size="sm"
-                        onClick={() => setActiveLeaderboard('global')}
-                      >
-                        <Globe className="h-4 w-4 mr-2" />
-                        Global
-                      </Button>
-                      <Button
-                        variant={activeLeaderboard === 'country' ? 'default' : 'outline'}
-                        size="sm"
-                        onClick={() => setActiveLeaderboard('country')}
-                      >
-                        <MapPin className="h-4 w-4 mr-2" />
-                        Country
-                      </Button>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <Leaderboard 
-                    type={activeLeaderboard} 
-                    country={user?.user_metadata?.country}
-                  />
-                </CardContent>
-              </Card>
-            </section>
+            {activeFilter === 'brands' && (
+              <section>
+                <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+                  <Star className="h-5 w-5 text-purple-500" />
+                  Featured Brands
+                </h2>
+                <FeaturedBrands limit={12} showMore={false} />
+              </section>
+            )}
           </TabsContent>
 
           <TabsContent value="search">

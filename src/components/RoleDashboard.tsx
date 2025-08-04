@@ -27,8 +27,11 @@ import {
   Bell,
   LogOut,
   User,
-  Archive
+  Archive,
+  Trophy,
+  MapPin
 } from 'lucide-react';
+import Leaderboard from '@/components/Leaderboard';
 
 interface UserProfile {
   id: string;
@@ -57,6 +60,7 @@ const RoleDashboard: React.FC = () => {
   const [stats, setStats] = useState<DashboardStats>({});
   const [loading, setLoading] = useState(true);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [activeLeaderboard, setActiveLeaderboard] = useState<'global' | 'country'>('global');
 
   useEffect(() => {
     if (user) {
@@ -295,6 +299,42 @@ const RoleDashboard: React.FC = () => {
           <p className="text-muted-foreground text-center py-8">
             Create your first closet to organize your style discoveries
           </p>
+        </CardContent>
+      </Card>
+
+      {/* Fashion Leaderboards */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Trophy className="h-5 w-5 text-yellow-500" />
+              Fashion Leaderboards
+            </CardTitle>
+            <div className="flex gap-2">
+              <Button
+                variant={activeLeaderboard === 'global' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setActiveLeaderboard('global')}
+              >
+                <Globe className="h-4 w-4 mr-2" />
+                Global
+              </Button>
+              <Button
+                variant={activeLeaderboard === 'country' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setActiveLeaderboard('country')}
+              >
+                <MapPin className="h-4 w-4 mr-2" />
+                Country
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <Leaderboard 
+            type={activeLeaderboard} 
+            country={user?.user_metadata?.country}
+          />
         </CardContent>
       </Card>
     </div>

@@ -232,16 +232,7 @@ const FeaturedBrands: React.FC<FeaturedBrandsProps> = ({ limit = 6, showMore = t
                     {brand.stats.products_count} products
                   </span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Star className="h-3 w-3 text-yellow-500" />
-                  <span className="text-muted-foreground">
-                    {brand.stats.total_likes} likes
-                  </span>
-                </div>
-                <div className="col-span-2 flex items-center justify-between">
-                  <span className="text-xs text-muted-foreground">
-                    Avg: {formatPrice(brand.stats.avg_price_cents)}
-                  </span>
+                <div className="col-span-2 flex items-center justify-end">
                   <div className="flex items-center gap-1">
                     <ArrowRight className="h-3 w-3 group-hover:translate-x-1 transition-transform" />
                     <span className="text-xs text-primary font-medium">

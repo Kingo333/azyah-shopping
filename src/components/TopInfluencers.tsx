@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Users, Heart, MessageSquare, ArrowRight, Crown, Medal } from 'lucide-react';
+import { Users, Archive, MessageSquare, ArrowRight, Crown, Medal } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface TopInfluencer {
@@ -214,9 +214,9 @@ const TopInfluencers: React.FC<TopInfluencersProps> = ({ limit = 6, showMore = t
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Heart className="h-3 w-3 text-red-500" />
+                  <Archive className="h-3 w-3 text-orange-500" />
                   <span className="text-muted-foreground">
-                    {influencer.stats.likes_received} likes
+                    {influencer.stats.closets_count} closets
                   </span>
                 </div>
                 <div className="flex items-center gap-2">

@@ -28,6 +28,7 @@ import ImageSearch from "./pages/ImageSearch";
 import TrendingStyles from "./pages/TrendingStyles";
 import TopInfluencers from "./pages/TopInfluencers";
 import FeaturedBrands from "./pages/FeaturedBrands";
+import UserProfile from "./pages/UserProfile";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -132,6 +133,11 @@ const App = () => (
             <Route path="/closets" element={
               <ProtectedRoute roles={['shopper', 'admin']}>
                 <Closets />
+              </ProtectedRoute>
+            } />
+            <Route path="/profile/:id" element={
+              <ProtectedRoute roles={['shopper', 'admin']}>
+                <UserProfile />
               </ProtectedRoute>
             } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
