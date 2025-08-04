@@ -90,24 +90,56 @@ const RoleDashboard: React.FC = () => {
   };
   const fetchDashboardStats = async () => {
     if (!user) return;
+    
+    const timeoutId = setTimeout(() => {
+      console.warn('Dashboard stats fetch timeout, setting loading to false');
+      setLoading(false);
+    }, 10000); // 10 second timeout
+
     try {
-      // Fetch basic stats for all roles
-      const [wishlistData, cartData] = await Promise.all([supabase.from('wishlist_items').select('*').eq('wishlist_id', user.id), supabase.from('cart_items').select('*').eq('user_id', user.id)]);
+      // Fetch basic stats for all roles with timeout
+      const statsPromises = [
+        supabase.from('wishlist_items').select('*').eq('wishlist_id', user.id),
+        supabase.from('cart_items').select('*').eq('user_id', user.id)
+      ];
+
+      const [wishlistData, cartData] = await Promise.race([
+        Promise.all(statsPromises),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Timeout')), 8000)
+        )
+      ]) as any[];
+
       const dashboardStats: DashboardStats = {
-        totalWishlistItems: wishlistData.data?.length || 0,
-        totalCartItems: cartData.data?.length || 0
+        totalWishlistItems: wishlistData?.data?.length || 0,
+        totalCartItems: cartData?.data?.length || 0
       };
 
       // Role-specific stats
       if (userProfile?.role === 'brand' || userProfile?.role === 'retailer') {
-        const {
-          data: products
-        } = await supabase.from('products').select('*').eq(userProfile.role === 'brand' ? 'brand_id' : 'retailer_id', user.id);
-        dashboardStats.totalProducts = products?.length || 0;
+        try {
+          const { data: products } = await supabase
+            .from('products')
+            .select('*')
+            .eq(userProfile.role === 'brand' ? 'brand_id' : 'retailer_id', user.id);
+          dashboardStats.totalProducts = products?.length || 0;
+        } catch (roleError) {
+          console.warn('Failed to fetch role-specific stats:', roleError);
+          dashboardStats.totalProducts = 0;
+        }
       }
+      
       setStats(dashboardStats);
+      clearTimeout(timeoutId);
     } catch (error) {
       console.error('Error fetching dashboard stats:', error);
+      // Set default stats on error
+      setStats({
+        totalWishlistItems: 0,
+        totalCartItems: 0,
+        totalProducts: 0
+      });
+      clearTimeout(timeoutId);
     } finally {
       setLoading(false);
     }
@@ -210,7 +242,7 @@ const RoleDashboard: React.FC = () => {
               className="h-16 sm:h-20 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300"
             >
               <Camera className="h-5 w-5 sm:h-6 sm:w-6" />
-              <span className="text-xs sm:text-sm">Search</span>
+              <span className="text-xs sm:text-sm">Scan</span>
             </Button>
           </div>
         </CardContent>

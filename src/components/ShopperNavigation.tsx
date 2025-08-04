@@ -58,39 +58,8 @@ const ShopperNavigation: React.FC = () => {
 
   const isActive = (path: string) => location.pathname === path;
 
-  // Mobile Bottom Navigation
-  if (isMobile) {
-    return (
-      <nav className="nav-mobile">
-        <div className="flex items-center justify-around max-w-md mx-auto">
-          {tabs.map((tab) => {
-            const Icon = tab.icon;
-            const active = isActive(tab.path);
-            
-            return (
-              <button
-                key={tab.id}
-                onClick={() => navigate(tab.path)}
-                className={`flex flex-col items-center justify-center py-2 px-1 rounded-lg transition-all duration-200 ${
-                  active 
-                    ? 'text-primary bg-primary/10' 
-                    : 'text-muted-foreground hover:text-primary hover:bg-primary/5'
-                }`}
-              >
-                <Icon className="h-5 w-5 mb-1" />
-                <span className="text-xs font-medium">{tab.label}</span>
-                {tab.badge && (
-                  <Badge variant="secondary" className="text-xs mt-1 px-1 py-0 h-4">
-                    {tab.badge}
-                  </Badge>
-                )}
-              </button>
-            );
-          })}
-        </div>
-      </nav>
-    );
-  }
+  // Unified navigation for all devices (removed mobile bottom nav)
+  // Always show the desktop-style navigation
 
   // Desktop Navigation
   return (

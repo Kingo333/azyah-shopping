@@ -165,21 +165,61 @@ const TrendingStyles: React.FC<TrendingStylesProps> = ({ limit = 6, showMore = t
             <CardContent>
               <div className="flex gap-2 mb-3">
                 {style.recent_products.slice(0, 3).map((product) => (
-                  <div key={product.id} className="relative">
+                  <div key={product.id} className="relative group/product">
                     <img
                       src={product.media_urls?.[0] || '/placeholder.svg'}
                       alt={product.title}
                       className="w-16 h-16 object-cover rounded-md"
                     />
+                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover/product:opacity-100 transition-opacity rounded-md flex items-center justify-center">
+                      <Button
+                        size="sm"
+                        className="text-xs py-1 px-2 h-auto bg-primary hover:bg-primary-glow"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          // Navigate to external product page - will implement proper link
+                          window.open(`/product/${product.id}`, '_blank');
+                        }}
+                      >
+                        Buy Now
+                      </Button>
+                    </div>
                   </div>
                 ))}
               </div>
               
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">
-                  {style.count} likes this week
-                </span>
-                <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">
+                    {style.count} likes this week
+                  </span>
+                  <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                </div>
+                
+                {/* Price range for trending products */}
+                {style.recent_products.length > 0 && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground">
+                      From {formatPrice(Math.min(...style.recent_products.map(p => p.price_cents)))}
+                    </span>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-6 text-xs py-0 px-2 hover:bg-primary hover:text-primary-foreground"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate('/swipe', { 
+                          state: { 
+                            category: style.category, 
+                            subcategory: style.subcategory 
+                          } 
+                        });
+                      }}
+                    >
+                      Shop Style
+                    </Button>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>

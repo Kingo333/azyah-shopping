@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
-import { Loader2, Sparkles, Heart, Star, ShoppingBag, Store, Building2 } from 'lucide-react';
+import { Loader2, Sparkles, Heart, Star, ShoppingBag, Store, Building2, ArrowLeft } from 'lucide-react';
 
 const Auth = () => {
   const { user, signUp, signIn, loading } = useAuth();
@@ -77,6 +77,18 @@ const Auth = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-accent/5 p-4">
       <div className="w-full max-w-md space-y-8">
+        {/* Back to Landing Button */}
+        <div className="flex justify-start">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => navigate('/')}
+            className="hover:bg-primary/10"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Home
+          </Button>
+        </div>
         {/* Header */}
         <div className="text-center space-y-4">
           <div className="flex justify-center">

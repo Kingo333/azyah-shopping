@@ -90,18 +90,23 @@ export const useSwipeProduct = () => {
       action: 'right' | 'up' | 'left'; 
       userId: string;
     }) => {
+      // Use upsert to handle duplicate swipes - update existing or insert new
       const { data, error } = await supabase
         .from('swipes')
-        .insert({
+        .upsert({
           user_id: userId,
           product_id: productId,
           action,
-          session_id: crypto.randomUUID()
+          session_id: crypto.randomUUID(),
+          created_at: new Date().toISOString()
+        }, {
+          onConflict: 'user_id,product_id'
         })
         .select()
         .single();
 
       if (error) {
+        console.error('Swipe error details:', error);
         toast({
           title: "Error recording swipe",
           description: error.message,
@@ -115,6 +120,9 @@ export const useSwipeProduct = () => {
     onSuccess: () => {
       // Invalidate and refetch products to get fresh recommendations
       queryClient.invalidateQueries({ queryKey: ['products'] });
+    },
+    onError: (error) => {
+      console.error('Swipe mutation error:', error);
     }
   });
 };

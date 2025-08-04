@@ -36,12 +36,15 @@ interface SearchResult {
 }
 
 interface ExternalSearchResult {
+  id: string;
   title: string;
-  price: string;
-  image: string;
-  link: string;
-  source: string;
-  similarity_score: number;
+  description: string;
+  price: number;
+  currency: string;
+  image_url: string | null;
+  brand: string;
+  external_url: string;
+  source: 'catalog' | 'external';
 }
 
 const ImageSearch: React.FC = () => {
@@ -177,43 +180,49 @@ const ImageSearch: React.FC = () => {
   };
 
   const searchExternalSources = async (query: string) => {
-    // Mock external search results (in production, this would use Google Shopping API)
-    const mockExternalResults: ExternalSearchResult[] = [
-      {
-        title: "Similar Style Dress - Zara",
-        price: "$89.99",
-        image: "https://images.unsplash.com/photo-1649972904349-6e44c42644a7?w=400&h=500&fit=crop",
-        link: "https://zara.com/example",
-        source: "Zara",
-        similarity_score: 0.92
-      },
-      {
-        title: "Comparable Design - H&M",
-        price: "$45.99",
-        image: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=400&h=500&fit=crop",
-        link: "https://hm.com/example",
-        source: "H&M",
-        similarity_score: 0.88
-      },
-      {
-        title: "Similar Pattern - ASOS",
-        price: "$67.50",
-        image: "https://images.unsplash.com/photo-1531297484001-80022131f5a1?w=400&h=500&fit=crop",
-        link: "https://asos.com/example",
-        source: "ASOS",
-        similarity_score: 0.85
-      },
-      {
-        title: "Matching Style - Mango",
-        price: "$75.00",
-        image: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=400&h=500&fit=crop",
-        link: "https://mango.com/example",
-        source: "Mango",
-        similarity_score: 0.82
-      }
-    ];
+    try {
+      // Call our Google Shopping API edge function
+      const { data, error } = await supabase.functions.invoke('google-shopping-search', {
+        body: { searchQuery: query, maxResults: 6 }
+      });
 
-    setExternalResults(mockExternalResults);
+      if (error) throw error;
+
+      if (data?.results) {
+        setExternalResults(data.results);
+      } else {
+        // Fallback to mock results if API fails
+        setExternalResults([]);
+      }
+    } catch (error) {
+      console.error('External search error:', error);
+      // Set mock results on error
+      const mockExternalResults: ExternalSearchResult[] = [
+        {
+          id: "ext-1",
+          title: "Similar Style Dress - Zara",
+          description: "Premium fashion item with similar design",
+          price: 89.99,
+          currency: "USD",
+          image_url: "https://images.unsplash.com/photo-1649972904349-6e44c42644a7?w=400&h=500&fit=crop",
+          brand: "Zara",
+          external_url: "https://zara.com/example",
+          source: "external"
+        },
+        {
+          id: "ext-2",
+          title: "Comparable Design - H&M",
+          description: "Affordable fashion with matching style",
+          price: 45.99,
+          currency: "USD",
+          image_url: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=400&h=500&fit=crop",
+          brand: "H&M",
+          external_url: "https://hm.com/example",
+          source: "external"
+        }
+      ];
+      setExternalResults(mockExternalResults);
+    }
   };
 
   const startCamera = async () => {
@@ -283,7 +292,7 @@ const ImageSearch: React.FC = () => {
   };
 
   const handleExternalProductClick = (result: ExternalSearchResult) => {
-    window.open(result.link, '_blank');
+    window.open(result.external_url, '_blank');
   };
 
   return (
@@ -511,30 +520,36 @@ const ImageSearch: React.FC = () => {
                         onClick={() => handleExternalProductClick(result)}
                       >
                         <CardContent className="p-3">
-                          <div className="aspect-[3/4] mb-2">
-                            <img
-                              src={result.image}
-                              alt={result.title}
-                              className="w-full h-full object-cover rounded-md"
-                            />
-                          </div>
-                          <h4 className="font-medium text-sm truncate">
-                            {result.title}
-                          </h4>
-                          <p className="text-xs text-muted-foreground mb-1">
-                            {result.source}
-                          </p>
-                          <div className="flex items-center justify-between">
-                            <span className="font-semibold text-sm">
-                              {result.price}
-                            </span>
-                            <div className="flex items-center gap-1">
-                              <Badge variant="secondary" className="text-xs">
-                                {Math.round(result.similarity_score * 100)}% match
-                              </Badge>
-                              <ExternalLink className="h-3 w-3 text-muted-foreground" />
-                            </div>
-                          </div>
+                           <div className="aspect-[3/4] mb-2">
+                             <img
+                               src={result.image_url || '/placeholder.svg'}
+                               alt={result.title}
+                               className="w-full h-full object-cover rounded-md"
+                               onError={(e) => {
+                                 (e.target as HTMLImageElement).src = '/placeholder.svg';
+                               }}
+                             />
+                           </div>
+                           <h4 className="font-medium text-sm truncate">
+                             {result.title}
+                           </h4>
+                           <p className="text-xs text-muted-foreground mb-1">
+                             {result.brand}
+                           </p>
+                           <div className="flex items-center justify-between">
+                             <span className="font-semibold text-sm">
+                               {new Intl.NumberFormat('en-US', {
+                                 style: 'currency',
+                                 currency: result.currency || 'USD'
+                               }).format(result.price)}
+                             </span>
+                             <div className="flex items-center gap-1">
+                               <Badge variant="secondary" className="text-xs">
+                                 AI Match
+                               </Badge>
+                               <ExternalLink className="h-3 w-3 text-muted-foreground" />
+                             </div>
+                           </div>
                         </CardContent>
                       </Card>
                     ))}

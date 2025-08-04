@@ -85,6 +85,10 @@ const SwipeDeck = ({
   const x = useMotionValue(0);
   const y = useMotionValue(0);
   
+  // Add state for touch handling
+  const [startPosition, setStartPosition] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  
   // Transforms (no need for useMemo as useTransform is already optimized)
   const rotate = useTransform(x, [-150, 150], [-15, 15]);
   const opacity = useTransform(x, [-150, 0, 150], [0.8, 1, 0.8]);
@@ -100,6 +104,47 @@ const SwipeDeck = ({
       trackProductView(currentProduct.id, 'swipe_deck');
     }
   }, [currentProduct?.id, trackProductView]);
+
+  // Enhanced touch/drag handling for mobile
+  const handleTouchStart = useCallback((event: TouchEvent | React.TouchEvent) => {
+    if (isAnimating) return;
+    const touch = event.touches[0];
+    setStartPosition({ x: touch.clientX, y: touch.clientY });
+    setIsDragging(true);
+  }, [isAnimating]);
+
+  const handleTouchMove = useCallback((event: TouchEvent | React.TouchEvent) => {
+    if (!isDragging || isAnimating) return;
+    event.preventDefault();
+    const touch = event.touches[0];
+    const deltaX = touch.clientX - startPosition.x;
+    const deltaY = touch.clientY - startPosition.y;
+    
+    x.set(deltaX);
+    y.set(deltaY);
+  }, [isDragging, isAnimating, startPosition, x, y]);
+
+  const handleTouchEnd = useCallback((event: TouchEvent | React.TouchEvent) => {
+    if (!isDragging || isAnimating) return;
+    setIsDragging(false);
+    
+    const touch = event.changedTouches[0];
+    const deltaX = touch.clientX - startPosition.x;
+    const deltaY = touch.clientY - startPosition.y;
+    
+    const threshold = 80;
+    const velocity = Math.abs(deltaX) + Math.abs(deltaY);
+
+    if (Math.abs(deltaX) > threshold || velocity > 200) {
+      handleSwipe(deltaX > 0 ? 'right' : 'left');
+    } else if (deltaY < -threshold) {
+      handleSwipe('up');
+    } else {
+      // Snap back
+      x.set(0);
+      y.set(0);
+    }
+  }, [isDragging, isAnimating, startPosition, x, y]);
 
   const handleDragEnd = useCallback((event: any, info: PanInfo) => {
     if (isAnimating) return;
@@ -263,6 +308,9 @@ const SwipeDeck = ({
         dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
         dragElastic={0.1}
         onDragEnd={handleDragEnd}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
         style={{ x, y, rotate, opacity }}
         animate={isAnimating ? { 
           x: x.get() > 0 ? 300 : x.get() < 0 ? -300 : 0,
@@ -270,7 +318,7 @@ const SwipeDeck = ({
           opacity: 0 
         } : {}}
         transition={{ type: 'tween', duration: 0.3 }}
-        className="absolute inset-0 cursor-grab active:cursor-grabbing"
+        className="absolute inset-0 cursor-grab active:cursor-grabbing touch-none"
       >
         <Card className="w-full h-full shadow-2xl border-0 overflow-hidden bg-background">
           <div className="relative h-3/5">
