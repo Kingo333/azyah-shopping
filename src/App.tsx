@@ -65,11 +65,6 @@ const App = () => (
                 <Forum />
               </ProtectedRoute>
             } />
-            <Route path="/feed" element={
-              <ProtectedRoute roles={['shopper', 'admin']}>
-                <Feed />
-              </ProtectedRoute>
-            } />
             <Route path="/fashion-feed" element={
               <ProtectedRoute roles={['shopper', 'admin']}>
                 <FashionFeed />

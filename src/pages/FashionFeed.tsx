@@ -5,7 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
-import { BackButton } from '@/components/ui/back-button';
+import ShopperNavigation from '@/components/ShopperNavigation';
+import TutorialTooltip from '@/components/TutorialTooltip';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -20,7 +21,11 @@ import {
   ShoppingBag,
   Plus,
   Camera,
-  Users
+  Users,
+  Sparkles,
+  ArrowUp,
+  ArrowRight,
+  Globe
 } from 'lucide-react';
 
 interface FeedPost {
@@ -208,14 +213,50 @@ const FashionFeed: React.FC = () => {
     );
   }
 
+  const tutorialSteps = [
+    {
+      title: "Welcome to Fashion Feed! ✨",
+      description: "Discover curated fashion content from brands, influencers, and fellow shoppers. Scroll through personalized posts based on your style preferences.",
+      icon: <Sparkles className="h-5 w-5 text-primary" />,
+      action: "Scroll down to see fashion posts!"
+    },
+    {
+      title: "Engage with Posts",
+      description: "Like posts with the heart button, save them with the bookmark, and share your favorites. Your interactions help us learn your style!",
+      icon: <Heart className="h-5 w-5 text-red-500" />,
+      action: "Try liking a post you find interesting"
+    },
+    {
+      title: "Shop the Look",
+      description: "See products you love? Many posts feature 'Shop the Look' sections where you can buy items directly from brands.",
+      icon: <ShoppingBag className="h-5 w-5 text-primary" />,
+      action: "Look for the 'Shop' button on product cards"
+    },
+    {
+      title: "Personalized Recommendations",
+      description: "The more you engage, the better we get at showing you content that matches your style. Your swipe history helps curate your feed!",
+      icon: <Sparkles className="h-5 w-5 text-purple-500" />,
+      action: "Keep engaging to improve your recommendations"
+    }
+  ];
+
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto max-w-2xl p-4">
+        {/* Navigation */}
+        <ShopperNavigation />
+        
+        {/* Tutorial */}
+        <TutorialTooltip
+          tutorialKey="fashion-feed"
+          steps={tutorialSteps}
+          autoShow={true}
+        />
+
         {/* Header */}
-        <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm pb-4 mb-6">
+        <div className="sticky top-20 z-10 bg-background/95 backdrop-blur-sm pb-4 mb-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <BackButton />
               <h1 className="text-2xl font-bold">Fashion Feed</h1>
             </div>
             <div className="flex items-center gap-2">

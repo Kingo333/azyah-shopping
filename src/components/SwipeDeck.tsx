@@ -435,10 +435,10 @@ const SwipeDeck = ({ onBack }: SwipeDeckProps) => {
           });
         }}
         onAddToBag={(productId, size) => {
-          // Handle add to bag
+          // Handle see shop - open external URL
           toast({
-            title: "Added to bag",
-            description: `Product in size ${size} has been added to your bag.`,
+            title: "Redirecting to shop",
+            description: `Opening ${selectedProduct?.brand?.name}'s product page.`,
           });
         }}
       />

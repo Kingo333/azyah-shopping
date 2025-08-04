@@ -180,17 +180,6 @@ const RoleDashboard: React.FC = () => {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <DollarSign className="h-5 w-5 text-green-500" />
-              <div>
-                <p className="text-sm text-muted-foreground">Earnings</p>
-                <p className="text-xl font-bold">{formatPrice(stats.affiliateEarnings || 0)}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
 
         <Card>
           <CardContent className="p-4">
@@ -224,9 +213,9 @@ const RoleDashboard: React.FC = () => {
               <Camera className="h-6 w-6" />
               <span>AR Try-On</span>
             </Button>
-            <Button onClick={() => navigate('/affiliate')} variant="outline" className="h-20 flex-col gap-2">
-              <DollarSign className="h-6 w-6" />
-              <span>Affiliate</span>
+            <Button onClick={() => navigate('/wishlist')} variant="outline" className="h-20 flex-col gap-2">
+              <Heart className="h-6 w-6" />
+              <span>Wishlist</span>
             </Button>
             <Button onClick={() => navigate('/fashion-feed')} variant="outline" className="h-20 flex-col gap-2">
               <Sparkles className="h-6 w-6" />

@@ -5,7 +5,7 @@ const Swipe = () => {
   const navigate = useNavigate();
 
   return (
-    <SwipeDeck onBack={() => navigate('/')} />
+    <SwipeDeck onBack={() => navigate('/dashboard')} />
   );
 };
 

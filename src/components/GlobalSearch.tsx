@@ -185,15 +185,15 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ isOpen, onClose }) => {
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="products" className="flex items-center gap-2">
                 <Package className="h-4 w-4" />
-                Products ({filterResultsByType('product').length})
+                Products
               </TabsTrigger>
               <TabsTrigger value="users" className="flex items-center gap-2">
                 <Users className="h-4 w-4" />
-                Shoppers ({filterResultsByType('user').length})
+                Shoppers
               </TabsTrigger>
               <TabsTrigger value="brands" className="flex items-center gap-2">
                 <Store className="h-4 w-4" />
-                Brands ({filterResultsByType('brand').length})
+                Brands
               </TabsTrigger>
             </TabsList>
 

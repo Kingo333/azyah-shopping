@@ -3,7 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { BackButton } from '@/components/ui/back-button';
+import ShopperNavigation from '@/components/ShopperNavigation';
+import TutorialTooltip from '@/components/TutorialTooltip';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -19,7 +20,8 @@ import {
   Heart,
   Settings,
   Info,
-  Upload
+  Upload,
+  CameraIcon
 } from 'lucide-react';
 
 interface ARProduct {
@@ -277,13 +279,49 @@ const ARTryOn: React.FC = () => {
     toast({ description: `Added ${selectedProduct?.title} (${selectedSize}) to bag` });
   };
 
+  const tutorialSteps = [
+    {
+      title: "Welcome to AR Try-On! 📸",
+      description: "Experience the future of fashion shopping! Try on clothes virtually using your camera or by uploading photos.",
+      icon: <CameraIcon className="h-5 w-5 text-primary" />,
+      action: "Choose a product to get started"
+    },
+    {
+      title: "Step 1: Camera Permission",
+      description: "For the best experience, allow camera access. If you're on mobile, make sure you're using HTTPS for camera functionality.",
+      icon: <Camera className="h-5 w-5 text-green-500" />,
+      action: "Click 'Use Live Camera' when ready"
+    },
+    {
+      title: "Step 2: Choose Your Product", 
+      description: "Select any AR-ready product, pick your size and color preferences, then see how it looks on you in real-time!",
+      icon: <Sparkles className="h-5 w-5 text-purple-500" />,
+      action: "Select a product from the left panel"
+    },
+    {
+      title: "Step 3: Save & Share",
+      description: "Love how you look? Capture photos and share them, or add items directly to your wishlist or bag!",
+      icon: <Heart className="h-5 w-5 text-red-500" />,
+      action: "Use the capture and share buttons during AR session"
+    }
+  ];
+
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto max-w-6xl p-4">
+        {/* Navigation */}
+        <ShopperNavigation />
+        
+        {/* Tutorial */}
+        <TutorialTooltip
+          tutorialKey="ar-tryOn"
+          steps={tutorialSteps}
+          autoShow={true}
+        />
+
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <BackButton />
             <div className="flex items-center gap-3">
               <h1 className="text-2xl font-bold">AR Try-On</h1>
               <Badge variant="secondary" className="gap-1">
@@ -292,10 +330,16 @@ const ARTryOn: React.FC = () => {
               </Badge>
             </div>
           </div>
-          <Button variant="outline" size="sm">
-            <Info className="h-4 w-4 mr-2" />
-            How it works
-          </Button>
+          <TutorialTooltip
+            tutorialKey="ar-tryOn"
+            steps={tutorialSteps}
+            trigger={
+              <Button variant="outline" size="sm">
+                <Info className="h-4 w-4 mr-2" />
+                How it works
+              </Button>
+            }
+          />
         </div>
 
         <div className="grid lg:grid-cols-3 gap-6">
@@ -392,7 +436,7 @@ const ARTryOn: React.FC = () => {
                   <div className="space-y-2">
                     <Button onClick={handleAddToBag} className="w-full" disabled={!selectedSize}>
                       <ShoppingBag className="h-4 w-4 mr-2" />
-                      Add to Bag - {formatPrice(selectedProduct.price)}
+                      Buy Now - {formatPrice(selectedProduct.price)}
                     </Button>
                     <Button variant="outline" onClick={handleAddToWishlist} className="w-full">
                       <Heart className="h-4 w-4 mr-2" />
