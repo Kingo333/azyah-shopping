@@ -10,12 +10,16 @@ import {
   Sparkles,
   ShoppingBag,
   ArrowLeft,
-  Home
+  Home,
+  User,
+  Menu
 } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const ShopperNavigation: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const isMobile = useIsMobile();
 
   const tabs = [
     {
@@ -26,7 +30,7 @@ const ShopperNavigation: React.FC = () => {
     },
     {
       id: 'swipe',
-      label: 'Start Swiping',
+      label: 'Swipe',
       icon: Heart,
       path: '/swipe'
     },
@@ -45,21 +49,78 @@ const ShopperNavigation: React.FC = () => {
     },
     {
       id: 'fashion-feed',
-      label: 'Fashion Feed',
-      icon: Sparkles,
+      label: 'Feed',
+      icon: Camera,
       path: '/fashion-feed'
+    },
+    {
+      id: 'wishlist',
+      label: 'Wishlist',
+      icon: Heart,
+      path: '/wishlist'
+    },
+    {
+      id: 'cart',
+      label: 'Cart',
+      icon: ShoppingBag,
+      path: '/cart'
     }
   ];
 
-  const isActive = (path: string) => {
-    return location.pathname === path;
-  };
+  const isActive = (path: string) => location.pathname === path;
 
+  // Mobile Bottom Navigation
+  if (isMobile) {
+    return (
+      <nav className="nav-mobile">
+        <div className="flex items-center justify-around max-w-md mx-auto">
+          {tabs.slice(0, 5).map((tab) => {
+            const Icon = tab.icon;
+            const active = isActive(tab.path);
+            
+            return (
+              <button
+                key={tab.id}
+                onClick={() => navigate(tab.path)}
+                className={`flex flex-col items-center justify-center py-2 px-1 rounded-lg transition-all duration-200 ${
+                  active 
+                    ? 'text-primary bg-primary/10' 
+                    : 'text-muted-foreground hover:text-primary hover:bg-primary/5'
+                }`}
+              >
+                <Icon className="h-5 w-5 mb-1" />
+                <span className="text-xs font-medium">{tab.label}</span>
+                {tab.badge && (
+                  <Badge variant="secondary" className="text-xs mt-1 px-1 py-0 h-4">
+                    {tab.badge}
+                  </Badge>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </nav>
+    );
+  }
+
+  // Desktop Navigation
   return (
-    <Card className="sticky top-4 z-40 bg-background/95 backdrop-blur-sm border-0 shadow-lg">
-      <CardContent className="p-3">
+    <Card className="card-luxury mb-6">
+      <CardContent className="p-6">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-1">
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => navigate('/dashboard')}
+              className="hover:bg-primary/10"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Dashboard
+            </Button>
+          </div>
+
+          <div className="flex items-center gap-2 overflow-x-auto">
             {tabs.map((tab) => {
               const Icon = tab.icon;
               const active = isActive(tab.path);
@@ -67,30 +128,40 @@ const ShopperNavigation: React.FC = () => {
               return (
                 <Button
                   key={tab.id}
-                  variant={active ? "default" : "ghost"}
+                  variant={active ? "default" : "outline"}
                   size="sm"
                   onClick={() => navigate(tab.path)}
-                  className={`relative flex items-center gap-2 transition-all duration-200 ${
+                  className={`flex items-center gap-2 whitespace-nowrap transition-all duration-300 ${
                     active 
-                      ? 'bg-primary text-primary-foreground shadow-sm' 
-                      : 'hover:bg-muted/50'
+                      ? 'bg-gradient-to-r from-primary to-primary-glow shadow-glow' 
+                      : 'hover:bg-primary/10 hover:scale-105'
                   }`}
                 >
                   <Icon className="h-4 w-4" />
-                  <span className="hidden sm:inline text-xs font-medium">
-                    {tab.label}
-                  </span>
+                  <span className="hidden sm:inline">{tab.label}</span>
                   {tab.badge && (
-                    <Badge variant="secondary" className="ml-1 text-xs">
+                    <Badge 
+                      variant={active ? "secondary" : "outline"} 
+                      className="text-xs ml-1"
+                    >
                       {tab.badge}
                     </Badge>
-                  )}
-                  {active && (
-                    <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-primary-foreground rounded-full" />
                   )}
                 </Button>
               );
             })}
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => navigate('/profile-settings')}
+              className="hover:bg-primary/10"
+            >
+              <User className="h-4 w-4" />
+              <span className="hidden sm:inline ml-2">Profile</span>
+            </Button>
           </div>
         </div>
       </CardContent>

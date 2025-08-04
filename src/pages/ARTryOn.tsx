@@ -335,10 +335,13 @@ const ARTryOn: React.FC = () => {
         </div>
 
         <div className="grid lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-1 space-y-4">
-            <Card>
+          <div className="lg:col-span-1 space-y-4 order-2 lg:order-1">
+            <Card className="card-luxury">
               <CardHeader>
-                <CardTitle className="text-lg">Your Wishlist Products</CardTitle>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Heart className="h-5 w-5 text-primary" />
+                  Your Wishlist Products
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 {wishlistLoading ? (
@@ -413,9 +416,12 @@ const ARTryOn: React.FC = () => {
 
             {/* Product Customization */}
             {selectedProduct && (
-              <Card>
+              <Card className="card-luxury">
                 <CardHeader>
-                  <CardTitle className="text-lg">Customize</CardTitle>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Settings className="h-5 w-5 text-accent" />
+                    Customize
+                  </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {/* Size Selection */}
@@ -428,6 +434,7 @@ const ARTryOn: React.FC = () => {
                           variant={selectedSize === size ? "default" : "outline"}
                           size="sm"
                           onClick={() => setSelectedSize(size)}
+                          className={selectedSize === size ? "btn-luxury" : "hover:bg-primary/10"}
                         >
                           {size}
                         </Button>
@@ -445,6 +452,7 @@ const ARTryOn: React.FC = () => {
                           variant={selectedColor === color ? "default" : "outline"}
                           size="sm"
                           onClick={() => setSelectedColor(color)}
+                          className={selectedColor === color ? "btn-luxury" : "hover:bg-primary/10"}
                         >
                           {color}
                         </Button>
@@ -456,11 +464,19 @@ const ARTryOn: React.FC = () => {
 
                   {/* Actions */}
                   <div className="space-y-2">
-                    <Button onClick={handleAddToBag} className="w-full" disabled={!selectedSize}>
+                    <Button 
+                      onClick={handleAddToBag} 
+                      className="btn-luxury w-full" 
+                      disabled={!selectedSize}
+                    >
                       <ShoppingBag className="h-4 w-4 mr-2" />
                       Buy Now - {formatPrice(selectedProduct.price)}
                     </Button>
-                    <Button variant="outline" onClick={handleAddToWishlist} className="w-full">
+                    <Button 
+                      variant="outline" 
+                      onClick={handleAddToWishlist} 
+                      className="w-full hover:bg-primary/10"
+                    >
                       <Heart className="h-4 w-4 mr-2" />
                       Add to Wishlist
                     </Button>
@@ -596,7 +612,7 @@ const ARTryOn: React.FC = () => {
 
         {/* Trending Styles Section - Full Width */}
         <div className="mt-8">
-          <Card>
+          <Card className="card-luxury">
             <CardHeader>
               <CardTitle className="text-xl flex items-center gap-2">
                 <TrendingUp className="h-5 w-5 text-blue-500" />

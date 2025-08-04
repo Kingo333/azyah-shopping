@@ -145,39 +145,72 @@ const RoleDashboard: React.FC = () => {
       </div>
 
       {/* Quick Actions */}
-      <Card>
+      <Card className="card-luxury">
         <CardHeader>
-          <CardTitle>Quick Actions</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-primary" />
+            Quick Actions
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
-            <Button onClick={() => navigate('/swipe')} className="h-20 flex-col gap-2">
-              <Heart className="h-6 w-6" />
-              <span>Swipe Deck</span>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3 sm:gap-4">
+            <Button 
+              onClick={() => navigate('/swipe')} 
+              className="btn-luxury h-16 sm:h-20 flex-col gap-1 sm:gap-2"
+            >
+              <Heart className="h-5 w-5 sm:h-6 sm:w-6" />
+              <span className="text-xs sm:text-sm">Swipe</span>
             </Button>
-            <Button onClick={() => navigate('/fashion-feed')} variant="outline" className="h-20 flex-col gap-2">
-              <Sparkles className="h-6 w-6" />
-              <span>Fashion Feed</span>
+            <Button 
+              onClick={() => navigate('/fashion-feed')} 
+              variant="outline" 
+              className="h-16 sm:h-20 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300"
+            >
+              <Sparkles className="h-5 w-5 sm:h-6 sm:w-6" />
+              <span className="text-xs sm:text-sm">Feed</span>
             </Button>
-            <Button onClick={() => navigate('/explore')} variant="outline" className="h-20 flex-col gap-2">
-              <Search className="h-6 w-6" />
-              <span>Explore</span>
+            <Button 
+              onClick={() => navigate('/explore')} 
+              variant="outline" 
+              className="h-16 sm:h-20 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300"
+            >
+              <Search className="h-5 w-5 sm:h-6 sm:w-6" />
+              <span className="text-xs sm:text-sm">Explore</span>
             </Button>
-            <Button onClick={() => navigate('/ar-tryOn')} variant="outline" className="h-20 flex-col gap-2">
-              <Camera className="h-6 w-6" />
-              <span>AR Try-On</span>
+            <Button 
+              onClick={() => navigate('/ar-tryOn')} 
+              variant="outline" 
+              className="h-16 sm:h-20 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300 relative"
+            >
+              <Camera className="h-5 w-5 sm:h-6 sm:w-6" />
+              <span className="text-xs sm:text-sm">AR Try-On</span>
+              <Badge variant="secondary" className="absolute -top-1 -right-1 text-xs px-1 py-0 h-4">
+                Beta
+              </Badge>
             </Button>
-            <Button onClick={() => navigate('/likes')} variant="outline" className="h-20 flex-col gap-2">
-              <Heart className="h-6 w-6" />
-              <span>Likes</span>
+            <Button 
+              onClick={() => navigate('/likes')} 
+              variant="outline" 
+              className="h-16 sm:h-20 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300"
+            >
+              <Heart className="h-5 w-5 sm:h-6 sm:w-6" />
+              <span className="text-xs sm:text-sm">Likes</span>
             </Button>
-            <Button onClick={() => navigate('/wishlist')} variant="outline" className="h-20 flex-col gap-2">
-              <ShoppingBag className="h-6 w-6" />
-              <span>Wishlist</span>
+            <Button 
+              onClick={() => navigate('/wishlist')} 
+              variant="outline" 
+              className="h-16 sm:h-20 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300"
+            >
+              <ShoppingBag className="h-5 w-5 sm:h-6 sm:w-6" />
+              <span className="text-xs sm:text-sm">Wishlist</span>
             </Button>
-            <Button onClick={() => navigate('/image-search')} variant="outline" className="h-20 flex-col gap-2">
-              <Camera className="h-6 w-6" />
-              <span>Image Search</span>
+            <Button 
+              onClick={() => navigate('/image-search')} 
+              variant="outline" 
+              className="h-16 sm:h-20 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300"
+            >
+              <Camera className="h-5 w-5 sm:h-6 sm:w-6" />
+              <span className="text-xs sm:text-sm">Search</span>
             </Button>
           </div>
         </CardContent>
@@ -399,31 +432,42 @@ const RoleDashboard: React.FC = () => {
       </Card>
     </div>;
   return <ErrorBoundary>
-      <div className="min-h-screen bg-background">
-        <div className="container mx-auto max-w-6xl p-4">
+      <div className="min-h-screen bg-background pb-20 sm:pb-0">
+        <div className="container-responsive mx-auto max-w-6xl p-4">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
           <div>
-            <h1 className="text-2xl font-bold">Dashboard</h1>
-            <p className="text-muted-foreground">Welcome back, {userProfile.name}</p>
+            <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
+              Dashboard
+            </h1>
+            <p className="text-muted-foreground text-sm sm:text-base">Welcome back, {userProfile.name}</p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 flex-wrap">
             <Badge variant="secondary" className="capitalize">
               {userProfile.role}
             </Badge>
             
-            
             {/* Profile & Actions */}
-            <Button variant="outline" size="sm" onClick={() => navigate('/profile-settings')}>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => navigate('/profile-settings')}
+              className="btn-luxury hidden sm:flex"
+            >
               <User className="h-4 w-4 mr-2" />
               Profile
             </Button>
             
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" className="hover:bg-primary/10">
               <Bell className="h-4 w-4" />
             </Button>
             
-            <Button variant="outline" size="sm" onClick={signOut}>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={signOut}
+              className="hidden sm:flex hover:bg-destructive/10"
+            >
               <LogOut className="h-4 w-4 mr-2" />
               Sign Out
             </Button>

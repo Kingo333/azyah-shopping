@@ -271,8 +271,8 @@ const FashionFeed: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto max-w-2xl p-4">
+    <div className="min-h-screen bg-background pb-20 sm:pb-0">
+      <div className="container-responsive mx-auto max-w-2xl p-4">
         {/* Navigation */}
         <ShopperNavigation />
         
@@ -285,11 +285,13 @@ const FashionFeed: React.FC = () => {
 
         {/* Header */}
         <div className="sticky top-20 z-10 bg-background/95 backdrop-blur-sm pb-4 mb-6">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-4">
             <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold">Fashion Feed</h1>
+              <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
+                Fashion Feed
+              </h1>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <Button 
                 variant={activeFilter === 'trending' ? "default" : "outline"} 
                 size="sm"
