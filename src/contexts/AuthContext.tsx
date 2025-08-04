@@ -93,6 +93,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         description: error.message,
         variant: "destructive"
       });
+    } else {
+      // Redirect to landing page after sign out
+      window.location.href = '/';
     }
   };
 

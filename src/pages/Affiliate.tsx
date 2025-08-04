@@ -1,266 +1,186 @@
-import { useState } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useParams } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { BackButton } from '@/components/ui/back-button';
-import { Copy, Share2, TrendingUp, DollarSign, Users, Eye } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { ExternalLink, Calendar, Heart } from 'lucide-react';
+
+interface AffiliateLink {
+  id: string;
+  brand_name: string;
+  description: string | null;
+  affiliate_url: string;
+  expiry_date: string | null;
+  clicks: number;
+  orders: number;
+}
+
+interface UserProfile {
+  id: string;
+  name: string | null;
+  bio: string | null;
+  avatar_url: string | null;
+}
 
 const Affiliate = () => {
-  const { user } = useAuth();
-  const { toast } = useToast();
-  const [isGeneratingLink, setIsGeneratingLink] = useState(false);
-  const [affiliateCode, setAffiliateCode] = useState('');
+  const { userId } = useParams();
+  const [links, setLinks] = useState<AffiliateLink[]>([]);
+  const [user, setUser] = useState<UserProfile | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const generateAffiliateLink = async () => {
-    if (!user) return;
-    
-    setIsGeneratingLink(true);
+  useEffect(() => {
+    if (userId) {
+      fetchPublicAffiliateLinks();
+    }
+  }, [userId]);
+
+  const fetchPublicAffiliateLinks = async () => {
     try {
-      const code = `${user.email?.split('@')[0]}-${Math.random().toString(36).substr(2, 6)}`;
-      
-      const { error } = await supabase
-        .from('affiliate_links')
-        .insert({
-          user_id: user.id,
-          code: code,
-          active: true
-        });
+      // Fetch user profile
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('id, name, bio, avatar_url')
+        .eq('id', userId)
+        .single();
 
-      if (error) throw error;
-      
-      setAffiliateCode(code);
-      toast({
-        title: "Affiliate link generated!",
-        description: "Your unique referral code has been created.",
-      });
+      if (userError) throw userError;
+      setUser(userData);
+
+      // Fetch public affiliate links
+      const { data: linksData, error: linksError } = await supabase
+        .from('affiliate_links')
+        .select('id, brand_name, description, affiliate_url, expiry_date, clicks, orders')
+        .eq('user_id', userId)
+        .eq('is_public', true)
+        .eq('active', true)
+        .order('created_at', { ascending: false });
+
+      if (linksError) throw linksError;
+      setLinks(linksData || []);
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to generate affiliate link. Please try again.",
-        variant: "destructive",
-      });
+      console.error('Error fetching affiliate data:', error);
     } finally {
-      setIsGeneratingLink(false);
+      setLoading(false);
     }
   };
 
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    toast({
-      title: "Copied!",
-      description: "Link copied to clipboard.",
-    });
+  const handleLinkClick = async (linkId: string, url: string) => {
+    // Track click
+    try {
+      await supabase
+        .from('affiliate_links')
+        .update({ clicks: links.find(l => l.id === linkId)?.clicks + 1 || 1 })
+        .eq('id', linkId);
+    } catch (error) {
+      console.error('Error tracking click:', error);
+    }
+    
+    // Open link
+    window.open(url, '_blank');
   };
 
-  const affiliateUrl = affiliateCode ? `https://azyah.app?ref=${affiliateCode}` : '';
+  if (loading) {
+    return (
+      <div className="container max-w-4xl mx-auto px-4 py-8">
+        <div className="text-center">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="container max-w-4xl mx-auto px-4 py-8">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">User Not Found</h1>
+          <p className="text-muted-foreground">This affiliate page doesn't exist.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-background p-4">
-      <div className="mx-auto max-w-6xl space-y-6">
-        <div className="text-center space-y-2">
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <BackButton />
-            <h1 className="text-3xl font-bold text-foreground">Affiliate Center</h1>
+    <div className="container max-w-4xl mx-auto px-4 py-8">
+      {/* User Profile Header */}
+      <Card className="mb-8">
+        <CardContent className="p-6">
+          <div className="flex items-center gap-4 mb-4">
+            <Avatar className="h-16 w-16">
+              <AvatarFallback className="text-lg">
+                {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <h1 className="text-2xl font-bold">{user.name || 'Affiliate Partner'}</h1>
+              <p className="text-muted-foreground">Fashion Affiliate</p>
+            </div>
           </div>
-          <p className="text-muted-foreground">
-            Share your love for fashion and earn commissions on every sale
-          </p>
-        </div>
+          {user.bio && (
+            <p className="text-muted-foreground">{user.bio}</p>
+          )}
+        </CardContent>
+      </Card>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Earnings</CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">$0.00</div>
-              <p className="text-xs text-muted-foreground">+0% from last month</p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Clicks</CardTitle>
-              <Eye className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">0</div>
-              <p className="text-xs text-muted-foreground">+0% from last month</p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Conversions</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">0</div>
-              <p className="text-xs text-muted-foreground">0% conversion rate</p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Commission Rate</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">5%</div>
-              <p className="text-xs text-muted-foreground">Standard rate</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Generate Link Section */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Generate Affiliate Link</CardTitle>
-            <CardDescription>
-              Create your unique referral link to start earning commissions
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {!affiliateCode ? (
-              <Button 
-                onClick={generateAffiliateLink} 
-                disabled={isGeneratingLink}
-                className="w-full md:w-auto"
-              >
-                {isGeneratingLink ? 'Generating...' : 'Generate My Affiliate Link'}
-              </Button>
-            ) : (
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="affiliate-link">Your Affiliate Link</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id="affiliate-link"
-                      value={affiliateUrl}
-                      readOnly
-                      className="flex-1"
-                    />
-                    <Button
-                      size="icon"
-                      variant="outline"
-                      onClick={() => copyToClipboard(affiliateUrl)}
-                    >
-                      <Copy className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      size="icon"
-                      variant="outline"
-                      onClick={() => {
-                        if (navigator.share) {
-                          navigator.share({
-                            title: 'Check out Azyah',
-                            url: affiliateUrl
-                          });
-                        }
-                      }}
-                    >
-                      <Share2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
+      {/* Affiliate Links */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Heart className="h-5 w-5" />
+            Recommended Fashion Brands
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {links.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              No public affiliate links available.
+            </div>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2">
+              {links.map((link) => {
+                const isExpired = link.expiry_date && new Date(link.expiry_date) < new Date();
                 
-                <div className="space-y-2">
-                  <Label htmlFor="affiliate-code">Your Affiliate Code</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id="affiliate-code"
-                      value={affiliateCode}
-                      readOnly
-                      className="flex-1"
-                    />
-                    <Button
-                      size="icon"
-                      variant="outline"
-                      onClick={() => copyToClipboard(affiliateCode)}
-                    >
-                      <Copy className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* How It Works */}
-        <Card>
-          <CardHeader>
-            <CardTitle>How It Works</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="text-center space-y-2">
-                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
-                  <Share2 className="h-6 w-6 text-primary" />
-                </div>
-                <h3 className="font-semibold">Share</h3>
-                <p className="text-sm text-muted-foreground">
-                  Share your affiliate link with friends and followers
-                </p>
-              </div>
-              
-              <div className="text-center space-y-2">
-                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
-                  <Users className="h-6 w-6 text-primary" />
-                </div>
-                <h3 className="font-semibold">Shop</h3>
-                <p className="text-sm text-muted-foreground">
-                  They discover and purchase amazing fashion items
-                </p>
-              </div>
-              
-              <div className="text-center space-y-2">
-                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
-                  <DollarSign className="h-6 w-6 text-primary" />
-                </div>
-                <h3 className="font-semibold">Earn</h3>
-                <p className="text-sm text-muted-foreground">
-                  You earn 5% commission on every successful purchase
-                </p>
-              </div>
+                return (
+                  <Card key={link.id} className={`transition-all duration-200 hover:shadow-md ${isExpired ? 'opacity-50' : ''}`}>
+                    <CardContent className="p-4">
+                      <div className="flex justify-between items-start mb-3">
+                        <h3 className="font-semibold text-lg">{link.brand_name}</h3>
+                        {isExpired && (
+                          <Badge variant="destructive">Expired</Badge>
+                        )}
+                      </div>
+                      
+                      {link.description && (
+                        <p className="text-muted-foreground text-sm mb-3">{link.description}</p>
+                      )}
+                      
+                      <div className="flex items-center gap-4 text-xs text-muted-foreground mb-4">
+                        <span>{link.clicks} clicks</span>
+                        <span>{link.orders} orders</span>
+                        {link.expiry_date && (
+                          <span className="flex items-center gap-1">
+                            <Calendar className="h-3 w-3" />
+                            Valid until {new Date(link.expiry_date).toLocaleDateString()}
+                          </span>
+                        )}
+                      </div>
+                      
+                      <Button 
+                        className="w-full"
+                        onClick={() => handleLinkClick(link.id, link.affiliate_url)}
+                        disabled={isExpired}
+                      >
+                        <ExternalLink className="h-4 w-4 mr-2" />
+                        Shop {link.brand_name}
+                      </Button>
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
-          </CardContent>
-        </Card>
-
-        {/* Tips */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Pro Tips</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Badge variant="secondary">Social Media</Badge>
-                <p className="text-sm">Share your link on Instagram stories and posts with fashion content</p>
-              </div>
-              <div className="space-y-2">
-                <Badge variant="secondary">Content Creation</Badge>
-                <p className="text-sm">Create styling videos and include your affiliate link in descriptions</p>
-              </div>
-              <div className="space-y-2">
-                <Badge variant="secondary">Personal Network</Badge>
-                <p className="text-sm">Share with friends who love fashion and shopping</p>
-              </div>
-              <div className="space-y-2">
-                <Badge variant="secondary">Seasonal Trends</Badge>
-                <p className="text-sm">Promote trending items during peak shopping seasons</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };
