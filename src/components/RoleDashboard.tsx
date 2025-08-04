@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
-import FeedComponent from '@/components/FeedComponent';
 import GlobalSearch from '@/components/GlobalSearch';
 import { 
   Heart, 
@@ -229,16 +228,34 @@ const RoleDashboard: React.FC = () => {
               <DollarSign className="h-6 w-6" />
               <span>Affiliate</span>
             </Button>
-            <Button onClick={() => navigate('/landing')} variant="outline" className="h-20 flex-col gap-2">
-              <Globe className="h-6 w-6" />
-              <span>Landing</span>
+            <Button onClick={() => navigate('/fashion-feed')} variant="outline" className="h-20 flex-col gap-2">
+              <Sparkles className="h-6 w-6" />
+              <span>Fashion Feed</span>
             </Button>
           </div>
         </CardContent>
       </Card>
 
-      {/* Feed Section */}
-      <FeedComponent limit={5} showHeader />
+      {/* Global Search */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Search className="h-5 w-5" />
+            Discover Products, Brands & Styles
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Search across products, brands, and styles to discover your next fashion find.
+            </p>
+            <Button onClick={() => setSearchOpen(true)} variant="outline" className="w-full">
+              <Search className="h-4 w-4 mr-2" />
+              Open Global Search
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Continue Swiping CTA */}
       <Card className="sticky bottom-4 bg-gradient-to-r from-primary/10 to-accent/10 border-primary/20">

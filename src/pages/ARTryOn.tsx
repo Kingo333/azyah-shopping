@@ -5,6 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { BackButton } from '@/components/ui/back-button';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   Camera, 
   RotateCcw, 
@@ -16,7 +18,8 @@ import {
   ShoppingBag,
   Heart,
   Settings,
-  Info
+  Info,
+  Upload
 } from 'lucide-react';
 
 interface ARProduct {
@@ -33,14 +36,18 @@ interface ARProduct {
 }
 
 const ARTryOn: React.FC = () => {
+  const { user } = useAuth();
   const [isARActive, setIsARActive] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<ARProduct | null>(null);
   const [selectedSize, setSelectedSize] = useState<string>('');
   const [selectedColor, setSelectedColor] = useState<string>('');
   const [cameraPermission, setCameraPermission] = useState<'granted' | 'denied' | 'pending'>('pending');
   const [isLoading, setIsLoading] = useState(false);
+  const [hasHttpsError, setHasHttpsError] = useState(false);
+  const [fallbackMode, setFallbackMode] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   // Mock AR-ready products
@@ -93,9 +100,38 @@ const ARTryOn: React.FC = () => {
     }
   }, []);
 
+  const logARError = async (errorType: string, errorMessage: string) => {
+    if (!user) return;
+    
+    try {
+      await supabase.from('events').insert({
+        user_id: user.id,
+        event_type: 'ar_error',
+        event_data: {
+          error_type: errorType,
+          error_message: errorMessage,
+          user_agent: navigator.userAgent,
+          is_mobile: /Mobi|Android/i.test(navigator.userAgent),
+          is_https: window.location.protocol === 'https:',
+          timestamp: new Date().toISOString()
+        }
+      });
+    } catch (error) {
+      console.error('Failed to log AR error:', error);
+    }
+  };
+
   const requestCameraAccess = async () => {
     try {
       setIsLoading(true);
+      
+      // Check for HTTPS
+      if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost') {
+        setHasHttpsError(true);
+        await logARError('https_required', 'Camera access requires HTTPS');
+        throw new Error('HTTPS required for camera access');
+      }
+      
       const stream = await navigator.mediaDevices.getUserMedia({ 
         video: { 
           facingMode: 'user',
@@ -112,12 +148,33 @@ const ARTryOn: React.FC = () => {
       setCameraPermission('granted');
       setIsARActive(true);
       toast({ description: "Camera access granted! AR try-on is now active." });
-    } catch (error) {
+    } catch (error: any) {
       setCameraPermission('denied');
-      toast({ 
-        description: "Camera access denied. Please enable camera permissions to use AR try-on.",
-        variant: "destructive"
-      });
+      await logARError('camera_access_denied', error.message);
+      
+      if (error.name === 'NotAllowedError') {
+        toast({ 
+          description: "Camera access denied. Try uploading a photo instead!",
+          variant: "destructive"
+        });
+      } else if (error.name === 'NotFoundError') {
+        toast({ 
+          description: "No camera found. Try uploading a photo instead!",
+          variant: "destructive"
+        });
+      } else if (hasHttpsError) {
+        toast({ 
+          description: "HTTPS required for camera. Try uploading a photo instead!",
+          variant: "destructive"
+        });
+      } else {
+        toast({ 
+          description: "Camera not available. Try uploading a photo instead!",
+          variant: "destructive"
+        });
+      }
+      
+      setFallbackMode(true);
     } finally {
       setIsLoading(false);
     }
@@ -198,6 +255,18 @@ const ARTryOn: React.FC = () => {
 
   const handleAddToWishlist = () => {
     toast({ description: `Added ${selectedProduct?.title} to wishlist` });
+  };
+
+  const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      // Here you would normally process the uploaded photo for AR try-on
+      toast({ description: "Photo uploaded! AR processing would happen here." });
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleAddToBag = () => {
@@ -343,32 +412,62 @@ const ARTryOn: React.FC = () => {
                   {!isARActive ? (
                     // Camera Permission / Start Screen
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="text-center space-y-4">
+                      <div className="text-center space-y-4 max-w-md mx-auto p-6">
                         <div className="w-20 h-20 mx-auto bg-primary/10 rounded-full flex items-center justify-center">
                           <Camera className="h-10 w-10 text-primary" />
                         </div>
                         <div>
                           <h3 className="text-lg font-semibold mb-2">Start AR Try-On</h3>
                           <p className="text-sm text-muted-foreground mb-4">
-                            Allow camera access to see how the {selectedProduct?.title} looks on you
+                            Use your camera or upload a photo to see how the {selectedProduct?.title} looks on you
                           </p>
-                          <Button 
-                            onClick={requestCameraAccess}
-                            disabled={isLoading}
-                            className="gap-2"
-                          >
-                            {isLoading ? (
-                              <>
-                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                Starting Camera...
-                              </>
-                            ) : (
-                              <>
-                                <Camera className="h-4 w-4" />
-                                Start AR Experience
-                              </>
+                          
+                          {hasHttpsError && (
+                            <div className="p-3 bg-yellow-100 rounded-lg mb-4">
+                              <p className="text-xs text-yellow-800">
+                                Live camera requires HTTPS. Try uploading a photo instead!
+                              </p>
+                            </div>
+                          )}
+                          
+                          <div className="space-y-3">
+                            {!fallbackMode && (
+                              <Button 
+                                onClick={requestCameraAccess}
+                                disabled={isLoading}
+                                className="gap-2 w-full"
+                              >
+                                {isLoading ? (
+                                  <>
+                                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                    Starting Camera...
+                                  </>
+                                ) : (
+                                  <>
+                                    <Camera className="h-4 w-4" />
+                                    Use Live Camera
+                                  </>
+                                )}
+                              </Button>
                             )}
-                          </Button>
+                            
+                            <Button 
+                              variant="outline"
+                              onClick={() => fileInputRef.current?.click()}
+                              className="gap-2 w-full"
+                            >
+                              <Upload className="h-4 w-4" />
+                              Upload Photo Instead
+                            </Button>
+                            
+                            <input
+                              ref={fileInputRef}
+                              type="file"
+                              accept="image/*"
+                              onChange={handlePhotoUpload}
+                              className="hidden"
+                            />
+                          </div>
                         </div>
                       </div>
                     </div>

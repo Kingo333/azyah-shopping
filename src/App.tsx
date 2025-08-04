@@ -9,6 +9,7 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Swipe from "./pages/Swipe";
 import Feed from "./pages/Feed";
+import FashionFeed from "./pages/FashionFeed";
 import Explore from "./pages/Explore";
 import Wishlist from "./pages/Wishlist";
 import ShoppingCart from "./pages/ShoppingCart";
@@ -19,6 +20,7 @@ import Affiliate from "./pages/Affiliate";
 import Forum from "./pages/Forum";
 import Closets from "./pages/Closets";
 import Landing from "./pages/Landing";
+import ProfileSettings from "./pages/ProfileSettings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -31,9 +33,9 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <Routes>
-            <Route path="/landing" element={<Landing />} />
+            <Route path="/" element={<Landing />} />
             <Route path="/auth" element={<Auth />} />
-            <Route path="/" element={
+            <Route path="/dashboard" element={
               <ProtectedRoute>
                 <Index />
               </ProtectedRoute>
@@ -66,6 +68,16 @@ const App = () => (
             <Route path="/feed" element={
               <ProtectedRoute roles={['shopper', 'admin']}>
                 <Feed />
+              </ProtectedRoute>
+            } />
+            <Route path="/fashion-feed" element={
+              <ProtectedRoute roles={['shopper', 'admin']}>
+                <FashionFeed />
+              </ProtectedRoute>
+            } />
+            <Route path="/profile-settings" element={
+              <ProtectedRoute>
+                <ProfileSettings />
               </ProtectedRoute>
             } />
             <Route path="/ar-tryOn" element={

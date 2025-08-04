@@ -61,7 +61,7 @@ const ProtectedRoute = ({ children, roles }: ProtectedRouteProps) => {
   }
 
   if (!user) {
-    return <Navigate to="/auth" replace />;
+    return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 
   // Role-based access control

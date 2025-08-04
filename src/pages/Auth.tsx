@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Navigate, useSearchParams } from 'react-router-dom';
+import { Navigate, useSearchParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,6 +11,7 @@ import { Loader2, Sparkles, Heart, Star, ShoppingBag, Store, Building2 } from 'l
 const Auth = () => {
   const { user, signUp, signIn, loading } = useAuth();
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('signin');
   const [selectedRole, setSelectedRole] = useState<string>('');
@@ -26,7 +27,7 @@ const Auth = () => {
 
   // Redirect if already authenticated
   if (user && !loading) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/dashboard" replace />;
   }
 
   const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -37,7 +38,10 @@ const Auth = () => {
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
 
-    await signIn(email, password);
+    const { error } = await signIn(email, password);
+    if (!error) {
+      navigate('/dashboard');
+    }
     setIsLoading(false);
   };
 
@@ -55,7 +59,10 @@ const Auth = () => {
       return;
     }
 
-    await signUp(email, password, { name, role: selectedRole });
+    const { error } = await signUp(email, password, { name, role: selectedRole });
+    if (!error) {
+      navigate('/dashboard');
+    }
     setIsLoading(false);
   };
 

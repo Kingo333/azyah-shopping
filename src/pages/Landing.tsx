@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   ArrowRight,
   Heart,
@@ -19,10 +20,18 @@ import { Button } from "@/components/ui/button";
 
 export default function Landing() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => setIsVisible(true), []);
+
+  // Redirect authenticated users to dashboard
+  useEffect(() => {
+    if (user) {
+      navigate('/dashboard');
+    }
+  }, [user, navigate]);
 
   const scrollToSection = (href: string) => {
     const element = document.querySelector(href);
