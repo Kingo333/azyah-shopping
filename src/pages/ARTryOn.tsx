@@ -411,19 +411,6 @@ const ARTryOn: React.FC = () => {
               </CardContent>
             </Card>
 
-            {/* Trending Styles Section */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5 text-blue-500" />
-                  Trending Styles
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <TrendingStyles limit={4} showMore={true} />
-              </CardContent>
-            </Card>
-
             {/* Product Customization */}
             {selectedProduct && (
               <Card>
@@ -605,6 +592,21 @@ const ARTryOn: React.FC = () => {
               </CardContent>
             </Card>
           </div>
+        </div>
+
+        {/* Trending Styles Section - Full Width */}
+        <div className="mt-8">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-xl flex items-center gap-2">
+                <TrendingUp className="h-5 w-5 text-blue-500" />
+                Trending Styles
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <TrendingStyles limit={6} showMore={true} />
+            </CardContent>
+          </Card>
         </div>
 
         {/* Hidden canvas for photo capture */}
