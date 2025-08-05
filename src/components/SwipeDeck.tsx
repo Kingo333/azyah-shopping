@@ -7,7 +7,14 @@ import SwipeAnalytics from '@/utils/swipeAnalytics';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Heart, X, Bookmark, Camera, Sparkles, Info } from 'lucide-react';
+import { 
+  Heart, 
+  X, 
+  Bookmark, 
+  Camera, 
+  Sparkles,
+  Info
+} from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { ProductDetailModal } from '@/components/ProductDetailModal';
@@ -20,11 +27,11 @@ interface SwipeDeckProps {
   searchQuery?: string;
 }
 
-const SwipeDeck = ({
-  filter = 'all',
-  subcategory = '',
-  priceRange = { min: 0, max: 1000 },
-  searchQuery = ''
+const SwipeDeck = ({ 
+  filter = 'all', 
+  subcategory = '', 
+  priceRange = { min: 0, max: 1000 }, 
+  searchQuery = '' 
 }: SwipeDeckProps) => {
   const { user } = useAuth();
   const { data: allProducts, isLoading } = useProducts({ limit: 50 });
@@ -40,187 +47,151 @@ const SwipeDeck = ({
     if (!allProducts) return null;
     let filtered = allProducts;
     if (filter && filter !== 'all') {
-      filtered = filtered.filter(p => p.title.toLowerCase().includes(filter.toLowerCase()));
+      filtered = filtered.filter(product => 
+        product.title.toLowerCase().includes(filter.toLowerCase())
+      );
     }
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(
-        p => p.title.toLowerCase().includes(query) || p.brand?.name.toLowerCase().includes(query)
+      filtered = filtered.filter(product => 
+        product.title.toLowerCase().includes(query) ||
+        product.brand?.name.toLowerCase().includes(query)
       );
     }
     if (priceRange) {
-      filtered = filtered.filter(p => {
-        const price = p.price_cents / 100;
+      filtered = filtered.filter(product => {
+        const price = product.price_cents / 100;
         return price >= priceRange.min && price <= priceRange.max;
       });
     }
     return SwipeAnalytics.getPersonalizedRecommendations(user?.id || '', filtered);
-  }, [allProducts, filter, searchQuery, priceRange, user?.id]);
+  }, [allProducts, filter, subcategory, searchQuery, priceRange, user?.id]);
 
   const currentProduct = products?.[currentIndex];
 
   const x = useMotionValue(0);
   const y = useMotionValue(0);
+
+  const [startPosition, setStartPosition] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+
   const rotate = useTransform(x, [-150, 150], [-15, 15]);
   const opacity = useTransform(x, [-150, 0, 150], [0.8, 1, 0.8]);
-
   const loveOpacity = useTransform(x, [50, 100], [0, 1]);
   const passOpacity = useTransform(x, [-100, -50], [1, 0]);
   const wishlistOpacity = useTransform(y, [-100, -50], [1, 0]);
 
   useEffect(() => {
-    if (currentProduct) trackProductView(currentProduct.id, 'swipe_deck');
+    if (currentProduct) {
+      trackProductView(currentProduct.id, 'swipe_deck');
+    }
   }, [currentProduct?.id, trackProductView]);
 
-  const handleSwipe = useCallback(
-    async (direction: 'left' | 'right' | 'up') => {
-      if (!currentProduct || !user || isAnimating) return;
+  const handleTouchStart = useCallback((event: TouchEvent | React.TouchEvent) => {
+    if (isAnimating) return;
+    const touch = event.touches[0];
+    setStartPosition({ x: touch.clientX, y: touch.clientY });
+    setIsDragging(true);
+  }, [isAnimating]);
 
-      setIsAnimating(true);
-      const messages = {
-        left: 'Skipped! 👋',
-        right: 'Loved it! ❤️',
-        up: 'Added to wishlist! ⭐'
-      };
-      toast({ title: messages[direction], description: currentProduct.title, duration: 1500 });
-      if (navigator.vibrate) navigator.vibrate(50);
+  const handleTouchMove = useCallback((event: TouchEvent | React.TouchEvent) => {
+    if (!isDragging || isAnimating) return;
+    event.preventDefault();
+    const touch = event.touches[0];
+    x.set(touch.clientX - startPosition.x);
+    y.set(touch.clientY - startPosition.y);
+  }, [isDragging, isAnimating, startPosition, x, y]);
 
-      try {
-        if (direction === 'right') {
-          await supabase.from('likes').insert({ user_id: user.id, product_id: currentProduct.id });
-        } else if (direction === 'up') {
-          const { data: wishlists } = await supabase
-            .from('wishlists')
-            .select('id')
-            .eq('user_id', user.id)
-            .limit(1);
-          let wishlistId = wishlists?.[0]?.id;
-          if (!wishlistId) {
-            const { data: newWishlist } = await supabase
-              .from('wishlists')
-              .insert({ user_id: user.id, title: 'My Wishlist' })
-              .select('id')
-              .single();
-            wishlistId = newWishlist?.id;
-          }
-          await supabase.from('wishlist_items').insert({ wishlist_id: wishlistId, product_id: currentProduct.id });
+  const handleTouchEnd = useCallback((event: TouchEvent | React.TouchEvent) => {
+    if (!isDragging || isAnimating) return;
+    setIsDragging(false);
+    const touch = event.changedTouches[0];
+    const deltaX = touch.clientX - startPosition.x;
+    const deltaY = touch.clientY - startPosition.y;
+    const threshold = 80;
+    if (Math.abs(deltaX) > threshold) handleSwipe(deltaX > 0 ? 'right' : 'left');
+    else if (deltaY < -threshold) handleSwipe('up');
+    else { x.set(0); y.set(0); }
+  }, [isDragging, isAnimating, startPosition, x, y]);
+
+  const handleDragEnd = useCallback((_: any, info: PanInfo) => {
+    if (isAnimating) return;
+    const threshold = 80;
+    if (Math.abs(info.offset.x) > threshold || Math.abs(info.velocity.x) > 400) {
+      handleSwipe(info.offset.x > 0 ? 'right' : 'left');
+    } else if (info.offset.y < -threshold || info.velocity.y < -400) {
+      handleSwipe('up');
+    } else { x.set(0); y.set(0); }
+  }, [isAnimating, x, y]);
+
+  const handleSwipe = useCallback(async (direction: 'left' | 'right' | 'up') => {
+    if (!currentProduct || !user || isAnimating) return;
+    setIsAnimating(true);
+    const messages = { left: "Skipped! 👋", right: "Loved it! ❤️", up: "Added to wishlist! ⭐" };
+    toast({ title: messages[direction], description: currentProduct.title, duration: 1500 });
+    if (navigator.vibrate) navigator.vibrate(50);
+
+    try {
+      if (direction === 'right') {
+        await supabase.from('likes').insert({ user_id: user.id, product_id: currentProduct.id });
+      } else if (direction === 'up') {
+        let { data: wishlists } = await supabase.from('wishlists').select('id').eq('user_id', user.id).limit(1);
+        let wishlistId = wishlists?.[0]?.id;
+        if (!wishlistId) {
+          const { data: newWishlist } = await supabase.from('wishlists').insert({ user_id: user.id, title: 'My Wishlist' }).select('id').single();
+          wishlistId = newWishlist?.id;
         }
-
-        SwipeAnalytics.trackSwipe(user.id, currentProduct.id, direction, currentProduct);
-        swipeProduct.mutate({ productId: currentProduct.id, action: direction, userId: user.id });
-
-        setTimeout(() => {
-          setCurrentIndex(prev => prev + 1);
-          setIsAnimating(false);
-          x.set(0);
-          y.set(0);
-        }, 300);
-      } catch (error) {
-        console.error('Swipe error:', error);
-        setIsAnimating(false);
-        x.set(0);
-        y.set(0);
+        await supabase.from('wishlist_items').insert({ wishlist_id: wishlistId, product_id: currentProduct.id });
       }
-    },
-    [currentProduct, user, isAnimating, swipeProduct, x, y]
-  );
-
-  const handleDragEnd = useCallback(
-    (_: any, info: PanInfo) => {
-      const threshold = 80;
-      const { offset, velocity } = info;
-      if (Math.abs(offset.x) > threshold || Math.abs(velocity.x) > 400) {
-        handleSwipe(offset.x > 0 ? 'right' : 'left');
-      } else if (offset.y < -threshold || velocity.y < -400) {
-        handleSwipe('up');
-      } else {
-        x.set(0);
-        y.set(0);
-      }
-    },
-    [handleSwipe, x, y]
-  );
+      SwipeAnalytics.trackSwipe(user.id, currentProduct.id, direction, currentProduct);
+      swipeProduct.mutate({ productId: currentProduct.id, action: direction, userId: user.id });
+      setTimeout(() => { setCurrentIndex(prev => prev + 1); setIsAnimating(false); x.set(0); y.set(0); }, 300);
+    } catch (error) {
+      console.error('Swipe error:', error);
+      setIsAnimating(false); x.set(0); y.set(0);
+    }
+  }, [currentProduct, user, isAnimating, swipeProduct, x, y]);
 
   const handleProductDetail = useCallback(() => {
     if (currentProduct) {
       trackProductClick(currentProduct.id, 'swipe_deck_detail');
-      setTimeout(() => setSelectedProduct(currentProduct), 50);
+      setSelectedProduct(currentProduct);
       setIsDetailModalOpen(true);
     }
   }, [currentProduct, trackProductClick]);
 
-  const formatPrice = useCallback(
-    (cents: number, currency: string = 'USD') =>
-      new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(cents / 100),
-    []
-  );
+  const formatPrice = useCallback((cents: number, currency: string = 'USD') =>
+    new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(cents / 100), []);
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-center space-y-4">
-          <div className="animate-spin">
-            <Sparkles className="h-8 w-8 text-primary mx-auto" />
-          </div>
-          <p className="text-muted-foreground">Curating your fashion feed...</p>
-        </div>
-      </div>
-    );
-  }
-
+  if (isLoading) return <div className="flex items-center justify-center h-full"><Sparkles className="animate-spin h-8 w-8 text-primary" /></div>;
   if (!currentProduct || currentIndex >= (products?.length || 0)) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-center space-y-6 max-w-md">
-          <div className="bg-gradient-to-r from-primary to-accent p-4 rounded-full w-20 h-20 mx-auto flex items-center justify-center">
-            <Sparkles className="h-10 w-10 text-white" />
-          </div>
-          <div className="space-y-3">
-            <h2 className="text-2xl font-bold">You're all caught up!</h2>
-            <p className="text-muted-foreground">No more items to discover right now. Check back later for fresh finds!</p>
-          </div>
-        </div>
-      </div>
-    );
+    return <div className="flex items-center justify-center h-full text-center">You're all caught up!</div>;
   }
 
   return (
-    <div className="relative w-full h-full" style={{ touchAction: 'none' }}>
+    <div className="relative w-full h-full">
       <motion.div
         drag={!isAnimating}
         dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
-        dragElastic={0.12}
+        dragElastic={0.1}
         onDragEnd={handleDragEnd}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
         style={{ x, y, rotate, opacity }}
-        animate={isAnimating ? { opacity: 0 } : {}}
-        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-        className="absolute inset-0 cursor-grab active:cursor-grabbing"
+        animate={isAnimating ? { x: x.get() > 0 ? 300 : x.get() < 0 ? -300 : 0, y: y.get() < 0 ? -300 : 0, opacity: 0 } : {}}
+        transition={{ type: 'tween', duration: 0.3 }}
+        className="absolute inset-0"
       >
         <Card className="w-full h-full shadow-2xl border-0 overflow-hidden bg-background">
           <div className="relative h-3/5">
-            <img
-              src={currentProduct.media_urls?.[0] || '/placeholder.svg'}
-              alt={currentProduct.title}
-              className="w-full h-full object-cover"
-            />
-            <div className="absolute top-4 right-4 bg-background/90 backdrop-blur-sm rounded-lg px-3 py-1.5 shadow-soft">
-              <span className="text-sm font-semibold text-foreground">{currentProduct.brand?.name || 'Brand'}</span>
-            </div>
-            {currentProduct.ar_mesh_url && (
-              <Badge className="absolute bottom-4 left-4 bg-purple-500 hover:bg-purple-600">
-                <Camera className="h-3 w-3 mr-1" />
-                AR Try-On
-              </Badge>
-            )}
-            <Button
-              size="sm"
-              variant="secondary"
-              className="absolute bottom-4 right-4 bg-background/90 backdrop-blur-sm hover:bg-background/95"
-              onClick={handleProductDetail}
-            >
-              <Info className="h-4 w-4 mr-1" />
-              Details
-            </Button>
+            <img src={currentProduct.media_urls[0] || '/placeholder.svg'} alt={currentProduct.title} className="w-full h-full object-cover" />
+            <div className="absolute top-4 right-4 bg-background/90 rounded-lg px-3 py-1.5 shadow-soft">{currentProduct.brand?.name}</div>
+            <motion.div style={{ opacity: loveOpacity }} className="absolute top-4 right-4 bg-green-500 text-white px-3 py-1 rounded-full font-medium shadow-lg"><Heart className="inline w-4 h-4 mr-1" />LOVE</motion.div>
+            <motion.div style={{ opacity: passOpacity }} className="absolute top-4 left-4 bg-red-500 text-white px-3 py-1 rounded-full font-medium shadow-lg"><X className="inline w-4 h-4 mr-1" />PASS</motion.div>
+            <motion.div style={{ opacity: wishlistOpacity }} className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-primary text-white px-4 py-2 rounded-full font-medium shadow-lg"><Bookmark className="inline w-4 h-4 mr-1" />WISHLIST</motion.div>
+            <Button size="sm" variant="secondary" className="absolute bottom-4 right-4 bg-background/90" onClick={handleProductDetail}><Info className="h-4 w-4 mr-1" />Details</Button>
+            {currentProduct.ar_mesh_url && <Badge className="absolute bottom-4 left-4 bg-purple-500"><Camera className="h-3 w-3 mr-1" />AR Try-On</Badge>}
           </div>
           <CardContent className="p-6 h-2/5 flex flex-col justify-between">
             <div className="space-y-3">
@@ -230,22 +201,14 @@ const SwipeDeck = ({
                   <p className="text-muted-foreground">{currentProduct.brand?.name}</p>
                 </div>
                 <div className="text-right">
-                  <p className="font-bold text-lg text-primary">
-                    {formatPrice(currentProduct.price_cents, currentProduct.currency)}
-                  </p>
-                  {currentProduct.compare_at_price_cents && (
-                    <p className="text-sm text-muted-foreground line-through">
-                      {formatPrice(currentProduct.compare_at_price_cents, currentProduct.currency)}
-                    </p>
-                  )}
+                  <p className="font-bold text-lg text-primary">{formatPrice(currentProduct.price_cents, currentProduct.currency)}</p>
+                  {currentProduct.compare_at_price_cents && <p className="text-sm text-muted-foreground line-through">{formatPrice(currentProduct.compare_at_price_cents, currentProduct.currency)}</p>}
                 </div>
               </div>
               {currentProduct.attributes?.style_tags && (
                 <div className="flex flex-wrap gap-1">
-                  {currentProduct.attributes.style_tags.slice(0, 3).map((tag: string, index: number) => (
-                    <Badge key={index} variant="secondary" className="text-xs">
-                      {tag}
-                    </Badge>
+                  {currentProduct.attributes.style_tags.slice(0, 3).map((tag, index) => (
+                    <Badge key={index} variant="secondary" className="text-xs">{tag}</Badge>
                   ))}
                 </div>
               )}
@@ -253,42 +216,18 @@ const SwipeDeck = ({
           </CardContent>
         </Card>
       </motion.div>
-
-      {products?.[currentIndex + 1] && (
-        <div className="absolute inset-0 -z-10 scale-95 opacity-50">
-          <Card className="w-full h-full shadow-xl border-0 overflow-hidden bg-background">
-            <div className="h-3/5">
-              <img
-                src={products[currentIndex + 1].media_urls?.[0] || '/placeholder.svg'}
-                alt={products[currentIndex + 1].title}
-                className="w-full h-full object-cover"
-              />
-            </div>
-          </Card>
-        </div>
-      )}
-
+      {products?.[currentIndex + 1] && <div className="absolute inset-0 -z-10 scale-95 opacity-50"><Card className="w-full h-full shadow-xl border-0 overflow-hidden bg-background"><img src={products[currentIndex + 1].media_urls[0] || '/placeholder.svg'} alt={products[currentIndex + 1].title} className="w-full h-full object-cover" /></Card></div>}
       <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-4">
-        <Button size="lg" variant="outline" className="rounded-full w-12 h-12 border-red-200 hover:bg-red-50" onClick={() => handleSwipe('left')} disabled={isAnimating}>
-          <X className="h-5 w-5 text-red-500" />
-        </Button>
-        <Button size="lg" variant="outline" className="rounded-full w-12 h-12 border-primary/20 hover:bg-primary/10" onClick={() => handleSwipe('up')} disabled={isAnimating}>
-          <Bookmark className="h-5 w-5 text-primary" />
-        </Button>
-        <Button size="lg" variant="outline" className="rounded-full w-12 h-12 border-green-200 hover:bg-green-50" onClick={() => handleSwipe('right')} disabled={isAnimating}>
-          <Heart className="h-5 w-5 text-green-500" />
-        </Button>
+        <Button size="lg" variant="outline" className="rounded-full w-12 h-12 border-red-200 hover:bg-red-50" onClick={() => handleSwipe('left')} disabled={isAnimating}><X className="h-5 w-5 text-red-500" /></Button>
+        <Button size="lg" variant="outline" className="rounded-full w-12 h-12 border-primary/20 hover:bg-primary/10" onClick={() => handleSwipe('up')} disabled={isAnimating}><Bookmark className="h-5 w-5 text-primary" /></Button>
+        <Button size="lg" variant="outline" className="rounded-full w-12 h-12 border-green-200 hover:bg-green-50" onClick={() => handleSwipe('right')} disabled={isAnimating}><Heart className="h-5 w-5 text-green-500" /></Button>
       </div>
-
       <ProductDetailModal
         product={selectedProduct}
         isOpen={isDetailModalOpen}
-        onClose={() => {
-          setIsDetailModalOpen(false);
-          setSelectedProduct(null);
-        }}
-        onAddToWishlist={() => toast({ title: 'Added to wishlist', description: 'Product added to wishlist.' })}
-        onAddToBag={() => toast({ title: 'Redirecting to shop', description: `Opening ${selectedProduct?.brand?.name}'s page.` })}
+        onClose={() => { setIsDetailModalOpen(false); setSelectedProduct(null); }}
+        onAddToWishlist={(productId) => toast({ title: "Added to wishlist", description: "Product has been added to your wishlist." })}
+        onAddToBag={(productId, size) => toast({ title: "Redirecting to shop", description: `Opening ${selectedProduct?.brand?.name}'s product page.` })}
       />
     </div>
   );
