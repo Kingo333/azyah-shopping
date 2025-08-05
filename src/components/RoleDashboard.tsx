@@ -12,6 +12,7 @@ import DashboardHeader from '@/components/DashboardHeader';
 import AffiliateHub from '@/components/AffiliateHub';
 import { Heart, ShoppingBag, Search, Sparkles, Camera, BarChart3, Users, Package, Settings, Store, TrendingUp, Plus, Eye, DollarSign, Globe, Bell, LogOut, User, Archive, Trophy, MapPin } from 'lucide-react';
 import Leaderboard from '@/components/Leaderboard';
+
 interface UserProfile {
   id: string;
   name: string;
@@ -19,6 +20,7 @@ interface UserProfile {
   avatar_url?: string;
   email: string;
 }
+
 interface DashboardStats {
   totalProducts?: number;
   totalViews?: number;
@@ -27,27 +29,25 @@ interface DashboardStats {
   totalWishlistItems?: number;
   totalCartItems?: number;
 }
+
 const RoleDashboard: React.FC = () => {
-  const {
-    user,
-    signOut
-  } = useAuth();
+  const { user, signOut } = useAuth();
   console.log('RoleDashboard: user state:', user);
   const navigate = useNavigate();
-  const {
-    toast
-  } = useToast();
+  const { toast } = useToast();
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [stats, setStats] = useState<DashboardStats>({});
   const [loading, setLoading] = useState(true);
   const [searchOpen, setSearchOpen] = useState(false);
   const [activeLeaderboard, setActiveLeaderboard] = useState<'global' | 'country'>('global');
+
   useEffect(() => {
     if (user) {
       fetchUserProfile();
       fetchDashboardStats();
     }
   }, [user]);
+
   const fetchUserProfile = async () => {
     if (!user) return;
     try {
@@ -90,6 +90,7 @@ const RoleDashboard: React.FC = () => {
       });
     }
   };
+
   const fetchDashboardStats = async () => {
     if (!user) return;
     
@@ -146,12 +147,14 @@ const RoleDashboard: React.FC = () => {
       setLoading(false);
     }
   };
+
   const formatPrice = (cents: number): string => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD'
     }).format(cents / 100);
   };
+
   if (loading) {
     return <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
@@ -160,6 +163,7 @@ const RoleDashboard: React.FC = () => {
         </div>
       </div>;
   }
+
   if (!userProfile) {
     return <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
@@ -167,7 +171,9 @@ const RoleDashboard: React.FC = () => {
         </div>
       </div>;
   }
-  const renderShopperDashboard = () => <div className="space-y-6">
+
+  const renderShopperDashboard = () => (
+    <div className="space-y-6">
       {/* Quick Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         
@@ -250,27 +256,39 @@ const RoleDashboard: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Global Search */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Search className="h-5 w-5" />
-            Discover Products, Brands & Styles
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Search across products, brands, and styles to discover your next fashion find.
-            </p>
-            <Button onClick={() => setSearchOpen(true)} variant="outline" className="w-full">
-              <Search className="h-4 w-4 mr-2" />
-              Open Global Search
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Global Search and Affiliate Hub Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Global Search */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Search className="h-5 w-5" />
+              Discover Products, Brands & Styles
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Search across products, brands, and styles to discover your next fashion find.
+              </p>
+              <Button onClick={() => setSearchOpen(true)} variant="outline" className="w-full">
+                <Search className="h-4 w-4 mr-2" />
+                Open Global Search
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
+        {/* Affiliate Hub - Desktop */}
+        <div className="hidden lg:block">
+          <AffiliateHub showTitle={false} />
+        </div>
+      </div>
+
+      {/* Affiliate Hub - Mobile (under Global Search) */}
+      <div className="block lg:hidden">
+        <AffiliateHub />
+      </div>
 
       {/* Closets Preview */}
       <Card>
@@ -314,7 +332,9 @@ const RoleDashboard: React.FC = () => {
           <Leaderboard type={activeLeaderboard} country={user?.user_metadata?.country} />
         </CardContent>
       </Card>
-    </div>;
+    </div>
+  );
+
   const renderBrandDashboard = () => <div className="space-y-6">
       {/* Quick Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -390,6 +410,7 @@ const RoleDashboard: React.FC = () => {
         </CardContent>
       </Card>
     </div>;
+
   const renderRetailerDashboard = () => <div className="space-y-6">
       {/* Quick Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -465,58 +486,27 @@ const RoleDashboard: React.FC = () => {
         </CardContent>
       </Card>
     </div>;
-  return <ErrorBoundary>
+
+  return (
+    <ErrorBoundary>
       <div className="min-h-screen bg-background pb-20 sm:pb-0">
         <div className="container-responsive mx-auto max-w-6xl p-4">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
-              Dashboard
-            </h1>
-            <p className="text-muted-foreground text-sm sm:text-base">Welcome back, {userProfile.name}</p>
+          {/* Header with Dashboard Header component */}
+          <div className="mb-6">
+            <DashboardHeader />
           </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <Badge variant="secondary" className="capitalize">
-              {userProfile.role}
-            </Badge>
-            
-            {/* Profile & Actions */}
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => navigate('/profile-settings')}
-              className="btn-luxury hidden sm:flex"
-            >
-              <User className="h-4 w-4 mr-2" />
-              Profile
-            </Button>
-            
-            <Button variant="outline" size="sm" className="hover:bg-primary/10">
-              <Bell className="h-4 w-4" />
-            </Button>
-            
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={signOut}
-              className="hidden sm:flex hover:bg-destructive/10"
-            >
-              <LogOut className="h-4 w-4 mr-2" />
-              Sign Out
-            </Button>
-          </div>
-        </div>
 
           {/* Role-based Dashboard Content */}
-          {userProfile.role === 'shopper' && renderShopperDashboard()}
-          {userProfile.role === 'brand' && renderBrandDashboard()}
-          {userProfile.role === 'retailer' && renderRetailerDashboard()}
+          {userProfile?.role === 'shopper' && renderShopperDashboard()}
+          {userProfile?.role === 'brand' && renderBrandDashboard()}
+          {userProfile?.role === 'retailer' && renderRetailerDashboard()}
         </div>
         
         {/* Global Search Modal */}
         <GlobalSearch isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
       </div>
-    </ErrorBoundary>;
+    </ErrorBoundary>
+  );
 };
+
 export default RoleDashboard;

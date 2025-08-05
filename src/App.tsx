@@ -1,6 +1,8 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { ThemeProvider } from "next-themes";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
@@ -36,118 +38,120 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <HelmetProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-        <ErrorBoundary>
-          <AuthProvider>
-            <Routes>
-            <Route path="/" element={<Landing />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/dashboard" element={
-              <ProtectedRoute>
-                <Index />
-              </ProtectedRoute>
-            } />
-            <Route path="/swipe" element={
-              <ProtectedRoute roles={['shopper', 'admin']}>
-                <Swipe />
-              </ProtectedRoute>
-            } />
-            <Route path="/explore" element={
-              <ProtectedRoute roles={['shopper', 'admin']}>
-                <Explore />
-              </ProtectedRoute>
-            } />
-            <Route path="/trending-styles" element={
-              <ProtectedRoute roles={['shopper', 'admin']}>
-                <TrendingStyles />
-              </ProtectedRoute>
-            } />
-            <Route path="/top-influencers" element={
-              <ProtectedRoute roles={['shopper', 'admin']}>
-                <TopInfluencers />
-              </ProtectedRoute>
-            } />
-            <Route path="/featured-brands" element={
-              <ProtectedRoute roles={['shopper', 'admin']}>
-                <FeaturedBrands />
-              </ProtectedRoute>
-            } />
-            <Route path="/wishlist" element={
-              <ProtectedRoute roles={['shopper', 'admin']}>
-                <Wishlist />
-              </ProtectedRoute>
-            } />
-            <Route path="/likes" element={
-              <ProtectedRoute roles={['shopper', 'admin']}>
-                <Likes />
-              </ProtectedRoute>
-            } />
-             <Route path="/affiliate/:userId" element={<Affiliate />} />
-             <Route path="/affiliate" element={
-               <ProtectedRoute roles={['shopper', 'admin']}>
-                 <Affiliate />
-               </ProtectedRoute>
-             } />
-            <Route path="/forum" element={
-              <ProtectedRoute roles={['shopper', 'admin']}>
-                <Forum />
-              </ProtectedRoute>
-            } />
-            <Route path="/fashion-feed" element={
-              <ProtectedRoute roles={['shopper', 'admin']}>
-                <FashionFeed />
-              </ProtectedRoute>
-            } />
-            <Route path="/profile-settings" element={
-              <ProtectedRoute>
-                <ProfileSettings />
-              </ProtectedRoute>
-            } />
-            <Route path="/image-search" element={
-              <ProtectedRoute roles={['shopper', 'admin']}>
-                <ImageSearch />
-              </ProtectedRoute>
-            } />
-            <Route path="/ar-tryOn" element={
-              <ProtectedRoute roles={['shopper', 'admin']}>
-                <ARTryOn />
-              </ProtectedRoute>
-            } />
-            <Route path="/brand-portal" element={
-              <ProtectedRoute roles={['brand', 'admin']}>
-                <BrandPortal />
-              </ProtectedRoute>
-            } />
-            <Route path="/retailer-portal" element={
-              <ProtectedRoute roles={['retailer', 'admin']}>
-                <RetailerPortal />
-              </ProtectedRoute>
-            } />
-            <Route path="/cart" element={
-              <ProtectedRoute roles={['shopper', 'admin']}>
-                <ShoppingCart />
-              </ProtectedRoute>
-            } />
-            <Route path="/closets" element={
-              <ProtectedRoute roles={['shopper', 'admin']}>
-                <Closets />
-              </ProtectedRoute>
-            } />
-            <Route path="/profile/:id" element={
-              <ProtectedRoute roles={['shopper', 'admin']}>
-                <UserProfile />
-              </ProtectedRoute>
-            } />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </AuthProvider>
-      </ErrorBoundary>
-    </BrowserRouter>
-      </HelmetProvider>
+      <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        <HelmetProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+          <ErrorBoundary>
+            <AuthProvider>
+              <Routes>
+              <Route path="/" element={<Landing />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/dashboard" element={
+                <ProtectedRoute>
+                  <Index />
+                </ProtectedRoute>
+              } />
+              <Route path="/swipe" element={
+                <ProtectedRoute roles={['shopper', 'admin']}>
+                  <Swipe />
+                </ProtectedRoute>
+              } />
+              <Route path="/explore" element={
+                <ProtectedRoute roles={['shopper', 'admin']}>
+                  <Explore />
+                </ProtectedRoute>
+              } />
+              <Route path="/trending-styles" element={
+                <ProtectedRoute roles={['shopper', 'admin']}>
+                  <TrendingStyles />
+                </ProtectedRoute>
+              } />
+              <Route path="/top-influencers" element={
+                <ProtectedRoute roles={['shopper', 'admin']}>
+                  <TopInfluencers />
+                </ProtectedRoute>
+              } />
+              <Route path="/featured-brands" element={
+                <ProtectedRoute roles={['shopper', 'admin']}>
+                  <FeaturedBrands />
+                </ProtectedRoute>
+              } />
+              <Route path="/wishlist" element={
+                <ProtectedRoute roles={['shopper', 'admin']}>
+                  <Wishlist />
+                </ProtectedRoute>
+              } />
+              <Route path="/likes" element={
+                <ProtectedRoute roles={['shopper', 'admin']}>
+                  <Likes />
+                </ProtectedRoute>
+              } />
+               <Route path="/affiliate/:userId" element={<Affiliate />} />
+               <Route path="/affiliate" element={
+                 <ProtectedRoute roles={['shopper', 'admin']}>
+                   <Affiliate />
+                 </ProtectedRoute>
+               } />
+              <Route path="/forum" element={
+                <ProtectedRoute roles={['shopper', 'admin']}>
+                  <Forum />
+                </ProtectedRoute>
+              } />
+              <Route path="/fashion-feed" element={
+                <ProtectedRoute roles={['shopper', 'admin']}>
+                  <FashionFeed />
+                </ProtectedRoute>
+              } />
+              <Route path="/profile-settings" element={
+                <ProtectedRoute>
+                  <ProfileSettings />
+                </ProtectedRoute>
+              } />
+              <Route path="/image-search" element={
+                <ProtectedRoute roles={['shopper', 'admin']}>
+                  <ImageSearch />
+                </ProtectedRoute>
+              } />
+              <Route path="/ar-tryOn" element={
+                <ProtectedRoute roles={['shopper', 'admin']}>
+                  <ARTryOn />
+                </ProtectedRoute>
+              } />
+              <Route path="/brand-portal" element={
+                <ProtectedRoute roles={['brand', 'admin']}>
+                  <BrandPortal />
+                </ProtectedRoute>
+              } />
+              <Route path="/retailer-portal" element={
+                <ProtectedRoute roles={['retailer', 'admin']}>
+                  <RetailerPortal />
+                </ProtectedRoute>
+              } />
+              <Route path="/cart" element={
+                <ProtectedRoute roles={['shopper', 'admin']}>
+                  <ShoppingCart />
+                </ProtectedRoute>
+              } />
+              <Route path="/closets" element={
+                <ProtectedRoute roles={['shopper', 'admin']}>
+                  <Closets />
+                </ProtectedRoute>
+              } />
+              <Route path="/profile/:id" element={
+                <ProtectedRoute roles={['shopper', 'admin']}>
+                  <UserProfile />
+                </ProtectedRoute>
+              } />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </AuthProvider>
+        </ErrorBoundary>
+      </BrowserRouter>
+        </HelmetProvider>
+      </ThemeProvider>
   </TooltipProvider>
 </QueryClientProvider>
 );
