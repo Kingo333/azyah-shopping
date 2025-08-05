@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -10,6 +9,11 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 import {
   Dialog,
   DialogContent,
@@ -28,7 +32,10 @@ import {
   Calendar,
   Eye,
   EyeOff,
-  Tag
+  Tag,
+  ChevronDown,
+  ChevronUp,
+  Share2
 } from 'lucide-react';
 
 interface AffiliateLink {
@@ -59,6 +66,7 @@ const AffiliateHub: React.FC<AffiliateHubProps> = ({ showTitle = true }) => {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingLink, setEditingLink] = useState<AffiliateLink | null>(null);
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const [formData, setFormData] = useState({
     brand_name: '',
     description: '',
@@ -208,6 +216,15 @@ const AffiliateHub: React.FC<AffiliateHubProps> = ({ showTitle = true }) => {
     });
   };
 
+  const copyPublicPageLink = () => {
+    const publicUrl = `${window.location.origin}/affiliate/${user?.id}`;
+    navigator.clipboard.writeText(publicUrl);
+    toast({
+      title: "Copied!",
+      description: "Public affiliate page link copied to clipboard."
+    });
+  };
+
   const formatCurrency = (cents: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -217,206 +234,254 @@ const AffiliateHub: React.FC<AffiliateHubProps> = ({ showTitle = true }) => {
 
   if (!user) return null;
 
+  const publicLinksCount = links.filter(link => link.is_public).length;
+
   return (
     <Card className="w-full">
-      {showTitle && (
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Link className="h-5 w-5" />
-            Affiliate Hub
-          </CardTitle>
-        </CardHeader>
-      )}
-      <CardContent className="space-y-4">
-        <div className="flex justify-between items-center">
-          <div>
-            <h3 className="text-lg font-semibold">My Affiliate Links</h3>
-            <p className="text-sm text-muted-foreground">
-              Manage your affiliate partnerships
-            </p>
-          </div>
-          <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-            <DialogTrigger asChild>
-              <Button onClick={() => setEditingLink(null)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Link
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
-              <DialogHeader>
-                <DialogTitle>
-                  {editingLink ? 'Edit' : 'Add'} Affiliate Link
-                </DialogTitle>
-                <DialogDescription>
-                  {editingLink ? 'Update your' : 'Create a new'} affiliate link details.
-                </DialogDescription>
-              </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <Label htmlFor="brand_name">Brand Name</Label>
-                  <Input
-                    id="brand_name"
-                    value={formData.brand_name}
-                    onChange={(e) => setFormData({ ...formData, brand_name: e.target.value })}
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="description">Description</Label>
-                  <Textarea
-                    id="description"
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    placeholder="Optional description"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="affiliate_url">Affiliate URL</Label>
-                  <Input
-                    id="affiliate_url"
-                    type="url"
-                    value={formData.affiliate_url}
-                    onChange={(e) => setFormData({ ...formData, affiliate_url: e.target.value })}
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="affiliate_code">Affiliate Code</Label>
-                  <Input
-                    id="affiliate_code"
-                    value={formData.affiliate_code}
-                    onChange={(e) => setFormData({ ...formData, affiliate_code: e.target.value })}
-                    placeholder="e.g., SAVE20, NEWUSER15"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="expiry_date">Expiry Date (Optional)</Label>
-                  <Input
-                    id="expiry_date"
-                    type="date"
-                    value={formData.expiry_date}
-                    onChange={(e) => setFormData({ ...formData, expiry_date: e.target.value })}
-                  />
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="is_public"
-                    checked={formData.is_public}
-                    onCheckedChange={(checked) => setFormData({ ...formData, is_public: checked })}
-                  />
-                  <Label htmlFor="is_public">Make Public</Label>
-                </div>
-                <div className="flex justify-end space-x-2">
-                  <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>
-                    Cancel
+      <Collapsible open={!isCollapsed} onOpenChange={(open) => setIsCollapsed(!open)}>
+        <CollapsibleTrigger asChild>
+          <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+            <CardTitle className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Link className="h-5 w-5" />
+                Affiliate Hub
+              </div>
+              <div className="flex items-center gap-2">
+                {publicLinksCount > 0 && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      copyPublicPageLink();
+                    }}
+                    className="h-8"
+                  >
+                    <Share2 className="h-3 w-3 mr-1" />
+                    Share Page
                   </Button>
-                  <Button type="submit">
-                    {editingLink ? 'Update' : 'Create'}
+                )}
+                {isCollapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+              </div>
+            </CardTitle>
+          </CardHeader>
+        </CollapsibleTrigger>
+        
+        <CollapsibleContent>
+          <CardContent className="space-y-4">
+            <div className="flex justify-between items-center">
+              <div>
+                <h3 className="text-lg font-semibold">My Affiliate Links</h3>
+                <p className="text-sm text-muted-foreground">
+                  Manage your affiliate partnerships
+                </p>
+              </div>
+              <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+                <DialogTrigger asChild>
+                  <Button onClick={() => setEditingLink(null)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Link
                   </Button>
-                </div>
-              </form>
-            </DialogContent>
-          </Dialog>
-        </div>
-
-        {loading ? (
-          <div className="text-center py-8">Loading...</div>
-        ) : links.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            No affiliate links yet. Create your first one!
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {links.map((link) => (
-              <Card key={link.id} className="p-4">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <h4 className="font-semibold">{link.brand_name}</h4>
-                      <Badge variant={link.is_public ? "default" : "secondary"}>
-                        {link.is_public ? <Eye className="h-3 w-3 mr-1" /> : <EyeOff className="h-3 w-3 mr-1" />}
-                        {link.is_public ? 'Public' : 'Private'}
-                      </Badge>
-                      {link.expiry_date && new Date(link.expiry_date) < new Date() && (
-                        <Badge variant="destructive">Expired</Badge>
-                      )}
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[425px]">
+                  <DialogHeader>
+                    <DialogTitle>
+                      {editingLink ? 'Edit' : 'Add'} Affiliate Link
+                    </DialogTitle>
+                    <DialogDescription>
+                      {editingLink ? 'Update your' : 'Create a new'} affiliate link details.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                    <div>
+                      <Label htmlFor="brand_name">Brand Name</Label>
+                      <Input
+                        id="brand_name"
+                        value={formData.brand_name}
+                        onChange={(e) => setFormData({ ...formData, brand_name: e.target.value })}
+                        required
+                      />
                     </div>
-                    {link.description && (
-                      <p className="text-sm text-muted-foreground mb-2">{link.description}</p>
-                    )}
-                    {link.affiliate_code && (
-                      <div className="flex items-center gap-2 mb-2">
-                        <Tag className="h-3 w-3 text-muted-foreground" />
-                        <span className="text-sm font-mono bg-muted px-2 py-1 rounded">
-                          {link.affiliate_code}
-                        </span>
+                    <div>
+                      <Label htmlFor="description">Description</Label>
+                      <Textarea
+                        id="description"
+                        value={formData.description}
+                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                        placeholder="Optional description"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="affiliate_url">Affiliate URL</Label>
+                      <Input
+                        id="affiliate_url"
+                        type="url"
+                        value={formData.affiliate_url}
+                        onChange={(e) => setFormData({ ...formData, affiliate_url: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="affiliate_code">Affiliate Code</Label>
+                      <Input
+                        id="affiliate_code"
+                        value={formData.affiliate_code}
+                        onChange={(e) => setFormData({ ...formData, affiliate_code: e.target.value })}
+                        placeholder="e.g., SAVE20, NEWUSER15"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="expiry_date">Expiry Date (Optional)</Label>
+                      <Input
+                        id="expiry_date"
+                        type="date"
+                        value={formData.expiry_date}
+                        onChange={(e) => setFormData({ ...formData, expiry_date: e.target.value })}
+                      />
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        id="is_public"
+                        checked={formData.is_public}
+                        onCheckedChange={(checked) => setFormData({ ...formData, is_public: checked })}
+                      />
+                      <Label htmlFor="is_public">Make Public</Label>
+                    </div>
+                    <div className="flex justify-end space-x-2">
+                      <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>
+                        Cancel
+                      </Button>
+                      <Button type="submit">
+                        {editingLink ? 'Update' : 'Create'}
+                      </Button>
+                    </div>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            </div>
+
+            {loading ? (
+              <div className="text-center py-8">Loading...</div>
+            ) : links.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                No affiliate links yet. Create your first one!
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {links.map((link) => (
+                  <Card key={link.id} className="p-4">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <h4 className="font-semibold">{link.brand_name}</h4>
+                          <Badge variant={link.is_public ? "default" : "secondary"}>
+                            {link.is_public ? <Eye className="h-3 w-3 mr-1" /> : <EyeOff className="h-3 w-3 mr-1" />}
+                            {link.is_public ? 'Public' : 'Private'}
+                          </Badge>
+                          {link.expiry_date && new Date(link.expiry_date) < new Date() && (
+                            <Badge variant="destructive">Expired</Badge>
+                          )}
+                        </div>
+                        {link.description && (
+                          <p className="text-sm text-muted-foreground mb-2">{link.description}</p>
+                        )}
+                        {link.affiliate_code && (
+                          <div className="flex items-center gap-2 mb-2">
+                            <Tag className="h-3 w-3 text-muted-foreground" />
+                            <span className="text-sm font-mono bg-muted px-2 py-1 rounded">
+                              {link.affiliate_code}
+                            </span>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-6 w-6 p-0"
+                              onClick={() => copyAffiliateCode(link.affiliate_code!)}
+                            >
+                              <Copy className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        )}
+                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                          <span>Clicks: {link.clicks}</span>
+                          <span>Orders: {link.orders}</span>
+                          <span>Revenue: {formatCurrency(link.revenue_cents)}</span>
+                          {link.expiry_date && (
+                            <span className="flex items-center gap-1">
+                              <Calendar className="h-3 w-3" />
+                              Expires: {new Date(link.expiry_date).toLocaleDateString()}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
                         <Button
                           size="sm"
-                          variant="ghost"
-                          className="h-6 w-6 p-0"
-                          onClick={() => copyAffiliateCode(link.affiliate_code!)}
+                          variant="outline"
+                          onClick={() => copyToClipboard(link.affiliate_url)}
                         >
                           <Copy className="h-3 w-3" />
                         </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => window.open(link.affiliate_url, '_blank')}
+                        >
+                          <ExternalLink className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleEdit(link)}
+                        >
+                          <Edit className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleDelete(link.id)}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
                       </div>
-                    )}
-                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                      <span>Clicks: {link.clicks}</span>
-                      <span>Orders: {link.orders}</span>
-                      <span>Revenue: {formatCurrency(link.revenue_cents)}</span>
-                      {link.expiry_date && (
-                        <span className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
-                          Expires: {new Date(link.expiry_date).toLocaleDateString()}
-                        </span>
-                      )}
                     </div>
+                  </Card>
+                ))}
+              </div>
+            )}
+
+            {publicLinksCount > 0 && (
+              <div className="pt-4 border-t">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium">Your Public Affiliate Page</p>
+                    <p className="text-xs text-muted-foreground">
+                      Share this link on social media to promote your affiliate codes
+                    </p>
                   </div>
                   <div className="flex items-center gap-2">
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => copyToClipboard(link.affiliate_url)}
+                      onClick={copyPublicPageLink}
                     >
-                      <Copy className="h-3 w-3" />
+                      <Copy className="h-3 w-3 mr-1" />
+                      Copy Link
                     </Button>
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => window.open(link.affiliate_url, '_blank')}
+                      onClick={() => window.open(`/affiliate/${user.id}`, '_blank')}
                     >
-                      <ExternalLink className="h-3 w-3" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleEdit(link)}
-                    >
-                      <Edit className="h-3 w-3" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleDelete(link.id)}
-                    >
-                      <Trash2 className="h-3 w-3" />
+                      <ExternalLink className="h-3 w-3 mr-1" />
+                      Preview
                     </Button>
                   </div>
                 </div>
-              </Card>
-            ))}
-          </div>
-        )}
-
-        <div className="pt-4 border-t">
-          <p className="text-xs text-muted-foreground">
-            Public affiliate page: 
-            <span className="font-mono bg-muted px-1 rounded ml-1">
-              /affiliate/{user.id}
-            </span>
-          </p>
-        </div>
-      </CardContent>
+              </div>
+            )}
+          </CardContent>
+        </CollapsibleContent>
+      </Collapsible>
     </Card>
   );
 };
