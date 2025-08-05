@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,31 +10,19 @@ import { BackButton } from '@/components/ui/back-button';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { 
-  Plus, Edit, Trash2, Upload, BarChart3, TrendingUp, Eye, 
-  Heart, ShoppingBag, DollarSign, Settings, Download, Filter 
-} from 'lucide-react';
+import { Plus, Edit, Trash2, Upload, BarChart3, TrendingUp, Eye, Heart, ShoppingBag, DollarSign, Settings, Download, Filter } from 'lucide-react';
 
 interface Product {
   id: string;
   title: string;
   price_cents: number;
-  category_slug: 
-    | 'clothing'
-    | 'footwear'
-    | 'accessories'
-    | 'jewelry'
-    | 'beauty'
-    | 'modestwear'
-    | 'kids'
-    | 'fragrance'
-    | 'home'
-    | 'giftcards';
-  status: 'active' | 'inactive' | 'archived' | 'out_of_stock' | 'draft' | 'sold_out';
-  media_urls: string[];
+  category_slug: 'clothing' | 'footwear' | 'accessories' | 'jewelry' | 'beauty' | 'modestwear' | 'kids' | 'fragrance' | 'home' | 'giftcards';
+  status: 'active' | 'inactive' | 'archived' | 'out_of_stock';
+  media_urls?: string[];
+  ar_mesh_url?: string | null;
   stock_qty: number;
   created_at: string;
-  brand: { name: string };
+  brand: { name: string; };
 }
 
 interface Brand {
@@ -54,64 +43,35 @@ const BrandPortal: React.FC = () => {
   const { user } = useAuth();
 
   useEffect(() => {
-    if (user) fetchBrandData();
-  }, [user]);
-
-  useEffect(() => {
-    if (brand?.id) fetchProducts();
-  }, [brand]);
+    if (user) {
+      fetchBrandData();
+      fetchProducts();
+    }
+  }, [user, brand?.id]);
 
   const fetchBrandData = async () => {
     try {
-      const { data, error } = await supabase
-        .from('brands')
-        .select('*')
-        .eq('owner_user_id', user?.id)
-        .single();
-
+      const { data, error } = await supabase.from('brands').select('*').eq('owner_user_id', user?.id).single();
       if (error && error.code !== 'PGRST116') throw error;
       setBrand(data);
-    } catch (error) {
-      console.error('Error fetching brand data:', error);
-      toast({
-        title: 'Error',
-        description: 'Unable to load brand data.',
-        variant: 'destructive',
-      });
-    }
+    } catch (error) { console.error('Error fetching brand data:', error); }
   };
 
   const fetchProducts = async () => {
-    if (!brand?.id) return; // safeguard
+    if (!brand?.id) return;
     try {
-      const { data, error } = await supabase
-        .from('products')
-        .select(`*, brand:brands(name)`)
-        .eq('brand_id', brand.id)
-        .order('created_at', { ascending: false });
-
+      const { data, error } = await supabase.from('products').select('id,title,price_cents,category_slug,status,media_urls,ar_mesh_url,stock_qty,created_at,brand:brands(name)').eq('brand_id', brand.id).order('created_at', { ascending: false });
       if (error) throw error;
-
-      const normalized = (data || []).map((p: any) => ({
+      const formatted = (data || []).map((p: any) => ({
         ...p,
-        media_urls: Array.isArray(p.media_urls)
-          ? p.media_urls
-          : typeof p.media_urls === 'string'
-          ? [p.media_urls]
-          : [],
+        media_urls: Array.isArray(p.media_urls) ? p.media_urls : [],
+        ar_mesh_url: p.ar_mesh_url || null
       }));
-
-      setProducts(normalized);
+      setProducts(formatted);
     } catch (error) {
       console.error('Error fetching products:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to fetch products',
-        variant: 'destructive',
-      });
-    } finally {
-      setLoading(false);
-    }
+      toast({ title: "Error", description: "Failed to fetch products", variant: "destructive" });
+    } finally { setLoading(false); }
   };
 
   const formatPrice = (cents: number, currency: string = 'USD'): string =>
@@ -120,11 +80,9 @@ const BrandPortal: React.FC = () => {
   const getStatusColor = (status: Product['status']) => {
     switch (status) {
       case 'active': return 'default';
-      case 'inactive':
-      case 'archived':
-      case 'draft': return 'secondary';
-      case 'out_of_stock':
-      case 'sold_out': return 'destructive';
+      case 'inactive': return 'secondary';
+      case 'archived': return 'secondary';
+      case 'out_of_stock': return 'destructive';
       default: return 'secondary';
     }
   };
@@ -138,16 +96,10 @@ const BrandPortal: React.FC = () => {
   const handleBulkAction = async (action: string) => {
     try {
       if (action === 'Archive') {
-        const { error } = await supabase
-          .from('products')
-          .update({ status: 'draft' })
-          .in('id', Array.from(selectedProducts));
+        const { error } = await supabase.from('products').update({ status: 'archived' }).in('id', Array.from(selectedProducts));
         if (error) throw error;
       } else if (action === 'Delete') {
-        const { error } = await supabase
-          .from('products')
-          .delete()
-          .in('id', Array.from(selectedProducts));
+        const { error } = await supabase.from('products').delete().in('id', Array.from(selectedProducts));
         if (error) throw error;
       }
       toast({ description: `${action} applied to ${selectedProducts.size} product(s)` });
@@ -155,11 +107,7 @@ const BrandPortal: React.FC = () => {
       fetchProducts();
     } catch (error) {
       console.error('Bulk action error:', error);
-      toast({
-        title: 'Error',
-        description: `Failed to ${action.toLowerCase()} products`,
-        variant: 'destructive',
-      });
+      toast({ title: "Error", description: `Failed to ${action.toLowerCase()} products`, variant: "destructive" });
     }
   };
 
@@ -167,51 +115,52 @@ const BrandPortal: React.FC = () => {
     try {
       const { error } = await supabase.from('products').delete().eq('id', productId);
       if (error) throw error;
-      toast({ description: 'Product deleted successfully' });
+      toast({ description: "Product deleted successfully" });
       fetchProducts();
     } catch (error) {
       console.error('Delete product error:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to delete product',
-        variant: 'destructive',
-      });
+      toast({ title: "Error", description: "Failed to delete product", variant: "destructive" });
     }
   };
 
-  if (!user) return <div className="min-h-screen flex items-center justify-center"><p>Please log in to access the brand portal.</p></div>;
-  if (!brand) return <div className="min-h-screen flex items-center justify-center"><p>Please create a brand profile first.</p></div>;
+  if (!user) return (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="text-center">
+        <h2 className="text-xl font-semibold mb-2">Access Restricted</h2>
+        <p className="text-muted-foreground">Please log in to access the brand portal.</p>
+      </div>
+    </div>
+  );
+
+  if (!brand) return (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="text-center">
+        <h2 className="text-xl font-semibold mb-2">No Brand Found</h2>
+        <p className="text-muted-foreground">Please create a brand profile first.</p>
+      </div>
+    </div>
+  );
 
   const analytics = {
     totalProducts: products.length,
     totalViews: products.reduce((sum, p: any) => sum + (p.views || 0), 0),
     totalLikes: products.reduce((sum, p: any) => sum + (p.likes || 0), 0),
     totalSales: products.reduce((sum, p: any) => sum + (p.sales || 0), 0),
-    totalRevenue: products.reduce((sum, p: any) => sum + (p.revenue || 0), 0),
+    totalRevenue: products.reduce((sum, p: any) => sum + (p.revenue || 0), 0)
   };
 
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto max-w-7xl p-4">
-        {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
             <BackButton />
             <div className="flex items-center gap-4">
               <div className="w-16 h-16 bg-muted rounded-lg overflow-hidden">
-                {brand.logo_url ? (
-                  <img src={brand.logo_url} alt={brand.name} className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                    {brand.name.charAt(0).toUpperCase()}
-                  </div>
-                )}
+                {brand.logo_url ? <img src={brand.logo_url} alt={brand.name} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-muted-foreground">{brand.name.charAt(0).toUpperCase()}</div>}
               </div>
               <div>
-                <div className="flex items-center gap-2">
-                  <h1 className="text-2xl font-bold">{brand.name}</h1>
-                  <Badge variant="secondary" className="text-xs">Verified</Badge>
-                </div>
+                <div className="flex items-center gap-2"><h1 className="text-2xl font-bold">{brand.name}</h1><Badge variant="secondary" className="text-xs">Verified</Badge></div>
                 <p className="text-muted-foreground">{brand.bio || 'Brand description'}</p>
               </div>
             </div>
@@ -229,7 +178,6 @@ const BrandPortal: React.FC = () => {
             <TabsTrigger value="settings">Brand Settings</TabsTrigger>
           </TabsList>
 
-          {/* Products Tab */}
           <TabsContent value="products" className="mt-6">
             <div className="space-y-6">
               <div className="flex items-center justify-between">
@@ -247,36 +195,18 @@ const BrandPortal: React.FC = () => {
                 )}
               </div>
 
-              {loading ? (
-                <div className="text-center py-8">Loading products...</div>
-              ) : products.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">No products yet. Create your first product!</div>
-              ) : (
+              {loading ? <div className="text-center py-8">Loading products...</div> : products.length === 0 ? <div className="text-center py-8 text-muted-foreground">No products yet. Create your first product!</div> :
                 <div className="grid gap-4">
                   {products.map((product) => (
                     <Card key={product.id} className="overflow-hidden">
                       <CardContent className="p-4">
                         <div className="flex items-center gap-4">
                           <input type="checkbox" checked={selectedProducts.has(product.id)} onChange={() => handleSelectProduct(product.id)} className="w-4 h-4" />
-                          <div className="w-20 h-20 bg-muted rounded-lg overflow-hidden">
-                            {product.media_urls[0] ? (
-                              <img src={product.media_urls[0]} alt={product.title} className="w-full h-full object-cover" />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">No Image</div>
-                            )}
-                          </div>
+                          <div className="w-20 h-20 bg-muted rounded-lg overflow-hidden">{product.media_urls && product.media_urls[0] ? <img src={product.media_urls[0]} alt={product.title} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">No Image</div>}</div>
                           <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <h3 className="font-medium">{product.title}</h3>
-                              <Badge variant={getStatusColor(product.status) as any}>{product.status.replace('_', ' ')}</Badge>
-                            </div>
-                            <p className="text-sm text-muted-foreground mb-2">
-                              {product.category_slug} • {formatPrice(product.price_cents)}
-                            </p>
-                            <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                              <span>Stock: {product.stock_qty}</span>
-                              <span>Created: {new Date(product.created_at).toLocaleDateString()}</span>
-                            </div>
+                            <div className="flex items-center gap-2 mb-1"><h3 className="font-medium">{product.title}</h3><Badge variant={getStatusColor(product.status) as any}>{product.status.replace('_', ' ')}</Badge></div>
+                            <p className="text-sm text-muted-foreground mb-2">{product.category_slug} • {formatPrice(product.price_cents)}</p>
+                            <div className="flex items-center gap-4 text-sm text-muted-foreground"><span>Stock: {product.stock_qty}</span><span>Created: {new Date(product.created_at).toLocaleDateString()}</span></div>
                           </div>
                           <div className="flex items-center gap-2">
                             <Button variant="outline" size="sm"><Edit className="h-4 w-4" /></Button>
@@ -286,12 +216,30 @@ const BrandPortal: React.FC = () => {
                       </CardContent>
                     </Card>
                   ))}
-                </div>
-              )}
+                </div>}
             </div>
           </TabsContent>
 
-          {/* Analytics & Settings tabs unchanged (keep same structure as your previous code) */}
+          <TabsContent value="analytics" className="mt-6">
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <Card><CardContent className="p-4"><div className="flex items-center gap-2"><div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center"><ShoppingBag className="h-4 w-4 text-primary" /></div><div><p className="text-sm text-muted-foreground">Total Products</p><p className="text-xl font-bold">{analytics.totalProducts}</p></div></div></CardContent></Card>
+                <Card><CardContent className="p-4"><div className="flex items-center gap-2"><div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center"><Eye className="h-4 w-4 text-blue-500" /></div><div><p className="text-sm text-muted-foreground">Total Views</p><p className="text-xl font-bold">{analytics.totalViews}</p></div></div></CardContent></Card>
+                <Card><CardContent className="p-4"><div className="flex items-center gap-2"><div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center"><Heart className="h-4 w-4 text-red-500" /></div><div><p className="text-sm text-muted-foreground">Total Likes</p><p className="text-xl font-bold">{analytics.totalLikes}</p></div></div></CardContent></Card>
+                <Card><CardContent className="p-4"><div className="flex items-center gap-2"><div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center"><DollarSign className="h-4 w-4 text-green-500" /></div><div><p className="text-sm text-muted-foreground">Revenue</p><p className="text-xl font-bold">${analytics.totalRevenue}</p></div></div></CardContent></Card>
+              </div>
+              <div className="grid md:grid-cols-2 gap-6">
+                <Card><CardHeader><CardTitle className="flex items-center gap-2"><TrendingUp className="h-5 w-5" />Sales Trend</CardTitle></CardHeader><CardContent><div className="h-64 bg-muted rounded-lg flex items-center justify-center"><p className="text-muted-foreground">Real analytics data will appear here</p></div></CardContent></Card>
+                <Card><CardHeader><CardTitle className="flex items-center gap-2"><BarChart3 className="h-5 w-5" />Top Products</CardTitle></CardHeader><CardContent><div className="space-y-3">{products.slice(0, 5).map((product, index) => (<div key={product.id} className="flex items-center gap-3"><span className="text-sm font-medium text-muted-foreground">#{index + 1}</span><div className="w-8 h-8 bg-muted rounded overflow-hidden">{product.media_urls && product.media_urls[0] ? <img src={product.media_urls[0]} alt={product.title} className="w-full h-full object-cover" /> : <div className="w-full h-full bg-gray-200"></div>}</div><div className="flex-1"><p className="text-sm font-medium truncate">{product.title}</p><p className="text-xs text-muted-foreground">{formatPrice(product.price_cents)}</p></div></div>))}</div></CardContent></Card>
+              </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="settings" className="mt-6">
+            <div className="space-y-6">
+              <Card><CardHeader><CardTitle>Brand Profile</CardTitle></CardHeader><CardContent className="space-y-4"><div className="grid md:grid-cols-2 gap-4"><div><label className="text-sm font-medium mb-2 block">Brand Name</label><Input defaultValue={brand.name} /></div><div><label className="text-sm font-medium mb-2 block">Website</label><Input defaultValue={brand.website || ''} /></div></div><div><label className="text-sm font-medium mb-2 block">Description</label><Textarea defaultValue={brand.bio || ''} /></div><Button>Save Changes</Button></CardContent></Card>
+            </div>
+          </TabsContent>
         </Tabs>
       </div>
     </div>
