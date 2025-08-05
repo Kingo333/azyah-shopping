@@ -17,6 +17,7 @@ export type Database = {
       affiliate_links: {
         Row: {
           active: boolean | null
+          affiliate_code: string | null
           affiliate_url: string
           brand_name: string
           clicks: number | null
@@ -33,6 +34,7 @@ export type Database = {
         }
         Insert: {
           active?: boolean | null
+          affiliate_code?: string | null
           affiliate_url: string
           brand_name: string
           clicks?: number | null
@@ -49,6 +51,7 @@ export type Database = {
         }
         Update: {
           active?: boolean | null
+          affiliate_code?: string | null
           affiliate_url?: string
           brand_name?: string
           clicks?: number | null
