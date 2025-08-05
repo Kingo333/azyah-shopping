@@ -1,3 +1,4 @@
+
 import { useParams } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
@@ -5,13 +6,15 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { ExternalLink, Calendar, Heart } from 'lucide-react';
+import { ExternalLink, Calendar, Heart, Tag, Copy } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
 
 interface AffiliateLink {
   id: string;
   brand_name: string;
   description: string | null;
   affiliate_url: string;
+  affiliate_code: string | null;
   expiry_date: string | null;
   clicks: number;
   orders: number;
@@ -51,7 +54,7 @@ const Affiliate = () => {
       // Fetch public affiliate links
       const { data: linksData, error: linksError } = await supabase
         .from('affiliate_links')
-        .select('id, brand_name, description, affiliate_url, expiry_date, clicks, orders')
+        .select('id, brand_name, description, affiliate_url, affiliate_code, expiry_date, clicks, orders')
         .eq('user_id', userId)
         .eq('is_public', true)
         .eq('active', true)
@@ -79,6 +82,14 @@ const Affiliate = () => {
     
     // Open link
     window.open(url, '_blank');
+  };
+
+  const copyAffiliateCode = (code: string) => {
+    navigator.clipboard.writeText(code);
+    toast({
+      title: "Copied!",
+      description: "Affiliate code copied to clipboard."
+    });
   };
 
   if (loading) {
@@ -152,6 +163,23 @@ const Affiliate = () => {
                       
                       {link.description && (
                         <p className="text-muted-foreground text-sm mb-3">{link.description}</p>
+                      )}
+
+                      {link.affiliate_code && (
+                        <div className="flex items-center gap-2 mb-3">
+                          <Tag className="h-3 w-3 text-muted-foreground" />
+                          <span className="text-sm font-mono bg-muted px-2 py-1 rounded">
+                            {link.affiliate_code}
+                          </span>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 w-6 p-0"
+                            onClick={() => copyAffiliateCode(link.affiliate_code!)}
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </div>
                       )}
                       
                       <div className="flex items-center gap-4 text-xs text-muted-foreground mb-4">
