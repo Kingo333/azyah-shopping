@@ -26,7 +26,8 @@ import {
   Link,
   Calendar,
   Eye,
-  EyeOff
+  EyeOff,
+  Tag
 } from 'lucide-react';
 
 interface AffiliateLink {
@@ -35,6 +36,7 @@ interface AffiliateLink {
   brand_name: string;
   description: string | null;
   affiliate_url: string;
+  affiliate_code: string | null;
   expiry_date: string | null;
   is_public: boolean;
   clicks: number;
@@ -60,6 +62,7 @@ const AffiliateHub: React.FC<AffiliateHubProps> = ({ showTitle = true }) => {
     brand_name: '',
     description: '',
     affiliate_url: '',
+    affiliate_code: '',
     expiry_date: '',
     is_public: false
   });
@@ -102,6 +105,7 @@ const AffiliateHub: React.FC<AffiliateHubProps> = ({ showTitle = true }) => {
         brand_name: formData.brand_name,
         description: formData.description || null,
         affiliate_url: formData.affiliate_url,
+        affiliate_code: formData.affiliate_code || null,
         expiry_date: formData.expiry_date ? new Date(formData.expiry_date).toISOString() : null,
         is_public: formData.is_public
       };
@@ -135,6 +139,7 @@ const AffiliateHub: React.FC<AffiliateHubProps> = ({ showTitle = true }) => {
         brand_name: '',
         description: '',
         affiliate_url: '',
+        affiliate_code: '',
         expiry_date: '',
         is_public: false
       });
@@ -155,6 +160,7 @@ const AffiliateHub: React.FC<AffiliateHubProps> = ({ showTitle = true }) => {
       brand_name: link.brand_name,
       description: link.description || '',
       affiliate_url: link.affiliate_url,
+      affiliate_code: link.affiliate_code || '',
       expiry_date: link.expiry_date ? new Date(link.expiry_date).toISOString().split('T')[0] : '',
       is_public: link.is_public
     });
@@ -190,6 +196,14 @@ const AffiliateHub: React.FC<AffiliateHubProps> = ({ showTitle = true }) => {
     toast({
       title: "Copied!",
       description: "Affiliate link copied to clipboard."
+    });
+  };
+
+  const copyAffiliateCode = (code: string) => {
+    navigator.clipboard.writeText(code);
+    toast({
+      title: "Copied!",
+      description: "Affiliate code copied to clipboard."
     });
   };
 
@@ -266,6 +280,15 @@ const AffiliateHub: React.FC<AffiliateHubProps> = ({ showTitle = true }) => {
                   />
                 </div>
                 <div>
+                  <Label htmlFor="affiliate_code">Affiliate Code</Label>
+                  <Input
+                    id="affiliate_code"
+                    value={formData.affiliate_code}
+                    onChange={(e) => setFormData({ ...formData, affiliate_code: e.target.value })}
+                    placeholder="e.g., SAVE20, NEWUSER15"
+                  />
+                </div>
+                <div>
                   <Label htmlFor="expiry_date">Expiry Date (Optional)</Label>
                   <Input
                     id="expiry_date"
@@ -319,6 +342,22 @@ const AffiliateHub: React.FC<AffiliateHubProps> = ({ showTitle = true }) => {
                     </div>
                     {link.description && (
                       <p className="text-sm text-muted-foreground mb-2">{link.description}</p>
+                    )}
+                    {link.affiliate_code && (
+                      <div className="flex items-center gap-2 mb-2">
+                        <Tag className="h-3 w-3 text-muted-foreground" />
+                        <span className="text-sm font-mono bg-muted px-2 py-1 rounded">
+                          {link.affiliate_code}
+                        </span>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-6 w-6 p-0"
+                          onClick={() => copyAffiliateCode(link.affiliate_code!)}
+                        >
+                          <Copy className="h-3 w-3" />
+                        </Button>
+                      </div>
                     )}
                     <div className="flex items-center gap-4 text-xs text-muted-foreground">
                       <span>Clicks: {link.clicks}</span>
