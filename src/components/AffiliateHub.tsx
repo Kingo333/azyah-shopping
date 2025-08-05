@@ -88,9 +88,11 @@ const AffiliateHub: React.FC<AffiliateHubProps> = ({ showTitle = true }) => {
         .from('affiliate_links')
         .select('*')
         .eq('user_id', user?.id)
+        .eq('active', true)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
+      console.log('Fetched affiliate links:', data);
       setLinks(data || []);
     } catch (error) {
       console.error('Error fetching affiliate links:', error);
@@ -116,7 +118,8 @@ const AffiliateHub: React.FC<AffiliateHubProps> = ({ showTitle = true }) => {
         affiliate_url: formData.affiliate_url,
         affiliate_code: formData.affiliate_code || null,
         expiry_date: formData.expiry_date ? new Date(formData.expiry_date).toISOString() : null,
-        is_public: formData.is_public
+        is_public: formData.is_public,
+        active: true
       };
 
       let result;
@@ -180,7 +183,7 @@ const AffiliateHub: React.FC<AffiliateHubProps> = ({ showTitle = true }) => {
     try {
       const { error } = await supabase
         .from('affiliate_links')
-        .delete()
+        .update({ active: false })
         .eq('id', id);
 
       if (error) throw error;
@@ -255,7 +258,7 @@ const AffiliateHub: React.FC<AffiliateHubProps> = ({ showTitle = true }) => {
                       e.stopPropagation();
                       copyPublicPageLink();
                     }}
-                    className="h-8"
+                    className="h-8 hidden sm:flex"
                   >
                     <Share2 className="h-3 w-3 mr-1" />
                     Share Page
@@ -269,7 +272,7 @@ const AffiliateHub: React.FC<AffiliateHubProps> = ({ showTitle = true }) => {
         
         <CollapsibleContent>
           <CardContent className="space-y-4">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
               <div>
                 <h3 className="text-lg font-semibold">My Affiliate Links</h3>
                 <p className="text-sm text-muted-foreground">
@@ -278,7 +281,7 @@ const AffiliateHub: React.FC<AffiliateHubProps> = ({ showTitle = true }) => {
               </div>
               <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
                 <DialogTrigger asChild>
-                  <Button onClick={() => setEditingLink(null)}>
+                  <Button onClick={() => setEditingLink(null)} size="sm">
                     <Plus className="h-4 w-4 mr-2" />
                     Add Link
                   </Button>
@@ -370,10 +373,10 @@ const AffiliateHub: React.FC<AffiliateHubProps> = ({ showTitle = true }) => {
               <div className="space-y-3">
                 {links.map((link) => (
                   <Card key={link.id} className="p-4">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <h4 className="font-semibold">{link.brand_name}</h4>
+                    <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2 mb-2">
+                          <h4 className="font-semibold truncate">{link.brand_name}</h4>
                           <Badge variant={link.is_public ? "default" : "secondary"}>
                             {link.is_public ? <Eye className="h-3 w-3 mr-1" /> : <EyeOff className="h-3 w-3 mr-1" />}
                             {link.is_public ? 'Public' : 'Private'}
@@ -383,25 +386,25 @@ const AffiliateHub: React.FC<AffiliateHubProps> = ({ showTitle = true }) => {
                           )}
                         </div>
                         {link.description && (
-                          <p className="text-sm text-muted-foreground mb-2">{link.description}</p>
+                          <p className="text-sm text-muted-foreground mb-2 break-words">{link.description}</p>
                         )}
                         {link.affiliate_code && (
                           <div className="flex items-center gap-2 mb-2">
-                            <Tag className="h-3 w-3 text-muted-foreground" />
-                            <span className="text-sm font-mono bg-muted px-2 py-1 rounded">
+                            <Tag className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                            <span className="text-sm font-mono bg-muted px-2 py-1 rounded truncate">
                               {link.affiliate_code}
                             </span>
                             <Button
                               size="sm"
                               variant="ghost"
-                              className="h-6 w-6 p-0"
+                              className="h-6 w-6 p-0 flex-shrink-0"
                               onClick={() => copyAffiliateCode(link.affiliate_code!)}
                             >
                               <Copy className="h-3 w-3" />
                             </Button>
                           </div>
                         )}
-                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                        <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
                           <span>Clicks: {link.clicks}</span>
                           <span>Orders: {link.orders}</span>
                           <span>Revenue: {formatCurrency(link.revenue_cents)}</span>
@@ -413,11 +416,12 @@ const AffiliateHub: React.FC<AffiliateHubProps> = ({ showTitle = true }) => {
                           )}
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1 flex-shrink-0">
                         <Button
                           size="sm"
                           variant="outline"
                           onClick={() => copyToClipboard(link.affiliate_url)}
+                          className="h-8 w-8 p-0"
                         >
                           <Copy className="h-3 w-3" />
                         </Button>
@@ -425,6 +429,7 @@ const AffiliateHub: React.FC<AffiliateHubProps> = ({ showTitle = true }) => {
                           size="sm"
                           variant="outline"
                           onClick={() => window.open(link.affiliate_url, '_blank')}
+                          className="h-8 w-8 p-0"
                         >
                           <ExternalLink className="h-3 w-3" />
                         </Button>
@@ -432,6 +437,7 @@ const AffiliateHub: React.FC<AffiliateHubProps> = ({ showTitle = true }) => {
                           size="sm"
                           variant="outline"
                           onClick={() => handleEdit(link)}
+                          className="h-8 w-8 p-0"
                         >
                           <Edit className="h-3 w-3" />
                         </Button>
@@ -439,6 +445,7 @@ const AffiliateHub: React.FC<AffiliateHubProps> = ({ showTitle = true }) => {
                           size="sm"
                           variant="outline"
                           onClick={() => handleDelete(link.id)}
+                          className="h-8 w-8 p-0"
                         >
                           <Trash2 className="h-3 w-3" />
                         </Button>
@@ -451,7 +458,7 @@ const AffiliateHub: React.FC<AffiliateHubProps> = ({ showTitle = true }) => {
 
             {publicLinksCount > 0 && (
               <div className="pt-4 border-t">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                   <div>
                     <p className="text-sm font-medium">Your Public Affiliate Page</p>
                     <p className="text-xs text-muted-foreground">

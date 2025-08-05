@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { ExternalLink, Calendar, Heart, Tag, Copy, Star } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import AffiliateCodeCard from '@/components/AffiliateCodeCard';
 
 interface AffiliateLink {
   id: string;
@@ -41,6 +42,8 @@ const Affiliate = () => {
 
   const fetchPublicAffiliateLinks = async () => {
     try {
+      console.log('Fetching data for user:', userId);
+      
       // Fetch user profile
       const { data: userData, error: userError } = await supabase
         .from('users')
@@ -48,10 +51,15 @@ const Affiliate = () => {
         .eq('id', userId)
         .single();
 
-      if (userError) throw userError;
+      if (userError) {
+        console.error('User error:', userError);
+        throw userError;
+      }
+      
+      console.log('User data:', userData);
       setUser(userData);
 
-      // Fetch public affiliate links
+      // Fetch public affiliate links with explicit filtering
       const { data: linksData, error: linksError } = await supabase
         .from('affiliate_links')
         .select('id, brand_name, description, affiliate_url, affiliate_code, expiry_date, clicks, orders')
@@ -60,10 +68,20 @@ const Affiliate = () => {
         .eq('active', true)
         .order('created_at', { ascending: false });
 
-      if (linksError) throw linksError;
+      if (linksError) {
+        console.error('Links error:', linksError);
+        throw linksError;
+      }
+      
+      console.log('Fetched public affiliate links:', linksData);
       setLinks(linksData || []);
     } catch (error) {
       console.error('Error fetching affiliate data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load affiliate page",
+        variant: "destructive"
+      });
     } finally {
       setLoading(false);
     }
@@ -73,32 +91,20 @@ const Affiliate = () => {
     // Track click
     try {
       const currentLink = links.find(l => l.id === linkId);
-      await supabase
+      const { error } = await supabase
         .from('affiliate_links')
         .update({ clicks: (currentLink?.clicks || 0) + 1 })
         .eq('id', linkId);
+        
+      if (error) {
+        console.error('Error tracking click:', error);
+      }
     } catch (error) {
       console.error('Error tracking click:', error);
     }
     
     // Open link
     window.open(url, '_blank');
-  };
-
-  const copyAffiliateCode = (code: string, brandName: string) => {
-    navigator.clipboard.writeText(code);
-    toast({
-      title: "Code Copied!",
-      description: `${brandName} affiliate code copied to clipboard.`
-    });
-  };
-
-  const copyAffiliateLink = (url: string, brandName: string) => {
-    navigator.clipboard.writeText(url);
-    toast({
-      title: "Link Copied!",
-      description: `${brandName} affiliate link copied to clipboard.`
-    });
   };
 
   if (loading) {
@@ -187,93 +193,19 @@ const Affiliate = () => {
               </div>
             ) : (
               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {links.map((link) => {
-                  const isExpired = link.expiry_date && new Date(link.expiry_date) < new Date();
-                  
-                  return (
-                    <Card 
-                      key={link.id} 
-                      className={`group transition-all duration-300 hover:shadow-xl hover:-translate-y-2 border-0 shadow-md bg-gradient-to-br from-white to-gray-50 overflow-hidden ${
-                        isExpired ? 'opacity-60' : ''
-                      }`}
-                    >
-                      <CardContent className="p-6">
-                        <div className="flex justify-between items-start mb-4">
-                          <div>
-                            <h3 className="font-bold text-xl text-gray-900 mb-1">{link.brand_name}</h3>
-                            {isExpired && (
-                              <Badge variant="destructive" className="mb-2">
-                                Expired
-                              </Badge>
-                            )}
-                          </div>
-                          <div className="text-right text-xs text-muted-foreground">
-                            <div>{link.clicks} uses</div>
-                            <div>{link.orders} orders</div>
-                          </div>
-                        </div>
-                        
-                        {link.description && (
-                          <p className="text-muted-foreground text-sm mb-4 line-clamp-2">
-                            {link.description}
-                          </p>
-                        )}
-
-                        {link.affiliate_code && (
-                          <div className="bg-gradient-to-r from-pink-100 to-purple-100 p-4 rounded-lg mb-4">
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <div className="flex items-center gap-2 mb-2">
-                                  <Tag className="h-4 w-4 text-pink-600" />
-                                  <span className="text-sm font-medium text-pink-800">Exclusive Code</span>
-                                </div>
-                                <div className="text-2xl font-bold font-mono text-pink-800 tracking-wider">
-                                  {link.affiliate_code}
-                                </div>
-                              </div>
-                              <Button
-                                size="sm"
-                                onClick={() => copyAffiliateCode(link.affiliate_code!, link.brand_name)}
-                                className="bg-pink-600 hover:bg-pink-700 text-white shrink-0"
-                              >
-                                <Copy className="h-3 w-3 mr-1" />
-                                Copy
-                              </Button>
-                            </div>
-                          </div>
-                        )}
-                        
-                        {link.expiry_date && (
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
-                            <Calendar className="h-4 w-4" />
-                            Valid until {new Date(link.expiry_date).toLocaleDateString()}
-                          </div>
-                        )}
-                        
-                        <div className="space-y-2">
-                          <Button 
-                            className="w-full bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white font-semibold py-2.5"
-                            onClick={() => handleLinkClick(link.id, link.affiliate_url)}
-                            disabled={isExpired}
-                          >
-                            <ExternalLink className="h-4 w-4 mr-2" />
-                            Shop {link.brand_name}
-                          </Button>
-                          
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="w-full"
-                            onClick={() => copyAffiliateLink(link.affiliate_url, link.brand_name)}
-                          >
-                            <Copy className="h-3 w-3 mr-2" />
-                            Copy Link
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
+                {links.map((link) => (
+                  <AffiliateCodeCard
+                    key={link.id}
+                    brand_name={link.brand_name}
+                    description={link.description}
+                    affiliate_code={link.affiliate_code}
+                    affiliate_url={link.affiliate_url}
+                    expiry_date={link.expiry_date}
+                    clicks={link.clicks}
+                    orders={link.orders}
+                    onLinkClick={() => handleLinkClick(link.id, link.affiliate_url)}
+                  />
+                ))}
               </div>
             )}
           </CardContent>

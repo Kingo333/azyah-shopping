@@ -1,13 +1,15 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Separator } from '@/components/ui/separator';
 import { BackButton } from '@/components/ui/back-button';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   Plus, 
   Edit, 
@@ -18,7 +20,6 @@ import {
   Eye, 
   Heart, 
   ShoppingBag,
-  Users,
   DollarSign,
   Settings,
   Download,
@@ -28,99 +29,79 @@ import {
 interface Product {
   id: string;
   title: string;
-  price: number;
-  category: string;
+  price_cents: number;
+  category_slug: string;
   status: 'active' | 'draft' | 'sold_out';
-  image: string;
-  views: number;
-  likes: number;
-  sales: number;
-  revenue: number;
-  arEnabled: boolean;
-  createdAt: string;
+  media_urls: any;
+  stock_qty: number;
+  created_at: string;
+  brand: {
+    name: string;
+  };
 }
 
-interface Analytics {
-  totalProducts: number;
-  totalViews: number;
-  totalLikes: number;
-  totalSales: number;
-  totalRevenue: number;
-  conversionRate: number;
-  topProduct: string;
+interface Brand {
+  id: string;
+  name: string;
+  logo_url: string | null;
+  bio: string | null;
+  website: string | null;
 }
 
 const BrandPortal: React.FC = () => {
   const [activeTab, setActiveTab] = useState('products');
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
+  const [products, setProducts] = useState<Product[]>([]);
+  const [brand, setBrand] = useState<Brand | null>(null);
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { user } = useAuth();
 
-  // Mock brand data
-  const brandInfo = {
-    name: 'Elegant Abayas',
-    logo: '/placeholder.svg',
-    description: 'Premium modest wear for the modern woman',
-    verified: true,
-    followers: 12400,
-    following: 89,
-    website: 'https://elegantabayas.com'
+  useEffect(() => {
+    if (user) {
+      fetchBrandData();
+      fetchProducts();
+    }
+  }, [user]);
+
+  const fetchBrandData = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('brands')
+        .select('*')
+        .eq('owner_user_id', user?.id)
+        .single();
+
+      if (error && error.code !== 'PGRST116') throw error;
+      setBrand(data);
+    } catch (error) {
+      console.error('Error fetching brand data:', error);
+    }
   };
 
-  // Mock products data
-  const products: Product[] = [
-    {
-      id: '1',
-      title: 'Embroidered Black Abaya',
-      price: 15900,
-      category: 'Abayas',
-      status: 'active',
-      image: '/placeholder.svg',
-      views: 1250,
-      likes: 89,
-      sales: 12,
-      revenue: 190800,
-      arEnabled: true,
-      createdAt: '2024-01-15'
-    },
-    {
-      id: '2',
-      title: 'Silk Evening Kaftan',
-      price: 22900,
-      category: 'Kaftans',
-      status: 'active',
-      image: '/placeholder.svg',
-      views: 890,
-      likes: 156,
-      sales: 8,
-      revenue: 183200,
-      arEnabled: false,
-      createdAt: '2024-01-10'
-    },
-    {
-      id: '3',
-      title: 'Classic Navy Abaya',
-      price: 12900,
-      category: 'Abayas',
-      status: 'draft',
-      image: '/placeholder.svg',
-      views: 0,
-      likes: 0,
-      sales: 0,
-      revenue: 0,
-      arEnabled: true,
-      createdAt: '2024-01-20'
-    }
-  ];
+  const fetchProducts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .select(`
+          *,
+          brand:brands(name)
+        `)
+        .eq('brand_id', brand?.id || '')
+        .order('created_at', { ascending: false });
 
-  // Mock analytics data
-  const analytics: Analytics = {
-    totalProducts: products.length,
-    totalViews: products.reduce((sum, p) => sum + p.views, 0),
-    totalLikes: products.reduce((sum, p) => sum + p.likes, 0),
-    totalSales: products.reduce((sum, p) => sum + p.sales, 0),
-    totalRevenue: products.reduce((sum, p) => sum + p.revenue, 0),
-    conversionRate: 3.2,
-    topProduct: 'Embroidered Black Abaya'
+      if (error) throw error;
+      setProducts(data || []);
+    } catch (error) {
+      console.error('Error fetching products:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch products",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const formatPrice = (cents: number, currency: string = 'USD'): string => {
@@ -128,15 +109,6 @@ const BrandPortal: React.FC = () => {
       style: 'currency',
       currency: currency,
     }).format(cents / 100);
-  };
-
-  const formatNumber = (num: number): string => {
-    if (num >= 1000000) {
-      return (num / 1000000).toFixed(1) + 'M';
-    } else if (num >= 1000) {
-      return (num / 1000).toFixed(1) + 'K';
-    }
-    return num.toString();
   };
 
   const getStatusColor = (status: string) => {
@@ -158,11 +130,90 @@ const BrandPortal: React.FC = () => {
     setSelectedProducts(newSelected);
   };
 
-  const handleBulkAction = (action: string) => {
-    toast({
-      description: `${action} applied to ${selectedProducts.size} product(s)`
-    });
-    setSelectedProducts(new Set());
+  const handleBulkAction = async (action: string) => {
+    try {
+      if (action === 'Archive') {
+        const { error } = await supabase
+          .from('products')
+          .update({ status: 'draft' })
+          .in('id', Array.from(selectedProducts));
+        
+        if (error) throw error;
+      } else if (action === 'Delete') {
+        const { error } = await supabase
+          .from('products')
+          .delete()
+          .in('id', Array.from(selectedProducts));
+        
+        if (error) throw error;
+      }
+
+      toast({
+        description: `${action} applied to ${selectedProducts.size} product(s)`
+      });
+      setSelectedProducts(new Set());
+      fetchProducts();
+    } catch (error) {
+      console.error('Bulk action error:', error);
+      toast({
+        title: "Error",
+        description: `Failed to ${action.toLowerCase()} products`,
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleDeleteProduct = async (productId: string) => {
+    try {
+      const { error } = await supabase
+        .from('products')
+        .delete()
+        .eq('id', productId);
+
+      if (error) throw error;
+
+      toast({
+        description: "Product deleted successfully"
+      });
+      fetchProducts();
+    } catch (error) {
+      console.error('Delete product error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete product",
+        variant: "destructive"
+      });
+    }
+  };
+
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold mb-2">Access Restricted</h2>
+          <p className="text-muted-foreground">Please log in to access the brand portal.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!brand) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold mb-2">No Brand Found</h2>
+          <p className="text-muted-foreground">Please create a brand profile first.</p>
+        </div>
+      </div>
+    );
+  }
+
+  const analytics = {
+    totalProducts: products.length,
+    totalViews: products.reduce((sum, p) => sum + (p as any).views || 0, 0),
+    totalLikes: products.reduce((sum, p) => sum + (p as any).likes || 0, 0),
+    totalSales: products.reduce((sum, p) => sum + (p as any).sales || 0, 0),
+    totalRevenue: products.reduce((sum, p) => sum + (p as any).revenue || 0, 0)
   };
 
   return (
@@ -174,20 +225,20 @@ const BrandPortal: React.FC = () => {
             <BackButton />
             <div className="flex items-center gap-4">
               <div className="w-16 h-16 bg-muted rounded-lg overflow-hidden">
-                <img src={brandInfo.logo} alt={brandInfo.name} className="w-full h-full object-cover" />
+                {brand.logo_url ? (
+                  <img src={brand.logo_url} alt={brand.name} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                    {brand.name.charAt(0).toUpperCase()}
+                  </div>
+                )}
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h1 className="text-2xl font-bold">{brandInfo.name}</h1>
-                  {brandInfo.verified && (
-                    <Badge variant="secondary" className="text-xs">Verified</Badge>
-                  )}
+                  <h1 className="text-2xl font-bold">{brand.name}</h1>
+                  <Badge variant="secondary" className="text-xs">Verified</Badge>
                 </div>
-                <p className="text-muted-foreground">{brandInfo.description}</p>
-                <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
-                  <span>{formatNumber(brandInfo.followers)} followers</span>
-                  <span>{brandInfo.following} following</span>
-                </div>
+                <p className="text-muted-foreground">{brand.bio || 'Brand description'}</p>
               </div>
             </div>
           </div>
@@ -253,76 +304,77 @@ const BrandPortal: React.FC = () => {
               </div>
 
               {/* Products Grid */}
-              <div className="grid gap-4">
-                {products.map((product) => (
-                  <Card key={product.id} className="overflow-hidden">
-                    <CardContent className="p-4">
-                      <div className="flex items-center gap-4">
-                        {/* Selection Checkbox */}
-                        <input
-                          type="checkbox"
-                          checked={selectedProducts.has(product.id)}
-                          onChange={() => handleSelectProduct(product.id)}
-                          className="w-4 h-4"
-                        />
-
-                        {/* Product Image */}
-                        <div className="w-20 h-20 bg-muted rounded-lg overflow-hidden">
-                          <img 
-                            src={product.image} 
-                            alt={product.title}
-                            className="w-full h-full object-cover"
+              {loading ? (
+                <div className="text-center py-8">Loading products...</div>
+              ) : products.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  No products yet. Create your first product!
+                </div>
+              ) : (
+                <div className="grid gap-4">
+                  {products.map((product) => (
+                    <Card key={product.id} className="overflow-hidden">
+                      <CardContent className="p-4">
+                        <div className="flex items-center gap-4">
+                          {/* Selection Checkbox */}
+                          <input
+                            type="checkbox"
+                            checked={selectedProducts.has(product.id)}
+                            onChange={() => handleSelectProduct(product.id)}
+                            className="w-4 h-4"
                           />
-                        </div>
 
-                        {/* Product Info */}
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <h3 className="font-medium">{product.title}</h3>
-                            <Badge variant={getStatusColor(product.status) as any}>
-                              {product.status.replace('_', ' ')}
-                            </Badge>
-                            {product.arEnabled && (
-                              <Badge variant="outline" className="text-xs">AR</Badge>
+                          {/* Product Image */}
+                          <div className="w-20 h-20 bg-muted rounded-lg overflow-hidden">
+                            {product.media_urls && Array.isArray(product.media_urls) && product.media_urls[0] ? (
+                              <img 
+                                src={product.media_urls[0]} 
+                                alt={product.title}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">
+                                No Image
+                              </div>
                             )}
                           </div>
-                          <p className="text-sm text-muted-foreground mb-2">
-                            {product.category} • {formatPrice(product.price)}
-                          </p>
-                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                            <span className="flex items-center gap-1">
-                              <Eye className="h-3 w-3" />
-                              {formatNumber(product.views)}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <Heart className="h-3 w-3" />
-                              {formatNumber(product.likes)}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <ShoppingBag className="h-3 w-3" />
-                              {product.sales} sales
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <DollarSign className="h-3 w-3" />
-                              {formatPrice(product.revenue)}
-                            </span>
+
+                          {/* Product Info */}
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <h3 className="font-medium">{product.title}</h3>
+                              <Badge variant={getStatusColor(product.status) as any}>
+                                {product.status.replace('_', ' ')}
+                              </Badge>
+                            </div>
+                            <p className="text-sm text-muted-foreground mb-2">
+                              {product.category_slug} • {formatPrice(product.price_cents)}
+                            </p>
+                            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                              <span>Stock: {product.stock_qty}</span>
+                              <span>Created: {new Date(product.created_at).toLocaleDateString()}</span>
+                            </div>
+                          </div>
+
+                          {/* Actions */}
+                          <div className="flex items-center gap-2">
+                            <Button variant="outline" size="sm">
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleDeleteProduct(product.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
                           </div>
                         </div>
-
-                        {/* Actions */}
-                        <div className="flex items-center gap-2">
-                          <Button variant="outline" size="sm">
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button variant="outline" size="sm">
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
             </div>
           </TabsContent>
 
@@ -335,11 +387,25 @@ const BrandPortal: React.FC = () => {
                   <CardContent className="p-4">
                     <div className="flex items-center gap-2">
                       <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
-                        <Eye className="h-4 w-4 text-primary" />
+                        <ShoppingBag className="h-4 w-4 text-primary" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Total Products</p>
+                        <p className="text-xl font-bold">{analytics.totalProducts}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                        <Eye className="h-4 w-4 text-blue-500" />
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground">Total Views</p>
-                        <p className="text-xl font-bold">{formatNumber(analytics.totalViews)}</p>
+                        <p className="text-xl font-bold">{analytics.totalViews}</p>
                       </div>
                     </div>
                   </CardContent>
@@ -353,7 +419,7 @@ const BrandPortal: React.FC = () => {
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground">Total Likes</p>
-                        <p className="text-xl font-bold">{formatNumber(analytics.totalLikes)}</p>
+                        <p className="text-xl font-bold">{analytics.totalLikes}</p>
                       </div>
                     </div>
                   </CardContent>
@@ -363,25 +429,11 @@ const BrandPortal: React.FC = () => {
                   <CardContent className="p-4">
                     <div className="flex items-center gap-2">
                       <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-                        <ShoppingBag className="h-4 w-4 text-green-500" />
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Total Sales</p>
-                        <p className="text-xl font-bold">{analytics.totalSales}</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                        <DollarSign className="h-4 w-4 text-blue-500" />
+                        <DollarSign className="h-4 w-4 text-green-500" />
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground">Revenue</p>
-                        <p className="text-xl font-bold">{formatPrice(analytics.totalRevenue)}</p>
+                        <p className="text-xl font-bold">${analytics.totalRevenue}</p>
                       </div>
                     </div>
                   </CardContent>
@@ -399,7 +451,7 @@ const BrandPortal: React.FC = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="h-64 bg-muted rounded-lg flex items-center justify-center">
-                      <p className="text-muted-foreground">Chart visualization coming soon</p>
+                      <p className="text-muted-foreground">Real analytics data will appear here</p>
                     </div>
                   </CardContent>
                 </Card>
@@ -413,23 +465,26 @@ const BrandPortal: React.FC = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3">
-                      {products.slice(0, 3).map((product, index) => (
+                      {products.slice(0, 5).map((product, index) => (
                         <div key={product.id} className="flex items-center gap-3">
                           <span className="text-sm font-medium text-muted-foreground">
                             #{index + 1}
                           </span>
                           <div className="w-8 h-8 bg-muted rounded overflow-hidden">
-                            <img 
-                              src={product.image} 
-                              alt={product.title}
-                              className="w-full h-full object-cover"
-                            />
+                            {product.media_urls && Array.isArray(product.media_urls) && product.media_urls[0] ? (
+                              <img 
+                                src={product.media_urls[0]} 
+                                alt={product.title}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full bg-gray-200"></div>
+                            )}
                           </div>
                           <div className="flex-1">
-                            <p className="text-sm font-medium">{product.title}</p>
-                            <p className="text-xs text-muted-foreground">{product.sales} sales</p>
+                            <p className="text-sm font-medium truncate">{product.title}</p>
+                            <p className="text-xs text-muted-foreground">{formatPrice(product.price_cents)}</p>
                           </div>
-                          <p className="text-sm font-medium">{formatPrice(product.revenue)}</p>
                         </div>
                       ))}
                     </div>
@@ -450,37 +505,18 @@ const BrandPortal: React.FC = () => {
                   <div className="grid md:grid-cols-2 gap-4">
                     <div>
                       <label className="text-sm font-medium mb-2 block">Brand Name</label>
-                      <Input defaultValue={brandInfo.name} />
+                      <Input defaultValue={brand.name} />
                     </div>
                     <div>
                       <label className="text-sm font-medium mb-2 block">Website</label>
-                      <Input defaultValue={brandInfo.website} />
+                      <Input defaultValue={brand.website || ''} />
                     </div>
                   </div>
                   <div>
                     <label className="text-sm font-medium mb-2 block">Description</label>
-                    <Textarea defaultValue={brandInfo.description} />
+                    <Textarea defaultValue={brand.bio || ''} />
                   </div>
                   <Button>Save Changes</Button>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Social Media</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Instagram</label>
-                      <Input placeholder="@brandname" />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">TikTok</label>
-                      <Input placeholder="@brandname" />
-                    </div>
-                  </div>
-                  <Button>Update Social Links</Button>
                 </CardContent>
               </Card>
             </div>
