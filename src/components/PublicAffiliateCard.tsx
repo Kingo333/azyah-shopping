@@ -3,7 +3,7 @@ import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Copy, Calendar, Tag, Star, ExternalLink } from 'lucide-react';
+import { Copy, Calendar, Tag, ExternalLink } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 interface PublicAffiliateCardProps {
@@ -47,14 +47,7 @@ const PublicAffiliateCard: React.FC<PublicAffiliateCardProps> = ({
       <CardContent className="p-6">
         <div className="flex justify-between items-start mb-4">
           <div className="flex-1">
-            <div className="flex items-center gap-2 mb-1">
-              <h3 className="font-bold text-xl text-gray-900 font-playfair">{brand_name}</h3>
-              <div className="flex items-center">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                ))}
-              </div>
-            </div>
+            <h3 className="font-bold text-xl text-gray-900 font-playfair mb-1">{brand_name}</h3>
             {isExpired && (
               <Badge variant="destructive" className="mb-2 rounded-full">
                 Expired
@@ -70,14 +63,14 @@ const PublicAffiliateCard: React.FC<PublicAffiliateCardProps> = ({
         )}
 
         {affiliate_code && (
-          <div className="bg-gradient-to-r from-red-50 to-pink-50 p-4 rounded-xl mb-4 border border-[#A30000]/20">
+          <div className="bg-gradient-to-r from-red-50 to-pink-50 p-4 rounded-xl mb-4 border border-accent-cartier/20">
             <div className="flex items-center justify-between">
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-2">
-                  <Tag className="h-4 w-4 text-[#A30000]" />
-                  <span className="text-sm font-medium text-[#A30000]">Exclusive Code</span>
+                  <Tag className="h-4 w-4 text-accent-cartier" />
+                  <span className="text-sm font-medium text-accent-cartier">Exclusive Code</span>
                 </div>
-                <div className="text-2xl font-bold font-mono text-[#A30000] tracking-wider bg-white px-3 py-1 rounded-lg border-2 border-dashed border-[#A30000]/30">
+                <div className="text-2xl font-bold font-mono text-accent-cartier tracking-wider bg-white px-3 py-1 rounded-lg border-2 border-dashed border-accent-cartier/30 block w-fit">
                   {affiliate_code}
                 </div>
               </div>
@@ -85,7 +78,7 @@ const PublicAffiliateCard: React.FC<PublicAffiliateCardProps> = ({
                 size="sm"
                 variant="outline"
                 onClick={copyCode}
-                className="ml-3 border-[#A30000]/30 text-[#A30000] hover:bg-[#A30000]/10 rounded-xl"
+                className="ml-3 border-accent-cartier/30 text-accent-cartier hover:bg-accent-cartier/10 rounded-xl"
               >
                 <Copy className="h-3 w-3 mr-1" />
                 Copy Code
@@ -104,7 +97,7 @@ const PublicAffiliateCard: React.FC<PublicAffiliateCardProps> = ({
         <Button 
           onClick={handleShopNow}
           disabled={isExpired}
-          className="w-full bg-gradient-to-r from-[#A30000] to-red-600 hover:from-[#A30000]/90 hover:to-red-600/90 text-white font-semibold py-3 shadow-lg rounded-xl transition-all duration-200"
+          className="w-full bg-gradient-to-r from-accent-cartier to-red-600 hover:from-accent-cartier/90 hover:to-red-600/90 text-white font-semibold py-3 shadow-lg rounded-xl transition-all duration-200"
         >
           <ExternalLink className="h-4 w-4 mr-2" />
           Shop {brand_name} Now
