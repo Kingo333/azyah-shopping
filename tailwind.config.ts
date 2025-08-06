@@ -43,8 +43,21 @@ export default {
 					foreground: 'hsl(var(--muted-foreground))'
 				},
 				accent: {
-					DEFAULT: 'hsl(var(--accent))',
-					foreground: 'hsl(var(--accent-foreground))'
+					DEFAULT: 'hsl(var(--accent-cartier))',
+					foreground: 'hsl(var(--accent-foreground))',
+					cartier: {
+						50: '#fef2f2',
+						100: '#fee2e2',
+						200: '#fecaca',
+						300: '#fca5a5',
+						400: '#f87171',
+						500: '#ef4444',
+						600: '#B11226',
+						700: '#A30000',
+						800: '#7f1d1d',
+						900: '#701a1a',
+						DEFAULT: 'hsl(var(--accent-cartier))'
+					}
 				},
 				popover: {
 					DEFAULT: 'hsl(var(--popover))',
@@ -70,7 +83,7 @@ export default {
 				'lux-primary': 'hsl(var(--lux-primary))',
 				'lux-secondary': 'hsl(var(--lux-secondary))',
 				'lux-accent': 'hsl(var(--lux-accent))',
-				// Cartier-red accent
+				// Cartier-red accent system
 				'cartier': {
 					50: '#fef2f2',
 					100: '#fee2e2',
@@ -78,8 +91,8 @@ export default {
 					300: '#fca5a5',
 					400: '#f87171',
 					500: '#ef4444',
-					600: '#A30000',
-					700: '#921414',
+					600: '#B11226',
+					700: '#A30000',
 					800: '#7f1d1d',
 					900: '#701a1a',
 				},
@@ -154,10 +167,10 @@ export default {
 				},
 				'cartier-glow': {
 					'0%, 100%': {
-						boxShadow: '0 0 20px hsl(0 100% 32% / 0.3)'
+						boxShadow: '0 0 20px hsl(var(--accent-cartier) / 0.3)'
 					},
 					'50%': {
-						boxShadow: '0 0 40px hsl(0 100% 32% / 0.6)'
+						boxShadow: '0 0 40px hsl(var(--accent-cartier) / 0.6)'
 					}
 				}
 			},
@@ -175,7 +188,7 @@ export default {
 				'glow': 'var(--shadow-glow)',
 				'crimson': 'var(--shadow-crimson)',
 				'elegant': 'var(--shadow-elegant)',
-				'cartier': '0 4px 24px hsl(0 100% 32% / 0.15)'
+				'cartier': '0 4px 24px hsl(var(--accent-cartier) / 0.15)'
 			},
 			fontFamily: {
 				'luxury': ['Inter', 'system-ui', 'sans-serif'],
@@ -187,4 +200,15 @@ export default {
 		}
 	},
 	plugins: [require("tailwindcss-animate")],
+	safelist: [
+		'bg-accent-cartier-600',
+		'bg-accent-cartier-700',
+		'text-accent-cartier-600',
+		'text-accent-cartier-700',
+		'border-accent-cartier-600',
+		'border-accent-cartier-700',
+		'ring-accent-cartier-600',
+		'hover:bg-accent-cartier-700',
+		'focus:ring-accent-cartier-600'
+	]
 } satisfies Config;

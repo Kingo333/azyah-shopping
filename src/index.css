@@ -21,6 +21,7 @@
     --muted-foreground: 215.4 16.3% 46.9%;
     --accent: 210 40% 96%;
     --accent-foreground: 222.2 84% 4.9%;
+    --accent-cartier: 0 100% 32%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
     --border: 214.3 31.8% 91.4%;
@@ -33,23 +34,18 @@
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
     
-    /* Luxury color system */
+    /* Legacy luxury colors */
     --lux-bg: 354 100% 98%;
     --lux-card: 0 0% 100%;
     --lux-primary: 340 82% 52%;
     --lux-secondary: 262 83% 58%;
     --lux-accent: 45 93% 47%;
     
-    /* Cartier-red accent system */
-    --cartier-primary: 0 100% 32%;
-    --cartier-secondary: 0 84% 60%;
-    --cartier-accent: 0 100% 25%;
-    
     /* Enhanced shadows */
     --shadow-glow: 0 0 30px hsl(var(--primary) / 0.15);
-    --shadow-crimson: 0 8px 32px hsl(340 82% 52% / 0.12);
+    --shadow-crimson: 0 8px 32px hsl(var(--accent-cartier) / 0.12);
     --shadow-elegant: 0 4px 24px hsl(222.2 84% 4.9% / 0.08);
-    --shadow-cartier: 0 4px 24px hsl(var(--cartier-primary) / 0.15);
+    --shadow-cartier: 0 4px 24px hsl(var(--accent-cartier) / 0.15);
     
     /* Sidebar colors */
     --sidebar-background: 0 0% 98%;
@@ -78,6 +74,7 @@
     --muted-foreground: 215 20.2% 65.1%;
     --accent: 217.2 32.6% 17.5%;
     --accent-foreground: 210 40% 98%;
+    --accent-cartier: 0 79% 63%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
     --border: 217.2 32.6% 17.5%;
@@ -95,11 +92,6 @@
     --lux-primary: 340 82% 52%;
     --lux-secondary: 262 83% 58%;
     --lux-accent: 45 93% 47%;
-    
-    /* Dark mode Cartier-red */
-    --cartier-primary: 0 100% 45%;
-    --cartier-secondary: 0 84% 70%;
-    --cartier-accent: 0 100% 35%;
     
     --sidebar-background: 222.2 84% 4.9%;
     --sidebar-foreground: 210 40% 98%;
@@ -130,14 +122,26 @@
   }
 
   .cartier-gradient {
-    background: linear-gradient(135deg, hsl(var(--cartier-primary)), hsl(var(--cartier-secondary)));
+    background: linear-gradient(135deg, hsl(var(--accent-cartier)), hsl(var(--accent-cartier) / 0.8));
   }
   
   .cartier-text {
-    color: hsl(var(--cartier-primary));
+    color: hsl(var(--accent-cartier));
   }
 
   .btn-cartier {
-    @apply bg-gradient-to-r from-cartier-600 to-red-600 hover:from-cartier-700 hover:to-red-700 text-white shadow-cartier;
+    @apply bg-gradient-to-r from-cartier-600 to-cartier-700 hover:from-cartier-700 hover:to-cartier-800 text-white shadow-cartier focus:ring-2 focus:ring-cartier-600;
+  }
+
+  .btn-cartier-outline {
+    @apply border-2 border-cartier-600 text-cartier-600 hover:bg-cartier-600 hover:text-white focus:ring-2 focus:ring-cartier-600;
+  }
+
+  .tab-cartier-active {
+    @apply border-b-2 border-cartier-600 text-cartier-600 font-medium;
+  }
+
+  .ring-cartier {
+    @apply focus:ring-2 focus:ring-cartier-600 focus:ring-offset-2;
   }
 }
