@@ -282,7 +282,7 @@ const AffiliateHub: React.FC<AffiliateHubProps> = ({ showTitle = true }) => {
               <div className="flex flex-col sm:flex-row gap-2">
                 <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
                   <DialogTrigger asChild>
-                    <Button onClick={() => setEditingLink(null)} size="sm" className="rounded-xl">
+                    <Button onClick={() => setEditingLink(null)} size="sm" className="rounded-xl btn-cartier">
                       <Plus className="h-4 w-4 mr-2" />
                       Add Link
                     </Button>
@@ -355,7 +355,7 @@ const AffiliateHub: React.FC<AffiliateHubProps> = ({ showTitle = true }) => {
                         <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>
                           Cancel
                         </Button>
-                        <Button type="submit">
+                        <Button type="submit" className="btn-cartier">
                           {editingLink ? 'Update' : 'Create'}
                         </Button>
                       </div>
@@ -441,17 +441,17 @@ const AffiliateHub: React.FC<AffiliateHubProps> = ({ showTitle = true }) => {
                         </div>
                         
                         {link.affiliate_code && (
-                          <div className="flex items-center justify-between gap-2 bg-gradient-to-r from-pink-50 to-purple-50 p-3 rounded-lg border border-pink-200">
+                          <div className="flex items-center justify-between gap-2 bg-gradient-to-r from-red-50 to-pink-50 p-3 rounded-lg border border-[#A30000]/20">
                             <div className="flex items-center gap-2 flex-1 min-w-0">
-                              <Tag className="h-3 w-3 text-pink-600 flex-shrink-0" />
-                              <span className="text-sm font-mono bg-white px-2 py-1 rounded border-dashed border border-pink-300 truncate">
+                              <Tag className="h-3 w-3 text-[#A30000] flex-shrink-0" />
+                              <span className="text-sm font-mono bg-white px-2 py-1 rounded border-dashed border border-[#A30000]/30 truncate">
                                 {link.affiliate_code}
                               </span>
                             </div>
                             <Button
                               size="sm"
                               variant="ghost"
-                              className="h-6 px-2 text-pink-600 hover:bg-pink-100 rounded-lg flex-shrink-0"
+                              className="h-6 px-2 text-[#A30000] hover:bg-[#A30000]/10 rounded-lg flex-shrink-0"
                               onClick={() => copyAffiliateCode(link.affiliate_code!)}
                             >
                               <Copy className="h-3 w-3 mr-1" />

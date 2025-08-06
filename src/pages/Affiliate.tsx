@@ -20,13 +20,18 @@ const Affiliate = () => {
   const { userId } = useParams();
   const [user, setUser] = useState<UserProfile | null>(null);
   const [userLoading, setUserLoading] = useState(true);
+  const [mounted, setMounted] = useState(false);
   const { codes, loading: codesLoading, error } = usePublicAffiliateCodes(userId);
 
   useEffect(() => {
-    if (userId) {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (userId && mounted) {
       fetchUserProfile();
     }
-  }, [userId]);
+  }, [userId, mounted]);
 
   const fetchUserProfile = async () => {
     try {
@@ -72,12 +77,10 @@ const Affiliate = () => {
     } catch (error) {
       console.error('Error tracking click:', error);
     }
-    
-    // Open link
-    window.open(url, '_blank');
   };
 
-  if (userLoading || codesLoading) {
+  // Prevent hydration mismatch by not rendering until mounted
+  if (!mounted || userLoading || codesLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-purple-50">
         <div className="container max-w-6xl mx-auto px-4 py-8">
@@ -120,19 +123,19 @@ const Affiliate = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-purple-50">
+    <div className="min-h-screen bg-background">
       <div className="container max-w-6xl mx-auto px-4 py-8">
         {/* User Profile Header */}
-        <Card className="mb-8 border-0 shadow-lg bg-white/80 backdrop-blur-sm rounded-2xl">
+        <Card className="mb-8 border-0 shadow-lg bg-card backdrop-blur-sm rounded-2xl">
           <CardContent className="p-8">
             <div className="flex flex-col md:flex-row items-center gap-6 mb-6">
-              <Avatar className="h-24 w-24 ring-4 ring-pink-100">
-                <AvatarFallback className="text-2xl bg-gradient-to-br from-pink-400 to-purple-400 text-white font-playfair">
+              <Avatar className="h-24 w-24 ring-4 ring-[#A30000]/20">
+                <AvatarFallback className="text-2xl bg-gradient-to-br from-[#A30000] to-red-600 text-white font-playfair">
                   {user.name ? user.name.charAt(0).toUpperCase() : 'A'}
                 </AvatarFallback>
               </Avatar>
               <div className="text-center md:text-left">
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent font-playfair">
+                <h1 className="text-3xl font-bold text-foreground font-playfair">
                   {user.name || 'Affiliate Partner'}
                 </h1>
                 <p className="text-lg text-muted-foreground">Fashion Affiliate & Style Curator</p>
@@ -145,7 +148,7 @@ const Affiliate = () => {
               </div>
             </div>
             {user.bio && (
-              <div className="bg-gradient-to-r from-pink-50 to-purple-50 p-4 rounded-xl">
+              <div className="bg-gradient-to-r from-[#A30000]/5 to-pink-50 p-4 rounded-xl">
                 <p className="text-muted-foreground text-center md:text-left">{user.bio}</p>
               </div>
             )}
@@ -153,10 +156,10 @@ const Affiliate = () => {
         </Card>
 
         {/* Affiliate Links */}
-        <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm rounded-2xl">
+        <Card className="border-0 shadow-lg bg-card backdrop-blur-sm rounded-2xl">
           <CardHeader className="pb-6">
             <CardTitle className="flex items-center gap-3 text-2xl font-playfair">
-              <div className="p-2 bg-gradient-to-br from-pink-400 to-purple-400 rounded-xl">
+              <div className="p-2 bg-gradient-to-br from-[#A30000] to-red-600 rounded-xl">
                 <Heart className="h-6 w-6 text-white" />
               </div>
               Exclusive Fashion Deals & Codes

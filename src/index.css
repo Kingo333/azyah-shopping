@@ -40,10 +40,16 @@
     --lux-secondary: 262 83% 58%;
     --lux-accent: 45 93% 47%;
     
+    /* Cartier-red accent system */
+    --cartier-primary: 0 100% 32%;
+    --cartier-secondary: 0 84% 60%;
+    --cartier-accent: 0 100% 25%;
+    
     /* Enhanced shadows */
     --shadow-glow: 0 0 30px hsl(var(--primary) / 0.15);
     --shadow-crimson: 0 8px 32px hsl(340 82% 52% / 0.12);
     --shadow-elegant: 0 4px 24px hsl(222.2 84% 4.9% / 0.08);
+    --shadow-cartier: 0 4px 24px hsl(var(--cartier-primary) / 0.15);
     
     /* Sidebar colors */
     --sidebar-background: 0 0% 98%;
@@ -90,6 +96,11 @@
     --lux-secondary: 262 83% 58%;
     --lux-accent: 45 93% 47%;
     
+    /* Dark mode Cartier-red */
+    --cartier-primary: 0 100% 45%;
+    --cartier-secondary: 0 84% 70%;
+    --cartier-accent: 0 100% 35%;
+    
     --sidebar-background: 222.2 84% 4.9%;
     --sidebar-foreground: 210 40% 98%;
     --sidebar-primary: 0 0% 98%;
@@ -116,5 +127,17 @@
   
   .gradient-text {
     @apply bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent;
+  }
+
+  .cartier-gradient {
+    background: linear-gradient(135deg, hsl(var(--cartier-primary)), hsl(var(--cartier-secondary)));
+  }
+  
+  .cartier-text {
+    color: hsl(var(--cartier-primary));
+  }
+
+  .btn-cartier {
+    @apply bg-gradient-to-r from-cartier-600 to-red-600 hover:from-cartier-700 hover:to-red-700 text-white shadow-cartier;
   }
 }

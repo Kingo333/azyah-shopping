@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -69,6 +70,19 @@ export default {
 				'lux-primary': 'hsl(var(--lux-primary))',
 				'lux-secondary': 'hsl(var(--lux-secondary))',
 				'lux-accent': 'hsl(var(--lux-accent))',
+				// Cartier-red accent
+				'cartier': {
+					50: '#fef2f2',
+					100: '#fee2e2',
+					200: '#fecaca',
+					300: '#fca5a5',
+					400: '#f87171',
+					500: '#ef4444',
+					600: '#A30000',
+					700: '#921414',
+					800: '#7f1d1d',
+					900: '#701a1a',
+				},
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
@@ -137,6 +151,14 @@ export default {
 					'50%': {
 						boxShadow: '0 0 60px hsl(var(--lux-primary) / 0.6)'
 					}
+				},
+				'cartier-glow': {
+					'0%, 100%': {
+						boxShadow: '0 0 20px hsl(0 100% 32% / 0.3)'
+					},
+					'50%': {
+						boxShadow: '0 0 40px hsl(0 100% 32% / 0.6)'
+					}
 				}
 			},
 			animation: {
@@ -146,12 +168,14 @@ export default {
 				'scale-in': 'scale-in 0.2s ease-out',
 				'slide-up': 'slide-up 0.3s ease-out',
 				'glow-pulse': 'glow-pulse 2s ease-in-out infinite',
-				'luxury-glow': 'luxury-glow 3s ease-in-out infinite'
+				'luxury-glow': 'luxury-glow 3s ease-in-out infinite',
+				'cartier-glow': 'cartier-glow 2s ease-in-out infinite'
 			},
 			boxShadow: {
 				'glow': 'var(--shadow-glow)',
 				'crimson': 'var(--shadow-crimson)',
-				'elegant': 'var(--shadow-elegant)'
+				'elegant': 'var(--shadow-elegant)',
+				'cartier': '0 4px 24px hsl(0 100% 32% / 0.15)'
 			},
 			fontFamily: {
 				'luxury': ['Inter', 'system-ui', 'sans-serif'],
