@@ -46,7 +46,10 @@ const BrandPortal: React.FC = () => {
   const { user } = useAuth();
   const { categories } = useCategories();
   const { data: analyticsData, isLoading: analyticsLoading } = useAnalytics(brand?.id, 'brand');
-  const { data: funnelData, isLoading: funnelLoading } = useConversionFunnel(brand?.id, 'brand');
+  const { data: funnelData, isLoading: funnelLoading } = useConversionFunnel({
+    startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    endDate: new Date().toISOString().split('T')[0]
+  });
 
   useEffect(() => {
     if (user) {
