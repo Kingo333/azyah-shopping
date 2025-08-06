@@ -27,9 +27,7 @@ const DashboardHeader: React.FC = () => {
   };
   return <div className="flex items-center justify-between">
       <div className="flex items-center gap-2">
-        <div className="relative w-8 h-8 rounded-lg overflow-hidden shadow-sm">
-          
-        </div>
+        
         <h1 className="font-serif text-xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
           Azyah
         </h1>
