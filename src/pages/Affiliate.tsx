@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { ShoppingBag, Instagram, Twitter, Globe } from 'lucide-react';
+import { Heart, Star } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { usePublicAffiliateCodes } from '@/hooks/usePublicAffiliateCodes';
 import PublicAffiliateCard from '@/components/PublicAffiliateCard';
@@ -14,11 +14,6 @@ interface UserProfile {
   name: string | null;
   bio: string | null;
   avatar_url: string | null;
-  socials: {
-    instagram?: string;
-    twitter?: string;
-    website?: string;
-  } | null;
 }
 
 const Affiliate = () => {
@@ -44,7 +39,7 @@ const Affiliate = () => {
       
       const { data: userData, error: userError } = await supabase
         .from('users')
-        .select('id, name, bio, avatar_url, socials')
+        .select('id, name, bio, avatar_url')
         .eq('id', userId)
         .single();
 
@@ -81,32 +76,6 @@ const Affiliate = () => {
       }
     } catch (error) {
       console.error('Error tracking click:', error);
-    }
-  };
-
-  const getSocialIcon = (platform: string) => {
-    switch (platform) {
-      case 'instagram':
-        return Instagram;
-      case 'twitter':
-        return Twitter;
-      case 'website':
-        return Globe;
-      default:
-        return Globe;
-    }
-  };
-
-  const getSocialUrl = (platform: string, value: string) => {
-    switch (platform) {
-      case 'instagram':
-        return value.startsWith('http') ? value : `https://instagram.com/${value.replace('@', '')}`;
-      case 'twitter':
-        return value.startsWith('http') ? value : `https://twitter.com/${value.replace('@', '')}`;
-      case 'website':
-        return value.startsWith('http') ? value : `https://${value}`;
-      default:
-        return value;
     }
   };
 
@@ -153,9 +122,6 @@ const Affiliate = () => {
     );
   }
 
-  const socialLinks = user.socials || {};
-  const hasSocialLinks = Object.values(socialLinks).some(value => value && value.trim() !== '');
-
   return (
     <div className="min-h-screen bg-background">
       <div className="container max-w-6xl mx-auto px-4 py-8">
@@ -163,42 +129,26 @@ const Affiliate = () => {
         <Card className="mb-8 border-0 shadow-lg bg-card backdrop-blur-sm rounded-2xl">
           <CardContent className="p-8">
             <div className="flex flex-col md:flex-row items-center gap-6 mb-6">
-              <Avatar className="h-24 w-24 ring-4 ring-accent-cartier/20">
-                <AvatarFallback className="text-2xl bg-gradient-to-br from-accent-cartier to-red-600 text-white font-playfair">
+              <Avatar className="h-24 w-24 ring-4 ring-[#A30000]/20">
+                <AvatarFallback className="text-2xl bg-gradient-to-br from-[#A30000] to-red-600 text-white font-playfair">
                   {user.name ? user.name.charAt(0).toUpperCase() : 'A'}
                 </AvatarFallback>
               </Avatar>
-              <div className="text-center md:text-left flex-1">
-                <h1 className="text-3xl font-bold text-foreground font-playfair mb-2">
+              <div className="text-center md:text-left">
+                <h1 className="text-3xl font-bold text-foreground font-playfair">
                   {user.name || 'Affiliate Partner'}
                 </h1>
-                
-                {/* Social Media Links */}
-                {hasSocialLinks && (
-                  <div className="flex items-center justify-center md:justify-start gap-3 mt-3">
-                    {Object.entries(socialLinks).map(([platform, value]) => {
-                      if (!value || value.trim() === '') return null;
-                      const IconComponent = getSocialIcon(platform);
-                      const url = getSocialUrl(platform, value);
-                      
-                      return (
-                        <a
-                          key={platform}
-                          href={url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="p-2 rounded-full bg-accent-cartier/10 hover:bg-accent-cartier/20 text-accent-cartier transition-colors"
-                        >
-                          <IconComponent className="h-4 w-4" />
-                        </a>
-                      );
-                    })}
-                  </div>
-                )}
+                <p className="text-lg text-muted-foreground">Fashion Affiliate & Style Curator</p>
+                <div className="flex items-center justify-center md:justify-start gap-1 mt-2">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                  ))}
+                  <span className="text-sm text-muted-foreground ml-1">Trusted Partner</span>
+                </div>
               </div>
             </div>
             {user.bio && (
-              <div className="bg-gradient-to-r from-accent-cartier/5 to-pink-50 p-4 rounded-xl">
+              <div className="bg-gradient-to-r from-[#A30000]/5 to-pink-50 p-4 rounded-xl">
                 <p className="text-muted-foreground text-center md:text-left">{user.bio}</p>
               </div>
             )}
@@ -209,8 +159,8 @@ const Affiliate = () => {
         <Card className="border-0 shadow-lg bg-card backdrop-blur-sm rounded-2xl">
           <CardHeader className="pb-6">
             <CardTitle className="flex items-center gap-3 text-2xl font-playfair">
-              <div className="p-2 bg-gradient-to-br from-accent-cartier to-red-600 rounded-xl">
-                <ShoppingBag className="h-6 w-6 text-white" />
+              <div className="p-2 bg-gradient-to-br from-[#A30000] to-red-600 rounded-xl">
+                <Heart className="h-6 w-6 text-white" />
               </div>
               Exclusive Fashion Deals & Codes
             </CardTitle>
@@ -221,7 +171,7 @@ const Affiliate = () => {
           <CardContent>
             {codes.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">
-                <ShoppingBag className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
+                <Heart className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
                 <p className="text-lg font-playfair">No exclusive deals available yet.</p>
                 <p>Check back soon for amazing fashion offers!</p>
               </div>
