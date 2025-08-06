@@ -1,342 +1,133 @@
-import { useState, useEffect } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
-import { toast } from '@/hooks/use-toast';
 
-export interface AnalyticsEvent {
-  id?: number;
-  user_id?: string;
-  session_id?: string;
-  event_type: string;
-  event_data?: Record<string, any>;
-  product_id?: string;
-  brand_id?: string;
-  retailer_id?: string;
-  ip_address?: string;
-  user_agent?: string;
-  referrer?: string;
-  created_at?: string;
-}
+import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface AnalyticsMetrics {
-  impressions: number;
-  clicks: number;
-  wishlist_adds: number;
-  ar_views: number;
-  conversions: number;
-  revenue_cents: number;
-  ctr: number;
-  conversion_rate: number;
+  totalViews: number;
+  totalLikes: number;
+  totalWishlistAdds: number;
+  conversionRate: number;
+  topReferrers: Array<{
+    code: string;
+    clicks: number;
+    revenue: number;
+  }>;
+  repeatShopperRate: number;
+  avgSwipeSentiment: number;
 }
 
 export interface ConversionFunnelData {
   stage: string;
   count: number;
-  conversion_rate: number;
+  percentage: number;
 }
 
-// Track analytics events
-export const useTrackEvent = () => {
-  const { user } = useAuth();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (event: Omit<AnalyticsEvent, 'id' | 'created_at'>) => {
-      const sessionId = sessionStorage.getItem('analytics_session') || crypto.randomUUID();
-      sessionStorage.setItem('analytics_session', sessionId);
-
-      const { data, error } = await supabase
-        .from('events')
-        .insert({
-          ...event,
-          user_id: user?.id,
-          session_id: sessionId,
-          user_agent: navigator.userAgent,
-          referrer: document.referrer || null,
-          ip_address: null // Will be populated by backend if needed
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      // Invalidate analytics queries to refresh data
-      queryClient.invalidateQueries({ queryKey: ['analytics'] });
-    }
-  });
-};
-
-// Get analytics overview
-export const useAnalyticsOverview = (
-  filters?: {
-    startDate?: string;
-    endDate?: string;
-    productId?: string;
-    brandId?: string;
-    retailerId?: string;
-  }
-) => {
+export const useAnalytics = (entityId: string | undefined, entityType: 'brand' | 'retailer') => {
   return useQuery({
-    queryKey: ['analytics', 'overview', filters],
+    queryKey: ['analytics', entityId, entityType],
     queryFn: async (): Promise<AnalyticsMetrics> => {
-      let query = supabase
-        .from('events')
-        .select('event_type, event_data, product_id, created_at');
+      if (!entityId) throw new Error('Entity ID required');
 
-      if (filters?.startDate) {
-        query = query.gte('created_at', filters.startDate);
-      }
-      if (filters?.endDate) {
-        query = query.lte('created_at', filters.endDate);
-      }
-      if (filters?.productId) {
-        query = query.eq('product_id', filters.productId);
-      }
-      if (filters?.brandId) {
-        query = query.eq('brand_id', filters.brandId);
-      }
-      if (filters?.retailerId) {
-        query = query.eq('retailer_id', filters.retailerId);
-      }
+      // Get views based on entity type
+      const viewsQuery = entityType === 'brand' 
+        ? supabase.from('events').select('*').eq('brand_id', entityId).eq('event_type', 'product_view')
+        : supabase.from('events').select('*').eq('retailer_id', entityId).eq('event_type', 'product_view');
 
-      const { data, error } = await query;
-      if (error) throw error;
-
-      // Calculate metrics from raw events
-      const impressions = data.filter(e => e.event_type === 'product_view').length;
-      const clicks = data.filter(e => e.event_type === 'product_click').length;
-      const wishlist_adds = data.filter(e => e.event_type === 'wishlist_add').length;
-      const ar_views = data.filter(e => e.event_type === 'ar_view').length;
-      const conversions = data.filter(e => e.event_type === 'purchase').length;
+      const { data: views } = await viewsQuery;
       
-      const revenue_cents = data
-        .filter(e => e.event_type === 'purchase')
-        .reduce((sum, e) => {
-          const eventData = e.event_data as any;
-          return sum + (eventData?.amount_cents || 0);
-        }, 0);
+      // Get likes
+      const { data: products } = await supabase
+        .from('products')
+        .select('id')
+        .eq(entityType === 'brand' ? 'brand_id' : 'retailer_id', entityId);
 
-      const ctr = impressions > 0 ? (clicks / impressions) * 100 : 0;
-      const conversion_rate = clicks > 0 ? (conversions / clicks) * 100 : 0;
+      const productIds = products?.map(p => p.id) || [];
+      
+      const { data: likes } = await supabase
+        .from('likes')
+        .select('*')
+        .in('product_id', productIds);
+
+      // Get wishlist adds
+      const { data: wishlistAdds } = await supabase
+        .from('wishlist_items')
+        .select('*')
+        .in('product_id', productIds);
+
+      // Calculate metrics
+      const totalViews = views?.length || 0;
+      const totalLikes = likes?.length || 0;
+      const totalWishlistAdds = wishlistAdds?.length || 0;
+      const conversionRate = totalViews > 0 ? (totalLikes / totalViews) * 100 : 0;
 
       return {
-        impressions,
-        clicks,
-        wishlist_adds,
-        ar_views,
-        conversions,
-        revenue_cents,
-        ctr: Math.round(ctr * 100) / 100,
-        conversion_rate: Math.round(conversion_rate * 100) / 100
+        totalViews,
+        totalLikes,
+        totalWishlistAdds,
+        conversionRate: Math.round(conversionRate * 100) / 100,
+        topReferrers: [], // Will implement with affiliate_clicks table
+        repeatShopperRate: 0, // Will implement with order analysis
+        avgSwipeSentiment: 0 // Will implement with swipe_actions analysis
       };
-    }
+    },
+    enabled: !!entityId
   });
 };
 
-// Get conversion funnel data
-export const useConversionFunnel = (
-  filters?: {
-    startDate?: string;
-    endDate?: string;
-    productId?: string;
-  }
-) => {
+export const useConversionFunnel = (entityId: string | undefined, entityType: 'brand' | 'retailer') => {
   return useQuery({
-    queryKey: ['analytics', 'funnel', filters],
+    queryKey: ['conversion-funnel', entityId, entityType],
     queryFn: async (): Promise<ConversionFunnelData[]> => {
-      let query = supabase
+      if (!entityId) throw new Error('Entity ID required');
+
+      // Get products for this entity
+      const { data: products } = await supabase
+        .from('products')
+        .select('id')
+        .eq(entityType === 'brand' ? 'brand_id' : 'retailer_id', entityId);
+
+      const productIds = products?.map(p => p.id) || [];
+
+      // Get funnel data
+      const { data: views } = await supabase
         .from('events')
-        .select('event_type, session_id')
-        .in('event_type', ['product_view', 'product_click', 'wishlist_add', 'ar_view', 'add_to_cart', 'purchase']);
+        .select('session_id')
+        .eq('event_type', 'product_view')
+        .in('product_id', productIds);
 
-      if (filters?.startDate) {
-        query = query.gte('created_at', filters.startDate);
-      }
-      if (filters?.endDate) {
-        query = query.lte('created_at', filters.endDate);
-      }
-      if (filters?.productId) {
-        query = query.eq('product_id', filters.productId);
-      }
+      const { data: likes } = await supabase
+        .from('likes')
+        .select('*')
+        .in('product_id', productIds);
 
-      const { data, error } = await query;
-      if (error) throw error;
+      const { data: wishlistAdds } = await supabase
+        .from('wishlist_items')
+        .select('*')
+        .in('product_id', productIds);
 
-      // Group by session and calculate funnel progression
-      const sessionData = data.reduce((acc, event) => {
-        if (!acc[event.session_id]) {
-          acc[event.session_id] = new Set();
+      const totalViews = views?.length || 0;
+      const totalLikes = likes?.length || 0;
+      const totalWishlistAdds = wishlistAdds?.length || 0;
+
+      return [
+        {
+          stage: 'Views',
+          count: totalViews,
+          percentage: 100
+        },
+        {
+          stage: 'Likes',
+          count: totalLikes,
+          percentage: totalViews > 0 ? (totalLikes / totalViews) * 100 : 0
+        },
+        {
+          stage: 'Wishlist Adds',
+          count: totalWishlistAdds,
+          percentage: totalLikes > 0 ? (totalWishlistAdds / totalLikes) * 100 : 0
         }
-        acc[event.session_id].add(event.event_type);
-        return acc;
-      }, {} as Record<string, Set<string>>);
-
-      const totalSessions = Object.keys(sessionData).length;
-      const stages = [
-        { stage: 'Product View', event: 'product_view' },
-        { stage: 'Product Click', event: 'product_click' },
-        { stage: 'AR Try-On', event: 'ar_view' },
-        { stage: 'Add to Cart', event: 'add_to_cart' },
-        { stage: 'Purchase', event: 'purchase' }
       ];
-
-      return stages.map((stage, index) => {
-        const count = Object.values(sessionData).filter(events => 
-          events.has(stage.event)
-        ).length;
-        
-        const previousCount = index === 0 ? totalSessions : 
-          Object.values(sessionData).filter(events => 
-            events.has(stages[index - 1].event)
-          ).length;
-        
-        const conversion_rate = previousCount > 0 ? (count / previousCount) * 100 : 0;
-
-        return {
-          stage: stage.stage,
-          count,
-          conversion_rate: Math.round(conversion_rate * 100) / 100
-        };
-      });
-    }
+    },
+    enabled: !!entityId
   });
-};
-
-// Get time-based analytics
-export const useTimeSeriesAnalytics = (
-  metric: 'impressions' | 'clicks' | 'conversions' | 'revenue',
-  period: 'hour' | 'day' | 'week' = 'day',
-  filters?: {
-    startDate?: string;
-    endDate?: string;
-    productId?: string;
-  }
-) => {
-  return useQuery({
-    queryKey: ['analytics', 'timeseries', metric, period, filters],
-    queryFn: async () => {
-      const eventTypes = {
-        impressions: 'product_view',
-        clicks: 'product_click',
-        conversions: 'purchase',
-        revenue: 'purchase'
-      };
-
-      let query = supabase
-        .from('events')
-        .select('created_at, event_data')
-        .eq('event_type', eventTypes[metric]);
-
-      if (filters?.startDate) {
-        query = query.gte('created_at', filters.startDate);
-      }
-      if (filters?.endDate) {
-        query = query.lte('created_at', filters.endDate);
-      }
-      if (filters?.productId) {
-        query = query.eq('product_id', filters.productId);
-      }
-
-      const { data, error } = await query;
-      if (error) throw error;
-
-      // Group data by time period
-      const groupedData = data.reduce((acc, event) => {
-        const date = new Date(event.created_at);
-        let key: string;
-
-        switch (period) {
-          case 'hour':
-            key = date.toISOString().slice(0, 13) + ':00:00.000Z';
-            break;
-          case 'week':
-            const weekStart = new Date(date);
-            weekStart.setDate(date.getDate() - date.getDay());
-            key = weekStart.toISOString().slice(0, 10);
-            break;
-          default: // day
-            key = date.toISOString().slice(0, 10);
-        }
-
-        if (!acc[key]) {
-          acc[key] = { count: 0, value: 0 };
-        }
-        
-        acc[key].count += 1;
-        if (metric === 'revenue') {
-          const eventData = event.event_data as any;
-          acc[key].value += eventData?.amount_cents || 0;
-        } else {
-          acc[key].value += 1;
-        }
-
-        return acc;
-      }, {} as Record<string, { count: number; value: number }>);
-
-      // Convert to array and sort by date
-      return Object.entries(groupedData)
-        .map(([date, data]) => ({
-          date,
-          count: data.count,
-          value: data.value
-        }))
-        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-    }
-  });
-};
-
-// Track specific product interactions
-export const useProductAnalytics = () => {
-  const trackEvent = useTrackEvent();
-
-  const trackProductView = (productId: string, source?: string) => {
-    trackEvent.mutate({
-      event_type: 'product_view',
-      product_id: productId,
-      event_data: { source }
-    });
-  };
-
-  const trackProductClick = (productId: string, source?: string) => {
-    trackEvent.mutate({
-      event_type: 'product_click',
-      product_id: productId,
-      event_data: { source }
-    });
-  };
-
-  const trackWishlistAdd = (productId: string) => {
-    trackEvent.mutate({
-      event_type: 'wishlist_add',
-      product_id: productId
-    });
-  };
-
-  const trackARView = (productId: string, duration?: number) => {
-    trackEvent.mutate({
-      event_type: 'ar_view',
-      product_id: productId,
-      event_data: { duration_seconds: duration }
-    });
-  };
-
-  const trackAddToCart = (productId: string, size?: string, color?: string) => {
-    trackEvent.mutate({
-      event_type: 'add_to_cart',
-      product_id: productId,
-      event_data: { size, color }
-    });
-  };
-
-  return {
-    trackProductView,
-    trackProductClick,
-    trackWishlistAdd,
-    trackARView,
-    trackAddToCart,
-    isTracking: trackEvent.isPending
-  };
 };

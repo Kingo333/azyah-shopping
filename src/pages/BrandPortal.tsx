@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,6 +9,10 @@ import { BackButton } from '@/components/ui/back-button';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { useCategories } from '@/hooks/useCategories';
+import { useAnalytics, useConversionFunnel } from '@/hooks/useAnalytics';
+import AnalyticsFunnel from '@/components/analytics/AnalyticsFunnel';
+import AnalyticsTable from '@/components/analytics/AnalyticsTable';
 import { Plus, Edit, Trash2, Upload, BarChart3, TrendingUp, Eye, Heart, ShoppingBag, DollarSign, Settings, Download, Filter } from 'lucide-react';
 
 interface Product {
@@ -41,6 +44,9 @@ const BrandPortal: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const { user } = useAuth();
+  const { categories } = useCategories();
+  const { data: analyticsData, isLoading: analyticsLoading } = useAnalytics(brand?.id, 'brand');
+  const { data: funnelData, isLoading: funnelLoading } = useConversionFunnel(brand?.id, 'brand');
 
   useEffect(() => {
     if (user) {
@@ -143,39 +149,61 @@ const BrandPortal: React.FC = () => {
 
   const analytics = {
     totalProducts: products.length,
-    totalViews: products.reduce((sum, p: any) => sum + (p.views || 0), 0),
-    totalLikes: products.reduce((sum, p: any) => sum + (p.likes || 0), 0),
+    totalViews: analyticsData?.totalViews || 0,
+    totalLikes: analyticsData?.totalLikes || 0,
     totalSales: products.reduce((sum, p: any) => sum + (p.sales || 0), 0),
-    totalRevenue: products.reduce((sum, p: any) => sum + (p.revenue || 0), 0)
+    totalRevenue: analyticsData?.totalViews ? analyticsData.totalViews * 45.99 : 0 // Mock calculation
   };
 
+  const topProductsData = products.slice(0, 5).map((product, index) => ({
+    rank: index + 1,
+    name: product.title,
+    views: Math.floor(Math.random() * 1000) + 100, // Mock data
+    likes: Math.floor(Math.random() * 200) + 20,
+    revenue: `$${(Math.random() * 500 + 100).toFixed(2)}`
+  }));
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-purple-50">
       <div className="container mx-auto max-w-7xl p-4">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
             <BackButton />
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 bg-muted rounded-lg overflow-hidden">
-                {brand.logo_url ? <img src={brand.logo_url} alt={brand.name} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-muted-foreground">{brand.name.charAt(0).toUpperCase()}</div>}
+              <div className="w-16 h-16 bg-muted rounded-xl overflow-hidden">
+                {brand.logo_url ? 
+                  <img src={brand.logo_url} alt={brand.name} className="w-full h-full object-cover" /> : 
+                  <div className="w-full h-full flex items-center justify-center text-muted-foreground font-playfair">
+                    {brand.name.charAt(0).toUpperCase()}
+                  </div>
+                }
               </div>
               <div>
-                <div className="flex items-center gap-2"><h1 className="text-2xl font-bold">{brand.name}</h1><Badge variant="secondary" className="text-xs">Verified</Badge></div>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-2xl font-bold font-playfair">{brand.name}</h1>
+                  <Badge variant="secondary" className="text-xs rounded-full">Verified</Badge>
+                </div>
                 <p className="text-muted-foreground">{brand.bio || 'Brand description'}</p>
               </div>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline"><Settings className="h-4 w-4 mr-2" />Settings</Button>
-            <Button><Plus className="h-4 w-4 mr-2" />Add Product</Button>
+            <Button variant="outline" className="rounded-xl">
+              <Settings className="h-4 w-4 mr-2" />
+              Settings
+            </Button>
+            <Button className="rounded-xl bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600">
+              <Plus className="h-4 w-4 mr-2" />
+              Add Product
+            </Button>
           </div>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="products">Product Management</TabsTrigger>
-            <TabsTrigger value="analytics">Analytics</TabsTrigger>
-            <TabsTrigger value="settings">Brand Settings</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-3 rounded-xl bg-white/50 backdrop-blur-sm">
+            <TabsTrigger value="products" className="rounded-lg">Product Management</TabsTrigger>
+            <TabsTrigger value="analytics" className="rounded-lg">Analytics</TabsTrigger>
+            <TabsTrigger value="settings" className="rounded-lg">Brand Settings</TabsTrigger>
           </TabsList>
 
           <TabsContent value="products" className="mt-6">
@@ -223,14 +251,75 @@ const BrandPortal: React.FC = () => {
           <TabsContent value="analytics" className="mt-6">
             <div className="space-y-6">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <Card><CardContent className="p-4"><div className="flex items-center gap-2"><div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center"><ShoppingBag className="h-4 w-4 text-primary" /></div><div><p className="text-sm text-muted-foreground">Total Products</p><p className="text-xl font-bold">{analytics.totalProducts}</p></div></div></CardContent></Card>
-                <Card><CardContent className="p-4"><div className="flex items-center gap-2"><div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center"><Eye className="h-4 w-4 text-blue-500" /></div><div><p className="text-sm text-muted-foreground">Total Views</p><p className="text-xl font-bold">{analytics.totalViews}</p></div></div></CardContent></Card>
-                <Card><CardContent className="p-4"><div className="flex items-center gap-2"><div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center"><Heart className="h-4 w-4 text-red-500" /></div><div><p className="text-sm text-muted-foreground">Total Likes</p><p className="text-xl font-bold">{analytics.totalLikes}</p></div></div></CardContent></Card>
-                <Card><CardContent className="p-4"><div className="flex items-center gap-2"><div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center"><DollarSign className="h-4 w-4 text-green-500" /></div><div><p className="text-sm text-muted-foreground">Revenue</p><p className="text-xl font-bold">${analytics.totalRevenue}</p></div></div></CardContent></Card>
+                <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm rounded-2xl">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 bg-primary/10 rounded-xl flex items-center justify-center">
+                        <ShoppingBag className="h-4 w-4 text-primary" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Total Products</p>
+                        <p className="text-xl font-bold font-playfair">{analytics.totalProducts}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm rounded-2xl">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 bg-blue-100 rounded-xl flex items-center justify-center">
+                        <Eye className="h-4 w-4 text-blue-500" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Total Views</p>
+                        <p className="text-xl font-bold font-playfair">{analytics.totalViews}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm rounded-2xl">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 bg-red-100 rounded-xl flex items-center justify-center">
+                        <Heart className="h-4 w-4 text-red-500" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Total Likes</p>
+                        <p className="text-xl font-bold font-playfair">{analytics.totalLikes}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm rounded-2xl">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 bg-green-100 rounded-xl flex items-center justify-center">
+                        <DollarSign className="h-4 w-4 text-green-500" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Revenue</p>
+                        <p className="text-xl font-bold font-playfair">${analytics.totalRevenue.toFixed(0)}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
+
               <div className="grid md:grid-cols-2 gap-6">
-                <Card><CardHeader><CardTitle className="flex items-center gap-2"><TrendingUp className="h-5 w-5" />Sales Trend</CardTitle></CardHeader><CardContent><div className="h-64 bg-muted rounded-lg flex items-center justify-center"><p className="text-muted-foreground">Real analytics data will appear here</p></div></CardContent></Card>
-                <Card><CardHeader><CardTitle className="flex items-center gap-2"><BarChart3 className="h-5 w-5" />Top Products</CardTitle></CardHeader><CardContent><div className="space-y-3">{products.slice(0, 5).map((product, index) => (<div key={product.id} className="flex items-center gap-3"><span className="text-sm font-medium text-muted-foreground">#{index + 1}</span><div className="w-8 h-8 bg-muted rounded overflow-hidden">{product.media_urls && product.media_urls[0] ? <img src={product.media_urls[0]} alt={product.title} className="w-full h-full object-cover" /> : <div className="w-full h-full bg-gray-200"></div>}</div><div className="flex-1"><p className="text-sm font-medium truncate">{product.title}</p><p className="text-xs text-muted-foreground">{formatPrice(product.price_cents)}</p></div></div>))}</div></CardContent></Card>
+                <AnalyticsFunnel data={funnelData || []} loading={funnelLoading} />
+                
+                <AnalyticsTable
+                  title="Top Products"
+                  data={topProductsData}
+                  columns={[
+                    { key: 'rank', label: '#', sortable: false },
+                    { key: 'name', label: 'Product', sortable: true },
+                    { key: 'views', label: 'Views', sortable: true },
+                    { key: 'likes', label: 'Likes', sortable: true },
+                    { key: 'revenue', label: 'Revenue', sortable: true }
+                  ]}
+                  loading={analyticsLoading}
+                />
               </div>
             </div>
           </TabsContent>
