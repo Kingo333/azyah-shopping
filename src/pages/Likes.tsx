@@ -1,154 +1,137 @@
-import React from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import ShopperNavigation from '@/components/ShopperNavigation';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Heart, ShoppingBag, Trash2 } from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
+import { Badge } from '@/components/ui/badge';
+import { useToast } from '@/hooks/use-toast';
+import { LazyImage } from '@/components/LazyImage';
+import ShopperNavigation from '@/components/ShopperNavigation';
+import { Heart, ShoppingCart, ExternalLink } from 'lucide-react';
 
 interface LikedProduct {
   id: string;
+  title: string;
+  price_cents: number;
+  currency: string;
+  media_urls: any;
+  brand_id: string;
+  status: string;
+  external_url?: string;
+  brand?: {
+    name: string;
+  };
+}
+
+interface Like {
+  id: string;
   product_id: string;
   created_at: string;
-  products: {
-    id: string;
-    title: string;
-    price_cents: number;
-    currency: string;
-    media_urls: any;
-    brands: {
-      name: string;
-    };
-  };
+  product: LikedProduct;
 }
 
 const Likes: React.FC = () => {
   const { user } = useAuth();
-  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const [likes, setLikes] = useState<Like[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const { data: likes, isLoading } = useQuery({
-    queryKey: ['likes', user?.id],
-    queryFn: async () => {
-      if (!user?.id) return [];
-      
-      // First get the liked product IDs
-      const { data: likeData, error: likesError } = await supabase
+  useEffect(() => {
+    if (user) {
+      fetchLikes();
+    }
+  }, [user]);
+
+  const fetchLikes = async () => {
+    try {
+      const { data, error } = await supabase
         .from('likes')
-        .select('id, product_id, created_at')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-
-      if (likesError) throw likesError;
-      if (!likeData?.length) return [];
-
-      // Then get the products with their details
-      const productIds = likeData.map(like => like.product_id);
-      const { data: products, error: productsError } = await supabase
-        .from('products')
         .select(`
           id,
-          title,
-          price_cents,
-          currency,
-          media_urls,
-          brands (name)
+          product_id,
+          created_at,
+          product:products(
+            id,
+            title,
+            price_cents,
+            currency,
+            media_urls,
+            brand_id,
+            status,
+            external_url,
+            brand:brands(
+              name
+            )
+          )
         `)
-        .in('id', productIds);
+        .eq('user_id', user?.id)
+        .order('created_at', { ascending: false });
 
-      if (productsError) throw productsError;
+      if (error) throw error;
+      setLikes((data as Like[]) || []);
+    } catch (error) {
+      console.error('Error fetching likes:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch liked products",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
-      // Combine the data
-      const result = likeData.map(like => ({
-        ...like,
-        products: products?.find(p => p.id === like.product_id)
-      })).filter(item => item.products) as LikedProduct[];
-
-      return result;
-    },
-    enabled: !!user?.id
-  });
-
-  const removeLikeMutation = useMutation({
-    mutationFn: async (productId: string) => {
+  const unlikeProduct = async (likeId: string) => {
+    try {
       const { error } = await supabase
         .from('likes')
         .delete()
-        .eq('user_id', user?.id)
-        .eq('product_id', productId);
+        .eq('id', likeId);
 
       if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['likes'] });
+
+      setLikes(prev => prev.filter(like => like.id !== likeId));
       toast({
-        title: "Removed from likes",
-        description: "Item has been removed from your likes."
+        title: "Success",
+        description: "Product removed from likes"
+      });
+    } catch (error) {
+      console.error('Error unliking product:', error);
+      toast({
+        title: "Error",
+        description: "Failed to unlike product",
+        variant: "destructive"
       });
     }
-  });
+  };
 
-  const addToWishlistMutation = useMutation({
-    mutationFn: async (productId: string) => {
-      // First get or create default wishlist
-      let { data: wishlists } = await supabase
-        .from('wishlists')
-        .select('id')
-        .eq('user_id', user?.id)
-        .limit(1);
-
-      let wishlistId = wishlists?.[0]?.id;
-
-      if (!wishlistId) {
-        const { data: newWishlist, error: wishlistError } = await supabase
-          .from('wishlists')
-          .insert({
-            user_id: user?.id,
-            title: 'My Wishlist'
-          })
-          .select('id')
-          .single();
-
-        if (wishlistError) throw wishlistError;
-        wishlistId = newWishlist.id;
-      }
-
-      // Add to wishlist
-      const { error } = await supabase
-        .from('wishlist_items')
-        .insert({
-          wishlist_id: wishlistId,
-          product_id: productId
-        });
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      toast({
-        title: "Added to wishlist",
-        description: "Item has been added to your wishlist."
-      });
-    }
-  });
-
-  const formatPrice = (cents: number, currency: string) => {
+  const formatPrice = (cents: number, currency: string = 'USD'): string => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: currency || 'USD'
+      currency: currency
     }).format(cents / 100);
   };
 
-  if (isLoading) {
+  const handleShopNow = (product: LikedProduct) => {
+    if (product.external_url) {
+      window.open(product.external_url, '_blank');
+    } else {
+      toast({
+        title: "Shop Now",
+        description: "Product URL not available"
+      });
+    }
+  };
+
+  if (loading) {
     return (
       <div className="min-h-screen bg-background">
         <div className="container mx-auto max-w-6xl p-4">
           <ShopperNavigation />
-          <div className="flex items-center justify-center py-20">
-            <div className="text-center">
-              <div className="w-12 h-12 rounded-full bg-gradient-accent animate-pulse mx-auto mb-4"></div>
-              <p className="text-muted-foreground">Loading your likes...</p>
-            </div>
+          <div className="text-center py-8">
+            <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+            <p>Loading your liked products...</p>
           </div>
         </div>
       </div>
@@ -161,71 +144,73 @@ const Likes: React.FC = () => {
         <ShopperNavigation />
         
         <div className="flex items-center gap-3 mb-6">
-          <Heart className="h-6 w-6 text-primary" />
+          <Heart className="h-6 w-6 text-red-500" />
           <h1 className="text-2xl font-bold">My Likes</h1>
-          <span className="text-sm text-muted-foreground">
-            ({likes?.length || 0} items)
-          </span>
+          <Badge variant="secondary">{likes.length}</Badge>
         </div>
 
-        {!likes?.length ? (
-          <div className="text-center py-20">
+        {likes.length === 0 ? (
+          <div className="text-center py-12">
             <Heart className="h-16 w-16 text-muted-foreground/50 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold mb-2">No likes yet</h3>
+            <h2 className="text-xl font-semibold mb-2">No liked products yet</h2>
             <p className="text-muted-foreground mb-4">
-              Start swiping right on items you love to see them here
+              Start exploring and like products to see them here
             </p>
-            <Button onClick={() => window.location.href = '/swipe'}>
-              Start Swiping
+            <Button onClick={() => window.location.href = '/explore'}>
+              Explore Products
             </Button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {likes.map((like) => (
-              <Card key={like.id} className="group hover:shadow-lg transition-all duration-300">
-                <CardContent className="p-0">
-                  <div className="relative aspect-square overflow-hidden rounded-t-lg">
-                    <img
-                      src={like.products.media_urls?.[0] || '/placeholder.svg'}
-                      alt={like.products.title}
+              <Card key={like.id} className="group hover:shadow-lg transition-shadow">
+                <CardContent className="p-4">
+                  <div className="relative aspect-square mb-3 rounded-lg overflow-hidden">
+                    <LazyImage
+                      src={like.product.media_urls?.[0] || '/placeholder.svg'}
+                      alt={like.product.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
-                    <div className="absolute top-2 right-2 bg-background/80 backdrop-blur-sm rounded-md px-2 py-1">
-                      <span className="text-xs font-medium">
-                        {like.products.brands?.name || 'Unbranded'}
-                      </span>
-                    </div>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      className="absolute top-2 right-2 h-8 w-8 p-0"
+                      onClick={() => unlikeProduct(like.id)}
+                    >
+                      <Heart className="h-4 w-4 fill-current" />
+                    </Button>
                   </div>
                   
-                  <div className="p-4">
-                    <h3 className="font-semibold line-clamp-2 mb-2">
-                      {like.products.title}
+                  <div className="space-y-2">
+                    <h3 className="font-semibold text-sm line-clamp-2">
+                      {like.product.title}
                     </h3>
-                    <p className="text-lg font-bold text-primary mb-4">
-                      {formatPrice(like.products.price_cents, like.products.currency)}
-                    </p>
                     
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => addToWishlistMutation.mutate(like.products.id)}
-                        disabled={addToWishlistMutation.isPending}
-                        className="flex-1"
-                      >
-                        <ShoppingBag className="h-4 w-4 mr-1" />
-                        Wishlist
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeLikeMutation.mutate(like.products.id)}
-                        disabled={removeLikeMutation.isPending}
-                        className="text-muted-foreground hover:text-destructive"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                    {like.product.brand && (
+                      <p className="text-xs text-muted-foreground">
+                        {like.product.brand.name}
+                      </p>
+                    )}
+                    
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-primary">
+                        {formatPrice(like.product.price_cents, like.product.currency)}
+                      </span>
+                      <Badge variant={like.product.status === 'active' ? 'default' : 'secondary'}>
+                        {like.product.status}
+                      </Badge>
                     </div>
+
+                    {/* Shop Now Button */}
+                    <Button
+                      onClick={() => handleShopNow(like.product)}
+                      className="w-full mt-3"
+                      disabled={!like.product.external_url}
+                    >
+                      <ShoppingCart className="h-4 w-4 mr-2" />
+                      Shop Now
+                      <ExternalLink className="h-3 w-3 ml-1" />
+                    </Button>
                   </div>
                 </CardContent>
               </Card>

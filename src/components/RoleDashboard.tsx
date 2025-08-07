@@ -175,8 +175,8 @@ const RoleDashboard: React.FC = () => {
 
   const renderShopperDashboard = () => (
     <div className="space-y-6">
-      {/* Quick Actions with Glass Panel */}
-      <GlassPanel className="p-6">
+      {/* Quick Actions with Glass Panel and Gradient */}
+      <GlassPanel className="p-6 bg-gradient-to-br from-blue-50/30 via-purple-50/20 to-pink-50/30 dark:from-blue-900/10 dark:via-purple-900/10 dark:to-pink-900/10 border border-blue-200/30 dark:border-blue-700/30">
         <div className="space-y-4">
           <h2 className="text-xl font-semibold flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-primary" />
@@ -247,8 +247,8 @@ const RoleDashboard: React.FC = () => {
 
       {/* Global Search and Affiliate Hub Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Global Search with Glass Panel */}
-        <GlassPanel className="p-6">
+        {/* Global Search with Glass Panel and Gradient */}
+        <GlassPanel className="p-6 bg-gradient-to-br from-green-50/30 via-emerald-50/20 to-teal-50/30 dark:from-green-900/10 dark:via-emerald-900/10 dark:to-teal-900/10 border border-green-200/30 dark:border-green-700/30">
           <div className="space-y-4">
             <h3 className="text-lg font-semibold flex items-center gap-2">
               <Search className="h-5 w-5" />
@@ -261,26 +261,32 @@ const RoleDashboard: React.FC = () => {
               <Search className="h-4 w-4 mr-2" />
               Open Global Search
             </Button>
+            {/* Dark mode code display */}
+            <div className="hidden dark:block">
+              <div className="text-xs font-mono text-muted-foreground/60 mt-2">
+                567AFGH
+              </div>
+            </div>
           </div>
         </GlassPanel>
 
-        {/* Affiliate Hub - Desktop with Glass Panel */}
+        {/* Affiliate Hub - Desktop with Glass Panel and Gradient */}
         <div className="hidden lg:block">
-          <GlassPanel className="p-6">
+          <GlassPanel className="p-6 bg-gradient-to-br from-orange-50/30 via-amber-50/20 to-yellow-50/30 dark:from-orange-900/10 dark:via-amber-900/10 dark:to-yellow-900/10 border border-orange-200/30 dark:border-orange-700/30">
             <AffiliateHub showTitle={false} />
           </GlassPanel>
         </div>
       </div>
 
-      {/* Affiliate Hub - Mobile with Glass Panel */}
+      {/* Affiliate Hub - Mobile with Glass Panel and Gradient */}
       <div className="block lg:hidden">
-        <GlassPanel className="p-6">
+        <GlassPanel className="p-6 bg-gradient-to-br from-orange-50/30 via-amber-50/20 to-yellow-50/30 dark:from-orange-900/10 dark:via-amber-900/10 dark:to-yellow-900/10 border border-orange-200/30 dark:border-orange-700/30">
           <AffiliateHub />
         </GlassPanel>
       </div>
 
-      {/* Closets Preview with Glass Panel */}
-      <GlassPanel className="p-6">
+      {/* Closets Preview with Glass Panel and Gradient */}
+      <GlassPanel className="p-6 bg-gradient-to-br from-violet-50/30 via-purple-50/20 to-indigo-50/30 dark:from-violet-900/10 dark:via-purple-900/10 dark:to-indigo-900/10 border border-violet-200/30 dark:border-violet-700/30">
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold">My Closets</h3>
@@ -295,8 +301,8 @@ const RoleDashboard: React.FC = () => {
         </div>
       </GlassPanel>
 
-      {/* Fashion Leaderboards with Glass Panel */}
-      <GlassPanel className="p-6">
+      {/* Fashion Leaderboards with Glass Panel and Gradient */}
+      <GlassPanel className="p-6 bg-gradient-to-br from-rose-50/30 via-pink-50/20 to-red-50/30 dark:from-rose-900/10 dark:via-pink-900/10 dark:to-red-900/10 border border-rose-200/30 dark:border-rose-700/30">
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold flex items-center gap-2">
