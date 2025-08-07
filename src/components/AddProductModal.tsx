@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,6 +10,8 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Upload, X, Plus } from 'lucide-react';
+import { CATEGORY_TREE, getAllCategories, getSubcategoriesForCategory, getCategoryDisplayName, getSubcategoryDisplayName } from '@/lib/categories';
+import type { TopCategory, SubCategory } from '@/lib/categories';
 
 interface AddProductModalProps {
   isOpen: boolean;
@@ -20,9 +22,16 @@ interface AddProductModalProps {
   retailerId?: string;
 }
 
-const categories = [
-  'clothing', 'footwear', 'accessories', 'jewelry', 'beauty', 
-  'modestwear', 'kids', 'fragrance', 'home', 'giftcards'
+const SUPPORTED_CURRENCIES = [
+  { code: 'USD', symbol: '$', name: 'US Dollar' },
+  { code: 'AED', symbol: 'د.إ', name: 'UAE Dirham' },
+  { code: 'EUR', symbol: '€', name: 'Euro' },
+  { code: 'GBP', symbol: '£', name: 'British Pound' },
+  { code: 'SAR', symbol: 'ر.س', name: 'Saudi Riyal' },
+  { code: 'QAR', symbol: 'ر.ق', name: 'Qatari Riyal' },
+  { code: 'KWD', symbol: 'د.ك', name: 'Kuwaiti Dinar' },
+  { code: 'BHD', symbol: 'د.ب', name: 'Bahraini Dinar' },
+  { code: 'OMR', symbol: 'ر.ع.', name: 'Omani Rial' }
 ];
 
 export const AddProductModal: React.FC<AddProductModalProps> = ({
@@ -41,15 +50,30 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
     title: '',
     description: '',
     price_cents: '',
+    currency: 'USD',
     category_slug: '',
+    subcategory_slug: '',
     sku: '',
     stock_qty: '0',
     external_url: ''
   });
+  const [availableSubcategories, setAvailableSubcategories] = useState<readonly SubCategory[]>([]);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
+
+  // Update subcategories when category changes
+  useEffect(() => {
+    if (formData.category_slug) {
+      const subcategories = getSubcategoriesForCategory(formData.category_slug as TopCategory);
+      setAvailableSubcategories(subcategories);
+      // Reset subcategory when category changes
+      setFormData(prev => ({ ...prev, subcategory_slug: '' }));
+    } else {
+      setAvailableSubcategories([]);
+    }
+  }, [formData.category_slug]);
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -87,7 +111,9 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
         title: formData.title,
         description: formData.description,
         price_cents: parseInt(formData.price_cents) * 100, // Convert to cents
+        currency: formData.currency,
         category_slug: formData.category_slug as any,
+        subcategory_slug: (formData.subcategory_slug || null) as any,
         sku: formData.sku || `SKU-${Date.now()}`,
         stock_qty: parseInt(formData.stock_qty) || 0,
         external_url: formData.external_url,
@@ -110,7 +136,9 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
         title: '',
         description: '',
         price_cents: '',
+        currency: 'USD',
         category_slug: '',
+        subcategory_slug: '',
         sku: '',
         stock_qty: '0',
         external_url: ''
@@ -150,16 +178,33 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
               />
             </div>
             
-            <div>
-              <Label htmlFor="price">Price (USD) *</Label>
-              <Input
-                id="price"
-                type="number"
-                step="0.01"
-                value={formData.price_cents}
-                onChange={(e) => handleInputChange('price_cents', e.target.value)}
-                required
-              />
+            <div className="grid grid-cols-3 gap-2">
+              <div className="col-span-2">
+                <Label htmlFor="price">Price *</Label>
+                <Input
+                  id="price"
+                  type="number"
+                  step="0.01"
+                  value={formData.price_cents}
+                  onChange={(e) => handleInputChange('price_cents', e.target.value)}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="currency">Currency *</Label>
+                <Select value={formData.currency} onValueChange={(value) => handleInputChange('currency', value)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SUPPORTED_CURRENCIES.map(currency => (
+                      <SelectItem key={currency.code} value={currency.code}>
+                        {currency.code}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
 
@@ -181,15 +226,37 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
                 <SelectContent>
-                  {categories.map(category => (
+                  {getAllCategories().map(category => (
                     <SelectItem key={category} value={category}>
-                      {category.charAt(0).toUpperCase() + category.slice(1)}
+                      {getCategoryDisplayName(category)}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
 
+            <div>
+              <Label htmlFor="subcategory">Subcategory</Label>
+              <Select 
+                value={formData.subcategory_slug} 
+                onValueChange={(value) => handleInputChange('subcategory_slug', value)}
+                disabled={!formData.category_slug}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={formData.category_slug ? "Select subcategory" : "Select category first"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableSubcategories.map(subcategory => (
+                    <SelectItem key={subcategory} value={subcategory}>
+                      {getSubcategoryDisplayName(subcategory)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="stock">Stock Quantity</Label>
               <Input
@@ -203,13 +270,14 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
 
           <div className="grid md:grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="sku">SKU</Label>
+              <Label htmlFor="sku">SKU (Stock Keeping Unit)</Label>
               <Input
                 id="sku"
                 value={formData.sku}
                 onChange={(e) => handleInputChange('sku', e.target.value)}
                 placeholder="Auto-generated if empty"
               />
+              <p className="text-xs text-muted-foreground mt-1">A unique identifier for your product used for tracking</p>
             </div>
 
             <div>
@@ -221,6 +289,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
                 onChange={(e) => handleInputChange('external_url', e.target.value)}
                 placeholder="https://..."
               />
+              <p className="text-xs text-muted-foreground mt-1">Direct link to purchase this product</p>
             </div>
           </div>
 
