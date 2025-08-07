@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { AddProductModal } from '@/components/AddProductModal';
+import { EditProductModal } from '@/components/EditProductModal';
 import { LogoUpload } from '@/components/LogoUpload';
 import { 
   Plus, 
@@ -73,6 +74,8 @@ const RetailerPortal: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAddProductModalOpen, setIsAddProductModalOpen] = useState(false);
+  const [isEditProductModalOpen, setIsEditProductModalOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -231,6 +234,30 @@ const RetailerPortal: React.FC = () => {
     toast({ description: "Brand partnership request sent!" });
   };
 
+  const handleEditProduct = (product: any) => {
+    // Convert retailer product to proper Product format for editing
+    const productForEdit = {
+      id: product.id,
+      title: product.title,
+      description: '',
+      price_cents: Math.round(product.price * 100),
+      currency: 'USD',
+      category_slug: product.category,
+      subcategory_slug: '',
+      sku: `RET-${product.id}`,
+      stock_qty: 0,
+      external_url: '',
+      media_urls: [product.image],
+      brand_id: null,
+      retailer_id: retailer?.id,
+      status: product.status,
+      created_at: product.createdAt,
+      updated_at: product.createdAt
+    };
+    setSelectedProduct(productForEdit);
+    setIsEditProductModalOpen(true);
+  };
+
   if (!user) return (
     <div className="min-h-screen flex items-center justify-center">
       <div className="text-center">
@@ -383,7 +410,7 @@ const RetailerPortal: React.FC = () => {
 
                           {/* Actions */}
                           <div className="flex items-center gap-2 flex-shrink-0">
-                            <Button variant="outline" size="sm">
+                            <Button variant="outline" size="sm" onClick={() => handleEditProduct(product)}>
                               <Edit className="h-4 w-4" />
                             </Button>
                             <Button variant="outline" size="sm">
@@ -625,6 +652,18 @@ const RetailerPortal: React.FC = () => {
         userType="retailer"
         retailerId={retailer.id}
       />
+
+      {selectedProduct && (
+        <EditProductModal
+          isOpen={isEditProductModalOpen}
+          onClose={() => {
+            setIsEditProductModalOpen(false);
+            setSelectedProduct(null);
+          }}
+          onProductUpdated={fetchProducts}
+          product={selectedProduct}
+        />
+      )}
     </div>
   );
 };

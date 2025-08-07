@@ -127,6 +127,59 @@ export const useSwipeProduct = () => {
   });
 };
 
+export const useUpdateProduct = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ 
+      productId, 
+      updateData 
+    }: { 
+      productId: string; 
+      updateData: any; // Use any to avoid type conflicts with Json
+    }) => {
+      const { data, error } = await supabase
+        .from('products')
+        .update({
+          ...updateData,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', productId)
+        .select(`
+          *,
+          brand:brands(*),
+          retailer:retailers(*)
+        `)
+        .single();
+
+      if (error) {
+        console.error('Update product error details:', error);
+        toast({
+          title: "Error updating product",
+          description: error.message,
+          variant: "destructive"
+        });
+        throw error;
+      }
+
+      return data as Product;
+    },
+    onSuccess: (updatedProduct) => {
+      // Invalidate and refetch products
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['product', updatedProduct.id] });
+      
+      toast({
+        title: "Success",
+        description: "Product updated successfully!"
+      });
+    },
+    onError: (error) => {
+      console.error('Update product mutation error:', error);
+    }
+  });
+};
+
 export const useCategories = () => {
   return useQuery({
     queryKey: ['categories'],

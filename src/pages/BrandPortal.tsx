@@ -15,21 +15,10 @@ import { useAnalytics, useConversionFunnel } from '@/hooks/useAnalytics';
 import AnalyticsFunnel from '@/components/analytics/AnalyticsFunnel';
 import AnalyticsTable from '@/components/analytics/AnalyticsTable';
 import { AddProductModal } from '@/components/AddProductModal';
+import { EditProductModal } from '@/components/EditProductModal';
 import { LogoUpload } from '@/components/LogoUpload';
 import { Plus, Edit, Trash2, Upload, BarChart3, TrendingUp, Eye, Heart, ShoppingBag, DollarSign, Download, Filter } from 'lucide-react';
-
-interface Product {
-  id: string;
-  title: string;
-  price_cents: number;
-  category_slug: 'clothing' | 'footwear' | 'accessories' | 'jewelry' | 'beauty' | 'modestwear' | 'kids' | 'fragrance' | 'home' | 'giftcards';
-  status: 'active' | 'inactive' | 'archived' | 'out_of_stock';
-  media_urls?: string[];
-  ar_mesh_url?: string | null;
-  stock_qty: number;
-  created_at: string;
-  brand: { name: string; };
-}
+import type { Product } from '@/types';
 
 interface Brand {
   id: string;
@@ -42,10 +31,12 @@ interface Brand {
 const BrandPortal: React.FC = () => {
   const [activeTab, setActiveTab] = useState('products');
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<any[]>([]);
   const [brand, setBrand] = useState<Brand | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAddProductModalOpen, setIsAddProductModalOpen] = useState(false);
+  const [isEditProductModalOpen, setIsEditProductModalOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const { toast } = useToast();
   const { user } = useAuth();
   const { categories } = useCategories();
@@ -89,15 +80,7 @@ const BrandPortal: React.FC = () => {
       const { data, error } = await supabase
         .from('products')
         .select(`
-          id,
-          title,
-          price_cents,
-          category_slug,
-          status,
-          media_urls,
-          ar_mesh_url,
-          stock_qty,
-          created_at,
+          *,
           brand:brands(name)
         `)
         .eq('brand_id', brand.id)
@@ -108,7 +91,11 @@ const BrandPortal: React.FC = () => {
       const formatted = (data || []).map((p: any) => ({
         ...p,
         media_urls: Array.isArray(p.media_urls) ? p.media_urls : [],
-        ar_mesh_url: p.ar_mesh_url || null
+        ar_mesh_url: p.ar_mesh_url || null,
+        currency: p.currency || 'USD',
+        sku: p.sku || `SKU-${p.id}`,
+        external_url: p.external_url || '',
+        description: p.description || ''
       }));
       
       setProducts(formatted);
@@ -129,7 +116,7 @@ const BrandPortal: React.FC = () => {
   const formatPrice = (cents: number, currency: string = 'USD'): string =>
     new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(cents / 100);
 
-  const getStatusColor = (status: Product['status']) => {
+  const getStatusColor = (status: string) => {
     switch (status) {
       case 'active': return 'default';
       case 'inactive': return 'secondary';
@@ -173,6 +160,11 @@ const BrandPortal: React.FC = () => {
       console.error('Delete product error:', error);
       toast({ title: "Error", description: "Failed to delete product", variant: "destructive" });
     }
+  };
+
+  const handleEditProduct = (product: any) => {
+    setSelectedProduct(product);
+    setIsEditProductModalOpen(true);
   };
 
   if (!user) return (
@@ -282,7 +274,7 @@ const BrandPortal: React.FC = () => {
                             <div className="flex items-center gap-4 text-sm text-muted-foreground"><span>Stock: {product.stock_qty}</span><span>Created: {new Date(product.created_at).toLocaleDateString()}</span></div>
                           </div>
                           <div className="flex items-center gap-2">
-                            <Button variant="outline" size="sm"><Edit className="h-4 w-4" /></Button>
+                            <Button variant="outline" size="sm" onClick={() => handleEditProduct(product)}><Edit className="h-4 w-4" /></Button>
                             <Button variant="outline" size="sm" onClick={() => handleDeleteProduct(product.id)}><Trash2 className="h-4 w-4" /></Button>
                           </div>
                         </div>
@@ -400,6 +392,18 @@ const BrandPortal: React.FC = () => {
         userType="brand"
         brandId={brand.id}
       />
+
+      {selectedProduct && (
+        <EditProductModal
+          isOpen={isEditProductModalOpen}
+          onClose={() => {
+            setIsEditProductModalOpen(false);
+            setSelectedProduct(null);
+          }}
+          onProductUpdated={fetchProducts}
+          product={selectedProduct}
+        />
+      )}
     </div>
   );
 };
