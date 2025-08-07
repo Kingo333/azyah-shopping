@@ -3,7 +3,7 @@ import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Copy, Calendar, Tag, Star, ExternalLink } from 'lucide-react';
+import { Copy, Calendar, Tag, ExternalLink } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 interface PublicAffiliateCardProps {
@@ -47,14 +47,7 @@ const PublicAffiliateCard: React.FC<PublicAffiliateCardProps> = ({
       <CardContent className="p-6">
         <div className="flex justify-between items-start mb-4">
           <div className="flex-1">
-            <div className="flex items-center gap-2 mb-1">
-              <h3 className="font-bold text-xl text-gray-900 font-playfair">{brand_name}</h3>
-              <div className="flex items-center">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                ))}
-              </div>
-            </div>
+            <h3 className="font-bold text-xl text-gray-900 font-playfair mb-1">{brand_name}</h3>
             {isExpired && (
               <Badge variant="destructive" className="mb-2 rounded-full">
                 Expired
@@ -72,12 +65,12 @@ const PublicAffiliateCard: React.FC<PublicAffiliateCardProps> = ({
         {affiliate_code && (
           <div className="bg-gradient-to-r from-red-50 to-pink-50 p-4 rounded-xl mb-4 border border-[#A30000]/20">
             <div className="flex items-center justify-between">
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-2">
-                  <Tag className="h-4 w-4 text-[#A30000]" />
+                  <Tag className="h-4 w-4 text-[#A30000] flex-shrink-0" />
                   <span className="text-sm font-medium text-[#A30000]">Exclusive Code</span>
                 </div>
-                <div className="text-2xl font-bold font-mono text-[#A30000] tracking-wider bg-white px-3 py-1 rounded-lg border-2 border-dashed border-[#A30000]/30">
+                <div className="text-lg sm:text-xl lg:text-2xl font-bold font-mono text-[#A30000] tracking-wider bg-white px-2 sm:px-3 py-1 rounded-lg border-2 border-dashed border-[#A30000]/30 break-all">
                   {affiliate_code}
                 </div>
               </div>
@@ -85,10 +78,11 @@ const PublicAffiliateCard: React.FC<PublicAffiliateCardProps> = ({
                 size="sm"
                 variant="outline"
                 onClick={copyCode}
-                className="ml-3 border-[#A30000]/30 text-[#A30000] hover:bg-[#A30000]/10 rounded-xl"
+                className="ml-3 border-[#A30000]/30 text-[#A30000] hover:bg-[#A30000]/10 rounded-xl flex-shrink-0"
               >
                 <Copy className="h-3 w-3 mr-1" />
-                Copy Code
+                <span className="hidden sm:inline">Copy Code</span>
+                <span className="sm:hidden">Copy</span>
               </Button>
             </div>
           </div>
@@ -96,7 +90,7 @@ const PublicAffiliateCard: React.FC<PublicAffiliateCardProps> = ({
         
         {expiry_date && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4 bg-yellow-50 p-2 rounded-xl">
-            <Calendar className="h-4 w-4 text-yellow-600" />
+            <Calendar className="h-4 w-4 text-yellow-600 flex-shrink-0" />
             <span className="text-yellow-700">Valid until {new Date(expiry_date).toLocaleDateString()}</span>
           </div>
         )}

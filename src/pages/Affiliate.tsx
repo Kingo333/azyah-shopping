@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Heart, Star } from 'lucide-react';
+import { ShoppingBag, ExternalLink } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { usePublicAffiliateCodes } from '@/hooks/usePublicAffiliateCodes';
 import PublicAffiliateCard from '@/components/PublicAffiliateCard';
@@ -14,6 +14,7 @@ interface UserProfile {
   name: string | null;
   bio: string | null;
   avatar_url: string | null;
+  socials: any;
 }
 
 const Affiliate = () => {
@@ -39,7 +40,7 @@ const Affiliate = () => {
       
       const { data: userData, error: userError } = await supabase
         .from('users')
-        .select('id, name, bio, avatar_url')
+        .select('id, name, bio, avatar_url, socials')
         .eq('id', userId)
         .single();
 
@@ -77,6 +78,39 @@ const Affiliate = () => {
     } catch (error) {
       console.error('Error tracking click:', error);
     }
+  };
+
+  const renderSocialLinks = () => {
+    if (!user?.socials) return null;
+
+    const socials = user.socials;
+    const socialPlatforms = [
+      { key: 'instagram', icon: '📷', label: 'Instagram' },
+      { key: 'twitter', icon: '🐦', label: 'Twitter' },
+      { key: 'facebook', icon: '📘', label: 'Facebook' },
+      { key: 'tiktok', icon: '🎵', label: 'TikTok' },
+      { key: 'youtube', icon: '📺', label: 'YouTube' },
+      { key: 'linkedin', icon: '💼', label: 'LinkedIn' }
+    ];
+
+    return (
+      <div className="flex gap-3 mt-4 justify-center md:justify-start">
+        {socialPlatforms
+          .filter(platform => socials[platform.key])
+          .map(platform => (
+            <a
+              key={platform.key}
+              href={socials[platform.key]}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-10 h-10 bg-gradient-to-br from-[#A30000] to-red-600 rounded-full flex items-center justify-center text-white hover:shadow-lg transition-all duration-200 hover:scale-105"
+              title={platform.label}
+            >
+              <span className="text-lg">{platform.icon}</span>
+            </a>
+          ))}
+      </div>
+    );
   };
 
   // Prevent hydration mismatch by not rendering until mounted
@@ -138,13 +172,7 @@ const Affiliate = () => {
                 <h1 className="text-3xl font-bold text-foreground font-playfair">
                   {user.name || 'Affiliate Partner'}
                 </h1>
-                <p className="text-lg text-muted-foreground">Fashion Affiliate & Style Curator</p>
-                <div className="flex items-center justify-center md:justify-start gap-1 mt-2">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                  ))}
-                  <span className="text-sm text-muted-foreground ml-1">Trusted Partner</span>
-                </div>
+                {renderSocialLinks()}
               </div>
             </div>
             {user.bio && (
@@ -160,7 +188,7 @@ const Affiliate = () => {
           <CardHeader className="pb-6">
             <CardTitle className="flex items-center gap-3 text-2xl font-playfair">
               <div className="p-2 bg-gradient-to-br from-[#A30000] to-red-600 rounded-xl">
-                <Heart className="h-6 w-6 text-white" />
+                <ShoppingBag className="h-6 w-6 text-white" />
               </div>
               Exclusive Fashion Deals & Codes
             </CardTitle>
@@ -171,7 +199,7 @@ const Affiliate = () => {
           <CardContent>
             {codes.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">
-                <Heart className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
+                <ShoppingBag className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
                 <p className="text-lg font-playfair">No exclusive deals available yet.</p>
                 <p>Check back soon for amazing fashion offers!</p>
               </div>
