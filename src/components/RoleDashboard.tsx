@@ -5,6 +5,7 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { GlassPanel } from '@/components/ui/glass-panel';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import GlobalSearch from '@/components/GlobalSearch';
@@ -185,153 +186,169 @@ const RoleDashboard: React.FC = () => {
       </div>
 
       {/* Quick Actions */}
-      <Card className="card-luxury">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-primary" />
-            Quick Actions
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3 sm:gap-4">
-            <Button 
-              onClick={() => navigate('/swipe')} 
-              className="btn-luxury h-16 sm:h-20 flex-col gap-1 sm:gap-2"
-            >
-              <Heart className="h-5 w-5 sm:h-6 sm:w-6" />
-              <span className="text-xs sm:text-sm">Swipe</span>
-            </Button>
-            <Button 
-              onClick={() => navigate('/fashion-feed')} 
-              variant="outline" 
-              className="h-16 sm:h-20 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300"
-            >
-              <Sparkles className="h-5 w-5 sm:h-6 sm:w-6" />
-              <span className="text-xs sm:text-sm">Feed</span>
-            </Button>
-            <Button 
-              onClick={() => navigate('/explore')} 
-              variant="outline" 
-              className="h-16 sm:h-20 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300"
-            >
-              <Search className="h-5 w-5 sm:h-6 sm:w-6" />
-              <span className="text-xs sm:text-sm">Explore</span>
-            </Button>
-            <Button 
-              onClick={() => navigate('/ar-tryOn')} 
-              variant="outline" 
-              className="h-16 sm:h-20 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300 relative"
-            >
-              <Camera className="h-5 w-5 sm:h-6 sm:w-6" />
-              <span className="text-xs sm:text-sm">AR Try-On</span>
-              <Badge variant="secondary" className="absolute -top-1 -right-1 text-xs px-1 py-0 h-4">
-                Beta
-              </Badge>
-            </Button>
-            <Button 
-              onClick={() => navigate('/likes')} 
-              variant="outline" 
-              className="h-16 sm:h-20 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300"
-            >
-              <Heart className="h-5 w-5 sm:h-6 sm:w-6" />
-              <span className="text-xs sm:text-sm">Likes</span>
-            </Button>
-            <Button 
-              onClick={() => navigate('/wishlist')} 
-              variant="outline" 
-              className="h-16 sm:h-20 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300"
-            >
-              <ShoppingBag className="h-5 w-5 sm:h-6 sm:w-6" />
-              <span className="text-xs sm:text-sm">Wishlist</span>
-            </Button>
-            <Button 
-              onClick={() => navigate('/image-search')} 
-              variant="outline" 
-              className="h-16 sm:h-20 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300"
-            >
-              <Camera className="h-5 w-5 sm:h-6 sm:w-6" />
-              <span className="text-xs sm:text-sm">Scan</span>
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Global Search and Affiliate Hub Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Global Search */}
-        <Card>
+      <GlassPanel>
+        <Card className="border-0 bg-transparent shadow-none">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Search className="h-5 w-5" />
-              Discover Products, Brands & Styles
+              <Sparkles className="h-5 w-5 text-primary" />
+              Quick Actions
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                Search across products, brands, and styles to discover your next fashion find.
-              </p>
-              <Button onClick={() => setSearchOpen(true)} variant="outline" className="w-full">
-                <Search className="h-4 w-4 mr-2" />
-                Open Global Search
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3 sm:gap-4">
+              <Button 
+                onClick={() => navigate('/swipe')} 
+                className="btn-luxury h-16 sm:h-20 flex-col gap-1 sm:gap-2"
+              >
+                <Heart className="h-5 w-5 sm:h-6 sm:w-6" />
+                <span className="text-xs sm:text-sm">Swipe</span>
+              </Button>
+              <Button 
+                onClick={() => navigate('/fashion-feed')} 
+                variant="outline" 
+                className="h-16 sm:h-20 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300"
+              >
+                <Sparkles className="h-5 w-5 sm:h-6 sm:w-6" />
+                <span className="text-xs sm:text-sm">Feed</span>
+              </Button>
+              <Button 
+                onClick={() => navigate('/explore')} 
+                variant="outline" 
+                className="h-16 sm:h-20 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300"
+              >
+                <Search className="h-5 w-5 sm:h-6 sm:w-6" />
+                <span className="text-xs sm:text-sm">Explore</span>
+              </Button>
+              <Button 
+                onClick={() => navigate('/ar-tryOn')} 
+                variant="outline" 
+                className="h-16 sm:h-20 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300 relative"
+              >
+                <Camera className="h-5 w-5 sm:h-6 sm:w-6" />
+                <span className="text-xs sm:text-sm">AR Try-On</span>
+                <Badge variant="secondary" className="absolute -top-1 -right-1 text-xs px-1 py-0 h-4">
+                  Beta
+                </Badge>
+              </Button>
+              <Button 
+                onClick={() => navigate('/likes')} 
+                variant="outline" 
+                className="h-16 sm:h-20 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300"
+              >
+                <Heart className="h-5 w-5 sm:h-6 sm:w-6" />
+                <span className="text-xs sm:text-sm">Likes</span>
+              </Button>
+              <Button 
+                onClick={() => navigate('/wishlist')} 
+                variant="outline" 
+                className="h-16 sm:h-20 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300"
+              >
+                <ShoppingBag className="h-5 w-5 sm:h-6 sm:w-6" />
+                <span className="text-xs sm:text-sm">Wishlist</span>
+              </Button>
+              <Button 
+                onClick={() => navigate('/image-search')} 
+                variant="outline" 
+                className="h-16 sm:h-20 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300"
+              >
+                <Camera className="h-5 w-5 sm:h-6 sm:w-6" />
+                <span className="text-xs sm:text-sm">Scan</span>
               </Button>
             </div>
           </CardContent>
         </Card>
+      </GlassPanel>
+
+      {/* Global Search and Affiliate Hub Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Global Search */}
+        <GlassPanel>
+          <Card className="border-0 bg-transparent shadow-none">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Search className="h-5 w-5" />
+                Discover Products, Brands & Styles
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Search across products, brands, and styles to discover your next fashion find.
+                </p>
+                <Button onClick={() => setSearchOpen(true)} variant="outline" className="w-full">
+                  <Search className="h-4 w-4 mr-2" />
+                  Open Global Search
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </GlassPanel>
 
         {/* Affiliate Hub - Desktop */}
         <div className="hidden lg:block">
-          <AffiliateHub showTitle={false} />
+          <GlassPanel>
+            <div className="p-6">
+              <AffiliateHub showTitle={false} />
+            </div>
+          </GlassPanel>
         </div>
       </div>
 
       {/* Affiliate Hub - Mobile (under Global Search) */}
       <div className="block lg:hidden">
-        <AffiliateHub />
+        <GlassPanel>
+          <div className="p-6">
+            <AffiliateHub />
+          </div>
+        </GlassPanel>
       </div>
 
       {/* Closets Preview */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <span>My Closets</span>
-            <Button variant="outline" size="sm" onClick={() => navigate('/closets')}>
-              <Archive className="h-4 w-4 mr-2" />
-              View All
-            </Button>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground text-center py-8">
-            Create your first closet to organize your style discoveries
-          </p>
-        </CardContent>
-      </Card>
+      <GlassPanel>
+        <Card className="border-0 bg-transparent shadow-none">
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <span>My Closets</span>
+              <Button variant="outline" size="sm" onClick={() => navigate('/closets')}>
+                <Archive className="h-4 w-4 mr-2" />
+                View All
+              </Button>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground text-center py-8">
+              Create your first closet to organize your style discoveries
+            </p>
+          </CardContent>
+        </Card>
+      </GlassPanel>
 
       {/* Fashion Leaderboards */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <Trophy className="h-5 w-5 text-yellow-500" />
-              Fashion Leaderboards
-            </CardTitle>
-            <div className="flex gap-2">
-              <Button variant={activeLeaderboard === 'global' ? 'default' : 'outline'} size="sm" onClick={() => setActiveLeaderboard('global')}>
-                <Globe className="h-4 w-4 mr-2" />
-                Global
-              </Button>
-              <Button variant={activeLeaderboard === 'country' ? 'default' : 'outline'} size="sm" onClick={() => setActiveLeaderboard('country')}>
-                <MapPin className="h-4 w-4 mr-2" />
-                Country
-              </Button>
+      <GlassPanel>
+        <Card className="border-0 bg-transparent shadow-none">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <Trophy className="h-5 w-5 text-yellow-500" />
+                Fashion Leaderboards
+              </CardTitle>
+              <div className="flex gap-2">
+                <Button variant={activeLeaderboard === 'global' ? 'default' : 'outline'} size="sm" onClick={() => setActiveLeaderboard('global')}>
+                  <Globe className="h-4 w-4 mr-2" />
+                  Global
+                </Button>
+                <Button variant={activeLeaderboard === 'country' ? 'default' : 'outline'} size="sm" onClick={() => setActiveLeaderboard('country')}>
+                  <MapPin className="h-4 w-4 mr-2" />
+                  Country
+                </Button>
+              </div>
             </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <Leaderboard type={activeLeaderboard} country={user?.user_metadata?.country} />
-        </CardContent>
-      </Card>
+          </CardHeader>
+          <CardContent>
+            <Leaderboard type={activeLeaderboard} country={user?.user_metadata?.country} />
+          </CardContent>
+        </Card>
+      </GlassPanel>
     </div>
   );
 
