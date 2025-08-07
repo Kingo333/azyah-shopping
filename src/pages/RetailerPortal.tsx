@@ -283,7 +283,13 @@ const RetailerPortal: React.FC = () => {
         {/* Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
           <div className="flex items-center gap-4">
-            <BackButton />
+            <BackButton 
+              fallbackPath="/dashboard"
+              onBack={() => {
+                console.log('Retailer portal back button clicked, navigating to dashboard');
+                window.location.href = '/dashboard';
+              }}
+            />
             <div className="flex items-center gap-4">
               <div className="w-16 h-16 bg-muted rounded-lg overflow-hidden">
                 {retailer.logo_url ? (

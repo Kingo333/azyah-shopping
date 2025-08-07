@@ -207,7 +207,13 @@ const BrandPortal: React.FC = () => {
       <div className="container mx-auto max-w-7xl p-4">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
-            <BackButton />
+            <BackButton 
+              fallbackPath="/dashboard"
+              onBack={() => {
+                console.log('Brand portal back button clicked, navigating to dashboard');
+                window.location.href = '/dashboard';
+              }}
+            />
             <div className="flex items-center gap-4">
               <div className="w-16 h-16 bg-muted rounded-xl overflow-hidden">
                 {brand.logo_url ? 
