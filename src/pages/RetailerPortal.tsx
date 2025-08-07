@@ -235,6 +235,7 @@ const RetailerPortal: React.FC = () => {
   };
 
   const handleEditProduct = (product: any) => {
+    console.log('Edit product clicked (retailer):', product);
     // Convert retailer product to proper Product format for editing
     const productForEdit = {
       id: product.id,

@@ -163,6 +163,7 @@ const BrandPortal: React.FC = () => {
   };
 
   const handleEditProduct = (product: any) => {
+    console.log('Edit product clicked:', product);
     setSelectedProduct(product);
     setIsEditProductModalOpen(true);
   };
