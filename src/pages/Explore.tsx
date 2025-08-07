@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -19,8 +18,7 @@ import {
   Star,
   Users,
   Sparkles,
-  Crown,
-  ArrowRight
+  Crown
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -101,20 +99,10 @@ const Explore: React.FC = () => {
 
             {activeFilter === 'brands' && (
               <section>
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-xl font-bold flex items-center gap-2">
-                    <Star className="h-5 w-5 text-purple-500" />
-                    Featured Brands
-                  </h2>
-                  <Button 
-                    onClick={() => navigate('/featured-brands')}
-                    variant="outline"
-                    className="flex items-center gap-2"
-                  >
-                    View All Brands
-                    <ArrowRight className="h-4 w-4" />
-                  </Button>
-                </div>
+                <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+                  <Star className="h-5 w-5 text-purple-500" />
+                  Featured Brands
+                </h2>
                 <FeaturedBrands limit={12} showMore={false} />
               </section>
             )}
