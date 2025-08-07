@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -8,6 +8,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { BackButton } from '@/components/ui/back-button';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { AddProductModal } from '@/components/AddProductModal';
+import { LogoUpload } from '@/components/LogoUpload';
 import { 
   Plus, 
   Edit, 
@@ -20,7 +24,6 @@ import {
   ShoppingBag,
   Users,
   DollarSign,
-  Settings,
   Download,
   Filter,
   Store,
@@ -55,20 +58,103 @@ interface Product {
   createdAt: string;
 }
 
+interface Retailer {
+  id: string;
+  name: string;
+  logo_url: string | null;
+  bio: string | null;
+  website: string | null;
+}
+
 const RetailerPortal: React.FC = () => {
   const [activeTab, setActiveTab] = useState('inventory');
   const [selectedBrand, setSelectedBrand] = useState<string>('all');
+  const [retailer, setRetailer] = useState<Retailer | null>(null);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isAddProductModalOpen, setIsAddProductModalOpen] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
 
-  // Mock retailer data
-  const retailerInfo = {
-    name: 'Fashion Collective',
-    logo: '/placeholder.svg',
-    description: 'Curated fashion from the best brands',
-    website: 'https://fashioncollective.com',
-    totalBrands: 12,
-    totalProducts: 156,
-    totalRevenue: 890000
+  useEffect(() => {
+    if (user) {
+      fetchRetailerData();
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (retailer?.id) {
+      fetchProducts();
+    }
+  }, [retailer?.id]);
+
+  const fetchRetailerData = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('retailers')
+        .select('*')
+        .eq('owner_user_id', user?.id)
+        .single();
+      
+      if (error && error.code !== 'PGRST116') throw error;
+      setRetailer(data);
+    } catch (error) { 
+      console.error('Error fetching retailer data:', error); 
+    }
+  };
+
+  const fetchProducts = async () => {
+    if (!retailer?.id) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .select(`
+          id,
+          title,
+          price_cents,
+          category_slug,
+          status,
+          media_urls,
+          stock_qty,
+          created_at
+        `)
+        .eq('retailer_id', retailer.id)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      
+      // Transform data to match interface
+      const formatted = (data || []).map((p: any) => ({
+        id: p.id,
+        title: p.title,
+        price: p.price_cents / 100,
+        category: p.category_slug,
+        brand: 'Retailer Product',
+        brandId: 'retailer',
+        status: p.status === 'active' ? 'active' as const : 'draft' as const,
+        image: Array.isArray(p.media_urls) && p.media_urls.length > 0 ? p.media_urls[0] : '/placeholder.svg',
+        views: Math.floor(Math.random() * 1000),
+        likes: Math.floor(Math.random() * 200),
+        sales: Math.floor(Math.random() * 50),
+        revenue: Math.floor(Math.random() * 5000),
+        margin: 30,
+        createdAt: p.created_at
+      }));
+      
+      setProducts(formatted);
+    } catch (error) {
+      console.error('Error fetching products:', error);
+      toast({ title: "Error", description: "Failed to fetch products", variant: "destructive" });
+    } finally { 
+      setLoading(false); 
+    }
+  };
+
+  const handleLogoUpdate = (logoUrl: string | null) => {
+    if (retailer) {
+      setRetailer({ ...retailer, logo_url: logoUrl });
+    }
   };
 
   // Mock brands data
@@ -99,58 +185,6 @@ const RetailerPortal: React.FC = () => {
       revenue: 156000,
       margin: 35,
       status: 'pending'
-    }
-  ];
-
-  // Mock products data
-  const products: Product[] = [
-    {
-      id: '1',
-      title: 'Embroidered Black Abaya',
-      price: 15900,
-      category: 'Abayas',
-      brand: 'Elegant Abayas',
-      brandId: '1',
-      status: 'active',
-      image: '/placeholder.svg',
-      views: 1250,
-      likes: 89,
-      sales: 12,
-      revenue: 190800,
-      margin: 30,
-      createdAt: '2024-01-15'
-    },
-    {
-      id: '2',
-      title: 'Silk Chiffon Hijab',
-      price: 4900,
-      category: 'Hijabs',
-      brand: 'Modern Hijab',
-      brandId: '2',
-      status: 'active',
-      image: '/placeholder.svg',
-      views: 890,
-      likes: 156,
-      sales: 28,
-      revenue: 137200,
-      margin: 25,
-      createdAt: '2024-01-10'
-    },
-    {
-      id: '3',
-      title: 'Gold Thread Kaftan',
-      price: 32900,
-      category: 'Kaftans',
-      brand: 'Luxury Kaftans',
-      brandId: '3',
-      status: 'draft',
-      image: '/placeholder.svg',
-      views: 0,
-      likes: 0,
-      sales: 0,
-      revenue: 0,
-      margin: 35,
-      createdAt: '2024-01-20'
     }
   ];
 
@@ -190,53 +224,73 @@ const RetailerPortal: React.FC = () => {
     totalSales: products.reduce((sum, p) => sum + p.sales, 0),
     totalViews: products.reduce((sum, p) => sum + p.views, 0),
     totalLikes: products.reduce((sum, p) => sum + p.likes, 0),
-    avgMargin: products.reduce((sum, p) => sum + p.margin, 0) / products.length
+    avgMargin: products.length > 0 ? products.reduce((sum, p) => sum + p.margin, 0) / products.length : 0
   };
 
   const handleLinkBrand = () => {
     toast({ description: "Brand partnership request sent!" });
   };
 
-  const handleUpdateMargin = (brandId: string, newMargin: number) => {
-    toast({ description: `Margin updated to ${newMargin}% for brand` });
-  };
+  if (!user) return (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="text-center">
+        <h2 className="text-xl font-semibold mb-2">Access Restricted</h2>
+        <p className="text-muted-foreground">Please log in to access the retailer portal.</p>
+      </div>
+    </div>
+  );
+
+  if (!retailer) return (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="text-center">
+        <h2 className="text-xl font-semibold mb-2">No Retailer Found</h2>
+        <p className="text-muted-foreground">Please create a retailer profile first.</p>
+      </div>
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto max-w-7xl p-4">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
           <div className="flex items-center gap-4">
             <BackButton />
             <div className="flex items-center gap-4">
               <div className="w-16 h-16 bg-muted rounded-lg overflow-hidden">
-                <img src={retailerInfo.logo} alt={retailerInfo.name} className="w-full h-full object-cover" />
+                {retailer.logo_url ? (
+                  <img src={retailer.logo_url} alt={retailer.name} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                    {retailer.name.charAt(0).toUpperCase()}
+                  </div>
+                )}
               </div>
               <div>
-                <h1 className="text-2xl font-bold">{retailerInfo.name}</h1>
-                <p className="text-muted-foreground">{retailerInfo.description}</p>
-                <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
-                  <span>{retailerInfo.totalBrands} brands</span>
-                  <span>{retailerInfo.totalProducts} products</span>
-                  <span>{formatPrice(retailerInfo.totalRevenue)} revenue</span>
+                <h1 className="text-2xl font-bold">{retailer.name}</h1>
+                <p className="text-muted-foreground">{retailer.bio || 'Retailer description'}</p>
+                <div className="flex flex-wrap items-center gap-2 sm:gap-4 mt-1 text-sm text-muted-foreground">
+                  <span>{brands.length} brands</span>
+                  <span>{products.length} products</span>
+                  <span>{formatPrice(totalAnalytics.totalRevenue * 100)} revenue</span>
                 </div>
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Button variant="outline">
-              <Settings className="h-4 w-4 mr-2" />
-              Settings
-            </Button>
-            <Button>
               <LinkIcon className="h-4 w-4 mr-2" />
               Link Brand
+            </Button>
+            <Button onClick={() => setIsAddProductModalOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Product
             </Button>
           </div>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
             <TabsTrigger value="inventory">Inventory</TabsTrigger>
             <TabsTrigger value="brands">Brands</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
@@ -247,7 +301,7 @@ const RetailerPortal: React.FC = () => {
           <TabsContent value="inventory" className="mt-6">
             <div className="space-y-6">
               {/* Filters */}
-              <div className="flex items-center gap-4">
+              <div className="flex flex-wrap items-center gap-4">
                 <Select value={selectedBrand} onValueChange={setSelectedBrand}>
                   <SelectTrigger className="w-48">
                     <SelectValue placeholder="Filter by brand" />
@@ -272,68 +326,76 @@ const RetailerPortal: React.FC = () => {
               </div>
 
               {/* Products Grid */}
-              <div className="grid gap-4">
-                {filteredProducts.map((product) => (
-                  <Card key={product.id} className="overflow-hidden">
-                    <CardContent className="p-4">
-                      <div className="flex items-center gap-4">
-                        {/* Product Image */}
-                        <div className="w-20 h-20 bg-muted rounded-lg overflow-hidden">
-                          <img 
-                            src={product.image} 
-                            alt={product.title}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-
-                        {/* Product Info */}
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <h3 className="font-medium">{product.title}</h3>
-                            <Badge variant={getStatusColor(product.status) as any}>
-                              {product.status.replace('_', ' ')}
-                            </Badge>
+              {loading ? (
+                <div className="text-center py-8">Loading products...</div>
+              ) : products.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  No products yet. Create your first product!
+                </div>
+              ) : (
+                <div className="grid gap-4">
+                  {filteredProducts.map((product) => (
+                    <Card key={product.id} className="overflow-hidden">
+                      <CardContent className="p-4">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                          {/* Product Image */}
+                          <div className="w-20 h-20 bg-muted rounded-lg overflow-hidden flex-shrink-0">
+                            <img 
+                              src={product.image} 
+                              alt={product.title}
+                              className="w-full h-full object-cover"
+                            />
                           </div>
-                          <p className="text-sm text-muted-foreground mb-2">
-                            {product.brand} • {product.category} • {formatPrice(product.price)}
-                          </p>
-                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                            <span className="flex items-center gap-1">
-                              <Eye className="h-3 w-3" />
-                              {formatNumber(product.views)}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <Heart className="h-3 w-3" />
-                              {formatNumber(product.likes)}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <ShoppingBag className="h-3 w-3" />
-                              {product.sales} sales
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <DollarSign className="h-3 w-3" />
-                              {formatPrice(product.revenue)}
-                            </span>
-                            <Badge variant="outline" className="text-xs">
-                              {product.margin}% margin
-                            </Badge>
+
+                          {/* Product Info */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex flex-wrap items-center gap-2 mb-1">
+                              <h3 className="font-medium truncate">{product.title}</h3>
+                              <Badge variant={getStatusColor(product.status) as any}>
+                                {product.status.replace('_', ' ')}
+                              </Badge>
+                            </div>
+                            <p className="text-sm text-muted-foreground mb-2">
+                              {product.brand} • {product.category} • ${product.price.toFixed(2)}
+                            </p>
+                            <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-sm text-muted-foreground">
+                              <span className="flex items-center gap-1">
+                                <Eye className="h-3 w-3" />
+                                {formatNumber(product.views)}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <Heart className="h-3 w-3" />
+                                {formatNumber(product.likes)}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <ShoppingBag className="h-3 w-3" />
+                                {product.sales} sales
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <DollarSign className="h-3 w-3" />
+                                ${product.revenue.toFixed(2)}
+                              </span>
+                              <Badge variant="outline" className="text-xs">
+                                {product.margin}% margin
+                              </Badge>
+                            </div>
+                          </div>
+
+                          {/* Actions */}
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <Button variant="outline" size="sm">
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button variant="outline" size="sm">
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
                           </div>
                         </div>
-
-                        {/* Actions */}
-                        <div className="flex items-center gap-2">
-                          <Button variant="outline" size="sm">
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button variant="outline" size="sm">
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
             </div>
           </TabsContent>
 
@@ -404,16 +466,16 @@ const RetailerPortal: React.FC = () => {
           <TabsContent value="analytics" className="mt-6">
             <div className="space-y-6">
               {/* Key Metrics */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <Card>
                   <CardContent className="p-4">
                     <div className="flex items-center gap-2">
                       <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
                         <Eye className="h-4 w-4 text-primary" />
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <p className="text-sm text-muted-foreground">Total Views</p>
-                        <p className="text-xl font-bold">{formatNumber(totalAnalytics.totalViews)}</p>
+                        <p className="text-lg sm:text-xl font-bold truncate">{formatNumber(totalAnalytics.totalViews)}</p>
                       </div>
                     </div>
                   </CardContent>
@@ -425,9 +487,9 @@ const RetailerPortal: React.FC = () => {
                       <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
                         <ShoppingBag className="h-4 w-4 text-green-500" />
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <p className="text-sm text-muted-foreground">Total Sales</p>
-                        <p className="text-xl font-bold">{totalAnalytics.totalSales}</p>
+                        <p className="text-lg sm:text-xl font-bold">{totalAnalytics.totalSales}</p>
                       </div>
                     </div>
                   </CardContent>
@@ -439,9 +501,9 @@ const RetailerPortal: React.FC = () => {
                       <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
                         <DollarSign className="h-4 w-4 text-blue-500" />
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <p className="text-sm text-muted-foreground">Revenue</p>
-                        <p className="text-xl font-bold">{formatPrice(totalAnalytics.totalRevenue)}</p>
+                        <p className="text-lg sm:text-xl font-bold truncate">${totalAnalytics.totalRevenue.toFixed(0)}</p>
                       </div>
                     </div>
                   </CardContent>
@@ -453,9 +515,9 @@ const RetailerPortal: React.FC = () => {
                       <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
                         <TrendingUp className="h-4 w-4 text-purple-500" />
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <p className="text-sm text-muted-foreground">Avg Margin</p>
-                        <p className="text-xl font-bold">{totalAnalytics.avgMargin.toFixed(1)}%</p>
+                        <p className="text-lg sm:text-xl font-bold">{totalAnalytics.avgMargin.toFixed(1)}%</p>
                       </div>
                     </div>
                   </CardContent>
@@ -470,9 +532,9 @@ const RetailerPortal: React.FC = () => {
                 <CardContent>
                   <div className="space-y-3">
                     {brands.map((brand) => (
-                      <div key={brand.id} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div key={brand.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 border rounded-lg gap-3">
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 bg-muted rounded overflow-hidden">
+                          <div className="w-8 h-8 bg-muted rounded overflow-hidden flex-shrink-0">
                             <img src={brand.logo} alt={brand.name} className="w-full h-full object-cover" />
                           </div>
                           <div>
@@ -500,19 +562,25 @@ const RetailerPortal: React.FC = () => {
                   <CardTitle>Store Profile</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  <LogoUpload
+                    currentLogoUrl={retailer.logo_url}
+                    onLogoUpdate={handleLogoUpdate}
+                    entityType="retailer"
+                    entityId={retailer.id}
+                  />
                   <div className="grid md:grid-cols-2 gap-4">
                     <div>
                       <label className="text-sm font-medium mb-2 block">Store Name</label>
-                      <Input defaultValue={retailerInfo.name} />
+                      <Input defaultValue={retailer.name} />
                     </div>
                     <div>
                       <label className="text-sm font-medium mb-2 block">Website</label>
-                      <Input defaultValue={retailerInfo.website} />
+                      <Input defaultValue={retailer.website || ''} />
                     </div>
                   </div>
                   <div>
                     <label className="text-sm font-medium mb-2 block">Description</label>
-                    <Textarea defaultValue={retailerInfo.description} />
+                    <Textarea defaultValue={retailer.bio || ''} />
                   </div>
                   <Button>Save Changes</Button>
                 </CardContent>
@@ -549,6 +617,14 @@ const RetailerPortal: React.FC = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      <AddProductModal
+        isOpen={isAddProductModalOpen}
+        onClose={() => setIsAddProductModalOpen(false)}
+        onProductAdded={fetchProducts}
+        userType="retailer"
+        retailerId={retailer.id}
+      />
     </div>
   );
 };

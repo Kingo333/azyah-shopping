@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,7 +14,9 @@ import { useCategories } from '@/hooks/useCategories';
 import { useAnalytics, useConversionFunnel } from '@/hooks/useAnalytics';
 import AnalyticsFunnel from '@/components/analytics/AnalyticsFunnel';
 import AnalyticsTable from '@/components/analytics/AnalyticsTable';
-import { Plus, Edit, Trash2, Upload, BarChart3, TrendingUp, Eye, Heart, ShoppingBag, DollarSign, Settings, Download, Filter } from 'lucide-react';
+import { AddProductModal } from '@/components/AddProductModal';
+import { LogoUpload } from '@/components/LogoUpload';
+import { Plus, Edit, Trash2, Upload, BarChart3, TrendingUp, Eye, Heart, ShoppingBag, DollarSign, Download, Filter } from 'lucide-react';
 
 interface Product {
   id: string;
@@ -42,6 +45,7 @@ const BrandPortal: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [brand, setBrand] = useState<Brand | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isAddProductModalOpen, setIsAddProductModalOpen] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
   const { categories } = useCategories();
@@ -54,33 +58,72 @@ const BrandPortal: React.FC = () => {
   useEffect(() => {
     if (user) {
       fetchBrandData();
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (brand?.id) {
       fetchProducts();
     }
-  }, [user, brand?.id]);
+  }, [brand?.id]);
 
   const fetchBrandData = async () => {
     try {
-      const { data, error } = await supabase.from('brands').select('*').eq('owner_user_id', user?.id).single();
+      const { data, error } = await supabase
+        .from('brands')
+        .select('*')
+        .eq('owner_user_id', user?.id)
+        .single();
+      
       if (error && error.code !== 'PGRST116') throw error;
       setBrand(data);
-    } catch (error) { console.error('Error fetching brand data:', error); }
+    } catch (error) { 
+      console.error('Error fetching brand data:', error); 
+    }
   };
 
   const fetchProducts = async () => {
     if (!brand?.id) return;
+    
     try {
-      const { data, error } = await supabase.from('products').select('id,title,price_cents,category_slug,status,media_urls,ar_mesh_url,stock_qty,created_at,brand:brands(name)').eq('brand_id', brand.id).order('created_at', { ascending: false });
+      const { data, error } = await supabase
+        .from('products')
+        .select(`
+          id,
+          title,
+          price_cents,
+          category_slug,
+          status,
+          media_urls,
+          ar_mesh_url,
+          stock_qty,
+          created_at,
+          brand:brands(name)
+        `)
+        .eq('brand_id', brand.id)
+        .order('created_at', { ascending: false });
+      
       if (error) throw error;
+      
       const formatted = (data || []).map((p: any) => ({
         ...p,
         media_urls: Array.isArray(p.media_urls) ? p.media_urls : [],
         ar_mesh_url: p.ar_mesh_url || null
       }));
+      
       setProducts(formatted);
     } catch (error) {
       console.error('Error fetching products:', error);
       toast({ title: "Error", description: "Failed to fetch products", variant: "destructive" });
-    } finally { setLoading(false); }
+    } finally { 
+      setLoading(false); 
+    }
+  };
+
+  const handleLogoUpdate = (logoUrl: string | null) => {
+    if (brand) {
+      setBrand({ ...brand, logo_url: logoUrl });
+    }
   };
 
   const formatPrice = (cents: number, currency: string = 'USD'): string =>
@@ -155,13 +198,13 @@ const BrandPortal: React.FC = () => {
     totalViews: analyticsData?.totalViews || 0,
     totalLikes: analyticsData?.totalLikes || 0,
     totalSales: products.reduce((sum, p: any) => sum + (p.sales || 0), 0),
-    totalRevenue: analyticsData?.totalViews ? analyticsData.totalViews * 45.99 : 0 // Mock calculation
+    totalRevenue: analyticsData?.totalViews ? analyticsData.totalViews * 45.99 : 0
   };
 
   const topProductsData = products.slice(0, 5).map((product, index) => ({
     rank: index + 1,
     name: product.title,
-    views: Math.floor(Math.random() * 1000) + 100, // Mock data
+    views: Math.floor(Math.random() * 1000) + 100,
     likes: Math.floor(Math.random() * 200) + 20,
     revenue: `$${(Math.random() * 500 + 100).toFixed(2)}`
   }));
@@ -191,11 +234,10 @@ const BrandPortal: React.FC = () => {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" className="rounded-xl">
-              <Settings className="h-4 w-4 mr-2" />
-              Settings
-            </Button>
-            <Button className="rounded-xl bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600">
+            <Button 
+              className="rounded-xl bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600"
+              onClick={() => setIsAddProductModalOpen(true)}
+            >
               <Plus className="h-4 w-4 mr-2" />
               Add Product
             </Button>
@@ -211,14 +253,14 @@ const BrandPortal: React.FC = () => {
 
           <TabsContent value="products" className="mt-6">
             <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <Button variant="outline" size="sm"><Filter className="h-4 w-4 mr-2" />Filter</Button>
                   <Button variant="outline" size="sm"><Upload className="h-4 w-4 mr-2" />Import CSV</Button>
                   <Button variant="outline" size="sm"><Download className="h-4 w-4 mr-2" />Export</Button>
                 </div>
                 {selectedProducts.size > 0 && (
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <span className="text-sm text-muted-foreground">{selectedProducts.size} selected</span>
                     <Button variant="outline" size="sm" onClick={() => handleBulkAction('Archive')}>Archive</Button>
                     <Button variant="outline" size="sm" onClick={() => handleBulkAction('Delete')}>Delete</Button>
@@ -308,7 +350,7 @@ const BrandPortal: React.FC = () => {
                 </Card>
               </div>
 
-              <div className="grid md:grid-cols-2 gap-6">
+              <div className="grid lg:grid-cols-2 gap-6">
                 <AnalyticsFunnel data={funnelData || []} loading={funnelLoading} />
                 
                 <AnalyticsTable
@@ -329,11 +371,35 @@ const BrandPortal: React.FC = () => {
 
           <TabsContent value="settings" className="mt-6">
             <div className="space-y-6">
-              <Card><CardHeader><CardTitle>Brand Profile</CardTitle></CardHeader><CardContent className="space-y-4"><div className="grid md:grid-cols-2 gap-4"><div><label className="text-sm font-medium mb-2 block">Brand Name</label><Input defaultValue={brand.name} /></div><div><label className="text-sm font-medium mb-2 block">Website</label><Input defaultValue={brand.website || ''} /></div></div><div><label className="text-sm font-medium mb-2 block">Description</label><Textarea defaultValue={brand.bio || ''} /></div><Button>Save Changes</Button></CardContent></Card>
+              <Card>
+                <CardHeader><CardTitle>Brand Profile</CardTitle></CardHeader>
+                <CardContent className="space-y-4">
+                  <LogoUpload
+                    currentLogoUrl={brand.logo_url}
+                    onLogoUpdate={handleLogoUpdate}
+                    entityType="brand"
+                    entityId={brand.id}
+                  />
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div><label className="text-sm font-medium mb-2 block">Brand Name</label><Input defaultValue={brand.name} /></div>
+                    <div><label className="text-sm font-medium mb-2 block">Website</label><Input defaultValue={brand.website || ''} /></div>
+                  </div>
+                  <div><label className="text-sm font-medium mb-2 block">Description</label><Textarea defaultValue={brand.bio || ''} /></div>
+                  <Button>Save Changes</Button>
+                </CardContent>
+              </Card>
             </div>
           </TabsContent>
         </Tabs>
       </div>
+
+      <AddProductModal
+        isOpen={isAddProductModalOpen}
+        onClose={() => setIsAddProductModalOpen(false)}
+        onProductAdded={fetchProducts}
+        userType="brand"
+        brandId={brand.id}
+      />
     </div>
   );
 };
