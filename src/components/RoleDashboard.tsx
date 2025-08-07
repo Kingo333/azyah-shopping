@@ -156,7 +156,7 @@ const RoleDashboard: React.FC = () => {
   };
 
   if (loading) {
-    return <div className="min-h-screen bg-background flex items-center justify-center">
+    return <div className="min-h-screen bg-gradient-to-br from-background to-muted/30 flex items-center justify-center">
         <div className="text-center">
           <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
           <p>Loading dashboard...</p>
@@ -165,7 +165,7 @@ const RoleDashboard: React.FC = () => {
   }
 
   if (!userProfile) {
-    return <div className="min-h-screen bg-background flex items-center justify-center">
+    return <div className="min-h-screen bg-gradient-to-br from-background to-muted/30 flex items-center justify-center">
         <div className="text-center">
           <p>Error loading profile</p>
         </div>
@@ -174,21 +174,13 @@ const RoleDashboard: React.FC = () => {
 
   const renderShopperDashboard = () => (
     <div className="space-y-6">
-      {/* Quick Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        
-
-        
-
-
-        
-      </div>
-
       {/* Quick Actions */}
-      <Card className="card-luxury">
-        <CardHeader>
+      <Card className="bg-gradient-to-r from-background to-muted/20 border-muted/30 shadow-lg">
+        <CardHeader className="pb-4">
           <CardTitle className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-primary" />
+            <div className="p-2 bg-primary/10 rounded-full">
+              <Sparkles className="h-5 w-5 text-primary" />
+            </div>
             Quick Actions
           </CardTitle>
         </CardHeader>
@@ -196,7 +188,7 @@ const RoleDashboard: React.FC = () => {
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3 sm:gap-4">
             <Button 
               onClick={() => navigate('/swipe')} 
-              className="btn-luxury h-16 sm:h-20 flex-col gap-1 sm:gap-2"
+              className="h-16 sm:h-20 flex-col gap-1 sm:gap-2 bg-gradient-to-b from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-md hover:shadow-lg transition-all duration-300"
             >
               <Heart className="h-5 w-5 sm:h-6 sm:w-6" />
               <span className="text-xs sm:text-sm">Swipe</span>
@@ -204,7 +196,7 @@ const RoleDashboard: React.FC = () => {
             <Button 
               onClick={() => navigate('/fashion-feed')} 
               variant="outline" 
-              className="h-16 sm:h-20 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300"
+              className="h-16 sm:h-20 flex-col gap-1 sm:gap-2 bg-muted/5 hover:bg-muted/20 hover:scale-105 transition-all duration-300 border-muted/40"
             >
               <Sparkles className="h-5 w-5 sm:h-6 sm:w-6" />
               <span className="text-xs sm:text-sm">Feed</span>
@@ -212,7 +204,7 @@ const RoleDashboard: React.FC = () => {
             <Button 
               onClick={() => navigate('/explore')} 
               variant="outline" 
-              className="h-16 sm:h-20 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300"
+              className="h-16 sm:h-20 flex-col gap-1 sm:gap-2 bg-muted/5 hover:bg-muted/20 hover:scale-105 transition-all duration-300 border-muted/40"
             >
               <Search className="h-5 w-5 sm:h-6 sm:w-6" />
               <span className="text-xs sm:text-sm">Explore</span>
@@ -220,18 +212,18 @@ const RoleDashboard: React.FC = () => {
             <Button 
               onClick={() => navigate('/ar-tryOn')} 
               variant="outline" 
-              className="h-16 sm:h-20 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300 relative"
+              className="h-16 sm:h-20 flex-col gap-1 sm:gap-2 bg-muted/5 hover:bg-muted/20 hover:scale-105 transition-all duration-300 relative border-muted/40"
             >
               <Camera className="h-5 w-5 sm:h-6 sm:w-6" />
               <span className="text-xs sm:text-sm">AR Try-On</span>
-              <Badge variant="secondary" className="absolute -top-1 -right-1 text-xs px-1 py-0 h-4">
+              <Badge variant="secondary" className="absolute -top-1 -right-1 text-xs px-1 py-0 h-4 bg-gradient-to-r from-accent-cartier to-accent-cartier-700 text-white">
                 Beta
               </Badge>
             </Button>
             <Button 
               onClick={() => navigate('/likes')} 
               variant="outline" 
-              className="h-16 sm:h-20 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300"
+              className="h-16 sm:h-20 flex-col gap-1 sm:gap-2 bg-muted/5 hover:bg-muted/20 hover:scale-105 transition-all duration-300 border-muted/40"
             >
               <Heart className="h-5 w-5 sm:h-6 sm:w-6" />
               <span className="text-xs sm:text-sm">Likes</span>
@@ -239,7 +231,7 @@ const RoleDashboard: React.FC = () => {
             <Button 
               onClick={() => navigate('/wishlist')} 
               variant="outline" 
-              className="h-16 sm:h-20 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300"
+              className="h-16 sm:h-20 flex-col gap-1 sm:gap-2 bg-muted/5 hover:bg-muted/20 hover:scale-105 transition-all duration-300 border-muted/40"
             >
               <ShoppingBag className="h-5 w-5 sm:h-6 sm:w-6" />
               <span className="text-xs sm:text-sm">Wishlist</span>
@@ -247,7 +239,7 @@ const RoleDashboard: React.FC = () => {
             <Button 
               onClick={() => navigate('/image-search')} 
               variant="outline" 
-              className="h-16 sm:h-20 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300"
+              className="h-16 sm:h-20 flex-col gap-1 sm:gap-2 bg-muted/5 hover:bg-muted/20 hover:scale-105 transition-all duration-300 border-muted/40"
             >
               <Camera className="h-5 w-5 sm:h-6 sm:w-6" />
               <span className="text-xs sm:text-sm">Scan</span>
@@ -259,10 +251,12 @@ const RoleDashboard: React.FC = () => {
       {/* Global Search and Affiliate Hub Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Global Search */}
-        <Card>
+        <Card className="bg-gradient-to-br from-card to-muted/10 border-muted/30 shadow-md hover:shadow-lg transition-shadow duration-300">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Search className="h-5 w-5" />
+              <div className="p-2 bg-blue-500/10 rounded-full">
+                <Search className="h-5 w-5 text-blue-600" />
+              </div>
               Discover Products, Brands & Styles
             </CardTitle>
           </CardHeader>
@@ -271,7 +265,7 @@ const RoleDashboard: React.FC = () => {
               <p className="text-sm text-muted-foreground">
                 Search across products, brands, and styles to discover your next fashion find.
               </p>
-              <Button onClick={() => setSearchOpen(true)} variant="outline" className="w-full">
+              <Button onClick={() => setSearchOpen(true)} variant="outline" className="w-full bg-muted/5 hover:bg-muted/20 border-muted/40">
                 <Search className="h-4 w-4 mr-2" />
                 Open Global Search
               </Button>
@@ -291,37 +285,62 @@ const RoleDashboard: React.FC = () => {
       </div>
 
       {/* Closets Preview */}
-      <Card>
+      <Card className="bg-gradient-to-br from-card to-muted/10 border-muted/30 shadow-md">
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
-            <span>My Closets</span>
-            <Button variant="outline" size="sm" onClick={() => navigate('/closets')}>
+            <div className="flex items-center gap-2">
+              <div className="p-2 bg-purple-500/10 rounded-full">
+                <Archive className="h-5 w-5 text-purple-600" />
+              </div>
+              My Closets
+            </div>
+            <Button variant="outline" size="sm" onClick={() => navigate('/closets')} className="border-muted/40 hover:bg-muted/20">
               <Archive className="h-4 w-4 mr-2" />
               View All
             </Button>
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-muted-foreground text-center py-8">
-            Create your first closet to organize your style discoveries
-          </p>
+          <div className="text-center py-12 bg-muted/5 rounded-lg border border-muted/20">
+            <div className="p-4 bg-muted/10 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+              <Archive className="h-8 w-8 text-muted-foreground/70" />
+            </div>
+            <p className="text-muted-foreground">
+              Create your first closet to organize your style discoveries
+            </p>
+            <Button className="mt-4" onClick={() => navigate('/closets')}>
+              Create Closet
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
       {/* Fashion Leaderboards */}
-      <Card>
+      <Card className="bg-gradient-to-br from-card to-muted/10 border-muted/30 shadow-md">
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2">
-              <Trophy className="h-5 w-5 text-yellow-500" />
+              <div className="p-2 bg-yellow-500/10 rounded-full">
+                <Trophy className="h-5 w-5 text-yellow-600" />
+              </div>
               Fashion Leaderboards
             </CardTitle>
             <div className="flex gap-2">
-              <Button variant={activeLeaderboard === 'global' ? 'default' : 'outline'} size="sm" onClick={() => setActiveLeaderboard('global')}>
+              <Button 
+                variant={activeLeaderboard === 'global' ? 'default' : 'outline'} 
+                size="sm" 
+                onClick={() => setActiveLeaderboard('global')}
+                className={activeLeaderboard === 'global' ? '' : 'border-muted/40 hover:bg-muted/20'}
+              >
                 <Globe className="h-4 w-4 mr-2" />
                 Global
               </Button>
-              <Button variant={activeLeaderboard === 'country' ? 'default' : 'outline'} size="sm" onClick={() => setActiveLeaderboard('country')}>
+              <Button 
+                variant={activeLeaderboard === 'country' ? 'default' : 'outline'} 
+                size="sm" 
+                onClick={() => setActiveLeaderboard('country')}
+                className={activeLeaderboard === 'country' ? '' : 'border-muted/40 hover:bg-muted/20'}
+              >
                 <MapPin className="h-4 w-4 mr-2" />
                 Country
               </Button>
@@ -329,7 +348,9 @@ const RoleDashboard: React.FC = () => {
           </div>
         </CardHeader>
         <CardContent>
-          <Leaderboard type={activeLeaderboard} country={user?.user_metadata?.country} />
+          <div className="bg-muted/5 rounded-lg p-4 border border-muted/20">
+            <Leaderboard type={activeLeaderboard} country={user?.user_metadata?.country} />
+          </div>
         </CardContent>
       </Card>
     </div>
@@ -338,10 +359,12 @@ const RoleDashboard: React.FC = () => {
   const renderBrandDashboard = () => <div className="space-y-6">
       {/* Quick Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card>
+        <Card className="bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-950/20 dark:to-blue-900/10 border-blue-200/40 dark:border-blue-800/30">
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
-              <Package className="h-5 w-5 text-blue-500" />
+              <div className="p-2 bg-blue-500/10 rounded-full">
+                <Package className="h-5 w-5 text-blue-500" />
+              </div>
               <div>
                 <p className="text-sm text-muted-foreground">Products</p>
                 <p className="text-xl font-bold">{stats.totalProducts || 0}</p>
@@ -350,10 +373,12 @@ const RoleDashboard: React.FC = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-950/20 dark:to-green-900/10 border-green-200/40 dark:border-green-800/30">
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
-              <Eye className="h-5 w-5 text-green-500" />
+              <div className="p-2 bg-green-500/10 rounded-full">
+                <Eye className="h-5 w-5 text-green-500" />
+              </div>
               <div>
                 <p className="text-sm text-muted-foreground">Views</p>
                 <p className="text-xl font-bold">{stats.totalViews || 0}</p>
@@ -362,10 +387,12 @@ const RoleDashboard: React.FC = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-gradient-to-br from-purple-50 to-purple-100/50 dark:from-purple-950/20 dark:to-purple-900/10 border-purple-200/40 dark:border-purple-800/30">
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
-              <ShoppingBag className="h-5 w-5 text-purple-500" />
+              <div className="p-2 bg-purple-500/10 rounded-full">
+                <ShoppingBag className="h-5 w-5 text-purple-500" />
+              </div>
               <div>
                 <p className="text-sm text-muted-foreground">Sales</p>
                 <p className="text-xl font-bold">{stats.totalSales || 0}</p>
@@ -374,10 +401,12 @@ const RoleDashboard: React.FC = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-gradient-to-br from-emerald-50 to-emerald-100/50 dark:from-emerald-950/20 dark:to-emerald-900/10 border-emerald-200/40 dark:border-emerald-800/30">
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
-              <DollarSign className="h-5 w-5 text-green-500" />
+              <div className="p-2 bg-emerald-500/10 rounded-full">
+                <DollarSign className="h-5 w-5 text-emerald-500" />
+              </div>
               <div>
                 <p className="text-sm text-muted-foreground">Revenue</p>
                 <p className="text-xl font-bold">{formatPrice(stats.totalRevenue || 0)}</p>
@@ -388,21 +417,26 @@ const RoleDashboard: React.FC = () => {
       </div>
 
       {/* Quick Actions */}
-      <Card>
+      <Card className="bg-gradient-to-r from-background to-muted/20 border-muted/30 shadow-lg">
         <CardHeader>
-          <CardTitle>Brand Management</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <div className="p-2 bg-primary/10 rounded-full">
+              <Settings className="h-5 w-5 text-primary" />
+            </div>
+            Brand Management
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            <Button onClick={() => navigate('/brand-portal')} className="h-20 flex-col gap-2">
+            <Button onClick={() => navigate('/brand-portal')} className="h-20 flex-col gap-2 bg-gradient-to-b from-primary to-primary/90">
               <Package className="h-6 w-6" />
               <span>Products</span>
             </Button>
-            <Button onClick={() => navigate('/brand-portal')} variant="outline" className="h-20 flex-col gap-2">
+            <Button onClick={() => navigate('/brand-portal')} variant="outline" className="h-20 flex-col gap-2 bg-muted/5 hover:bg-muted/20 border-muted/40">
               <BarChart3 className="h-6 w-6" />
               <span>Analytics</span>
             </Button>
-            <Button onClick={() => navigate('/brand-portal')} variant="outline" className="h-20 flex-col gap-2">
+            <Button onClick={() => navigate('/brand-portal')} variant="outline" className="h-20 flex-col gap-2 bg-muted/5 hover:bg-muted/20 border-muted/40">
               <Settings className="h-6 w-6" />
               <span>Settings</span>
             </Button>
@@ -414,10 +448,12 @@ const RoleDashboard: React.FC = () => {
   const renderRetailerDashboard = () => <div className="space-y-6">
       {/* Quick Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card>
+        <Card className="bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-950/20 dark:to-blue-900/10 border-blue-200/40 dark:border-blue-800/30">
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
-              <Store className="h-5 w-5 text-blue-500" />
+              <div className="p-2 bg-blue-500/10 rounded-full">
+                <Store className="h-5 w-5 text-blue-500" />
+              </div>
               <div>
                 <p className="text-sm text-muted-foreground">Brands</p>
                 <p className="text-xl font-bold">5</p>
@@ -426,10 +462,12 @@ const RoleDashboard: React.FC = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-950/20 dark:to-green-900/10 border-green-200/40 dark:border-green-800/30">
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
-              <Package className="h-5 w-5 text-green-500" />
+              <div className="p-2 bg-green-500/10 rounded-full">
+                <Package className="h-5 w-5 text-green-500" />
+              </div>
               <div>
                 <p className="text-sm text-muted-foreground">Products</p>
                 <p className="text-xl font-bold">{stats.totalProducts || 0}</p>
@@ -438,10 +476,12 @@ const RoleDashboard: React.FC = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-gradient-to-br from-purple-50 to-purple-100/50 dark:from-purple-950/20 dark:to-purple-900/10 border-purple-200/40 dark:border-purple-800/30">
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-purple-500" />
+              <div className="p-2 bg-purple-500/10 rounded-full">
+                <TrendingUp className="h-5 w-5 text-purple-500" />
+              </div>
               <div>
                 <p className="text-sm text-muted-foreground">Sales</p>
                 <p className="text-xl font-bold">{stats.totalSales || 0}</p>
@@ -450,10 +490,12 @@ const RoleDashboard: React.FC = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-gradient-to-br from-emerald-50 to-emerald-100/50 dark:from-emerald-950/20 dark:to-emerald-900/10 border-emerald-200/40 dark:border-emerald-800/30">
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
-              <DollarSign className="h-5 w-5 text-green-500" />
+              <div className="p-2 bg-emerald-500/10 rounded-full">
+                <DollarSign className="h-5 w-5 text-emerald-500" />
+              </div>
               <div>
                 <p className="text-sm text-muted-foreground">Revenue</p>
                 <p className="text-xl font-bold">{formatPrice(stats.totalRevenue || 0)}</p>
@@ -464,21 +506,26 @@ const RoleDashboard: React.FC = () => {
       </div>
 
       {/* Quick Actions */}
-      <Card>
+      <Card className="bg-gradient-to-r from-background to-muted/20 border-muted/30 shadow-lg">
         <CardHeader>
-          <CardTitle>Retailer Management</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <div className="p-2 bg-primary/10 rounded-full">
+              <Store className="h-5 w-5 text-primary" />
+            </div>
+            Retailer Management
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            <Button onClick={() => navigate('/retailer-portal')} className="h-20 flex-col gap-2">
+            <Button onClick={() => navigate('/retailer-portal')} className="h-20 flex-col gap-2 bg-gradient-to-b from-primary to-primary/90">
               <Package className="h-6 w-6" />
               <span>Inventory</span>
             </Button>
-            <Button onClick={() => navigate('/retailer-portal')} variant="outline" className="h-20 flex-col gap-2">
+            <Button onClick={() => navigate('/retailer-portal')} variant="outline" className="h-20 flex-col gap-2 bg-muted/5 hover:bg-muted/20 border-muted/40">
               <Store className="h-6 w-6" />
               <span>Brands</span>
             </Button>
-            <Button onClick={() => navigate('/retailer-portal')} variant="outline" className="h-20 flex-col gap-2">
+            <Button onClick={() => navigate('/retailer-portal')} variant="outline" className="h-20 flex-col gap-2 bg-muted/5 hover:bg-muted/20 border-muted/40">
               <BarChart3 className="h-6 w-6" />
               <span>Analytics</span>
             </Button>
@@ -489,10 +536,10 @@ const RoleDashboard: React.FC = () => {
 
   return (
     <ErrorBoundary>
-      <div className="min-h-screen bg-background pb-20 sm:pb-0">
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 pb-20 sm:pb-0">
         <div className="container-responsive mx-auto max-w-6xl p-4">
           {/* Header with Dashboard Header component */}
-          <div className="mb-6">
+          <div className="mb-6 bg-card/50 backdrop-blur-sm rounded-lg p-4 border border-muted/20 shadow-sm">
             <DashboardHeader />
           </div>
 
