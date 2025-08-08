@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -27,7 +26,7 @@ interface FormData {
   price: number | string;
   comparePrice: number | string;
   category: TopCategory;
-  subcategory: string;
+  subcategory: SubCategory | '';
   stock: number | string;
   sku: string;
   externalUrl: string;
@@ -93,7 +92,7 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
         price: product.price_cents / 100,
         comparePrice: product.compare_at_price_cents ? product.compare_at_price_cents / 100 : '',
         category: product.category_slug as TopCategory,
-        subcategory: product.subcategory_slug || '',
+        subcategory: (product.subcategory_slug as SubCategory) || '',
         stock: product.stock_qty,
         sku: product.sku,
         externalUrl: product.external_url || '',
