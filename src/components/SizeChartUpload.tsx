@@ -26,20 +26,21 @@ export const SizeChartUpload: React.FC<SizeChartUploadProps> = ({
     if (!file) return;
 
     // Validate file type
-    if (!file.type.startsWith('image/')) {
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+    if (!allowedTypes.includes(file.type)) {
       toast({
         title: 'Invalid file type',
-        description: 'Please upload an image file',
+        description: 'Please upload a JPG, PNG, or GIF image',
         variant: 'destructive'
       });
       return;
     }
 
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
+    // Validate file size (max 8MB)
+    if (file.size > 8 * 1024 * 1024) {
       toast({
         title: 'File too large',
-        description: 'Please upload an image smaller than 5MB',
+        description: 'Please upload an image smaller than 8MB',
         variant: 'destructive'
       });
       return;
@@ -120,12 +121,12 @@ export const SizeChartUpload: React.FC<SizeChartUploadProps> = ({
             <Input
               id="size-chart-upload"
               type="file"
-              accept="image/*"
+              accept="image/jpeg,image/jpg,image/png,image/gif"
               onChange={handleFileUpload}
               className="hidden"
             />
             <div className="text-xs text-gray-500 mt-2">
-              Supports JPG, PNG, GIF up to 5MB
+              Supports JPG, PNG, GIF up to 8MB
             </div>
           </div>
         )}

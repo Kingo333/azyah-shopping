@@ -86,6 +86,7 @@ export interface ProductAttributes {
   occasion?: 'casual' | 'formal' | 'business' | 'evening' | 'bridal' | 'party' | 'athleisure' | 'beach' | 'Ramadan' | 'Eid';
   season?: 'SS' | 'FW' | 'Resort' | 'Holiday';
   style_tags?: string[];
+  size_chart?: string;
 }
 
 export interface Product {
