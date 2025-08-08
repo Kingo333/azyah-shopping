@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -11,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Upload, X, Loader2 } from 'lucide-react';
 import { CATEGORY_TREE, getAllCategories, getSubcategoriesForCategory, getCategoryDisplayName, getSubcategoryDisplayName } from '@/lib/categories';
+import { SizeChartUpload } from '@/components/SizeChartUpload';
 import type { TopCategory, SubCategory } from '@/lib/categories';
 import type { Product } from '@/types';
 
@@ -44,6 +44,7 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [uploadingImages, setUploadingImages] = useState(false);
   const [images, setImages] = useState<string[]>([]);
+  const [sizeChartUrl, setSizeChartUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [formData, setFormData] = useState({
@@ -77,6 +78,10 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
       const mediaUrls = Array.isArray(product.media_urls) ? product.media_urls : 
                        typeof product.media_urls === 'string' ? [product.media_urls] : [];
       setImages(mediaUrls);
+
+      // Set existing size chart
+      const attributes = product.attributes as any;
+      setSizeChartUrl(attributes?.size_chart || null);
     }
   }, [product, isOpen]);
 
@@ -187,6 +192,8 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
     setLoading(true);
 
     try {
+      const currentAttributes = product.attributes as any || {};
+      
       const updateData = {
         title: formData.title,
         description: formData.description,
@@ -198,6 +205,10 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
         stock_qty: parseInt(formData.stock_qty) || 0,
         external_url: formData.external_url,
         media_urls: images,
+        attributes: {
+          ...currentAttributes,
+          size_chart: sizeChartUrl
+        },
         updated_at: new Date().toISOString()
       };
 
@@ -412,6 +423,12 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
               </div>
             )}
           </div>
+
+          <SizeChartUpload
+            currentSizeChart={sizeChartUrl}
+            onSizeChartUpdate={setSizeChartUrl}
+            productId={product.id}
+          />
 
           <div className="flex justify-end space-x-2 pt-4 border-t">
             <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
