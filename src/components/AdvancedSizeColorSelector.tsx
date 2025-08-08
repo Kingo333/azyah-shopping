@@ -1,32 +1,39 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Ruler, Palette, AlertCircle, CheckCircle } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Info, Ruler } from 'lucide-react';
 
-interface SizeOption {
+interface Size {
   value: string;
   label: string;
   inStock: boolean;
   stockCount?: number;
 }
 
-interface ColorOption {
+interface Color {
   value: string;
   label: string;
   hexCode: string;
   inStock: boolean;
 }
 
+interface SizeChart {
+  [key: string]: string;
+}
+
 interface AdvancedSizeColorSelectorProps {
-  sizes: SizeOption[];
-  colors: ColorOption[];
+  sizes: Size[];
+  colors: Color[];
   selectedSize: string;
   selectedColor: string;
   onSizeSelect: (size: string) => void;
   onColorSelect: (color: string) => void;
-  sizeChart?: Record<string, string>;
+  sizeChart?: SizeChart;
+  sizeChartImage?: string | null;
+  className?: string;
 }
 
 export const AdvancedSizeColorSelector: React.FC<AdvancedSizeColorSelectorProps> = ({
@@ -36,164 +43,148 @@ export const AdvancedSizeColorSelector: React.FC<AdvancedSizeColorSelectorProps>
   selectedColor,
   onSizeSelect,
   onColorSelect,
-  sizeChart
+  sizeChart,
+  sizeChartImage,
+  className = ''
 }) => {
-  const [stockWarning, setStockWarning] = useState<string | null>(null);
-
-  useEffect(() => {
-    const selectedSizeData = sizes.find(s => s.value === selectedSize);
-    const selectedColorData = colors.find(c => c.value === selectedColor);
-    
-    if (selectedSizeData && selectedColorData) {
-      if (!selectedSizeData.inStock || !selectedColorData.inStock) {
-        setStockWarning('Selected combination is out of stock');
-      } else if (selectedSizeData.stockCount && selectedSizeData.stockCount < 3) {
-        setStockWarning(`Only ${selectedSizeData.stockCount} left in stock`);
-      } else {
-        setStockWarning(null);
-      }
-    }
-  }, [selectedSize, selectedColor, sizes, colors]);
+  const [showSizeGuide, setShowSizeGuide] = useState(false);
 
   return (
-    <div className="space-y-6">
+    <div className={`space-y-4 ${className}`}>
       {/* Size Selection */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <label className="text-sm font-medium flex items-center gap-2">
-            <Ruler className="h-4 w-4" />
-            Size
-          </label>
-          {sizeChart && (
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button variant="ghost" size="sm" className="text-xs text-primary">
-                  Size Chart
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Size Chart</DialogTitle>
-                </DialogHeader>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  {Object.entries(sizeChart).map(([size, measurement]) => (
-                    <div key={size} className="flex justify-between p-2 border rounded">
-                      <span className="font-medium">{size}</span>
-                      <span>{measurement}</span>
-                    </div>
-                  ))}
-                </div>
-              </DialogContent>
-            </Dialog>
-          )}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="font-medium text-sm">Size</h3>
+          <div className="flex items-center gap-2">
+            {/* Size Chart Preview */}
+            {sizeChartImage && (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="ghost" size="sm" className="p-1">
+                    <img 
+                      src={sizeChartImage} 
+                      alt="Size chart preview" 
+                      className="w-6 h-6 object-contain rounded border"
+                    />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80">
+                  <div className="space-y-2">
+                    <h4 className="font-medium text-sm">Size Chart</h4>
+                    <img 
+                      src={sizeChartImage} 
+                      alt="Size chart" 
+                      className="w-full h-auto max-h-64 object-contain rounded border"
+                    />
+                  </div>
+                </PopoverContent>
+              </Popover>
+            )}
+            
+            {/* Size Guide Button */}
+            {sizeChart && (
+              <Popover open={showSizeGuide} onOpenChange={setShowSizeGuide}>
+                <PopoverTrigger asChild>
+                  <Button variant="ghost" size="sm" className="text-xs text-muted-foreground hover:text-foreground">
+                    <Ruler className="h-3 w-3 mr-1" />
+                    Size Guide
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80">
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-sm flex items-center gap-2">
+                        <Info className="h-4 w-4" />
+                        Size Guide
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                      {Object.entries(sizeChart).map(([size, measurement]) => (
+                        <div key={size} className="flex justify-between text-sm">
+                          <span className="font-medium">{size}:</span>
+                          <span className="text-muted-foreground">{measurement}</span>
+                        </div>
+                      ))}
+                    </CardContent>
+                  </Card>
+                </PopoverContent>
+              </Popover>
+            )}
+          </div>
         </div>
         
-        <div className="grid grid-cols-4 gap-2">
+        <div className="flex flex-wrap gap-2">
           {sizes.map((size) => (
-            <motion.div
+            <Button
               key={size.value}
-              whileHover={{ scale: size.inStock ? 1.05 : 1 }}
-              whileTap={{ scale: 0.95 }}
+              variant={selectedSize === size.value ? 'default' : 'outline'}
+              size="sm"
+              className={`text-xs min-w-12 ${
+                !size.inStock 
+                  ? 'opacity-50 cursor-not-allowed' 
+                  : selectedSize === size.value 
+                    ? 'bg-foreground text-background' 
+                    : 'hover:bg-muted'
+              }`}
+              onClick={() => size.inStock && onSizeSelect(size.value)}
+              disabled={!size.inStock}
             >
-              <Button
-                variant={selectedSize === size.value ? "default" : "outline"}
-                className={`w-full relative ${
-                  !size.inStock 
-                    ? 'opacity-50 cursor-not-allowed line-through' 
-                    : selectedSize === size.value 
-                    ? 'ring-2 ring-primary ring-offset-1' 
-                    : 'hover:border-primary'
-                }`}
-                onClick={() => size.inStock && onSizeSelect(size.value)}
-                disabled={!size.inStock}
-              >
-                {size.label}
-                {size.inStock && size.stockCount && size.stockCount < 5 && (
-                  <div className="absolute -top-1 -right-1 w-2 h-2 bg-orange-500 rounded-full" />
-                )}
-              </Button>
-            </motion.div>
+              {size.label}
+              {size.inStock && size.stockCount && size.stockCount <= 3 && (
+                <Badge variant="secondary" className="ml-1 text-xs px-1 py-0">
+                  {size.stockCount}
+                </Badge>
+              )}
+            </Button>
           ))}
         </div>
       </div>
 
       {/* Color Selection */}
-      <div className="space-y-3">
-        <label className="text-sm font-medium flex items-center gap-2">
-          <Palette className="h-4 w-4" />
-          Color
-        </label>
-        
+      <div>
+        <h3 className="font-medium text-sm mb-3">Color</h3>
         <div className="flex flex-wrap gap-3">
           {colors.map((color) => (
-            <motion.button
-              key={color.value}
-              onClick={() => color.inStock && onColorSelect(color.value)}
-              className={`relative group ${!color.inStock ? 'cursor-not-allowed' : ''}`}
-              whileHover={{ scale: color.inStock ? 1.1 : 1 }}
-              whileTap={{ scale: 0.9 }}
-              disabled={!color.inStock}
-            >
-              <div
-                className={`w-10 h-10 rounded-full border-2 transition-all duration-200 ${
-                  selectedColor === color.value
-                    ? 'border-primary ring-2 ring-primary ring-offset-2'
-                    : color.inStock
-                    ? 'border-border hover:border-primary'
-                    : 'border-border opacity-50'
-                }`}
+            <div key={color.value} className="flex flex-col items-center gap-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                className={`w-8 h-8 rounded-full p-0 border-2 relative ${
+                  selectedColor === color.value 
+                    ? 'border-foreground ring-2 ring-offset-2 ring-foreground' 
+                    : 'border-muted-foreground'
+                } ${!color.inStock ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105'}`}
                 style={{ backgroundColor: color.hexCode }}
+                onClick={() => color.inStock && onColorSelect(color.value)}
+                disabled={!color.inStock}
               >
                 {!color.inStock && (
-                  <div className="absolute inset-0 bg-black/20 rounded-full flex items-center justify-center">
-                    <div className="w-6 h-0.5 bg-red-500 rotate-45" />
-                  </div>
-                )}
-                {selectedColor === color.value && (
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <CheckCircle className="h-4 w-4 text-white drop-shadow-lg" />
+                    <div className="w-full h-0.5 bg-red-500 rotate-45" />
                   </div>
                 )}
-              </div>
-              
-              {/* Color Label Tooltip */}
-              <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
-                <div className="bg-black text-white text-xs px-2 py-1 rounded whitespace-nowrap">
-                  {color.label}
-                </div>
-              </div>
-            </motion.button>
+              </Button>
+              <span className="text-xs text-muted-foreground capitalize">
+                {color.label}
+              </span>
+            </div>
           ))}
         </div>
       </div>
 
-      {/* Stock Warning */}
-      {stockWarning && (
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex items-center gap-2 p-3 bg-orange-50 border border-orange-200 rounded-lg"
-        >
-          <AlertCircle className="h-4 w-4 text-orange-600" />
-          <span className="text-sm text-orange-800">{stockWarning}</span>
-        </motion.div>
-      )}
-
-      {/* Selected Combination Summary */}
-      {selectedSize && selectedColor && (
-        <div className="flex items-center gap-2 p-3 bg-accent/30 rounded-lg">
-          <span className="text-sm font-medium">Selected:</span>
-          <Badge variant="secondary">Size {selectedSize}</Badge>
-          <Badge 
-            variant="secondary" 
-            className="flex items-center gap-1"
-          >
-            <div 
-              className="w-3 h-3 rounded-full border" 
-              style={{ backgroundColor: colors.find(c => c.value === selectedColor)?.hexCode }}
-            />
-            {colors.find(c => c.value === selectedColor)?.label}
-          </Badge>
+      {/* Selected Options Summary */}
+      {(selectedSize || selectedColor) && (
+        <div className="flex flex-wrap gap-2 pt-2 border-t">
+          {selectedSize && (
+            <Badge variant="outline" className="text-xs">
+              Size: {sizes.find(s => s.value === selectedSize)?.label}
+            </Badge>
+          )}
+          {selectedColor && (
+            <Badge variant="outline" className="text-xs">
+              Color: {colors.find(c => c.value === selectedColor)?.label}
+            </Badge>
+          )}
         </div>
       )}
     </div>

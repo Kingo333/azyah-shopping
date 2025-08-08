@@ -149,7 +149,7 @@ export const BrandProductDetailModal: React.FC<BrandProductDetailModalProps> = (
     { value: 'beige', label: 'Beige', hexCode: '#f5f5dc', inStock: true }
   ];
 
-  // Mock analytics data that reflects shopper behavior, not brand behavior
+  // Mock analytics data
   const analyticsData = {
     shopperViews: Math.floor(Math.random() * 2000) + 500,
     shopperLikes: Math.floor(Math.random() * 300) + 50,
@@ -165,7 +165,7 @@ export const BrandProductDetailModal: React.FC<BrandProductDetailModalProps> = (
           <DialogTitle className="sr-only">{product.title} - Brand Management</DialogTitle>
         </DialogHeader>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
           {/* Enhanced Image Gallery */}
           <div className="lg:col-span-1">
             <EnhancedProductGallery
@@ -177,32 +177,32 @@ export const BrandProductDetailModal: React.FC<BrandProductDetailModalProps> = (
           </div>
 
           {/* Product Info */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-2 space-y-4 lg:space-y-6">
             {/* Header with Actions */}
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
+            <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
+              <div className="flex-1 min-w-0">
                 {isEditing ? (
                   <div className="space-y-3">
                     <Input
                       value={editedProduct?.title || ''}
                       onChange={(e) => setEditedProduct({...editedProduct, title: e.target.value})}
-                      className="text-2xl font-bold"
+                      className="text-xl sm:text-2xl font-bold"
                       placeholder="Product title"
                     />
                     {product.brand && <p className="text-muted-foreground">{product.brand.name}</p>}
                   </div>
                 ) : (
                   <div>
-                    <h1 className="text-2xl font-bold">{product.title}</h1>
+                    <h1 className="text-xl sm:text-2xl font-bold">{product.title}</h1>
                     {product.brand && <p className="text-muted-foreground">{product.brand.name}</p>}
                   </div>
                 )}
-                <Badge variant="outline" className="mt-1 capitalize">
+                <Badge variant="outline" className="mt-1 capitalize text-xs">
                   {product.status.replace('_', ' ')}
                 </Badge>
               </div>
               
-              <div className="flex gap-2 ml-4">
+              <div className="flex gap-2">
                 <Button variant="ghost" size="sm" onClick={handleShare}>
                   <Share2 className="h-4 w-4" />
                 </Button>
@@ -234,7 +234,7 @@ export const BrandProductDetailModal: React.FC<BrandProductDetailModalProps> = (
             {/* Pricing */}
             <div className="flex items-center gap-4">
               {isEditing ? (
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2">
                   <div>
                     <label className="text-sm font-medium">Price</label>
                     <Input
@@ -258,7 +258,7 @@ export const BrandProductDetailModal: React.FC<BrandProductDetailModalProps> = (
                 </div>
               ) : (
                 <div className="flex items-center gap-2">
-                  <span className="text-3xl font-bold">{formatPrice(product.price_cents, product.currency)}</span>
+                  <span className="text-2xl sm:text-3xl font-bold">{formatPrice(product.price_cents, product.currency)}</span>
                   {product.compare_at_price_cents && product.compare_at_price_cents > product.price_cents && (
                     <span className="text-lg text-muted-foreground line-through">
                       {formatPrice(product.compare_at_price_cents, product.currency)}
@@ -269,22 +269,22 @@ export const BrandProductDetailModal: React.FC<BrandProductDetailModalProps> = (
             </div>
 
             {/* Shopper Analytics */}
-            <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <div className="p-3 sm:p-4 bg-blue-50 rounded-lg border border-blue-200">
               <div className="flex items-center gap-2 mb-3">
                 <BarChart3 className="h-4 w-4 text-blue-600" />
                 <span className="font-medium text-sm text-blue-800">Shopper Engagement Insights</span>
               </div>
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Shopper Views:</span>
+                  <span className="text-muted-foreground">Views:</span>
                   <span className="font-medium text-blue-700">{analyticsData.shopperViews}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Likes by Shoppers:</span>
+                  <span className="text-muted-foreground">Likes:</span>
                   <span className="font-medium text-blue-700">{analyticsData.shopperLikes}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Wishlist Adds:</span>
+                  <span className="text-muted-foreground">Wishlist:</span>
                   <span className="font-medium text-blue-700">{analyticsData.shopperWishlistAdds}</span>
                 </div>
                 <div className="flex items-center justify-between">
@@ -318,6 +318,7 @@ export const BrandProductDetailModal: React.FC<BrandProductDetailModalProps> = (
                 L: '38-40 inches',
                 XL: '40-42 inches'
               }}
+              sizeChartImage={product.attributes?.size_chart}
             />
 
             {/* Description */}
@@ -345,9 +346,9 @@ export const BrandProductDetailModal: React.FC<BrandProductDetailModalProps> = (
             )}
 
             {/* Inventory Management */}
-            <div className="p-4 bg-muted/30 rounded-lg">
+            <div className="p-3 sm:p-4 bg-muted/30 rounded-lg">
               <h3 className="font-medium mb-3">Inventory Management</h3>
-              <div className="grid grid-cols-2 gap-4 text-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">Stock Quantity:</span>
                   {isEditing ? (
@@ -389,7 +390,7 @@ export const BrandProductDetailModal: React.FC<BrandProductDetailModalProps> = (
                 />
               </div>
             ) : product.external_url && (
-              <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
+              <div className="p-3 sm:p-4 bg-purple-50 rounded-lg border border-purple-200">
                 <div className="flex items-center gap-2 mb-2">
                   <ExternalLink className="h-4 w-4 text-purple-600" />
                   <span className="font-medium text-sm text-purple-800">External Product Link</span>

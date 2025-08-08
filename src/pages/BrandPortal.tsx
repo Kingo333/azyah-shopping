@@ -221,7 +221,7 @@ const BrandPortal: React.FC = () => {
   };
 
   if (!user) return (
-    <div className="min-h-screen flex items-center justify-center">
+    <div className="min-h-screen flex items-center justify-center p-4">
       <div className="text-center">
         <h2 className="text-xl font-semibold mb-2">Access Restricted</h2>
         <p className="text-muted-foreground">Please log in to access the brand portal.</p>
@@ -230,7 +230,7 @@ const BrandPortal: React.FC = () => {
   );
 
   if (!brand) return (
-    <div className="min-h-screen flex items-center justify-center">
+    <div className="min-h-screen flex items-center justify-center p-4">
       <div className="text-center">
         <h2 className="text-xl font-semibold mb-2">No Brand Found</h2>
         <p className="text-muted-foreground">Please create a brand profile first.</p>
@@ -256,9 +256,9 @@ const BrandPortal: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-purple-50">
-      <div className="container mx-auto max-w-7xl p-4">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-4">
+      <div className="container mx-auto max-w-7xl p-2 sm:p-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 sm:mb-6 gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
             <BackButton 
               fallbackPath="/dashboard"
               onBack={() => {
@@ -266,8 +266,8 @@ const BrandPortal: React.FC = () => {
                 window.location.href = '/dashboard';
               }}
             />
-            <div className="flex items-center gap-4">
-              <div className="w-16 h-16 bg-muted rounded-xl overflow-hidden">
+            <div className="flex items-center gap-2 sm:gap-4">
+              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-muted rounded-xl overflow-hidden">
                 {brand.logo_url ? 
                   <img src={brand.logo_url} alt={brand.name} className="w-full h-full object-cover" /> : 
                   <div className="w-full h-full flex items-center justify-center text-muted-foreground font-playfair">
@@ -276,17 +276,17 @@ const BrandPortal: React.FC = () => {
                 }
               </div>
               <div>
-                <div className="flex items-center gap-2">
-                  <h1 className="text-2xl font-bold font-playfair">{brand.name}</h1>
-                  <Badge variant="secondary" className="text-xs rounded-full">Verified</Badge>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                  <h1 className="text-lg sm:text-2xl font-bold font-playfair">{brand.name}</h1>
+                  <Badge variant="secondary" className="text-xs rounded-full w-fit">Verified</Badge>
                 </div>
-                <p className="text-muted-foreground">{brand.bio || 'Brand description'}</p>
+                <p className="text-muted-foreground text-sm">{brand.bio || 'Brand description'}</p>
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 w-full sm:w-auto">
             <Button 
-              className="rounded-xl bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600"
+              className="rounded-xl bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 flex-1 sm:flex-none"
               onClick={() => setIsAddProductModalOpen(true)}
             >
               <Plus className="h-4 w-4 mr-2" />
@@ -297,18 +297,18 @@ const BrandPortal: React.FC = () => {
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid w-full grid-cols-3 rounded-xl bg-white/50 backdrop-blur-sm">
-            <TabsTrigger value="products" className="rounded-lg">Product Management</TabsTrigger>
-            <TabsTrigger value="analytics" className="rounded-lg">Analytics</TabsTrigger>
-            <TabsTrigger value="settings" className="rounded-lg">Brand Settings</TabsTrigger>
+            <TabsTrigger value="products" className="rounded-lg text-xs sm:text-sm">Products</TabsTrigger>
+            <TabsTrigger value="analytics" className="rounded-lg text-xs sm:text-sm">Analytics</TabsTrigger>
+            <TabsTrigger value="settings" className="rounded-lg text-xs sm:text-sm">Settings</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="products" className="mt-6">
-            <div className="space-y-6">
-              <div className="flex flex-wrap items-center justify-between gap-2">
+          <TabsContent value="products" className="mt-4 sm:mt-6">
+            <div className="space-y-4 sm:space-y-6">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4">
                 <div className="flex flex-wrap items-center gap-2">
-                  <Button variant="outline" size="sm"><Filter className="h-4 w-4 mr-2" />Filter</Button>
-                  <Button variant="outline" size="sm"><Upload className="h-4 w-4 mr-2" />Import CSV</Button>
-                  <Button variant="outline" size="sm"><Download className="h-4 w-4 mr-2" />Export</Button>
+                  <Button variant="outline" size="sm" className="text-xs"><Filter className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />Filter</Button>
+                  <Button variant="outline" size="sm" className="text-xs"><Upload className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />Import</Button>
+                  <Button variant="outline" size="sm" className="text-xs"><Download className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />Export</Button>
                 </div>
                 {selectedProducts.size > 0 && (
                   <div className="flex flex-wrap items-center gap-2">
@@ -324,14 +324,19 @@ const BrandPortal: React.FC = () => {
               ) : products.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">No products yet. Create your first product!</div>
               ) : (
-                <div className="grid gap-4">
+                <div className="grid gap-2 sm:gap-4">
                   {products.map((product) => (
                     <Card key={product.id} className="overflow-hidden">
-                      <CardContent className="p-4">
-                        <div className="flex items-center gap-4">
-                          <input type="checkbox" checked={selectedProducts.has(product.id)} onChange={() => handleSelectProduct(product.id)} className="w-4 h-4" />
+                      <CardContent className="p-3 sm:p-4">
+                        <div className="flex items-center gap-2 sm:gap-4">
+                          <input 
+                            type="checkbox" 
+                            checked={selectedProducts.has(product.id)} 
+                            onChange={() => handleSelectProduct(product.id)} 
+                            className="w-4 h-4" 
+                          />
                           <div 
-                            className="w-20 h-20 bg-muted rounded-lg overflow-hidden cursor-pointer hover:opacity-80 transition-opacity"
+                            className="w-16 h-16 sm:w-20 sm:h-20 bg-muted rounded-lg overflow-hidden cursor-pointer hover:opacity-80 transition-opacity"
                             onClick={() => handleViewProduct(product)}
                           >
                             {product.media_urls && product.media_urls[0] ? (
@@ -340,31 +345,35 @@ const BrandPortal: React.FC = () => {
                               <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">No Image</div>
                             )}
                           </div>
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mb-1">
                               <h3 
-                                className="font-medium cursor-pointer hover:text-primary transition-colors" 
+                                className="font-medium cursor-pointer hover:text-primary transition-colors truncate" 
                                 onClick={() => handleViewProduct(product)}
                               >
                                 {product.title}
                               </h3>
-                              <Badge variant={getStatusColor(product.status) as any}>{product.status.replace('_', ' ')}</Badge>
+                              <Badge variant={getStatusColor(product.status) as any} className="w-fit text-xs">
+                                {product.status.replace('_', ' ')}
+                              </Badge>
                             </div>
-                            <p className="text-sm text-muted-foreground mb-2">{product.category_slug} • {formatPrice(product.price_cents)}</p>
-                            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                            <p className="text-sm text-muted-foreground mb-2">
+                              {product.category_slug} • {formatPrice(product.price_cents)}
+                            </p>
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-sm text-muted-foreground">
                               <span>Stock: {product.stock_qty}</span>
                               <span>Created: {new Date(product.created_at).toLocaleDateString()}</span>
                             </div>
                           </div>
-                          <div className="flex items-center gap-2">
+                          <div className="flex sm:flex-row flex-col items-center gap-1 sm:gap-2">
                             <Button variant="outline" size="sm" onClick={() => handleViewProduct(product)}>
-                              <Eye className="h-4 w-4" />
+                              <Eye className="h-3 w-3 sm:h-4 sm:w-4" />
                             </Button>
                             <Button variant="outline" size="sm" onClick={() => handleEditProduct(product)}>
-                              <Edit className="h-4 w-4" />
+                              <Edit className="h-3 w-3 sm:h-4 sm:w-4" />
                             </Button>
                             <Button variant="outline" size="sm" onClick={() => handleDeleteProduct(product.id)}>
-                              <Trash2 className="h-4 w-4" />
+                              <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
                             </Button>
                           </div>
                         </div>
@@ -376,68 +385,69 @@ const BrandPortal: React.FC = () => {
             </div>
           </TabsContent>
 
-          <TabsContent value="analytics" className="mt-6">
-            <div className="space-y-6">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <TabsContent value="analytics" className="mt-4 sm:mt-6">
+            <div className="space-y-4 sm:space-y-6">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
                 <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm rounded-2xl">
-                  <CardContent className="p-4">
+                  <CardContent className="p-3 sm:p-4">
                     <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 bg-primary/10 rounded-xl flex items-center justify-center">
-                        <ShoppingBag className="h-4 w-4 text-primary" />
+                      <div className="w-6 h-6 sm:w-8 sm:h-8 bg-primary/10 rounded-xl flex items-center justify-center">
+                        <ShoppingBag className="h-3 w-3 sm:h-4 sm:w-4 text-primary" />
                       </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Total Products</p>
-                        <p className="text-xl font-bold font-playfair">{analytics.totalProducts}</p>
+                      <div className="min-w-0">
+                        <p className="text-xs sm:text-sm text-muted-foreground">Products</p>
+                        <p className="text-lg sm:text-xl font-bold font-playfair">{analytics.totalProducts}</p>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
+                
                 <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm rounded-2xl">
-                  <CardContent className="p-4">
+                  <CardContent className="p-3 sm:p-4">
                     <div className="flex items-center gap-2">
                       <div className="w-8 h-8 bg-blue-100 rounded-xl flex items-center justify-center">
                         <Eye className="h-4 w-4 text-blue-500" />
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground">Shopper Views</p>
-                        <p className="text-xl font-bold font-playfair">{analytics.totalViews}</p>
+                        <p className="text-lg sm:text-xl font-bold font-playfair">{analytics.totalViews}</p>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
                 <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm rounded-2xl">
-                  <CardContent className="p-4">
+                  <CardContent className="p-3 sm:p-4">
                     <div className="flex items-center gap-2">
                       <div className="w-8 h-8 bg-red-100 rounded-xl flex items-center justify-center">
                         <Heart className="h-4 w-4 text-red-500" />
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground">Shopper Likes</p>
-                        <p className="text-xl font-bold font-playfair">{analytics.totalLikes}</p>
+                        <p className="text-lg sm:text-xl font-bold font-playfair">{analytics.totalLikes}</p>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
                 <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm rounded-2xl">
-                  <CardContent className="p-4">
+                  <CardContent className="p-3 sm:p-4">
                     <div className="flex items-center gap-2">
                       <div className="w-8 h-8 bg-green-100 rounded-xl flex items-center justify-center">
                         <DollarSign className="h-4 w-4 text-green-500" />
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground">Revenue</p>
-                        <p className="text-xl font-bold font-playfair">${analytics.totalRevenue.toFixed(0)}</p>
+                        <p className="text-lg sm:text-xl font-bold font-playfair">${analytics.totalRevenue.toFixed(0)}</p>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
               </div>
 
-              <div className="grid lg:grid-cols-2 gap-6">
+              <div className="grid lg:grid-cols-2 gap-4 sm:gap-6">
                 <ImprovedAnalyticsFunnel data={funnelData || []} loading={funnelLoading} />
                 
                 <AnalyticsTable
-                  title="Top Performing Products"
+                  title="Top Products"
                   data={topProductsData}
                   columns={[
                     { key: 'rank', label: '#', sortable: false },
@@ -450,7 +460,7 @@ const BrandPortal: React.FC = () => {
                 />
               </div>
 
-              <div className="grid lg:grid-cols-2 gap-6">
+              <div className="grid lg:grid-cols-2 gap-4 sm:gap-6">
                 <AnalyticsChart
                   title="Impressions Over Time"
                   data={timeSeriesData || []}
@@ -469,8 +479,8 @@ const BrandPortal: React.FC = () => {
             </div>
           </TabsContent>
 
-          <TabsContent value="settings" className="mt-6">
-            <div className="space-y-6">
+          <TabsContent value="settings" className="mt-4 sm:mt-6">
+            <div className="space-y-4 sm:space-y-6">
               <Card>
                 <CardHeader><CardTitle>Brand Profile</CardTitle></CardHeader>
                 <CardContent className="space-y-4">
@@ -480,12 +490,12 @@ const BrandPortal: React.FC = () => {
                     entityType="brand"
                     entityId={brand.id}
                   />
-                  <div className="grid md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div><label className="text-sm font-medium mb-2 block">Brand Name</label><Input defaultValue={brand.name} /></div>
                     <div><label className="text-sm font-medium mb-2 block">Website</label><Input defaultValue={brand.website || ''} /></div>
                   </div>
                   <div><label className="text-sm font-medium mb-2 block">Description</label><Textarea defaultValue={brand.bio || ''} /></div>
-                  <Button>Save Changes</Button>
+                  <Button className="w-full sm:w-auto">Save Changes</Button>
                 </CardContent>
               </Card>
             </div>

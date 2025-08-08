@@ -136,7 +136,7 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
-    if (!files) return;
+    if (!files || files.length === 0) return;
 
     const validFiles = Array.from(files).filter(file => {
       // Validate file type
@@ -199,6 +199,10 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
       });
     } finally {
       setUploadingImages(false);
+      // Reset the input value to allow re-uploading the same file
+      if (event.target) {
+        event.target.value = '';
+      }
     }
   };
 
@@ -292,7 +296,7 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Basic Information */}
             <div className="space-y-4">
               <div>
@@ -315,7 +319,7 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
                 />
               </div>
 
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 <div>
                   <Label htmlFor="currency">Currency *</Label>
                   <Select value={formData.currency} onValueChange={(value) => handleInputChange('currency', value)}>
@@ -356,7 +360,7 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div>
                   <Label htmlFor="stock">Stock Quantity *</Label>
                   <Input
@@ -392,14 +396,13 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
 
             {/* Categories and Attributes */}
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div>
                   <Label>Category *</Label>
                   <Select 
                     value={formData.category} 
                     onValueChange={(value) => {
                       handleInputChange('category', value);
-                      // Reset subcategory when category changes
                       handleInputChange('subcategory', '');
                     }}
                   >
@@ -436,7 +439,7 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
               <div className="space-y-3">
                 <Label className="text-sm font-medium">Product Attributes</Label>
                 
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <div>
                     <Label className="text-xs">Gender Target</Label>
                     <Select value={formData.attributes.gender_target} onValueChange={(value) => handleAttributeChange('gender_target', value)}>
@@ -493,7 +496,7 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
             <Label>Product Images</Label>
             <div className="space-y-4">
               {images.length > 0 && (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                   {images.map((image, index) => (
                     <div key={index} className="relative">
                       <img
@@ -505,7 +508,7 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
                         type="button"
                         variant="destructive"
                         size="sm"
-                        className="absolute top-1 right-1"
+                        className="absolute top-1 right-1 h-6 w-6 p-0"
                         onClick={() => handleRemoveImage(index)}
                       >
                         <X className="h-3 w-3" />
@@ -515,11 +518,11 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
                 </div>
               )}
 
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6">
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 sm:p-6">
                 <div className="text-center">
-                  <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                  <Upload className="mx-auto h-8 w-8 sm:h-12 sm:w-12 text-gray-400 mb-2 sm:mb-4" />
                   <Label htmlFor="images" className="cursor-pointer">
-                    <Button type="button" variant="outline" disabled={uploadingImages}>
+                    <Button type="button" variant="outline" disabled={uploadingImages} className="w-full sm:w-auto">
                       <Plus className="h-4 w-4 mr-2" />
                       {uploadingImages ? 'Uploading...' : 'Add Images'}
                     </Button>
@@ -580,11 +583,11 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
             </div>
           </div>
 
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose}>
+          <DialogFooter className="flex flex-col sm:flex-row gap-2">
+            <Button type="button" variant="outline" onClick={onClose} className="w-full sm:w-auto">
               Cancel
             </Button>
-            <Button type="submit" disabled={isSaving}>
+            <Button type="submit" disabled={isSaving} className="w-full sm:w-auto">
               <Save className="h-4 w-4 mr-2" />
               {isSaving ? 'Saving...' : 'Save Changes'}
             </Button>
