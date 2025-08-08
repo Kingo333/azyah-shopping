@@ -12,55 +12,21 @@ import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { SizeChartUpload } from '@/components/SizeChartUpload';
 
+// Define valid categories based on the database enum
 const categories = [
-  't-shirts',
-  'shirts',
-  'pants',
-  'jeans',
-  'shorts',
-  'skirts',
-  'dresses',
-  'sweaters',
-  'hoodies',
-  'jackets',
-  'coats',
-  'suits',
-  'blazers',
-  'swimwear',
-  'underwear',
-  'socks',
-  'shoes',
   'accessories',
-  'bags',
+  'beauty',
+  'clothing',
+  'footwear',
+  'fragrance',
+  'giftcards',
+  'home',
   'jewelry',
-  'watches',
-  'eyewear',
-  'hats',
-  'gloves',
-  'scarves',
-  'belts',
-  'ties',
-  'cufflinks',
-  'wallets',
-  'keychains',
-  'phone-cases',
-  'stickers',
-  'posters',
-  'mugs',
-  'pillows',
-  'blankets',
-  'towels',
-  'art',
-  'home-decor',
-  'furniture',
-  'lighting',
-  'kitchen',
-  'dining',
-  'bedding',
-  'bath',
-  'storage',
-  'organization'
-];
+  'kids',
+  'modestwear'
+] as const;
+
+type CategoryType = typeof categories[number];
 
 interface EditProductModalProps {
   product: Product | null;
@@ -74,7 +40,7 @@ interface FormData {
   description: string;
   price: number | string;
   comparePrice: number | string;
-  category: string;
+  category: CategoryType;
   subcategory: string;
   stock: number | string;
   sku: string;
@@ -107,7 +73,7 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
     description: '',
     price: '',
     comparePrice: '',
-    category: '',
+    category: 'clothing',
     subcategory: '',
     stock: '',
     sku: '',
@@ -140,7 +106,7 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
         description: product.description || '',
         price: product.price_cents / 100,
         comparePrice: product.compare_at_price_cents ? product.compare_at_price_cents / 100 : '',
-        category: product.category_slug,
+        category: product.category_slug as CategoryType,
         subcategory: product.subcategory_slug || '',
         stock: product.stock_qty,
         sku: product.sku,
