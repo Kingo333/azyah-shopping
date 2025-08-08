@@ -424,7 +424,7 @@ const SwipeDeck = ({
         isOpen={isDetailModalOpen}
         onClose={() => { setIsDetailModalOpen(false); setSelectedProduct(null); }}
         onAddToWishlist={(productId) => toast({ title: "Added to wishlist", description: "Product has been added to your wishlist." })}
-        onAddToBag={(productId, size) => toast({ title: "Redirecting to shop", description: `Opening ${selectedProduct?.brand?.name}'s product page.` })}
+        onAddToCart={(productId, size) => toast({ title: "Redirecting to shop", description: `Opening ${selectedProduct?.brand?.name}'s product page.` })}
       />
     </div>
   );
