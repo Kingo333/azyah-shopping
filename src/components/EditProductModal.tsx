@@ -25,6 +25,7 @@ interface FormData {
   description: string;
   price: number | string;
   comparePrice: number | string;
+  currency: string;
   category: TopCategory;
   subcategory: SubCategory | '';
   stock: number | string;
@@ -58,6 +59,7 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
     description: '',
     price: '',
     comparePrice: '',
+    currency: 'USD',
     category: 'clothing',
     subcategory: '',
     stock: '',
@@ -84,6 +86,20 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
   const [isSaving, setIsSaving] = useState(false);
   const [sizeChart, setSizeChart] = useState<string | null>(null);
 
+  // Common currencies for fashion e-commerce
+  const currencies = [
+    { code: 'USD', name: 'US Dollar', symbol: '$' },
+    { code: 'EUR', name: 'Euro', symbol: '€' },
+    { code: 'GBP', name: 'British Pound', symbol: '£' },
+    { code: 'CAD', name: 'Canadian Dollar', symbol: 'C$' },
+    { code: 'AUD', name: 'Australian Dollar', symbol: 'A$' },
+    { code: 'AED', name: 'UAE Dirham', symbol: 'د.إ' },
+    { code: 'SAR', name: 'Saudi Riyal', symbol: 'ر.س' },
+    { code: 'KWD', name: 'Kuwaiti Dinar', symbol: 'د.ك' },
+    { code: 'QAR', name: 'Qatari Riyal', symbol: 'ر.ق' },
+    { code: 'BHD', name: 'Bahraini Dinar', symbol: '.د.ب' },
+  ];
+
   useEffect(() => {
     if (product) {
       setFormData({
@@ -91,6 +107,7 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
         description: product.description || '',
         price: product.price_cents / 100,
         comparePrice: product.compare_at_price_cents ? product.compare_at_price_cents / 100 : '',
+        currency: product.currency || 'USD',
         category: product.category_slug as TopCategory,
         subcategory: (product.subcategory_slug as SubCategory) || '',
         stock: product.stock_qty,
@@ -218,6 +235,7 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
         description: formData.description,
         price_cents: Math.round(parseFloat(formData.price.toString()) * 100),
         compare_at_price_cents: formData.comparePrice ? Math.round(parseFloat(formData.comparePrice.toString()) * 100) : null,
+        currency: formData.currency,
         category_slug: formData.category,
         subcategory_slug: formData.subcategory || null,
         stock_qty: parseInt(formData.stock.toString()),
@@ -264,6 +282,7 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
   if (!product) return null;
 
   const availableSubcategories = getSubcategoriesForCategory(formData.category);
+  const selectedCurrency = currencies.find(c => c.code === formData.currency);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -296,9 +315,26 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 <div>
-                  <Label htmlFor="price">Price ($) *</Label>
+                  <Label htmlFor="currency">Currency *</Label>
+                  <Select value={formData.currency} onValueChange={(value) => handleInputChange('currency', value)}>
+                    <SelectTrigger>
+                      <SelectValue>
+                        {selectedCurrency ? `${selectedCurrency.symbol} ${selectedCurrency.code}` : 'Select Currency'}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {currencies.map((currency) => (
+                        <SelectItem key={currency.code} value={currency.code}>
+                          {currency.symbol} {currency.code} - {currency.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="price">Price *</Label>
                   <Input
                     id="price"
                     type="number"
@@ -309,7 +345,7 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
                   />
                 </div>
                 <div>
-                  <Label htmlFor="comparePrice">Compare Price ($)</Label>
+                  <Label htmlFor="comparePrice">Compare Price</Label>
                   <Input
                     id="comparePrice"
                     type="number"
