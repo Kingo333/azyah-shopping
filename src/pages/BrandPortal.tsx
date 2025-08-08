@@ -10,8 +10,9 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useCategories } from '@/hooks/useCategories';
-import { useAnalytics, useConversionFunnel } from '@/hooks/useAnalytics';
-import AnalyticsFunnel from '@/components/analytics/AnalyticsFunnel';
+import { useAnalytics, useConversionFunnel, useTimeSeriesAnalytics } from '@/hooks/useAnalytics';
+import ImprovedAnalyticsFunnel from '@/components/analytics/ImprovedAnalyticsFunnel';
+import AnalyticsChart from '@/components/analytics/AnalyticsChart';
 import AnalyticsTable from '@/components/analytics/AnalyticsTable';
 import { AddProductModal } from '@/components/AddProductModal';
 import { EditProductModal } from '@/components/EditProductModal';
@@ -42,10 +43,24 @@ const BrandPortal: React.FC = () => {
   const { user } = useAuth();
   const { categories } = useCategories();
   const { data: analyticsData, isLoading: analyticsLoading } = useAnalytics(brand?.id, 'brand');
-  const { data: funnelData, isLoading: funnelLoading } = useConversionFunnel({
+  
+  const dateRange = {
     startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     endDate: new Date().toISOString().split('T')[0]
+  };
+  
+  const { data: funnelData, isLoading: funnelLoading } = useConversionFunnel({
+    ...dateRange,
+    brandId: brand?.id
   });
+
+  const { data: timeSeriesData, isLoading: timeSeriesLoading } = useTimeSeriesAnalytics(
+    'impressions',
+    'day',
+    dateRange,
+    brand?.id,
+    'brand'
+  );
 
   useEffect(() => {
     if (user) {
@@ -139,7 +154,16 @@ const BrandPortal: React.FC = () => {
         const { error } = await supabase.from('products').update({ status: 'archived' }).in('id', Array.from(selectedProducts));
         if (error) throw error;
       } else if (action === 'Delete') {
-        const { error } = await supabase.from('products').delete().in('id', Array.from(selectedProducts));
+        // First try to delete related data
+        const productIds = Array.from(selectedProducts);
+        
+        // Delete related records first
+        await supabase.from('likes').delete().in('product_id', productIds);
+        await supabase.from('wishlist_items').delete().in('product_id', productIds);
+        await supabase.from('cart_items').delete().in('product_id', productIds);
+        
+        // Then delete products
+        const { error } = await supabase.from('products').delete().in('id', productIds);
         if (error) throw error;
       }
       toast({ description: `${action} applied to ${selectedProducts.size} product(s)` });
@@ -157,37 +181,21 @@ const BrandPortal: React.FC = () => {
     }
 
     try {
-      // First, check for related data that might prevent deletion
-      const { data: relatedData, error: checkError } = await supabase
-        .from('likes')
-        .select('id')
-        .eq('product_id', productId)
-        .limit(1);
-
-      if (checkError) {
-        console.error('Error checking related data:', checkError);
-      }
-
-      // Delete the product - RLS policies will ensure only owners can delete
+      // Delete related records first
+      await supabase.from('likes').delete().eq('product_id', productId);
+      await supabase.from('wishlist_items').delete().eq('product_id', productId);
+      await supabase.from('cart_items').delete().eq('product_id', productId);
+      
+      // Then delete the product
       const { error } = await supabase
         .from('products')
         .delete()
         .eq('id', productId);
 
-      if (error) {
-        if (error.code === '23503') {
-          toast({ 
-            title: "Cannot Delete Product", 
-            description: "This product has related data (likes, orders, etc.) and cannot be deleted.", 
-            variant: "destructive" 
-          });
-        } else {
-          throw error;
-        }
-      } else {
-        toast({ description: "Product deleted successfully" });
-        fetchProducts();
-      }
+      if (error) throw error;
+      
+      toast({ description: "Product deleted successfully" });
+      fetchProducts();
     } catch (error) {
       console.error('Delete product error:', error);
       toast({ title: "Error", description: "Failed to delete product", variant: "destructive" });
@@ -234,8 +242,8 @@ const BrandPortal: React.FC = () => {
     totalProducts: products.length,
     totalViews: analyticsData?.totalViews || 0,
     totalLikes: analyticsData?.totalLikes || 0,
-    totalSales: products.reduce((sum, p: any) => sum + (p.sales || 0), 0),
-    totalRevenue: analyticsData?.totalViews ? analyticsData.totalViews * 45.99 : 0
+    totalWishlistAdds: analyticsData?.totalWishlistAdds || 0,
+    totalRevenue: (analyticsData?.totalViews || 0) * 45.99
   };
 
   const topProductsData = products.slice(0, 5).map((product, index) => ({
@@ -391,7 +399,7 @@ const BrandPortal: React.FC = () => {
                         <Eye className="h-4 w-4 text-blue-500" />
                       </div>
                       <div>
-                        <p className="text-sm text-muted-foreground">Total Views</p>
+                        <p className="text-sm text-muted-foreground">Shopper Views</p>
                         <p className="text-xl font-bold font-playfair">{analytics.totalViews}</p>
                       </div>
                     </div>
@@ -404,7 +412,7 @@ const BrandPortal: React.FC = () => {
                         <Heart className="h-4 w-4 text-red-500" />
                       </div>
                       <div>
-                        <p className="text-sm text-muted-foreground">Total Likes</p>
+                        <p className="text-sm text-muted-foreground">Shopper Likes</p>
                         <p className="text-xl font-bold font-playfair">{analytics.totalLikes}</p>
                       </div>
                     </div>
@@ -426,10 +434,10 @@ const BrandPortal: React.FC = () => {
               </div>
 
               <div className="grid lg:grid-cols-2 gap-6">
-                <AnalyticsFunnel data={funnelData || []} loading={funnelLoading} />
+                <ImprovedAnalyticsFunnel data={funnelData || []} loading={funnelLoading} />
                 
                 <AnalyticsTable
-                  title="Top Products"
+                  title="Top Performing Products"
                   data={topProductsData}
                   columns={[
                     { key: 'rank', label: '#', sortable: false },
@@ -439,6 +447,23 @@ const BrandPortal: React.FC = () => {
                     { key: 'revenue', label: 'Revenue', sortable: true }
                   ]}
                   loading={analyticsLoading}
+                />
+              </div>
+
+              <div className="grid lg:grid-cols-2 gap-6">
+                <AnalyticsChart
+                  title="Impressions Over Time"
+                  data={timeSeriesData || []}
+                  type="area"
+                  metric="impressions"
+                  loading={timeSeriesLoading}
+                />
+                <AnalyticsChart
+                  title="Revenue Trend"
+                  data={timeSeriesData?.map(d => ({ ...d, value: d.value * 45 })) || []}
+                  type="bar"
+                  metric="revenue"
+                  loading={timeSeriesLoading}
                 />
               </div>
             </div>
@@ -486,6 +511,7 @@ const BrandPortal: React.FC = () => {
             }}
             product={selectedProduct}
             onEdit={handleEditFromDetail}
+            onProductUpdated={fetchProducts}
           />
 
           <EditProductModal
