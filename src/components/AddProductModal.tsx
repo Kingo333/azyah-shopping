@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Upload, X, Plus } from 'lucide-react';
+import { Upload, X, Loader2 } from 'lucide-react';
 import { CATEGORY_TREE, getAllCategories, getSubcategoriesForCategory, getCategoryDisplayName, getSubcategoryDisplayName } from '@/lib/categories';
 import type { TopCategory, SubCategory } from '@/lib/categories';
 
@@ -45,7 +45,10 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
   const { toast } = useToast();
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [uploadingImages, setUploadingImages] = useState(false);
   const [images, setImages] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -75,25 +78,82 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
     }
   }, [formData.category_slug]);
 
+  const uploadImageToStorage = async (file: File): Promise<string> => {
+    if (!user) throw new Error('User not authenticated');
+
+    const fileName = `${user.id}/${Date.now()}-${file.name}`;
+    
+    const { data, error } = await supabase.storage
+      .from('product-images')
+      .upload(fileName, file);
+
+    if (error) throw error;
+
+    const { data: publicUrl } = supabase.storage
+      .from('product-images')
+      .getPublicUrl(fileName);
+
+    return publicUrl.publicUrl;
+  };
+
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (!files) return;
 
+    setUploadingImages(true);
     const newImages: string[] = [];
-    
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      if (file.size > 5 * 1024 * 1024) {
-        toast({ title: "Error", description: "Image must be less than 5MB", variant: "destructive" });
-        continue;
+
+    try {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        
+        // Validate file type
+        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+        if (!allowedTypes.includes(file.type)) {
+          toast({
+            title: 'Invalid file type',
+            description: `${file.name} is not a valid image format. Please use JPG, PNG, or GIF.`,
+            variant: 'destructive'
+          });
+          continue;
+        }
+
+        // Validate file size (8MB limit)
+        if (file.size > 8 * 1024 * 1024) {
+          toast({
+            title: 'File too large',
+            description: `${file.name} is larger than 8MB. Please choose a smaller image.`,
+            variant: 'destructive'
+          });
+          continue;
+        }
+
+        const imageUrl = await uploadImageToStorage(file);
+        newImages.push(imageUrl);
       }
 
-      // For now, create object URLs for preview
-      const imageUrl = URL.createObjectURL(file);
-      newImages.push(imageUrl);
+      setImages(prev => [...prev, ...newImages]);
+      
+      if (newImages.length > 0) {
+        toast({
+          title: 'Images uploaded',
+          description: `${newImages.length} image(s) uploaded successfully`
+        });
+      }
+    } catch (error) {
+      console.error('Error uploading images:', error);
+      toast({
+        title: 'Upload failed',
+        description: 'Failed to upload images. Please try again.',
+        variant: 'destructive'
+      });
+    } finally {
+      setUploadingImages(false);
+      // Reset the input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
-
-    setImages(prev => [...prev, ...newImages]);
   };
 
   const removeImage = (index: number) => {
@@ -117,7 +177,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
         sku: formData.sku || `SKU-${Date.now()}`,
         stock_qty: parseInt(formData.stock_qty) || 0,
         external_url: formData.external_url,
-        media_urls: images, // Using object URLs for now
+        media_urls: images,
         brand_id: userType === 'brand' ? brandId : null,
         retailer_id: userType === 'retailer' ? retailerId : null,
         status: 'active' as const
@@ -161,13 +221,13 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[95vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Add New Product</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="title">Product Name *</Label>
               <Input
@@ -218,7 +278,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
             />
           </div>
 
-          <div className="grid md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="category">Category *</Label>
               <Select value={formData.category_slug} onValueChange={(value) => handleInputChange('category_slug', value)}>
@@ -256,7 +316,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
             </div>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="stock">Stock Quantity</Label>
               <Input
@@ -266,83 +326,100 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
                 onChange={(e) => handleInputChange('stock_qty', e.target.value)}
               />
             </div>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="sku">SKU (Stock Keeping Unit)</Label>
+              <Label htmlFor="sku">SKU</Label>
               <Input
                 id="sku"
                 value={formData.sku}
                 onChange={(e) => handleInputChange('sku', e.target.value)}
                 placeholder="Auto-generated if empty"
               />
-              <p className="text-xs text-muted-foreground mt-1">A unique identifier for your product used for tracking</p>
             </div>
+          </div>
 
-            <div>
-              <Label htmlFor="external_url">Shop Now URL</Label>
-              <Input
-                id="external_url"
-                type="url"
-                value={formData.external_url}
-                onChange={(e) => handleInputChange('external_url', e.target.value)}
-                placeholder="https://..."
-              />
-              <p className="text-xs text-muted-foreground mt-1">Direct link to purchase this product</p>
-            </div>
+          <div>
+            <Label htmlFor="external_url">Shop Now URL</Label>
+            <Input
+              id="external_url"
+              type="url"
+              value={formData.external_url}
+              onChange={(e) => handleInputChange('external_url', e.target.value)}
+              placeholder="https://..."
+            />
           </div>
 
           <div>
             <Label>Product Images</Label>
             <div className="mt-2">
               <input
+                ref={fileInputRef}
                 type="file"
-                accept="image/*"
+                accept="image/jpeg,image/jpg,image/png,image/gif"
                 multiple
                 onChange={handleImageUpload}
                 className="hidden"
-                id="image-upload"
               />
-              <label
-                htmlFor="image-upload"
-                className="flex items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50"
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploadingImages}
+                className="w-full h-32 border-2 border-dashed hover:bg-gray-50"
               >
                 <div className="text-center">
-                  <Upload className="mx-auto h-8 w-8 text-gray-400" />
-                  <p className="text-sm text-gray-500">Click to upload images</p>
+                  {uploadingImages ? (
+                    <>
+                      <Loader2 className="mx-auto h-8 w-8 text-gray-400 animate-spin" />
+                      <p className="text-sm text-gray-500 mt-2">Uploading images...</p>
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="mx-auto h-8 w-8 text-gray-400" />
+                      <p className="text-sm text-gray-500 mt-2">Click to upload images</p>
+                      <p className="text-xs text-gray-400">JPG, PNG, GIF up to 8MB each</p>
+                    </>
+                  )}
                 </div>
-              </label>
+              </Button>
             </div>
 
             {images.length > 0 && (
-              <div className="mt-4 grid grid-cols-4 gap-4">
+              <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-4">
                 {images.map((image, index) => (
-                  <div key={index} className="relative">
+                  <div key={index} className="relative group">
                     <img
                       src={image}
                       alt={`Product ${index + 1}`}
-                      className="w-full h-20 object-cover rounded-lg"
+                      className="w-full h-24 object-cover rounded-lg border"
                     />
-                    <button
+                    <Button
                       type="button"
+                      variant="destructive"
+                      size="sm"
                       onClick={() => removeImage(index)}
-                      className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center"
+                      className="absolute -top-2 -right-2 w-6 h-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
                     >
                       <X className="h-3 w-3" />
-                    </button>
+                    </Button>
                   </div>
                 ))}
               </div>
             )}
           </div>
 
-          <div className="flex justify-end space-x-2 pt-4">
-            <Button type="button" variant="outline" onClick={onClose}>
+          <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-2 pt-4 border-t">
+            <Button type="button" variant="outline" onClick={onClose} disabled={loading} className="w-full sm:w-auto">
               Cancel
             </Button>
-            <Button type="submit" disabled={loading}>
-              {loading ? 'Adding...' : 'Add Product'}
+            <Button type="submit" disabled={loading || uploadingImages} className="w-full sm:w-auto">
+              {loading ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Adding...
+                </>
+              ) : (
+                'Add Product'
+              )}
             </Button>
           </div>
         </form>

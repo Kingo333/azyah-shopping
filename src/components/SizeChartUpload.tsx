@@ -1,11 +1,12 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Upload, X, Image as ImageIcon } from 'lucide-react';
+import { Upload, X, Image as ImageIcon, Loader2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface SizeChartUploadProps {
   currentSizeChart?: string | null;
@@ -18,8 +19,28 @@ export const SizeChartUpload: React.FC<SizeChartUploadProps> = ({
   onSizeChartUpdate,
   productId
 }) => {
+  const { user } = useAuth();
   const [uploading, setUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(currentSizeChart);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const uploadSizeChartToStorage = async (file: File): Promise<string> => {
+    if (!user) throw new Error('User not authenticated');
+
+    const fileName = `${user.id}/size-chart-${productId}-${Date.now()}-${file.name}`;
+    
+    const { data, error } = await supabase.storage
+      .from('size-charts')
+      .upload(fileName, file);
+
+    if (error) throw error;
+
+    const { data: publicUrl } = supabase.storage
+      .from('size-charts')
+      .getPublicUrl(fileName);
+
+    return publicUrl.publicUrl;
+  };
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -49,19 +70,13 @@ export const SizeChartUpload: React.FC<SizeChartUploadProps> = ({
     setUploading(true);
 
     try {
-      // Convert to base64 for storage
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const base64String = e.target?.result as string;
-        setPreviewUrl(base64String);
-        onSizeChartUpdate(base64String);
-        toast({
-          title: 'Size chart uploaded',
-          description: 'Size chart has been successfully uploaded'
-        });
-        setUploading(false);
-      };
-      reader.readAsDataURL(file);
+      const sizeChartUrl = await uploadSizeChartToStorage(file);
+      setPreviewUrl(sizeChartUrl);
+      onSizeChartUpdate(sizeChartUrl);
+      toast({
+        title: 'Size chart uploaded',
+        description: 'Size chart has been successfully uploaded'
+      });
     } catch (error) {
       console.error('Error uploading size chart:', error);
       toast({
@@ -69,7 +84,12 @@ export const SizeChartUpload: React.FC<SizeChartUploadProps> = ({
         description: 'Failed to upload size chart. Please try again.',
         variant: 'destructive'
       });
+    } finally {
       setUploading(false);
+      // Reset the input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
@@ -109,25 +129,38 @@ export const SizeChartUpload: React.FC<SizeChartUploadProps> = ({
           </div>
         ) : (
           <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-            <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-            <div className="text-sm text-gray-600 mb-4">
-              Upload a size chart image to help customers choose the right size
-            </div>
-            <Label htmlFor="size-chart-upload">
-              <Button variant="outline" disabled={uploading} className="cursor-pointer">
-                {uploading ? 'Uploading...' : 'Choose Image'}
-              </Button>
-            </Label>
-            <Input
-              id="size-chart-upload"
-              type="file"
-              accept="image/jpeg,image/jpg,image/png,image/gif"
-              onChange={handleFileUpload}
-              className="hidden"
-            />
-            <div className="text-xs text-gray-500 mt-2">
-              Supports JPG, PNG, GIF up to 8MB
-            </div>
+            {uploading ? (
+              <>
+                <Loader2 className="mx-auto h-12 w-12 text-gray-400 mb-4 animate-spin" />
+                <div className="text-sm text-gray-600 mb-4">
+                  Uploading size chart...
+                </div>
+              </>
+            ) : (
+              <>
+                <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                <div className="text-sm text-gray-600 mb-4">
+                  Upload a size chart image to help customers choose the right size
+                </div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/jpg,image/png,image/gif"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
+                <Button 
+                  variant="outline" 
+                  disabled={uploading} 
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  Choose Image
+                </Button>
+                <div className="text-xs text-gray-500 mt-2">
+                  Supports JPG, PNG, GIF up to 8MB
+                </div>
+              </>
+            )}
           </div>
         )}
       </CardContent>

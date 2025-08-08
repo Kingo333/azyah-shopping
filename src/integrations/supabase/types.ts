@@ -1068,7 +1068,13 @@ export type Database = {
         | "delivered"
         | "cancelled"
         | "returned"
-      product_status: "active" | "inactive" | "archived" | "out_of_stock"
+      product_status:
+        | "active"
+        | "inactive"
+        | "archived"
+        | "out_of_stock"
+        | "draft"
+        | "sold_out"
       subcategory_type:
         | "dresses"
         | "abayas"
@@ -1291,7 +1297,14 @@ export const Constants = {
         "cancelled",
         "returned",
       ],
-      product_status: ["active", "inactive", "archived", "out_of_stock"],
+      product_status: [
+        "active",
+        "inactive",
+        "archived",
+        "out_of_stock",
+        "draft",
+        "sold_out",
+      ],
       subcategory_type: [
         "dresses",
         "abayas",

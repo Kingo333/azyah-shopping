@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -159,12 +160,12 @@ export const RetailerProductDetailModal: React.FC<RetailerProductDetailModalProp
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-5xl h-[95vh] overflow-y-auto">
+      <DialogContent className="max-w-6xl h-[95vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="sr-only">{product.title} - Retailer Management</DialogTitle>
         </DialogHeader>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
           {/* Enhanced Image Gallery */}
           <div className="lg:col-span-1">
             <EnhancedProductGallery
@@ -176,20 +177,20 @@ export const RetailerProductDetailModal: React.FC<RetailerProductDetailModalProp
           </div>
 
           {/* Product Info */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-2 space-y-4 lg:space-y-6">
             {/* Header with Actions */}
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
+            <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
+              <div className="flex-1 min-w-0">
                 {isEditing ? (
                   <div className="space-y-3">
                     <Input
                       value={editedProduct?.title || ''}
                       onChange={(e) => setEditedProduct({...editedProduct, title: e.target.value})}
-                      className="text-2xl font-bold"
+                      className="text-xl sm:text-2xl font-bold"
                       placeholder="Product title"
                     />
                     <div className="flex items-center gap-2">
-                      {product.brand && <p className="text-muted-foreground">{product.brand.name}</p>}
+                      {product.brand && <p className="text-muted-foreground text-sm">{product.brand.name}</p>}
                       {product.retailer && (
                         <Badge variant="secondary" className="text-xs">
                           Sold by {product.retailer.name}
@@ -199,9 +200,9 @@ export const RetailerProductDetailModal: React.FC<RetailerProductDetailModalProp
                   </div>
                 ) : (
                   <div>
-                    <h1 className="text-2xl font-bold">{product.title}</h1>
-                    <div className="flex items-center gap-2 mt-1">
-                      {product.brand && <p className="text-muted-foreground">{product.brand.name}</p>}
+                    <h1 className="text-xl sm:text-2xl font-bold break-words">{product.title}</h1>
+                    <div className="flex flex-wrap items-center gap-2 mt-1">
+                      {product.brand && <p className="text-muted-foreground text-sm">{product.brand.name}</p>}
                       {product.retailer && (
                         <Badge variant="secondary" className="text-xs">
                           Sold by {product.retailer.name}
@@ -210,12 +211,12 @@ export const RetailerProductDetailModal: React.FC<RetailerProductDetailModalProp
                     </div>
                   </div>
                 )}
-                <Badge variant="outline" className="mt-1 capitalize">
+                <Badge variant="outline" className="mt-1 capitalize text-xs">
                   {product.status.replace('_', ' ')}
                 </Badge>
               </div>
               
-              <div className="flex gap-2 ml-4">
+              <div className="flex gap-2 flex-shrink-0">
                 <Button variant="ghost" size="sm" onClick={handleShare}>
                   <Share2 className="h-4 w-4" />
                 </Button>
@@ -245,9 +246,9 @@ export const RetailerProductDetailModal: React.FC<RetailerProductDetailModalProp
             </div>
 
             {/* Pricing */}
-            <div className="flex items-center gap-4">
+            <div className="flex flex-col sm:flex-row items-start gap-4">
               {isEditing ? (
-                <div className="flex gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full sm:w-auto">
                   <div>
                     <label className="text-sm font-medium">Price</label>
                     <Input
@@ -270,8 +271,8 @@ export const RetailerProductDetailModal: React.FC<RetailerProductDetailModalProp
                   </div>
                 </div>
               ) : (
-                <div className="flex items-center gap-2">
-                  <span className="text-3xl font-bold">{formatPrice(product.price_cents, product.currency)}</span>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-2xl sm:text-3xl font-bold">{formatPrice(product.price_cents, product.currency)}</span>
                   {product.compare_at_price_cents && product.compare_at_price_cents > product.price_cents && (
                     <span className="text-lg text-muted-foreground line-through">
                       {formatPrice(product.compare_at_price_cents, product.currency)}
@@ -282,7 +283,7 @@ export const RetailerProductDetailModal: React.FC<RetailerProductDetailModalProp
             </div>
 
             {/* Shopper Sales Analytics */}
-            <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+            <div className="p-3 sm:p-4 bg-green-50 rounded-lg border border-green-200">
               <div className="flex items-center gap-2 mb-3">
                 <TrendingUp className="h-4 w-4 text-green-600" />
                 <span className="font-medium text-sm text-green-800">Shopper Sales Performance</span>
@@ -309,10 +310,10 @@ export const RetailerProductDetailModal: React.FC<RetailerProductDetailModalProp
 
             {/* Attributes */}
             <div className="flex flex-wrap gap-2">
-              {attributes.occasion && <Badge variant="secondary" className="capitalize">{attributes.occasion}</Badge>}
-              {attributes.material && <Badge variant="outline" className="capitalize">{attributes.material}</Badge>}
+              {attributes.occasion && <Badge variant="secondary" className="capitalize text-xs">{attributes.occasion}</Badge>}
+              {attributes.material && <Badge variant="outline" className="capitalize text-xs">{attributes.material}</Badge>}
               {attributes.style_tags && attributes.style_tags.slice(0, 3).map((tag: string) => (
-                <Badge key={tag} variant="outline" className="capitalize">{tag}</Badge>
+                <Badge key={tag} variant="outline" className="capitalize text-xs">{tag}</Badge>
               ))}
             </div>
 
@@ -331,23 +332,51 @@ export const RetailerProductDetailModal: React.FC<RetailerProductDetailModalProp
                 L: '38-40 inches',
                 XL: '40-42 inches'
               }}
+              sizeChartImage={attributes?.size_chart}
             />
 
             {/* Description */}
             <div>
               <h3 className="font-medium mb-2">Description</h3>
-              <p className="text-muted-foreground text-sm leading-relaxed">{product.description}</p>
+              {isEditing ? (
+                <Textarea
+                  value={editedProduct?.description || ''}
+                  onChange={(e) => setEditedProduct({...editedProduct, description: e.target.value})}
+                  className="min-h-20"
+                  placeholder="Product description"
+                />
+              ) : (
+                <p className="text-muted-foreground text-sm leading-relaxed">{product.description}</p>
+              )}
             </div>
 
+            {/* Size Chart Upload */}
+            {isEditing && (
+              <SizeChartUpload
+                currentSizeChart={editedProduct?.size_chart}
+                onSizeChartUpdate={(sizeChart) => setEditedProduct({...editedProduct, size_chart: sizeChart})}
+                productId={product.id}
+              />
+            )}
+
             {/* Inventory Management */}
-            <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <div className="p-3 sm:p-4 bg-blue-50 rounded-lg border border-blue-200">
               <h3 className="font-medium mb-3 text-blue-800">Inventory Management</h3>
-              <div className="grid grid-cols-2 gap-4 text-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">Current Stock:</span>
-                  <span className={`font-medium ${product.stock_qty <= 5 ? 'text-red-600' : 'text-blue-600'}`}>
-                    {product.stock_qty} units
-                  </span>
+                  {isEditing ? (
+                    <Input
+                      type="number"
+                      value={editedProduct?.stock_qty || 0}
+                      onChange={(e) => setEditedProduct({...editedProduct, stock_qty: parseInt(e.target.value)})}
+                      className="w-20 h-8"
+                    />
+                  ) : (
+                    <span className={`font-medium ${product.stock_qty <= 5 ? 'text-red-600' : 'text-blue-600'}`}>
+                      {product.stock_qty} units
+                    </span>
+                  )}
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">SKU:</span>
@@ -365,8 +394,17 @@ export const RetailerProductDetailModal: React.FC<RetailerProductDetailModalProp
             </div>
 
             {/* External Integration */}
-            {product.external_url && (
-              <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
+            {isEditing ? (
+              <div>
+                <label className="text-sm font-medium mb-2 block">External Product URL</label>
+                <Input
+                  value={editedProduct?.external_url || ''}
+                  onChange={(e) => setEditedProduct({...editedProduct, external_url: e.target.value})}
+                  placeholder="https://your-store.com/product"
+                />
+              </div>
+            ) : product.external_url && (
+              <div className="p-3 sm:p-4 bg-purple-50 rounded-lg border border-purple-200">
                 <div className="flex items-center gap-2 mb-2">
                   <ExternalLink className="h-4 w-4 text-purple-600" />
                   <span className="font-medium text-sm text-purple-800">External Product Link</span>
