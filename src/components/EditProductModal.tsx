@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -11,22 +12,7 @@ import { Product } from '@/types';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { SizeChartUpload } from '@/components/SizeChartUpload';
-
-// Define valid categories based on the database enum
-const categories = [
-  'accessories',
-  'beauty',
-  'clothing',
-  'footwear',
-  'fragrance',
-  'giftcards',
-  'home',
-  'jewelry',
-  'kids',
-  'modestwear'
-] as const;
-
-type CategoryType = typeof categories[number];
+import { CATEGORY_TREE, getAllCategories, getSubcategoriesForCategory, TopCategory, SubCategory } from '@/lib/categories';
 
 interface EditProductModalProps {
   product: Product | null;
@@ -40,7 +26,7 @@ interface FormData {
   description: string;
   price: number | string;
   comparePrice: number | string;
-  category: CategoryType;
+  category: TopCategory;
   subcategory: string;
   stock: number | string;
   sku: string;
@@ -106,7 +92,7 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
         description: product.description || '',
         price: product.price_cents / 100,
         comparePrice: product.compare_at_price_cents ? product.compare_at_price_cents / 100 : '',
-        category: product.category_slug as CategoryType,
+        category: product.category_slug as TopCategory,
         subcategory: product.subcategory_slug || '',
         stock: product.stock_qty,
         sku: product.sku,
@@ -278,6 +264,8 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
 
   if (!product) return null;
 
+  const availableSubcategories = getSubcategoriesForCategory(formData.category);
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -372,12 +360,19 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <Label>Category *</Label>
-                  <Select value={formData.category} onValueChange={(value) => handleInputChange('category', value)}>
+                  <Select 
+                    value={formData.category} 
+                    onValueChange={(value) => {
+                      handleInputChange('category', value);
+                      // Reset subcategory when category changes
+                      handleInputChange('subcategory', '');
+                    }}
+                  >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {categories.map((cat) => (
+                      {getAllCategories().map((cat) => (
                         <SelectItem key={cat} value={cat} className="capitalize">
                           {cat.replace('-', ' ')}
                         </SelectItem>
@@ -389,12 +384,12 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
                   <Label>Subcategory</Label>
                   <Select value={formData.subcategory} onValueChange={(value) => handleInputChange('subcategory', value)}>
                     <SelectTrigger>
-                      <SelectValue />
+                      <SelectValue placeholder="Select subcategory" />
                     </SelectTrigger>
                     <SelectContent>
-                      {categories.map((cat) => (
-                        <SelectItem key={cat} value={cat} className="capitalize">
-                          {cat.replace('-', ' ')}
+                      {availableSubcategories.map((subcat) => (
+                        <SelectItem key={subcat} value={subcat} className="capitalize">
+                          {subcat.replace('-', ' ')}
                         </SelectItem>
                       ))}
                     </SelectContent>
