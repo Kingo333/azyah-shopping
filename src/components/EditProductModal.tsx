@@ -16,7 +16,7 @@ interface EditProductModalProps {
   isOpen: boolean;
   onClose: () => void;
   onProductUpdated: () => void;
-  product: any; // Use any to avoid strict type checking issues
+  product: any;
 }
 
 const SUPPORTED_CURRENCIES = [
@@ -40,6 +40,7 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [images, setImages] = useState<string[]>([]);
+  const [uploadingImages, setUploadingImages] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -77,6 +78,52 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
     }
   }, [product, isOpen]);
 
+  const uploadImageToSupabase = async (file: File): Promise<string> => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+    const filePath = `products/${fileName}`;
+
+    // Convert file to base64 for storage as a workaround since we don't have storage buckets
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const base64 = e.target?.result as string;
+        resolve(base64);
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files) return;
+
+    setUploadingImages(true);
+    const newImages: string[] = [];
+    
+    try {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        if (file.size > 5 * 1024 * 1024) {
+          toast({ title: "Error", description: `${file.name} must be less than 5MB`, variant: "destructive" });
+          continue;
+        }
+
+        // Upload image and get URL
+        const imageUrl = await uploadImageToSupabase(file);
+        newImages.push(imageUrl);
+      }
+
+      setImages(prev => [...prev, ...newImages]);
+      toast({ title: "Success", description: `${newImages.length} image(s) uploaded successfully!` });
+    } catch (error) {
+      console.error('Error uploading images:', error);
+      toast({ title: "Error", description: "Failed to upload images", variant: "destructive" });
+    } finally {
+      setUploadingImages(false);
+    }
+  };
+
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
@@ -95,27 +142,6 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
     }
   }, [formData.category_slug]);
 
-  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-    if (!files) return;
-
-    const newImages: string[] = [];
-    
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      if (file.size > 5 * 1024 * 1024) {
-        toast({ title: "Error", description: "Image must be less than 5MB", variant: "destructive" });
-        continue;
-      }
-
-      // For now, create object URLs for preview
-      const imageUrl = URL.createObjectURL(file);
-      newImages.push(imageUrl);
-    }
-
-    setImages(prev => [...prev, ...newImages]);
-  };
-
   const removeImage = (index: number) => {
     setImages(prev => prev.filter((_, i) => i !== index));
   };
@@ -130,7 +156,7 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
       const updateData = {
         title: formData.title,
         description: formData.description,
-        price_cents: parseInt(formData.price_cents) * 100, // Convert to cents
+        price_cents: parseInt(formData.price_cents) * 100,
         currency: formData.currency,
         category_slug: formData.category_slug as any,
         subcategory_slug: (formData.subcategory_slug || null) as any,
@@ -308,14 +334,19 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
                 onChange={handleImageUpload}
                 className="hidden"
                 id="image-upload-edit"
+                disabled={uploadingImages}
               />
               <label
                 htmlFor="image-upload-edit"
-                className="flex items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50"
+                className={`flex items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 ${
+                  uploadingImages ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
               >
                 <div className="text-center">
                   <Upload className="mx-auto h-8 w-8 text-gray-400" />
-                  <p className="text-sm text-gray-500">Click to upload images</p>
+                  <p className="text-sm text-gray-500">
+                    {uploadingImages ? 'Uploading...' : 'Click to upload images'}
+                  </p>
                 </div>
               </label>
             </div>
@@ -346,8 +377,8 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit" disabled={loading}>
-              {loading ? 'Updating...' : 'Update Product'}
+            <Button type="submit" disabled={loading || uploadingImages}>
+              {loading ? 'Updating...' : uploadingImages ? 'Uploading...' : 'Update Product'}
             </Button>
           </div>
         </form>

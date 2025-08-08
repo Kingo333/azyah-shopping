@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -16,6 +15,7 @@ import AnalyticsFunnel from '@/components/analytics/AnalyticsFunnel';
 import AnalyticsTable from '@/components/analytics/AnalyticsTable';
 import { AddProductModal } from '@/components/AddProductModal';
 import { EditProductModal } from '@/components/EditProductModal';
+import { BrandProductDetailModal } from '@/components/BrandProductDetailModal';
 import { LogoUpload } from '@/components/LogoUpload';
 import { Plus, Edit, Trash2, Upload, BarChart3, TrendingUp, Eye, Heart, ShoppingBag, DollarSign, Download, Filter } from 'lucide-react';
 import type { Product } from '@/types';
@@ -36,6 +36,7 @@ const BrandPortal: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [isAddProductModalOpen, setIsAddProductModalOpen] = useState(false);
   const [isEditProductModalOpen, setIsEditProductModalOpen] = useState(false);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const { toast } = useToast();
   const { user } = useAuth();
@@ -151,19 +152,62 @@ const BrandPortal: React.FC = () => {
   };
 
   const handleDeleteProduct = async (productId: string) => {
+    if (!confirm('Are you sure you want to delete this product? This action cannot be undone.')) {
+      return;
+    }
+
     try {
-      const { error } = await supabase.from('products').delete().eq('id', productId);
-      if (error) throw error;
-      toast({ description: "Product deleted successfully" });
-      fetchProducts();
+      // First, check for related data that might prevent deletion
+      const { data: relatedData, error: checkError } = await supabase
+        .from('likes')
+        .select('id')
+        .eq('product_id', productId)
+        .limit(1);
+
+      if (checkError) {
+        console.error('Error checking related data:', checkError);
+      }
+
+      // Delete the product - RLS policies will ensure only owners can delete
+      const { error } = await supabase
+        .from('products')
+        .delete()
+        .eq('id', productId);
+
+      if (error) {
+        if (error.code === '23503') {
+          toast({ 
+            title: "Cannot Delete Product", 
+            description: "This product has related data (likes, orders, etc.) and cannot be deleted.", 
+            variant: "destructive" 
+          });
+        } else {
+          throw error;
+        }
+      } else {
+        toast({ description: "Product deleted successfully" });
+        fetchProducts();
+      }
     } catch (error) {
       console.error('Delete product error:', error);
       toast({ title: "Error", description: "Failed to delete product", variant: "destructive" });
     }
   };
 
+  const handleViewProduct = (product: any) => {
+    console.log('View product clicked:', product);
+    setSelectedProduct(product);
+    setIsDetailModalOpen(true);
+  };
+
   const handleEditProduct = (product: any) => {
     console.log('Edit product clicked:', product);
+    setSelectedProduct(product);
+    setIsEditProductModalOpen(true);
+  };
+
+  const handleEditFromDetail = (product: any) => {
+    setIsDetailModalOpen(false);
     setSelectedProduct(product);
     setIsEditProductModalOpen(true);
   };
@@ -267,28 +311,60 @@ const BrandPortal: React.FC = () => {
                 )}
               </div>
 
-              {loading ? <div className="text-center py-8">Loading products...</div> : products.length === 0 ? <div className="text-center py-8 text-muted-foreground">No products yet. Create your first product!</div> :
+              {loading ? (
+                <div className="text-center py-8">Loading products...</div>
+              ) : products.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">No products yet. Create your first product!</div>
+              ) : (
                 <div className="grid gap-4">
                   {products.map((product) => (
                     <Card key={product.id} className="overflow-hidden">
                       <CardContent className="p-4">
                         <div className="flex items-center gap-4">
                           <input type="checkbox" checked={selectedProducts.has(product.id)} onChange={() => handleSelectProduct(product.id)} className="w-4 h-4" />
-                          <div className="w-20 h-20 bg-muted rounded-lg overflow-hidden">{product.media_urls && product.media_urls[0] ? <img src={product.media_urls[0]} alt={product.title} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">No Image</div>}</div>
+                          <div 
+                            className="w-20 h-20 bg-muted rounded-lg overflow-hidden cursor-pointer hover:opacity-80 transition-opacity"
+                            onClick={() => handleViewProduct(product)}
+                          >
+                            {product.media_urls && product.media_urls[0] ? (
+                              <img src={product.media_urls[0]} alt={product.title} className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">No Image</div>
+                            )}
+                          </div>
                           <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1"><h3 className="font-medium">{product.title}</h3><Badge variant={getStatusColor(product.status) as any}>{product.status.replace('_', ' ')}</Badge></div>
+                            <div className="flex items-center gap-2 mb-1">
+                              <h3 
+                                className="font-medium cursor-pointer hover:text-primary transition-colors" 
+                                onClick={() => handleViewProduct(product)}
+                              >
+                                {product.title}
+                              </h3>
+                              <Badge variant={getStatusColor(product.status) as any}>{product.status.replace('_', ' ')}</Badge>
+                            </div>
                             <p className="text-sm text-muted-foreground mb-2">{product.category_slug} • {formatPrice(product.price_cents)}</p>
-                            <div className="flex items-center gap-4 text-sm text-muted-foreground"><span>Stock: {product.stock_qty}</span><span>Created: {new Date(product.created_at).toLocaleDateString()}</span></div>
+                            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                              <span>Stock: {product.stock_qty}</span>
+                              <span>Created: {new Date(product.created_at).toLocaleDateString()}</span>
+                            </div>
                           </div>
                           <div className="flex items-center gap-2">
-                            <Button variant="outline" size="sm" onClick={() => handleEditProduct(product)}><Edit className="h-4 w-4" /></Button>
-                            <Button variant="outline" size="sm" onClick={() => handleDeleteProduct(product.id)}><Trash2 className="h-4 w-4" /></Button>
+                            <Button variant="outline" size="sm" onClick={() => handleViewProduct(product)}>
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button variant="outline" size="sm" onClick={() => handleEditProduct(product)}>
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button variant="outline" size="sm" onClick={() => handleDeleteProduct(product.id)}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
                           </div>
                         </div>
                       </CardContent>
                     </Card>
                   ))}
-                </div>}
+                </div>
+              )}
             </div>
           </TabsContent>
 
@@ -401,15 +477,27 @@ const BrandPortal: React.FC = () => {
       />
 
       {selectedProduct && (
-        <EditProductModal
-          isOpen={isEditProductModalOpen}
-          onClose={() => {
-            setIsEditProductModalOpen(false);
-            setSelectedProduct(null);
-          }}
-          onProductUpdated={fetchProducts}
-          product={selectedProduct}
-        />
+        <>
+          <BrandProductDetailModal
+            isOpen={isDetailModalOpen}
+            onClose={() => {
+              setIsDetailModalOpen(false);
+              setSelectedProduct(null);
+            }}
+            product={selectedProduct}
+            onEdit={handleEditFromDetail}
+          />
+
+          <EditProductModal
+            isOpen={isEditProductModalOpen}
+            onClose={() => {
+              setIsEditProductModalOpen(false);
+              setSelectedProduct(null);
+            }}
+            onProductUpdated={fetchProducts}
+            product={selectedProduct}
+          />
+        </>
       )}
     </div>
   );
