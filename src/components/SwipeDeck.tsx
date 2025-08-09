@@ -153,7 +153,9 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({ filter, subcategory, priceRange, 
           logo_url: item.brand.logo_url,
           cover_image_url: item.brand.cover_image_url,
           bio: item.brand.bio,
-          socials: item.brand.socials,
+          socials: item.brand.socials && typeof item.brand.socials === 'object' && item.brand.socials !== null 
+            ? item.brand.socials as Record<string, string> 
+            : {},
           website: item.brand.website,
           contact_email: item.brand.contact_email,
           shipping_regions: item.brand.shipping_regions,
