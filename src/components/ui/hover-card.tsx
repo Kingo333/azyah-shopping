@@ -1,3 +1,4 @@
+
 import * as React from "react"
 import * as HoverCardPrimitive from "@radix-ui/react-hover-card"
 
@@ -24,4 +25,40 @@ const HoverCardContent = React.forwardRef<
 ))
 HoverCardContent.displayName = HoverCardPrimitive.Content.displayName
 
-export { HoverCard, HoverCardTrigger, HoverCardContent }
+const HoverCardHeader = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => (
+  <div
+    ref={ref}
+    className={cn("flex flex-col space-y-1.5 pb-3", className)}
+    {...props}
+  />
+))
+HoverCardHeader.displayName = "HoverCardHeader"
+
+const HoverCardTitle = React.forwardRef<
+  HTMLParagraphElement,
+  React.HTMLAttributes<HTMLHeadingElement>
+>(({ className, ...props }, ref) => (
+  <h3
+    ref={ref}
+    className={cn("text-sm font-semibold leading-none tracking-tight", className)}
+    {...props}
+  />
+))
+HoverCardTitle.displayName = "HoverCardTitle"
+
+const HoverCardDescription = React.forwardRef<
+  HTMLParagraphElement,
+  React.HTMLAttributes<HTMLParagraphElement>
+>(({ className, ...props }, ref) => (
+  <p
+    ref={ref}
+    className={cn("text-sm text-muted-foreground", className)}
+    {...props}
+  />
+))
+HoverCardDescription.displayName = "HoverCardDescription"
+
+export { HoverCard, HoverCardTrigger, HoverCardContent, HoverCardHeader, HoverCardTitle, HoverCardDescription }

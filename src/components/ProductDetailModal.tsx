@@ -19,7 +19,8 @@ import {
   ExternalLink,
   Share2,
   Camera,
-  Sparkles
+  Sparkles,
+  ShoppingBag
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth } from '@/contexts/AuthContext';
@@ -85,7 +86,6 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuSeparator, DropdownMenuShortcut, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Separator } from "@/components/ui/separator"
 import { EnhancedProductGallery } from './EnhancedProductGallery';
 
 interface ProductDetailModalProps {
@@ -305,49 +305,59 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product, isOpen
                   <h4 className="text-sm font-semibold">Size Chart</h4>
                 </AccordionTrigger>
                 <AccordionContent>
-                  <Table>
-                    <TableCaption>Our size chart to ensure a perfect fit.</TableCaption>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-[100px]">Size</TableHead>
-                        <TableHead>Chest (in)</TableHead>
-                        <TableHead>Waist (in)</TableHead>
-                        <TableHead>Hips (in)</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      <TableRow>
-                        <TableCell className="font-medium">XS</TableCell>
-                        <TableCell>32-34</TableCell>
-                        <TableCell>24-26</TableCell>
-                        <TableCell>34-36</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell className="font-medium">S</TableCell>
-                        <TableCell>34-36</TableCell>
-                        <TableCell>26-28</TableCell>
-                        <TableCell>36-38</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell className="font-medium">M</TableCell>
-                        <TableCell>36-38</TableCell>
-                        <TableCell>28-30</TableCell>
-                        <TableCell>38-40</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell className="font-medium">L</TableCell>
-                        <TableCell>38-40</TableCell>
-                        <TableCell>30-32</TableCell>
-                        <TableCell>40-42</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell className="font-medium">XL</TableCell>
-                        <TableCell>40-42</TableCell>
-                        <TableCell>32-34</TableCell>
-                        <TableCell>42-44</TableCell>
-                      </TableRow>
-                    </TableBody>
-                  </Table>
+                  {product.attributes?.size_chart ? (
+                    <div className="space-y-4">
+                      <img 
+                        src={product.attributes.size_chart} 
+                        alt="Size Chart"
+                        className="w-full h-auto rounded-lg border"
+                      />
+                    </div>
+                  ) : (
+                    <Table>
+                      <TableCaption>Our size chart to ensure a perfect fit.</TableCaption>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-[100px]">Size</TableHead>
+                          <TableHead>Chest (in)</TableHead>
+                          <TableHead>Waist (in)</TableHead>
+                          <TableHead>Hips (in)</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        <TableRow>
+                          <TableCell className="font-medium">XS</TableCell>
+                          <TableCell>32-34</TableCell>
+                          <TableCell>24-26</TableCell>
+                          <TableCell>34-36</TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell className="font-medium">S</TableCell>
+                          <TableCell>34-36</TableCell>
+                          <TableCell>26-28</TableCell>
+                          <TableCell>36-38</TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell className="font-medium">M</TableCell>
+                          <TableCell>36-38</TableCell>
+                          <TableCell>28-30</TableCell>
+                          <TableCell>38-40</TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell className="font-medium">L</TableCell>
+                          <TableCell>38-40</TableCell>
+                          <TableCell>30-32</TableCell>
+                          <TableCell>40-42</TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell className="font-medium">XL</TableCell>
+                          <TableCell>40-42</TableCell>
+                          <TableCell>32-34</TableCell>
+                          <TableCell>42-44</TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </Table>
+                  )}
                 </AccordionContent>
               </AccordionItem>
             </Accordion>
