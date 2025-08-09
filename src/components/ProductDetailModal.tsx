@@ -138,6 +138,21 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
     setCurrentJob(null);
   };
 
+  // Mock data for size/color selector
+  const availableSizes = ['XS', 'S', 'M', 'L', 'XL'].map(size => ({
+    value: size,
+    label: size,
+    inStock: true,
+    stockCount: 10
+  }));
+
+  const availableColors = [
+    { value: 'black', label: 'Black', hexCode: '#000000', inStock: true },
+    { value: 'white', label: 'White', hexCode: '#ffffff', inStock: true },
+    { value: 'navy', label: 'Navy', hexCode: '#1e3a8a', inStock: true },
+    { value: 'beige', label: 'Beige', hexCode: '#f5f5dc', inStock: true }
+  ];
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] p-0 overflow-hidden">
@@ -241,10 +256,12 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
                 {/* Size and Color Selection */}
                 <AdvancedSizeColorSelector
+                  sizes={availableSizes}
+                  colors={availableColors}
                   selectedSize={selectedSize}
                   selectedColor={selectedColor}
-                  onSizeChange={setSelectedSize}
-                  onColorChange={setSelectedColor}
+                  onSizeSelect={setSelectedSize}
+                  onColorSelect={setSelectedColor}
                 />
 
                 {/* Description */}

@@ -359,6 +359,7 @@ const RetailerPortal = () => {
             setIsAddModalOpen(false);
             fetchProducts();
           }}
+          userType="retailer"
         />
 
         {editingProduct && (
