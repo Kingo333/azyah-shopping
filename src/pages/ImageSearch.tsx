@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import ShopperNavigation from '@/components/ShopperNavigation';
 import TutorialTooltip from '@/components/TutorialTooltip';
-import { ProductDetailModal } from '@/components/ProductDetailModal';
+import ProductDetailModal from '@/components/ProductDetailModal';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { 
