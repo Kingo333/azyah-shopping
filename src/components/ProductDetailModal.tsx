@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Heart, ShoppingBag, ExternalLink, Sparkles, X } from 'lucide-react';
-import { Product } from '@/types';
+import type { Product as BaseProduct } from '@/types';
 import { EnhancedProductGallery } from './EnhancedProductGallery';
 import { AdvancedSizeColorSelector } from './AdvancedSizeColorSelector';
 import { AddToClosetModal } from './AddToClosetModal';
@@ -16,8 +16,19 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 
+// ---- Local extension so we don't have to edit the global Product type
+type ProductWithImages = BaseProduct & {
+  media_urls?: string[] | null;
+  images?: string[] | null;
+  external_url?: string | null;
+  compare_at_price_cents?: number | null;
+  price_cents?: number | null;
+  currency?: string | null;
+  brand?: { name?: string | null } | null;
+};
+
 interface ProductDetailModalProps {
-  product?: Product | null;           // <-- allow null/undefined
+  product?: ProductWithImages | null; // allow null/undefined safely
   isOpen: boolean;
   onClose: () => void;
 }
@@ -32,7 +43,7 @@ interface TryOnJob {
 const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   product,
   isOpen,
-  onClose
+  onClose,
 }) => {
   const { isEnabled } = useFeatureFlags();
   const { toast } = useToast();
@@ -44,10 +55,10 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   const [showAiTryOn, setShowAiTryOn] = useState(false);
   const [currentJob, setCurrentJob] = useState<TryOnJob | null>(null);
 
-  // 🔒 Always compute a safe images array
+  // Always compute a safe images array
   const images = useMemo<string[]>(() => {
-    const media = (product?.media_urls ?? product?.images ?? []) as unknown as string[];
-    return Array.isArray(media) ? media.filter(Boolean) : [];
+    const media = (product?.media_urls ?? product?.images ?? []) as unknown;
+    return Array.isArray(media) ? (media as string[]).filter(Boolean) : [];
   }, [product]);
 
   const priceCurrency = product?.currency || 'USD';
@@ -58,13 +69,19 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
     if (product?.external_url) {
       window.open(product.external_url, '_blank', 'noopener,noreferrer');
     } else {
-      toast({ description: 'Shop link not available for this product', variant: 'destructive' });
+      toast({
+        description: 'Shop link not available for this product',
+        variant: 'destructive',
+      });
     }
   };
 
   const handleAiTryOnUpload = async (imageId: string) => {
     if (!user || !session || !product?.id) {
-      toast({ description: 'Please sign in and select a product to use AI Try-On', variant: 'destructive' });
+      toast({
+        description: 'Please sign in and select a product to use AI Try-On',
+        variant: 'destructive',
+      });
       return;
     }
 
@@ -73,8 +90,8 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
         body: {
           person_image_id: imageId,
           product_id: product.id,
-          variant_id: selectedSize || selectedColor || null
-        }
+          variant_id: selectedSize || selectedColor || null,
+        },
       });
       if (error) throw error;
 
@@ -82,44 +99,53 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
       void pollJobStatus(result.job_id);
     } catch (err) {
       console.error('AI Try-On error:', err);
-      toast({ description: 'Failed to start AI Try-On. Please try again.', variant: 'destructive' });
+      toast({
+        description: 'Failed to start AI Try-On. Please try again.',
+        variant: 'destructive',
+      });
     }
   };
 
   const pollJobStatus = async (jobId: string) => {
     const interval = setInterval(async () => {
       try {
-        const { data: job, error } = await supabase.functions.invoke(`tryon-jobs/${jobId}`, { method: 'GET' });
+        const { data: job, error } = await supabase.functions.invoke(`tryon-jobs/${jobId}`, {
+          method: 'GET',
+        });
         if (error) throw error;
         setCurrentJob(job);
         if (job.status === 'succeeded' || job.status === 'failed') clearInterval(interval);
       } catch (err) {
         console.error('Error polling job status:', err);
         clearInterval(interval);
-        setCurrentJob(prev => (prev ? { ...prev, status: 'failed' } : null));
+        setCurrentJob((prev) => (prev ? { ...prev, status: 'failed' } : null));
       }
     }, 2000);
 
+    // hard stop after 60s
     setTimeout(() => clearInterval(interval), 60000);
   };
 
   const handleTryAgain = () => setCurrentJob(null);
 
-  // Mock data (unchanged)
-  const availableSizes = ['XS', 'S', 'M', 'L', 'XL'].map(size => ({
-    value: size, label: size, inStock: true, stockCount: 10
+  // Mock size/color data (replace with real variants when ready)
+  const availableSizes = ['XS', 'S', 'M', 'L', 'XL'].map((size) => ({
+    value: size,
+    label: size,
+    inStock: true,
+    stockCount: 10,
   }));
   const availableColors = [
     { value: 'black', label: 'Black', hexCode: '#000000', inStock: true },
     { value: 'white', label: 'White', hexCode: '#ffffff', inStock: true },
     { value: 'navy', label: 'Navy', hexCode: '#1e3a8a', inStock: true },
-    { value: 'beige', label: 'Beige', hexCode: '#f5f5dc', inStock: true }
+    { value: 'beige', label: 'Beige', hexCode: '#f5f5dc', inStock: true },
   ];
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] p-0 overflow-hidden">
-        {/* ⏳ Loading/empty guard */}
+        {/* Loading/empty guard */}
         {!product ? (
           <div className="flex h-[70vh] items-center justify-center text-sm text-muted-foreground">
             Loading product details…
@@ -154,13 +180,17 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     <p className="text-muted-foreground">{product.brand?.name}</p>
                     <div className="flex items-center gap-4 mt-2">
                       <span className="text-2xl font-bold">
-                        {new Intl.NumberFormat('en-US', { style: 'currency', currency: priceCurrency })
-                          .format(priceCents / 100)}
+                        {new Intl.NumberFormat('en-US', {
+                          style: 'currency',
+                          currency: priceCurrency,
+                        }).format(priceCents / 100)}
                       </span>
                       {compareAtCents ? (
                         <span className="text-lg text-muted-foreground line-through">
-                          {new Intl.NumberFormat('en-US', { style: 'currency', currency: priceCurrency })
-                            .format(compareAtCents / 100)}
+                          {new Intl.NumberFormat('en-US', {
+                            style: 'currency',
+                            currency: priceCurrency,
+                          }).format(compareAtCents / 100)}
                         </span>
                       ) : null}
                     </div>
