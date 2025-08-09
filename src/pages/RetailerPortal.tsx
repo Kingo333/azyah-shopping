@@ -18,7 +18,8 @@ import { AddProductModal } from '@/components/AddProductModal';
 import { EditProductModal } from '@/components/EditProductModal';
 import { RetailerProductDetailModal } from '@/components/RetailerProductDetailModal';
 import { LogoUpload } from '@/components/LogoUpload';
-import { Plus, Edit, Trash2, Upload, BarChart3, TrendingUp, Eye, Heart, ShoppingBag, DollarSign, Download, Filter } from 'lucide-react';
+import RetailerBrandsList from '@/components/RetailerBrandsList';
+import { Plus, Edit, Trash2, Upload, BarChart3, TrendingUp, Eye, Heart, ShoppingBag, DollarSign, Download, Filter, Store } from 'lucide-react';
 import type { Product } from '@/types';
 
 interface Retailer {
@@ -93,13 +94,22 @@ const RetailerPortal: React.FC = () => {
     if (!retailer?.id) return;
     
     try {
+      // Get products associated with brands owned by this retailer
+      const { data: brands } = await supabase
+        .from('brands')
+        .select('id')
+        .eq('owner_user_id', user?.id);
+
+      const brandIds = brands?.map(b => b.id) || [];
+
       const { data, error } = await supabase
         .from('products')
         .select(`
           *,
-          retailer:retailers(name)
+          brand:brands(id, name, logo_url),
+          retailer:retailers(id, name, logo_url)
         `)
-        .eq('retailer_id', retailer.id)
+        .in('brand_id', brandIds)
         .order('created_at', { ascending: false });
       
       if (error) throw error;
@@ -296,8 +306,9 @@ const RetailerPortal: React.FC = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-3 rounded-xl bg-white/50 backdrop-blur-sm">
+          <TabsList className="grid w-full grid-cols-4 rounded-xl bg-white/50 backdrop-blur-sm">
             <TabsTrigger value="products" className="rounded-lg">Product Management</TabsTrigger>
+            <TabsTrigger value="brands" className="rounded-lg">My Brands</TabsTrigger>
             <TabsTrigger value="analytics" className="rounded-lg">Sales Analytics</TabsTrigger>
             <TabsTrigger value="settings" className="rounded-lg">Store Settings</TabsTrigger>
           </TabsList>
@@ -350,7 +361,20 @@ const RetailerPortal: React.FC = () => {
                               </h3>
                               <Badge variant={getStatusColor(product.status) as any}>{product.status.replace('_', ' ')}</Badge>
                             </div>
-                            <p className="text-sm text-muted-foreground mb-2">{product.category_slug} • {formatPrice(product.price_cents)}</p>
+                            <div className="flex items-center gap-2 mb-2">
+                              {product.brand && (
+                                <div className="flex items-center gap-1">
+                                  {product.brand.logo_url && (
+                                    <img src={product.brand.logo_url} alt={product.brand.name} className="w-4 h-4 rounded" />
+                                  )}
+                                  <Badge variant="outline" className="text-xs">
+                                    {product.brand.name}
+                                  </Badge>
+                                </div>
+                              )}
+                              <span className="text-sm text-muted-foreground">•</span>
+                              <span className="text-sm font-medium">{formatPrice(product.price_cents, product.currency)}</span>
+                            </div>
                             <div className="flex items-center gap-4 text-sm text-muted-foreground">
                               <span>Stock: {product.stock_qty}</span>
                               <span>Created: {new Date(product.created_at).toLocaleDateString()}</span>
@@ -373,6 +397,22 @@ const RetailerPortal: React.FC = () => {
                   ))}
                 </div>
               )}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="brands" className="mt-6">
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-semibold">My Brands</h2>
+                  <p className="text-muted-foreground">Manage the brands you represent as a retailer</p>
+                </div>
+                <Button variant="outline">
+                  <Store className="h-4 w-4 mr-2" />
+                  Connect New Brand
+                </Button>
+              </div>
+              <RetailerBrandsList retailerId={retailer.id} />
             </div>
           </TabsContent>
 

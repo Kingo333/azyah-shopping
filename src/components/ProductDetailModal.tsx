@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -186,13 +187,13 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product, isOpen
     }
   };
 
-  const handleExternalLink = () => {
+  const handleShopNow = () => {
     if (product.external_url) {
-      window.open(product.external_url, '_blank');
+      window.open(product.external_url, '_blank', 'noopener,noreferrer');
     } else {
       toast({
-        title: "No external link",
-        description: "This product does not have an external link.",
+        title: "Shop URL not available",
+        description: "This product does not have a shop link available.",
         variant: "destructive",
       });
     }
@@ -201,185 +202,201 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product, isOpen
   const handleARTryOn = () => {
     // Close modal and navigate to AR Try-On with this product
     onClose();
-    navigate(`/ar-tryOn?product=${product.id}`);
+    navigate(`/ar-tryOn?product=${product.id}`, { 
+      state: { 
+        returnTo: '/swipe',
+        productDetails: product 
+      }
+    });
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="max-w-4xl max-h-[95vh] p-0 gap-0 overflow-hidden">
+        <DialogHeader className="p-6 pb-0">
           <DialogTitle className="flex items-center gap-2">
             {product.title}
-            <Badge variant="outline" className="gap-1">
-              <Sparkles className="h-3 w-3" />
-              AR Ready
-            </Badge>
+            {product.ar_mesh_url && (
+              <Badge variant="outline" className="gap-1">
+                <Sparkles className="h-3 w-3" />
+                AR Ready
+              </Badge>
+            )}
           </DialogTitle>
         </DialogHeader>
 
-        <div className="grid md:grid-cols-2 gap-6">
-          {/* Product Images */}
-          <div className="space-y-4">
-            <EnhancedProductGallery
-              images={product.media_urls || []}
-              productTitle={product.title}
-              productId={product.id}
-              hasARMesh={!!product.ar_mesh_url}
-              onARTryOn={handleARTryOn}
-            />
-          </div>
-
-          {/* Product Details */}
-          <div className="space-y-6">
-            {/* Product Info */}
-            <div className="space-y-2">
-              <h2 className="text-2xl font-semibold">{product.title}</h2>
-              <p className="text-muted-foreground">{product.description || 'No description available.'}</p>
-              <div className="flex items-center gap-4">
-                <span className="text-2xl font-bold">{formatPrice(product.price_cents, product.currency)}</span>
-                {product.compare_at_price_cents && product.compare_at_price_cents > product.price_cents && (
-                  <span className="text-lg text-muted-foreground line-through">{formatPrice(product.compare_at_price_cents, product.currency)}</span>
-                )}
-              </div>
+        <ScrollArea className="max-h-[calc(95vh-80px)]">
+          <div className="grid md:grid-cols-2 gap-6 p-6">
+            {/* Product Images */}
+            <div className="space-y-4">
+              <EnhancedProductGallery
+                images={product.media_urls || []}
+                productTitle={product.title}
+                productId={product.id}
+                hasARMesh={!!product.ar_mesh_url}
+                onARTryOn={handleARTryOn}
+              />
             </div>
 
-            {/* AR Try-On Call-to-Action */}
-            <div className="bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg p-4">
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
-                  <Sparkles className="h-5 w-5 text-white" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-sm mb-1">Try Before You Buy</h3>
-                  <p className="text-xs text-muted-foreground mb-3">
-                    See how this {product.title} looks on you with our advanced AR try-on experience. 
-                    Perfect fit guaranteed!
-                  </p>
-                  <Button 
-                    onClick={handleARTryOn}
-                    className="w-full bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white border-0"
-                  >
-                    <Camera className="h-4 w-4 mr-2" />
-                    Try in AR Now
-                  </Button>
-                </div>
-              </div>
-            </div>
-
-            {/* Actions */}
-            <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
-                <Button 
-                  onClick={handleWishlist}
-                  variant="outline" 
-                  className="gap-2"
-                  disabled={wishlistLoading}
-                >
-                  <Heart className="h-4 w-4" />
-                  {isInWishlist ? 'In Wishlist' : 'Add to Wishlist'}
-                </Button>
-                <Button onClick={handleAddToBag} className="gap-2">
-                  <ShoppingBag className="h-4 w-4" />
-                  Add to Bag
-                </Button>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-3">
-                <Button variant="secondary" className="gap-2" onClick={handleShare}>
-                  <Share2 className="h-4 w-4" />
-                  Share
-                </Button>
-                {product.external_url && (
-                  <Button variant="secondary" className="gap-2" onClick={handleExternalLink}>
-                    <ExternalLink className="h-4 w-4" />
-                    View on Retailer Site
-                  </Button>
-                )}
-              </div>
-            </div>
-
-            {/* Size Chart */}
-            <Accordion type="single" collapsible>
-              <AccordionItem value="size-chart">
-                <AccordionTrigger>
-                  <h4 className="text-sm font-semibold">Size Chart</h4>
-                </AccordionTrigger>
-                <AccordionContent>
-                  {product.attributes?.size_chart ? (
-                    <div className="space-y-4">
-                      <img 
-                        src={product.attributes.size_chart} 
-                        alt="Size Chart"
-                        className="w-full h-auto rounded-lg border"
-                      />
-                    </div>
-                  ) : (
-                    <Table>
-                      <TableCaption>Our size chart to ensure a perfect fit.</TableCaption>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="w-[100px]">Size</TableHead>
-                          <TableHead>Chest (in)</TableHead>
-                          <TableHead>Waist (in)</TableHead>
-                          <TableHead>Hips (in)</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        <TableRow>
-                          <TableCell className="font-medium">XS</TableCell>
-                          <TableCell>32-34</TableCell>
-                          <TableCell>24-26</TableCell>
-                          <TableCell>34-36</TableCell>
-                        </TableRow>
-                        <TableRow>
-                          <TableCell className="font-medium">S</TableCell>
-                          <TableCell>34-36</TableCell>
-                          <TableCell>26-28</TableCell>
-                          <TableCell>36-38</TableCell>
-                        </TableRow>
-                        <TableRow>
-                          <TableCell className="font-medium">M</TableCell>
-                          <TableCell>36-38</TableCell>
-                          <TableCell>28-30</TableCell>
-                          <TableCell>38-40</TableCell>
-                        </TableRow>
-                        <TableRow>
-                          <TableCell className="font-medium">L</TableCell>
-                          <TableCell>38-40</TableCell>
-                          <TableCell>30-32</TableCell>
-                          <TableCell>40-42</TableCell>
-                        </TableRow>
-                        <TableRow>
-                          <TableCell className="font-medium">XL</TableCell>
-                          <TableCell>40-42</TableCell>
-                          <TableCell>32-34</TableCell>
-                          <TableCell>42-44</TableCell>
-                        </TableRow>
-                      </TableBody>
-                    </Table>
+            {/* Product Details */}
+            <div className="space-y-6">
+              {/* Product Info */}
+              <div className="space-y-2">
+                <h2 className="text-2xl font-semibold">{product.title}</h2>
+                <p className="text-muted-foreground">{product.description || 'No description available.'}</p>
+                <div className="flex items-center gap-4">
+                  <span className="text-2xl font-bold">{formatPrice(product.price_cents, product.currency)}</span>
+                  {product.compare_at_price_cents && product.compare_at_price_cents > product.price_cents && (
+                    <span className="text-lg text-muted-foreground line-through">{formatPrice(product.compare_at_price_cents, product.currency)}</span>
                   )}
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
+                </div>
+              </div>
 
-            {/* Specifications */}
-            <Accordion type="single" collapsible>
-              <AccordionItem value="specifications">
-                <AccordionTrigger>
-                  <h4 className="text-sm font-semibold">Specifications</h4>
-                </AccordionTrigger>
-                <AccordionContent>
-                  <ul className="list-disc pl-5">
-                    <li>Material: {product.attributes?.material || 'Not specified'}</li>
-                    <li>Color: {product.attributes?.color_primary || 'Not specified'}</li>
-                    <li>Gender: {product.attributes?.gender_target || 'Unisex'}</li>
-                    <li>Style: {product.attributes?.style_tags?.join(', ') || 'Casual'}</li>
-                  </ul>
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
+              {/* AR Try-On Call-to-Action */}
+              {product.ar_mesh_url && (
+                <div className="bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
+                      <Sparkles className="h-5 w-5 text-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-sm mb-1">Try Before You Buy</h3>
+                      <p className="text-xs text-muted-foreground mb-3">
+                        See how this {product.title} looks on you with our advanced AR try-on experience. 
+                        Perfect fit guaranteed!
+                      </p>
+                      <Button 
+                        onClick={handleARTryOn}
+                        className="w-full bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white border-0"
+                      >
+                        <Camera className="h-4 w-4 mr-2" />
+                        Try in AR Now
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <Button 
+                    onClick={handleWishlist}
+                    variant="outline" 
+                    className="gap-2"
+                    disabled={wishlistLoading}
+                  >
+                    <Heart className="h-4 w-4" />
+                    {isInWishlist ? 'In Wishlist' : 'Add to Wishlist'}
+                  </Button>
+                  <Button onClick={handleAddToBag} className="gap-2">
+                    <ShoppingBag className="h-4 w-4" />
+                    Add to Bag
+                  </Button>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-3">
+                  <Button variant="secondary" className="gap-2" onClick={handleShare}>
+                    <Share2 className="h-4 w-4" />
+                    Share
+                  </Button>
+                  <Button 
+                    variant={product.external_url ? "default" : "secondary"} 
+                    className="gap-2" 
+                    onClick={handleShopNow}
+                    disabled={!product.external_url}
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                    {product.external_url ? 'Shop Now' : 'Shop URL N/A'}
+                  </Button>
+                </div>
+              </div>
+
+              {/* Size Chart */}
+              <Accordion type="single" collapsible>
+                <AccordionItem value="size-chart">
+                  <AccordionTrigger>
+                    <h4 className="text-sm font-semibold">Size Chart</h4>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    {product.attributes?.size_chart ? (
+                      <div className="space-y-4">
+                        <img 
+                          src={product.attributes.size_chart} 
+                          alt="Size Chart"
+                          className="w-full h-auto rounded-lg border"
+                        />
+                      </div>
+                    ) : (
+                      <Table>
+                        <TableCaption>Our size chart to ensure a perfect fit.</TableCaption>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="w-[100px]">Size</TableHead>
+                            <TableHead>Chest (in)</TableHead>
+                            <TableHead>Waist (in)</TableHead>
+                            <TableHead>Hips (in)</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          <TableRow>
+                            <TableCell className="font-medium">XS</TableCell>
+                            <TableCell>32-34</TableCell>
+                            <TableCell>24-26</TableCell>
+                            <TableCell>34-36</TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell className="font-medium">S</TableCell>
+                            <TableCell>34-36</TableCell>
+                            <TableCell>26-28</TableCell>
+                            <TableCell>36-38</TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell className="font-medium">M</TableCell>
+                            <TableCell>36-38</TableCell>
+                            <TableCell>28-30</TableCell>
+                            <TableCell>38-40</TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell className="font-medium">L</TableCell>
+                            <TableCell>38-40</TableCell>
+                            <TableCell>30-32</TableCell>
+                            <TableCell>40-42</TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell className="font-medium">XL</TableCell>
+                            <TableCell>40-42</TableCell>
+                            <TableCell>32-34</TableCell>
+                            <TableCell>42-44</TableCell>
+                          </TableRow>
+                        </TableBody>
+                      </Table>
+                    )}
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+
+              {/* Specifications */}
+              <Accordion type="single" collapsible>
+                <AccordionItem value="specifications">
+                  <AccordionTrigger>
+                    <h4 className="text-sm font-semibold">Specifications</h4>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <ul className="list-disc pl-5 space-y-1">
+                      <li>Material: {product.attributes?.material || 'Not specified'}</li>
+                      <li>Color: {product.attributes?.color_primary || 'Not specified'}</li>
+                      <li>Gender: {product.attributes?.gender_target || 'Unisex'}</li>
+                      <li>Style: {product.attributes?.style_tags?.join(', ') || 'Casual'}</li>
+                      {product.brand && <li>Brand: {product.brand.name}</li>}
+                      {product.sku && <li>SKU: {product.sku}</li>}
+                    </ul>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+            </div>
           </div>
-        </div>
+        </ScrollArea>
       </DialogContent>
     </Dialog>
   );

@@ -89,19 +89,36 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({ filter, subcategory, priceRange, 
           seo_title,
           seo_description,
           retailer_id,
-          brand:brands!inner(id, name, slug, logo_url, bio, website, owner_user_id, created_at, updated_at, socials, contact_email, shipping_regions, cover_image_url),
+          brand:brands!inner(
+            id, 
+            name, 
+            slug, 
+            logo_url, 
+            bio, 
+            website, 
+            owner_user_id, 
+            created_at, 
+            updated_at, 
+            socials, 
+            contact_email, 
+            shipping_regions, 
+            cover_image_url
+          ),
           attributes
         `)
         .eq('status', 'active');
 
-      if (filter !== 'all') {
+      // Apply category filter
+      if (filter && filter !== 'all') {
         query = query.eq('category_slug', filter as TopCategory);
       }
 
-      if (subcategory) {
+      // Apply subcategory filter - this should be more specific
+      if (subcategory && subcategory !== '') {
         query = query.eq('subcategory_slug', subcategory as SubCategory);
       }
 
+      // Apply price range filter
       if (priceRange.min > 0) {
         query = query.gte('price_cents', priceRange.min * 100);
       }
@@ -110,9 +127,13 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({ filter, subcategory, priceRange, 
         query = query.lte('price_cents', priceRange.max * 100);
       }
 
-      if (searchQuery) {
-        query = query.ilike('title', `%${searchQuery}%`);
+      // Apply search query
+      if (searchQuery && searchQuery.trim() !== '') {
+        query = query.ilike('title', `%${searchQuery.trim()}%`);
       }
+
+      // Order by created_at for consistent results
+      query = query.order('created_at', { ascending: false });
 
       const { data, error } = await query;
 
@@ -165,6 +186,14 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({ filter, subcategory, priceRange, 
         } : undefined,
         attributes: convertJsonToProductAttributes(item.attributes)
       }));
+
+      console.log('Fetched products with filters:', { 
+        filter, 
+        subcategory, 
+        priceRange, 
+        searchQuery, 
+        count: transformedProducts.length 
+      });
 
       setProducts(transformedProducts);
       setIndex(0); // Reset index when products change
@@ -249,6 +278,12 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({ filter, subcategory, priceRange, 
       <div className="flex flex-col items-center justify-center space-y-4">
         <Search className="h-10 w-10 text-muted-foreground opacity-50" />
         <p className="text-muted-foreground">No products found matching your criteria.</p>
+        <Button variant="outline" onClick={() => {
+          // Reset filters could be implemented here
+          window.location.reload();
+        }}>
+          Reset Filters
+        </Button>
       </div>
     );
   }
