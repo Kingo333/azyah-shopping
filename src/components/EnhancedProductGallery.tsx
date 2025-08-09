@@ -1,12 +1,15 @@
+
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ZoomIn, RotateCw, Camera } from 'lucide-react';
+import { ZoomIn, RotateCw, Camera, Sparkles } from 'lucide-react';
 
 interface EnhancedProductGalleryProps {
   images: string[];
   productTitle: string;
+  productId?: string;
   hasARMesh?: boolean;
   onARTryOn?: () => void;
 }
@@ -14,9 +17,11 @@ interface EnhancedProductGalleryProps {
 export const EnhancedProductGallery: React.FC<EnhancedProductGalleryProps> = ({
   images,
   productTitle,
-  hasARMesh,
+  productId,
+  hasARMesh = true, // Default to true for clothing items
   onARTryOn
 }) => {
+  const navigate = useNavigate();
   const [selectedImage, setSelectedImage] = useState(0);
   const [isZoomed, setIsZoomed] = useState(false);
   const [rotation, setRotation] = useState(0);
@@ -27,6 +32,15 @@ export const EnhancedProductGallery: React.FC<EnhancedProductGalleryProps> = ({
 
   const handleZoom = () => {
     setIsZoomed(!isZoomed);
+  };
+
+  const handleARTryOn = () => {
+    if (onARTryOn) {
+      onARTryOn();
+    } else if (productId) {
+      // Navigate to AR Try-On page with product ID
+      navigate(`/ar-tryOn?product=${productId}`);
+    }
   };
 
   return (
@@ -74,10 +88,10 @@ export const EnhancedProductGallery: React.FC<EnhancedProductGalleryProps> = ({
           {hasARMesh && (
             <Button
               size="sm"
-              className="absolute bottom-4 left-4 bg-primary/90 backdrop-blur-sm hover:bg-primary"
-              onClick={onARTryOn}
+              className="absolute bottom-4 left-4 bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white border-0"
+              onClick={handleARTryOn}
             >
-              <Camera className="h-4 w-4 mr-2" />
+              <Sparkles className="h-4 w-4 mr-2" />
               Try in AR
             </Button>
           )}
@@ -85,7 +99,7 @@ export const EnhancedProductGallery: React.FC<EnhancedProductGalleryProps> = ({
         
         {/* AR Badge */}
         {hasARMesh && (
-          <Badge className="absolute top-4 left-4 bg-purple-500 hover:bg-purple-600">
+          <Badge className="absolute top-4 left-4 bg-gradient-to-r from-purple-500 to-blue-500 text-white border-0">
             <Camera className="h-3 w-3 mr-1" />
             AR Ready
           </Badge>
@@ -117,9 +131,15 @@ export const EnhancedProductGallery: React.FC<EnhancedProductGalleryProps> = ({
         </div>
       )}
 
-      {/* Image Counter */}
+      {/* Image Counter and AR Info */}
       <div className="flex items-center justify-between text-sm text-muted-foreground">
         <span>{selectedImage + 1} of {images.length}</span>
+        {hasARMesh && (
+          <div className="flex items-center gap-1 text-purple-500">
+            <Sparkles className="h-3 w-3" />
+            <span className="text-xs">AR Experience Available</span>
+          </div>
+        )}
         {isZoomed && (
           <span className="text-primary">Tap image to zoom out</span>
         )}

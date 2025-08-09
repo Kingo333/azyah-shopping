@@ -1,14 +1,19 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import ShopperNavigation from '@/components/ShopperNavigation';
 import TutorialTooltip from '@/components/TutorialTooltip';
 import TrendingStyles from '@/components/TrendingStyles';
+import { ARGarmentOverlay } from '@/components/ARGarmentOverlay';
+import { ARSmartFit } from '@/components/ARSmartFit';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useProduct } from '@/hooks/useProducts';
 import { supabase } from '@/integrations/supabase/client';
 import { 
   Camera, 
@@ -25,7 +30,9 @@ import {
   Upload,
   CameraIcon,
   Plus,
-  TrendingUp
+  TrendingUp,
+  Smartphone,
+  Monitor
 } from 'lucide-react';
 import { useWishlistProducts } from '@/hooks/useWishlistProducts';
 
@@ -45,6 +52,13 @@ interface ARProduct {
 const ARTryOn: React.FC = () => {
   const { user } = useAuth();
   const isMobile = useIsMobile();
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  
+  // Get product ID from URL params
+  const productIdFromUrl = searchParams.get('product');
+  const { data: productFromUrl } = useProduct(productIdFromUrl || '');
+  
   const [isARActive, setIsARActive] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<ARProduct | null>(null);
   const [selectedSize, setSelectedSize] = useState<string>('');
@@ -53,6 +67,7 @@ const ARTryOn: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [hasHttpsError, setHasHttpsError] = useState(false);
   const [fallbackMode, setFallbackMode] = useState(false);
+  const [activeTab, setActiveTab] = useState<'camera' | 'smartfit'>('camera');
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -73,15 +88,41 @@ const ARTryOn: React.FC = () => {
     colors: ['Black', 'White', 'Navy'] // Default colors - you might want to fetch actual colors
   }));
 
+  // Handle product preselection from URL
   useEffect(() => {
-    // Set default selections for the first product
-    if (arProducts.length > 0 && !selectedProduct) {
+    if (productFromUrl && productIdFromUrl) {
+      const arProduct: ARProduct = {
+        id: productFromUrl.id,
+        title: productFromUrl.title,
+        brand: productFromUrl.brand?.name || 'Fashion Brand',
+        price: productFromUrl.price_cents,
+        currency: productFromUrl.currency || 'USD',
+        image: productFromUrl.media_urls?.[0] || 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=600&h=800&fit=crop',
+        arMeshUrl: productFromUrl.ar_mesh_url || '/models/product.glb',
+        category: productFromUrl.category_slug || 'Fashion',
+        sizes: ['XS', 'S', 'M', 'L', 'XL'],
+        colors: ['Black', 'White', 'Navy']
+      };
+      
+      setSelectedProduct(arProduct);
+      setSelectedSize(arProduct.sizes[0]);
+      setSelectedColor(arProduct.colors[0]);
+      
+      // Clear URL params after selecting
+      navigate('/ar-tryOn', { replace: true });
+      
+      // Show welcome message for direct navigation
+      toast({
+        description: `Ready to try on ${arProduct.title} in AR!`,
+      });
+    } else if (arProducts.length > 0 && !selectedProduct) {
+      // Set default selections for the first product
       const firstProduct = arProducts[0];
       setSelectedProduct(firstProduct);
       setSelectedSize(firstProduct.sizes[0]);
       setSelectedColor(firstProduct.colors[0]);
     }
-  }, [arProducts]);
+  }, [productFromUrl, productIdFromUrl, arProducts, selectedProduct, navigate, toast]);
 
   const logARError = async (errorType: string, errorMessage: string) => {
     if (!user) return;
@@ -108,22 +149,29 @@ const ARTryOn: React.FC = () => {
     try {
       setIsLoading(true);
       
-      // Force fallback mode on mobile devices
-      if (isMobile) {
-        await logARError('mobile_fallback', 'Mobile devices use photo upload mode');
-        setFallbackMode(true);
-        toast({ 
-          description: "Mobile devices use photo upload mode for better experience!",
-          variant: "default"
-        });
-        return;
-      }
-      
-      // Check for HTTPS
+      // Check for HTTPS first
       if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost') {
         setHasHttpsError(true);
         await logARError('https_required', 'Camera access requires HTTPS');
-        throw new Error('HTTPS required for camera access');
+        setFallbackMode(true);
+        toast({ 
+          description: "Camera requires HTTPS. Using photo mode instead!",
+          variant: "default"
+        });
+        setActiveTab('smartfit');
+        return;
+      }
+      
+      // Check if getUserMedia is available
+      if (!navigator.mediaDevices?.getUserMedia) {
+        await logARError('webrtc_not_supported', 'WebRTC not supported');
+        setFallbackMode(true);
+        toast({ 
+          description: "Live camera not supported. Using photo mode!",
+          variant: "default"
+        });
+        setActiveTab('smartfit');
+        return;
       }
       
       const stream = await navigator.mediaDevices.getUserMedia({ 
@@ -136,39 +184,56 @@ const ARTryOn: React.FC = () => {
       
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        videoRef.current.play();
+        await videoRef.current.play();
       }
       
       setCameraPermission('granted');
       setIsARActive(true);
-      toast({ description: "Camera access granted! AR try-on is now active." });
+      setActiveTab('camera');
+      
+      // Log successful AR session start
+      if (user && selectedProduct) {
+        await supabase.from('events').insert({
+          user_id: user.id,
+          event_type: 'ar_session_start',
+          event_data: {
+            product_id: selectedProduct.id,
+            product_title: selectedProduct.title,
+            selected_size: selectedSize,
+            selected_color: selectedColor,
+            device_type: isMobile ? 'mobile' : 'desktop',
+            camera_mode: 'live',
+            timestamp: new Date().toISOString()
+          }
+        });
+      }
+      
+      toast({ 
+        description: "Camera ready! Position yourself in the frame and adjust the garment.",
+      });
     } catch (error: any) {
       setCameraPermission('denied');
       await logARError('camera_access_denied', error.message);
       
+      setFallbackMode(true);
+      setActiveTab('smartfit');
+      
       if (error.name === 'NotAllowedError') {
         toast({ 
-          description: "Camera access denied. Try uploading a photo instead!",
-          variant: "destructive"
+          description: "Camera access denied. Switched to photo mode!",
+          variant: "default"
         });
       } else if (error.name === 'NotFoundError') {
         toast({ 
-          description: "No camera found. Try uploading a photo instead!",
-          variant: "destructive"
-        });
-      } else if (hasHttpsError) {
-        toast({ 
-          description: "HTTPS required for camera. Try uploading a photo instead!",
-          variant: "destructive"
+          description: "No camera found. Using photo mode instead!",
+          variant: "default"
         });
       } else {
         toast({ 
-          description: "Camera not available. Try uploading a photo instead!",
-          variant: "destructive"
+          description: "Camera unavailable. Using photo mode!",
+          variant: "default"
         });
       }
-      
-      setFallbackMode(true);
     } finally {
       setIsLoading(false);
     }
@@ -271,6 +336,7 @@ const ARTryOn: React.FC = () => {
     toast({ description: `Added ${selectedProduct?.title} (${selectedSize}) to bag` });
   };
 
+  // Enhanced tutorial steps
   const tutorialSteps = [
     {
       title: "Welcome to AR Try-On!",
@@ -279,34 +345,34 @@ const ARTryOn: React.FC = () => {
       action: "Choose a product to get started"
     },
     {
-      title: "Step 1: Camera or Upload",
-      description: "On desktop, use live camera for real-time AR. On mobile, upload a full-body photo for the best try-on experience.",
-      icon: <Camera className="h-5 w-5 text-green-500" />,
-      action: isMobile ? "Upload a photo" : "Click 'Use Live Camera' when ready"
+      title: "Step 1: Camera or Smart Fit",
+      description: isMobile 
+        ? "On mobile, we recommend Smart Fit mode - upload a full-body photo for accurate virtual try-on with AI-powered fit analysis."
+        : "On desktop, use live camera for real-time AR, or try Smart Fit mode with photo upload for detailed fit analysis.",
+      icon: isMobile ? <Smartphone className="h-5 w-5 text-green-500" /> : <Monitor className="h-5 w-5 text-green-500" />,
+      action: isMobile ? "Use Smart Fit for best results" : "Choose live camera or Smart Fit mode"
     },
     {
-      title: "Step 2: Choose Your Product", 
-      description: "Select any AR-ready product, pick your size and color preferences, then see how it looks on you in real-time!",
+      title: "Step 2: Position & Adjust", 
+      description: "In live mode, position yourself in the frame. In Smart Fit mode, upload a clear full-body photo. Then drag, zoom, and rotate the garment for perfect placement.",
       icon: <Sparkles className="h-5 w-5 text-purple-500" />,
-      action: "Select a product from the left panel"
+      action: "Use the control buttons to adjust fit and position"
     },
     {
-      title: "Step 3: Save & Share",
-      description: "Love how you look? Capture photos and share them, or add items directly to your wishlist or bag!",
+      title: "Step 3: Save & Purchase",
+      description: "Love how it looks? Capture and share photos, check the AI fit analysis, and add to your bag with confidence!",
       icon: <Heart className="h-5 w-5 text-red-500" />,
-      action: "Use the capture and share buttons during AR session"
+      action: "Use capture, share, and purchase options"
     }
   ];
 
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto max-w-6xl p-4">
-        {/* Navigation */}
         <ShopperNavigation />
         
-        {/* Tutorial */}
         <TutorialTooltip
-          tutorialKey="ar-tryOn"
+          tutorialKey="ar-tryOn-enhanced"
           steps={tutorialSteps}
           autoShow={true}
         />
@@ -318,23 +384,32 @@ const ARTryOn: React.FC = () => {
               <h1 className="text-2xl font-bold">AR Try-On</h1>
               <Badge variant="secondary" className="gap-1">
                 <Sparkles className="h-3 w-3" />
-                Beta
+                Enhanced
               </Badge>
             </div>
           </div>
-          <TutorialTooltip
-            tutorialKey="ar-tryOn"
-            steps={tutorialSteps}
-            trigger={
-              <Button variant="outline" size="sm">
-                <Info className="h-4 w-4 mr-2" />
-                How it works
-              </Button>
-            }
-          />
+          <div className="flex gap-2">
+            <TutorialTooltip
+              tutorialKey="ar-tryOn-enhanced"
+              steps={tutorialSteps}
+              trigger={
+                <Button variant="outline" size="sm">
+                  <Info className="h-4 w-4 mr-2" />
+                  How it works
+                </Button>
+              }
+            />
+            {selectedProduct && (
+              <Badge variant="outline" className="gap-1">
+                <Zap className="h-3 w-3" />
+                {selectedProduct.title}
+              </Badge>
+            )}
+          </div>
         </div>
 
         <div className="grid lg:grid-cols-3 gap-6">
+          {/* Left Panel - Product Selection & Customization */}
           <div className="lg:col-span-1 space-y-4 order-2 lg:order-1">
             <Card className="card-luxury">
               <CardHeader>
@@ -486,131 +561,158 @@ const ARTryOn: React.FC = () => {
             )}
           </div>
 
-          {/* AR Camera View */}
+          {/* AR Experience Panel */}
           <div className="lg:col-span-2">
             <Card className="h-full">
               <CardContent className="p-0">
-                <div className="relative aspect-video bg-muted rounded-lg overflow-hidden">
-                  {!isARActive ? (
-                    // Camera Permission / Start Screen
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="text-center space-y-4 max-w-md mx-auto p-6">
-                        <div className="w-20 h-20 mx-auto bg-primary/10 rounded-full flex items-center justify-center">
-                          <Camera className="h-10 w-10 text-primary" />
-                        </div>
-                        <div>
-                          <h3 className="text-lg font-semibold mb-2">Start AR Try-On</h3>
-                          <p className="text-sm text-muted-foreground mb-4">
-                            Use your camera or upload a photo to see how the {selectedProduct?.title} looks on you
-                          </p>
-                          
-                          {hasHttpsError && (
-                            <div className="p-3 bg-yellow-100 rounded-lg mb-4">
-                              <p className="text-xs text-yellow-800">
-                                Live camera requires HTTPS. Try uploading a photo instead!
-                              </p>
-                            </div>
-                          )}
-                          
-                          <div className="space-y-3">
-                          {!fallbackMode && !isMobile && (
-                            <Button 
-                              onClick={requestCameraAccess}
-                              disabled={isLoading}
-                              className="gap-2 w-full"
-                            >
-                              {isLoading ? (
-                                  <>
-                                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                    Starting Camera...
-                                  </>
-                                ) : (
-                                  <>
-                                    <Camera className="h-4 w-4" />
-                                    Use Live Camera
-                                  </>
+                {selectedProduct ? (
+                  <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'camera' | 'smartfit')} className="w-full">
+                    <div className="p-4 pb-0">
+                      <TabsList className="grid w-full grid-cols-2">
+                        <TabsTrigger value="camera" className="gap-2">
+                          <Camera className="h-4 w-4" />
+                          Live Camera
+                          {!isMobile && <Badge variant="secondary" className="text-xs">Best</Badge>}
+                        </TabsTrigger>
+                        <TabsTrigger value="smartfit" className="gap-2">
+                          <Sparkles className="h-4 w-4" />
+                          Smart Fit
+                          {isMobile && <Badge variant="secondary" className="text-xs">Recommended</Badge>}
+                        </TabsTrigger>
+                      </TabsList>
+                    </div>
+
+                    <TabsContent value="camera" className="mt-0">
+                      <div className="relative aspect-video bg-muted rounded-lg overflow-hidden">
+                        {!isARActive ? (
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="text-center space-y-4 max-w-md mx-auto p-6">
+                              <div className="w-20 h-20 mx-auto bg-primary/10 rounded-full flex items-center justify-center">
+                                <Camera className="h-10 w-10 text-primary" />
+                              </div>
+                              <div>
+                                <h3 className="text-lg font-semibold mb-2">Live AR Try-On</h3>
+                                <p className="text-sm text-muted-foreground mb-4">
+                                  Position yourself in front of the camera to see how the {selectedProduct.title} looks on you in real-time
+                                </p>
+                                
+                                {hasHttpsError && (
+                                  <div className="p-3 bg-yellow-100 rounded-lg mb-4">
+                                    <p className="text-xs text-yellow-800">
+                                      Live camera requires HTTPS. Try Smart Fit mode instead!
+                                    </p>
+                                  </div>
                                 )}
-                              </Button>
-                            )}
-                            
-                            <Button 
-                              variant="outline"
-                              onClick={() => fileInputRef.current?.click()}
-                              className="gap-2 w-full"
-                            >
-                              <Upload className="h-4 w-4" />
-                              Upload Photo Instead
-                            </Button>
-                            
-                            <input
-                              ref={fileInputRef}
-                              type="file"
-                              accept="image/*"
-                              onChange={handlePhotoUpload}
-                              className="hidden"
-                            />
+                                
+                                <div className="space-y-3">
+                                  <Button 
+                                    onClick={requestCameraAccess}
+                                    disabled={isLoading || hasHttpsError}
+                                    className="gap-2 w-full"
+                                  >
+                                    {isLoading ? (
+                                      <>
+                                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                        Starting Camera...
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Camera className="h-4 w-4" />
+                                        Start Live AR
+                                      </>
+                                    )}
+                                  </Button>
+                                  
+                                  <Button 
+                                    variant="outline"
+                                    onClick={() => setActiveTab('smartfit')}
+                                    className="gap-2 w-full"
+                                  >
+                                    <Sparkles className="h-4 w-4" />
+                                    Try Smart Fit Instead
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
                           </div>
-                        </div>
+                        ) : (
+                          <>
+                            <video 
+                              ref={videoRef}
+                              className="w-full h-full object-cover"
+                              autoPlay
+                              muted
+                              playsInline
+                            />
+                            
+                            <ARGarmentOverlay
+                              product={selectedProduct}
+                              selectedSize={selectedSize}
+                              selectedColor={selectedColor}
+                              isVisible={true}
+                              containerWidth={800}
+                              containerHeight={600}
+                            />
+
+                            {/* Controls Overlay */}
+                            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex items-center gap-2">
+                              <Button size="sm" variant="secondary" onClick={capturePhoto}>
+                                <Download className="h-4 w-4" />
+                              </Button>
+                              <Button size="sm" variant="secondary" onClick={sharePhoto}>
+                                <Share className="h-4 w-4" />
+                              </Button>
+                              <Button size="sm" variant="outline" onClick={stopCamera}>
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+
+                            {/* Product Info Overlay */}
+                            <div className="absolute top-4 right-4 bg-background/90 backdrop-blur-sm rounded-lg p-3 max-w-xs">
+                              <h4 className="font-medium text-sm">{selectedProduct.title}</h4>
+                              <p className="text-xs text-muted-foreground">{selectedProduct.brand}</p>
+                              <p className="text-sm font-semibold">{formatPrice(selectedProduct.price)}</p>
+                              <div className="flex gap-1 mt-2">
+                                <Badge variant="outline" className="text-xs">{selectedSize}</Badge>
+                                <Badge variant="outline" className="text-xs">{selectedColor}</Badge>
+                              </div>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </TabsContent>
+
+                    <TabsContent value="smartfit" className="mt-0">
+                      <div className="p-4">
+                        <ARSmartFit
+                          product={selectedProduct}
+                          selectedSize={selectedSize}
+                          selectedColor={selectedColor}
+                        />
+                      </div>
+                    </TabsContent>
+                  </Tabs>
+                ) : (
+                  <div className="aspect-video flex items-center justify-center">
+                    <div className="text-center space-y-4">
+                      <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto">
+                        <ShoppingBag className="h-8 w-8 text-muted-foreground" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold">Select a Product</h3>
+                        <p className="text-sm text-muted-foreground">
+                          Choose a product from your wishlist to start trying it on in AR
+                        </p>
                       </div>
                     </div>
-                  ) : (
-                    // Active AR View
-                    <>
-                      <video 
-                        ref={videoRef}
-                        className="w-full h-full object-cover"
-                        autoPlay
-                        muted
-                        playsInline
-                      />
-                      
-                      {/* AR Overlay */}
-                      <div className="absolute inset-0 pointer-events-none">
-                        {/* Simulated AR garment overlay */}
-                        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-48 h-64 border-2 border-primary/50 rounded-lg bg-primary/10 flex items-center justify-center">
-                          <div className="text-center text-primary">
-                            <Sparkles className="h-8 w-8 mx-auto mb-2" />
-                            <p className="text-sm font-medium">{selectedProduct?.title}</p>
-                            <p className="text-xs">AR Rendering...</p>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Controls Overlay */}
-                      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex items-center gap-2">
-                        <Button size="sm" variant="secondary" onClick={capturePhoto}>
-                          <Download className="h-4 w-4" />
-                        </Button>
-                        <Button size="sm" variant="secondary" onClick={sharePhoto}>
-                          <Share className="h-4 w-4" />
-                        </Button>
-                        <Button size="sm" variant="secondary">
-                          <RotateCcw className="h-4 w-4" />
-                        </Button>
-                        <Button size="sm" variant="outline" onClick={stopCamera}>
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-
-                      {/* Product Info Overlay */}
-                      <div className="absolute top-4 right-4 bg-background/90 backdrop-blur-sm rounded-lg p-3 max-w-xs">
-                        <h4 className="font-medium text-sm">{selectedProduct?.title}</h4>
-                        <p className="text-xs text-muted-foreground">{selectedProduct?.brand}</p>
-                        <p className="text-sm font-semibold">{selectedProduct && formatPrice(selectedProduct.price)}</p>
-                        <div className="flex gap-1 mt-2">
-                          <Badge variant="outline" className="text-xs">{selectedSize}</Badge>
-                          <Badge variant="outline" className="text-xs">{selectedColor}</Badge>
-                        </div>
-                      </div>
-                    </>
-                  )}
-                </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
         </div>
 
-        {/* Trending Styles Section - Full Width */}
+        {/* Trending Styles Section */}
         <div className="mt-8">
           <Card className="card-luxury">
             <CardHeader>
@@ -625,7 +727,6 @@ const ARTryOn: React.FC = () => {
           </Card>
         </div>
 
-        {/* Hidden canvas for photo capture */}
         <canvas ref={canvasRef} className="hidden" />
       </div>
     </div>
