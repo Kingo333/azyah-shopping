@@ -23,6 +23,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Product } from '@/types';
 import { useNavigate } from 'react-router-dom';
 import { TopCategory, SubCategory } from '@/lib/categories';
+import { convertJsonToProductAttributes } from '@/lib/type-utils';
 
 interface SwipeDeckProps {
   filter: string;
@@ -109,26 +110,26 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({ filter, subcategory, priceRange, 
 
       if (error) throw error;
 
-      // Transform the data to match Product type
+      // Transform the data to match Product type with proper type conversions
       const transformedProducts: Product[] = (data || []).map(item => ({
         id: item.id,
         title: item.title,
         price_cents: item.price_cents,
-        currency: item.currency,
-        media_urls: item.media_urls,
+        currency: item.currency || 'USD',
+        media_urls: Array.isArray(item.media_urls) ? item.media_urls as string[] : [],
         external_url: item.external_url,
         ar_mesh_url: item.ar_mesh_url,
-        brand_id: item.brand_id,
+        brand_id: item.brand_id || '',
         sku: item.sku,
         category_slug: item.category_slug,
         subcategory_slug: item.subcategory_slug,
         status: item.status,
-        stock_qty: item.stock_qty,
+        stock_qty: item.stock_qty || 0,
         min_stock_alert: item.min_stock_alert || 5,
         created_at: item.created_at,
         updated_at: item.updated_at,
         brand: item.brand,
-        attributes: item.attributes
+        attributes: convertJsonToProductAttributes(item.attributes)
       }));
 
       setProducts(transformedProducts);
