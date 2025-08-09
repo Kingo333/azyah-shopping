@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -139,7 +138,9 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({ filter, subcategory, priceRange, 
         stock_qty: item.stock_qty || 0,
         min_stock_alert: item.min_stock_alert || 5,
         weight_grams: item.weight_grams,
-        dimensions: item.dimensions,
+        dimensions: item.dimensions && typeof item.dimensions === 'object' && item.dimensions !== null 
+          ? item.dimensions as Record<string, number> 
+          : undefined,
         tags: item.tags,
         seo_title: item.seo_title,
         seo_description: item.seo_description,
