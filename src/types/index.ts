@@ -107,7 +107,7 @@ export interface Product {
   external_url?: string;
   stock_qty: number;
   min_stock_alert: number;
-  status: 'active' | 'inactive' | 'archived' | 'out_of_stock';
+  status: 'active' | 'inactive' | 'archived' | 'out_of_stock' | 'draft' | 'sold_out';
   weight_grams?: number;
   dimensions?: Record<string, number>;
   tags?: string[];
