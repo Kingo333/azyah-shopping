@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -81,7 +82,15 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({ filter, subcategory, priceRange, 
           min_stock_alert,
           created_at,
           updated_at,
-          brand:brands!inner(name),
+          description,
+          compare_at_price_cents,
+          weight_grams,
+          dimensions,
+          tags,
+          seo_title,
+          seo_description,
+          retailer_id,
+          brand:brands!inner(id, name, slug, logo_url, bio, website, owner_user_id, created_at, updated_at, socials, contact_email, shipping_regions, cover_image_url),
           attributes
         `)
         .eq('status', 'active');
@@ -114,21 +123,43 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({ filter, subcategory, priceRange, 
       const transformedProducts: Product[] = (data || []).map(item => ({
         id: item.id,
         title: item.title,
+        description: item.description,
         price_cents: item.price_cents,
+        compare_at_price_cents: item.compare_at_price_cents,
         currency: item.currency || 'USD',
         media_urls: Array.isArray(item.media_urls) ? item.media_urls as string[] : [],
         external_url: item.external_url,
         ar_mesh_url: item.ar_mesh_url,
         brand_id: item.brand_id || '',
+        retailer_id: item.retailer_id,
         sku: item.sku,
         category_slug: item.category_slug,
         subcategory_slug: item.subcategory_slug,
         status: item.status,
         stock_qty: item.stock_qty || 0,
         min_stock_alert: item.min_stock_alert || 5,
+        weight_grams: item.weight_grams,
+        dimensions: item.dimensions,
+        tags: item.tags,
+        seo_title: item.seo_title,
+        seo_description: item.seo_description,
         created_at: item.created_at,
         updated_at: item.updated_at,
-        brand: item.brand,
+        brand: item.brand ? {
+          id: item.brand.id,
+          name: item.brand.name,
+          slug: item.brand.slug,
+          logo_url: item.brand.logo_url,
+          cover_image_url: item.brand.cover_image_url,
+          bio: item.brand.bio,
+          socials: item.brand.socials,
+          website: item.brand.website,
+          contact_email: item.brand.contact_email,
+          shipping_regions: item.brand.shipping_regions,
+          owner_user_id: item.brand.owner_user_id,
+          created_at: item.brand.created_at,
+          updated_at: item.brand.updated_at
+        } : undefined,
         attributes: convertJsonToProductAttributes(item.attributes)
       }));
 
