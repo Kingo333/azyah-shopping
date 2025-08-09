@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -23,6 +22,7 @@ import ProductDetailModal from '@/components/ProductDetailModal';
 import { supabase } from '@/integrations/supabase/client';
 import { Product } from '@/types';
 import { useNavigate } from 'react-router-dom';
+import { TopCategory, SubCategory } from '@/lib/categories';
 
 interface SwipeDeckProps {
   filter: string;
@@ -77,6 +77,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({ filter, subcategory, priceRange, 
           subcategory_slug,
           status,
           stock_qty,
+          min_stock_alert,
           created_at,
           updated_at,
           brand:brands!inner(name),
@@ -85,11 +86,11 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({ filter, subcategory, priceRange, 
         .eq('status', 'active');
 
       if (filter !== 'all') {
-        query = query.eq('category_slug', filter);
+        query = query.eq('category_slug', filter as TopCategory);
       }
 
       if (subcategory) {
-        query = query.eq('subcategory_slug', subcategory);
+        query = query.eq('subcategory_slug', subcategory as SubCategory);
       }
 
       if (priceRange.min > 0) {
@@ -123,6 +124,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({ filter, subcategory, priceRange, 
         subcategory_slug: item.subcategory_slug,
         status: item.status,
         stock_qty: item.stock_qty,
+        min_stock_alert: item.min_stock_alert || 5,
         created_at: item.created_at,
         updated_at: item.updated_at,
         brand: item.brand,
