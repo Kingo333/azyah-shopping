@@ -23,6 +23,7 @@ import { TryOnProgress } from './TryOnProgress';
 import { TryOnResultGallery } from './TryOnResultGallery';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ProductDetailModalProps {
   product: Product;
@@ -73,24 +74,18 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
     }
 
     try {
-      const response = await fetch('/functions/v1/tryon-jobs', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`
-        },
-        body: JSON.stringify({
+      const { data: result, error } = await supabase.functions.invoke('tryon-jobs', {
+        body: {
           person_image_id: imageId,
           product_id: product.id,
           variant_id: selectedSize || selectedColor || null
-        })
+        }
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to start try-on');
+      if (error) {
+        throw error;
       }
 
-      const result = await response.json();
       setCurrentJob({ id: result.job_id, status: 'queued' });
       
       // Poll for updates
@@ -107,17 +102,14 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   const pollJobStatus = async (jobId: string) => {
     const pollInterval = setInterval(async () => {
       try {
-        const response = await fetch(`/functions/v1/tryon-jobs/${jobId}`, {
-          headers: {
-            'Authorization': `Bearer ${session?.access_token || ''}`
-          }
+        const { data: job, error } = await supabase.functions.invoke(`tryon-jobs/${jobId}`, {
+          method: 'GET'
         });
 
-        if (!response.ok) {
-          throw new Error('Failed to get job status');
+        if (error) {
+          throw error;
         }
 
-        const job = await response.json();
         setCurrentJob(job);
 
         if (job.status === 'succeeded' || job.status === 'failed') {

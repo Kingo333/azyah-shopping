@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
@@ -42,13 +43,6 @@ const ShopperNavigation: React.FC = () => {
       path: '/image-search'
     },
     {
-      id: 'ar-tryOn',
-      label: 'AR Try-On',
-      icon: Sparkles,
-      path: '/ar-tryOn',
-      badge: 'Beta'
-    },
-    {
       id: 'fashion-feed',
       label: 'Feed',
       icon: Camera,
@@ -57,9 +51,6 @@ const ShopperNavigation: React.FC = () => {
   ];
 
   const isActive = (path: string) => location.pathname === path;
-
-  // Unified navigation for all devices (removed mobile bottom nav)
-  // Always show the desktop-style navigation
 
   // Desktop Navigation
   return (

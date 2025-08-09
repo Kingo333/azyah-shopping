@@ -207,14 +207,19 @@ const RoleDashboard: React.FC = () => {
               <span className="text-xs sm:text-sm">Explore</span>
             </Button>
             <Button 
-              onClick={() => navigate('/ar-tryOn')} 
+              onClick={() => {
+                navigate('/swipe');
+                toast({
+                  description: "Browse products and tap 'Try with AI' in any product details to use AI Try-On!",
+                });
+              }}
               variant="outline" 
               className="h-16 sm:h-20 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300 relative"
             >
-              <Camera className="h-5 w-5 sm:h-6 sm:w-6" />
-              <span className="text-xs sm:text-sm">AR Try-On</span>
+              <Sparkles className="h-5 w-5 sm:h-6 sm:w-6" />
+              <span className="text-xs sm:text-sm">AI Try-On</span>
               <Badge variant="secondary" className="absolute -top-1 -right-1 text-xs px-1 py-0 h-4">
-                Beta
+                New
               </Badge>
             </Button>
             <Button 
