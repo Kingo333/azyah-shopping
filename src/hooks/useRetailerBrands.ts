@@ -1,7 +1,6 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/hooks/use-toast';
 
 interface RetailerBrand {
   id: string;
@@ -16,50 +15,45 @@ export const useRetailerBrands = (retailerId: string) => {
   return useQuery({
     queryKey: ['retailer-brands', retailerId],
     queryFn: async (): Promise<RetailerBrand[]> => {
-      // First get all brands owned by this retailer
-      const { data: brands, error: brandsError } = await supabase
-        .from('brands')
+      const { data, error } = await supabase
+        .from('products')
         .select(`
-          id,
-          name,
-          slug,
-          logo_url,
-          bio
+          brand:brands!inner(
+            id,
+            name,
+            slug,
+            logo_url,
+            bio
+          )
         `)
-        .eq('owner_user_id', (await supabase.auth.getUser()).data.user?.id);
+        .eq('retailer_id', retailerId)
+        .eq('status', 'active');
 
-      if (brandsError) {
-        console.error('Error fetching retailer brands:', brandsError);
-        toast({
-          title: "Error",
-          description: "Failed to fetch brands",
-          variant: "destructive"
-        });
-        throw brandsError;
-      }
+      if (error) throw error;
 
-      // Then get product counts for each brand
-      const brandsWithCounts = await Promise.all(
-        (brands || []).map(async (brand) => {
-          const { count, error: countError } = await supabase
-            .from('products')
-            .select('id', { count: 'exact', head: true })
-            .eq('brand_id', brand.id)
-            .eq('status', 'active');
-
-          if (countError) {
-            console.error('Error counting products for brand:', countError);
+      // Group by brand and count products
+      const brandMap = new Map<string, RetailerBrand>();
+      
+      data?.forEach(item => {
+        if (item.brand) {
+          const brandId = item.brand.id;
+          if (brandMap.has(brandId)) {
+            brandMap.get(brandId)!.product_count += 1;
+          } else {
+            brandMap.set(brandId, {
+              id: item.brand.id,
+              name: item.brand.name,
+              slug: item.brand.slug,
+              logo_url: item.brand.logo_url,
+              bio: item.brand.bio,
+              product_count: 1
+            });
           }
+        }
+      });
 
-          return {
-            ...brand,
-            product_count: count || 0
-          };
-        })
-      );
-
-      return brandsWithCounts;
+      return Array.from(brandMap.values()).sort((a, b) => a.name.localeCompare(b.name));
     },
-    enabled: !!retailerId
+    enabled: !!retailerId,
   });
 };

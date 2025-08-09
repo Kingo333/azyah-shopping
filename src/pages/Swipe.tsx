@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { useNavigate } from 'react-router-dom';
+
+import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import CategoryFilter from "@/components/CategoryFilter";
 import { ArrowLeft, Heart, Search, Menu, Sparkles, ChevronDown } from "lucide-react";
@@ -13,19 +14,39 @@ import SwipeDeck from '@/components/SwipeDeck';
 const Swipe = () => {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [selectedSubcategories, setSelectedSubcategories] = useState<string[]>([]);
+  // Initialize state from URL params
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(
+    searchParams.get('category') ? [searchParams.get('category')!] : []
+  );
+  const [selectedSubcategories, setSelectedSubcategories] = useState<string[]>(
+    searchParams.get('subcategory') ? [searchParams.get('subcategory')!] : []
+  );
   const [priceRange, setPriceRange] = useState<{
     min: number;
     max: number;
   }>({
-    min: 0,
-    max: 1000
+    min: parseInt(searchParams.get('minPrice') || '0'),
+    max: parseInt(searchParams.get('maxPrice') || '1000')
   });
-  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState<string>(searchParams.get('search') || '');
+  const [selectedCurrency, setSelectedCurrency] = useState<string>(searchParams.get('currency') || 'USD');
   const [showFilters, setShowFilters] = useState(false);
-  const [selectedCurrency, setSelectedCurrency] = useState<string>('USD');
+
+  // Update URL when filters change
+  useEffect(() => {
+    const params = new URLSearchParams();
+    
+    if (selectedCategories[0]) params.set('category', selectedCategories[0]);
+    if (selectedSubcategories[0]) params.set('subcategory', selectedSubcategories[0]);
+    if (priceRange.min > 0) params.set('minPrice', priceRange.min.toString());
+    if (priceRange.max < 1000) params.set('maxPrice', priceRange.max.toString());
+    if (searchQuery) params.set('search', searchQuery);
+    if (selectedCurrency !== 'USD') params.set('currency', selectedCurrency);
+    
+    setSearchParams(params, { replace: true });
+  }, [selectedCategories, selectedSubcategories, priceRange, searchQuery, selectedCurrency, setSearchParams]);
 
   if (loading) {
     return (
@@ -214,7 +235,8 @@ const Swipe = () => {
               filter={selectedCategories[0] || 'all'} 
               subcategory={selectedSubcategories[0] || ''}
               priceRange={priceRange} 
-              searchQuery={searchQuery} 
+              searchQuery={searchQuery}
+              currency={selectedCurrency}
             />
           </div>
         </div>

@@ -1,570 +1,373 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { BackButton } from '@/components/ui/back-button';
-import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { useCategories } from '@/hooks/useCategories';
-import { useAnalytics, useConversionFunnel, useTimeSeriesAnalytics } from '@/hooks/useAnalytics';
-import ImprovedAnalyticsFunnel from '@/components/analytics/ImprovedAnalyticsFunnel';
-import AnalyticsChart from '@/components/analytics/AnalyticsChart';
-import AnalyticsTable from '@/components/analytics/AnalyticsTable';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
+import { 
+  Package,
+  Store,
+  BarChart3,
+  Plus,
+  Settings,
+  Users,
+  ShoppingBag
+} from 'lucide-react';
 import { AddProductModal } from '@/components/AddProductModal';
 import { EditProductModal } from '@/components/EditProductModal';
-import { RetailerProductDetailModal } from '@/components/RetailerProductDetailModal';
-import { LogoUpload } from '@/components/LogoUpload';
-import RetailerBrandsList from '@/components/RetailerBrandsList';
-import { Plus, Edit, Trash2, Upload, BarChart3, TrendingUp, Eye, Heart, ShoppingBag, DollarSign, Download, Filter, Store } from 'lucide-react';
-import type { Product } from '@/types';
+import { AnalyticsDashboard } from '@/components/AnalyticsDashboard';
+import { RetailerBrandsList } from '@/components/RetailerBrandsList';
+import { useRetailerBrands } from '@/hooks/useRetailerBrands';
+import { Product } from '@/types';
+import { convertJsonToProductAttributes } from '@/lib/type-utils';
 
-interface Retailer {
-  id: string;
-  name: string;
-  logo_url: string | null;
-  bio: string | null;
-  website: string | null;
-}
-
-const RetailerPortal: React.FC = () => {
-  const [activeTab, setActiveTab] = useState('products');
-  const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
-  const [products, setProducts] = useState<any[]>([]);
-  const [retailer, setRetailer] = useState<Retailer | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [isAddProductModalOpen, setIsAddProductModalOpen] = useState(false);
-  const [isEditProductModalOpen, setIsEditProductModalOpen] = useState(false);
-  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState<any>(null);
-  const { toast } = useToast();
+const RetailerPortal = () => {
   const { user } = useAuth();
-  const { categories } = useCategories();
-  const { data: analyticsData, isLoading: analyticsLoading } = useAnalytics(retailer?.id, 'retailer');
-  
-  const dateRange = {
-    startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-    endDate: new Date().toISOString().split('T')[0]
-  };
-  
-  const { data: funnelData, isLoading: funnelLoading } = useConversionFunnel({
-    ...dateRange,
-    retailerId: retailer?.id
-  });
+  const [retailer, setRetailer] = useState<any>(null);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const { data: timeSeriesData, isLoading: timeSeriesLoading } = useTimeSeriesAnalytics(
-    'impressions',
-    'day',
-    dateRange,
-    retailer?.id,
-    'retailer'
-  );
+  const { data: brands, isLoading: brandsLoading } = useRetailerBrands(retailer?.id || '');
 
   useEffect(() => {
     if (user) {
-      fetchRetailerData();
+      fetchRetailer();
     }
   }, [user]);
 
   useEffect(() => {
-    if (retailer?.id) {
+    if (retailer) {
       fetchProducts();
     }
-  }, [retailer?.id]);
+  }, [retailer]);
 
-  const fetchRetailerData = async () => {
+  const fetchRetailer = async () => {
     try {
       const { data, error } = await supabase
         .from('retailers')
         .select('*')
         .eq('owner_user_id', user?.id)
         .single();
-      
-      if (error && error.code !== 'PGRST116') throw error;
+
+      if (error && error.code !== 'PGRST116') {
+        throw error;
+      }
+
       setRetailer(data);
-    } catch (error) { 
-      console.error('Error fetching retailer data:', error); 
+    } catch (error: any) {
+      console.error('Error fetching retailer:', error);
     }
   };
 
   const fetchProducts = async () => {
-    if (!retailer?.id) return;
-    
+    if (!retailer) return;
+
     try {
-      // Get products associated with brands owned by this retailer
-      const { data: brands } = await supabase
-        .from('brands')
-        .select('id')
-        .eq('owner_user_id', user?.id);
-
-      const brandIds = brands?.map(b => b.id) || [];
-
+      setLoading(true);
       const { data, error } = await supabase
         .from('products')
         .select(`
-          *,
-          brand:brands(id, name, logo_url),
-          retailer:retailers(id, name, logo_url)
+          id,
+          title,
+          price_cents,
+          currency,
+          media_urls,
+          external_url,
+          brand_id,
+          retailer_id,
+          sku,
+          category_slug,
+          subcategory_slug,
+          status,
+          stock_qty,
+          created_at,
+          updated_at,
+          description,
+          compare_at_price_cents,
+          weight_grams,
+          dimensions,
+          tags,
+          seo_title,
+          seo_description,
+          attributes,
+          brand:brands(
+            id,
+            name,
+            logo_url
+          )
         `)
-        .in('brand_id', brandIds)
+        .eq('retailer_id', retailer.id)
         .order('created_at', { ascending: false });
-      
+
       if (error) throw error;
-      
-      const formatted = (data || []).map((p: any) => ({
-        ...p,
-        media_urls: Array.isArray(p.media_urls) ? p.media_urls : [],
-        ar_mesh_url: p.ar_mesh_url || null,
-        currency: p.currency || 'USD',
-        sku: p.sku || `SKU-${p.id}`,
-        external_url: p.external_url || '',
-        description: p.description || ''
+
+      const transformedProducts: Product[] = (data || []).map(item => ({
+        id: item.id,
+        title: item.title,
+        description: item.description,
+        price_cents: item.price_cents,
+        compare_at_price_cents: item.compare_at_price_cents,
+        currency: item.currency || 'USD',
+        media_urls: Array.isArray(item.media_urls) ? item.media_urls as string[] : [],
+        external_url: item.external_url,
+        brand_id: item.brand_id || '',
+        retailer_id: item.retailer_id,
+        sku: item.sku,
+        category_slug: item.category_slug,
+        subcategory_slug: item.subcategory_slug,
+        status: item.status,
+        stock_qty: item.stock_qty || 0,
+        created_at: item.created_at,
+        updated_at: item.updated_at,
+        weight_grams: item.weight_grams,
+        dimensions: item.dimensions && typeof item.dimensions === 'object' && item.dimensions !== null 
+          ? item.dimensions as Record<string, number> 
+          : undefined,
+        tags: item.tags,
+        seo_title: item.seo_title,
+        seo_description: item.seo_description,
+        brand: item.brand ? {
+          id: item.brand.id,
+          name: item.brand.name,
+          slug: '',
+          logo_url: item.brand.logo_url,
+          bio: '',
+          socials: {},
+          website: '',
+          contact_email: '',
+          shipping_regions: [],
+          owner_user_id: '',
+          created_at: '',
+          updated_at: ''
+        } : undefined,
+        attributes: convertJsonToProductAttributes(item.attributes)
       }));
-      
-      setProducts(formatted);
-    } catch (error) {
+
+      setProducts(transformedProducts);
+    } catch (error: any) {
       console.error('Error fetching products:', error);
-      toast({ title: "Error", description: "Failed to fetch products", variant: "destructive" });
-    } finally { 
-      setLoading(false); 
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleLogoUpdate = (logoUrl: string | null) => {
-    if (retailer) {
-      setRetailer({ ...retailer, logo_url: logoUrl });
-    }
+  const handleAddProduct = () => {
+    setIsAddModalOpen(true);
   };
 
-  const formatPrice = (cents: number, currency: string = 'USD'): string =>
-    new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(cents / 100);
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active': return 'default';
-      case 'inactive': return 'secondary';
-      case 'archived': return 'secondary';
-      case 'out_of_stock': return 'destructive';
-      default: return 'secondary';
-    }
+  const handleEditProduct = (product: Product) => {
+    setEditingProduct(product);
   };
 
-  const handleSelectProduct = (productId: string) => {
-    const newSelected = new Set(selectedProducts);
-    newSelected.has(productId) ? newSelected.delete(productId) : newSelected.add(productId);
-    setSelectedProducts(newSelected);
+  const handleCloseEditModal = () => {
+    setEditingProduct(null);
   };
 
-  const handleBulkAction = async (action: string) => {
-    try {
-      if (action === 'Archive') {
-        const { error } = await supabase.from('products').update({ status: 'archived' }).in('id', Array.from(selectedProducts));
-        if (error) throw error;
-      } else if (action === 'Delete') {
-        // First try to delete related data
-        const productIds = Array.from(selectedProducts);
-        
-        // Delete related records first
-        await supabase.from('likes').delete().in('product_id', productIds);
-        await supabase.from('wishlist_items').delete().in('product_id', productIds);
-        await supabase.from('cart_items').delete().in('product_id', productIds);
-        
-        // Then delete products
-        const { error } = await supabase.from('products').delete().in('id', productIds);
-        if (error) throw error;
-      }
-      toast({ description: `${action} applied to ${selectedProducts.size} product(s)` });
-      setSelectedProducts(new Set());
-      fetchProducts();
-    } catch (error) {
-      console.error('Bulk action error:', error);
-      toast({ title: "Error", description: `Failed to ${action.toLowerCase()} products`, variant: "destructive" });
-    }
+  const handleProductUpdate = () => {
+    fetchProducts();
   };
-
-  const handleDeleteProduct = async (productId: string) => {
-    if (!confirm('Are you sure you want to delete this product? This action cannot be undone.')) {
-      return;
-    }
-
-    try {
-      // Delete related records first
-      await supabase.from('likes').delete().eq('product_id', productId);
-      await supabase.from('wishlist_items').delete().eq('product_id', productId);
-      await supabase.from('cart_items').delete().eq('product_id', productId);
-      
-      // Then delete the product
-      const { error } = await supabase
-        .from('products')
-        .delete()
-        .eq('id', productId);
-
-      if (error) throw error;
-      
-      toast({ description: "Product deleted successfully" });
-      fetchProducts();
-    } catch (error) {
-      console.error('Delete product error:', error);
-      toast({ title: "Error", description: "Failed to delete product", variant: "destructive" });
-    }
-  };
-
-  const handleViewProduct = (product: any) => {
-    console.log('View product clicked:', product);
-    setSelectedProduct(product);
-    setIsDetailModalOpen(true);
-  };
-
-  const handleEditProduct = (product: any) => {
-    console.log('Edit product clicked:', product);
-    setSelectedProduct(product);
-    setIsEditProductModalOpen(true);
-  };
-
-  const handleEditFromDetail = (product: any) => {
-    setIsDetailModalOpen(false);
-    setSelectedProduct(product);
-    setIsEditProductModalOpen(true);
-  };
-
-  if (!user) return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="text-center">
-        <h2 className="text-xl font-semibold mb-2">Access Restricted</h2>
-        <p className="text-muted-foreground">Please log in to access the retailer portal.</p>
-      </div>
-    </div>
-  );
-
-  if (!retailer) return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="text-center">
-        <h2 className="text-xl font-semibold mb-2">No Retailer Found</h2>
-        <p className="text-muted-foreground">Please create a retailer profile first.</p>
-      </div>
-    </div>
-  );
-
-  const analytics = {
-    totalProducts: products.length,
-    totalViews: analyticsData?.totalViews || 0,
-    totalLikes: analyticsData?.totalLikes || 0,
-    totalWishlistAdds: analyticsData?.totalWishlistAdds || 0,
-    totalRevenue: (analyticsData?.totalViews || 0) * 45.99
-  };
-
-  const topProductsData = products.slice(0, 5).map((product, index) => ({
-    rank: index + 1,
-    name: product.title,
-    views: Math.floor(Math.random() * 1000) + 100,
-    sales: Math.floor(Math.random() * 50) + 10,
-    revenue: `$${(Math.random() * 500 + 100).toFixed(2)}`
-  }));
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50">
-      <div className="container mx-auto max-w-7xl p-4">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-4">
-            <BackButton 
-              fallbackPath="/dashboard"
-              onBack={() => {
-                console.log('Retailer portal back button clicked, navigating to dashboard');
-                window.location.href = '/dashboard';
-              }}
-            />
-            <div className="flex items-center gap-4">
-              <div className="w-16 h-16 bg-muted rounded-xl overflow-hidden">
-                {retailer.logo_url ? 
-                  <img src={retailer.logo_url} alt={retailer.name} className="w-full h-full object-cover" /> : 
-                  <div className="w-full h-full flex items-center justify-center text-muted-foreground font-playfair">
-                    {retailer.name.charAt(0).toUpperCase()}
-                  </div>
-                }
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h1 className="text-2xl font-bold font-playfair">{retailer.name}</h1>
-                  <Badge variant="secondary" className="text-xs rounded-full">Verified Store</Badge>
-                </div>
-                <p className="text-muted-foreground">{retailer.bio || 'Retailer description'}</p>
-              </div>
-            </div>
+    <div className="min-h-screen bg-background">
+      <div className="container max-w-7xl mx-auto p-6">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-3xl font-bold">Retailer Portal</h1>
+            <p className="text-muted-foreground mt-1">
+              {retailer?.name || 'Your Store'}
+            </p>
           </div>
-          <div className="flex items-center gap-2">
-            <Button 
-              className="rounded-xl bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600"
-              onClick={() => setIsAddProductModalOpen(true)}
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Add Product
-            </Button>
-          </div>
+          <Button onClick={() => setIsAddModalOpen(true)} className="gap-2">
+            <Plus className="h-4 w-4" />
+            Add Product
+          </Button>
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-4 rounded-xl bg-white/50 backdrop-blur-sm">
-            <TabsTrigger value="products" className="rounded-lg">Product Management</TabsTrigger>
-            <TabsTrigger value="brands" className="rounded-lg">My Brands</TabsTrigger>
-            <TabsTrigger value="analytics" className="rounded-lg">Sales Analytics</TabsTrigger>
-            <TabsTrigger value="settings" className="rounded-lg">Store Settings</TabsTrigger>
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Products</CardTitle>
+              <Package className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{products.length}</div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Brands</CardTitle>
+              <Store className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{brands?.length || 0}</div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Active Products</CardTitle>
+              <ShoppingBag className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {products.filter(p => p.status === 'active').length}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Low Stock</CardTitle>
+              <Package className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {products.filter(p => (p.stock_qty || 0) <= 5).length}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Tabs */}
+        <Tabs defaultValue="products" className="space-y-6">
+          <TabsList>
+            <TabsTrigger value="products">Products</TabsTrigger>
+            <TabsTrigger value="brands">Brands</TabsTrigger>
+            <TabsTrigger value="analytics">Analytics</TabsTrigger>
+            <TabsTrigger value="settings">Settings</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="products" className="mt-6">
-            <div className="space-y-6">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="flex flex-wrap items-center gap-2">
-                  <Button variant="outline" size="sm"><Filter className="h-4 w-4 mr-2" />Filter</Button>
-                  <Button variant="outline" size="sm"><Upload className="h-4 w-4 mr-2" />Import CSV</Button>
-                  <Button variant="outline" size="sm"><Download className="h-4 w-4 mr-2" />Export</Button>
-                </div>
-                {selectedProducts.size > 0 && (
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-sm text-muted-foreground">{selectedProducts.size} selected</span>
-                    <Button variant="outline" size="sm" onClick={() => handleBulkAction('Archive')}>Archive</Button>
-                    <Button variant="outline" size="sm" onClick={() => handleBulkAction('Delete')}>Delete</Button>
+          <TabsContent value="products">
+            <Card>
+              <CardHeader>
+                <CardTitle>Product Catalog</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {loading ? (
+                  <div className="text-center py-8">Loading products...</div>
+                ) : products.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {products.map((product) => (
+                      <Card key={product.id} className="overflow-hidden">
+                        <div className="aspect-square relative">
+                          <img
+                            src={product.media_urls?.[0] || '/placeholder.svg'}
+                            alt={product.title}
+                            className="w-full h-full object-cover"
+                          />
+                          <Badge 
+                            variant={product.status === 'active' ? 'default' : 'secondary'}
+                            className="absolute top-2 right-2"
+                          >
+                            {product.status}
+                          </Badge>
+                        </div>
+                        <CardContent className="p-4">
+                          <div className="space-y-2">
+                            <h3 className="font-semibold line-clamp-2">{product.title}</h3>
+                            {product.brand && (
+                              <div className="flex items-center gap-2">
+                                {product.brand.logo_url && (
+                                  <img 
+                                    src={product.brand.logo_url} 
+                                    alt={product.brand.name}
+                                    className="w-4 h-4 rounded"
+                                  />
+                                )}
+                                <span className="text-sm text-muted-foreground">
+                                  {product.brand.name}
+                                </span>
+                              </div>
+                            )}
+                            <div className="flex items-center justify-between">
+                              <span className="font-bold">
+                                {new Intl.NumberFormat('en-US', {
+                                  style: 'currency',
+                                  currency: product.currency || 'USD',
+                                }).format((product.price_cents || 0) / 100)}
+                              </span>
+                              <span className="text-sm text-muted-foreground">
+                                Stock: {product.stock_qty || 0}
+                              </span>
+                            </div>
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="w-full mt-2"
+                              onClick={() => setEditingProduct(product)}
+                            >
+                              Edit Product
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-medium mb-2">No products yet</h3>
+                    <p className="text-muted-foreground mb-4">
+                      Start building your catalog by adding your first product.
+                    </p>
+                    <Button onClick={() => setIsAddModalOpen(true)} className="gap-2">
+                      <Plus className="h-4 w-4" />
+                      Add Product
+                    </Button>
                   </div>
                 )}
-              </div>
-
-              {loading ? (
-                <div className="text-center py-8">Loading products...</div>
-              ) : products.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">No products yet. Add your first product!</div>
-              ) : (
-                <div className="grid gap-4">
-                  {products.map((product) => (
-                    <Card key={product.id} className="overflow-hidden">
-                      <CardContent className="p-4">
-                        <div className="flex items-center gap-4">
-                          <input type="checkbox" checked={selectedProducts.has(product.id)} onChange={() => handleSelectProduct(product.id)} className="w-4 h-4" />
-                          <div 
-                            className="w-20 h-20 bg-muted rounded-lg overflow-hidden cursor-pointer hover:opacity-80 transition-opacity"
-                            onClick={() => handleViewProduct(product)}
-                          >
-                            {product.media_urls && product.media_urls[0] ? (
-                              <img src={product.media_urls[0]} alt={product.title} className="w-full h-full object-cover" />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">No Image</div>
-                            )}
-                          </div>
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <h3 
-                                className="font-medium cursor-pointer hover:text-primary transition-colors" 
-                                onClick={() => handleViewProduct(product)}
-                              >
-                                {product.title}
-                              </h3>
-                              <Badge variant={getStatusColor(product.status) as any}>{product.status.replace('_', ' ')}</Badge>
-                            </div>
-                            <div className="flex items-center gap-2 mb-2">
-                              {product.brand && (
-                                <div className="flex items-center gap-1">
-                                  {product.brand.logo_url && (
-                                    <img src={product.brand.logo_url} alt={product.brand.name} className="w-4 h-4 rounded" />
-                                  )}
-                                  <Badge variant="outline" className="text-xs">
-                                    {product.brand.name}
-                                  </Badge>
-                                </div>
-                              )}
-                              <span className="text-sm text-muted-foreground">•</span>
-                              <span className="text-sm font-medium">{formatPrice(product.price_cents, product.currency)}</span>
-                            </div>
-                            <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                              <span>Stock: {product.stock_qty}</span>
-                              <span>Created: {new Date(product.created_at).toLocaleDateString()}</span>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Button variant="outline" size="sm" onClick={() => handleViewProduct(product)}>
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            <Button variant="outline" size="sm" onClick={() => handleEditProduct(product)}>
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button variant="outline" size="sm" onClick={() => handleDeleteProduct(product.id)}>
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </div>
+              </CardContent>
+            </Card>
           </TabsContent>
 
-          <TabsContent value="brands" className="mt-6">
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-xl font-semibold">My Brands</h2>
-                  <p className="text-muted-foreground">Manage the brands you represent as a retailer</p>
-                </div>
-                <Button variant="outline">
-                  <Store className="h-4 w-4 mr-2" />
-                  Connect New Brand
-                </Button>
-              </div>
-              <RetailerBrandsList retailerId={retailer.id} />
-            </div>
+          <TabsContent value="brands">
+            <RetailerBrandsList retailerId={retailer?.id || ''} />
           </TabsContent>
 
-          <TabsContent value="analytics" className="mt-6">
-            <div className="space-y-6">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm rounded-2xl">
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 bg-primary/10 rounded-xl flex items-center justify-center">
-                        <ShoppingBag className="h-4 w-4 text-primary" />
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Total Products</p>
-                        <p className="text-xl font-bold font-playfair">{analytics.totalProducts}</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm rounded-2xl">
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 bg-blue-100 rounded-xl flex items-center justify-center">
-                        <Eye className="h-4 w-4 text-blue-500" />
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Shopper Views</p>
-                        <p className="text-xl font-bold font-playfair">{analytics.totalViews}</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm rounded-2xl">
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 bg-purple-100 rounded-xl flex items-center justify-center">
-                        <Heart className="h-4 w-4 text-purple-500" />
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Wishlist Adds</p>
-                        <p className="text-xl font-bold font-playfair">{analytics.totalWishlistAdds}</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm rounded-2xl">
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 bg-green-100 rounded-xl flex items-center justify-center">
-                        <DollarSign className="h-4 w-4 text-green-500" />
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Revenue</p>
-                        <p className="text-xl font-bold font-playfair">${analytics.totalRevenue.toFixed(0)}</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              <div className="grid lg:grid-cols-2 gap-6">
-                <ImprovedAnalyticsFunnel data={funnelData || []} loading={funnelLoading} />
-                
-                <AnalyticsTable
-                  title="Best Selling Products"
-                  data={topProductsData}
-                  columns={[
-                    { key: 'rank', label: '#', sortable: false },
-                    { key: 'name', label: 'Product', sortable: true },
-                    { key: 'views', label: 'Views', sortable: true },
-                    { key: 'sales', label: 'Sales', sortable: true },
-                    { key: 'revenue', label: 'Revenue', sortable: true }
-                  ]}
-                  loading={analyticsLoading}
-                />
-              </div>
-
-              <div className="grid lg:grid-cols-2 gap-6">
-                <AnalyticsChart
-                  title="Sales Impressions"
-                  data={timeSeriesData || []}
-                  type="area"
-                  metric="impressions"
-                  loading={timeSeriesLoading}
-                />
-                <AnalyticsChart
-                  title="Revenue Performance"
-                  data={timeSeriesData?.map(d => ({ ...d, value: d.value * 45 })) || []}
-                  type="line"
-                  metric="revenue"
-                  loading={timeSeriesLoading}
-                />
-              </div>
-            </div>
+          <TabsContent value="analytics">
+            <AnalyticsDashboard />
           </TabsContent>
 
-          <TabsContent value="settings" className="mt-6">
-            <div className="space-y-6">
-              <Card>
-                <CardHeader><CardTitle>Store Profile</CardTitle></CardHeader>
-                <CardContent className="space-y-4">
-                  <LogoUpload
-                    currentLogoUrl={retailer.logo_url}
-                    onLogoUpdate={handleLogoUpdate}
-                    entityType="retailer"
-                    entityId={retailer.id}
-                  />
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div><label className="text-sm font-medium mb-2 block">Store Name</label><Input defaultValue={retailer.name} /></div>
-                    <div><label className="text-sm font-medium mb-2 block">Website</label><Input defaultValue={retailer.website || ''} /></div>
-                  </div>
-                  <div><label className="text-sm font-medium mb-2 block">Store Description</label><Textarea defaultValue={retailer.bio || ''} /></div>
-                  <Button>Save Changes</Button>
-                </CardContent>
-              </Card>
-            </div>
+          <TabsContent value="settings">
+            <Card>
+              <CardHeader>
+                <CardTitle>Store Settings</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground">Store settings coming soon...</p>
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
-      </div>
 
-      <AddProductModal
-        isOpen={isAddProductModalOpen}
-        onClose={() => setIsAddProductModalOpen(false)}
-        onProductAdded={fetchProducts}
-        userType="retailer"
-        retailerId={retailer.id}
-      />
+        {/* Modals */}
+        <AddProductModal 
+          isOpen={isAddModalOpen}
+          onClose={() => setIsAddModalOpen(false)}
+          onSuccess={() => {
+            setIsAddModalOpen(false);
+            fetchProducts();
+          }}
+        />
 
-      {selectedProduct && (
-        <>
-          <RetailerProductDetailModal
-            isOpen={isDetailModalOpen}
-            onClose={() => {
-              setIsDetailModalOpen(false);
-              setSelectedProduct(null);
-            }}
-            product={selectedProduct}
-            onEdit={handleEditFromDetail}
-            onProductUpdated={fetchProducts}
-          />
-
+        {editingProduct && (
           <EditProductModal
-            isOpen={isEditProductModalOpen}
-            onClose={() => {
-              setIsEditProductModalOpen(false);
-              setSelectedProduct(null);
+            product={editingProduct}
+            isOpen={!!editingProduct}
+            onClose={() => setEditingProduct(null)}
+            onSuccess={() => {
+              setEditingProduct(null);
+              fetchProducts();
             }}
-            onProductUpdated={fetchProducts}
-            product={selectedProduct}
           />
-        </>
-      )}
+        )}
+      </div>
     </div>
   );
 };

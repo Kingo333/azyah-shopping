@@ -30,6 +30,7 @@ interface SwipeDeckProps {
   subcategory: string;
   priceRange: { min: number; max: number };
   searchQuery: string;
+  currency?: string;
 }
 
 const cardVariants = {
@@ -44,7 +45,13 @@ const cardVariants = {
 
 const DISTANCE_THRESHOLD = 100;
 
-const SwipeDeck: React.FC<SwipeDeckProps> = ({ filter, subcategory, priceRange, searchQuery }) => {
+const SwipeDeck: React.FC<SwipeDeckProps> = ({ 
+  filter, 
+  subcategory, 
+  priceRange, 
+  searchQuery, 
+  currency = 'USD' 
+}) => {
   const [products, setProducts] = useState<Product[]>([]);
   const [index, setIndex] = useState(0);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -108,14 +115,18 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({ filter, subcategory, priceRange, 
         `)
         .eq('status', 'active');
 
-      // Apply category filter
-      if (filter && filter !== 'all') {
+      // Apply subcategory filter first (more specific)
+      if (subcategory && subcategory !== '') {
+        query = query.eq('subcategory_slug', subcategory as SubCategory);
+      }
+      // Apply category filter only if no subcategory
+      else if (filter && filter !== 'all') {
         query = query.eq('category_slug', filter as TopCategory);
       }
 
-      // Apply subcategory filter - this should be more specific
-      if (subcategory && subcategory !== '') {
-        query = query.eq('subcategory_slug', subcategory as SubCategory);
+      // Apply currency filter
+      if (currency && currency !== 'USD') {
+        query = query.eq('currency', currency);
       }
 
       // Apply price range filter
@@ -205,7 +216,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({ filter, subcategory, priceRange, 
         variant: "destructive",
       });
     }
-  }, [filter, subcategory, priceRange, searchQuery, toast]);
+  }, [filter, subcategory, priceRange, searchQuery, currency, toast]);
 
   useEffect(() => {
     fetchProducts();

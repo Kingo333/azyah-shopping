@@ -1,93 +1,27 @@
-
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { AspectRatio } from "@/components/ui/aspect-ratio"
-import {
-  ShoppingCart,
-  PackageOpen,
-  CreditCard,
-  Truck,
-  RotateCcw,
-  Heart,
-  ExternalLink,
-  Share2,
-  Camera,
+import { motion } from 'framer-motion';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { 
+  Heart, 
+  ShoppingBag, 
+  ExternalLink, 
+  Star,
   Sparkles,
-  ShoppingBag
-} from "lucide-react"
-import { useToast } from "@/hooks/use-toast"
-import { useAuth } from '@/contexts/AuthContext';
-import { useWishlist } from '@/hooks/useWishlist';
+  X
+} from 'lucide-react';
 import { Product } from '@/types';
-import { Separator } from '@/components/ui/separator';
-import { ScrollArea } from "@/components/ui/scroll-area"
-import {
-  Table,
-  TableBody,
-  TableCaption,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet"
-import { Label } from "@/components/ui/label"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Switch } from "@/components/ui/switch"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Skeleton } from "@/components/ui/skeleton"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion"
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
-import {
-  Drawer,
-  DrawerClose,
-  DrawerContent,
-  DrawerDescription,
-  DrawerFooter,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerTrigger,
-} from "@/components/ui/drawer"
-import { Command, CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator, CommandShortcut } from "@/components/ui/command"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Calendar } from "@/components/ui/calendar"
-import { Checkbox } from "@/components/ui/checkbox"
-import { HoverCard, HoverCardContent, HoverCardDescription, HoverCardHeader, HoverCardTitle, HoverCardTrigger } from "@/components/ui/hover-card"
-import { Progress } from "@/components/ui/progress"
-import { Slider } from "@/components/ui/slider"
-import { ContextMenu, ContextMenuCheckboxItem, ContextMenuContent, ContextMenuGroup, ContextMenuItem, ContextMenuLabel, ContextMenuRadioGroup, ContextMenuRadioItem, ContextMenuSeparator, ContextMenuShortcut, ContextMenuSub, ContextMenuSubContent, ContextMenuSubTrigger, ContextMenuTrigger } from "@/components/ui/context-menu"
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
-import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuSeparator, DropdownMenuShortcut, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { EnhancedProductGallery } from './EnhancedProductGallery';
+import { AdvancedSizeColorSelector } from './AdvancedSizeColorSelector';
+import { AddToClosetModal } from './AddToClosetModal';
+import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
+import { AiTryOnUploader } from './AiTryOnUploader';
+import { TryOnProgress } from './TryOnProgress';
+import { TryOnResultGallery } from './TryOnResultGallery';
+import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface ProductDetailModalProps {
   product: Product;
@@ -95,308 +29,295 @@ interface ProductDetailModalProps {
   onClose: () => void;
 }
 
-const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product, isOpen, onClose }) => {
-  const navigate = useNavigate();
+interface TryOnJob {
+  id: string;
+  status: 'queued' | 'running' | 'succeeded' | 'failed';
+  output_url?: string;
+  error_message?: string;
+}
+
+const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
+  product,
+  isOpen,
+  onClose
+}) => {
+  const { isEnabled } = useFeatureFlags();
   const { toast } = useToast();
   const { user } = useAuth();
-  const { 
-    wishlist, 
-    isInWishlist, 
-    addToWishlist, 
-    removeFromWishlist,
-    isLoading: wishlistLoading 
-  } = useWishlist(product?.id);
-
-  const formatPrice = (cents: number, currency: string = 'USD'): string => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: currency,
-    }).format(cents / 100);
-  };
-
-  const handleAddToBag = () => {
-    toast({
-      title: "Added to bag",
-      description: "Check your cart to complete your order.",
-    })
-  };
-
-  const handleWishlist = async () => {
-    if (!user) {
-      toast({
-        title: "Sign in required",
-        description: "You must be signed in to add items to your wishlist.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (isInWishlist) {
-      try {
-        await removeFromWishlist(wishlist?.id || '');
-        toast({
-          description: `${product.title} removed from wishlist.`,
-        });
-      } catch (error) {
-        toast({
-          title: "Error",
-          description: "Failed to remove from wishlist. Please try again.",
-          variant: "destructive",
-        });
-      }
-    } else {
-      try {
-        await addToWishlist();
-        toast({
-          description: `${product.title} added to wishlist!`,
-        });
-      } catch (error) {
-        toast({
-          title: "Error",
-          description: "Failed to add to wishlist. Please try again.",
-          variant: "destructive",
-        });
-      }
-    }
-  };
-
-  const handleShare = async () => {
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: product.title,
-          text: product.description || `Check out this awesome product: ${product.title}`,
-          url: window.location.href,
-        });
-        toast({
-          description: "Product shared successfully!",
-        });
-      } catch (error) {
-        toast({
-          title: "Sharing failed",
-          description: "Could not share the product. Please try again.",
-          variant: "destructive",
-        });
-      }
-    } else {
-      toast({
-        title: "Sharing not supported",
-        description: "Your browser does not support the Web Share API.",
-        variant: "destructive",
-      });
-    }
-  };
+  
+  const [selectedSize, setSelectedSize] = useState('');
+  const [selectedColor, setSelectedColor] = useState('');
+  const [isClosetModalOpen, setIsClosetModalOpen] = useState(false);
+  const [showAiTryOn, setShowAiTryOn] = useState(false);
+  const [currentJob, setCurrentJob] = useState<TryOnJob | null>(null);
 
   const handleShopNow = () => {
     if (product.external_url) {
       window.open(product.external_url, '_blank', 'noopener,noreferrer');
     } else {
       toast({
-        title: "Shop URL not available",
-        description: "This product does not have a shop link available.",
-        variant: "destructive",
+        description: "Shop link not available for this product",
+        variant: "destructive"
       });
     }
   };
 
-  const handleARTryOn = () => {
-    // Close modal and navigate to AR Try-On with this product
-    onClose();
-    navigate(`/ar-tryOn?product=${product.id}`, { 
-      state: { 
-        returnTo: '/swipe',
-        productDetails: product 
+  const handleAiTryOnUpload = async (imageId: string) => {
+    if (!user) {
+      toast({
+        description: "Please sign in to use AI Try-On",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const response = await fetch('/functions/v1/tryon-jobs', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${(await user.getIdToken?.()) || ''}`
+        },
+        body: JSON.stringify({
+          person_image_id: imageId,
+          product_id: product.id,
+          variant_id: selectedSize || selectedColor || null
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to start try-on');
       }
-    });
+
+      const result = await response.json();
+      setCurrentJob({ id: result.job_id, status: 'queued' });
+      
+      // Poll for updates
+      pollJobStatus(result.job_id);
+    } catch (error) {
+      console.error('AI Try-On error:', error);
+      toast({
+        description: "Failed to start AI Try-On. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const pollJobStatus = async (jobId: string) => {
+    const pollInterval = setInterval(async () => {
+      try {
+        const response = await fetch(`/functions/v1/tryon-jobs/${jobId}`, {
+          headers: {
+            'Authorization': `Bearer ${(await user?.getIdToken?.()) || ''}`
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to get job status');
+        }
+
+        const job = await response.json();
+        setCurrentJob(job);
+
+        if (job.status === 'succeeded' || job.status === 'failed') {
+          clearInterval(pollInterval);
+        }
+      } catch (error) {
+        console.error('Error polling job status:', error);
+        clearInterval(pollInterval);
+        setCurrentJob(prev => prev ? { ...prev, status: 'failed' } : null);
+      }
+    }, 2000);
+
+    // Clear interval after 60 seconds max
+    setTimeout(() => clearInterval(pollInterval), 60000);
+  };
+
+  const handleTryAgain = () => {
+    setCurrentJob(null);
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[95vh] p-0 gap-0 overflow-hidden">
-        <DialogHeader className="p-6 pb-0">
-          <DialogTitle className="flex items-center gap-2">
-            {product.title}
-            {product.ar_mesh_url && (
-              <Badge variant="outline" className="gap-1">
-                <Sparkles className="h-3 w-3" />
-                AR Ready
-              </Badge>
-            )}
-          </DialogTitle>
-        </DialogHeader>
+      <DialogContent className="max-w-4xl max-h-[90vh] p-0 overflow-hidden">
+        <div className="grid grid-cols-1 md:grid-cols-2 h-full">
+          {/* Image Gallery */}
+          <div className="relative">
+            <EnhancedProductGallery
+              images={product.media_urls || []}
+              productTitle={product.title}
+              productId={product.id}
+              hasARMesh={false} // Disabled AR
+            />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onClose}
+              className="absolute top-4 right-4 z-10 bg-background/80 backdrop-blur-sm"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
 
-        <ScrollArea className="max-h-[calc(95vh-80px)]">
-          <div className="grid md:grid-cols-2 gap-6 p-6">
-            {/* Product Images */}
-            <div className="space-y-4">
-              <EnhancedProductGallery
-                images={product.media_urls || []}
-                productTitle={product.title}
-                productId={product.id}
-                hasARMesh={!!product.ar_mesh_url}
-                onARTryOn={handleARTryOn}
-              />
-            </div>
-
-            {/* Product Details */}
-            <div className="space-y-6">
-              {/* Product Info */}
-              <div className="space-y-2">
-                <h2 className="text-2xl font-semibold">{product.title}</h2>
-                <p className="text-muted-foreground">{product.description || 'No description available.'}</p>
-                <div className="flex items-center gap-4">
-                  <span className="text-2xl font-bold">{formatPrice(product.price_cents, product.currency)}</span>
-                  {product.compare_at_price_cents && product.compare_at_price_cents > product.price_cents && (
-                    <span className="text-lg text-muted-foreground line-through">{formatPrice(product.compare_at_price_cents, product.currency)}</span>
-                  )}
+          {/* Product Details */}
+          <div className="flex flex-col h-full">
+            <ScrollArea className="flex-1 p-6">
+              <div className="space-y-6">
+                {/* Header */}
+                <div>
+                  <h2 className="text-2xl font-bold line-clamp-2 mb-2">{product.title}</h2>
+                  <p className="text-muted-foreground">{product.brand?.name}</p>
+                  <div className="flex items-center gap-4 mt-2">
+                    <span className="text-2xl font-bold">
+                      {new Intl.NumberFormat('en-US', {
+                        style: 'currency',
+                        currency: product.currency || 'USD',
+                      }).format((product.price_cents || 0) / 100)}
+                    </span>
+                    {product.compare_at_price_cents && (
+                      <span className="text-lg text-muted-foreground line-through">
+                        {new Intl.NumberFormat('en-US', {
+                          style: 'currency',
+                          currency: product.currency || 'USD',
+                        }).format(product.compare_at_price_cents / 100)}
+                      </span>
+                    )}
+                  </div>
                 </div>
-              </div>
 
-              {/* AR Try-On Call-to-Action */}
-              {product.ar_mesh_url && (
-                <div className="bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg p-4">
-                  <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
-                      <Sparkles className="h-5 w-5 text-white" />
+                {/* AI Try-On Section */}
+                {isEnabled('aiTryOn') && (
+                  <div className="border rounded-lg p-4 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-950/20 dark:to-blue-950/20">
+                    {!showAiTryOn && !currentJob && (
+                      <div className="text-center">
+                        <Button 
+                          onClick={() => setShowAiTryOn(true)}
+                          className="gap-2 bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
+                        >
+                          <Sparkles className="h-4 w-4" />
+                          Try with AI
+                        </Button>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          Upload your photo to see how this looks on you
+                        </p>
+                      </div>
+                    )}
+
+                    {showAiTryOn && !currentJob && (
+                      <AiTryOnUploader onUploadComplete={handleAiTryOnUpload} />
+                    )}
+
+                    {currentJob && currentJob.status !== 'succeeded' && (
+                      <TryOnProgress 
+                        status={currentJob.status} 
+                      />
+                    )}
+
+                    {currentJob?.status === 'succeeded' && currentJob.output_url && (
+                      <TryOnResultGallery
+                        resultUrl={currentJob.output_url}
+                        product={product}
+                        onTryAgain={handleTryAgain}
+                      />
+                    )}
+
+                    {currentJob?.status === 'failed' && (
+                      <div className="text-center space-y-2">
+                        <p className="text-sm text-red-600">
+                          {currentJob.error_message || 'Try-on failed. Please try again.'}
+                        </p>
+                        <Button 
+                          onClick={handleTryAgain}
+                          variant="outline"
+                          size="sm"
+                        >
+                          Try Again
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Size and Color Selection */}
+                <AdvancedSizeColorSelector
+                  product={product}
+                  selectedSize={selectedSize}
+                  selectedColor={selectedColor}
+                  onSizeChange={setSelectedSize}
+                  onColorChange={setSelectedColor}
+                />
+
+                {/* Description */}
+                {product.description && (
+                  <div>
+                    <h4 className="font-semibold mb-2">Description</h4>
+                    <p className="text-muted-foreground text-sm leading-relaxed">
+                      {product.description}
+                    </p>
+                  </div>
+                )}
+
+                {/* Product Details */}
+                <div className="space-y-3">
+                  <h4 className="font-semibold">Product Details</h4>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">SKU:</span>
+                      <span>{product.sku}</span>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-sm mb-1">Try Before You Buy</h3>
-                      <p className="text-xs text-muted-foreground mb-3">
-                        See how this {product.title} looks on you with our advanced AR try-on experience. 
-                        Perfect fit guaranteed!
-                      </p>
-                      <Button 
-                        onClick={handleARTryOn}
-                        className="w-full bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white border-0"
-                      >
-                        <Camera className="h-4 w-4 mr-2" />
-                        Try in AR Now
-                      </Button>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Category:</span>
+                      <span className="capitalize">{product.category_slug?.replace('_', ' ')}</span>
                     </div>
                   </div>
                 </div>
-              )}
-
-              {/* Actions */}
-              <div className="space-y-3">
-                <div className="grid grid-cols-2 gap-3">
-                  <Button 
-                    onClick={handleWishlist}
-                    variant="outline" 
-                    className="gap-2"
-                    disabled={wishlistLoading}
-                  >
-                    <Heart className="h-4 w-4" />
-                    {isInWishlist ? 'In Wishlist' : 'Add to Wishlist'}
-                  </Button>
-                  <Button onClick={handleAddToBag} className="gap-2">
-                    <ShoppingBag className="h-4 w-4" />
-                    Add to Bag
-                  </Button>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-3">
-                  <Button variant="secondary" className="gap-2" onClick={handleShare}>
-                    <Share2 className="h-4 w-4" />
-                    Share
-                  </Button>
-                  <Button 
-                    variant={product.external_url ? "default" : "secondary"} 
-                    className="gap-2" 
-                    onClick={handleShopNow}
-                    disabled={!product.external_url}
-                  >
-                    <ExternalLink className="h-4 w-4" />
-                    {product.external_url ? 'Shop Now' : 'Shop URL N/A'}
-                  </Button>
-                </div>
               </div>
+            </ScrollArea>
 
-              {/* Size Chart */}
-              <Accordion type="single" collapsible>
-                <AccordionItem value="size-chart">
-                  <AccordionTrigger>
-                    <h4 className="text-sm font-semibold">Size Chart</h4>
-                  </AccordionTrigger>
-                  <AccordionContent>
-                    {product.attributes?.size_chart ? (
-                      <div className="space-y-4">
-                        <img 
-                          src={product.attributes.size_chart} 
-                          alt="Size Chart"
-                          className="w-full h-auto rounded-lg border"
-                        />
-                      </div>
-                    ) : (
-                      <Table>
-                        <TableCaption>Our size chart to ensure a perfect fit.</TableCaption>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead className="w-[100px]">Size</TableHead>
-                            <TableHead>Chest (in)</TableHead>
-                            <TableHead>Waist (in)</TableHead>
-                            <TableHead>Hips (in)</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          <TableRow>
-                            <TableCell className="font-medium">XS</TableCell>
-                            <TableCell>32-34</TableCell>
-                            <TableCell>24-26</TableCell>
-                            <TableCell>34-36</TableCell>
-                          </TableRow>
-                          <TableRow>
-                            <TableCell className="font-medium">S</TableCell>
-                            <TableCell>34-36</TableCell>
-                            <TableCell>26-28</TableCell>
-                            <TableCell>36-38</TableCell>
-                          </TableRow>
-                          <TableRow>
-                            <TableCell className="font-medium">M</TableCell>
-                            <TableCell>36-38</TableCell>
-                            <TableCell>28-30</TableCell>
-                            <TableCell>38-40</TableCell>
-                          </TableRow>
-                          <TableRow>
-                            <TableCell className="font-medium">L</TableCell>
-                            <TableCell>38-40</TableCell>
-                            <TableCell>30-32</TableCell>
-                            <TableCell>40-42</TableCell>
-                          </TableRow>
-                          <TableRow>
-                            <TableCell className="font-medium">XL</TableCell>
-                            <TableCell>40-42</TableCell>
-                            <TableCell>32-34</TableCell>
-                            <TableCell>42-44</TableCell>
-                          </TableRow>
-                        </TableBody>
-                      </Table>
-                    )}
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
-
-              {/* Specifications */}
-              <Accordion type="single" collapsible>
-                <AccordionItem value="specifications">
-                  <AccordionTrigger>
-                    <h4 className="text-sm font-semibold">Specifications</h4>
-                  </AccordionTrigger>
-                  <AccordionContent>
-                    <ul className="list-disc pl-5 space-y-1">
-                      <li>Material: {product.attributes?.material || 'Not specified'}</li>
-                      <li>Color: {product.attributes?.color_primary || 'Not specified'}</li>
-                      <li>Gender: {product.attributes?.gender_target || 'Unisex'}</li>
-                      <li>Style: {product.attributes?.style_tags?.join(', ') || 'Casual'}</li>
-                      {product.brand && <li>Brand: {product.brand.name}</li>}
-                      {product.sku && <li>SKU: {product.sku}</li>}
-                    </ul>
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
+            {/* Sticky Footer Actions */}
+            <div className="border-t p-6 space-y-3 bg-background">
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" className="flex-1 gap-2">
+                  <Heart className="h-4 w-4" />
+                  Wishlist
+                </Button>
+                <Button 
+                  onClick={() => setIsClosetModalOpen(true)} 
+                  variant="outline" 
+                  size="sm" 
+                  className="flex-1 gap-2"
+                >
+                  <ShoppingBag className="h-4 w-4" />
+                  Add to Closet
+                </Button>
+              </div>
+              
+              {product.external_url ? (
+                <Button 
+                  onClick={handleShopNow}
+                  className="w-full gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  Shop Now
+                </Button>
+              ) : (
+                <Button 
+                  disabled
+                  className="w-full gap-2 opacity-50 cursor-not-allowed"
+                >
+                  <ShoppingBag className="h-4 w-4" />
+                  Shop Link Not Available
+                </Button>
+              )}
             </div>
           </div>
-        </ScrollArea>
+        </div>
+
+        <AddToClosetModal
+          product={product}
+          isOpen={isClosetModalOpen}
+          onClose={() => setIsClosetModalOpen(false)}
+        />
       </DialogContent>
     </Dialog>
   );
