@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
@@ -43,7 +44,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 }) => {
   const { isEnabled } = useFeatureFlags();
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   
   const [selectedSize, setSelectedSize] = useState('');
   const [selectedColor, setSelectedColor] = useState('');
@@ -63,7 +64,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   };
 
   const handleAiTryOnUpload = async (imageId: string) => {
-    if (!user) {
+    if (!user || !session) {
       toast({
         description: "Please sign in to use AI Try-On",
         variant: "destructive"
@@ -76,7 +77,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${(await user.getIdToken?.()) || ''}`
+          'Authorization': `Bearer ${session.access_token}`
         },
         body: JSON.stringify({
           person_image_id: imageId,
@@ -108,7 +109,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
       try {
         const response = await fetch(`/functions/v1/tryon-jobs/${jobId}`, {
           headers: {
-            'Authorization': `Bearer ${(await user?.getIdToken?.()) || ''}`
+            'Authorization': `Bearer ${session?.access_token || ''}`
           }
         });
 
@@ -147,7 +148,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               images={product.media_urls || []}
               productTitle={product.title}
               productId={product.id}
-              hasARMesh={false} // Disabled AR
+              hasARMesh={false}
             />
             <Button
               variant="ghost"
@@ -240,7 +241,6 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
                 {/* Size and Color Selection */}
                 <AdvancedSizeColorSelector
-                  product={product}
                   selectedSize={selectedSize}
                   selectedColor={selectedColor}
                   onSizeChange={setSelectedSize}
@@ -314,7 +314,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
         </div>
 
         <AddToClosetModal
-          product={product}
+          productId={product.id}
           isOpen={isClosetModalOpen}
           onClose={() => setIsClosetModalOpen(false)}
         />

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -17,7 +18,7 @@ import {
 import { AddProductModal } from '@/components/AddProductModal';
 import { EditProductModal } from '@/components/EditProductModal';
 import { AnalyticsDashboard } from '@/components/AnalyticsDashboard';
-import { RetailerBrandsList } from '@/components/RetailerBrandsList';
+import RetailerBrandsList from '@/components/RetailerBrandsList';
 import { useRetailerBrands } from '@/hooks/useRetailerBrands';
 import { Product } from '@/types';
 import { convertJsonToProductAttributes } from '@/lib/type-utils';
@@ -83,6 +84,7 @@ const RetailerPortal = () => {
           subcategory_slug,
           status,
           stock_qty,
+          min_stock_alert,
           created_at,
           updated_at,
           description,
@@ -93,6 +95,7 @@ const RetailerPortal = () => {
           seo_title,
           seo_description,
           attributes,
+          ar_mesh_url,
           brand:brands(
             id,
             name,
@@ -120,6 +123,7 @@ const RetailerPortal = () => {
         subcategory_slug: item.subcategory_slug,
         status: item.status,
         stock_qty: item.stock_qty || 0,
+        min_stock_alert: item.min_stock_alert || 0,
         created_at: item.created_at,
         updated_at: item.updated_at,
         weight_grams: item.weight_grams,
@@ -129,6 +133,7 @@ const RetailerPortal = () => {
         tags: item.tags,
         seo_title: item.seo_title,
         seo_description: item.seo_description,
+        ar_mesh_url: item.ar_mesh_url,
         brand: item.brand ? {
           id: item.brand.id,
           name: item.brand.name,
@@ -350,7 +355,7 @@ const RetailerPortal = () => {
         <AddProductModal 
           isOpen={isAddModalOpen}
           onClose={() => setIsAddModalOpen(false)}
-          onSuccess={() => {
+          onProductAdded={() => {
             setIsAddModalOpen(false);
             fetchProducts();
           }}
@@ -361,7 +366,7 @@ const RetailerPortal = () => {
             product={editingProduct}
             isOpen={!!editingProduct}
             onClose={() => setEditingProduct(null)}
-            onSuccess={() => {
+            onProductUpdated={() => {
               setEditingProduct(null);
               fetchProducts();
             }}
