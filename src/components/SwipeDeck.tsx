@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,7 +14,8 @@ import {
   Users,
   Star,
   ExternalLink,
-  Camera
+  Camera,
+  Search
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
@@ -69,17 +71,25 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({ filter, subcategory, priceRange, 
           media_urls,
           external_url,
           ar_mesh_url,
+          brand_id,
+          sku,
+          category_slug,
+          subcategory_slug,
+          status,
+          stock_qty,
+          created_at,
+          updated_at,
           brand:brands!inner(name),
           attributes
         `)
         .eq('status', 'active');
 
       if (filter !== 'all') {
-        query = query.eq('category', filter);
+        query = query.eq('category_slug', filter);
       }
 
       if (subcategory) {
-        query = query.eq('subcategory', subcategory);
+        query = query.eq('subcategory_slug', subcategory);
       }
 
       if (priceRange.min > 0) {
@@ -98,7 +108,28 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({ filter, subcategory, priceRange, 
 
       if (error) throw error;
 
-      setProducts(data || []);
+      // Transform the data to match Product type
+      const transformedProducts: Product[] = (data || []).map(item => ({
+        id: item.id,
+        title: item.title,
+        price_cents: item.price_cents,
+        currency: item.currency,
+        media_urls: item.media_urls,
+        external_url: item.external_url,
+        ar_mesh_url: item.ar_mesh_url,
+        brand_id: item.brand_id,
+        sku: item.sku,
+        category_slug: item.category_slug,
+        subcategory_slug: item.subcategory_slug,
+        status: item.status,
+        stock_qty: item.stock_qty,
+        created_at: item.created_at,
+        updated_at: item.updated_at,
+        brand: item.brand,
+        attributes: item.attributes
+      }));
+
+      setProducts(transformedProducts);
       setIndex(0); // Reset index when products change
     } catch (error: any) {
       console.error("Error fetching products:", error.message);
@@ -212,7 +243,6 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({ filter, subcategory, priceRange, 
                     src={currentProduct.media_urls?.[0] || '/placeholder.svg'}
                     alt={currentProduct.title}
                     className="object-cover rounded-md w-full h-full"
-                    style={{ imageRendering: 'high-quality' }}
                     onError={(e) => {
                       (e.target as HTMLImageElement).src = '/placeholder.svg';
                     }}
@@ -259,7 +289,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({ filter, subcategory, priceRange, 
           <Button variant="destructive" size="icon" onClick={handleDislike}>
             <X className="h-5 w-5" />
           </Button>
-          <Button variant="primary" size="icon" onClick={() => handleLike(products[index])}>
+          <Button variant="default" size="icon" onClick={() => handleLike(products[index])}>
             <Heart className="h-5 w-5" />
           </Button>
         </div>
