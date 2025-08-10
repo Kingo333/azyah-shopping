@@ -692,7 +692,7 @@ const AiTryOnModal: React.FC<AiTryOnModalProps> = ({ isOpen, onClose }) => {
       <li>Person: single subject, full-body, front-facing, neutral pose; arms slightly away from torso.</li>
       <li>Lighting & background: bright, even light; plain background; avoid filters, hats/sunglasses, and heavy occlusions.</li>
       <li>Quality: high‑resolution (≥ 1024px), JPG/PNG/WebP, under 10MB.</li>
-      <li>Outfit image: product cutout or flat/ghost mannequin on a plain background, front view (no model).</li>
+      <li>Outfit image: product cutout or flat/ghost mannequin on a plain background, front view; preferably no model, but model photos can work.</li>
     </ul>
   </AlertDescription>
 </Alert>
