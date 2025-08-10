@@ -312,15 +312,16 @@ const AiTryOnModal: React.FC<AiTryOnModalProps> = ({ isOpen, onClose }) => {
     if (!currentJob?.result_url || !user) return;
 
     try {
+      // Use a direct insert since the table now exists
       const { error } = await supabase
         .from('ai_assets')
-        .insert({
+        .insert([{
           user_id: user.id,
           job_id: currentJob.job_id,
           asset_url: currentJob.result_url,
           asset_type: 'tryon_result',
           title: `AI Try-On ${new Date().toLocaleDateString()}`
-        });
+        }]);
 
       if (error) throw error;
 

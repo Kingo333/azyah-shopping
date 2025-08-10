@@ -76,6 +76,87 @@ export type Database = {
           },
         ]
       }
+      ai_assets: {
+        Row: {
+          asset_type: string
+          asset_url: string
+          created_at: string
+          id: string
+          job_id: string | null
+          title: string | null
+          user_id: string
+        }
+        Insert: {
+          asset_type?: string
+          asset_url: string
+          created_at?: string
+          id?: string
+          job_id?: string | null
+          title?: string | null
+          user_id: string
+        }
+        Update: {
+          asset_type?: string
+          asset_url?: string
+          created_at?: string
+          id?: string
+          job_id?: string | null
+          title?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      ai_tryon_jobs: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          credits_used: number | null
+          error: Json | null
+          id: string
+          num_images: number | null
+          outfit_image_id: string | null
+          person_image_id: string | null
+          provider: string
+          provider_job_id: string | null
+          resolution: string | null
+          result_url: string | null
+          status: string | null
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          credits_used?: number | null
+          error?: Json | null
+          id?: string
+          num_images?: number | null
+          outfit_image_id?: string | null
+          person_image_id?: string | null
+          provider?: string
+          provider_job_id?: string | null
+          resolution?: string | null
+          result_url?: string | null
+          status?: string | null
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          credits_used?: number | null
+          error?: Json | null
+          id?: string
+          num_images?: number | null
+          outfit_image_id?: string | null
+          person_image_id?: string | null
+          provider?: string
+          provider_job_id?: string | null
+          resolution?: string | null
+          result_url?: string | null
+          status?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       brands: {
         Row: {
           bio: string | null
