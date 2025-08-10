@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -449,7 +450,6 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
         isOpen={isAddToClosetOpen}
         onClose={() => setIsAddToClosetOpen(false)}
         productId={product.id}
-        productTitle={product.title}
         productImage={images[0]}
       />
     </>
