@@ -69,7 +69,17 @@ export class BitStudioClient {
     num_images?: number;
     seed?: number;
   }): Promise<BitStudioImage[]> {
-    return this.makeSupabaseRequest('bitstudio-tryon', params);
+    // The edge function returns an object: { job_id, provider_job_id, result }
+    // Normalize to always return the underlying array as the hook expects.
+    const resp = await this.makeSupabaseRequest('bitstudio-tryon', params);
+    if (Array.isArray(resp)) {
+      return resp as BitStudioImage[];
+    }
+    if (resp && Array.isArray(resp.result)) {
+      return resp.result as BitStudioImage[];
+    }
+    console.error('Unexpected try-on response shape:', resp);
+    throw { error: 'Invalid response from try-on', code: 'INVALID_RESPONSE' } as BitStudioError;
   }
 
   static async generateImages(params: {

@@ -80,11 +80,19 @@ serve(async (req) => {
       );
     }
 
-    // Validate type parameter
-    const validTypes = ['virtual-try-on-person', 'virtual-try-on-outfit'];
+    // Validate type parameter - extend support for inpainting/edit/video uploads
+    const validTypes = [
+      'virtual-try-on-person',
+      'virtual-try-on-outfit',
+      'inpaint-base',
+      'inpaint-mask',
+      'inpaint-reference',
+      'edit',
+      'image-to-video'
+    ];
     if (!validTypes.includes(type)) {
       return new Response(
-        JSON.stringify({ error: 'Invalid type. Must be virtual-try-on-person or virtual-try-on-outfit', code: 'bad_request' }),
+        JSON.stringify({ error: 'Invalid type. Must be one of: ' + validTypes.join(', '), code: 'bad_request' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
       );
     }
@@ -173,7 +181,7 @@ serve(async (req) => {
       JSON.stringify({ 
         error: 'Upload failed', 
         code: 'upload_error',
-        details: error.message 
+        details: (error as any)?.message 
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     );
