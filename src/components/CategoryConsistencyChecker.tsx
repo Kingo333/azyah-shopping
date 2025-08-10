@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertTriangle, CheckCircle } from 'lucide-react';
-import { getTopCategories } from '@/lib/taxonomy';
+import { getTopCategories, type CatId } from '@/lib/taxonomy';
 
 const CategoryConsistencyChecker: React.FC = () => {
   const { data: dbCategories, isLoading } = useQuery({
