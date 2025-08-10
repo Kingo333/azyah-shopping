@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -5,7 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import ShopperNavigation from '@/components/ShopperNavigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Heart, ShoppingBag, Trash2 } from 'lucide-react';
+import { Heart, ShoppingBag, Trash2, ExternalLink } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 interface LikedProduct {
@@ -18,6 +19,7 @@ interface LikedProduct {
     price_cents: number;
     currency: string;
     media_urls: any;
+    external_url?: string;
     brands: {
       name: string;
     };
@@ -53,6 +55,7 @@ const Likes: React.FC = () => {
           price_cents,
           currency,
           media_urls,
+          external_url,
           brands (name)
         `)
         .in('id', productIds);
@@ -132,6 +135,18 @@ const Likes: React.FC = () => {
     }
   });
 
+  const handleShopNow = (product: LikedProduct['products']) => {
+    if (product.external_url) {
+      window.open(product.external_url, '_blank', 'noopener,noreferrer');
+    } else {
+      toast({
+        title: "Shop link not available",
+        description: "This product doesn't have a shop link available.",
+        variant: "destructive"
+      });
+    }
+  };
+
   const formatPrice = (cents: number, currency: string) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -180,7 +195,7 @@ const Likes: React.FC = () => {
             </Button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-6">
             {likes.map((like) => (
               <Card key={like.id} className="group hover:shadow-lg transition-all duration-300">
                 <CardContent className="p-0">
@@ -197,33 +212,45 @@ const Likes: React.FC = () => {
                     </div>
                   </div>
                   
-                  <div className="p-4">
-                    <h3 className="font-semibold line-clamp-2 mb-2">
+                  <div className="p-2 md:p-4 space-y-2 md:space-y-3">
+                    <h3 className="font-semibold line-clamp-2 text-sm md:text-base">
                       {like.products.title}
                     </h3>
-                    <p className="text-lg font-bold text-primary mb-4">
+                    <p className="text-base md:text-lg font-bold text-primary">
                       {formatPrice(like.products.price_cents, like.products.currency)}
                     </p>
                     
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => addToWishlistMutation.mutate(like.products.id)}
-                        disabled={addToWishlistMutation.isPending}
-                        className="flex-1"
-                      >
-                        <ShoppingBag className="h-4 w-4 mr-1" />
-                        Wishlist
-                      </Button>
+                    <div className="space-y-2">
+                      <div className="flex gap-1 md:gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => addToWishlistMutation.mutate(like.products.id)}
+                          disabled={addToWishlistMutation.isPending}
+                          className="flex-1 text-xs md:text-sm px-2 md:px-3 h-8 md:h-9"
+                        >
+                          <ShoppingBag className="h-3 w-3 md:h-4 md:w-4 mr-1" />
+                          Wishlist
+                        </Button>
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={() => handleShopNow(like.products)}
+                          className="flex-1 text-xs md:text-sm px-2 md:px-3 h-8 md:h-9"
+                        >
+                          <ExternalLink className="h-3 w-3 md:h-4 md:w-4 mr-1" />
+                          Shop
+                        </Button>
+                      </div>
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => removeLikeMutation.mutate(like.products.id)}
                         disabled={removeLikeMutation.isPending}
-                        className="text-muted-foreground hover:text-destructive"
+                        className="w-full text-muted-foreground hover:text-destructive text-xs md:text-sm h-8 md:h-9"
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Trash2 className="h-3 w-3 md:h-4 md:w-4 mr-1" />
+                        Remove
                       </Button>
                     </div>
                   </div>

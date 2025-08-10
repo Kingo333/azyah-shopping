@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -6,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Heart, Plus, Trash2, Eye, EyeOff, Grid, List } from 'lucide-react';
+import { Heart, Plus, Trash2, Eye, EyeOff, Grid, List, ExternalLink } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -32,6 +33,7 @@ interface WishlistItem {
     price_cents: number;
     currency: string;
     media_urls: string[];
+    external_url?: string;
     brand?: { name: string };
   };
 }
@@ -76,6 +78,7 @@ export const WishlistManager: React.FC = () => {
             price_cents,
             currency,
             media_urls,
+            external_url,
             brand:brands(name)
           )
         `)
@@ -116,7 +119,6 @@ export const WishlistManager: React.FC = () => {
     }
   });
 
-  // Delete wishlist mutation
   const deleteWishlistMutation = useMutation({
     mutationFn: async (wishlistId: string) => {
       const { error } = await supabase
@@ -136,7 +138,6 @@ export const WishlistManager: React.FC = () => {
     }
   });
 
-  // Remove item from wishlist mutation
   const removeItemMutation = useMutation({
     mutationFn: async (itemId: string) => {
       const { error } = await supabase
@@ -155,7 +156,6 @@ export const WishlistManager: React.FC = () => {
     }
   });
 
-  // Toggle wishlist privacy
   const togglePrivacyMutation = useMutation({
     mutationFn: async ({ wishlistId, isPublic }: { wishlistId: string; isPublic: boolean }) => {
       const { error } = await supabase
@@ -173,6 +173,18 @@ export const WishlistManager: React.FC = () => {
       });
     }
   });
+
+  const handleShopNow = (product: WishlistItem['product']) => {
+    if (product.external_url) {
+      window.open(product.external_url, '_blank', 'noopener,noreferrer');
+    } else {
+      toast({
+        title: "Shop link not available",
+        description: "This product doesn't have a shop link available.",
+        variant: "destructive"
+      });
+    }
+  };
 
   const formatPrice = (cents: number, currency: string = 'USD') => {
     return new Intl.NumberFormat('en-US', {
@@ -374,7 +386,7 @@ export const WishlistManager: React.FC = () => {
           </div>
 
           {itemsLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-6">
               {[1, 2, 3, 4, 5, 6].map(i => (
                 <div key={i} className="animate-pulse">
                   <div className="aspect-square bg-accent rounded-lg mb-3"></div>
@@ -384,25 +396,25 @@ export const WishlistManager: React.FC = () => {
               ))}
             </div>
           ) : (
-            <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6' : 'space-y-4'}>
+            <div className={viewMode === 'grid' ? 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-6' : 'space-y-4'}>
               {wishlistItems?.map(item => (
                 <Card key={item.id} className="group hover:shadow-lg transition-shadow">
-                  <CardContent className="p-4">
-                    <div className={viewMode === 'grid' ? 'space-y-3' : 'flex gap-4'}>
+                  <CardContent className="p-0">
+                    <div className={viewMode === 'grid' ? 'space-y-2 md:space-y-3' : 'flex gap-4'}>
                       <div className={viewMode === 'grid' ? 'aspect-square' : 'w-24 h-24 flex-shrink-0'}>
                         <img
                           src={item.product.media_urls[0] || '/placeholder.svg'}
                           alt={item.product.title}
-                          className="w-full h-full object-cover rounded-lg"
+                          className="w-full h-full object-cover rounded-t-lg"
                         />
                       </div>
                       
-                      <div className={`${viewMode === 'list' ? 'flex-1' : ''} space-y-2`}>
+                      <div className={`${viewMode === 'list' ? 'flex-1' : 'p-2 md:p-4'} space-y-2`}>
                         <div className="flex items-start justify-between">
                           <div>
-                            <h3 className="font-medium line-clamp-2">{item.product.title}</h3>
+                            <h3 className="font-medium line-clamp-2 text-sm md:text-base">{item.product.title}</h3>
                             {item.product.brand && (
-                              <p className="text-sm text-muted-foreground">{item.product.brand.name}</p>
+                              <p className="text-xs md:text-sm text-muted-foreground">{item.product.brand.name}</p>
                             )}
                           </div>
                           <Button
@@ -416,13 +428,18 @@ export const WishlistManager: React.FC = () => {
                         </div>
                         
                         <div className="flex items-center justify-between">
-                          <span className="font-bold">
+                          <span className="font-bold text-sm md:text-base">
                             {formatPrice(item.product.price_cents, item.product.currency)}
                           </span>
-                          <span className="text-xs text-muted-foreground">
-                            Added {new Date(item.added_at).toLocaleDateString()}
-                          </span>
                         </div>
+
+                        <Button
+                          onClick={() => handleShopNow(item.product)}
+                          className="w-full text-xs md:text-sm h-8 md:h-9"
+                        >
+                          <ExternalLink className="h-3 w-3 md:h-4 md:w-4 mr-1" />
+                          Shop Now
+                        </Button>
                       </div>
                     </div>
                   </CardContent>
