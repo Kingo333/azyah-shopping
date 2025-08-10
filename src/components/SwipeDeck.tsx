@@ -189,7 +189,14 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
       }
       // Apply category filter only if no subcategory
       else if (filter && filter !== 'all') {
-        query = query.eq('category_slug', filter as any);
+        // Map new "bags" category to "accessories" for database compatibility
+        const dbCategory = filter === 'bags' ? 'accessories' : filter;
+        query = query.eq('category_slug', dbCategory as any);
+        
+        // If bags category is selected, filter by bag subcategories
+        if (filter === 'bags') {
+          query = query.in('subcategory_slug', ['handbags', 'clutches', 'totes', 'backpacks', 'wallets']);
+        }
       }
 
       // Apply currency filter
@@ -276,6 +283,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
 
       setProducts(transformedProducts);
       setIndex(0); // Reset index when products change
+      x.set(0); // Reset swipe position when products change
     } catch (error: any) {
       console.error("Error fetching products:", error.message);
       toast({
