@@ -47,6 +47,15 @@ export function useBitStudio() {
       }
     }
 
+    // Show raw response for pattern matching errors
+    if (error.raw_response) {
+      console.error('BitStudio raw response:', error.raw_response);
+      // If it's a pattern error, include more details
+      if (error.raw_response.includes('pattern') || error.raw_response.includes('match')) {
+        message = `Validation error: ${error.raw_response}`;
+      }
+    }
+
     if (error.code === 'MISSING_API_KEY') {
       message = 'BitStudio API key is not configured. Please check your settings.';
       action = () => window.open('https://docs.lovable.dev', '_blank');
@@ -60,6 +69,10 @@ export function useBitStudio() {
       action = () => window.open('/billing', '_blank');
     } else if (error.code === 'bad_request' || error.code === 'invalid_aspect_ratio' || error.code === 'invalid_resolution') {
       message = error.details || error.error || 'Invalid parameters. Please check your inputs.';
+      // Include raw response for debugging pattern errors
+      if (error.raw_response) {
+        message += ` (Raw: ${error.raw_response.substring(0, 100)})`;
+      }
     } else if (status && status >= 500) {
       message = 'Temporary server issue. Please retry.';
     } else if (error.code === 'INVALID_RESPONSE') {
@@ -92,6 +105,7 @@ export function useBitStudio() {
   const healthCheck = useCallback(async (): Promise<boolean> => {
     try {
       const result = await BitStudioClient.healthCheck();
+      console.log('Health check result:', result);
       if (!result.ok) {
         handleError({ 
           code: result.error?.includes('API key') ? 'MISSING_API_KEY' : 'HEALTH_CHECK_ERROR',
@@ -101,12 +115,15 @@ export function useBitStudio() {
       }
       return true;
     } catch (error: any) {
+      console.error('Health check error:', error);
       handleError(error);
       return false;
     }
   }, [handleError]);
 
   const validateFile = useCallback((file: File): boolean => {
+    console.log('Validating file:', { name: file.name, size: file.size, type: file.type });
+    
     // Check for HEIC files which aren't supported
     if (file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif')) {
       handleError({ 
@@ -126,6 +143,7 @@ export function useBitStudio() {
       return false;
     }
     
+    console.log('File validation passed');
     return true;
   }, [handleError]);
 
@@ -138,7 +156,8 @@ export function useBitStudio() {
       setError(null);
       setLoading(true);
       
-      console.log('Uploading image with type:', type);
+      console.log('Starting upload with type:', JSON.stringify(type));
+      console.log('File details:', { name: file.name, size: file.size, type: file.type });
       
       const result = await BitStudioClient.uploadImage(file, type);
       
@@ -163,6 +182,8 @@ export function useBitStudio() {
       setError(null);
       setLoading(true);
       
+      console.log('Starting virtual try-on with params:', params);
+      
       // Ensure safe resolution mapping
       const safeRes = asTryGen(params.resolution as AnyRes);
       const mappedParams = {
@@ -170,16 +191,23 @@ export function useBitStudio() {
         resolution: safeRes
       };
       
+      console.log('Mapped params:', mappedParams);
+      
       const results = await BitStudioClient.virtualTryOn(mappedParams);
       
       // Virtual Try-On returns an array, get the first result's ID
       const jobId = Array.isArray(results) && results.length > 0 ? results[0].id : null;
       
+      console.log('VTO response job ID:', jobId);
+      
       if (!jobId) {
         throw { error: 'No job ID returned from virtual try-on', code: 'INVALID_RESPONSE' };
       }
 
+      console.log('Starting polling for job:', jobId);
       const result = await BitStudioClient.pollUntilComplete(jobId);
+      
+      console.log('Polling completed with result:', result);
       
       toast({
         title: 'Try-On Complete',
@@ -188,6 +216,7 @@ export function useBitStudio() {
       
       return result;
     } catch (error: any) {
+      console.error('Virtual try-on error:', error);
       handleError(error);
       return null;
     } finally {

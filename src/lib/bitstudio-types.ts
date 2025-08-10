@@ -18,11 +18,18 @@ export interface BitStudioError {
   details?: string;
   status?: number;
   bitstudio_error?: any;
+  raw_response?: string;
 }
 
+// Exact types from BitStudio API documentation
 export const BITSTUDIO_IMAGE_TYPES = {
   PERSON: 'virtual-try-on-person',
-  OUTFIT: 'virtual-try-on-outfit'
+  OUTFIT: 'virtual-try-on-outfit',
+  INPAINT_BASE: 'inpaint-base',
+  INPAINT_MASK: 'inpaint-mask',
+  INPAINT_REFERENCE: 'inpaint-reference',
+  EDIT: 'edit',
+  IMAGE_TO_VIDEO: 'image-to-video'
 } as const;
 
 export type AspectRatio = 'portrait' | 'landscape' | 'square';
