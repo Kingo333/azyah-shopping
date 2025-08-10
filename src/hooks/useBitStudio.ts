@@ -39,6 +39,16 @@ export function useBitStudio() {
 
     const status = typeof error?.status === 'number' ? error.status : undefined;
 
+    // Surface BitStudio's detailed error if available
+    if (error.bitstudio_error) {
+      console.error('BitStudio API details:', error.bitstudio_error);
+      
+      // Show the actual BitStudio error message if it's more specific
+      if (error.bitstudio_error.error && error.bitstudio_error.error !== error.error) {
+        message = `${error.error}: ${error.bitstudio_error.error}`;
+      }
+    }
+
     if (error.code === 'unauthorized' || error.code === 'invalid_token') {
       message = 'BitStudio API key is invalid or missing. Please check your configuration.';
       action = () => window.open('https://docs.lovable.dev', '_blank');
@@ -48,7 +58,7 @@ export function useBitStudio() {
       message = 'Insufficient credits or subscription required';
       action = () => window.open('/billing', '_blank');
     } else if (error.code === 'bad_request' || error.code === 'invalid_aspect_ratio' || error.code === 'invalid_resolution') {
-      message = 'Invalid parameters. Please check your inputs.';
+      message = error.details || error.error || 'Invalid parameters. Please check your inputs.';
     } else if (status && status >= 500) {
       message = 'Temporary server issue. Please retry.';
     } else if (error.code === 'INVALID_RESPONSE') {
@@ -56,7 +66,7 @@ export function useBitStudio() {
     } else if (error.code === 'upload_error') {
       message = 'File upload failed. Please try again.';
     } else if (error.code === 'api_error') {
-      message = 'BitStudio API error. Please try again later.';
+      message = error.details || 'BitStudio API error. Please try again later.';
     } else {
       message = error.error || error.message || 'Unknown error occurred';
     }
@@ -109,13 +119,20 @@ export function useBitStudio() {
     try {
       setError(null);
       setLoading(true);
+      
+      console.log('Uploading image with type:', type);
+      
       const result = await BitStudioClient.uploadImage(file, type);
+      
+      console.log('Upload successful:', result);
+      
       toast({
         title: 'Success',
         description: 'Image uploaded successfully',
       });
       return result;
     } catch (error: any) {
+      console.error('Upload error details:', error);
       handleError(error);
       return null;
     } finally {

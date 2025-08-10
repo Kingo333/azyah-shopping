@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -18,6 +17,8 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useBitStudio } from '@/hooks/useBitStudio';
+import { BITSTUDIO_IMAGE_TYPES } from '@/lib/bitstudio-types';
 
 interface AiTryOnModalProps {
   isOpen: boolean;
@@ -35,6 +36,7 @@ interface TryOnJob {
 const AiTryOnModal: React.FC<AiTryOnModalProps> = ({ isOpen, onClose }) => {
   const { toast } = useToast();
   const { user, session } = useAuth();
+  const { uploadImage, loading: uploadLoading } = useBitStudio();
   
   const [step, setStep] = useState<'person' | 'outfit' | 'settings' | 'generating' | 'result'>('person');
   const [personImage, setPersonImage] = useState<{ file: File; preview: string; id?: string } | null>(null);
@@ -43,7 +45,6 @@ const AiTryOnModal: React.FC<AiTryOnModalProps> = ({ isOpen, onClose }) => {
   const [resolution, setResolution] = useState<'standard' | 'high'>('standard');
   const [numImages, setNumImages] = useState(1);
   const [prompt, setPrompt] = useState('');
-  const [isUploading, setIsUploading] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [currentJob, setCurrentJob] = useState<TryOnJob | null>(null);
   const [progress, setProgress] = useState(0);
@@ -74,51 +75,30 @@ const AiTryOnModal: React.FC<AiTryOnModalProps> = ({ isOpen, onClose }) => {
     return true;
   };
 
-  const uploadImage = async (file: File, type: 'virtual-try-on-person' | 'virtual-try-on-outfit') => {
-    if (!session) return null;
-
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('type', type);
-
-    const { data, error } = await supabase.functions.invoke('bitstudio-upload', {
-      body: formData,
-    });
-
-    if (error) {
-      console.error('Upload error:', error);
-      throw new Error(error.message || 'Upload failed');
-    }
-
-    return data;
-  };
-
   const handlePersonImageSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file || !validateFile(file)) return;
 
-    setIsUploading(true);
     try {
       const preview = URL.createObjectURL(file);
-      const uploadResult = await uploadImage(file, 'virtual-try-on-person');
       
-      setPersonImage({
-        file,
-        preview,
-        id: uploadResult.id
-      });
+      console.log('Uploading person image...');
+      const uploadResult = await uploadImage(file, BITSTUDIO_IMAGE_TYPES.PERSON);
       
-      toast({
-        description: 'Person photo uploaded successfully!',
-      });
+      if (uploadResult) {
+        setPersonImage({
+          file,
+          preview,
+          id: uploadResult.id
+        });
+        
+        toast({
+          description: 'Person photo uploaded successfully!',
+        });
+      }
     } catch (error: any) {
       console.error('Person image upload error:', error);
-      toast({
-        description: 'Failed to upload person photo. Please try again.',
-        variant: 'destructive'
-      });
-    } finally {
-      setIsUploading(false);
+      // Error handling is done in useBitStudio hook
     }
   };
 
@@ -126,28 +106,26 @@ const AiTryOnModal: React.FC<AiTryOnModalProps> = ({ isOpen, onClose }) => {
     const file = event.target.files?.[0];
     if (!file || !validateFile(file)) return;
 
-    setIsUploading(true);
     try {
       const preview = URL.createObjectURL(file);
-      const uploadResult = await uploadImage(file, 'virtual-try-on-outfit');
       
-      setOutfitImage({
-        file,
-        preview,
-        id: uploadResult.id
-      });
+      console.log('Uploading outfit image...');
+      const uploadResult = await uploadImage(file, BITSTUDIO_IMAGE_TYPES.OUTFIT);
       
-      toast({
-        description: 'Outfit photo uploaded successfully!',
-      });
+      if (uploadResult) {
+        setOutfitImage({
+          file,
+          preview,
+          id: uploadResult.id
+        });
+        
+        toast({
+          description: 'Outfit photo uploaded successfully!',
+        });
+      }
     } catch (error: any) {
       console.error('Outfit image upload error:', error);
-      toast({
-        description: 'Failed to upload outfit photo. Please try again.',
-        variant: 'destructive'
-      });
-    } finally {
-      setIsUploading(false);
+      // Error handling is done in useBitStudio hook
     }
   };
 
@@ -196,6 +174,8 @@ const AiTryOnModal: React.FC<AiTryOnModalProps> = ({ isOpen, onClose }) => {
       if (prompt.trim()) {
         requestBody.prompt = prompt.trim();
       }
+
+      console.log('Starting generation with params:', requestBody);
 
       const { data, error } = await supabase.functions.invoke('bitstudio-tryon', {
         body: requestBody,
@@ -400,7 +380,7 @@ const AiTryOnModal: React.FC<AiTryOnModalProps> = ({ isOpen, onClose }) => {
                           onClick={() => personFileRef.current?.click()} 
                           variant="outline" 
                           size="sm"
-                          disabled={isUploading}
+                          disabled={uploadLoading}
                         >
                           Change Photo
                         </Button>
@@ -415,15 +395,15 @@ const AiTryOnModal: React.FC<AiTryOnModalProps> = ({ isOpen, onClose }) => {
                   ) : (
                     <Button 
                       onClick={() => personFileRef.current?.click()} 
-                      disabled={isUploading}
+                      disabled={uploadLoading}
                       className="gap-2"
                     >
-                      {isUploading ? (
+                      {uploadLoading ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
                       ) : (
                         <Upload className="h-4 w-4" />
                       )}
-                      {isUploading ? 'Uploading...' : 'Choose Photo'}
+                      {uploadLoading ? 'Uploading...' : 'Choose Photo'}
                     </Button>
                   )}
 
@@ -495,11 +475,11 @@ const AiTryOnModal: React.FC<AiTryOnModalProps> = ({ isOpen, onClose }) => {
                       <div className="flex gap-2">
                         <Button 
                           onClick={() => outfitFileRef.current?.click()} 
-                          disabled={isUploading}
+                          disabled={uploadLoading}
                           variant="outline"
                           className="flex-1 gap-2"
                         >
-                          {isUploading ? (
+                          {uploadLoading ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
                           ) : (
                             <Upload className="h-4 w-4" />

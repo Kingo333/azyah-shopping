@@ -14,7 +14,12 @@ serve(async (req) => {
 
   try {
     const BITSTUDIO_API_KEY = Deno.env.get('BITSTUDIO_API_KEY');
-    const BITSTUDIO_API_BASE = Deno.env.get('BITSTUDIO_API_BASE') || 'https://api.bitstudio.ai';
+    let BITSTUDIO_API_BASE = Deno.env.get('BITSTUDIO_API_BASE') || 'https://api.bitstudio.ai';
+    
+    // Normalize API base to ensure v1 endpoint
+    if (!BITSTUDIO_API_BASE.includes('/v1')) {
+      BITSTUDIO_API_BASE = BITSTUDIO_API_BASE.replace(/\/+$/, '') + '/v1';
+    }
 
     console.log('Upload function called, API key present:', !!BITSTUDIO_API_KEY);
     console.log('API base URL:', BITSTUDIO_API_BASE);
@@ -97,10 +102,12 @@ serve(async (req) => {
       );
     }
 
-    // Create form data for bitStudio API
+    // Create form data for bitStudio API with compatibility hedging
     const bitStudioFormData = new FormData();
     bitStudioFormData.append('file', file);
+    bitStudioFormData.append('image', file); // Hedge: some APIs expect 'image'
     bitStudioFormData.append('type', type);
+    bitStudioFormData.append('image_type', type); // Hedge: some APIs expect 'image_type'
 
     console.log('Making request to BitStudio API...');
 
@@ -116,12 +123,23 @@ serve(async (req) => {
     console.log('BitStudio API response status:', response.status);
 
     if (!response.ok) {
+      let errorData;
       let errorText;
+      
       try {
         errorText = await response.text();
         console.error('BitStudio API error response:', errorText);
+        
+        // Try to parse as JSON first
+        try {
+          errorData = JSON.parse(errorText);
+        } catch {
+          // If not JSON, create error object from text
+          errorData = { error: errorText, code: 'api_error' };
+        }
       } catch (e) {
         errorText = `HTTP ${response.status}`;
+        errorData = { error: errorText, code: 'api_error' };
       }
       
       // Handle specific error cases with proper codes
@@ -130,7 +148,8 @@ serve(async (req) => {
           JSON.stringify({ 
             error: 'Invalid or expired BitStudio API key', 
             code: 'invalid_token',
-            details: 'Please check your BitStudio API key configuration'
+            details: 'Please check your BitStudio API key configuration',
+            bitstudio_error: errorData
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
         );
@@ -140,7 +159,8 @@ serve(async (req) => {
         return new Response(
           JSON.stringify({ 
             error: 'Rate limit exceeded. Please try again in a moment.', 
-            code: 'RATE_LIMITED' 
+            code: 'RATE_LIMITED',
+            bitstudio_error: errorData
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 429 }
         );
@@ -150,9 +170,22 @@ serve(async (req) => {
         return new Response(
           JSON.stringify({ 
             error: 'Insufficient credits or subscription required', 
-            code: 'insufficient_credits' 
+            code: 'insufficient_credits',
+            bitstudio_error: errorData
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 402 }
+        );
+      }
+
+      if (response.status === 400) {
+        return new Response(
+          JSON.stringify({ 
+            error: errorData?.error || 'Invalid request parameters', 
+            code: 'bad_request',
+            details: errorData?.details || 'Please check your input parameters',
+            bitstudio_error: errorData
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
         );
       }
       
@@ -161,7 +194,8 @@ serve(async (req) => {
         JSON.stringify({ 
           error: `BitStudio API error: ${response.status}`, 
           code: 'api_error',
-          details: errorText 
+          details: errorData?.error || errorText,
+          bitstudio_error: errorData
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: response.status }
       );
