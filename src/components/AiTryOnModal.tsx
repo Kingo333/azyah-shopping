@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -28,7 +28,7 @@ interface AiTryOnModalProps {
 const AiTryOnModal: React.FC<AiTryOnModalProps> = ({ isOpen, onClose }) => {
   const { toast } = useToast();
   const { user } = useAuth();
-  const { uploadImage, virtualTryOn, loading } = useBitStudio();
+  const { uploadImage, virtualTryOn, loading, healthCheck } = useBitStudio();
   
   const [step, setStep] = useState<'person' | 'outfit' | 'settings' | 'generating' | 'result'>('person');
   const [personImage, setPersonImage] = useState<{ file: File; preview: string; id?: string } | null>(null);
@@ -42,6 +42,19 @@ const AiTryOnModal: React.FC<AiTryOnModalProps> = ({ isOpen, onClose }) => {
 
   const personFileRef = useRef<HTMLInputElement>(null);
   const outfitFileRef = useRef<HTMLInputElement>(null);
+
+  // Health check when modal opens
+  useEffect(() => {
+    if (isOpen && step === 'person') {
+      const checkHealth = async () => {
+        const isHealthy = await healthCheck();
+        if (!isHealthy) {
+          console.log('BitStudio health check failed - user will see error toast');
+        }
+      };
+      checkHealth();
+    }
+  }, [isOpen, step, healthCheck]);
 
   const validateFile = (file: File): boolean => {
     const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];

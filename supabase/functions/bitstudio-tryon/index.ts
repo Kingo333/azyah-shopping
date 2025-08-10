@@ -16,19 +16,14 @@ serve(async (req) => {
     const BITSTUDIO_API_KEY = Deno.env.get('BITSTUDIO_API_KEY');
     let BITSTUDIO_API_BASE = Deno.env.get('BITSTUDIO_API_BASE') || 'https://api.bitstudio.ai';
     
-    // Remove any trailing slashes and /v1 - BitStudio API doesn't use /v1
-    BITSTUDIO_API_BASE = BITSTUDIO_API_BASE.replace(/\/+$/, '').replace(/\/v1$/, '');
+    // Remove any trailing slashes - BitStudio API doesn't use /v1
+    BITSTUDIO_API_BASE = BITSTUDIO_API_BASE.replace(/\/+$/, '');
 
     if (!BITSTUDIO_API_KEY) {
-      throw new Error('bitStudio API key not configured');
+      throw new Error('BitStudio API key not configured');
     }
 
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-    );
-
-    // Get user from auth header
+    // Get user from auth header first
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       return new Response(
@@ -37,9 +32,22 @@ serve(async (req) => {
       );
     }
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser(
-      authHeader.replace('Bearer ', '')
+    const token = authHeader.replace('Bearer ', '');
+
+    // Create Supabase client with the user's token
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      {
+        global: {
+          headers: {
+            Authorization: authHeader,
+          },
+        },
+      }
     );
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
 
     if (authError || !user) {
       return new Response(
@@ -66,7 +74,8 @@ serve(async (req) => {
       outfit_image_id,
       outfit_image_url: outfit_image_url ? 'provided' : 'not provided',
       resolution,
-      num_images
+      num_images,
+      user_id: user.id
     });
 
     // Validate required parameters
@@ -94,12 +103,16 @@ serve(async (req) => {
     if (jobError) {
       console.error('Database error:', jobError);
       return new Response(
-        JSON.stringify({ error: 'Failed to create job record' }),
+        JSON.stringify({ 
+          error: 'Failed to create job record',
+          details: jobError.message,
+          code: 'DATABASE_ERROR'
+        }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
       );
     }
 
-    // Make request to bitStudio API - use correct endpoint without /v1
+    // Make request to BitStudio API
     const requestBody = {
       person_image_id,
       person_image_url,
@@ -130,32 +143,54 @@ serve(async (req) => {
     console.log('BitStudio virtual try-on response status:', response.status);
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error('bitStudio API error:', response.status, errorText);
+      let errorData;
+      try {
+        errorData = await response.json();
+      } catch {
+        errorData = { error: `HTTP ${response.status}`, message: await response.text() };
+      }
+      
+      console.error('BitStudio API error:', response.status, errorData);
       
       // Update job status to failed
       await supabase
         .from('ai_tryon_jobs')
         .update({ 
           status: 'failed',
-          error: { message: errorText, status: response.status }
+          error: { 
+            message: errorData.error || errorData.message || 'Unknown error',
+            status: response.status,
+            bitstudio_error: errorData
+          }
         })
         .eq('id', jobData.id);
 
       if (response.status === 429) {
         return new Response(
-          JSON.stringify({ error: 'Rate limit exceeded. Please try again in a moment.' }),
+          JSON.stringify({ 
+            error: 'Rate limit exceeded. Please try again in a moment.',
+            code: 'RATE_LIMITED',
+            bitstudio_error: errorData
+          }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 429 }
         );
       }
       
-      throw new Error(`bitStudio API error: ${response.status} - ${errorText}`);
+      return new Response(
+        JSON.stringify({ 
+          error: errorData.error || errorData.message || `BitStudio API error: ${response.status}`,
+          code: 'API_ERROR',
+          status: response.status,
+          bitstudio_error: errorData
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: response.status }
+      );
     }
 
     const result = await response.json();
     console.log('BitStudio virtual try-on response:', result);
     
-    // Extract job ID from first result (bitStudio returns array)
+    // Extract job ID from first result (BitStudio returns array)
     const providerJobId = Array.isArray(result) && result.length > 0 ? result[0].id : null;
     
     // Update job with provider job ID
@@ -181,7 +216,11 @@ serve(async (req) => {
   } catch (error) {
     console.error('Try-on error:', error);
     return new Response(
-      JSON.stringify({ error: 'Try-on failed', details: error.message }),
+      JSON.stringify({ 
+        error: 'Try-on failed', 
+        details: error.message,
+        code: 'INTERNAL_ERROR'
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     );
   }

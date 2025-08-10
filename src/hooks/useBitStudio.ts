@@ -47,7 +47,10 @@ export function useBitStudio() {
       }
     }
 
-    if (error.code === 'unauthorized' || error.code === 'invalid_token') {
+    if (error.code === 'MISSING_API_KEY') {
+      message = 'BitStudio API key is not configured. Please check your settings.';
+      action = () => window.open('https://docs.lovable.dev', '_blank');
+    } else if (error.code === 'unauthorized' || error.code === 'invalid_token') {
       message = 'BitStudio API key is invalid or missing. Please check your configuration.';
       action = () => window.open('https://docs.lovable.dev', '_blank');
     } else if (error.code === 'RATE_LIMITED') {
@@ -85,6 +88,23 @@ export function useBitStudio() {
 
     return message;
   }, [toast]);
+
+  const healthCheck = useCallback(async (): Promise<boolean> => {
+    try {
+      const result = await BitStudioClient.healthCheck();
+      if (!result.ok) {
+        handleError({ 
+          code: result.error?.includes('API key') ? 'MISSING_API_KEY' : 'HEALTH_CHECK_ERROR',
+          error: result.error || 'Health check failed'
+        });
+        return false;
+      }
+      return true;
+    } catch (error: any) {
+      handleError(error);
+      return false;
+    }
+  }, [handleError]);
 
   const validateFile = useCallback((file: File): boolean => {
     // Check for HEIC files which aren't supported
@@ -180,6 +200,7 @@ export function useBitStudio() {
     error,
     uploadImage,
     virtualTryOn,
+    healthCheck,
     clearError: () => setError(null),
   };
 }

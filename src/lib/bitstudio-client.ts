@@ -16,6 +16,18 @@ export class BitStudioClient {
     return data;
   }
 
+  static async healthCheck(): Promise<{ ok: boolean; base?: string; error?: string }> {
+    try {
+      return await this.makeSupabaseRequest('bitstudio-health');
+    } catch (error: any) {
+      console.error('Health check error:', error);
+      return { 
+        ok: false, 
+        error: error.error || error.message || 'Health check failed' 
+      };
+    }
+  }
+
   static async uploadImage(file: File, type: string): Promise<BitStudioImage> {
     try {
       // Get the session token for authentication
@@ -24,12 +36,12 @@ export class BitStudioClient {
         throw { error: 'Authentication required', code: 'UNAUTHORIZED' } as BitStudioError;
       }
 
-      // Use direct fetch to preserve error details from FormData uploads
+      // Use the full Supabase Functions URL for better reliability
       const formData = new FormData();
       formData.append('file', file);
       formData.append('type', type);
 
-      const response = await fetch(`${window.location.origin}/functions/v1/bitstudio-upload`, {
+      const response = await fetch(`https://klwolsopucgswhtdlsps.supabase.co/functions/v1/bitstudio-upload`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${session.access_token}`,
@@ -38,10 +50,15 @@ export class BitStudioClient {
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ 
-          error: `HTTP ${response.status}`, 
-          code: 'FETCH_ERROR' 
-        }));
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch {
+          errorData = { 
+            error: `HTTP ${response.status}`, 
+            code: 'FETCH_ERROR' 
+          };
+        }
         console.error('Upload fetch error:', response.status, errorData);
         throw errorData as BitStudioError;
       }
