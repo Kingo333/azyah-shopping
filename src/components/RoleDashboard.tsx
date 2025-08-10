@@ -219,9 +219,6 @@ const RoleDashboard: React.FC = () => {
       <GlassPanel variant="premium" className="p-8">
         <div className="space-y-6">
           <h2 className="text-2xl font-cormorant font-semibold flex items-center gap-3 text-foreground/90">
-            <div className="p-2 rounded-full bg-gradient-to-br from-primary/10 to-accent-cartier/10">
-              <Sparkles className="h-6 w-6 text-primary" />
-            </div>
             Quick Actions
           </h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-4 sm:gap-5">
@@ -237,7 +234,7 @@ const RoleDashboard: React.FC = () => {
               variant="outline" 
               className="h-16 sm:h-20 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300"
             >
-              <Sparkles className="h-5 w-5 sm:h-6 sm:w-6" />
+              <Users className="h-5 w-5 sm:h-6 sm:w-6" />
               <span className="text-xs sm:text-sm">Feed</span>
             </Button>
             <Button 
