@@ -27,16 +27,15 @@ export default function Landing() {
 
   useEffect(() => setIsVisible(true), []);
 
-  // Redirect authenticated users to dashboard (temporarily disabled for preview)
+  // Redirect authenticated users to dashboard
   useEffect(() => {
     console.log('Landing page: user state:', user);
-    // Temporarily commenting out redirect so you can see the landing page
-    // if (user) {
-    //   console.log('User is authenticated, redirecting to dashboard');
-    //   navigate('/dashboard');
-    // } else {
-    //   console.log('No user, staying on landing page');
-    // }
+    if (user) {
+      console.log('User is authenticated, redirecting to dashboard');
+      navigate('/dashboard');
+    } else {
+      console.log('No user, staying on landing page');
+    }
   }, [user, navigate]);
 
   const scrollToSection = (href: string) => {
@@ -45,6 +44,18 @@ export default function Landing() {
       element.scrollIntoView({ behavior: 'smooth' });
     }
   };
+
+  // Show loading while user state is being determined
+  if (user === undefined) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p>Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
