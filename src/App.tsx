@@ -3,6 +3,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { HelmetProvider } from 'react-helmet-async';
+import { ThemeProvider } from 'next-themes';
 import { Toaster } from '@/components/ui/toaster';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { FeatureFlagsProvider } from '@/contexts/FeatureFlagsContext';
@@ -45,9 +46,15 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <HelmetProvider>
-        <AuthProvider>
-          <FeatureFlagsProvider>
-            <Router>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="light"
+          enableSystem={true}
+          disableTransitionOnChange={false}
+        >
+          <AuthProvider>
+            <FeatureFlagsProvider>
+              <Router>
             <Routes>
               <Route path="/" element={<Landing />} />
               <Route path="/dashboard" element={
@@ -141,10 +148,11 @@ function App() {
               } />
               <Route path="*" element={<NotFound />} />
             </Routes>
-            </Router>
-            <Toaster />
-          </FeatureFlagsProvider>
-        </AuthProvider>
+              </Router>
+              <Toaster />
+            </FeatureFlagsProvider>
+          </AuthProvider>
+        </ThemeProvider>
       </HelmetProvider>
     </QueryClientProvider>
   );
