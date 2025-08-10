@@ -1,4 +1,3 @@
-
 import * as React from "react"
 import * as ToastPrimitives from "@radix-ui/react-toast"
 import { cva, type VariantProps } from "class-variance-authority"
@@ -113,11 +112,8 @@ ToastDescription.displayName = ToastPrimitives.Description.displayName
 
 type ToastProps = React.ComponentPropsWithoutRef<typeof Toast>
 
-// Fix the ToastActionElement type to properly match what JSX produces
-type ToastActionElement = React.ReactElement<
-  React.ComponentPropsWithoutRef<typeof ToastAction>,
-  typeof ToastAction
->
+// Simplify the ToastActionElement type to match what JSX actually produces
+type ToastActionElement = React.ReactElement<typeof ToastAction>
 
 export {
   type ToastProps,
