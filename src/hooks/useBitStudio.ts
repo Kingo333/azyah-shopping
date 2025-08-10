@@ -40,8 +40,9 @@ export function useBitStudio() {
 
     const status = typeof error?.status === 'number' ? error.status : undefined;
 
-    if (error.code === 'unauthorized') {
-      message = 'Server key invalid or missing';
+    if (error.code === 'unauthorized' || error.code === 'invalid_token') {
+      message = 'BitStudio API key is invalid or missing. Please check your configuration.';
+      action = () => window.open('https://docs.lovable.dev', '_blank');
     } else if (error.code === 'RATE_LIMITED') {
       message = 'Rate limit exceeded. Please try again in a moment.';
     } else if (error.code === 'insufficient_credits' || error.code === 'no_active_subscription' || error.code === 'upgrade_required') {
@@ -53,6 +54,10 @@ export function useBitStudio() {
       message = 'Temporary server issue. Please retry.';
     } else if (error.code === 'INVALID_RESPONSE') {
       message = 'Invalid response from server. Please try again.';
+    } else if (error.code === 'upload_error') {
+      message = 'File upload failed. Please try again.';
+    } else if (error.code === 'api_error') {
+      message = 'BitStudio API error. Please try again later.';
     } else {
       message = error.error || error.message || 'Unknown error occurred';
     }
@@ -60,7 +65,7 @@ export function useBitStudio() {
     setError(message);
     
     const actionElement = action 
-      ? createElement(ToastAction, { altText: "Open billing", onClick: action }, "Open billing")
+      ? createElement(ToastAction, { altText: "Learn more", onClick: action }, "Learn more")
       : undefined;
 
     toast({

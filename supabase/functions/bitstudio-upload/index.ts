@@ -17,7 +17,15 @@ serve(async (req) => {
     const BITSTUDIO_API_BASE = Deno.env.get('BITSTUDIO_API_BASE') || 'https://api.bitstudio.ai';
 
     if (!BITSTUDIO_API_KEY) {
-      throw new Error('bitStudio API key not configured');
+      console.error('BitStudio API key not configured');
+      return new Response(
+        JSON.stringify({ 
+          error: 'BitStudio API key not configured', 
+          code: 'invalid_token',
+          details: 'Please configure your BitStudio API key in the project settings'
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
+      );
     }
 
     // Get the form data
@@ -27,7 +35,7 @@ serve(async (req) => {
 
     if (!file) {
       return new Response(
-        JSON.stringify({ error: 'No file provided' }),
+        JSON.stringify({ error: 'No file provided', code: 'bad_request' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
       );
     }
@@ -35,7 +43,7 @@ serve(async (req) => {
     // Validate file size (10MB max)
     if (file.size > 10 * 1024 * 1024) {
       return new Response(
-        JSON.stringify({ error: 'File size exceeds 10MB limit' }),
+        JSON.stringify({ error: 'File size exceeds 10MB limit', code: 'bad_request' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
       );
     }
@@ -44,7 +52,7 @@ serve(async (req) => {
     const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
     if (!allowedTypes.includes(file.type)) {
       return new Response(
-        JSON.stringify({ error: 'Invalid file type. Only JPEG, PNG, and WebP are allowed.' }),
+        JSON.stringify({ error: 'Invalid file type. Only JPEG, PNG, and WebP are allowed.', code: 'bad_request' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
       );
     }
@@ -53,7 +61,7 @@ serve(async (req) => {
     const validTypes = ['virtual-try-on-person', 'virtual-try-on-outfit'];
     if (!validTypes.includes(type)) {
       return new Response(
-        JSON.stringify({ error: 'Invalid type. Must be virtual-try-on-person or virtual-try-on-outfit' }),
+        JSON.stringify({ error: 'Invalid type. Must be virtual-try-on-person or virtual-try-on-outfit', code: 'bad_request' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
       );
     }
@@ -76,14 +84,47 @@ serve(async (req) => {
       const errorText = await response.text();
       console.error('bitStudio API error:', response.status, errorText);
       
-      if (response.status === 429) {
+      // Handle specific error cases with proper codes
+      if (response.status === 401) {
         return new Response(
-          JSON.stringify({ error: 'Rate limit exceeded. Please try again in a moment.' }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 429 }
+          JSON.stringify({ 
+            error: 'Invalid or expired BitStudio API key', 
+            code: 'invalid_token',
+            details: 'Please check your BitStudio API key configuration'
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
         );
       }
       
-      throw new Error(`bitStudio API error: ${response.status}`);
+      if (response.status === 429) {
+        return new Response(
+          JSON.stringify({ 
+            error: 'Rate limit exceeded. Please try again in a moment.', 
+            code: 'RATE_LIMITED' 
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 429 }
+        );
+      }
+
+      if (response.status === 402) {
+        return new Response(
+          JSON.stringify({ 
+            error: 'Insufficient credits or subscription required', 
+            code: 'insufficient_credits' 
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 402 }
+        );
+      }
+      
+      // Generic server error
+      return new Response(
+        JSON.stringify({ 
+          error: `BitStudio API error: ${response.status}`, 
+          code: 'api_error',
+          details: errorText 
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: response.status }
+      );
     }
 
     const result = await response.json();
@@ -96,7 +137,11 @@ serve(async (req) => {
   } catch (error) {
     console.error('Upload error:', error);
     return new Response(
-      JSON.stringify({ error: 'Upload failed', details: error.message }),
+      JSON.stringify({ 
+        error: 'Upload failed', 
+        code: 'upload_error',
+        details: error.message 
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     );
   }
