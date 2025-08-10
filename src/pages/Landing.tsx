@@ -27,11 +27,16 @@ export default function Landing() {
 
   useEffect(() => setIsVisible(true), []);
 
-  // Redirect authenticated users to dashboard
+  // Redirect authenticated users to dashboard (temporarily disabled for preview)
   useEffect(() => {
-    if (user) {
-      navigate('/dashboard');
-    }
+    console.log('Landing page: user state:', user);
+    // Temporarily commenting out redirect so you can see the landing page
+    // if (user) {
+    //   console.log('User is authenticated, redirecting to dashboard');
+    //   navigate('/dashboard');
+    // } else {
+    //   console.log('No user, staying on landing page');
+    // }
   }, [user, navigate]);
 
   const scrollToSection = (href: string) => {
