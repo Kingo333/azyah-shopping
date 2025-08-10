@@ -185,11 +185,11 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
 
       // Apply subcategory filter first (more specific)
       if (subcategory && subcategory !== '') {
-        query = query.eq('subcategory_slug', subcategory as SubCategory);
+        query = query.eq('subcategory_slug', subcategory as any);
       }
       // Apply category filter only if no subcategory
       else if (filter && filter !== 'all') {
-        query = query.eq('category_slug', filter as TopCategory);
+        query = query.eq('category_slug', filter as any);
       }
 
       // Apply currency filter
