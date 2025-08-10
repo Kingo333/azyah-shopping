@@ -21,7 +21,7 @@ export function useBitStudio() {
       message = 'Rate limit exceeded. Please try again in a moment.';
     } else if (error.code === 'insufficient_credits' || error.code === 'no_active_subscription' || error.code === 'upgrade_required') {
       message = 'Insufficient credits or subscription required';
-      action = () => window.open('/billing', '_blank'); // Assuming billing page exists
+      action = () => window.open('/billing', '_blank');
     } else if (error.code === 'bad_request' || error.code === 'invalid_aspect_ratio' || error.code === 'invalid_resolution') {
       message = 'Invalid parameters. Please check your inputs.';
     } else if (error.status >= 500) {
@@ -63,7 +63,9 @@ export function useBitStudio() {
       setError(null);
       setLoading(true);
       const results = await BitStudioClient.virtualTryOn(params);
-      const jobId = results[0]?.id;
+      
+      // Handle array response - get first item's ID
+      const jobId = Array.isArray(results) ? results[0]?.id : results?.id;
       
       if (!jobId) {
         throw { error: 'No job ID returned', code: 'INVALID_RESPONSE' };
@@ -90,6 +92,8 @@ export function useBitStudio() {
       setError(null);
       setLoading(true);
       const results = await BitStudioClient.generateImages(params);
+      
+      // Handle both array and single object responses
       const jobId = Array.isArray(results) ? results[0]?.id : results?.id;
       
       if (!jobId) {
@@ -154,6 +158,27 @@ export function useBitStudio() {
     }
   }, [handleError, toast]);
 
+  const editImage = useCallback(async (id: string, params: Parameters<typeof BitStudioClient.editImage>[1]): Promise<BitStudioImage | null> => {
+    try {
+      setError(null);
+      setLoading(true);
+      const result = await BitStudioClient.editImage(id, params);
+      const polledResult = await BitStudioClient.pollUntilComplete(result.id || id);
+      
+      toast({
+        title: 'Edit Complete',
+        description: polledResult.credits_used ? `Used ${polledResult.credits_used} credits` : 'Image edited successfully',
+      });
+      
+      return polledResult;
+    } catch (error: any) {
+      handleError(error);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, [handleError, toast]);
+
   const generateVideo = useCallback(async (id: string, params: Parameters<typeof BitStudioClient.generateVideo>[1]): Promise<BitStudioImage | null> => {
     try {
       setError(null);
@@ -183,6 +208,7 @@ export function useBitStudio() {
     generateImages,
     upscaleImage,
     inpaintImage,
+    editImage,
     generateVideo,
     clearError: () => setError(null),
   };
