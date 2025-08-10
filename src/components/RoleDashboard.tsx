@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -20,8 +19,8 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import AiStudioModal from '@/components/AiStudioModal';
-import CreatePostModal from '@/components/CreatePostModal';
-import AddProductModal from '@/components/AddProductModal';
+import { CreatePostModal } from '@/components/CreatePostModal';
+import { AddProductModal } from '@/components/AddProductModal';
 
 const RoleDashboard = () => {
   const { user } = useAuth();
@@ -279,7 +278,7 @@ const RoleDashboard = () => {
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between mb-3">
                     <action.icon className={`h-6 w-6 ${action.primary ? 'text-purple-600' : 'text-gray-600'}`} />
-                    {action.badge && (
+                    {'badge' in action && action.badge && (
                       <Badge variant="outline" className="text-xs">
                         {action.badge}
                       </Badge>
@@ -366,12 +365,17 @@ const RoleDashboard = () => {
       
       <CreatePostModal 
         isOpen={isCreatePostOpen} 
-        onClose={() => setIsCreatePostOpen(false)} 
+        onClose={() => setIsCreatePostOpen(false)}
+        onPostCreated={() => {}}
+        userId={user?.id || ''}
       />
       
       <AddProductModal 
         isOpen={isAddProductOpen} 
-        onClose={() => setIsAddProductOpen(false)} 
+        onClose={() => setIsAddProductOpen(false)}
+        onProductAdded={() => {}}
+        userType="brand"
+        brandId={user?.id}
       />
     </div>
   );
