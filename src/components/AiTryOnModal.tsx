@@ -328,7 +328,6 @@ const AiTryOnModal: React.FC<AiTryOnModalProps> = ({ isOpen, onClose }) => {
     setCurrentJob(null);
     setProgress(0);
     setIsGenerating(false);
-    setIsUploading(false);
   };
 
   const handleClose = () => {
