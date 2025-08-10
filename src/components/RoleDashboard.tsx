@@ -45,10 +45,21 @@ const RoleDashboard: React.FC = () => {
   const [aiStudioModalOpen, setAiStudioModalOpen] = useState(false);
 
   useEffect(() => {
+    // Always set loading to false after a timeout to prevent infinite loading
+    const timeoutId = setTimeout(() => {
+      setLoading(false);
+    }, 5000);
+
     if (user) {
       fetchUserProfile();
       fetchDashboardStats();
+      clearTimeout(timeoutId);
+    } else {
+      setLoading(false);
+      clearTimeout(timeoutId);
     }
+
+    return () => clearTimeout(timeoutId);
   }, [user]);
 
   const fetchUserProfile = async () => {
@@ -91,6 +102,8 @@ const RoleDashboard: React.FC = () => {
         role: 'shopper',
         email: user.email!
       });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -163,6 +176,19 @@ const RoleDashboard: React.FC = () => {
         <div className="text-center">
           <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
           <p>Loading dashboard...</p>
+        </div>
+      </div>;
+  }
+
+  // Show sign-in prompt if no user
+  if (!user) {
+    return <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <h2 className="text-2xl font-bold">Welcome to Azyah</h2>
+          <p className="text-muted-foreground">Please sign in to access your dashboard</p>
+          <Button onClick={() => navigate('/auth')}>
+            Sign In
+          </Button>
         </div>
       </div>;
   }
