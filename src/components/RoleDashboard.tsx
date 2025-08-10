@@ -214,15 +214,17 @@ const RoleDashboard: React.FC = () => {
   console.log('Rendering dashboard for user:', userProfile);
 
   const renderShopperDashboard = () => (
-    <div className="space-y-6">
-      {/* Quick Actions with Glass Panel */}
-      <GlassPanel className="p-6">
-        <div className="space-y-4">
-          <h2 className="text-xl font-semibold flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-primary" />
+    <div className="space-y-4">
+      {/* Quick Actions with Premium Glass Panel */}
+      <GlassPanel variant="premium" className="p-8">
+        <div className="space-y-6">
+          <h2 className="text-2xl font-cormorant font-semibold flex items-center gap-3 text-foreground/90">
+            <div className="p-2 rounded-full bg-gradient-to-br from-primary/10 to-accent-cartier/10">
+              <Sparkles className="h-6 w-6 text-primary" />
+            </div>
             Quick Actions
           </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3 sm:gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-4 sm:gap-5">
             <Button 
               onClick={() => navigate('/swipe')} 
               className="btn-luxury h-16 sm:h-20 flex-col gap-1 sm:gap-2"
@@ -286,69 +288,83 @@ const RoleDashboard: React.FC = () => {
       </GlassPanel>
 
       {/* Global Search and Affiliate Hub Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Global Search with Glass Panel */}
-        <GlassPanel className="p-6">
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold flex items-center gap-2">
-              <Search className="h-5 w-5" />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Global Search with Premium Glass Panel */}
+        <GlassPanel variant="premium" className="p-8">
+          <div className="space-y-5">
+            <h3 className="text-xl font-cormorant font-semibold flex items-center gap-3">
+              <div className="p-2 rounded-full bg-gradient-to-br from-primary/10 to-accent-cartier/10">
+                <Search className="h-5 w-5 text-primary" />
+              </div>
               Discover Products, Brands & Styles
             </h3>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-muted-foreground leading-relaxed">
               Search across products, brands, and styles to discover your next fashion find.
             </p>
-            <Button onClick={() => setSearchOpen(true)} variant="outline" className="w-full">
+            <Button onClick={() => setSearchOpen(true)} variant="premium" size="lg" className="w-full">
               <Search className="h-4 w-4 mr-2" />
               Open Global Search
             </Button>
           </div>
         </GlassPanel>
 
-        {/* Affiliate Hub - Desktop with Glass Panel */}
+        {/* Affiliate Hub - Desktop with Premium Glass Panel */}
         <div className="hidden lg:block">
-          <GlassPanel className="p-6">
+          <GlassPanel variant="premium" className="p-8">
             <AffiliateHub showTitle={false} />
           </GlassPanel>
         </div>
       </div>
 
-      {/* Affiliate Hub - Mobile with Glass Panel */}
+      {/* Affiliate Hub - Mobile with Premium Glass Panel */}
       <div className="block lg:hidden">
-        <GlassPanel className="p-6">
+        <GlassPanel variant="premium" className="p-8">
           <AffiliateHub />
         </GlassPanel>
       </div>
 
-      {/* Closets Preview with Glass Panel */}
-      <GlassPanel className="p-6">
-        <div className="space-y-4">
+      {/* Closets Preview with Premium Glass Panel */}
+      <GlassPanel variant="premium" className="p-8">
+        <div className="space-y-5">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold">My Closets</h3>
-            <Button variant="outline" size="sm" onClick={() => navigate('/closets')}>
+            <h3 className="text-xl font-cormorant font-semibold flex items-center gap-3">
+              <div className="p-2 rounded-full bg-gradient-to-br from-primary/10 to-accent-cartier/10">
+                <Archive className="h-5 w-5 text-primary" />
+              </div>
+              My Closets
+            </h3>
+            <Button variant="premium" size="sm" onClick={() => navigate('/closets')}>
               <Archive className="h-4 w-4 mr-2" />
               View All
             </Button>
           </div>
-          <p className="text-muted-foreground text-center py-8">
-            Create your first closet to organize your style discoveries
-          </p>
+          <div className="text-center py-12 space-y-3">
+            <div className="w-16 h-16 mx-auto rounded-full bg-gradient-to-br from-primary/10 to-accent-cartier/10 flex items-center justify-center mb-4">
+              <Archive className="h-8 w-8 text-primary/60" />
+            </div>
+            <p className="text-muted-foreground text-lg">
+              Create your first closet to organize your style discoveries
+            </p>
+          </div>
         </div>
       </GlassPanel>
 
-      {/* Fashion Leaderboards with Glass Panel */}
-      <GlassPanel className="p-6">
-        <div className="space-y-4">
+      {/* Fashion Leaderboards with Premium Glass Panel */}
+      <GlassPanel variant="premium" className="p-8">
+        <div className="space-y-6">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold flex items-center gap-2">
-              <Trophy className="h-5 w-5 text-yellow-500" />
+            <h3 className="text-xl font-cormorant font-semibold flex items-center gap-3">
+              <div className="p-2 rounded-full bg-gradient-to-br from-yellow-500/10 to-orange-500/10">
+                <Trophy className="h-5 w-5 text-yellow-500" />
+              </div>
               Fashion Leaderboards
             </h3>
-            <div className="flex gap-2">
-              <Button variant={activeLeaderboard === 'global' ? 'default' : 'outline'} size="sm" onClick={() => setActiveLeaderboard('global')}>
+            <div className="flex gap-3">
+              <Button variant={activeLeaderboard === 'global' ? 'premium' : 'outline'} size="sm" onClick={() => setActiveLeaderboard('global')}>
                 <Globe className="h-4 w-4 mr-2" />
                 Global
               </Button>
-              <Button variant={activeLeaderboard === 'country' ? 'default' : 'outline'} size="sm" onClick={() => setActiveLeaderboard('country')}>
+              <Button variant={activeLeaderboard === 'country' ? 'premium' : 'outline'} size="sm" onClick={() => setActiveLeaderboard('country')}>
                 <MapPin className="h-4 w-4 mr-2" />
                 Country
               </Button>
@@ -361,165 +377,161 @@ const RoleDashboard: React.FC = () => {
   );
 
   const renderBrandDashboard = () => (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Quick Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <Package className="h-5 w-5 text-blue-500" />
-              <div>
-                <p className="text-sm text-muted-foreground">Products</p>
-                <p className="text-xl font-bold">{stats.totalProducts || 0}</p>
-              </div>
+        <GlassPanel variant="premium" className="p-6">
+          <div className="flex items-center gap-4">
+            <div className="p-3 rounded-xl bg-gradient-to-br from-blue-500/10 to-blue-600/10">
+              <Package className="h-6 w-6 text-blue-500" />
             </div>
-          </CardContent>
-        </Card>
+            <div>
+              <p className="text-sm text-muted-foreground font-medium">Products</p>
+              <p className="text-2xl font-bold text-foreground">{stats.totalProducts || 0}</p>
+            </div>
+          </div>
+        </GlassPanel>
 
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <Eye className="h-5 w-5 text-green-500" />
-              <div>
-                <p className="text-sm text-muted-foreground">Views</p>
-                <p className="text-xl font-bold">{stats.totalViews || 0}</p>
-              </div>
+        <GlassPanel variant="premium" className="p-6">
+          <div className="flex items-center gap-4">
+            <div className="p-3 rounded-xl bg-gradient-to-br from-green-500/10 to-green-600/10">
+              <Eye className="h-6 w-6 text-green-500" />
             </div>
-          </CardContent>
-        </Card>
+            <div>
+              <p className="text-sm text-muted-foreground font-medium">Views</p>
+              <p className="text-2xl font-bold text-foreground">{stats.totalViews || 0}</p>
+            </div>
+          </div>
+        </GlassPanel>
 
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <ShoppingBag className="h-5 w-5 text-purple-500" />
-              <div>
-                <p className="text-sm text-muted-foreground">Sales</p>
-                <p className="text-xl font-bold">{stats.totalSales || 0}</p>
-              </div>
+        <GlassPanel variant="premium" className="p-6">
+          <div className="flex items-center gap-4">
+            <div className="p-3 rounded-xl bg-gradient-to-br from-purple-500/10 to-purple-600/10">
+              <ShoppingBag className="h-6 w-6 text-purple-500" />
             </div>
-          </CardContent>
-        </Card>
+            <div>
+              <p className="text-sm text-muted-foreground font-medium">Sales</p>
+              <p className="text-2xl font-bold text-foreground">{stats.totalSales || 0}</p>
+            </div>
+          </div>
+        </GlassPanel>
 
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <DollarSign className="h-5 w-5 text-green-500" />
-              <div>
-                <p className="text-sm text-muted-foreground">Revenue</p>
-                <p className="text-xl font-bold">{formatPrice(stats.totalRevenue || 0)}</p>
-              </div>
+        <GlassPanel variant="premium" className="p-6">
+          <div className="flex items-center gap-4">
+            <div className="p-3 rounded-xl bg-gradient-to-br from-green-500/10 to-emerald-600/10">
+              <DollarSign className="h-6 w-6 text-green-500" />
             </div>
-          </CardContent>
-        </Card>
+            <div>
+              <p className="text-sm text-muted-foreground font-medium">Revenue</p>
+              <p className="text-2xl font-bold text-foreground">{formatPrice(stats.totalRevenue || 0)}</p>
+            </div>
+          </div>
+        </GlassPanel>
       </div>
 
       {/* Quick Actions */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Brand Management</CardTitle>
-        </CardHeader>
-        <CardContent>
+      <GlassPanel variant="premium" className="p-8">
+        <div className="space-y-6">
+          <h3 className="text-xl font-cormorant font-semibold">Brand Management</h3>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            <Button onClick={() => navigate('/brand-portal')} className="h-20 flex-col gap-2">
-              <Package className="h-6 w-6" />
-              <span>Products</span>
+            <Button onClick={() => navigate('/brand-portal')} variant="premium" className="h-24 flex-col gap-3">
+              <Package className="h-7 w-7" />
+              <span className="font-medium">Products</span>
             </Button>
-            <Button onClick={() => navigate('/brand-portal')} variant="outline" className="h-20 flex-col gap-2">
-              <BarChart3 className="h-6 w-6" />
-              <span>Analytics</span>
+            <Button onClick={() => navigate('/brand-portal')} variant="outline" className="h-24 flex-col gap-3 hover:scale-105 transition-transform">
+              <BarChart3 className="h-7 w-7" />
+              <span className="font-medium">Analytics</span>
             </Button>
-            <Button onClick={() => navigate('/brand-portal')} variant="outline" className="h-20 flex-col gap-2">
-              <Settings className="h-6 w-6" />
-              <span>Settings</span>
+            <Button onClick={() => navigate('/brand-portal')} variant="outline" className="h-24 flex-col gap-3 hover:scale-105 transition-transform">
+              <Settings className="h-7 w-7" />
+              <span className="font-medium">Settings</span>
             </Button>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </GlassPanel>
     </div>
   );
 
   const renderRetailerDashboard = () => (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Quick Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <Store className="h-5 w-5 text-blue-500" />
-              <div>
-                <p className="text-sm text-muted-foreground">Brands</p>
-                <p className="text-xl font-bold">5</p>
-              </div>
+        <GlassPanel variant="premium" className="p-6">
+          <div className="flex items-center gap-4">
+            <div className="p-3 rounded-xl bg-gradient-to-br from-blue-500/10 to-blue-600/10">
+              <Store className="h-6 w-6 text-blue-500" />
             </div>
-          </CardContent>
-        </Card>
+            <div>
+              <p className="text-sm text-muted-foreground font-medium">Brands</p>
+              <p className="text-2xl font-bold text-foreground">5</p>
+            </div>
+          </div>
+        </GlassPanel>
 
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <Package className="h-5 w-5 text-green-500" />
-              <div>
-                <p className="text-sm text-muted-foreground">Products</p>
-                <p className="text-xl font-bold">{stats.totalProducts || 0}</p>
-              </div>
+        <GlassPanel variant="premium" className="p-6">
+          <div className="flex items-center gap-4">
+            <div className="p-3 rounded-xl bg-gradient-to-br from-green-500/10 to-green-600/10">
+              <Package className="h-6 w-6 text-green-500" />
             </div>
-          </CardContent>
-        </Card>
+            <div>
+              <p className="text-sm text-muted-foreground font-medium">Products</p>
+              <p className="text-2xl font-bold text-foreground">{stats.totalProducts || 0}</p>
+            </div>
+          </div>
+        </GlassPanel>
 
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-purple-500" />
-              <div>
-                <p className="text-sm text-muted-foreground">Sales</p>
-                <p className="text-xl font-bold">{stats.totalSales || 0}</p>
-              </div>
+        <GlassPanel variant="premium" className="p-6">
+          <div className="flex items-center gap-4">
+            <div className="p-3 rounded-xl bg-gradient-to-br from-purple-500/10 to-purple-600/10">
+              <TrendingUp className="h-6 w-6 text-purple-500" />
             </div>
-          </CardContent>
-        </Card>
+            <div>
+              <p className="text-sm text-muted-foreground font-medium">Sales</p>
+              <p className="text-2xl font-bold text-foreground">{stats.totalSales || 0}</p>
+            </div>
+          </div>
+        </GlassPanel>
 
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <DollarSign className="h-5 w-5 text-green-500" />
-              <div>
-                <p className="text-sm text-muted-foreground">Revenue</p>
-                <p className="text-xl font-bold">{formatPrice(stats.totalRevenue || 0)}</p>
-              </div>
+        <GlassPanel variant="premium" className="p-6">
+          <div className="flex items-center gap-4">
+            <div className="p-3 rounded-xl bg-gradient-to-br from-green-500/10 to-emerald-600/10">
+              <DollarSign className="h-6 w-6 text-green-500" />
             </div>
-          </CardContent>
-        </Card>
+            <div>
+              <p className="text-sm text-muted-foreground font-medium">Revenue</p>
+              <p className="text-2xl font-bold text-foreground">{formatPrice(stats.totalRevenue || 0)}</p>
+            </div>
+          </div>
+        </GlassPanel>
       </div>
 
       {/* Quick Actions */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Retailer Management</CardTitle>
-        </CardHeader>
-        <CardContent>
+      <GlassPanel variant="premium" className="p-8">
+        <div className="space-y-6">
+          <h3 className="text-xl font-cormorant font-semibold">Retailer Management</h3>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            <Button onClick={() => navigate('/retailer-portal')} className="h-20 flex-col gap-2">
-              <Package className="h-6 w-6" />
-              <span>Inventory</span>
+            <Button onClick={() => navigate('/retailer-portal')} variant="premium" className="h-24 flex-col gap-3">
+              <Package className="h-7 w-7" />
+              <span className="font-medium">Inventory</span>
             </Button>
-            <Button onClick={() => navigate('/retailer-portal')} variant="outline" className="h-20 flex-col gap-2">
-              <Store className="h-6 w-6" />
-              <span>Brands</span>
+            <Button onClick={() => navigate('/retailer-portal')} variant="outline" className="h-24 flex-col gap-3 hover:scale-105 transition-transform">
+              <Store className="h-7 w-7" />
+              <span className="font-medium">Brands</span>
             </Button>
-            <Button onClick={() => navigate('/retailer-portal')} variant="outline" className="h-20 flex-col gap-2">
-              <BarChart3 className="h-6 w-6" />
-              <span>Analytics</span>
+            <Button onClick={() => navigate('/retailer-portal')} variant="outline" className="h-24 flex-col gap-3 hover:scale-105 transition-transform">
+              <BarChart3 className="h-7 w-7" />
+              <span className="font-medium">Analytics</span>
             </Button>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </GlassPanel>
     </div>
   );
 
   return (
     <ErrorBoundary>
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-background/95 pb-20 sm:pb-0">
-        <div className="container-responsive mx-auto max-w-6xl p-4">
+      <div className="min-h-screen dashboard-bg pb-20 sm:pb-0">
+        <div className="container mx-auto max-w-7xl px-4 py-6">
           {/* Header with Dashboard Header component */}
           <div className="mb-6">
             <DashboardHeader />

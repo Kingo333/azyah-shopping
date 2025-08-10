@@ -47,6 +47,18 @@
     --shadow-elegant: 0 4px 24px hsl(222.2 84% 4.9% / 0.08);
     --shadow-cartier: 0 4px 24px hsl(var(--accent-cartier) / 0.15);
     
+    /* Premium Glass Effects */
+    --glass-bg: rgba(255, 255, 255, 0.08);
+    --glass-border: rgba(255, 255, 255, 0.12);
+    --glass-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+    --glass-shadow-premium: 0 8px 40px rgba(0, 0, 0, 0.12);
+    --glass-backdrop: blur(20px) saturate(180%);
+    
+    /* Premium gradients */
+    --gradient-glass: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+    --gradient-premium: linear-gradient(135deg, hsl(var(--primary) / 0.05), hsl(var(--accent-cartier) / 0.03));
+    --gradient-dashboard: linear-gradient(135deg, hsl(var(--background)), hsl(var(--primary-glow) / 0.3));
+    
     /* Sidebar colors */
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
@@ -92,6 +104,15 @@
     --lux-primary: 340 82% 52%;
     --lux-secondary: 262 83% 58%;
     --lux-accent: 45 93% 47%;
+    
+    /* Dark mode glass effects */
+    --glass-bg: rgba(0, 0, 0, 0.15);
+    --glass-border: rgba(255, 255, 255, 0.08);
+    --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    --glass-shadow-premium: 0 8px 40px rgba(0, 0, 0, 0.25);
+    --gradient-glass: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
+    --gradient-premium: linear-gradient(135deg, hsl(var(--primary-glow) / 0.1), hsl(var(--accent-cartier) / 0.05));
+    --gradient-dashboard: linear-gradient(135deg, hsl(var(--background)), hsl(var(--primary-glow) / 0.15));
     
     --sidebar-background: 222.2 84% 4.9%;
     --sidebar-foreground: 210 40% 98%;
@@ -143,5 +164,30 @@
 
   .ring-cartier {
     @apply focus:ring-2 focus:ring-cartier-600 focus:ring-offset-2;
+  }
+
+  /* Premium glass styling utilities */
+  .glass-panel {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow-premium);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+
+  .glass-premium {
+    background: var(--gradient-glass);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow-premium);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+  }
+
+  .dashboard-bg {
+    background: var(--gradient-dashboard);
+  }
+
+  .premium-hover {
+    @apply hover:scale-[1.02] transition-all duration-300 ease-out;
   }
 }
