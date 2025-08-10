@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -26,19 +25,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { AddToClosetModal } from '@/components/AddToClosetModal';
 import { motion, AnimatePresence } from 'framer-motion';
 
-interface ProductBrand {
-  id: string;
-  name: string;
-  logo_url?: string;
-}
-
-interface ProductRetailer {
-  id: string;
-  name: string;
-  logo_url?: string;
-}
-
-interface Product {
+// Simple type definitions to avoid recursion
+type SimpleProduct = {
   id: string;
   title: string;
   description?: string;
@@ -46,18 +34,26 @@ interface Product {
   currency: string;
   media_urls: string[];
   external_url?: string;
-  brand?: ProductBrand;
-  retailer?: ProductRetailer;
+  brand?: {
+    id: string;
+    name: string;
+    logo_url?: string;
+  };
+  retailer?: {
+    id: string;
+    name: string;
+    logo_url?: string;
+  };
   category_slug: string;
   subcategory_slug?: string;
   stock_qty?: number;
   rating?: number;
   review_count?: number;
   created_at: string;
-}
+};
 
 interface ProductDetailModalProps {
-  product: Product | null;
+  product: SimpleProduct | null;
   isOpen: boolean;
   onClose: () => void;
   onLike?: (productId: string) => void;

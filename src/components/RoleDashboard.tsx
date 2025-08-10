@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -28,6 +29,10 @@ interface Profile {
 
 const RoleDashboard = () => {
   const { user } = useAuth();
+  const [isCreatePostOpen, setIsCreatePostOpen] = useState(false);
+  const [isAddProductOpen, setIsAddProductOpen] = useState(false);
+  const [isAiStudioOpen, setIsAiStudioOpen] = useState(false);
+
   const { data: profile } = useQuery({
     queryKey: ['user-profile', user?.id],
     queryFn: async () => {
@@ -44,19 +49,8 @@ const RoleDashboard = () => {
     enabled: !!user?.id
   });
 
-  const [isCreatePostOpen, setIsCreatePostOpen] = useState(false);
-  const [isAddProductOpen, setIsAddProductOpen] = useState(false);
-  const [isAiStudioOpen, setIsAiStudioOpen] = useState(false);
-
-  if (!user || !profile) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
-
-  const userRole = profile.role || 'shopper';
+  // Move all hooks before any early returns
+  const userRole = profile?.role || 'shopper';
 
   const quickActions = useMemo(() => {
     const actions = [];
@@ -93,7 +87,16 @@ const RoleDashboard = () => {
     return actions;
   }, [userRole]);
 
-  const badges = Array.isArray(profile.badges) ? profile.badges : [];
+  const badges = Array.isArray(profile?.badges) ? profile.badges : [];
+
+  // Early returns after all hooks
+  if (!user || !profile) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">
