@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -15,9 +14,11 @@ import { getTopCategories, getSubcategories, getCatLabel, getSubcatLabel, type C
 interface AddProductModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onProductAdded?: () => void;
+  userType?: string;
 }
 
-const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClose }) => {
+const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClose, onProductAdded, userType }) => {
   const { toast } = useToast();
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -68,6 +69,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClose }) =>
     onSuccess: () => {
       toast({ title: "Success", description: "Product added successfully!" });
       queryClient.invalidateQueries({ queryKey: ['products'] });
+      onProductAdded?.();
       onClose();
       resetForm();
     },
