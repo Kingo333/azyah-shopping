@@ -1,5 +1,5 @@
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, createElement } from 'react';
 import { BitStudioClient } from '@/lib/bitstudio-client';
 import { BitStudioImage, BitStudioError } from '@/lib/bitstudio-types';
 import { useToast } from '@/hooks/use-toast';
@@ -63,11 +63,10 @@ export function useBitStudio() {
 
     setError(message);
     
-    const actionElement = action ? (
-      <ToastAction altText="Learn more" onClick={action}>
-        Learn more
-      </ToastAction>
-    ) : undefined;
+    const actionElement = action ? createElement(ToastAction, {
+      altText: "Learn more",
+      onClick: action
+    }, "Learn more") : undefined;
 
     toast({
       title: 'Error',
