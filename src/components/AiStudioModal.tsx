@@ -12,6 +12,7 @@ import { Loader2, Download, Sparkles, Wand2 } from 'lucide-react';
 import { useBitStudio } from '@/hooks/useBitStudio';
 import { BITSTUDIO_IMAGE_TYPES } from '@/lib/bitstudio-types';
 import { useToast } from '@/hooks/use-toast';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 export interface AiStudioModalProps {
   open: boolean;
@@ -262,7 +263,17 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({ open, onClose, trigger })
                 </div>
               </CardContent>
             </Card>
-            
+            <Alert className="mt-2">
+              <AlertTitle>Best photo tips</AlertTitle>
+              <AlertDescription>
+                <ul className="list-disc pl-5 space-y-1 text-sm text-muted-foreground">
+                  <li>Person: single subject, full-body, front-facing, neutral pose; arms slightly away.</li>
+                  <li>Lighting & background: bright, even light; plain background; avoid filters and obstructions.</li>
+                  <li>Quality: high‑resolution (≥ 1024px), JPG/PNG/WebP, under 10MB.</li>
+                  <li>Outfit: product cutout or flat/ghost mannequin on plain background; front view (no model).</li>
+                </ul>
+              </AlertDescription>
+            </Alert>
             {error && (
               <Card className="border-destructive">
                 <CardContent className="pt-6">

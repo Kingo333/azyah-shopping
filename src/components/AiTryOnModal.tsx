@@ -19,6 +19,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBitStudio } from '@/hooks/useBitStudio';
 import { BITSTUDIO_IMAGE_TYPES } from '@/lib/bitstudio-types';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 interface AiTryOnModalProps {
   isOpen: boolean;
@@ -684,18 +685,17 @@ const AiTryOnModal: React.FC<AiTryOnModalProps> = ({ isOpen, onClose }) => {
             </Card>
           )}
 
-          <div className="bg-muted/50 p-3 rounded-lg">
-            <div className="flex items-start gap-2 text-sm">
-              <AlertCircle className="h-4 w-4 mt-0.5 text-blue-500 flex-shrink-0" />
-              <div className="space-y-1 text-muted-foreground">
-                <p className="font-medium">Tips for best results:</p>
-                <p>• Use full-body, front-facing photos</p>
-                <p>• Ensure good lighting and neutral pose</p>
-                <p>• Clean garment images work best</p>
-                <p>• Only one person in the photo</p>
-              </div>
-            </div>
-          </div>
+<Alert>
+  <AlertTitle>Best photo tips</AlertTitle>
+  <AlertDescription>
+    <ul className="list-disc pl-5 space-y-1 text-sm text-muted-foreground">
+      <li>Person: single subject, full-body, front-facing, neutral pose; arms slightly away from torso.</li>
+      <li>Lighting & background: bright, even light; plain background; avoid filters, hats/sunglasses, and heavy occlusions.</li>
+      <li>Quality: high‑resolution (≥ 1024px), JPG/PNG/WebP, under 10MB.</li>
+      <li>Outfit image: product cutout or flat/ghost mannequin on a plain background, front view (no model).</li>
+    </ul>
+  </AlertDescription>
+</Alert>
         </div>
       </DialogContent>
     </Dialog>
