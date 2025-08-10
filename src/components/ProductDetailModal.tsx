@@ -1,6 +1,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
 import { Heart, ShoppingBag, ExternalLink, X } from 'lucide-react';
 import { Product } from '@/types';
@@ -131,37 +132,36 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     />
                   </div>
 
-                  {/* Description */}
-                  {product.description && (
-                    <div className="space-y-2">
-                      <h3 className="font-semibold text-base">Description</h3>
-                      <p className="text-muted-foreground text-sm leading-relaxed">
-                        {product.description}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Product Details */}
-                  <div className="space-y-3">
-                    <h3 className="font-semibold text-base">Product Details</h3>
-                    <div className="bg-muted/50 rounded-lg p-3 space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">SKU:</span>
-                        <span className="font-medium">{product.sku}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Category:</span>
-                        <span className="font-medium capitalize">
-                          {product.category_slug?.replace('_', ' ')}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
+                  <Accordion type="single" collapsible defaultValue="details">
+                    {product.description && (
+                      <AccordionItem value="description">
+                        <AccordionTrigger className="text-base font-semibold">Description</AccordionTrigger>
+                        <AccordionContent>
+                          <p className="text-muted-foreground text-sm leading-relaxed">{product.description}</p>
+                        </AccordionContent>
+                      </AccordionItem>
+                    )}
+                    <AccordionItem value="details">
+                      <AccordionTrigger className="text-base font-semibold">Product Details</AccordionTrigger>
+                      <AccordionContent>
+                        <div className="bg-muted/50 rounded-lg p-3 space-y-2">
+                          <div className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">SKU:</span>
+                            <span className="font-medium">{product.sku}</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">Category:</span>
+                            <span className="font-medium capitalize">{product.category_slug?.replace('_', ' ')}</span>
+                          </div>
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  </Accordion>
                 </div>
               </div>
 
               {/* Fixed Bottom Actions */}
-              <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-lg border-t border-border p-4 space-y-3 safe-area-bottom">
+              <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-lg border-t border-border p-4 space-y-3 pb-mobile-safe">
                 <div className="flex gap-2">
                   <Button 
                     variant="outline" 
@@ -218,7 +218,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   variant="ghost"
                   aria-label="Close product details"
                   onClick={onClose}
-                  className="absolute top-4 right-4 z-20 bg-background/60 hover:bg-background/80 backdrop-blur-md rounded-full h-8 w-8"
+                  className="absolute top-4 right-4 z-20 bg-background/60 hover:bg-background/80 backdrop-blur-md rounded-full h-8 w-8 md:block"
                 >
                   <X className="h-5 w-5" />
                 </Button>
@@ -263,32 +263,31 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     sizeChartImage="/placeholder.svg"
                   />
 
-                  {/* Description */}
-                  {product.description && (
-                    <div>
-                      <h4 className="font-semibold mb-2">Description</h4>
-                      <p className="text-muted-foreground text-sm leading-relaxed">
-                        {product.description}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Product Details */}
-                  <div className="space-y-3">
-                    <h4 className="font-semibold">Product Details</h4>
-                    <div className="grid grid-cols-2 gap-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">SKU:</span>
-                        <span>{product.sku}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Category:</span>
-                        <span className="capitalize">
-                          {product.category_slug?.replace('_', ' ')}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
+                  <Accordion type="single" collapsible defaultValue="details">
+                    {product.description && (
+                      <AccordionItem value="description">
+                        <AccordionTrigger className="text-base font-semibold">Description</AccordionTrigger>
+                        <AccordionContent>
+                          <p className="text-muted-foreground text-sm leading-relaxed">{product.description}</p>
+                        </AccordionContent>
+                      </AccordionItem>
+                    )}
+                    <AccordionItem value="details">
+                      <AccordionTrigger className="text-base font-semibold">Product Details</AccordionTrigger>
+                      <AccordionContent>
+                        <div className="grid grid-cols-2 gap-2 text-sm">
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">SKU:</span>
+                            <span>{product.sku}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Category:</span>
+                            <span className="capitalize">{product.category_slug?.replace('_', ' ')}</span>
+                          </div>
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  </Accordion>
                 </div>
 
                 {/* Sticky Footer */}
