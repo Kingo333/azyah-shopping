@@ -45,35 +45,47 @@ const RoleDashboard: React.FC = () => {
   const [aiStudioModalOpen, setAiStudioModalOpen] = useState(false);
 
   useEffect(() => {
-    // Always set loading to false after a timeout to prevent infinite loading
-    const timeoutId = setTimeout(() => {
-      setLoading(false);
-    }, 5000);
+    const initializeDashboard = async () => {
+      console.log('Initializing dashboard, user:', user);
+      
+      if (!user) {
+        console.log('No user found, setting loading to false');
+        setLoading(false);
+        return;
+      }
 
-    if (user) {
-      fetchUserProfile();
-      fetchDashboardStats();
-      clearTimeout(timeoutId);
-    } else {
-      setLoading(false);
-      clearTimeout(timeoutId);
-    }
+      try {
+        await fetchUserProfile();
+        await fetchDashboardStats();
+      } catch (error) {
+        console.error('Error initializing dashboard:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    return () => clearTimeout(timeoutId);
+    initializeDashboard();
   }, [user]);
 
   const fetchUserProfile = async () => {
     if (!user) return;
+    
+    console.log('Fetching user profile for:', user.id);
+    
     try {
-      const {
-        data,
-        error
-      } = await supabase.from('users').select('*').eq('id', user.id).maybeSingle();
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', user.id)
+        .maybeSingle();
+
       if (error) {
         console.error('Error fetching user profile:', error);
         throw error;
       }
+
       if (data) {
+        console.log('Found user profile:', data);
         setUserProfile(data);
       } else {
         // User profile doesn't exist, create one
@@ -84,50 +96,41 @@ const RoleDashboard: React.FC = () => {
           role: 'shopper' as const,
           email: user.email!
         };
-        const {
-          error: insertError
-        } = await supabase.from('users').insert([defaultProfile]);
+
+        const { error: insertError } = await supabase
+          .from('users')
+          .insert([defaultProfile]);
+
         if (insertError) {
           console.error('Error creating user profile:', insertError);
-          // Use the default profile even if insert fails
         }
+        
         setUserProfile(defaultProfile);
       }
     } catch (error) {
       console.error('Error with user profile:', error);
       // Fallback profile
-      setUserProfile({
+      const fallbackProfile = {
         id: user.id,
         name: user.email?.split('@')[0] || 'User',
-        role: 'shopper',
+        role: 'shopper' as const,
         email: user.email!
-      });
-    } finally {
-      setLoading(false);
+      };
+      setUserProfile(fallbackProfile);
     }
   };
 
   const fetchDashboardStats = async () => {
     if (!user) return;
     
-    const timeoutId = setTimeout(() => {
-      console.warn('Dashboard stats fetch timeout, setting loading to false');
-      setLoading(false);
-    }, 10000); // 10 second timeout
-
+    console.log('Fetching dashboard stats for:', user.id);
+    
     try {
-      // Fetch basic stats for all roles with timeout
-      const statsPromises = [
+      // Fetch basic stats for all roles
+      const [wishlistData, cartData] = await Promise.all([
         supabase.from('wishlist_items').select('*').eq('wishlist_id', user.id),
         supabase.from('cart_items').select('*').eq('user_id', user.id)
-      ];
-
-      const [wishlistData, cartData] = await Promise.race([
-        Promise.all(statsPromises),
-        new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Timeout')), 8000)
-        )
-      ]) as any[];
+      ]);
 
       const dashboardStats: DashboardStats = {
         totalWishlistItems: wishlistData?.data?.length || 0,
@@ -149,7 +152,7 @@ const RoleDashboard: React.FC = () => {
       }
       
       setStats(dashboardStats);
-      clearTimeout(timeoutId);
+      console.log('Dashboard stats updated:', dashboardStats);
     } catch (error) {
       console.error('Error fetching dashboard stats:', error);
       // Set default stats on error
@@ -158,9 +161,6 @@ const RoleDashboard: React.FC = () => {
         totalCartItems: 0,
         totalProducts: 0
       });
-      clearTimeout(timeoutId);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -171,18 +171,24 @@ const RoleDashboard: React.FC = () => {
     }).format(cents / 100);
   };
 
+  // Show loading spinner
   if (loading) {
-    return <div className="min-h-screen bg-background flex items-center justify-center">
+    console.log('Showing loading spinner');
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
           <p>Loading dashboard...</p>
         </div>
-      </div>;
+      </div>
+    );
   }
 
   // Show sign-in prompt if no user
   if (!user) {
-    return <div className="min-h-screen bg-background flex items-center justify-center">
+    console.log('No user, showing sign-in prompt');
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center space-y-4">
           <h2 className="text-2xl font-bold">Welcome to Azyah</h2>
           <p className="text-muted-foreground">Please sign in to access your dashboard</p>
@@ -190,16 +196,22 @@ const RoleDashboard: React.FC = () => {
             Sign In
           </Button>
         </div>
-      </div>;
+      </div>
+    );
   }
 
   if (!userProfile) {
-    return <div className="min-h-screen bg-background flex items-center justify-center">
+    console.log('No user profile, showing error');
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <p>Error loading profile</p>
         </div>
-      </div>;
+      </div>
+    );
   }
+
+  console.log('Rendering dashboard for user:', userProfile);
 
   const renderShopperDashboard = () => (
     <div className="space-y-6">
@@ -348,7 +360,8 @@ const RoleDashboard: React.FC = () => {
     </div>
   );
 
-  const renderBrandDashboard = () => <div className="space-y-6">
+  const renderBrandDashboard = () => (
+    <div className="space-y-6">
       {/* Quick Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
@@ -422,9 +435,11 @@ const RoleDashboard: React.FC = () => {
           </div>
         </CardContent>
       </Card>
-    </div>;
+    </div>
+  );
 
-  const renderRetailerDashboard = () => <div className="space-y-6">
+  const renderRetailerDashboard = () => (
+    <div className="space-y-6">
       {/* Quick Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
@@ -498,7 +513,8 @@ const RoleDashboard: React.FC = () => {
           </div>
         </CardContent>
       </Card>
-    </div>;
+    </div>
+  );
 
   return (
     <ErrorBoundary>
