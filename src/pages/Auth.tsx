@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { GlassPanel } from '@/components/ui/glass-panel';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2, Sparkles, Heart, Star, ShoppingBag, Store, Building2, ArrowLeft } from 'lucide-react';
@@ -75,7 +76,7 @@ const Auth = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-accent/5 p-4">
+    <div className="min-h-screen dashboard-bg flex items-center justify-center p-4">
       <div className="w-full max-w-md space-y-8">
         {/* Back to Landing Button */}
         <div className="flex justify-start">
@@ -83,48 +84,48 @@ const Auth = () => {
             variant="ghost" 
             size="sm" 
             onClick={() => navigate('/')}
-            className="hover:bg-primary/10"
+            className="hover:bg-primary/10 premium-hover"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Home
           </Button>
         </div>
         {/* Header */}
-        <div className="text-center space-y-4">
+        <div className="text-center space-y-6">
           <div className="flex justify-center">
             <div className="relative">
               <div className="absolute inset-0 bg-gradient-to-r from-primary to-accent rounded-full blur-lg opacity-30 animate-pulse"></div>
-              <div className="relative bg-white rounded-full p-4 shadow-lg">
+              <div className="relative glass-premium rounded-full p-6 shadow-lg">
+                <Sparkles className="h-8 w-8 text-primary mx-auto" />
               </div>
             </div>
           </div>
           <div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+            <h1 className="text-4xl font-cormorant font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
               Azyah
             </h1>
-            <p className="text-muted-foreground mt-2">
+            <p className="text-muted-foreground mt-3 text-lg">
               Discover fashion that speaks to your soul
             </p>
           </div>
         </div>
 
         {/* Auth Card */}
-        <Card className="border-0 shadow-2xl bg-white/80 backdrop-blur-sm">
-          <CardHeader className="space-y-1 text-center">
-            <CardTitle className="text-2xl font-semibold">
+        <GlassPanel variant="premium" className="p-8">
+          <div className="space-y-2 text-center mb-8">
+            <h2 className="text-2xl font-cormorant font-semibold">
               {activeTab === 'signin' ? 'Welcome back' : 'Join Azyah'}
-            </CardTitle>
-            <CardDescription>
+            </h2>
+            <p className="text-muted-foreground">
               {activeTab === 'signin' 
                 ? 'Sign in to continue your fashion journey' 
                 : 'Create your account to start discovering'
               }
-            </CardDescription>
-          </CardHeader>
-          
-          <CardContent>
+            </p>
+          </div>
+          <div>
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-2 bg-muted/50">
+              <TabsList className="grid w-full grid-cols-2 glass-panel mb-8">
                 <TabsTrigger value="signin" className="flex items-center gap-2">
                   Sign In
                 </TabsTrigger>
@@ -134,33 +135,35 @@ const Auth = () => {
               </TabsList>
 
               {/* Sign In Tab */}
-              <TabsContent value="signin" className="space-y-4 mt-6">
-                <form onSubmit={handleSignIn} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="signin-email">Email</Label>
+              <TabsContent value="signin" className="space-y-6 mt-6">
+                <form onSubmit={handleSignIn} className="space-y-6">
+                  <div className="space-y-3">
+                    <Label htmlFor="signin-email" className="text-sm font-medium">Email</Label>
                     <Input
                       id="signin-email"
                       name="email"
                       type="email"
                       placeholder="Enter your email"
                       required
-                      className="h-11"
+                      className="h-12 glass-panel border-white/20"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signin-password">Password</Label>
+                  <div className="space-y-3">
+                    <Label htmlFor="signin-password" className="text-sm font-medium">Password</Label>
                     <Input
                       id="signin-password"
                       name="password"
                       type="password"
                       placeholder="Enter your password"
                       required
-                      className="h-11"
+                      className="h-12 glass-panel border-white/20"
                     />
                   </div>
                   <Button 
                     type="submit" 
-                    className="w-full h-11 bg-gradient-to-r from-primary to-primary-glow hover:shadow-lg transition-all duration-300"
+                    variant="premium"
+                    size="lg"
+                    className="w-full h-12"
                     disabled={isLoading}
                   >
                     {isLoading ? (
@@ -176,32 +179,32 @@ const Auth = () => {
               </TabsContent>
 
               {/* Sign Up Tab */}
-              <TabsContent value="signup" className="space-y-4 mt-6">
-                <form onSubmit={handleSignUp} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-name">Full Name</Label>
+              <TabsContent value="signup" className="space-y-6 mt-6">
+                <form onSubmit={handleSignUp} className="space-y-6">
+                  <div className="space-y-3">
+                    <Label htmlFor="signup-name" className="text-sm font-medium">Full Name</Label>
                     <Input
                       id="signup-name"
                       name="name"
                       type="text"
                       placeholder="Enter your full name"
                       required
-                      className="h-11"
+                      className="h-12 glass-panel border-white/20"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-email">Email</Label>
+                  <div className="space-y-3">
+                    <Label htmlFor="signup-email" className="text-sm font-medium">Email</Label>
                     <Input
                       id="signup-email"
                       name="email"
                       type="email"
                       placeholder="Enter your email"
                       required
-                      className="h-11"
+                      className="h-12 glass-panel border-white/20"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-password">Password</Label>
+                  <div className="space-y-3">
+                    <Label htmlFor="signup-password" className="text-sm font-medium">Password</Label>
                     <Input
                       id="signup-password"
                       name="password"
@@ -209,32 +212,35 @@ const Auth = () => {
                       placeholder="Create a strong password"
                       required
                       minLength={6}
-                      className="h-11"
+                      className="h-12 glass-panel border-white/20"
                     />
                   </div>
-                  <div className="space-y-3">
-                    <Label className="text-base font-medium">Choose your role</Label>
-                    <div className="grid grid-cols-1 gap-3">
+                  <div className="space-y-4">
+                    <Label className="text-base font-cormorant font-semibold">Choose your role</Label>
+                    <div className="grid grid-cols-1 gap-4">
                       {/* Shopper Role */}
-                      <div
-                        className={`p-4 border-2 rounded-lg cursor-pointer transition-all duration-200 ${
+                      <GlassPanel
+                        variant={selectedRole === 'shopper' ? 'premium' : 'default'}
+                        className={`p-5 cursor-pointer transition-all duration-300 ${
                           selectedRole === 'shopper'
-                            ? 'border-primary bg-primary/5 shadow-md'
-                            : 'border-border hover:border-primary/50 hover:bg-primary/2'
+                            ? 'border-primary/50 shadow-lg scale-[1.02]'
+                            : 'hover:scale-[1.01] hover:border-primary/30'
                         }`}
                         onClick={() => setSelectedRole('shopper')}
                       >
-                        <div className="flex items-center space-x-3">
-                          <div className={`p-2 rounded-full ${
-                            selectedRole === 'shopper' ? 'bg-primary text-primary-foreground' : 'bg-muted'
+                        <div className="flex items-center space-x-4">
+                          <div className={`p-3 rounded-xl ${
+                            selectedRole === 'shopper' 
+                              ? 'bg-gradient-to-br from-primary/20 to-primary/10' 
+                              : 'bg-muted/50'
                           }`}>
-                            <ShoppingBag className="h-5 w-5" />
+                            <ShoppingBag className="h-6 w-6 text-primary" />
                           </div>
                           <div className="flex-1">
-                            <h3 className="font-semibold text-sm">Fashion Lover</h3>
-                            <p className="text-xs text-muted-foreground">Shop and discover new styles</p>
+                            <h3 className="font-semibold text-base">Fashion Lover</h3>
+                            <p className="text-sm text-muted-foreground">Shop and discover new styles</p>
                           </div>
-                          <div className={`w-4 h-4 rounded-full border-2 ${
+                          <div className={`w-5 h-5 rounded-full border-2 ${
                             selectedRole === 'shopper' 
                               ? 'border-primary bg-primary' 
                               : 'border-muted-foreground'
@@ -244,7 +250,7 @@ const Auth = () => {
                             )}
                           </div>
                         </div>
-                      </div>
+                      </GlassPanel>
 
                       {/* Brand Role */}
                       <div
@@ -311,7 +317,9 @@ const Auth = () => {
                   </div>
                   <Button 
                     type="submit" 
-                    className="w-full h-11 bg-gradient-to-r from-primary to-accent hover:shadow-lg transition-all duration-300"
+                    variant="premium"
+                    size="lg"
+                    className="w-full h-12"
                     disabled={isLoading || !selectedRole}
                   >
                     {isLoading ? (
@@ -326,8 +334,8 @@ const Auth = () => {
                 </form>
               </TabsContent>
             </Tabs>
-          </CardContent>
-        </Card>
+          </div>
+        </GlassPanel>
 
         {/* Footer */}
         <div className="text-center text-sm text-muted-foreground">

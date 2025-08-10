@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { GlassPanel } from '@/components/ui/glass-panel';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import ShopperNavigation from '@/components/ShopperNavigation';
@@ -30,86 +31,98 @@ const Explore: React.FC = () => {
   const [activeFilter, setActiveFilter] = useState<'trending' | 'influencers' | 'brands'>('brands');
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen dashboard-bg">
       <div className="container mx-auto max-w-6xl p-4">
         <ShopperNavigation />
         
         {/* Header */}
-        <div className="flex items-center gap-3 mb-6">
-          <h1 className="text-2xl font-bold">Explore</h1>
-          <Sparkles className="h-6 w-6 text-primary" />
+        <div className="flex items-center gap-4 mb-8">
+          <h1 className="text-3xl font-cormorant font-bold">Explore</h1>
+          <div className="p-2 rounded-full bg-gradient-to-br from-primary/10 to-accent/10">
+            <Sparkles className="h-6 w-6 text-primary" />
+          </div>
         </div>
 
         {/* Main Navigation */}
-        <Tabs value={activeSection} onValueChange={(value) => setActiveSection(value as any)} className="mb-6">
-          <TabsList>
+        <Tabs value={activeSection} onValueChange={(value) => setActiveSection(value as any)} className="mb-8">
+          <TabsList className="glass-panel">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="search">Search</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-8">
             {/* Filter Buttons */}
-            <div className="flex flex-wrap gap-3 justify-center">
-              <Button
-                variant={activeFilter === 'trending' ? 'default' : 'outline'}
-                onClick={() => setActiveFilter('trending')}
-                className="flex items-center gap-2"
-              >
-                <TrendingUp className="h-4 w-4" />
-                Trending Styles
-              </Button>
-              <Button
-                variant={activeFilter === 'influencers' ? 'default' : 'outline'}
-                onClick={() => setActiveFilter('influencers')}
-                className="flex items-center gap-2"
-              >
-                <Users className="h-4 w-4" />
-                Top Influencers
-              </Button>
-              <Button
-                variant={activeFilter === 'brands' ? 'default' : 'outline'}
-                onClick={() => setActiveFilter('brands')}
-                className="flex items-center gap-2"
-              >
-                <Star className="h-4 w-4" />
-                Featured Brands
-              </Button>
-            </div>
+            <GlassPanel variant="premium" className="p-6">
+              <div className="flex flex-wrap gap-4 justify-center">
+                <Button
+                  variant={activeFilter === 'trending' ? 'premium' : 'outline'}
+                  onClick={() => setActiveFilter('trending')}
+                  className="flex items-center gap-2 hover:scale-105 transition-transform"
+                >
+                  <TrendingUp className="h-4 w-4" />
+                  Trending Styles
+                </Button>
+                <Button
+                  variant={activeFilter === 'influencers' ? 'premium' : 'outline'}
+                  onClick={() => setActiveFilter('influencers')}
+                  className="flex items-center gap-2 hover:scale-105 transition-transform"
+                >
+                  <Users className="h-4 w-4" />
+                  Top Influencers
+                </Button>
+                <Button
+                  variant={activeFilter === 'brands' ? 'premium' : 'outline'}
+                  onClick={() => setActiveFilter('brands')}
+                  className="flex items-center gap-2 hover:scale-105 transition-transform"
+                >
+                  <Star className="h-4 w-4" />
+                  Featured Brands
+                </Button>
+              </div>
+            </GlassPanel>
 
             {/* Content based on active filter */}
             {activeFilter === 'trending' && (
-              <section>
-                <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5 text-blue-500" />
+              <GlassPanel variant="premium" className="p-8">
+                <h2 className="text-2xl font-cormorant font-bold mb-6 flex items-center gap-3">
+                  <div className="p-2 rounded-full bg-gradient-to-br from-blue-500/10 to-blue-600/10">
+                    <TrendingUp className="h-6 w-6 text-blue-500" />
+                  </div>
                   Trending Styles
                 </h2>
                 <TrendingStyles limit={12} showMore={false} />
-              </section>
+              </GlassPanel>
             )}
 
             {activeFilter === 'influencers' && (
-              <section>
-                <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-                  <Users className="h-5 w-5 text-green-500" />
+              <GlassPanel variant="premium" className="p-8">
+                <h2 className="text-2xl font-cormorant font-bold mb-6 flex items-center gap-3">
+                  <div className="p-2 rounded-full bg-gradient-to-br from-green-500/10 to-green-600/10">
+                    <Users className="h-6 w-6 text-green-500" />
+                  </div>
                   Top Influencers
                 </h2>
                 <TopInfluencers limit={12} showMore={false} />
-              </section>
+              </GlassPanel>
             )}
 
             {activeFilter === 'brands' && (
-              <section>
-                <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-                  <Star className="h-5 w-5 text-purple-500" />
+              <GlassPanel variant="premium" className="p-8">
+                <h2 className="text-2xl font-cormorant font-bold mb-6 flex items-center gap-3">
+                  <div className="p-2 rounded-full bg-gradient-to-br from-purple-500/10 to-purple-600/10">
+                    <Star className="h-6 w-6 text-purple-500" />
+                  </div>
                   Featured Brands
                 </h2>
                 <FeaturedBrands limit={12} showMore={false} />
-              </section>
+              </GlassPanel>
             )}
           </TabsContent>
 
           <TabsContent value="search">
-            <ExploreSearch />
+            <GlassPanel variant="premium" className="p-8">
+              <ExploreSearch />
+            </GlassPanel>
           </TabsContent>
         </Tabs>
       </div>

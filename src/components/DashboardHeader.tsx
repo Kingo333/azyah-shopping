@@ -25,26 +25,25 @@ const DashboardHeader: React.FC = () => {
   const getUserName = () => {
     return user?.user_metadata?.name || user?.email?.split('@')[0] || 'User';
   };
-  return <div className="flex items-center justify-between">
-      <div className="flex items-center gap-2">
-        
-        <h1 className="font-serif text-xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+  return <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center gap-3">
+        <h1 className="font-cormorant text-2xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
           Azyah
         </h1>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-3">
         {/* Theme Toggle */}
-        <Button variant="ghost" size="sm" onClick={handleThemeToggle} className="hover:bg-primary/10">
-          {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+        <Button variant="ghost" size="sm" onClick={handleThemeToggle} className="hover:bg-primary/10 hover:scale-105 transition-all">
+          {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
         </Button>
 
         {/* User Menu */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" className="flex items-center gap-2 hover:bg-primary/10">
-              <Avatar className="h-6 w-6">
-                <AvatarFallback className="text-xs">
+            <Button variant="ghost" size="sm" className="flex items-center gap-3 hover:bg-primary/10 hover:scale-105 transition-all">
+              <Avatar className="h-8 w-8 border-2 border-white/20">
+                <AvatarFallback className="text-sm bg-gradient-to-br from-primary/10 to-accent/10">
                   {getUserName().charAt(0).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
@@ -53,7 +52,7 @@ const DashboardHeader: React.FC = () => {
               </span>
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
+          <DropdownMenuContent align="end" className="w-56 glass-panel border-white/20">
             <DropdownMenuItem onClick={() => navigate('/profile-settings')}>
               <Settings className="mr-2 h-4 w-4" />
               Profile Settings

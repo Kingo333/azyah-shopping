@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { GlassPanel } from '@/components/ui/glass-panel';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -232,7 +233,7 @@ const UserProfile: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen dashboard-bg">
       <SEOHead 
         title={`${userProfile.name || userProfile.email} - User Profile`}
         description={`View ${userProfile.name || userProfile.email}'s fashion profile, posts, and public closets`}
@@ -246,75 +247,78 @@ const UserProfile: React.FC = () => {
         </div>
 
         {/* Profile Header */}
-        <Card className="mb-6">
-          <CardContent className="p-6">
-            <div className="flex flex-col md:flex-row gap-6">
-              <Avatar className="w-24 h-24 mx-auto md:mx-0">
-                <AvatarImage src={userProfile.avatar_url} />
-                <AvatarFallback className="text-2xl">
-                  {userProfile.name?.[0] || userProfile.email[0]}
-                </AvatarFallback>
-              </Avatar>
+        <GlassPanel variant="premium" className="p-8 mb-8">
+          <div className="flex flex-col md:flex-row gap-8">
+            <Avatar className="w-32 h-32 mx-auto md:mx-0 border-4 border-white/20">
+              <AvatarImage src={userProfile.avatar_url} />
+              <AvatarFallback className="text-3xl bg-gradient-to-br from-primary/10 to-accent/10">
+                {userProfile.name?.[0] || userProfile.email[0]}
+              </AvatarFallback>
+            </Avatar>
 
-              <div className="flex-1 text-center md:text-left">
-                <h1 className="text-2xl font-bold mb-2">
-                  {userProfile.name || userProfile.email.split('@')[0]}
-                </h1>
-                
-                {userProfile.bio && (
-                  <p className="text-muted-foreground mb-4">{userProfile.bio}</p>
-                )}
+            <div className="flex-1 text-center md:text-left">
+              <h1 className="text-3xl font-cormorant font-bold mb-3">
+                {userProfile.name || userProfile.email.split('@')[0]}
+              </h1>
+              
+              {userProfile.bio && (
+                <p className="text-muted-foreground mb-6 text-lg leading-relaxed">{userProfile.bio}</p>
+              )}
 
-                <div className="flex flex-wrap gap-4 justify-center md:justify-start mb-4">
-                  {userProfile.country && (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <div className="flex flex-wrap gap-6 justify-center md:justify-start mb-6">
+                {userProfile.country && (
+                  <div className="flex items-center gap-3 text-muted-foreground">
+                    <div className="p-2 rounded-full bg-gradient-to-br from-primary/10 to-accent/10">
                       <MapPin className="h-4 w-4" />
-                      {userProfile.country}
                     </div>
-                  )}
-                </div>
+                    <span className="font-medium">{userProfile.country}</span>
+                  </div>
+                )}
+              </div>
 
-                {/* Social Links */}
-                <div className="flex gap-3 justify-center md:justify-start">
-                  {userProfile.socials?.instagram && (
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => window.open(`https://instagram.com/${userProfile.socials.instagram}`, '_blank')}
-                    >
-                      <Instagram className="h-4 w-4 mr-2" />
-                      Instagram
-                    </Button>
-                  )}
-                  {userProfile.socials?.twitter && (
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => window.open(`https://twitter.com/${userProfile.socials.twitter}`, '_blank')}
-                    >
-                      <Twitter className="h-4 w-4 mr-2" />
-                      Twitter
-                    </Button>
-                  )}
-                  {userProfile.website && (
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => window.open(userProfile.website, '_blank')}
-                    >
-                      <Globe className="h-4 w-4 mr-2" />
-                      Website
-                    </Button>
-                  )}
-                </div>
+              {/* Social Links */}
+              <div className="flex gap-4 justify-center md:justify-start">
+                {userProfile.socials?.instagram && (
+                  <Button 
+                    variant="premium" 
+                    size="sm"
+                    onClick={() => window.open(`https://instagram.com/${userProfile.socials.instagram}`, '_blank')}
+                    className="hover:scale-105 transition-transform"
+                  >
+                    <Instagram className="h-4 w-4 mr-2" />
+                    Instagram
+                  </Button>
+                )}
+                {userProfile.socials?.twitter && (
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => window.open(`https://twitter.com/${userProfile.socials.twitter}`, '_blank')}
+                    className="hover:scale-105 transition-transform"
+                  >
+                    <Twitter className="h-4 w-4 mr-2" />
+                    Twitter
+                  </Button>
+                )}
+                {userProfile.website && (
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => window.open(userProfile.website, '_blank')}
+                    className="hover:scale-105 transition-transform"
+                  >
+                    <Globe className="h-4 w-4 mr-2" />
+                    Website
+                  </Button>
+                )}
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </GlassPanel>
 
         {/* Content Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-2 glass-panel mb-8">
             <TabsTrigger value="posts">Posts</TabsTrigger>
             <TabsTrigger value="closets">Public Closets</TabsTrigger>
           </TabsList>
