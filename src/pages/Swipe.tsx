@@ -76,9 +76,9 @@ const Swipe = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen dashboard-bg flex flex-col">
       {/* Header */}
-      <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur-xl supports-[backdrop-filter]:bg-background/80 shrink-0">
+      <header className="sticky top-0 z-50 w-full border-b border-white/20 glass-premium shrink-0">
         <div className="container max-w-screen-2xl mx-auto px-2 sm:px-4 py-3 sm:py-4">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center space-x-2 sm:space-x-4 flex-shrink-0">
@@ -126,7 +126,7 @@ const Swipe = () => {
                     <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4 ml-1" />
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-[90vw] max-w-sm bg-background/95 backdrop-blur-xl border-border/50 shadow-elegant z-50" align="end">
+                <PopoverContent className="w-[90vw] max-w-sm glass-premium border-white/20 shadow-elegant z-50" align="end">
                   <div className="space-y-4 sm:space-y-6">
                     <div className="space-y-2">
                       <h4 className="font-semibold text-base sm:text-lg">Filters</h4>

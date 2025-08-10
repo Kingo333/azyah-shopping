@@ -56,7 +56,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent
-        className="max-w-4xl max-h-[90vh] p-0 overflow-y-auto md:overflow-hidden"
+        className="max-w-4xl max-h-[90vh] p-0 overflow-y-auto md:overflow-hidden glass-premium border-white/20"
       >
         {!product ? (
           <div className="flex h-[70vh] items-center justify-center text-sm text-muted-foreground">
@@ -65,7 +65,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
         ) : (
           <div className="flex flex-col md:grid md:grid-cols-2 h-auto md:h-full">
             {/* Image Gallery */}
-            <div className="relative">
+            <div className="relative h-[40vh] md:h-full">
               <EnhancedProductGallery
                 images={images}
                 productTitle={product.title}
@@ -76,21 +76,21 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 variant="ghost"
                 size="sm"
                 onClick={onClose}
-                className="absolute top-4 right-4 z-10 bg-background/80 backdrop-blur-sm"
+                className="absolute top-2 right-2 md:top-4 md:right-4 z-10 glass-subtle"
               >
                 <X className="h-4 w-4" />
               </Button>
             </div>
 
             {/* Product Details */}
-            <div className="flex flex-col h-auto md:h-full">
-              <div className="p-6 space-y-6 md:flex-1 md:overflow-y-auto">
+            <div className="flex flex-col h-auto md:h-full glass-subtle border-white/10">
+              <div className="p-4 md:p-6 space-y-4 md:space-y-6 md:flex-1 md:overflow-y-auto">
                 {/* Header */}
                 <div>
-                  <h2 className="text-2xl font-bold line-clamp-2 mb-2">{product.title}</h2>
+                  <h2 className="text-xl md:text-2xl font-bold line-clamp-2 mb-2">{product.title}</h2>
                   <p className="text-muted-foreground">{product.brand?.name}</p>
                   <div className="flex items-center gap-4 mt-2">
-                    <span className="text-2xl font-bold">
+                    <span className="text-xl md:text-2xl font-bold">
                       {new Intl.NumberFormat('en-US', { style: 'currency', currency: priceCurrency })
                         .format(priceCents / 100)}
                     </span>
@@ -142,19 +142,19 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               </div>
 
               {/* Sticky Footer */}
-              <div className="border-t p-6 space-y-3 bg-background sticky bottom-0 md:static">
+              <div className="border-t border-white/20 p-4 md:p-6 space-y-3 glass-premium sticky bottom-0 md:static">
                 <div className="flex gap-2">
-                  <Button variant="outline" size="sm" className="flex-1 gap-2">
-                    <Heart className="h-4 w-4" />
+                  <Button variant="outline" size="sm" className="flex-1 gap-1 md:gap-2 text-xs md:text-sm h-9 md:h-10">
+                    <Heart className="h-3 w-3 md:h-4 md:w-4" />
                     Wishlist
                   </Button>
                   <Button
                     onClick={() => setIsClosetModalOpen(true)}
                     variant="outline"
                     size="sm"
-                    className="flex-1 gap-2"
+                    className="flex-1 gap-1 md:gap-2 text-xs md:text-sm h-9 md:h-10"
                   >
-                    <ShoppingBag className="h-4 w-4" />
+                    <ShoppingBag className="h-3 w-3 md:h-4 md:w-4" />
                     Add to Closet
                   </Button>
                 </div>
@@ -162,14 +162,14 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 {product.external_url ? (
                   <Button
                     onClick={handleShopNow}
-                    className="w-full gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
+                    className="w-full gap-1 md:gap-2 bg-gradient-accent hover:shadow-soft text-xs md:text-sm h-9 md:h-10"
                   >
-                    <ExternalLink className="h-4 w-4" />
+                    <ExternalLink className="h-3 w-3 md:h-4 md:w-4" />
                     Shop Now
                   </Button>
                 ) : (
-                  <Button disabled className="w-full gap-2 opacity-50 cursor-not-allowed">
-                    <ShoppingBag className="h-4 w-4" />
+                  <Button disabled className="w-full gap-1 md:gap-2 opacity-50 cursor-not-allowed text-xs md:text-sm h-9 md:h-10">
+                    <ShoppingBag className="h-3 w-3 md:h-4 md:w-4" />
                     Shop Link Not Available
                   </Button>
                 )}

@@ -171,7 +171,7 @@ const Likes: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen dashboard-bg">
       <div className="container mx-auto max-w-6xl p-4">
         <ShopperNavigation />
         
@@ -197,7 +197,7 @@ const Likes: React.FC = () => {
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-6">
             {likes.map((like) => (
-              <Card key={like.id} className="group hover:shadow-lg transition-all duration-300">
+              <Card key={like.id} className="group glass-premium hover:shadow-elegant transition-all duration-300 premium-hover">
                 <CardContent className="p-0">
                   <div className="relative aspect-square overflow-hidden rounded-t-lg">
                     <img

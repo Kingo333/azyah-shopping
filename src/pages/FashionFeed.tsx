@@ -271,7 +271,7 @@ const FashionFeed: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-background pb-20 sm:pb-0">
+    <div className="min-h-screen dashboard-bg pb-20 sm:pb-0">
       <div className="container-responsive mx-auto max-w-2xl p-4">
         {/* Navigation */}
         <ShopperNavigation />
@@ -284,7 +284,7 @@ const FashionFeed: React.FC = () => {
         />
 
         {/* Header */}
-        <div className="sticky top-20 z-10 bg-background/95 backdrop-blur-sm pb-4 mb-6">
+        <div className="sticky top-20 z-10 glass-premium pb-4 mb-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-4">
             <div className="flex items-center gap-3">
               <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
@@ -334,7 +334,7 @@ const FashionFeed: React.FC = () => {
         </div>
 
         {/* Create Post Prompt */}
-        <Card className="mb-6">
+        <Card className="mb-6 glass-premium border-white/20">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <Avatar>
@@ -362,7 +362,7 @@ const FashionFeed: React.FC = () => {
         {/* Feed Posts */}
         <div className="space-y-6">
           {filteredPosts.length === 0 ? (
-            <Card>
+            <Card className="glass-premium border-white/20">
               <CardContent className="p-12 text-center">
                 <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                 <h3 className="text-lg font-semibold mb-2">No posts yet</h3>
@@ -377,7 +377,7 @@ const FashionFeed: React.FC = () => {
             </Card>
           ) : (
             filteredPosts.map((post) => (
-              <Card key={post.id} className="overflow-hidden">
+              <Card key={post.id} className="overflow-hidden glass-premium border-white/20 premium-hover">
                 <CardHeader className="pb-3">
                   <div className="flex items-center gap-3">
                     <Avatar>

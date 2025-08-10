@@ -277,8 +277,8 @@ const ARTryOn = () => {
 
   if (!selectedProduct) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md">
+      <div className="min-h-screen dashboard-bg flex items-center justify-center p-4">
+        <Card className="w-full max-w-md glass-premium border-white/20">
           <CardHeader className="text-center">
             <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
               <Sparkles className="h-8 w-8 text-white" />
@@ -320,9 +320,9 @@ const ARTryOn = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50">
+    <div className="min-h-screen dashboard-bg">
       {/* Header */}
-      <div className="bg-white/80 backdrop-blur-lg border-b sticky top-0 z-50">
+      <div className="glass-premium border-b border-white/20 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-4">
@@ -368,7 +368,7 @@ const ARTryOn = () => {
               exit={{ opacity: 0, y: -20 }}
               className="mb-6"
             >
-              <Card className="bg-gradient-to-r from-purple-500 to-blue-500 text-white border-0">
+              <Card className="glass-premium border-white/20 text-white bg-gradient-subtle">
                 <CardContent className="p-6">
                   <div className="flex items-start gap-4">
                     <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center flex-shrink-0">
@@ -402,7 +402,7 @@ const ARTryOn = () => {
         <div className="grid lg:grid-cols-3 gap-8">
           {/* AR Experience */}
           <div className="lg:col-span-2">
-            <Card className="overflow-hidden">
+            <Card className="overflow-hidden glass-premium border-white/20">
               <CardHeader className="pb-4">
                 <div className="flex items-center justify-between">
                   <CardTitle className="flex items-center gap-2">
