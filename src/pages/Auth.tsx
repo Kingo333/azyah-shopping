@@ -96,7 +96,6 @@ const Auth = () => {
             <div className="relative">
               <div className="absolute inset-0 bg-gradient-to-r from-primary to-accent rounded-full blur-lg opacity-30 animate-pulse"></div>
               <div className="relative glass-premium rounded-full p-6 shadow-lg">
-                <Sparkles className="h-8 w-8 text-primary mx-auto" />
               </div>
             </div>
           </div>
