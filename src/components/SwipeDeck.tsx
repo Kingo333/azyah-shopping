@@ -67,6 +67,74 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
 
   const cardRef = useRef<HTMLDivElement>(null);
 
+  const nextCard = useCallback(() => {
+    x.set(0);
+    setIndex((prevIndex) => Math.min(prevIndex + 1, products.length - 1));
+  }, [x, products.length]);
+
+  const prevCard = useCallback(() => {
+    x.set(0);
+    setIndex((prevIndex) => Math.max(prevIndex - 1, 0));
+  }, [x]);
+
+  const handleLike = useCallback(async (product: Product) => {
+    if (!user) {
+      toast({
+        title: "Sign in required",
+        description: "You must be signed in to like products.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('likes')
+        .insert([{ user_id: user.id, product_id: product.id }]);
+
+      if (error) {
+        // If it's a duplicate error, just show success message
+        if (error.code === '23505') {
+          toast({
+            description: `${product.title} is already in your likes!`,
+          });
+        } else {
+          throw error;
+        }
+      } else {
+        toast({
+          description: `${product.title} added to your likes!`,
+        });
+      }
+      
+      nextCard();
+    } catch (error: any) {
+      console.error("Error liking product:", error.message);
+      toast({
+        title: "Error",
+        description: "Failed to like product. Please try again.",
+        variant: "destructive",
+      });
+    }
+  }, [user, toast, nextCard]);
+
+  const handleDislike = useCallback(() => {
+    nextCard();
+  }, [nextCard]);
+
+  const handleSwipeEnd = useCallback((event: any, info: PanInfo) => {
+    const currentProduct = products[index];
+    if (!currentProduct) return;
+
+    if (info.offset.x > DISTANCE_THRESHOLD) {
+      handleLike(currentProduct);
+    } else if (info.offset.x < -DISTANCE_THRESHOLD) {
+      handleDislike();
+    } else {
+      x.set(0); // Reset position if not swiped far enough
+    }
+  }, [x, index, products, handleLike, handleDislike]);
+
   const fetchProducts = useCallback(async () => {
     try {
       let query = supabase
@@ -222,65 +290,10 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
     fetchProducts();
   }, [fetchProducts]);
 
-  const handleLike = async (product: Product) => {
-    if (!user) {
-      toast({
-        title: "Sign in required",
-        description: "You must be signed in to like products.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      const { data, error } = await supabase
-        .from('likes')
-        .insert([{ user_id: user.id, product_id: product.id }]);
-
-      if (error) throw error;
-
-      toast({
-        description: `${product.title} added to your likes!`,
-      });
-      nextCard();
-    } catch (error: any) {
-      console.error("Error liking product:", error.message);
-      toast({
-        title: "Error",
-        description: "Failed to like product. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleDislike = () => {
-    nextCard();
-  };
-
-  const nextCard = () => {
-    x.set(0);
-    setIndex((prevIndex) => Math.min(prevIndex + 1, products.length - 1));
-  };
-
-  const prevCard = () => {
-    x.set(0);
-    setIndex((prevIndex) => Math.max(prevIndex - 1, 0));
-  };
-
   const handleProductClick = (product: Product) => {
     setSelectedProduct(product);
     setIsModalOpen(true);
   };
-
-  const handleSwipeEnd = useCallback((event: any, info: PanInfo) => {
-    if (info.offset.x > DISTANCE_THRESHOLD) {
-      handleLike(products[index]);
-    } else if (info.offset.x < -DISTANCE_THRESHOLD) {
-      handleDislike();
-    } else {
-      x.set(0); // Reset position if not swiped far enough
-    }
-  }, [x, index, products, handleLike, handleDislike]);
 
   const currentProduct = useMemo(() => products[index], [products, index]);
 
@@ -372,7 +385,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
           <Button variant="destructive" size="icon" onClick={handleDislike}>
             <X className="h-5 w-5" />
           </Button>
-          <Button variant="default" size="icon" onClick={() => handleLike(products[index])}>
+          <Button variant="default" size="icon" onClick={() => currentProduct && handleLike(currentProduct)}>
             <Heart className="h-5 w-5" />
           </Button>
         </div>
