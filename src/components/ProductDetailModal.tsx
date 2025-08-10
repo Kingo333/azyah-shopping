@@ -80,8 +80,8 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   </Button>
                 </div>
                 
-                {/* Image Gallery - Fixed Height */}
-                <div className="h-[45vh]">
+                {/* Image Gallery */}
+                <div>
                   <EnhancedProductGallery
                     images={images}
                     productTitle={product.title}
@@ -89,6 +89,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     hasARMesh={false}
                   />
                 </div>
+                <div className="border-t border-border" />
               </div>
 
               {/* Scrollable Content Area */}
