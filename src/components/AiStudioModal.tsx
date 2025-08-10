@@ -14,12 +14,13 @@ import { useBitStudio } from '@/hooks/useBitStudio';
 import { BITSTUDIO_IMAGE_TYPES } from '@/lib/bitstudio-types';
 import { useToast } from '@/hooks/use-toast';
 
-interface AiStudioModalProps {
+export interface AiStudioModalProps {
+  open: boolean;
+  onClose: () => void;
   trigger?: React.ReactNode;
 }
 
-export const AiStudioModal: React.FC<AiStudioModalProps> = ({ trigger }) => {
-  const [open, setOpen] = useState(false);
+const AiStudioModal: React.FC<AiStudioModalProps> = ({ open, onClose, trigger }) => {
   const [activeTab, setActiveTab] = useState('virtual-tryon');
   
   // File uploads
@@ -240,7 +241,7 @@ export const AiStudioModal: React.FC<AiStudioModalProps> = ({ trigger }) => {
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={onClose}>
       <DialogTrigger asChild>
         {trigger || (
           <Button variant="outline" className="gap-2">
@@ -581,3 +582,5 @@ export const AiStudioModal: React.FC<AiStudioModalProps> = ({ trigger }) => {
     </Dialog>
   );
 };
+
+export default AiStudioModal;
