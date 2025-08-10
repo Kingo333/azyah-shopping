@@ -3,7 +3,7 @@ import { useState, useCallback } from 'react';
 import { BitStudioClient } from '@/lib/bitstudio-client';
 import { BitStudioImage, BitStudioError } from '@/lib/bitstudio-types';
 import { useToast } from '@/hooks/use-toast';
-import { ToastAction, type ToastActionElement } from '@/components/ui/toast';
+import { ToastAction } from '@/components/ui/toast';
 
 // Use the existing types from bitstudio-types instead of duplicating
 type BitImage = BitStudioImage & {
@@ -20,9 +20,11 @@ function getFirstId(resp: BitCreateResponse): string | undefined {
 
 // Resolution type guards and mappers
 type AnyRes = 'low' | 'standard' | 'high';
+type TryGenRes = 'standard' | 'high';
+type EditRes = 'standard' | 'low';
 
-const asTryGen = (r?: AnyRes): 'standard' | 'high' => (r === 'high' ? 'high' : 'standard');
-const asEdit = (r?: AnyRes): 'standard' | 'low' => (r === 'low' ? 'low' : 'standard');
+const asTryGen = (r?: AnyRes): TryGenRes => (r === 'high' ? 'high' : 'standard');
+const asEdit = (r?: AnyRes): EditRes => (r === 'low' ? 'low' : 'standard');
 
 export function useBitStudio() {
   const [loading, setLoading] = useState(false);
@@ -56,15 +58,17 @@ export function useBitStudio() {
 
     setError(message);
     
-    const actionElement: ToastActionElement | undefined = action 
-      ? (<ToastAction altText="Open billing" onClick={action}>Open billing</ToastAction>)
-      : undefined;
+    const actionButton = action ? (
+      <ToastAction altText="Open billing" onClick={action}>
+        Open billing
+      </ToastAction>
+    ) : undefined;
 
     toast({
       title: 'Error',
       description: message,
       variant: 'destructive',
-      action: actionElement,
+      action: actionButton,
     });
 
     return message;
