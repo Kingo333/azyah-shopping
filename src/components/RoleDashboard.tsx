@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -198,6 +197,10 @@ const RoleDashboard = () => {
       <AddProductModal 
         isOpen={isAddProductOpen}
         onClose={() => setIsAddProductOpen(false)}
+        onProductAdded={() => {}}
+        userType={userRole as 'brand' | 'retailer'}
+        brandId={userRole === 'brand' ? user.id : undefined}
+        retailerId={userRole === 'retailer' ? user.id : undefined}
       />
 
       <AiStudioModal

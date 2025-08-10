@@ -26,6 +26,18 @@ import { useAuth } from '@/contexts/AuthContext';
 import { AddToClosetModal } from '@/components/AddToClosetModal';
 import { motion, AnimatePresence } from 'framer-motion';
 
+interface ProductBrand {
+  id: string;
+  name: string;
+  logo_url?: string;
+}
+
+interface ProductRetailer {
+  id: string;
+  name: string;
+  logo_url?: string;
+}
+
 interface Product {
   id: string;
   title: string;
@@ -34,16 +46,8 @@ interface Product {
   currency: string;
   media_urls: string[];
   external_url?: string;
-  brand?: {
-    id: string;
-    name: string;
-    logo_url?: string;
-  };
-  retailer?: {
-    id: string;
-    name: string;
-    logo_url?: string;
-  };
+  brand?: ProductBrand;
+  retailer?: ProductRetailer;
   category_slug: string;
   subcategory_slug?: string;
   stock_qty?: number;
