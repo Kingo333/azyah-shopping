@@ -1,3 +1,4 @@
+
 // Unified Category Taxonomy for Azyah Platform
 export const CATEGORY_TREE = {
   clothing: [
@@ -7,11 +8,11 @@ export const CATEGORY_TREE = {
   ],
   footwear: ['heels', 'flats', 'sandals', 'sneakers', 'boots', 'loafers', 'slippers'],
   accessories: [
-    'handbags', 'clutches', 'totes', 'backpacks', 'wallets', 'belts', 'scarves',
-    'hats', 'sunglasses', 'watches', 'jewelry'
+    'belts', 'scarves', 'hats', 'sunglasses', 'watches'
   ],
   jewelry: ['necklaces', 'earrings', 'bracelets', 'rings', 'anklets', 'brooches'],
-  beauty: ['perfume', 'eau-de-toilette', 'eau-de-parfum', 'skincare', 'makeup', 'nailcare', 'haircare'],
+  beauty: ['all beauty', 'skincare', 'haircare', 'makeup', 'fragrances', 'home fragrances', 'tools & accessories'],
+  bags: ['handbags', 'clutches', 'totes', 'backpacks', 'wallets'],
   modestwear: ['abayas', 'hijabs', 'niqabs', 'jilbabs', 'kaftans'],
   kids: ['baby clothing', 'girls clothing', 'boys clothing', 'kids footwear', 'kids accessories'],
   fragrance: ['oriental', 'floral', 'woody', 'citrus', 'gourmand', 'oud'],
