@@ -283,7 +283,7 @@ const ARTryOn = () => {
             <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
               <Sparkles className="h-8 w-8 text-white" />
             </div>
-            <CardTitle>AR Try-On Experience</CardTitle>
+            <CardTitle className="font-playfair">AR Try-On Experience</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-center text-muted-foreground">
@@ -375,7 +375,7 @@ const ARTryOn = () => {
                       <Info className="h-6 w-6" />
                     </div>
                     <div className="flex-1">
-                      <h3 className="text-lg font-semibold mb-2">Welcome to AR Try-On!</h3>
+                      <h3 className="text-lg font-semibold font-playfair mb-2">Welcome to AR Try-On!</h3>
                       <p className="text-white/90 text-sm mb-4">
                         {deviceType === 'mobile' 
                           ? "Use your front camera or upload a photo to see how clothes look on you. Drag, zoom, and rotate for the perfect fit!"

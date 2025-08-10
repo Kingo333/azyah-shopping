@@ -8,7 +8,7 @@ const Wishlist: React.FC = () => {
       <div className="container mx-auto max-w-6xl p-4">
         <ShopperNavigation />
         <div className="flex items-center gap-3 mb-6">
-          <h1 className="text-2xl font-bold">My Wishlist</h1>
+          <h1 className="text-2xl font-bold font-playfair">My Wishlist</h1>
         </div>
         <WishlistManager />
       </div>

@@ -87,7 +87,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               <div className="p-4 md:p-6 space-y-4 md:space-y-6 md:flex-1 md:overflow-y-auto">
                 {/* Header */}
                 <div>
-                  <h2 className="text-xl md:text-2xl font-bold line-clamp-2 mb-2">{product.title}</h2>
+                  <h2 className="text-xl md:text-2xl font-bold font-playfair line-clamp-2 mb-2">{product.title}</h2>
                   <p className="text-muted-foreground">{product.brand?.name}</p>
                   <div className="flex items-center gap-4 mt-2">
                     <span className="text-xl md:text-2xl font-bold">

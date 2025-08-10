@@ -177,7 +177,7 @@ const Likes: React.FC = () => {
         
         <div className="flex items-center gap-3 mb-6">
           <Heart className="h-6 w-6 text-primary" />
-          <h1 className="text-2xl font-bold">My Likes</h1>
+          <h1 className="text-2xl font-bold font-playfair">My Likes</h1>
           <span className="text-sm text-muted-foreground">
             ({likes?.length || 0} items)
           </span>
@@ -186,7 +186,7 @@ const Likes: React.FC = () => {
         {!likes?.length ? (
           <div className="text-center py-20">
             <Heart className="h-16 w-16 text-muted-foreground/50 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold mb-2">No likes yet</h3>
+            <h3 className="text-xl font-semibold font-playfair mb-2">No likes yet</h3>
             <p className="text-muted-foreground mb-4">
               Start swiping right on items you love to see them here
             </p>

@@ -287,7 +287,7 @@ const FashionFeed: React.FC = () => {
         <div className="sticky top-20 z-10 glass-premium pb-4 mb-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-4">
             <div className="flex items-center gap-3">
-              <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
+              <h1 className="text-2xl sm:text-3xl font-bold font-playfair bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
                 Fashion Feed
               </h1>
             </div>
@@ -365,7 +365,7 @@ const FashionFeed: React.FC = () => {
             <Card className="glass-premium border-white/20">
               <CardContent className="p-12 text-center">
                 <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                <h3 className="text-lg font-semibold mb-2">No posts yet</h3>
+                <h3 className="text-lg font-semibold font-playfair mb-2">No posts yet</h3>
                 <p className="text-muted-foreground mb-4">
                   Be the first to share your style! Follow other users to see their posts here.
                 </p>

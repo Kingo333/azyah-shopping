@@ -91,7 +91,7 @@ const Swipe = () => {
                   <Sparkles className="h-4 w-4 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-xl font-bold">Discover</h1>
+                  <h1 className="text-xl font-bold font-playfair">Discover</h1>
                   <p className="text-xs text-muted-foreground">
                     {getCurrentCategoryDisplay()}
                   </p>
@@ -220,7 +220,7 @@ const Swipe = () => {
       {/* Main Content */}
       <main className="flex-1 flex flex-col container max-w-screen-lg mx-auto px-4 py-8">
         <div className="text-center space-y-3 mb-8">
-          <h2 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+          <h2 className="text-2xl md:text-3xl font-bold font-playfair bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
             Your Fashion Feed
           </h2>
           <p className="text-muted-foreground">
