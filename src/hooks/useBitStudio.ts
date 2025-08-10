@@ -4,27 +4,17 @@ import { BitStudioClient } from '@/lib/bitstudio-client';
 import { BitStudioImage, BitStudioError } from '@/lib/bitstudio-types';
 import { useToast } from '@/hooks/use-toast';
 
-// Types for handling bitStudio responses
-type BitStatus = 'pending' | 'generating' | 'completed' | 'failed';
-
-export interface BitImage {
-  id: string;
-  status: BitStatus;
-  path?: string;
+// Use the existing types from bitstudio-types instead of duplicating
+type BitImage = BitStudioImage & {
+  video_path?: string;
   credits_used?: number;
-  versions?: unknown[];
-  [k: string]: any;
-}
+};
 
 // Some endpoints (virtual-try-on) return an array; others return an object
 type BitCreateResponse = BitImage | BitImage[];
 
 function getFirstId(resp: BitCreateResponse): string | undefined {
   return Array.isArray(resp) ? resp[0]?.id : resp?.id;
-}
-
-function isBitImage(x: any): x is BitImage {
-  return x && typeof x === 'object' && typeof x.id === 'string';
 }
 
 export function useBitStudio() {
@@ -38,6 +28,8 @@ export function useBitStudio() {
     let message = 'An error occurred';
     let action: (() => void) | undefined;
 
+    const status = typeof error?.status === 'number' ? error.status : undefined;
+
     if (error.code === 'unauthorized') {
       message = 'Server key invalid or missing';
     } else if (error.code === 'RATE_LIMITED') {
@@ -47,8 +39,10 @@ export function useBitStudio() {
       action = () => window.open('/billing', '_blank');
     } else if (error.code === 'bad_request' || error.code === 'invalid_aspect_ratio' || error.code === 'invalid_resolution') {
       message = 'Invalid parameters. Please check your inputs.';
-    } else if (error.status >= 500) {
+    } else if (status && status >= 500) {
       message = 'Temporary server issue. Please retry.';
+    } else if (error.code === 'INVALID_RESPONSE') {
+      message = 'Invalid response from server. Please try again.';
     } else {
       message = error.error || error.message || 'Unknown error occurred';
     }
@@ -58,12 +52,31 @@ export function useBitStudio() {
       title: 'Error',
       description: message,
       variant: 'destructive',
+      action: action ? { altText: 'Open billing', onClick: action } : undefined,
     });
 
     return message;
   }, [toast]);
 
+  const validateFile = useCallback((file: File): boolean => {
+    if (file.size > 10 * 1024 * 1024) {
+      handleError({ code: 'bad_request', error: 'File size exceeds 10MB limit' });
+      return false;
+    }
+    
+    if (!file.type.startsWith('image/')) {
+      handleError({ code: 'bad_request', error: 'Only image files are allowed' });
+      return false;
+    }
+    
+    return true;
+  }, [handleError]);
+
   const uploadImage = useCallback(async (file: File, type: string): Promise<BitStudioImage | null> => {
+    if (!validateFile(file)) {
+      return null;
+    }
+
     try {
       setError(null);
       setLoading(true);
@@ -79,13 +92,20 @@ export function useBitStudio() {
     } finally {
       setLoading(false);
     }
-  }, [handleError, toast]);
+  }, [handleError, toast, validateFile]);
 
   const virtualTryOn = useCallback(async (params: Parameters<typeof BitStudioClient.virtualTryOn>[0]): Promise<BitStudioImage | null> => {
     try {
       setError(null);
       setLoading(true);
-      const results = await BitStudioClient.virtualTryOn(params);
+      
+      // Defensive resolution mapping
+      const mappedParams = {
+        ...params,
+        resolution: params.resolution === 'low' ? 'standard' : params.resolution
+      };
+      
+      const results = await BitStudioClient.virtualTryOn(mappedParams);
       
       // Handle array response - get first item's ID using safe extraction
       const data = results as BitCreateResponse;
@@ -115,7 +135,14 @@ export function useBitStudio() {
     try {
       setError(null);
       setLoading(true);
-      const results = await BitStudioClient.generateImages(params);
+      
+      // Defensive resolution mapping
+      const mappedParams = {
+        ...params,
+        resolution: params.resolution === 'low' ? 'standard' : params.resolution
+      };
+      
+      const results = await BitStudioClient.generateImages(mappedParams);
       
       // Handle both array and single object responses using safe extraction
       const data = results as BitCreateResponse;
@@ -187,7 +214,14 @@ export function useBitStudio() {
     try {
       setError(null);
       setLoading(true);
-      const result = await BitStudioClient.editImage(id, params);
+      
+      // Defensive resolution mapping for edit (high -> standard)
+      const mappedParams = {
+        ...params,
+        resolution: params.resolution === 'high' ? 'standard' : params.resolution
+      };
+      
+      const result = await BitStudioClient.editImage(id, mappedParams);
       const polledResult = await BitStudioClient.pollUntilComplete(result.id || id);
       
       toast({

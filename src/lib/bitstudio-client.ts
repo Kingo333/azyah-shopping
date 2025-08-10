@@ -106,6 +106,8 @@ export class BitStudioClient {
     const startTime = Date.now();
     let delay = 2000; // Start with 2 seconds
     let retryCount = 0;
+    let rateLimitRetries = 0;
+    const maxRateLimitRetries = 2;
     
     while (Date.now() - startTime < maxWaitMs) {
       try {
@@ -119,6 +121,9 @@ export class BitStudioClient {
           throw { error: result.error || 'Generation failed', code: 'GENERATION_FAILED' };
         }
         
+        // Reset rate limit retries on successful request
+        rateLimitRetries = 0;
+        
         // Exponential backoff with jitter
         await new Promise(resolve => setTimeout(resolve, delay + Math.random() * 1000));
         delay = Math.min(delay * 1.2, 6000); // Max 6 seconds
@@ -126,13 +131,14 @@ export class BitStudioClient {
         
       } catch (error: any) {
         // Handle rate limiting with exponential backoff
-        if (error.code === 'RATE_LIMITED' || (error.status === 429)) {
-          const backoffDelay = Math.min(1000 * Math.pow(2, retryCount), 10000);
+        if ((error.code === 'RATE_LIMITED' || (error.status === 429)) && rateLimitRetries < maxRateLimitRetries) {
+          const backoffDelay = Math.min(1000 * Math.pow(2, rateLimitRetries), 10000);
           await new Promise(resolve => setTimeout(resolve, backoffDelay));
-          retryCount++;
+          rateLimitRetries++;
           continue;
         }
         
+        // If we've exceeded rate limit retries or it's a different error, throw
         throw error;
       }
     }

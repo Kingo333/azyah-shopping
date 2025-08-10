@@ -20,12 +20,23 @@ export interface AiStudioModalProps {
   trigger?: React.ReactNode;
 }
 
+function mapResolutionFor(
+  feature: 'tryon' | 'generate' | 'edit',
+  selected: 'low' | 'standard' | 'high'
+): 'low' | 'standard' | 'high' {
+  if (feature === 'edit') {
+    return selected === 'high' ? 'standard' : selected;
+  }
+  return selected === 'low' ? 'standard' : selected;
+}
+
 const AiStudioModal: React.FC<AiStudioModalProps> = ({ open, onClose, trigger }) => {
   const [activeTab, setActiveTab] = useState('virtual-tryon');
   
   // File uploads
   const [personFile, setPersonFile] = useState<File | null>(null);
   const [outfitFile, setOutfitFile] = useState<File | null>(null);
+  const [baseFile, setBaseFile] = useState<File | null>(null);
   const [maskFile, setMaskFile] = useState<File | null>(null);
   const [referenceFile, setReferenceFile] = useState<File | null>(null);
   
@@ -41,6 +52,9 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({ open, onClose, trigger })
   const [currentResult, setCurrentResult] = useState<any>(null);
   const [personImageId, setPersonImageId] = useState<string | null>(null);
   const [outfitImageId, setOutfitImageId] = useState<string | null>(null);
+  const [baseImageId, setBaseImageId] = useState<string | null>(null);
+  const [maskImageId, setMaskImageId] = useState<string | null>(null);
+  const [referenceImageId, setReferenceImageId] = useState<string | null>(null);
   
   const { 
     loading, 
@@ -57,9 +71,32 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({ open, onClose, trigger })
   
   const { toast } = useToast();
 
+  // File validation helper
+  const validateFile = (file: File): boolean => {
+    if (file.size > 10 * 1024 * 1024) {
+      toast({
+        title: 'File Too Large',
+        description: 'Please select an image file smaller than 10MB',
+        variant: 'destructive',
+      });
+      return false;
+    }
+    
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: 'Invalid File Type',
+        description: 'Please select an image file',
+        variant: 'destructive',
+      });
+      return false;
+    }
+    
+    return true;
+  };
+
   // File upload handlers
   const handleFileUpload = async (file: File, type: string, setImageId: (id: string) => void) => {
-    if (!file) return;
+    if (!file || !validateFile(file)) return;
     
     try {
       clearError();
@@ -92,6 +129,30 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({ open, onClose, trigger })
     }
   };
 
+  const handleBaseUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setBaseFile(file);
+      handleFileUpload(file, BITSTUDIO_IMAGE_TYPES.INPAINT_BASE, setBaseImageId);
+    }
+  };
+
+  const handleMaskUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setMaskFile(file);
+      handleFileUpload(file, BITSTUDIO_IMAGE_TYPES.INPAINT_MASK, setMaskImageId);
+    }
+  };
+
+  const handleReferenceUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setReferenceFile(file);
+      handleFileUpload(file, BITSTUDIO_IMAGE_TYPES.INPAINT_REFERENCE, setReferenceImageId);
+    }
+  };
+
   // Feature handlers
   const handleVirtualTryOn = async () => {
     if (!personImageId || !outfitImageId) {
@@ -106,7 +167,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({ open, onClose, trigger })
     const result = await virtualTryOn({
       person_image_id: personImageId,
       outfit_image_id: outfitImageId,
-      resolution,
+      resolution: mapResolutionFor('tryon', resolution),
       num_images: numImages,
       prompt: prompt || undefined,
     });
@@ -131,7 +192,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({ open, onClose, trigger })
       num_images: numImages,
       aspect_ratio: aspectRatio,
       style,
-      resolution,
+      resolution: mapResolutionFor('generate', resolution),
       outfit_image_id: outfitImageId || undefined,
     });
 
@@ -152,6 +213,29 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({ open, onClose, trigger })
 
     const result = await upscaleImage(currentResult.id, {
       upscale_factor: upscaleFactor,
+    });
+
+    if (result) {
+      setCurrentResult(result);
+    }
+  };
+
+  const handleInpaint = async () => {
+    if (!baseImageId || !maskImageId) {
+      toast({
+        title: 'Missing Images',
+        description: 'Please upload both base and mask images',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const result = await inpaintImage(baseImageId, {
+      mask_image_id: maskImageId,
+      reference_image_id: referenceImageId || undefined,
+      prompt: prompt || undefined,
+      denoise: 0.4,
+      num_images: numImages,
     });
 
     if (result) {
@@ -180,7 +264,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({ open, onClose, trigger })
 
     const result = await editImage(currentResult.id, {
       prompt,
-      resolution: resolution === 'high' ? 'standard' : 'low',
+      resolution: mapResolutionFor('edit', resolution),
       num_images: numImages,
     });
 
@@ -240,16 +324,36 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({ open, onClose, trigger })
     }
   };
 
+  const downloadVideo = async () => {
+    if (!currentResult?.video_path) return;
+    
+    try {
+      const response = await fetch(currentResult.video_path);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `bitstudio-video-${currentResult.id}.mp4`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (err) {
+      toast({
+        title: 'Download Failed',
+        description: 'Could not download the video',
+        variant: 'destructive',
+      });
+    }
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogTrigger asChild>
-        {trigger || (
-          <Button variant="outline" className="gap-2">
-            <Sparkles className="h-4 w-4" />
-            AI Studio
-          </Button>
-        )}
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
+      {trigger && (
+        <DialogTrigger asChild>
+          {trigger}
+        </DialogTrigger>
+      )}
       <DialogContent className="max-w-4xl h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -400,11 +504,11 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({ open, onClose, trigger })
                       Enhance Images
                     </CardTitle>
                     <CardDescription>
-                      Upscale, edit, or create videos from your images
+                      Upscale, edit, inpaint, or create videos from your images
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-4 gap-2">
                       <Button 
                         onClick={handleUpscale} 
                         disabled={loading || !currentResult?.id}
@@ -423,6 +527,16 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({ open, onClose, trigger })
                       >
                         {loading ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Edit className="h-3 w-3 mr-1" />}
                         Edit
+                      </Button>
+                      
+                      <Button 
+                        onClick={handleInpaint} 
+                        disabled={loading || !baseImageId || !maskImageId}
+                        variant="outline"
+                        size="sm"
+                      >
+                        {loading ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Upload className="h-3 w-3 mr-1" />}
+                        Inpaint
                       </Button>
                       
                       <Button 
@@ -445,6 +559,48 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({ open, onClose, trigger })
                         onChange={(e) => setPrompt(e.target.value)}
                         className="mt-1"
                       />
+                    </div>
+
+                    {/* Inpainting file uploads */}
+                    <div className="space-y-2">
+                      <Label>Inpainting Images</Label>
+                      <div className="grid grid-cols-1 gap-2">
+                        <div>
+                          <Label htmlFor="base-upload" className="text-sm">Base Image</Label>
+                          <Input
+                            id="base-upload"
+                            type="file"
+                            accept="image/*"
+                            onChange={handleBaseUpload}
+                            className="mt-1"
+                          />
+                          {baseImageId && <Badge variant="outline" className="mt-1">Base Uploaded</Badge>}
+                        </div>
+                        
+                        <div>
+                          <Label htmlFor="mask-upload" className="text-sm">Mask Image</Label>
+                          <Input
+                            id="mask-upload"
+                            type="file"
+                            accept="image/*"
+                            onChange={handleMaskUpload}
+                            className="mt-1"
+                          />
+                          {maskImageId && <Badge variant="outline" className="mt-1">Mask Uploaded</Badge>}
+                        </div>
+                        
+                        <div>
+                          <Label htmlFor="reference-upload" className="text-sm">Reference Image (Optional)</Label>
+                          <Input
+                            id="reference-upload"
+                            type="file"
+                            accept="image/*"
+                            onChange={handleReferenceUpload}
+                            className="mt-1"
+                          />
+                          {referenceImageId && <Badge variant="outline" className="mt-1">Reference Uploaded</Badge>}
+                        </div>
+                      </div>
                     </div>
                     
                     <div>
@@ -495,6 +651,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({ open, onClose, trigger })
                       <SelectContent>
                         <SelectItem value="1">1</SelectItem>
                         <SelectItem value="2">2</SelectItem>
+                        <SelectItem value="3">3</SelectItem>
                         <SelectItem value="4">4</SelectItem>
                       </SelectContent>
                     </Select>
@@ -558,12 +715,20 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({ open, onClose, trigger })
                         )}
                       </div>
                       
-                      {currentResult.path && (
-                        <Button onClick={downloadImage} size="sm" variant="outline">
-                          <Download className="h-4 w-4 mr-2" />
-                          Download
-                        </Button>
-                      )}
+                      <div className="flex gap-2">
+                        {currentResult.path && (
+                          <Button onClick={downloadImage} size="sm" variant="outline">
+                            <Download className="h-4 w-4 mr-2" />
+                            Download
+                          </Button>
+                        )}
+                        {currentResult.video_path && (
+                          <Button onClick={downloadVideo} size="sm" variant="outline">
+                            <Download className="h-4 w-4 mr-2" />
+                            Download Video
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ) : (
