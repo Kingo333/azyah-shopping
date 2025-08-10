@@ -17,23 +17,44 @@ export class BitStudioClient {
   }
 
   static async uploadImage(file: File, type: string): Promise<BitStudioImage> {
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('type', type);
+    try {
+      // Get the session token for authentication
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw { error: 'Authentication required', code: 'UNAUTHORIZED' } as BitStudioError;
+      }
 
-    const { data, error } = await supabase.functions.invoke('bitstudio-upload', {
-      body: formData,
-    });
+      // Use direct fetch to preserve error details from FormData uploads
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('type', type);
 
-    if (error) {
+      const response = await fetch(`${window.location.origin}/functions/v1/bitstudio-upload`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ 
+          error: `HTTP ${response.status}`, 
+          code: 'FETCH_ERROR' 
+        }));
+        console.error('Upload fetch error:', response.status, errorData);
+        throw errorData as BitStudioError;
+      }
+
+      return await response.json() as BitStudioImage;
+    } catch (error: any) {
       console.error('Upload error:', error);
-      throw { error: error.message, code: 'UPLOAD_ERROR' } as BitStudioError;
+      throw error;
     }
-
-    return data as BitStudioImage;
   }
 
   static async getImage(id: string): Promise<BitStudioImage> {
+    // Use POST with JSON body instead of URL parameter
     return this.makeSupabaseRequest('bitstudio-status', { id });
   }
 

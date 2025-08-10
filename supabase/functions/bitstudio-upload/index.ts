@@ -16,6 +16,9 @@ serve(async (req) => {
     const BITSTUDIO_API_KEY = Deno.env.get('BITSTUDIO_API_KEY');
     const BITSTUDIO_API_BASE = Deno.env.get('BITSTUDIO_API_BASE') || 'https://api.bitstudio.ai';
 
+    console.log('Upload function called, API key present:', !!BITSTUDIO_API_KEY);
+    console.log('API base URL:', BITSTUDIO_API_BASE);
+
     if (!BITSTUDIO_API_KEY) {
       console.error('BitStudio API key not configured');
       return new Response(
@@ -33,6 +36,13 @@ serve(async (req) => {
     const file = formData.get('file') as File;
     const type = formData.get('type') as string;
 
+    console.log('Upload request:', { 
+      fileName: file?.name, 
+      fileSize: file?.size, 
+      fileType: file?.type, 
+      type: type 
+    });
+
     if (!file) {
       return new Response(
         JSON.stringify({ error: 'No file provided', code: 'bad_request' }),
@@ -48,11 +58,24 @@ serve(async (req) => {
       );
     }
 
-    // Validate file type
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    // Expanded image type validation - include more formats
+    const allowedTypes = [
+      'image/jpeg', 
+      'image/jpg', 
+      'image/png', 
+      'image/webp', 
+      'image/gif',
+      'image/bmp',
+      'image/tiff'
+    ];
+    
     if (!allowedTypes.includes(file.type)) {
+      console.error('Invalid file type:', file.type);
       return new Response(
-        JSON.stringify({ error: 'Invalid file type. Only JPEG, PNG, and WebP are allowed.', code: 'bad_request' }),
+        JSON.stringify({ 
+          error: `Invalid file type: ${file.type}. Supported formats: JPEG, PNG, WebP, GIF, BMP, TIFF`, 
+          code: 'bad_request' 
+        }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
       );
     }
@@ -71,6 +94,8 @@ serve(async (req) => {
     bitStudioFormData.append('file', file);
     bitStudioFormData.append('type', type);
 
+    console.log('Making request to BitStudio API...');
+
     // Make request to bitStudio API
     const response = await fetch(`${BITSTUDIO_API_BASE}/images`, {
       method: 'POST',
@@ -80,9 +105,16 @@ serve(async (req) => {
       body: bitStudioFormData,
     });
 
+    console.log('BitStudio API response status:', response.status);
+
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error('bitStudio API error:', response.status, errorText);
+      let errorText;
+      try {
+        errorText = await response.text();
+        console.error('BitStudio API error response:', errorText);
+      } catch (e) {
+        errorText = `HTTP ${response.status}`;
+      }
       
       // Handle specific error cases with proper codes
       if (response.status === 401) {
@@ -128,6 +160,7 @@ serve(async (req) => {
     }
 
     const result = await response.json();
+    console.log('BitStudio API success response:', result);
     
     return new Response(
       JSON.stringify(result),
@@ -135,7 +168,7 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Upload error:', error);
+    console.error('Upload function error:', error);
     return new Response(
       JSON.stringify({ 
         error: 'Upload failed', 

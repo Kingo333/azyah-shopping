@@ -4,7 +4,6 @@ import { BitStudioClient } from '@/lib/bitstudio-client';
 import { BitStudioImage, BitStudioError } from '@/lib/bitstudio-types';
 import { useToast } from '@/hooks/use-toast';
 import { ToastAction } from '@/components/ui/toast';
-import { createElement } from 'react';
 
 // Use the existing types from bitstudio-types instead of duplicating
 type BitImage = BitStudioImage & {
@@ -64,9 +63,11 @@ export function useBitStudio() {
 
     setError(message);
     
-    const actionElement = action 
-      ? createElement(ToastAction, { altText: "Learn more", onClick: action }, "Learn more")
-      : undefined;
+    const actionElement = action ? (
+      <ToastAction altText="Learn more" onClick={action}>
+        Learn more
+      </ToastAction>
+    ) : undefined;
 
     toast({
       title: 'Error',
@@ -79,6 +80,15 @@ export function useBitStudio() {
   }, [toast]);
 
   const validateFile = useCallback((file: File): boolean => {
+    // Check for HEIC files which aren't supported
+    if (file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif')) {
+      handleError({ 
+        code: 'bad_request', 
+        error: 'HEIC/HEIF files are not supported. Please convert to JPEG or PNG first.' 
+      });
+      return false;
+    }
+
     if (file.size > 10 * 1024 * 1024) {
       handleError({ code: 'bad_request', error: 'File size exceeds 10MB limit' });
       return false;
@@ -128,12 +138,11 @@ export function useBitStudio() {
       
       const results = await BitStudioClient.virtualTryOn(mappedParams);
       
-      // Handle array response - get first item's ID using safe extraction
-      const data = results as BitCreateResponse;
-      const jobId = getFirstId(data);
+      // Virtual Try-On returns an array, get the first result's ID
+      const jobId = Array.isArray(results) && results.length > 0 ? results[0].id : null;
       
       if (!jobId) {
-        throw { error: 'No job ID returned', code: 'INVALID_RESPONSE' };
+        throw { error: 'No job ID returned from virtual try-on', code: 'INVALID_RESPONSE' };
       }
 
       const result = await BitStudioClient.pollUntilComplete(jobId);
@@ -166,12 +175,11 @@ export function useBitStudio() {
       
       const results = await BitStudioClient.generateImages(mappedParams);
       
-      // Handle both array and single object responses using safe extraction
-      const data = results as BitCreateResponse;
-      const jobId = getFirstId(data);
+      // Generate Images returns an array, get the first result's ID
+      const jobId = Array.isArray(results) && results.length > 0 ? results[0].id : null;
       
       if (!jobId) {
-        throw { error: 'No job ID returned', code: 'INVALID_RESPONSE' };
+        throw { error: 'No job ID returned from image generation', code: 'INVALID_RESPONSE' };
       }
 
       const result = await BitStudioClient.pollUntilComplete(jobId);
