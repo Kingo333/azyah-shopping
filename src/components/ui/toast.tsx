@@ -112,8 +112,8 @@ ToastDescription.displayName = ToastPrimitives.Description.displayName
 
 type ToastProps = React.ComponentPropsWithoutRef<typeof Toast>
 
-// Simplify the ToastActionElement type to match what JSX actually produces
-type ToastActionElement = React.ReactElement<typeof ToastAction>
+// Make ToastActionElement more flexible to handle both JSX and createElement scenarios
+type ToastActionElement = React.ReactElement | undefined
 
 export {
   type ToastProps,
