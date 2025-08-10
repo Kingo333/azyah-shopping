@@ -57,7 +57,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent
-        className="w-[100vw] h-[100dvh] md:max-w-4xl md:h-auto md:max-h-[90vh] p-0 overflow-hidden glass-premium border-white/20 rounded-none md:rounded-3xl"
+        className="w-[100vw] h-[100dvh] md:max-w-4xl md:max-h-[90vh] p-0 glass-premium border-white/20 rounded-none md:rounded-3xl top-0 left-0 translate-x-0 translate-y-0 overflow-y-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2"
       >
         {!product ? (
           <div className="flex h-[70vh] items-center justify-center text-sm text-muted-foreground">
@@ -66,7 +66,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
         ) : (
           <>
             {/* Mobile Layout */}
-            <div className="md:hidden flex flex-col h-full">
+            <div className="md:hidden flex flex-col h-full min-h-0">
               {/* Fixed Header with Close Button */}
               <div className="relative flex-shrink-0">
                 <div className="absolute top-3 right-3 z-30">
@@ -92,8 +92,8 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               </div>
 
               {/* Scrollable Content Area */}
-              <div className="flex-1 overflow-y-auto bg-background">
-                <div className="p-4 space-y-4 pb-24">
+              <div className="flex-1 min-h-0 overflow-y-auto bg-background">
+                <div className="p-4 space-y-4 pb-40">
                   {/* Product Header */}
                   <div className="space-y-2">
                     <h1 className="text-xl font-bold leading-tight">{product.title}</h1>
