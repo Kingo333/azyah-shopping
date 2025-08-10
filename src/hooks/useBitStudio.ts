@@ -21,10 +21,8 @@ function getFirstId(resp: BitCreateResponse): string | undefined {
 // Resolution type guards and mappers
 type AnyRes = 'low' | 'standard' | 'high';
 type TryGenRes = 'standard' | 'high';
-type EditRes = 'standard' | 'low';
 
 const asTryGen = (r?: AnyRes): TryGenRes => (r === 'high' ? 'high' : 'standard');
-const asEdit = (r?: AnyRes): EditRes => (r === 'low' ? 'low' : 'standard');
 
 export function useBitStudio() {
   const [loading, setLoading] = useState(false);
@@ -177,145 +175,11 @@ export function useBitStudio() {
     }
   }, [handleError, toast]);
 
-  const generateImages = useCallback(async (params: Parameters<typeof BitStudioClient.generateImages>[0]): Promise<BitStudioImage | null> => {
-    try {
-      setError(null);
-      setLoading(true);
-      
-      // Ensure safe resolution mapping
-      const safeRes = asTryGen(params.resolution as AnyRes);
-      const mappedParams = {
-        ...params,
-        resolution: safeRes
-      };
-      
-      const results = await BitStudioClient.generateImages(mappedParams);
-      
-      // Generate Images returns an array, get the first result's ID
-      const jobId = Array.isArray(results) && results.length > 0 ? results[0].id : null;
-      
-      if (!jobId) {
-        throw { error: 'No job ID returned from image generation', code: 'INVALID_RESPONSE' };
-      }
-
-      const result = await BitStudioClient.pollUntilComplete(jobId);
-      
-      toast({
-        title: 'Generation Complete',
-        description: result.credits_used ? `Used ${result.credits_used} credits` : 'Images generated successfully',
-      });
-      
-      return result;
-    } catch (error: any) {
-      handleError(error);
-      return null;
-    } finally {
-      setLoading(false);
-    }
-  }, [handleError, toast]);
-
-  const upscaleImage = useCallback(async (id: string, params: Parameters<typeof BitStudioClient.upscaleImage>[1]): Promise<BitStudioImage | null> => {
-    try {
-      setError(null);
-      setLoading(true);
-      const result = await BitStudioClient.upscaleImage(id, params);
-      const polledResult = await BitStudioClient.pollUntilComplete(result.id || id);
-      
-      toast({
-        title: 'Upscale Complete',
-        description: polledResult.credits_used ? `Used ${polledResult.credits_used} credits` : 'Image upscaled successfully',
-      });
-      
-      return polledResult;
-    } catch (error: any) {
-      handleError(error);
-      return null;
-    } finally {
-      setLoading(false);
-    }
-  }, [handleError, toast]);
-
-  const inpaintImage = useCallback(async (id: string, params: Parameters<typeof BitStudioClient.inpaintImage>[1]): Promise<BitStudioImage | null> => {
-    try {
-      setError(null);
-      setLoading(true);
-      const result = await BitStudioClient.inpaintImage(id, params);
-      const polledResult = await BitStudioClient.pollUntilComplete(result.id || id);
-      
-      toast({
-        title: 'Inpainting Complete',
-        description: polledResult.credits_used ? `Used ${polledResult.credits_used} credits` : 'Inpainting completed successfully',
-      });
-      
-      return polledResult;
-    } catch (error: any) {
-      handleError(error);
-      return null;
-    } finally {
-      setLoading(false);
-    }
-  }, [handleError, toast]);
-
-  const editImage = useCallback(async (id: string, params: Parameters<typeof BitStudioClient.editImage>[1]): Promise<BitStudioImage | null> => {
-    try {
-      setError(null);
-      setLoading(true);
-      
-      // Ensure safe resolution mapping for edit (never 'high')
-      const safeEditRes = asEdit(params.resolution as AnyRes);
-      const mappedParams = {
-        ...params,
-        resolution: safeEditRes
-      };
-      
-      const result = await BitStudioClient.editImage(id, mappedParams);
-      const polledResult = await BitStudioClient.pollUntilComplete(result.id || id);
-      
-      toast({
-        title: 'Edit Complete',
-        description: polledResult.credits_used ? `Used ${polledResult.credits_used} credits` : 'Image edited successfully',
-      });
-      
-      return polledResult;
-    } catch (error: any) {
-      handleError(error);
-      return null;
-    } finally {
-      setLoading(false);
-    }
-  }, [handleError, toast]);
-
-  const generateVideo = useCallback(async (id: string, params: Parameters<typeof BitStudioClient.generateVideo>[1]): Promise<BitStudioImage | null> => {
-    try {
-      setError(null);
-      setLoading(true);
-      const result = await BitStudioClient.generateVideo(id, params);
-      const polledResult = await BitStudioClient.pollUntilComplete(result.id || id, 600000); // 10 minutes for video
-      
-      toast({
-        title: 'Video Generation Complete',
-        description: 'Video generated successfully',
-      });
-      
-      return polledResult;
-    } catch (error: any) {
-      handleError(error);
-      return null;
-    } finally {
-      setLoading(false);
-    }
-  }, [handleError, toast]);
-
   return {
     loading,
     error,
     uploadImage,
     virtualTryOn,
-    generateImages,
-    upscaleImage,
-    inpaintImage,
-    editImage,
-    generateVideo,
     clearError: () => setError(null),
   };
 }
