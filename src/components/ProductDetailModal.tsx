@@ -162,14 +162,19 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 {product.external_url ? (
                   <Button
                     onClick={handleShopNow}
-                    className="w-full gap-1 md:gap-2 bg-gradient-accent hover:shadow-soft text-xs md:text-sm h-9 md:h-10"
+                    size="lg"
+                    className="w-full gap-1 md:gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-sm md:text-base h-10 md:h-12 shadow-lg hover:shadow-xl transition-all duration-200"
                   >
-                    <ExternalLink className="h-3 w-3 md:h-4 md:w-4" />
+                    <ExternalLink className="h-4 w-4 md:h-5 md:w-5" />
                     Shop Now
                   </Button>
                 ) : (
-                  <Button disabled className="w-full gap-1 md:gap-2 opacity-50 cursor-not-allowed text-xs md:text-sm h-9 md:h-10">
-                    <ShoppingBag className="h-3 w-3 md:h-4 md:w-4" />
+                  <Button 
+                    disabled 
+                    size="lg"
+                    className="w-full gap-1 md:gap-2 opacity-50 cursor-not-allowed text-sm md:text-base h-10 md:h-12"
+                  >
+                    <ShoppingBag className="h-4 w-4 md:h-5 md:w-5" />
                     Shop Link Not Available
                   </Button>
                 )}
