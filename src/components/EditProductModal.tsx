@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -14,10 +15,9 @@ interface EditProductModalProps {
   product: Product | null;
   isOpen: boolean;
   onClose: () => void;
-  onProductUpdated?: () => void;
 }
 
-const EditProductModal: React.FC<EditProductModalProps> = ({ product, isOpen, onClose, onProductUpdated }) => {
+const EditProductModal: React.FC<EditProductModalProps> = ({ product, isOpen, onClose }) => {
   const { toast } = useToast();
   const updateProductMutation = useUpdateProduct();
   
@@ -99,7 +99,6 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ product, isOpen, on
         updateData
       });
 
-      onProductUpdated?.();
       onClose();
     } catch (error: any) {
       toast({

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -14,8 +15,8 @@ import {
   Users,
   ShoppingBag
 } from 'lucide-react';
-import AddProductModal from '@/components/AddProductModal';
-import EditProductModal from '@/components/EditProductModal';
+import { AddProductModal } from '@/components/AddProductModal';
+import { EditProductModal } from '@/components/EditProductModal';
 import { AnalyticsDashboard } from '@/components/AnalyticsDashboard';
 import RetailerBrandsList from '@/components/RetailerBrandsList';
 import { useRetailerBrands } from '@/hooks/useRetailerBrands';

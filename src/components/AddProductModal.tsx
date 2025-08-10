@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -14,12 +15,9 @@ import { getTopCategories, getSubcategories, getCatLabel, getSubcatLabel, type C
 interface AddProductModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onProductAdded?: () => void;
-  userType?: string;
-  brandId?: string;
 }
 
-const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClose, onProductAdded, userType, brandId }) => {
+const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClose }) => {
   const { toast } = useToast();
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -31,7 +29,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClose, onPr
     currency: 'USD',
     category_slug: '',
     subcategory_slug: '',
-    brand_id: brandId || '',
+    brand_id: '',
     sku: '',
     external_url: '',
     media_urls: ['']
@@ -50,13 +48,6 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClose, onPr
       setAvailableSubcategories([]);
     }
   }, [formData.category_slug]);
-
-  // Update brand_id when brandId prop changes
-  useEffect(() => {
-    if (brandId) {
-      setFormData(prev => ({ ...prev, brand_id: brandId }));
-    }
-  }, [brandId]);
 
   const addProductMutation = useMutation({
     mutationFn: async (productData: any) => {
@@ -77,7 +68,6 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClose, onPr
     onSuccess: () => {
       toast({ title: "Success", description: "Product added successfully!" });
       queryClient.invalidateQueries({ queryKey: ['products'] });
-      onProductAdded?.();
       onClose();
       resetForm();
     },
@@ -98,7 +88,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClose, onPr
       currency: 'USD',
       category_slug: '',
       subcategory_slug: '',
-      brand_id: brandId || '',
+      brand_id: '',
       sku: '',
       external_url: '',
       media_urls: ['']

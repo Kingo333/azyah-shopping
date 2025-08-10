@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertTriangle, CheckCircle } from 'lucide-react';
-import { getTopCategories, getSafeCatLabel, type CatId } from '@/lib/taxonomy';
+import { getTopCategories } from '@/lib/taxonomy';
 
 const CategoryConsistencyChecker: React.FC = () => {
   const { data: dbCategories, isLoading } = useQuery({
@@ -76,7 +76,7 @@ const CategoryConsistencyChecker: React.FC = () => {
                   <strong>Categories in database but not in taxonomy:</strong>
                   <div className="flex flex-wrap gap-1 mt-2">
                     {missingFromStatic.map(cat => (
-                      <Badge key={cat} variant="destructive">{getSafeCatLabel(cat)}</Badge>
+                      <Badge key={cat} variant="destructive">{cat}</Badge>
                     ))}
                   </div>
                 </AlertDescription>
@@ -90,7 +90,7 @@ const CategoryConsistencyChecker: React.FC = () => {
                   <strong>Categories in taxonomy but not used in database:</strong>
                   <div className="flex flex-wrap gap-1 mt-2">
                     {missingFromDb.map(cat => (
-                      <Badge key={cat} variant="secondary">{getSafeCatLabel(cat)}</Badge>
+                      <Badge key={cat} variant="secondary">{cat}</Badge>
                     ))}
                   </div>
                 </AlertDescription>
@@ -107,7 +107,7 @@ const CategoryConsistencyChecker: React.FC = () => {
                 key={cat} 
                 variant={dbCategoriesSet.has(cat) ? "default" : "outline"}
               >
-                {getSafeCatLabel(cat)}
+                {cat}
               </Badge>
             ))}
           </div>

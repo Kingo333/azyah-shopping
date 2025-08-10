@@ -14,8 +14,8 @@ import { useAnalytics, useConversionFunnel, useTimeSeriesAnalytics } from '@/hoo
 import ImprovedAnalyticsFunnel from '@/components/analytics/ImprovedAnalyticsFunnel';
 import AnalyticsChart from '@/components/analytics/AnalyticsChart';
 import AnalyticsTable from '@/components/analytics/AnalyticsTable';
-import AddProductModal from '@/components/AddProductModal';
-import EditProductModal from '@/components/EditProductModal';
+import { AddProductModal } from '@/components/AddProductModal';
+import { EditProductModal } from '@/components/EditProductModal';
 import { BrandProductDetailModal } from '@/components/BrandProductDetailModal';
 import { LogoUpload } from '@/components/LogoUpload';
 import { Plus, Edit, Trash2, Upload, BarChart3, TrendingUp, Eye, Heart, ShoppingBag, DollarSign, Download, Filter } from 'lucide-react';

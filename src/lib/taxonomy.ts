@@ -148,7 +148,7 @@ export const TAXONOMY: Cat[] = [
   },
 ];
 
-// Helper types - updated to include "bags"
+// Helper types
 export type CatId = (typeof TAXONOMY)[number]['id'];
 export type SubcatId = NonNullable<Cat['sub']>[number]['id'];
 
@@ -172,10 +172,4 @@ export const getSubcatLabel = (subId: SubcatId): string => {
 export const isValidCatSubPair = (catId: CatId, subId?: string | null): boolean => {
   if (!subId) return true;
   return getSubcategories(catId).some(s => s.id === subId);
-};
-
-// Helper function to safely get category label for any string
-export const getSafeCatLabel = (id: string): string => {
-  const category = TAXONOMY.find(c => c.id === id);
-  return category?.label ?? id;
 };
