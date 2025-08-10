@@ -1,18 +1,13 @@
+
 import React, { useState, useMemo } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Heart, ShoppingBag, ExternalLink, Sparkles, X } from 'lucide-react';
+import { Heart, ShoppingBag, ExternalLink, X } from 'lucide-react';
 import { Product } from '@/types';
 import { EnhancedProductGallery } from './EnhancedProductGallery';
 import { AdvancedSizeColorSelector } from './AdvancedSizeColorSelector';
 import { AddToClosetModal } from './AddToClosetModal';
-import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
-import { AiTryOnUploader } from './AiTryOnUploader';
-import { TryOnProgress } from './TryOnProgress';
-import { TryOnResultGallery } from './TryOnResultGallery';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
 
 interface ProductDetailModalProps {
   product?: Product | null;
@@ -20,30 +15,19 @@ interface ProductDetailModalProps {
   onClose: () => void;
 }
 
-interface TryOnJob {
-  id: string;
-  status: 'queued' | 'running' | 'succeeded' | 'failed';
-  output_url?: string;
-  error_message?: string;
-}
-
 const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   product,
   isOpen,
   onClose
 }) => {
-  const { isEnabled } = useFeatureFlags();
   const { toast } = useToast();
-  const { user, session } = useAuth();
 
   const [selectedSize, setSelectedSize] = useState('');
   const [selectedColor, setSelectedColor] = useState('');
   const [isClosetModalOpen, setIsClosetModalOpen] = useState(false);
-  const [showAiTryOn, setShowAiTryOn] = useState(false);
-  const [currentJob, setCurrentJob] = useState<TryOnJob | null>(null);
 
   const images = useMemo<string[]>(() => {
-    const media = (product?.media_urls ?? product?.images ?? []) as unknown as string[];
+    const media = (product?.media_urls ?? []) as unknown as string[];
     return Array.isArray(media) ? media.filter(Boolean) : [];
   }, [product]);
 
@@ -58,49 +42,6 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
       toast({ description: 'Shop link not available for this product', variant: 'destructive' });
     }
   };
-
-  const handleAiTryOnUpload = async (imageId: string) => {
-    if (!user || !session || !product?.id) {
-      toast({ description: 'Please sign in and select a product to use AI Try-On', variant: 'destructive' });
-      return;
-    }
-
-    try {
-      const { data: result, error } = await supabase.functions.invoke('tryon-jobs', {
-        body: {
-          person_image_id: imageId,
-          product_id: product.id,
-          variant_id: selectedSize || selectedColor || null
-        }
-      });
-      if (error) throw error;
-
-      setCurrentJob({ id: result.job_id, status: 'queued' });
-      void pollJobStatus(result.job_id);
-    } catch (err) {
-      console.error('AI Try-On error:', err);
-      toast({ description: 'Failed to start AI Try-On. Please try again.', variant: 'destructive' });
-    }
-  };
-
-  const pollJobStatus = async (jobId: string) => {
-    const interval = setInterval(async () => {
-      try {
-        const { data: job, error } = await supabase.functions.invoke(`tryon-jobs/${jobId}`, { method: 'GET' });
-        if (error) throw error;
-        setCurrentJob(job);
-        if (job.status === 'succeeded' || job.status === 'failed') clearInterval(interval);
-      } catch (err) {
-        console.error('Error polling job status:', err);
-        clearInterval(interval);
-        setCurrentJob(prev => (prev ? { ...prev, status: 'failed' } : null));
-      }
-    }, 2000);
-
-    setTimeout(() => clearInterval(interval), 60000);
-  };
-
-  const handleTryAgain = () => setCurrentJob(null);
 
   const availableSizes = ['XS', 'S', 'M', 'L', 'XL'].map(size => ({
     value: size, label: size, inStock: true, stockCount: 10
@@ -161,53 +102,6 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     )}
                   </div>
                 </div>
-
-                {/* AI Try-On Section */}
-                {isEnabled('aiTryOn') && (
-                  <div className="border rounded-lg p-4 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-950/20 dark:to-blue-950/20">
-                    {!showAiTryOn && !currentJob && (
-                      <div className="text-center">
-                        <Button
-                          onClick={() => setShowAiTryOn(true)}
-                          className="gap-2 bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
-                        >
-                          <Sparkles className="h-4 w-4" />
-                          Try with AI
-                        </Button>
-                        <p className="text-xs text-muted-foreground mt-2">
-                          Upload your photo to see how this looks on you
-                        </p>
-                      </div>
-                    )}
-
-                    {showAiTryOn && !currentJob && (
-                      <AiTryOnUploader onUploadComplete={handleAiTryOnUpload} />
-                    )}
-
-                    {currentJob && currentJob.status !== 'succeeded' && (
-                      <TryOnProgress status={currentJob.status} />
-                    )}
-
-                    {currentJob?.status === 'succeeded' && currentJob.output_url && (
-                      <TryOnResultGallery
-                        resultUrl={currentJob.output_url}
-                        product={product}
-                        onTryAgain={handleTryAgain}
-                      />
-                    )}
-
-                    {currentJob?.status === 'failed' && (
-                      <div className="text-center space-y-2">
-                        <p className="text-sm text-red-600">
-                          {currentJob.error_message || 'Try-on failed. Please try again.'}
-                        </p>
-                        <Button onClick={handleTryAgain} variant="outline" size="sm">
-                          Try Again
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                )}
 
                 {/* Size and Color Selection */}
                 <AdvancedSizeColorSelector
