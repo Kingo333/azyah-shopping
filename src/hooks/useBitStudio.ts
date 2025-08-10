@@ -4,6 +4,29 @@ import { BitStudioClient } from '@/lib/bitstudio-client';
 import { BitStudioImage, BitStudioError } from '@/lib/bitstudio-types';
 import { useToast } from '@/hooks/use-toast';
 
+// Types for handling bitStudio responses
+type BitStatus = 'pending' | 'generating' | 'completed' | 'failed';
+
+export interface BitImage {
+  id: string;
+  status: BitStatus;
+  path?: string;
+  credits_used?: number;
+  versions?: unknown[];
+  [k: string]: any;
+}
+
+// Some endpoints (virtual-try-on) return an array; others return an object
+type BitCreateResponse = BitImage | BitImage[];
+
+function getFirstId(resp: BitCreateResponse): string | undefined {
+  return Array.isArray(resp) ? resp[0]?.id : resp?.id;
+}
+
+function isBitImage(x: any): x is BitImage {
+  return x && typeof x === 'object' && typeof x.id === 'string';
+}
+
 export function useBitStudio() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -64,8 +87,9 @@ export function useBitStudio() {
       setLoading(true);
       const results = await BitStudioClient.virtualTryOn(params);
       
-      // Handle array response - get first item's ID
-      const jobId = Array.isArray(results) ? results[0]?.id : results?.id;
+      // Handle array response - get first item's ID using safe extraction
+      const data = results as BitCreateResponse;
+      const jobId = getFirstId(data);
       
       if (!jobId) {
         throw { error: 'No job ID returned', code: 'INVALID_RESPONSE' };
@@ -93,8 +117,9 @@ export function useBitStudio() {
       setLoading(true);
       const results = await BitStudioClient.generateImages(params);
       
-      // Handle both array and single object responses
-      const jobId = Array.isArray(results) ? results[0]?.id : results?.id;
+      // Handle both array and single object responses using safe extraction
+      const data = results as BitCreateResponse;
+      const jobId = getFirstId(data);
       
       if (!jobId) {
         throw { error: 'No job ID returned', code: 'INVALID_RESPONSE' };
