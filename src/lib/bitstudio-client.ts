@@ -1,22 +1,18 @@
 
 import type { BitStudioImage, BitStudioError, AspectRatio, Resolution, Style, UpscaleFactor } from './bitstudio-types';
+import { supabase } from '@/integrations/supabase/client';
 
 export class BitStudioClient {
-  private static async makeRequest(url: string, options: RequestInit = {}) {
-    const response = await fetch(url, {
-      ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
+  private static async makeSupabaseRequest(functionName: string, body?: any) {
+    const { data, error } = await supabase.functions.invoke(functionName, {
+      body: JSON.stringify(body),
     });
 
-    const data = await response.json();
-    
-    if (!response.ok) {
-      throw data as BitStudioError;
+    if (error) {
+      console.error(`Supabase function error (${functionName}):`, error);
+      throw { error: error.message, code: 'SUPABASE_ERROR' } as BitStudioError;
     }
-    
+
     return data;
   }
 
@@ -25,22 +21,20 @@ export class BitStudioClient {
     formData.append('file', file);
     formData.append('type', type);
 
-    const response = await fetch('/api/bitstudio/images', {
-      method: 'POST',
+    const { data, error } = await supabase.functions.invoke('bitstudio-upload', {
       body: formData,
     });
 
-    const data = await response.json();
-    
-    if (!response.ok) {
-      throw data as BitStudioError;
+    if (error) {
+      console.error('Upload error:', error);
+      throw { error: error.message, code: 'UPLOAD_ERROR' } as BitStudioError;
     }
-    
-    return data;
+
+    return data as BitStudioImage;
   }
 
   static async getImage(id: string): Promise<BitStudioImage> {
-    return this.makeRequest(`/api/bitstudio/images/${id}`);
+    return this.makeSupabaseRequest('bitstudio-status', { id });
   }
 
   static async virtualTryOn(params: {
@@ -54,10 +48,7 @@ export class BitStudioClient {
     num_images?: number;
     seed?: number;
   }): Promise<BitStudioImage[]> {
-    return this.makeRequest('/api/bitstudio/virtual-try-on', {
-      method: 'POST',
-      body: JSON.stringify(params),
-    });
+    return this.makeSupabaseRequest('bitstudio-tryon', params);
   }
 
   static async generateImages(params: {
@@ -74,10 +65,7 @@ export class BitStudioClient {
     set_text?: string;
     seed?: number;
   }): Promise<BitStudioImage[]> {
-    return this.makeRequest('/api/bitstudio/generate', {
-      method: 'POST',
-      body: JSON.stringify(params),
-    });
+    return this.makeSupabaseRequest('bitstudio-generate', params);
   }
 
   static async upscaleImage(id: string, params: {
@@ -85,10 +73,7 @@ export class BitStudioClient {
     denoise?: number;
     version_id?: string;
   }): Promise<BitStudioImage> {
-    return this.makeRequest(`/api/bitstudio/images/${id}/upscale`, {
-      method: 'POST',
-      body: JSON.stringify(params),
-    });
+    return this.makeSupabaseRequest('bitstudio-upscale', { id, ...params });
   }
 
   static async inpaintImage(id: string, params: {
@@ -98,10 +83,7 @@ export class BitStudioClient {
     denoise?: number;
     num_images?: number;
   }): Promise<BitStudioImage> {
-    return this.makeRequest(`/api/bitstudio/images/${id}/inpaint`, {
-      method: 'POST',
-      body: JSON.stringify(params),
-    });
+    return this.makeSupabaseRequest('bitstudio-inpaint', { id, ...params });
   }
 
   static async editImage(id: string, params: {
@@ -111,19 +93,13 @@ export class BitStudioClient {
     seed?: number;
     version_id?: string;
   }): Promise<BitStudioImage> {
-    return this.makeRequest(`/api/bitstudio/images/${id}/edit`, {
-      method: 'POST',
-      body: JSON.stringify(params),
-    });
+    return this.makeSupabaseRequest('bitstudio-edit', { id, ...params });
   }
 
   static async generateVideo(id: string, params: {
     prompt: string;
   }): Promise<BitStudioImage> {
-    return this.makeRequest(`/api/bitstudio/images/${id}/video`, {
-      method: 'POST',
-      body: JSON.stringify(params),
-    });
+    return this.makeSupabaseRequest('bitstudio-video', { id, ...params });
   }
 
   static async pollUntilComplete(id: string, maxWaitMs = 180000): Promise<BitStudioImage> {
