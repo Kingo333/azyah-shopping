@@ -25,8 +25,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { AddToClosetModal } from '@/components/AddToClosetModal';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// Simple type definitions to avoid recursion
-type SimpleProduct = {
+interface Product {
   id: string;
   title: string;
   description?: string;
@@ -50,10 +49,10 @@ type SimpleProduct = {
   rating?: number;
   review_count?: number;
   created_at: string;
-};
+}
 
 interface ProductDetailModalProps {
-  product: SimpleProduct | null;
+  product: Product | null;
   isOpen: boolean;
   onClose: () => void;
   onLike?: (productId: string) => void;
@@ -450,6 +449,8 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
         isOpen={isAddToClosetOpen}
         onClose={() => setIsAddToClosetOpen(false)}
         productId={product.id}
+        productTitle={product.title}
+        productImage={images[0]}
       />
     </>
   );
