@@ -134,7 +134,7 @@ const AiTryOnModal: React.FC<AiTryOnModalProps> = ({ isOpen, onClose }) => {
   };
 
   const startGeneration = async () => {
-    if (!personImage?.id && !outfitImage?.id && !outfitImage?.url) {
+    if (!personImage?.id || (!outfitImage?.id && !outfitImage?.url)) {
       toast({
         description: 'Please provide both person and outfit images.',
         variant: 'destructive'
