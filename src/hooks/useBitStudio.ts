@@ -4,6 +4,7 @@ import { BitStudioClient } from '@/lib/bitstudio-client';
 import { BitStudioImage, BitStudioError } from '@/lib/bitstudio-types';
 import { useToast } from '@/hooks/use-toast';
 import { ToastAction } from '@/components/ui/toast';
+import { createElement } from 'react';
 
 // Use the existing types from bitstudio-types instead of duplicating
 type BitImage = BitStudioImage & {
@@ -59,7 +60,7 @@ export function useBitStudio() {
     setError(message);
     
     const actionElement = action 
-      ? <ToastAction altText="Open billing" onClick={action}>Open billing</ToastAction>
+      ? createElement(ToastAction, { altText: "Open billing", onClick: action }, "Open billing")
       : undefined;
 
     toast({
