@@ -39,11 +39,11 @@ const AiTryOnModal: React.FC<AiTryOnModalProps> = ({ isOpen, onClose }) => {
   const [prompt, setPrompt] = useState('');
   const [currentResult, setCurrentResult] = useState<any>(null);
   const [progress, setProgress] = useState(0);
+  const [generationStatus, setGenerationStatus] = useState('');
 
   const personFileRef = useRef<HTMLInputElement>(null);
   const outfitFileRef = useRef<HTMLInputElement>(null);
 
-  // Health check when modal opens
   useEffect(() => {
     if (isOpen && step === 'person') {
       const checkHealth = async () => {
@@ -156,7 +156,8 @@ const AiTryOnModal: React.FC<AiTryOnModalProps> = ({ isOpen, onClose }) => {
     }
 
     setStep('generating');
-    setProgress(25);
+    setProgress(10);
+    setGenerationStatus('Initializing...');
 
     try {
       const params: any = {
@@ -179,22 +180,48 @@ const AiTryOnModal: React.FC<AiTryOnModalProps> = ({ isOpen, onClose }) => {
       }
 
       console.log('Starting generation with params:', params);
-      setProgress(50);
+      setProgress(25);
+      setGenerationStatus('Submitting request...');
 
-      // Use the virtualTryOn hook which handles polling internally
+      const progressInterval = setInterval(() => {
+        setProgress(prev => {
+          if (prev < 90) {
+            const increment = Math.random() * 10;
+            const newProgress = Math.min(prev + increment, 90);
+            
+            if (newProgress < 40) {
+              setGenerationStatus('Processing images...');
+            } else if (newProgress < 70) {
+              setGenerationStatus('Generating try-on...');
+            } else {
+              setGenerationStatus('Finalizing result...');
+            }
+            
+            return newProgress;
+          }
+          return prev;
+        });
+      }, 1000);
+
       const result = await virtualTryOn(params);
+
+      clearInterval(progressInterval);
 
       if (result) {
         setCurrentResult(result);
         setProgress(100);
+        setGenerationStatus('Complete!');
         setStep('result');
       } else {
-        // Error already handled by the hook
         setStep('settings');
+        setProgress(0);
+        setGenerationStatus('');
       }
 
     } catch (error: any) {
       console.error('Generation error:', error);
+      setProgress(0);
+      setGenerationStatus('');
       toast({
         description: error.message || 'Failed to generate try-on. Please try again.',
         variant: 'destructive'
@@ -204,26 +231,49 @@ const AiTryOnModal: React.FC<AiTryOnModalProps> = ({ isOpen, onClose }) => {
   };
 
   const handleDownload = async () => {
-    if (!currentResult?.path) return;
+    if (!currentResult?.path) {
+      toast({
+        description: 'No image available to download',
+        variant: 'destructive'
+      });
+      return;
+    }
 
     try {
-      const response = await fetch(currentResult.path);
+      const downloadToast = toast({
+        description: 'Preparing download...',
+      });
+
+      const response = await fetch(currentResult.path, {
+        method: 'GET',
+        mode: 'cors',
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch image: ${response.status}`);
+      }
+
       const blob = await response.blob();
+      
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
       link.download = `ai-tryon-${Date.now()}.png`;
+      link.style.display = 'none';
+      
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      
       window.URL.revokeObjectURL(url);
       
       toast({
         description: 'Image downloaded successfully!',
       });
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Download error:', error);
       toast({
-        description: 'Failed to download image',
+        description: 'Failed to download image. Please try again.',
         variant: 'destructive'
       });
     }
@@ -233,7 +283,6 @@ const AiTryOnModal: React.FC<AiTryOnModalProps> = ({ isOpen, onClose }) => {
     if (!currentResult?.path || !user) return;
 
     try {
-      // Use a direct insert since the table now exists
       const { error } = await supabase
         .from('ai_assets')
         .insert([{
@@ -268,6 +317,7 @@ const AiTryOnModal: React.FC<AiTryOnModalProps> = ({ isOpen, onClose }) => {
     setPrompt('');
     setCurrentResult(null);
     setProgress(0);
+    setGenerationStatus('');
   };
 
   const handleClose = () => {
@@ -289,7 +339,6 @@ const AiTryOnModal: React.FC<AiTryOnModalProps> = ({ isOpen, onClose }) => {
         </DialogHeader>
 
         <div className="space-y-6">
-          {/* Step 1: Person Photo */}
           {step === 'person' && (
             <Card>
               <CardContent className="p-6">
@@ -358,7 +407,6 @@ const AiTryOnModal: React.FC<AiTryOnModalProps> = ({ isOpen, onClose }) => {
             </Card>
           )}
 
-          {/* Step 2: Outfit Photo */}
           {step === 'outfit' && (
             <Card>
               <CardContent className="p-6">
@@ -468,7 +516,6 @@ const AiTryOnModal: React.FC<AiTryOnModalProps> = ({ isOpen, onClose }) => {
             </Card>
           )}
 
-          {/* Step 3: Settings */}
           {step === 'settings' && (
             <Card>
               <CardContent className="p-6 space-y-6">
@@ -555,22 +602,24 @@ const AiTryOnModal: React.FC<AiTryOnModalProps> = ({ isOpen, onClose }) => {
             </Card>
           )}
 
-          {/* Step 4: Generating */}
           {step === 'generating' && (
             <Card>
-              <CardContent className="p-6 text-center space-y-4">
+              <CardContent className="p-6 text-center space-y-6">
                 <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center mx-auto">
                   <Loader2 className="h-8 w-8 text-white animate-spin" />
                 </div>
                 
-                <div className="space-y-2">
+                <div className="space-y-4">
                   <h3 className="font-semibold text-lg">Generating Your Try-On</h3>
-                  <p className="text-muted-foreground">
-                    AI is creating your try-on...
+                  <p className="text-sm text-muted-foreground">
+                    {generationStatus || 'AI is creating your try-on...'}
                   </p>
                   
-                  <div className="w-full max-w-xs mx-auto">
-                    <Progress value={progress} className="h-2" />
+                  <div className="w-full max-w-sm mx-auto space-y-2">
+                    <Progress value={progress} className="h-3" />
+                    <p className="text-xs text-muted-foreground">
+                      {Math.round(progress)}% complete
+                    </p>
                   </div>
                 </div>
                 
@@ -581,7 +630,6 @@ const AiTryOnModal: React.FC<AiTryOnModalProps> = ({ isOpen, onClose }) => {
             </Card>
           )}
 
-          {/* Step 5: Result */}
           {step === 'result' && currentResult?.path && (
             <Card>
               <CardContent className="p-6 space-y-4">
@@ -599,6 +647,7 @@ const AiTryOnModal: React.FC<AiTryOnModalProps> = ({ isOpen, onClose }) => {
                     src={currentResult.path}
                     alt="AI Try-On result"
                     className="w-full h-full object-cover"
+                    crossOrigin="anonymous"
                   />
                 </div>
                 
@@ -635,7 +684,6 @@ const AiTryOnModal: React.FC<AiTryOnModalProps> = ({ isOpen, onClose }) => {
             </Card>
           )}
 
-          {/* Tips */}
           <div className="bg-muted/50 p-3 rounded-lg">
             <div className="flex items-start gap-2 text-sm">
               <AlertCircle className="h-4 w-4 mt-0.5 text-blue-500 flex-shrink-0" />
