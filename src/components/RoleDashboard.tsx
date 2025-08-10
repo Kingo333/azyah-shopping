@@ -214,9 +214,9 @@ const RoleDashboard: React.FC = () => {
   console.log('Rendering dashboard for user:', userProfile);
 
   const renderShopperDashboard = () => (
-    <div className="space-y-5">
+    <div className="space-y-6">
       {/* Quick Actions with Glass Panel */}
-      <GlassPanel className="p-5 md:p-6">
+      <GlassPanel className="p-6">
         <div className="space-y-4">
           <h2 className="text-xl font-semibold flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-primary" />
@@ -288,7 +288,7 @@ const RoleDashboard: React.FC = () => {
       {/* Global Search and Affiliate Hub Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Global Search with Glass Panel */}
-        <GlassPanel className="p-5 md:p-6">
+        <GlassPanel className="p-6">
           <div className="space-y-4">
             <h3 className="text-lg font-semibold flex items-center gap-2">
               <Search className="h-5 w-5" />
@@ -306,7 +306,7 @@ const RoleDashboard: React.FC = () => {
 
         {/* Affiliate Hub - Desktop with Glass Panel */}
         <div className="hidden lg:block">
-          <GlassPanel className="p-5 md:p-6">
+          <GlassPanel className="p-6">
             <AffiliateHub showTitle={false} />
           </GlassPanel>
         </div>
@@ -314,13 +314,13 @@ const RoleDashboard: React.FC = () => {
 
       {/* Affiliate Hub - Mobile with Glass Panel */}
       <div className="block lg:hidden">
-        <GlassPanel className="p-5 md:p-6">
+        <GlassPanel className="p-6">
           <AffiliateHub />
         </GlassPanel>
       </div>
 
       {/* Closets Preview with Glass Panel */}
-      <GlassPanel className="p-5 md:p-6">
+      <GlassPanel className="p-6">
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold">My Closets</h3>
@@ -336,7 +336,7 @@ const RoleDashboard: React.FC = () => {
       </GlassPanel>
 
       {/* Fashion Leaderboards with Glass Panel */}
-      <GlassPanel className="p-5 md:p-6">
+      <GlassPanel className="p-6">
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold flex items-center gap-2">
@@ -361,7 +361,7 @@ const RoleDashboard: React.FC = () => {
   );
 
   const renderBrandDashboard = () => (
-  <div className="space-y-5">
+    <div className="space-y-6">
       {/* Quick Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
@@ -439,7 +439,7 @@ const RoleDashboard: React.FC = () => {
   );
 
   const renderRetailerDashboard = () => (
-    <div className="space-y-5">
+    <div className="space-y-6">
       {/* Quick Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
@@ -519,7 +519,7 @@ const RoleDashboard: React.FC = () => {
   return (
     <ErrorBoundary>
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-background/95 pb-20 sm:pb-0">
-        <div className="container mx-auto px-4">
+        <div className="container-responsive mx-auto max-w-6xl p-4">
           {/* Header with Dashboard Header component */}
           <div className="mb-6">
             <DashboardHeader />
