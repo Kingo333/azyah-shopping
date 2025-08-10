@@ -56,16 +56,16 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent
-        className="max-w-4xl max-h-[90vh] p-0 overflow-y-auto md:overflow-hidden glass-premium border-white/20"
+        className="w-[100vw] h-[100dvh] md:max-w-4xl md:h-auto md:max-h-[90vh] p-0 overflow-hidden glass-premium border-white/20 rounded-none md:rounded-3xl"
       >
         {!product ? (
           <div className="flex h-[70vh] items-center justify-center text-sm text-muted-foreground">
             Loading product details…
           </div>
         ) : (
-          <div className="flex flex-col md:grid md:grid-cols-2 h-auto md:h-full">
+          <div className="flex flex-col md:grid md:grid-cols-2 h-full">
             {/* Image Gallery */}
-            <div className="relative h-[40vh] md:h-full">
+            <div className="relative h-[48vh] sm:h-[50vh] md:h-full">
               <EnhancedProductGallery
                 images={images}
                 productTitle={product.title}
@@ -74,17 +74,17 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               />
               <Button
                 variant="ghost"
-                size="sm"
+                aria-label="Close product details"
                 onClick={onClose}
-                className="absolute top-2 right-2 md:top-4 md:right-4 z-10 glass-subtle"
+                className="absolute top-3 right-3 md:top-4 md:right-4 z-20 bg-background/60 hover:bg-background/80 backdrop-blur-md rounded-full h-9 w-9 md:h-8 md:w-8"
               >
-                <X className="h-4 w-4" />
+                <X className="h-5 w-5" />
               </Button>
             </div>
 
             {/* Product Details */}
-            <div className="flex flex-col h-auto md:h-full glass-subtle border-white/10">
-              <div className="p-4 md:p-6 space-y-4 md:space-y-6 md:flex-1 md:overflow-y-auto">
+            <div className="flex flex-col h-full glass-subtle border-white/10">
+              <div className="p-4 md:p-6 space-y-4 md:space-y-6 flex-1 overflow-y-auto">
                 {/* Header */}
                 <div>
                   <h2 className="text-xl md:text-2xl font-bold font-playfair line-clamp-2 mb-2">{product.title}</h2>
@@ -142,7 +142,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               </div>
 
               {/* Sticky Footer */}
-              <div className="border-t border-white/20 p-4 md:p-6 space-y-3 glass-premium sticky bottom-0 md:static">
+              <div className="sticky bottom-0 z-10 glass-premium backdrop-blur-md border-t border-white/20 p-4 md:p-6 space-y-3 pb-mobile-safe md:static">
                 <div className="flex gap-2">
                   <Button variant="outline" size="sm" className="flex-1 gap-1 md:gap-2 text-xs md:text-sm h-9 md:h-10">
                     <Heart className="h-3 w-3 md:h-4 md:w-4" />
