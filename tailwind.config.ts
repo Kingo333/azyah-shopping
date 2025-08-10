@@ -190,10 +190,11 @@ export default {
 				'elegant': 'var(--shadow-elegant)',
 				'cartier': '0 4px 24px hsl(var(--accent-cartier) / 0.15)'
 			},
-			fontFamily: {
-				'luxury': ['Inter', 'system-ui', 'sans-serif'],
-				'playfair': ['Playfair Display', 'serif']
-			},
+				fontFamily: {
+					'luxury': ['Inter', 'system-ui', 'sans-serif'],
+					'playfair': ['Playfair Display', 'serif'],
+					'cormorant': ['Cormorant Garamond', 'serif']
+				},
 			spacing: {
 				'mobile-safe': 'env(safe-area-inset-bottom)'
 			}

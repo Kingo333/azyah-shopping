@@ -17,6 +17,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { SEOHead } from "@/components/SEOHead";
 
 export default function Landing() {
   const navigate = useNavigate();
@@ -42,6 +43,11 @@ export default function Landing() {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEOHead
+        title="Azyah — Luxury Fashion Discovery"
+        description="Swipe to discover luxury fashion, AI curation, AR try-on, and a global community."
+        canonical="https://azyah.app/"
+      />
       {/* NAV */}
       <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-md border-b border-primary/10">
         <div className="container max-w-7xl mx-auto px-6 lg:px-12 h-20 flex items-center justify-between">
@@ -51,7 +57,7 @@ export default function Landing() {
               <img src="/marketing/azyah-logo.png" alt="Azyah" className="w-full h-full object-cover"/>
             </div>
             <div>
-              <h1 className="font-serif text-2xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">Azyah</h1>
+              <h1 className="font-cormorant text-2xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">Azyah</h1>
               <p className="text-xs text-primary/70 uppercase tracking-wider">
                 Fashion Discovery
               </p>
@@ -176,7 +182,7 @@ export default function Landing() {
               <span className="inline-flex items-center space-x-3 bg-primary/10 border border-primary/20 rounded-full px-4 py-2">
                 <span className="text-sm font-medium bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent uppercase tracking-wider">Fashion Discovery</span>
               </span>
-              <h1 className="font-serif text-6xl lg:text-8xl font-bold leading-[0.9]">
+              <h1 className="font-cormorant text-6xl lg:text-8xl font-bold leading-[0.9]">
                 Discover
                 <span className="block bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent italic">Fashion</span>
                 <span className="block">Through Swipe</span>
@@ -188,7 +194,7 @@ export default function Landing() {
 
             <div className="flex flex-col sm:flex-row gap-4">
               <Button
-                variant="default"
+                variant="premium"
                 size="lg"
                 className="group px-8 py-4"
                 onClick={() => navigate("/auth")}
@@ -227,7 +233,7 @@ export default function Landing() {
           {/* Visual */}
           <div className="relative">
             <div className="aspect-[4/5] bg-gradient-to-br from-primary/5 to-primary/10 rounded-lg overflow-hidden shadow-lg border border-primary/10">
-              <img src="/marketing/hero-visual.png" alt="Fashion Discovery" className="w-full h-full object-cover"/>
+              <img src="/marketing/hero-visual.png" alt="Azyah luxury fashion discovery hero" className="w-full h-full object-cover" loading="eager" fetchPriority="high" decoding="async"/>
             </div>
             <div className="absolute -top-4 -right-4 w-24 h-24 bg-primary/20 rounded-full blur-xl animate-pulse"/>
             <div className="absolute -bottom-4 -left-4 w-32 h-32 bg-primary/10 rounded-full blur-xl animate-pulse"/>
@@ -240,7 +246,7 @@ export default function Landing() {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(var(--primary)_/_0.05),transparent_50%)]"/>
         <div className="container max-w-7xl mx-auto px-6 lg:px-12 relative">
           <div className="text-center mb-20">
-            <h2 className="font-serif text-5xl lg:text-7xl font-bold mb-6">The Future of
+            <h2 className="font-cormorant text-5xl lg:text-7xl font-bold mb-6">The Future of
               <span className="block bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent italic">Fashion Discovery</span>
             </h2>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
@@ -257,7 +263,7 @@ export default function Landing() {
             ].map(([title, icon, desc, bullets]) => (
               <article key={title as string} className="group bg-card/50 backdrop-blur-sm rounded-lg p-10 shadow-lg hover:shadow-xl border border-primary/10 hover:border-primary/20 transition-all duration-300">
                 <div className="w-16 h-16 relative rounded-lg shadow-md group-hover:shadow-lg transition-shadow">
-                  <img src={icon as string} alt={title as string} className="w-full h-full object-cover rounded-lg"/>
+                  <img src={icon as string} alt={title as string} className="w-full h-full object-cover rounded-lg" loading="lazy" decoding="async"/>
                 </div>
                 <h3 className="font-serif text-2xl font-bold mt-6">{title}</h3>
                 <p className="text-muted-foreground mt-4">{desc}</p>
@@ -279,7 +285,7 @@ export default function Landing() {
       <section id="brands" className="py-24 lg:py-32">
         <div className="container max-w-7xl mx-auto px-6 lg:px-12 grid lg:grid-cols-2 gap-16 items-center">
           <div className="space-y-10">
-            <h2 className="font-serif text-5xl lg:text-6xl font-bold">Partner with
+            <h2 className="font-cormorant text-5xl lg:text-6xl font-bold">Partner with
               <span className="block text-primary italic">Azyah</span>
             </h2>
             <p className="text-xl text-muted-foreground">Showcase collections to a curated audience.</p>
@@ -289,7 +295,7 @@ export default function Landing() {
                 ["For Retailers", "/auth?role=retailer"],
               ].map(([label, href]) => (
                 <div key={label} className="space-y-4">
-                  <h3 className="font-serif text-2xl font-bold">{label}</h3>
+                  <h3 className="font-cormorant text-2xl font-bold">{label}</h3>
                   <p className="text-muted-foreground">
                     {label === "For Brands" ? "Show your line to fashion lovers." : "Expand reach with AI analytics."}
                   </p>
@@ -323,7 +329,7 @@ export default function Landing() {
       <section id="retailers" className="relative py-24 lg:py-32 bg-foreground text-background overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent"/>
         <div className="container max-w-7xl mx-auto px-6 lg:px-12 text-center relative space-y-10">
-          <h2 className="font-serif text-5xl lg:text-7xl font-bold">
+          <h2 className="font-cormorant text-5xl lg:text-7xl font-bold">
             Begin Your <span className="block text-primary italic">Luxury Journey</span>
           </h2>
           <p className="text-xl lg:text-2xl text-background/80 max-w-3xl mx-auto">
@@ -350,7 +356,7 @@ export default function Landing() {
                 <Heart className="w-5 h-5 text-primary-foreground"/>
               </div>
               <div>
-                <h3 className="font-serif text-xl font-bold">Azyah</h3>
+                <h3 className="font-cormorant text-xl font-bold">Azyah</h3>
                 <p className="text-xs text-muted-foreground uppercase">Fashion Discovery</p>
               </div>
             </div>

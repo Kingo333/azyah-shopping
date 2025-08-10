@@ -11,6 +11,7 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default: "bg-cartier-600 text-white hover:bg-cartier-700 shadow-sm",
+        premium: "bg-gradient-to-r from-cartier-600 to-cartier-700 text-white shadow-cartier hover:from-cartier-700 hover:to-cartier-800",
         destructive:
           "bg-destructive text-destructive-foreground hover:bg-destructive/90",
         outline:
