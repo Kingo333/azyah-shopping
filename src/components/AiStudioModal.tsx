@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -20,14 +19,19 @@ export interface AiStudioModalProps {
   trigger?: React.ReactNode;
 }
 
-function mapResolutionFor(
-  feature: 'tryon' | 'generate' | 'edit',
-  selected: 'low' | 'standard' | 'high'
-): 'low' | 'standard' | 'high' {
+type AnyRes = 'low' | 'standard' | 'high';
+type TryGenRes = 'standard' | 'high';
+type EditRes = 'standard' | 'low';
+
+function mapResolutionFor(feature: 'edit', selected: AnyRes): EditRes;
+function mapResolutionFor(feature: 'tryon' | 'generate', selected: AnyRes): TryGenRes;
+function mapResolutionFor(feature: 'tryon' | 'generate' | 'edit', selected: AnyRes): AnyRes {
   if (feature === 'edit') {
-    return selected === 'high' ? 'standard' : selected;
+    // Edit supports 'standard' | 'low' (never 'high')
+    return selected === 'high' ? 'standard' : (selected ?? 'standard');
   }
-  return selected === 'low' ? 'standard' : selected;
+  // Try-On & Generate support 'standard' | 'high' (never 'low')
+  return selected === 'low' ? 'standard' : (selected ?? 'standard');
 }
 
 const AiStudioModal: React.FC<AiStudioModalProps> = ({ open, onClose, trigger }) => {
