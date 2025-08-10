@@ -11,7 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import GlobalSearch from '@/components/GlobalSearch';
 import DashboardHeader from '@/components/DashboardHeader';
 import AffiliateHub from '@/components/AffiliateHub';
-import AiTryOnModal from '@/components/AiTryOnModal';
+import AiStudioModal from '@/components/AiStudioModal';
 import { Heart, ShoppingBag, Search, Sparkles, Camera, BarChart3, Users, Package, Settings, Store, TrendingUp, Plus, Eye, DollarSign, Globe, Bell, LogOut, User, Archive, Trophy, MapPin } from 'lucide-react';
 import Leaderboard from '@/components/Leaderboard';
 
@@ -42,7 +42,7 @@ const RoleDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchOpen, setSearchOpen] = useState(false);
   const [activeLeaderboard, setActiveLeaderboard] = useState<'global' | 'country'>('global');
-  const [aiTryOnModalOpen, setAiTryOnModalOpen] = useState(false);
+  const [aiStudioModalOpen, setAiStudioModalOpen] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -209,12 +209,12 @@ const RoleDashboard: React.FC = () => {
               <span className="text-xs sm:text-sm">Explore</span>
             </Button>
             <Button 
-              onClick={() => setAiTryOnModalOpen(true)}
+              onClick={() => setAiStudioModalOpen(true)}
               variant="outline" 
-              className="h-16 sm:h-20 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300 relative bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-950/20 dark:to-blue-950/20 border-purple-200 dark:border-purple-800"
+              className="h-16 sm:h-20 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300 relative bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 border-purple-200 dark:border-purple-800"
             >
               <Sparkles className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600" />
-              <span className="text-xs sm:text-sm text-purple-600">AI Try-On</span>
+              <span className="text-xs sm:text-sm text-purple-600">AI Studio</span>
               <Badge variant="secondary" className="absolute -top-1 -right-1 text-xs px-1 py-0 h-4">
                 New
               </Badge>
@@ -492,8 +492,8 @@ const RoleDashboard: React.FC = () => {
         {/* Global Search Modal */}
         <GlobalSearch isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
         
-        {/* AI Try-On Modal */}
-        <AiTryOnModal isOpen={aiTryOnModalOpen} onClose={() => setAiTryOnModalOpen(false)} />
+        {/* AI Studio Modal */}
+        <AiStudioModal isOpen={aiStudioModalOpen} onClose={() => setAiStudioModalOpen(false)} />
       </div>
     </ErrorBoundary>
   );
