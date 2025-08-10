@@ -16,16 +16,13 @@ export interface BitStudioError {
   error: string;
   code?: string;
   details?: string;
+  status?: number;
+  bitstudio_error?: any;
 }
 
 export const BITSTUDIO_IMAGE_TYPES = {
   PERSON: 'virtual-try-on-person',
-  OUTFIT: 'virtual-try-on-outfit',
-  INPAINT_BASE: 'inpaint-base',
-  INPAINT_MASK: 'inpaint-mask',
-  INPAINT_REFERENCE: 'inpaint-reference',
-  EDIT: 'edit',
-  IMAGE_TO_VIDEO: 'image-to-video'
+  OUTFIT: 'virtual-try-on-outfit'
 } as const;
 
 export type AspectRatio = 'portrait' | 'landscape' | 'square';

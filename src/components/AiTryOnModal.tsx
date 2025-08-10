@@ -25,18 +25,10 @@ interface AiTryOnModalProps {
   onClose: () => void;
 }
 
-interface TryOnJob {
-  job_id: string;
-  status: 'pending' | 'generating' | 'completed' | 'failed';
-  result_url?: string;
-  credits_used?: number;
-  error?: string;
-}
-
 const AiTryOnModal: React.FC<AiTryOnModalProps> = ({ isOpen, onClose }) => {
   const { toast } = useToast();
-  const { user, session } = useAuth();
-  const { uploadImage, loading: uploadLoading } = useBitStudio();
+  const { user } = useAuth();
+  const { uploadImage, virtualTryOn, loading } = useBitStudio();
   
   const [step, setStep] = useState<'person' | 'outfit' | 'settings' | 'generating' | 'result'>('person');
   const [personImage, setPersonImage] = useState<{ file: File; preview: string; id?: string } | null>(null);
@@ -45,8 +37,7 @@ const AiTryOnModal: React.FC<AiTryOnModalProps> = ({ isOpen, onClose }) => {
   const [resolution, setResolution] = useState<'standard' | 'high'>('standard');
   const [numImages, setNumImages] = useState(1);
   const [prompt, setPrompt] = useState('');
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [currentJob, setCurrentJob] = useState<TryOnJob | null>(null);
+  const [currentResult, setCurrentResult] = useState<any>(null);
   const [progress, setProgress] = useState(0);
 
   const personFileRef = useRef<HTMLInputElement>(null);
@@ -151,122 +142,59 @@ const AiTryOnModal: React.FC<AiTryOnModalProps> = ({ isOpen, onClose }) => {
       return;
     }
 
-    setIsGenerating(true);
     setStep('generating');
-    setProgress(0);
+    setProgress(25);
 
     try {
-      const requestBody: any = {
+      const params: any = {
         resolution,
         num_images: numImages,
       };
 
       if (personImage?.id) {
-        requestBody.person_image_id = personImage.id;
+        params.person_image_id = personImage.id;
       }
 
       if (outfitImage?.id) {
-        requestBody.outfit_image_id = outfitImage.id;
+        params.outfit_image_id = outfitImage.id;
       } else if (outfitImage?.url) {
-        requestBody.outfit_image_url = outfitImage.url;
+        params.outfit_image_url = outfitImage.url;
       }
 
       if (prompt.trim()) {
-        requestBody.prompt = prompt.trim();
+        params.prompt = prompt.trim();
       }
 
-      console.log('Starting generation with params:', requestBody);
+      console.log('Starting generation with params:', params);
+      setProgress(50);
 
-      const { data, error } = await supabase.functions.invoke('bitstudio-tryon', {
-        body: requestBody,
-      });
+      // Use the virtualTryOn hook which handles polling internally
+      const result = await virtualTryOn(params);
 
-      if (error) {
-        throw new Error(error.message || 'Failed to start generation');
+      if (result) {
+        setCurrentResult(result);
+        setProgress(100);
+        setStep('result');
+      } else {
+        // Error already handled by the hook
+        setStep('settings');
       }
-
-      setCurrentJob({
-        job_id: data.job_id,
-        status: 'generating'
-      });
-
-      // Start polling for status
-      pollJobStatus(data.job_id);
 
     } catch (error: any) {
       console.error('Generation error:', error);
       toast({
-        description: error.message || 'Failed to start AI try-on. Please try again.',
+        description: error.message || 'Failed to generate try-on. Please try again.',
         variant: 'destructive'
       });
-      setIsGenerating(false);
       setStep('settings');
     }
   };
 
-  const pollJobStatus = async (jobId: string) => {
-    const maxAttempts = 90; // 3 minutes with 2-second intervals
-    let attempts = 0;
-    let delay = 2000; // Start with 2 seconds
-
-    const poll = async () => {
-      try {
-        const { data, error } = await supabase.functions.invoke('bitstudio-status', {
-          body: { job_id: jobId },
-        });
-
-        if (error) {
-          throw new Error(error.message || 'Status check failed');
-        }
-
-        setCurrentJob(data);
-        
-        // Update progress based on status
-        if (data.status === 'generating') {
-          setProgress(Math.min(75, (attempts / maxAttempts) * 100));
-        } else if (data.status === 'completed') {
-          setProgress(100);
-          setStep('result');
-          setIsGenerating(false);
-          
-          if (data.credits_used) {
-            toast({
-              description: `Try-on completed! Used ${data.credits_used} credits.`,
-            });
-          }
-          return;
-        } else if (data.status === 'failed') {
-          throw new Error(data.error || 'Generation failed');
-        }
-
-        attempts++;
-        if (attempts < maxAttempts) {
-          // Exponential backoff: 2s -> 4s -> 6s (max)
-          delay = Math.min(6000, delay + 2000);
-          setTimeout(poll, delay);
-        } else {
-          throw new Error('Generation timeout');
-        }
-
-      } catch (error: any) {
-        console.error('Polling error:', error);
-        toast({
-          description: error.message || 'Generation failed. Please try again.',
-          variant: 'destructive'
-        });
-        setIsGenerating(false);
-        setStep('settings');
-      }
-    };
-
-    poll();
-  };
-
   const handleDownload = async () => {
-    if (!currentJob?.result_url) return;
+    if (!currentResult?.path) return;
 
     try {
-      const response = await fetch(currentJob.result_url);
+      const response = await fetch(currentResult.path);
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -289,7 +217,7 @@ const AiTryOnModal: React.FC<AiTryOnModalProps> = ({ isOpen, onClose }) => {
   };
 
   const handleSaveToGallery = async () => {
-    if (!currentJob?.result_url || !user) return;
+    if (!currentResult?.path || !user) return;
 
     try {
       // Use a direct insert since the table now exists
@@ -297,8 +225,8 @@ const AiTryOnModal: React.FC<AiTryOnModalProps> = ({ isOpen, onClose }) => {
         .from('ai_assets')
         .insert([{
           user_id: user.id,
-          job_id: currentJob.job_id,
-          asset_url: currentJob.result_url,
+          job_id: currentResult.id,
+          asset_url: currentResult.path,
           asset_type: 'tryon_result',
           title: `AI Try-On ${new Date().toLocaleDateString()}`
         }]);
@@ -325,9 +253,8 @@ const AiTryOnModal: React.FC<AiTryOnModalProps> = ({ isOpen, onClose }) => {
     setResolution('standard');
     setNumImages(1);
     setPrompt('');
-    setCurrentJob(null);
+    setCurrentResult(null);
     setProgress(0);
-    setIsGenerating(false);
   };
 
   const handleClose = () => {
@@ -379,7 +306,7 @@ const AiTryOnModal: React.FC<AiTryOnModalProps> = ({ isOpen, onClose }) => {
                           onClick={() => personFileRef.current?.click()} 
                           variant="outline" 
                           size="sm"
-                          disabled={uploadLoading}
+                          disabled={loading}
                         >
                           Change Photo
                         </Button>
@@ -394,15 +321,15 @@ const AiTryOnModal: React.FC<AiTryOnModalProps> = ({ isOpen, onClose }) => {
                   ) : (
                     <Button 
                       onClick={() => personFileRef.current?.click()} 
-                      disabled={uploadLoading}
+                      disabled={loading}
                       className="gap-2"
                     >
-                      {uploadLoading ? (
+                      {loading ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
                       ) : (
                         <Upload className="h-4 w-4" />
                       )}
-                      {uploadLoading ? 'Uploading...' : 'Choose Photo'}
+                      {loading ? 'Uploading...' : 'Choose Photo'}
                     </Button>
                   )}
 
@@ -474,11 +401,11 @@ const AiTryOnModal: React.FC<AiTryOnModalProps> = ({ isOpen, onClose }) => {
                       <div className="flex gap-2">
                         <Button 
                           onClick={() => outfitFileRef.current?.click()} 
-                          disabled={uploadLoading}
+                          disabled={loading}
                           variant="outline"
                           className="flex-1 gap-2"
                         >
-                          {uploadLoading ? (
+                          {loading ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
                           ) : (
                             <Upload className="h-4 w-4" />
@@ -600,10 +527,10 @@ const AiTryOnModal: React.FC<AiTryOnModalProps> = ({ isOpen, onClose }) => {
                   </Button>
                   <Button 
                     onClick={startGeneration}
-                    disabled={isGenerating}
+                    disabled={loading}
                     className="flex-1 gap-2"
                   >
-                    {isGenerating ? (
+                    {loading ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
                       <Sparkles className="h-4 w-4" />
@@ -626,8 +553,7 @@ const AiTryOnModal: React.FC<AiTryOnModalProps> = ({ isOpen, onClose }) => {
                 <div className="space-y-2">
                   <h3 className="font-semibold text-lg">Generating Your Try-On</h3>
                   <p className="text-muted-foreground">
-                    {currentJob?.status === 'pending' && 'Your request is queued...'}
-                    {currentJob?.status === 'generating' && 'AI is creating your try-on...'}
+                    AI is creating your try-on...
                   </p>
                   
                   <div className="w-full max-w-xs mx-auto">
@@ -643,21 +569,21 @@ const AiTryOnModal: React.FC<AiTryOnModalProps> = ({ isOpen, onClose }) => {
           )}
 
           {/* Step 5: Result */}
-          {step === 'result' && currentJob?.result_url && (
+          {step === 'result' && currentResult?.path && (
             <Card>
               <CardContent className="p-6 space-y-4">
                 <div className="text-center">
                   <h3 className="font-semibold text-lg">Your AI Try-On Result</h3>
-                  {currentJob.credits_used && (
+                  {currentResult.credits_used && (
                     <p className="text-sm text-muted-foreground">
-                      Used {currentJob.credits_used} credits
+                      Used {currentResult.credits_used} credits
                     </p>
                   )}
                 </div>
 
                 <div className="aspect-[3/4] max-w-md mx-auto rounded-lg overflow-hidden">
                   <img
-                    src={currentJob.result_url}
+                    src={currentResult.path}
                     alt="AI Try-On result"
                     className="w-full h-full object-cover"
                   />

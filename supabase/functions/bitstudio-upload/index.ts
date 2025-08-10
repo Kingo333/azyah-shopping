@@ -7,6 +7,11 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Helper to normalize type format for BitStudio API
+const normalizeBitStudioType = (type: string): string => {
+  return type.replace(/-/g, '_');
+};
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -45,7 +50,7 @@ serve(async (req) => {
       fileName: file?.name, 
       fileSize: file?.size, 
       fileType: file?.type, 
-      type: type 
+      originalType: type 
     });
 
     if (!file) {
@@ -63,7 +68,7 @@ serve(async (req) => {
       );
     }
 
-    // Expanded image type validation - include more formats
+    // Expanded image type validation
     const allowedTypes = [
       'image/jpeg', 
       'image/jpg', 
@@ -85,15 +90,10 @@ serve(async (req) => {
       );
     }
 
-    // Validate type parameter - extend support for inpainting/edit/video uploads
+    // Validate type parameter - focus on virtual try-on types
     const validTypes = [
       'virtual-try-on-person',
-      'virtual-try-on-outfit',
-      'inpaint-base',
-      'inpaint-mask',
-      'inpaint-reference',
-      'edit',
-      'image-to-video'
+      'virtual-try-on-outfit'
     ];
     if (!validTypes.includes(type)) {
       return new Response(
@@ -102,16 +102,20 @@ serve(async (req) => {
       );
     }
 
-    // Create form data for bitStudio API with compatibility hedging
+    // Normalize type for BitStudio API compatibility
+    const normalizedType = normalizeBitStudioType(type);
+    console.log(`Type normalization: "${type}" → "${normalizedType}"`);
+
+    // Create form data for BitStudio API with compatibility hedging
     const bitStudioFormData = new FormData();
     bitStudioFormData.append('file', file);
     bitStudioFormData.append('image', file); // Hedge: some APIs expect 'image'
-    bitStudioFormData.append('type', type);
-    bitStudioFormData.append('image_type', type); // Hedge: some APIs expect 'image_type'
+    bitStudioFormData.append('type', normalizedType);
+    bitStudioFormData.append('image_type', normalizedType); // Hedge: some APIs expect 'image_type'
 
-    console.log('Making request to BitStudio API...');
+    console.log('Making request to BitStudio API with normalized type:', normalizedType);
 
-    // Make request to bitStudio API
+    // Make request to BitStudio API
     const response = await fetch(`${BITSTUDIO_API_BASE}/images`, {
       method: 'POST',
       headers: {
