@@ -1,501 +1,379 @@
+
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
-import { ErrorBoundary } from '@/components/ErrorBoundary';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { GlassPanel } from '@/components/ui/glass-panel';
+import { 
+  ShoppingBag, 
+  Heart, 
+  TrendingUp, 
+  Users, 
+  Package, 
+  BarChart3, 
+  Star,
+  Plus,
+  Zap,
+  Sparkles,
+  Share2,
+  User
+} from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { useToast } from '@/hooks/use-toast';
-import GlobalSearch from '@/components/GlobalSearch';
-import DashboardHeader from '@/components/DashboardHeader';
-import AffiliateHub from '@/components/AffiliateHub';
-import AiTryOnModal from '@/components/AiTryOnModal';
-import { Heart, ShoppingBag, Search, Sparkles, Camera, BarChart3, Users, Package, Settings, Store, TrendingUp, Plus, Eye, DollarSign, Globe, Bell, LogOut, User, Archive, Trophy, MapPin } from 'lucide-react';
-import Leaderboard from '@/components/Leaderboard';
+import AiStudioModal from '@/components/AiStudioModal';
+import CreatePostModal from '@/components/CreatePostModal';
+import AddProductModal from '@/components/AddProductModal';
 
-interface UserProfile {
-  id: string;
-  name: string;
-  role: 'shopper' | 'brand' | 'retailer' | 'admin';
-  avatar_url?: string;
-  email: string;
-}
-
-interface DashboardStats {
-  totalProducts?: number;
-  totalViews?: number;
-  totalSales?: number;
-  totalRevenue?: number;
-  totalWishlistItems?: number;
-  totalCartItems?: number;
-}
-
-const RoleDashboard: React.FC = () => {
-  const { user, signOut } = useAuth();
-  console.log('RoleDashboard: user state:', user);
+const RoleDashboard = () => {
+  const { user } = useAuth();
   const navigate = useNavigate();
-  const { toast } = useToast();
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-  const [stats, setStats] = useState<DashboardStats>({});
-  const [loading, setLoading] = useState(true);
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [activeLeaderboard, setActiveLeaderboard] = useState<'global' | 'country'>('global');
-  const [aiTryOnModalOpen, setAiTryOnModalOpen] = useState(false);
+  const [userRole, setUserRole] = useState<'shopper' | 'brand' | 'retailer' | null>(null);
+  const [isAiStudioOpen, setIsAiStudioOpen] = useState(false);
+  const [isCreatePostOpen, setIsCreatePostOpen] = useState(false);
+  const [isAddProductOpen, setIsAddProductOpen] = useState(false);
 
   useEffect(() => {
-    if (user) {
-      fetchUserProfile();
-      fetchDashboardStats();
-    }
+    // In a real app, you'd fetch this from your user profile
+    // For now, we'll assume shopper as default
+    setUserRole('shopper');
   }, [user]);
 
-  const fetchUserProfile = async () => {
-    if (!user) return;
-    try {
-      const {
-        data,
-        error
-      } = await supabase.from('users').select('*').eq('id', user.id).maybeSingle();
-      if (error) {
-        console.error('Error fetching user profile:', error);
-        throw error;
+  if (!userRole) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+      </div>
+    );
+  }
+
+  const shopperQuickActions = [
+    {
+      title: "AI Studio",
+      description: "Virtual try-on, generate images, upscale & more",
+      icon: Sparkles,
+      action: () => setIsAiStudioOpen(true),
+      badge: "Powered by bitStudio",
+      primary: true
+    },
+    {
+      title: "Create Post",
+      description: "Share your style with the community",
+      icon: Plus,
+      action: () => setIsCreatePostOpen(true)
+    },
+    {
+      title: "Browse Likes",
+      description: "View your liked products",
+      icon: Heart,
+      action: () => navigate('/likes')
+    }
+  ];
+
+  const brandQuickActions = [
+    {
+      title: "Add Product",
+      description: "Add new products to your catalog",
+      icon: Plus,
+      action: () => setIsAddProductOpen(true),
+      primary: true
+    },
+    {
+      title: "View Analytics",
+      description: "Track your brand performance",
+      icon: BarChart3,
+      action: () => navigate('/analytics')
+    },
+    {
+      title: "Brand Portal",
+      description: "Manage your brand profile",
+      icon: Package,
+      action: () => navigate('/brand-portal')
+    }
+  ];
+
+  const retailerQuickActions = [
+    {
+      title: "Add Product",
+      description: "Add new products to your inventory",
+      icon: Plus,
+      action: () => setIsAddProductOpen(true),
+      primary: true
+    },
+    {
+      title: "View Analytics", 
+      description: "Track your retail performance",
+      icon: BarChart3,
+      action: () => navigate('/analytics')
+    },
+    {
+      title: "Retailer Portal",
+      description: "Manage your retail profile",
+      icon: Package,
+      action: () => navigate('/retailer-portal')
+    }
+  ];
+
+  const getQuickActions = () => {
+    switch (userRole) {
+      case 'shopper':
+        return shopperQuickActions;
+      case 'brand':
+        return brandQuickActions;
+      case 'retailer':
+        return retailerQuickActions;
+      default:
+        return [];
+    }
+  };
+
+  const getOverviewCards = () => {
+    const baseCards = [
+      {
+        title: "Profile Views",
+        value: "1,234",
+        description: "This month",
+        icon: User,
+        trend: "+12%"
+      },
+      {
+        title: "Activity Score",
+        value: "95",
+        description: "Engagement rating",
+        icon: TrendingUp,
+        trend: "+5%"
       }
-      if (data) {
-        setUserProfile(data);
-      } else {
-        // User profile doesn't exist, create one
-        console.log('Creating new user profile for:', user.email);
-        const defaultProfile = {
-          id: user.id,
-          name: user.email?.split('@')[0] || 'User',
-          role: 'shopper' as const,
-          email: user.email!
+    ];
+
+    switch (userRole) {
+      case 'shopper':
+        return [
+          {
+            title: "Liked Products",
+            value: "47",
+            description: "Products you've liked",
+            icon: Heart,
+            trend: "+3 this week"
+          },
+          {
+            title: "Posts Created",
+            value: "12",
+            description: "Your shared styles",
+            icon: Share2,
+            trend: "+2 this week"
+          },
+          ...baseCards
+        ];
+      case 'brand':
+        return [
+          {
+            title: "Products Listed",
+            value: "156",
+            description: "Active products",
+            icon: Package,
+            trend: "+8 this week"
+          },
+          {
+            title: "Total Likes",
+            value: "2,847",
+            description: "Across all products",
+            icon: Heart,
+            trend: "+156 this week"
+          },
+          ...baseCards
+        ];
+      case 'retailer':
+        return [
+          {
+            title: "Products Listed",
+            value: "89",
+            description: "Active inventory",
+            icon: ShoppingBag,
+            trend: "+5 this week"
+          },
+          {
+            title: "Brand Partnerships",
+            value: "23",
+            description: "Active partnerships",
+            icon: Users,
+            trend: "+2 this month"
+          },
+          ...baseCards
+        ];
+      default:
+        return baseCards;
+    }
+  };
+
+  const getWelcomeMessage = () => {
+    switch (userRole) {
+      case 'shopper':
+        return {
+          title: "Welcome to your Fashion Hub",
+          description: "Discover new styles, share your looks, and connect with the fashion community"
         };
-        const {
-          error: insertError
-        } = await supabase.from('users').insert([defaultProfile]);
-        if (insertError) {
-          console.error('Error creating user profile:', insertError);
-          // Use the default profile even if insert fails
-        }
-        setUserProfile(defaultProfile);
-      }
-    } catch (error) {
-      console.error('Error with user profile:', error);
-      // Fallback profile
-      setUserProfile({
-        id: user.id,
-        name: user.email?.split('@')[0] || 'User',
-        role: 'shopper',
-        email: user.email!
-      });
+      case 'brand':
+        return {
+          title: "Welcome to your Brand Dashboard",
+          description: "Manage your products, track performance, and grow your fashion brand"
+        };
+      case 'retailer':
+        return {
+          title: "Welcome to your Retail Dashboard", 
+          description: "Manage inventory, partner with brands, and grow your retail business"
+        };
+      default:
+        return {
+          title: "Welcome to Azyah",
+          description: "Your personalized fashion experience"
+        };
     }
   };
 
-  const fetchDashboardStats = async () => {
-    if (!user) return;
-    
-    const timeoutId = setTimeout(() => {
-      console.warn('Dashboard stats fetch timeout, setting loading to false');
-      setLoading(false);
-    }, 10000); // 10 second timeout
-
-    try {
-      // Fetch basic stats for all roles with timeout
-      const statsPromises = [
-        supabase.from('wishlist_items').select('*').eq('wishlist_id', user.id),
-        supabase.from('cart_items').select('*').eq('user_id', user.id)
-      ];
-
-      const [wishlistData, cartData] = await Promise.race([
-        Promise.all(statsPromises),
-        new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Timeout')), 8000)
-        )
-      ]) as any[];
-
-      const dashboardStats: DashboardStats = {
-        totalWishlistItems: wishlistData?.data?.length || 0,
-        totalCartItems: cartData?.data?.length || 0
-      };
-
-      // Role-specific stats
-      if (userProfile?.role === 'brand' || userProfile?.role === 'retailer') {
-        try {
-          const { data: products } = await supabase
-            .from('products')
-            .select('*')
-            .eq(userProfile.role === 'brand' ? 'brand_id' : 'retailer_id', user.id);
-          dashboardStats.totalProducts = products?.length || 0;
-        } catch (roleError) {
-          console.warn('Failed to fetch role-specific stats:', roleError);
-          dashboardStats.totalProducts = 0;
-        }
-      }
-      
-      setStats(dashboardStats);
-      clearTimeout(timeoutId);
-    } catch (error) {
-      console.error('Error fetching dashboard stats:', error);
-      // Set default stats on error
-      setStats({
-        totalWishlistItems: 0,
-        totalCartItems: 0,
-        totalProducts: 0
-      });
-      clearTimeout(timeoutId);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const formatPrice = (cents: number): string => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(cents / 100);
-  };
-
-  if (loading) {
-    return <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p>Loading dashboard...</p>
-        </div>
-      </div>;
-  }
-
-  if (!userProfile) {
-    return <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <p>Error loading profile</p>
-        </div>
-      </div>;
-  }
-
-  const renderShopperDashboard = () => (
-    <div className="space-y-6">
-      {/* Quick Actions with Glass Panel */}
-      <GlassPanel className="p-6">
-        <div className="space-y-4">
-          <h2 className="text-xl font-semibold flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-primary" />
-            Quick Actions
-          </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3 sm:gap-4">
-            <Button 
-              onClick={() => navigate('/swipe')} 
-              className="btn-luxury h-16 sm:h-20 flex-col gap-1 sm:gap-2"
-            >
-              <Heart className="h-5 w-5 sm:h-6 sm:w-6" />
-              <span className="text-xs sm:text-sm">Swipe</span>
-            </Button>
-            <Button 
-              onClick={() => navigate('/fashion-feed')} 
-              variant="outline" 
-              className="h-16 sm:h-20 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300"
-            >
-              <Sparkles className="h-5 w-5 sm:h-6 sm:w-6" />
-              <span className="text-xs sm:text-sm">Feed</span>
-            </Button>
-            <Button 
-              onClick={() => navigate('/explore')} 
-              variant="outline" 
-              className="h-16 sm:h-20 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300"
-            >
-              <Search className="h-5 w-5 sm:h-6 sm:w-6" />
-              <span className="text-xs sm:text-sm">Explore</span>
-            </Button>
-            <Button 
-              onClick={() => setAiTryOnModalOpen(true)}
-              variant="outline" 
-              className="h-16 sm:h-20 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300 relative bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-950/20 dark:to-blue-950/20 border-purple-200 dark:border-purple-800"
-            >
-              <Sparkles className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600" />
-              <span className="text-xs sm:text-sm text-purple-600">AI Try-On</span>
-              <Badge variant="secondary" className="absolute -top-1 -right-1 text-xs px-1 py-0 h-4">
-                New
-              </Badge>
-            </Button>
-            <Button 
-              onClick={() => navigate('/likes')} 
-              variant="outline" 
-              className="h-16 sm:h-20 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300"
-            >
-              <Heart className="h-5 w-5 sm:h-6 sm:w-6" />
-              <span className="text-xs sm:text-sm">Likes</span>
-            </Button>
-            <Button 
-              onClick={() => navigate('/wishlist')} 
-              variant="outline" 
-              className="h-16 sm:h-20 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300"
-            >
-              <ShoppingBag className="h-5 w-5 sm:h-6 sm:w-6" />
-              <span className="text-xs sm:text-sm">Wishlist</span>
-            </Button>
-            <Button 
-              onClick={() => navigate('/image-search')} 
-              variant="outline" 
-              className="h-16 sm:h-20 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300"
-            >
-              <Camera className="h-5 w-5 sm:h-6 sm:w-6" />
-              <span className="text-xs sm:text-sm">Scan</span>
-            </Button>
-          </div>
-        </div>
-      </GlassPanel>
-
-      {/* Global Search and Affiliate Hub Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Global Search with Glass Panel */}
-        <GlassPanel className="p-6">
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold flex items-center gap-2">
-              <Search className="h-5 w-5" />
-              Discover Products, Brands & Styles
-            </h3>
-            <p className="text-sm text-muted-foreground">
-              Search across products, brands, and styles to discover your next fashion find.
-            </p>
-            <Button onClick={() => setSearchOpen(true)} variant="outline" className="w-full">
-              <Search className="h-4 w-4 mr-2" />
-              Open Global Search
-            </Button>
-          </div>
-        </GlassPanel>
-
-        {/* Affiliate Hub - Desktop with Glass Panel */}
-        <div className="hidden lg:block">
-          <GlassPanel className="p-6">
-            <AffiliateHub showTitle={false} />
-          </GlassPanel>
-        </div>
-      </div>
-
-      {/* Affiliate Hub - Mobile with Glass Panel */}
-      <div className="block lg:hidden">
-        <GlassPanel className="p-6">
-          <AffiliateHub />
-        </GlassPanel>
-      </div>
-
-      {/* Closets Preview with Glass Panel */}
-      <GlassPanel className="p-6">
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold">My Closets</h3>
-            <Button variant="outline" size="sm" onClick={() => navigate('/closets')}>
-              <Archive className="h-4 w-4 mr-2" />
-              View All
-            </Button>
-          </div>
-          <p className="text-muted-foreground text-center py-8">
-            Create your first closet to organize your style discoveries
-          </p>
-        </div>
-      </GlassPanel>
-
-      {/* Fashion Leaderboards with Glass Panel */}
-      <GlassPanel className="p-6">
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold flex items-center gap-2">
-              <Trophy className="h-5 w-5 text-yellow-500" />
-              Fashion Leaderboards
-            </h3>
-            <div className="flex gap-2">
-              <Button variant={activeLeaderboard === 'global' ? 'default' : 'outline'} size="sm" onClick={() => setActiveLeaderboard('global')}>
-                <Globe className="h-4 w-4 mr-2" />
-                Global
-              </Button>
-              <Button variant={activeLeaderboard === 'country' ? 'default' : 'outline'} size="sm" onClick={() => setActiveLeaderboard('country')}>
-                <MapPin className="h-4 w-4 mr-2" />
-                Country
-              </Button>
-            </div>
-          </div>
-          <Leaderboard type={activeLeaderboard} country={user?.user_metadata?.country} />
-        </div>
-      </GlassPanel>
-    </div>
-  );
-
-  const renderBrandDashboard = () => <div className="space-y-6">
-      {/* Quick Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <Package className="h-5 w-5 text-blue-500" />
-              <div>
-                <p className="text-sm text-muted-foreground">Products</p>
-                <p className="text-xl font-bold">{stats.totalProducts || 0}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <Eye className="h-5 w-5 text-green-500" />
-              <div>
-                <p className="text-sm text-muted-foreground">Views</p>
-                <p className="text-xl font-bold">{stats.totalViews || 0}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <ShoppingBag className="h-5 w-5 text-purple-500" />
-              <div>
-                <p className="text-sm text-muted-foreground">Sales</p>
-                <p className="text-xl font-bold">{stats.totalSales || 0}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <DollarSign className="h-5 w-5 text-green-500" />
-              <div>
-                <p className="text-sm text-muted-foreground">Revenue</p>
-                <p className="text-xl font-bold">{formatPrice(stats.totalRevenue || 0)}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Quick Actions */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Brand Management</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            <Button onClick={() => navigate('/brand-portal')} className="h-20 flex-col gap-2">
-              <Package className="h-6 w-6" />
-              <span>Products</span>
-            </Button>
-            <Button onClick={() => navigate('/brand-portal')} variant="outline" className="h-20 flex-col gap-2">
-              <BarChart3 className="h-6 w-6" />
-              <span>Analytics</span>
-            </Button>
-            <Button onClick={() => navigate('/brand-portal')} variant="outline" className="h-20 flex-col gap-2">
-              <Settings className="h-6 w-6" />
-              <span>Settings</span>
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    </div>;
-
-  const renderRetailerDashboard = () => <div className="space-y-6">
-      {/* Quick Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <Store className="h-5 w-5 text-blue-500" />
-              <div>
-                <p className="text-sm text-muted-foreground">Brands</p>
-                <p className="text-xl font-bold">5</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <Package className="h-5 w-5 text-green-500" />
-              <div>
-                <p className="text-sm text-muted-foreground">Products</p>
-                <p className="text-xl font-bold">{stats.totalProducts || 0}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-purple-500" />
-              <div>
-                <p className="text-sm text-muted-foreground">Sales</p>
-                <p className="text-xl font-bold">{stats.totalSales || 0}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <DollarSign className="h-5 w-5 text-green-500" />
-              <div>
-                <p className="text-sm text-muted-foreground">Revenue</p>
-                <p className="text-xl font-bold">{formatPrice(stats.totalRevenue || 0)}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Quick Actions */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Retailer Management</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            <Button onClick={() => navigate('/retailer-portal')} className="h-20 flex-col gap-2">
-              <Package className="h-6 w-6" />
-              <span>Inventory</span>
-            </Button>
-            <Button onClick={() => navigate('/retailer-portal')} variant="outline" className="h-20 flex-col gap-2">
-              <Store className="h-6 w-6" />
-              <span>Brands</span>
-            </Button>
-            <Button onClick={() => navigate('/retailer-portal')} variant="outline" className="h-20 flex-col gap-2">
-              <BarChart3 className="h-6 w-6" />
-              <span>Analytics</span>
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    </div>;
+  const welcomeMessage = getWelcomeMessage();
+  const quickActions = getQuickActions();
+  const overviewCards = getOverviewCards();
 
   return (
-    <ErrorBoundary>
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-background/95 pb-20 sm:pb-0">
-        <div className="container-responsive mx-auto max-w-6xl p-4">
-          {/* Header with Dashboard Header component */}
-          <div className="mb-6">
-            <DashboardHeader />
+    <div className="space-y-6">
+      {/* Welcome Section */}
+      <div className="bg-gradient-to-r from-purple-500/10 via-blue-500/10 to-teal-500/10 rounded-2xl p-6 border">
+        <div className="flex items-start justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">
+              {welcomeMessage.title}
+            </h1>
+            <p className="text-gray-600 max-w-2xl">
+              {welcomeMessage.description}
+            </p>
           </div>
-
-          {/* Role-based Dashboard Content */}
-          {userProfile?.role === 'shopper' && renderShopperDashboard()}
-          {userProfile?.role === 'brand' && renderBrandDashboard()}
-          {userProfile?.role === 'retailer' && renderRetailerDashboard()}
+          <Badge variant="outline" className="capitalize">
+            {userRole}
+          </Badge>
         </div>
-        
-        {/* Global Search Modal */}
-        <GlobalSearch isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
-        
-        {/* AI Try-On Modal */}
-        <AiTryOnModal isOpen={aiTryOnModalOpen} onClose={() => setAiTryOnModalOpen(false)} />
       </div>
-    </ErrorBoundary>
+
+      {/* Quick Actions */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Zap className="h-5 w-5" />
+                Quick Actions
+              </CardTitle>
+              <CardDescription>
+                Tools to speed up your workflow
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {quickActions.map((action, index) => (
+              <Card 
+                key={index} 
+                className={`cursor-pointer transition-all hover:shadow-md ${
+                  action.primary ? 'ring-2 ring-purple-500/20 bg-gradient-to-br from-purple-50 to-blue-50' : ''
+                }`}
+                onClick={action.action}
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between mb-3">
+                    <action.icon className={`h-6 w-6 ${action.primary ? 'text-purple-600' : 'text-gray-600'}`} />
+                    {action.badge && (
+                      <Badge variant="outline" className="text-xs">
+                        {action.badge}
+                      </Badge>
+                    )}
+                  </div>
+                  <h3 className="font-semibold text-gray-900 mb-1">
+                    {action.title}
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    {action.description}
+                  </p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Overview Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {overviewCards.map((card, index) => (
+          <Card key={index}>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <card.icon className="h-5 w-5 text-gray-600" />
+                <Badge variant="outline" className="text-xs">
+                  {card.trend}
+                </Badge>
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-gray-900 mb-1">
+                  {card.value}
+                </p>
+                <p className="text-sm text-gray-600">
+                  {card.description}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Recent Activity */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Recent Activity</CardTitle>
+          <CardDescription>
+            Your latest interactions and updates
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {/* Placeholder for recent activity */}
+            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+              <div className="flex-1">
+                <p className="text-sm font-medium">You liked a new product</p>
+                <p className="text-xs text-gray-600">2 hours ago</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+              <div className="flex-1">
+                <p className="text-sm font-medium">New follower joined</p>
+                <p className="text-xs text-gray-600">5 hours ago</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+              <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+              <div className="flex-1">
+                <p className="text-sm font-medium">Profile view milestone reached</p>
+                <p className="text-xs text-gray-600">1 day ago</p>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Modals */}
+      <AiStudioModal 
+        isOpen={isAiStudioOpen} 
+        onClose={() => setIsAiStudioOpen(false)} 
+      />
+      
+      <CreatePostModal 
+        isOpen={isCreatePostOpen} 
+        onClose={() => setIsCreatePostOpen(false)} 
+      />
+      
+      <AddProductModal 
+        isOpen={isAddProductOpen} 
+        onClose={() => setIsAddProductOpen(false)} 
+      />
+    </div>
   );
 };
 

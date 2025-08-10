@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,7 +8,6 @@ import {
   Heart, 
   X, 
   RotateCcw, 
-  Sparkles, 
   ShoppingBag,
   TrendingUp,
   Users,
@@ -343,7 +343,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                     </span>
                     {currentProduct.ar_mesh_url && (
                       <Badge variant="outline" className="gap-1">
-                        <Sparkles className="h-3 w-3" />
+                        <Camera className="h-3 w-3" />
                         AR Ready
                       </Badge>
                     )}
