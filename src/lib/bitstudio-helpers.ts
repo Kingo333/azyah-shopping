@@ -1,10 +1,15 @@
-
 // Helper functions for BitStudio API compatibility
-export const normalizeBitStudioType = (type: string): string => {
-  // Convert hyphenated types to underscore format for BitStudio API
-  return type.replace(/-/g, '_');
+
+// Note: BitStudio API uses hyphens in type names like "virtual-try-on-person"
+// Keep types as-is per their documentation
+export const validateBitStudioType = (type: string): boolean => {
+  const validTypes = [
+    'virtual-try-on-person',
+    'virtual-try-on-outfit'
+  ];
+  return validTypes.includes(type);
 };
 
-export const logTypeNormalization = (originalType: string, normalizedType: string) => {
-  console.log(`BitStudio type normalization: "${originalType}" → "${normalizedType}"`);
+export const logApiCall = (endpoint: string, params: any) => {
+  console.log(`BitStudio API call: ${endpoint}`, params);
 };

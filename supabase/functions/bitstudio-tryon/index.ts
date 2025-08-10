@@ -14,7 +14,10 @@ serve(async (req) => {
 
   try {
     const BITSTUDIO_API_KEY = Deno.env.get('BITSTUDIO_API_KEY');
-    const BITSTUDIO_API_BASE = Deno.env.get('BITSTUDIO_API_BASE') || 'https://api.bitstudio.ai';
+    let BITSTUDIO_API_BASE = Deno.env.get('BITSTUDIO_API_BASE') || 'https://api.bitstudio.ai';
+    
+    // Remove any trailing slashes and /v1 - BitStudio API doesn't use /v1
+    BITSTUDIO_API_BASE = BITSTUDIO_API_BASE.replace(/\/+$/, '').replace(/\/v1$/, '');
 
     if (!BITSTUDIO_API_KEY) {
       throw new Error('bitStudio API key not configured');
@@ -57,6 +60,15 @@ serve(async (req) => {
       prompt
     } = body;
 
+    console.log('Virtual try-on request:', {
+      person_image_id,
+      person_image_url: person_image_url ? 'provided' : 'not provided',
+      outfit_image_id,
+      outfit_image_url: outfit_image_url ? 'provided' : 'not provided',
+      resolution,
+      num_images
+    });
+
     // Validate required parameters
     if ((!person_image_id && !person_image_url) || (!outfit_image_id && !outfit_image_url)) {
       return new Response(
@@ -87,7 +99,7 @@ serve(async (req) => {
       );
     }
 
-    // Make request to bitStudio API
+    // Make request to bitStudio API - use correct endpoint without /v1
     const requestBody = {
       person_image_id,
       person_image_url,
@@ -104,6 +116,8 @@ serve(async (req) => {
       requestBody[key] === undefined && delete requestBody[key]
     );
 
+    console.log('Making request to BitStudio with body:', requestBody);
+
     const response = await fetch(`${BITSTUDIO_API_BASE}/images/virtual-try-on`, {
       method: 'POST',
       headers: {
@@ -112,6 +126,8 @@ serve(async (req) => {
       },
       body: JSON.stringify(requestBody),
     });
+
+    console.log('BitStudio virtual try-on response status:', response.status);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -133,10 +149,11 @@ serve(async (req) => {
         );
       }
       
-      throw new Error(`bitStudio API error: ${response.status}`);
+      throw new Error(`bitStudio API error: ${response.status} - ${errorText}`);
     }
 
     const result = await response.json();
+    console.log('BitStudio virtual try-on response:', result);
     
     // Extract job ID from first result (bitStudio returns array)
     const providerJobId = Array.isArray(result) && result.length > 0 ? result[0].id : null;

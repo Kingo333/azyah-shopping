@@ -63,7 +63,6 @@ export class BitStudioClient {
     person_image_url?: string;
     outfit_image_id?: string;
     outfit_image_url?: string;
-    outfit_asset_id?: string;
     prompt?: string;
     resolution?: Resolution;
     num_images?: number;
@@ -82,69 +81,23 @@ export class BitStudioClient {
     throw { error: 'Invalid response from try-on', code: 'INVALID_RESPONSE' } as BitStudioError;
   }
 
-  static async generateImages(params: {
-    prompt: string;
-    num_images?: number;
-    aspect_ratio?: AspectRatio;
-    style?: Style;
-    resolution?: Resolution;
-    model_text?: string;
-    outfit_text?: string;
-    outfit_image_id?: string;
-    outfit_asset_id?: string;
-    set_id?: string;
-    set_text?: string;
-    seed?: number;
-  }): Promise<BitStudioImage[]> {
-    return this.makeSupabaseRequest('bitstudio-generate', params);
-  }
-
-  static async upscaleImage(id: string, params: {
-    upscale_factor: UpscaleFactor;
-    denoise?: number;
-    version_id?: string;
-  }): Promise<BitStudioImage> {
-    return this.makeSupabaseRequest('bitstudio-upscale', { id, ...params });
-  }
-
-  static async inpaintImage(id: string, params: {
-    mask_image_id: string;
-    reference_image_id?: string;
-    prompt?: string;
-    denoise?: number;
-    num_images?: number;
-  }): Promise<BitStudioImage> {
-    return this.makeSupabaseRequest('bitstudio-inpaint', { id, ...params });
-  }
-
-  static async editImage(id: string, params: {
-    prompt: string;
-    resolution?: 'standard' | 'low';
-    num_images?: number;
-    seed?: number;
-    version_id?: string;
-  }): Promise<BitStudioImage> {
-    return this.makeSupabaseRequest('bitstudio-edit', { id, ...params });
-  }
-
-  static async generateVideo(id: string, params: {
-    prompt: string;
-  }): Promise<BitStudioImage> {
-    return this.makeSupabaseRequest('bitstudio-video', { id, ...params });
-  }
-
   static async pollUntilComplete(id: string, maxWaitMs = 180000): Promise<BitStudioImage> {
     const startTime = Date.now();
     let delay = 2000; // Start with 2 seconds
     let retryCount = 0;
     let rateLimitRetries = 0;
-    const maxRateLimitRetries = 2;
+    const maxRateLimitRetries = 3;
+    
+    console.log(`Starting polling for image ${id}`);
     
     while (Date.now() - startTime < maxWaitMs) {
       try {
         const result = await this.getImage(id);
         
+        console.log(`Poll ${retryCount + 1}: Status = ${result.status}`);
+        
         if (result.status === 'completed') {
+          console.log('Image generation completed successfully');
           return result;
         }
         
@@ -161,9 +114,12 @@ export class BitStudioClient {
         retryCount++;
         
       } catch (error: any) {
+        console.error(`Poll ${retryCount + 1} error:`, error);
+        
         // Handle rate limiting with exponential backoff
         if ((error.code === 'RATE_LIMITED' || (error.status === 429)) && rateLimitRetries < maxRateLimitRetries) {
           const backoffDelay = Math.min(1000 * Math.pow(2, rateLimitRetries), 10000);
+          console.log(`Rate limited, waiting ${backoffDelay}ms before retry`);
           await new Promise(resolve => setTimeout(resolve, backoffDelay));
           rateLimitRetries++;
           continue;

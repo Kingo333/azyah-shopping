@@ -13,7 +13,10 @@ serve(async (req) => {
 
   try {
     const BITSTUDIO_API_KEY = Deno.env.get('BITSTUDIO_API_KEY');
-    const BITSTUDIO_API_BASE = Deno.env.get('BITSTUDIO_API_BASE') || 'https://api.bitstudio.ai';
+    let BITSTUDIO_API_BASE = Deno.env.get('BITSTUDIO_API_BASE') || 'https://api.bitstudio.ai';
+    
+    // Remove any trailing slashes and /v1 - BitStudio API doesn't use /v1
+    BITSTUDIO_API_BASE = BITSTUDIO_API_BASE.replace(/\/+$/, '').replace(/\/v1$/, '');
 
     if (!BITSTUDIO_API_KEY) {
       throw new Error('BitStudio API key not configured');
@@ -37,6 +40,8 @@ serve(async (req) => {
         'Authorization': `Bearer ${BITSTUDIO_API_KEY}`,
       },
     });
+
+    console.log('BitStudio status check response status:', response.status);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -62,7 +67,7 @@ serve(async (req) => {
         );
       }
       
-      throw new Error(`BitStudio API error: ${response.status}`);
+      throw new Error(`BitStudio API error: ${response.status} - ${errorText}`);
     }
 
     const result = await response.json();

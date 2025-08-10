@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
 
@@ -6,11 +5,6 @@ const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
-
-// Helper to normalize type format for BitStudio API
-const normalizeBitStudioType = (type: string): string => {
-  return type.replace(/-/g, '_');
-};
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -21,10 +15,8 @@ serve(async (req) => {
     const BITSTUDIO_API_KEY = Deno.env.get('BITSTUDIO_API_KEY');
     let BITSTUDIO_API_BASE = Deno.env.get('BITSTUDIO_API_BASE') || 'https://api.bitstudio.ai';
     
-    // Normalize API base to ensure v1 endpoint
-    if (!BITSTUDIO_API_BASE.includes('/v1')) {
-      BITSTUDIO_API_BASE = BITSTUDIO_API_BASE.replace(/\/+$/, '') + '/v1';
-    }
+    // Remove any trailing slashes and /v1 - BitStudio API doesn't use /v1
+    BITSTUDIO_API_BASE = BITSTUDIO_API_BASE.replace(/\/+$/, '').replace(/\/v1$/, '');
 
     console.log('Upload function called, API key present:', !!BITSTUDIO_API_KEY);
     console.log('API base URL:', BITSTUDIO_API_BASE);
@@ -90,7 +82,7 @@ serve(async (req) => {
       );
     }
 
-    // Validate type parameter - focus on virtual try-on types
+    // Validate type parameter - keep hyphens as per BitStudio docs
     const validTypes = [
       'virtual-try-on-person',
       'virtual-try-on-outfit'
@@ -102,20 +94,16 @@ serve(async (req) => {
       );
     }
 
-    // Normalize type for BitStudio API compatibility
-    const normalizedType = normalizeBitStudioType(type);
-    console.log(`Type normalization: "${type}" → "${normalizedType}"`);
+    console.log(`Using type as-is (with hyphens): "${type}"`);
 
-    // Create form data for BitStudio API with compatibility hedging
+    // Create form data for BitStudio API - use type as-is per docs
     const bitStudioFormData = new FormData();
     bitStudioFormData.append('file', file);
-    bitStudioFormData.append('image', file); // Hedge: some APIs expect 'image'
-    bitStudioFormData.append('type', normalizedType);
-    bitStudioFormData.append('image_type', normalizedType); // Hedge: some APIs expect 'image_type'
+    bitStudioFormData.append('type', type);
 
-    console.log('Making request to BitStudio API with normalized type:', normalizedType);
+    console.log('Making request to BitStudio API with type:', type);
 
-    // Make request to BitStudio API
+    // Make request to BitStudio API - no /v1 suffix
     const response = await fetch(`${BITSTUDIO_API_BASE}/images`, {
       method: 'POST',
       headers: {
