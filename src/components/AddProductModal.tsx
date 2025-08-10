@@ -16,9 +16,10 @@ interface AddProductModalProps {
   onClose: () => void;
   onProductAdded?: () => void;
   userType?: string;
+  brandId?: string;
 }
 
-const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClose, onProductAdded, userType }) => {
+const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClose, onProductAdded, userType, brandId }) => {
   const { toast } = useToast();
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -30,7 +31,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClose, onPr
     currency: 'USD',
     category_slug: '',
     subcategory_slug: '',
-    brand_id: '',
+    brand_id: brandId || '',
     sku: '',
     external_url: '',
     media_urls: ['']
@@ -49,6 +50,13 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClose, onPr
       setAvailableSubcategories([]);
     }
   }, [formData.category_slug]);
+
+  // Update brand_id when brandId prop changes
+  useEffect(() => {
+    if (brandId) {
+      setFormData(prev => ({ ...prev, brand_id: brandId }));
+    }
+  }, [brandId]);
 
   const addProductMutation = useMutation({
     mutationFn: async (productData: any) => {
@@ -90,7 +98,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClose, onPr
       currency: 'USD',
       category_slug: '',
       subcategory_slug: '',
-      brand_id: '',
+      brand_id: brandId || '',
       sku: '',
       external_url: '',
       media_urls: ['']
