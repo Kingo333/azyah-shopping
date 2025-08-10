@@ -63,98 +63,121 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
             Loading product details…
           </div>
         ) : (
-          <div className="flex flex-col md:grid md:grid-cols-2 h-full">
-            {/* Image Gallery */}
-            <div className="relative h-[48vh] sm:h-[50vh] md:h-full">
-              <EnhancedProductGallery
-                images={images}
-                productTitle={product.title}
-                productId={product.id}
-                hasARMesh={false}
-              />
-              <Button
-                variant="ghost"
-                aria-label="Close product details"
-                onClick={onClose}
-                className="absolute top-3 right-3 md:top-4 md:right-4 z-20 bg-background/60 hover:bg-background/80 backdrop-blur-md rounded-full h-9 w-9 md:h-8 md:w-8"
-              >
-                <X className="h-5 w-5" />
-              </Button>
-            </div>
-
-            {/* Product Details */}
-            <div className="flex flex-col h-full glass-subtle border-white/10">
-              <div className="p-4 md:p-6 space-y-4 md:space-y-6 flex-1 overflow-y-auto">
-                {/* Header */}
-                <div>
-                  <h2 className="text-xl md:text-2xl font-bold font-playfair line-clamp-2 mb-2">{product.title}</h2>
-                  <p className="text-muted-foreground">{product.brand?.name}</p>
-                  <div className="flex items-center gap-4 mt-2">
-                    <span className="text-xl md:text-2xl font-bold">
-                      {new Intl.NumberFormat('en-US', { style: 'currency', currency: priceCurrency })
-                        .format(priceCents / 100)}
-                    </span>
-                    {compareAtCents && (
-                      <span className="text-lg text-muted-foreground line-through">
-                        {new Intl.NumberFormat('en-US', { style: 'currency', currency: priceCurrency })
-                          .format(compareAtCents / 100)}
-                      </span>
-                    )}
-                  </div>
+          <>
+            {/* Mobile Layout */}
+            <div className="md:hidden flex flex-col h-full">
+              {/* Fixed Header with Close Button */}
+              <div className="relative flex-shrink-0">
+                <div className="absolute top-3 right-3 z-30">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={onClose}
+                    className="bg-black/50 hover:bg-black/70 backdrop-blur-sm rounded-full h-10 w-10 text-white"
+                  >
+                    <X className="h-5 w-5" />
+                  </Button>
                 </div>
+                
+                {/* Image Gallery - Fixed Height */}
+                <div className="h-[45vh]">
+                  <EnhancedProductGallery
+                    images={images}
+                    productTitle={product.title}
+                    productId={product.id}
+                    hasARMesh={false}
+                  />
+                </div>
+              </div>
 
-                {/* Size and Color Selection */}
-                <AdvancedSizeColorSelector
-                  sizes={availableSizes}
-                  colors={availableColors}
-                  selectedSize={selectedSize}
-                  selectedColor={selectedColor}
-                  onSizeSelect={setSelectedSize}
-                  onColorSelect={setSelectedColor}
-                />
-
-                {/* Description */}
-                {product.description && (
-                  <div>
-                    <h4 className="font-semibold mb-2">Description</h4>
-                    <p className="text-muted-foreground text-sm leading-relaxed">
-                      {product.description}
-                    </p>
-                  </div>
-                )}
-
-                {/* Product Details */}
-                <div className="space-y-3">
-                  <h4 className="font-semibold">Product Details</h4>
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">SKU:</span>
-                      <span>{product.sku}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Category:</span>
-                      <span className="capitalize">
-                        {product.category_slug?.replace('_', ' ')}
+              {/* Scrollable Content Area */}
+              <div className="flex-1 overflow-y-auto bg-background">
+                <div className="p-4 space-y-4 pb-24">
+                  {/* Product Header */}
+                  <div className="space-y-2">
+                    <h1 className="text-xl font-bold leading-tight">{product.title}</h1>
+                    <p className="text-muted-foreground text-sm">{product.brand?.name}</p>
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl font-bold text-primary">
+                        {new Intl.NumberFormat('en-US', { style: 'currency', currency: priceCurrency })
+                          .format(priceCents / 100)}
                       </span>
+                      {compareAtCents && (
+                        <span className="text-lg text-muted-foreground line-through">
+                          {new Intl.NumberFormat('en-US', { style: 'currency', currency: priceCurrency })
+                            .format(compareAtCents / 100)}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Size and Color Selection with Size Chart */}
+                  <div className="space-y-4">
+                    <AdvancedSizeColorSelector
+                      sizes={availableSizes}
+                      colors={availableColors}
+                      selectedSize={selectedSize}
+                      selectedColor={selectedColor}
+                      onSizeSelect={setSelectedSize}
+                      onColorSelect={setSelectedColor}
+                      sizeChart={{
+                        "XS": "Chest: 32-34, Waist: 24-26",
+                        "S": "Chest: 34-36, Waist: 26-28", 
+                        "M": "Chest: 36-38, Waist: 28-30",
+                        "L": "Chest: 38-40, Waist: 30-32",
+                        "XL": "Chest: 40-42, Waist: 32-34"
+                      }}
+                      sizeChartImage="/placeholder.svg"
+                    />
+                  </div>
+
+                  {/* Description */}
+                  {product.description && (
+                    <div className="space-y-2">
+                      <h3 className="font-semibold text-base">Description</h3>
+                      <p className="text-muted-foreground text-sm leading-relaxed">
+                        {product.description}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Product Details */}
+                  <div className="space-y-3">
+                    <h3 className="font-semibold text-base">Product Details</h3>
+                    <div className="bg-muted/50 rounded-lg p-3 space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">SKU:</span>
+                        <span className="font-medium">{product.sku}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Category:</span>
+                        <span className="font-medium capitalize">
+                          {product.category_slug?.replace('_', ' ')}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Sticky Footer */}
-              <div className="sticky bottom-0 z-10 glass-premium backdrop-blur-md border-t border-white/20 p-4 md:p-6 space-y-3 pb-mobile-safe md:static">
+              {/* Fixed Bottom Actions */}
+              <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-lg border-t border-border p-4 space-y-3 safe-area-bottom">
                 <div className="flex gap-2">
-                  <Button variant="outline" size="sm" className="flex-1 gap-1 md:gap-2 text-xs md:text-sm h-9 md:h-10">
-                    <Heart className="h-3 w-3 md:h-4 md:w-4" />
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="flex-1 gap-2 h-11"
+                  >
+                    <Heart className="h-4 w-4" />
                     Wishlist
                   </Button>
                   <Button
                     onClick={() => setIsClosetModalOpen(true)}
                     variant="outline"
                     size="sm"
-                    className="flex-1 gap-1 md:gap-2 text-xs md:text-sm h-9 md:h-10"
+                    className="flex-1 gap-2 h-11"
                   >
-                    <ShoppingBag className="h-3 w-3 md:h-4 md:w-4" />
+                    <ShoppingBag className="h-4 w-4" />
                     Add to Closet
                   </Button>
                 </div>
@@ -163,24 +186,152 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   <Button
                     onClick={handleShopNow}
                     size="lg"
-                    className="w-full gap-1 md:gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-sm md:text-base h-10 md:h-12 shadow-lg hover:shadow-xl transition-all duration-200"
+                    className="w-full gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold h-12 shadow-lg"
                   >
-                    <ExternalLink className="h-4 w-4 md:h-5 md:w-5" />
+                    <ExternalLink className="h-5 w-5" />
                     Shop Now
                   </Button>
                 ) : (
                   <Button 
                     disabled 
                     size="lg"
-                    className="w-full gap-1 md:gap-2 opacity-50 cursor-not-allowed text-sm md:text-base h-10 md:h-12"
+                    className="w-full gap-2 opacity-50 cursor-not-allowed h-12"
                   >
-                    <ShoppingBag className="h-4 w-4 md:h-5 md:w-5" />
+                    <ShoppingBag className="h-5 w-5" />
                     Shop Link Not Available
                   </Button>
                 )}
               </div>
             </div>
-          </div>
+
+            {/* Desktop Layout */}
+            <div className="hidden md:grid md:grid-cols-2 h-full">
+              {/* Image Gallery */}
+              <div className="relative h-full">
+                <EnhancedProductGallery
+                  images={images}
+                  productTitle={product.title}
+                  productId={product.id}
+                  hasARMesh={false}
+                />
+                <Button
+                  variant="ghost"
+                  aria-label="Close product details"
+                  onClick={onClose}
+                  className="absolute top-4 right-4 z-20 bg-background/60 hover:bg-background/80 backdrop-blur-md rounded-full h-8 w-8"
+                >
+                  <X className="h-5 w-5" />
+                </Button>
+              </div>
+
+              {/* Product Details */}
+              <div className="flex flex-col h-full glass-subtle border-white/10">
+                <div className="p-6 space-y-6 flex-1 overflow-y-auto">
+                  {/* Header */}
+                  <div>
+                    <h2 className="text-2xl font-bold font-playfair line-clamp-2 mb-2">{product.title}</h2>
+                    <p className="text-muted-foreground">{product.brand?.name}</p>
+                    <div className="flex items-center gap-4 mt-2">
+                      <span className="text-2xl font-bold">
+                        {new Intl.NumberFormat('en-US', { style: 'currency', currency: priceCurrency })
+                          .format(priceCents / 100)}
+                      </span>
+                      {compareAtCents && (
+                        <span className="text-lg text-muted-foreground line-through">
+                          {new Intl.NumberFormat('en-US', { style: 'currency', currency: priceCurrency })
+                            .format(compareAtCents / 100)}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Size and Color Selection */}
+                  <AdvancedSizeColorSelector
+                    sizes={availableSizes}
+                    colors={availableColors}
+                    selectedSize={selectedSize}
+                    selectedColor={selectedColor}
+                    onSizeSelect={setSelectedSize}
+                    onColorSelect={setSelectedColor}
+                    sizeChart={{
+                      "XS": "Chest: 32-34, Waist: 24-26",
+                      "S": "Chest: 34-36, Waist: 26-28", 
+                      "M": "Chest: 36-38, Waist: 28-30",
+                      "L": "Chest: 38-40, Waist: 30-32",
+                      "XL": "Chest: 40-42, Waist: 32-34"
+                    }}
+                    sizeChartImage="/placeholder.svg"
+                  />
+
+                  {/* Description */}
+                  {product.description && (
+                    <div>
+                      <h4 className="font-semibold mb-2">Description</h4>
+                      <p className="text-muted-foreground text-sm leading-relaxed">
+                        {product.description}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Product Details */}
+                  <div className="space-y-3">
+                    <h4 className="font-semibold">Product Details</h4>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">SKU:</span>
+                        <span>{product.sku}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Category:</span>
+                        <span className="capitalize">
+                          {product.category_slug?.replace('_', ' ')}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Sticky Footer */}
+                <div className="sticky bottom-0 z-10 glass-premium backdrop-blur-md border-t border-white/20 p-6 space-y-3">
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" className="flex-1 gap-2 text-sm h-10">
+                      <Heart className="h-4 w-4" />
+                      Wishlist
+                    </Button>
+                    <Button
+                      onClick={() => setIsClosetModalOpen(true)}
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 gap-2 text-sm h-10"
+                    >
+                      <ShoppingBag className="h-4 w-4" />
+                      Add to Closet
+                    </Button>
+                  </div>
+
+                  {product.external_url ? (
+                    <Button
+                      onClick={handleShopNow}
+                      size="lg"
+                      className="w-full gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-base h-12 shadow-lg hover:shadow-xl transition-all duration-200"
+                    >
+                      <ExternalLink className="h-5 w-5" />
+                      Shop Now
+                    </Button>
+                  ) : (
+                    <Button 
+                      disabled 
+                      size="lg"
+                      className="w-full gap-2 opacity-50 cursor-not-allowed text-base h-12"
+                    >
+                      <ShoppingBag className="h-5 w-5" />
+                      Shop Link Not Available
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </>
         )}
 
         {product && (
