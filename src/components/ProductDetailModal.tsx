@@ -450,7 +450,6 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
         isOpen={isAddToClosetOpen}
         onClose={() => setIsAddToClosetOpen(false)}
         productId={product.id}
-        productImage={images[0]}
       />
     </>
   );

@@ -1,11 +1,12 @@
+
 import React, { useState, useMemo } from 'react';
-import { useQuery } from 'react-query';
+import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Zap, Package, PenTool, Sparkles } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import CreatePostModal from '@/components/CreatePostModal';
-import AddProductModal from '@/components/AddProductModal';
+import { CreatePostModal } from '@/components/CreatePostModal';
+import { AddProductModal } from '@/components/AddProductModal';
 import AiStudioModal from '@/components/AiStudioModal';
 
 interface Badge {
@@ -19,37 +20,27 @@ interface Badge {
 
 interface Profile {
   id: string;
-  username: string;
-  full_name: string;
-  avatar_url: string;
+  name: string;
+  email: string;
   role: string;
+  avatar_url?: string;
   badges?: Badge[];
 }
 
 const RoleDashboard = () => {
   const { user } = useAuth();
   const { data: profile } = useQuery({
-    queryKey: ['profile', user?.id],
+    queryKey: ['user-profile', user?.id],
     queryFn: async () => {
       if (!user?.id) return null;
       const { data, error } = await supabase
-        .from('profiles')
-        .select(`
-          *,
-          badges (
-            id,
-            name,
-            description,
-            icon,
-            color,
-            created_at
-          )
-        `)
+        .from('users')
+        .select('*')
         .eq('id', user.id)
         .single();
       
       if (error) throw error;
-      return data;
+      return data as Profile;
     },
     enabled: !!user?.id
   });
@@ -110,7 +101,7 @@ const RoleDashboard = () => {
       {/* Header Section */}
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-gray-900">
-          Welcome, {profile.full_name || profile.username}!
+          Welcome, {profile.name || user.email}!
         </h1>
         <p className="text-sm text-gray-600">
           You are logged in as a {userRole}.
@@ -177,7 +168,6 @@ const RoleDashboard = () => {
             </p>
           </CardHeader>
           <CardContent>
-            {/* Add shopper-specific content here */}
             <p>Welcome to your personalized shopping experience!</p>
           </CardContent>
         </Card>
@@ -192,7 +182,6 @@ const RoleDashboard = () => {
             </p>
           </CardHeader>
           <CardContent>
-            {/* Add brand/retailer-specific content here */}
             <p>Manage your product catalog and track your sales performance.</p>
           </CardContent>
         </Card>
@@ -202,6 +191,8 @@ const RoleDashboard = () => {
       <CreatePostModal 
         isOpen={isCreatePostOpen}
         onClose={() => setIsCreatePostOpen(false)}
+        onPostCreated={() => {}}
+        userId={user.id}
       />
 
       <AddProductModal 
