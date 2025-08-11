@@ -46,8 +46,19 @@ export function useBitStudio() {
       }
     }
 
-    // Handle service unavailable errors
-    if (error.code === 'service_unavailable' || status === 503) {
+    // Handle specific BitStudio upgrade requirements
+    if (error.code === 'upgrade_required' || (error.bitstudio_error?.error === 'upgrade_required')) {
+      const feature = error.bitstudio_error?.feature || 'this feature';
+      const requiredPlan = error.bitstudio_error?.required_plan || 'Pro';
+      
+      if (feature === 'resolution_high') {
+        message = `High resolution requires ${requiredPlan} plan. Please use standard resolution or upgrade your BitStudio account.`;
+      } else {
+        message = `${feature} requires ${requiredPlan} plan. Please upgrade your BitStudio account.`;
+      }
+      
+      action = () => window.open('https://bitstudio.ai/pricing', '_blank');
+    } else if (error.code === 'service_unavailable' || status === 503) {
       message = 'BitStudio API is temporarily unavailable. Please try again in a few minutes.';
     } else if (error.code === 'MISSING_API_KEY') {
       message = 'BitStudio API key is not configured. Please check your settings.';
@@ -57,9 +68,9 @@ export function useBitStudio() {
       action = () => window.open('https://docs.lovable.dev', '_blank');
     } else if (error.code === 'RATE_LIMITED') {
       message = 'Rate limit exceeded. Please try again in a moment.';
-    } else if (error.code === 'insufficient_credits' || error.code === 'no_active_subscription' || error.code === 'upgrade_required') {
+    } else if (error.code === 'insufficient_credits' || error.code === 'no_active_subscription') {
       message = 'Insufficient credits or subscription required';
-      action = () => window.open('/billing', '_blank');
+      action = () => window.open('https://bitstudio.ai/billing', '_blank');
     } else if (error.code === 'bad_request' || error.code === 'invalid_aspect_ratio' || error.code === 'invalid_resolution') {
       message = error.details || error.error || 'Invalid parameters. Please check your inputs.';
       // Include raw response for debugging pattern errors
@@ -81,9 +92,9 @@ export function useBitStudio() {
     setError(message);
     
     const actionElement = action ? createElement(ToastAction, {
-      altText: "Learn more",
+      altText: action === (() => window.open('https://bitstudio.ai/pricing', '_blank')) ? "Upgrade Plan" : "Learn more",
       onClick: action
-    }, "Learn more") : undefined;
+    }, action === (() => window.open('https://bitstudio.ai/pricing', '_blank')) ? "Upgrade Plan" : "Learn more") : undefined;
 
     toast({
       title: 'Error',
