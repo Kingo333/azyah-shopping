@@ -47,8 +47,8 @@ const cardVariants = {
   })
 };
 
-const DISTANCE_THRESHOLD = 80;
-const VERTICAL_THRESHOLD = 80;
+const DISTANCE_THRESHOLD = 60;
+const VERTICAL_THRESHOLD = 60;
 
 const SwipeDeck: React.FC<SwipeDeckProps> = ({
   filter,
@@ -208,9 +208,9 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
     const { x: offsetX, y: offsetY } = offset;
     const { x: velocityX, y: velocityY } = velocity;
 
-    // Calculate effective offset including velocity
-    const effectiveX = offsetX + velocityX * 0.1;
-    const effectiveY = offsetY + velocityY * 0.1;
+    // Calculate effective offset including velocity for more responsive swiping
+    const effectiveX = offsetX + velocityX * 0.15;
+    const effectiveY = offsetY + velocityY * 0.15;
 
     // Check for vertical swipe up first (wishlist)
     if (effectiveY < -VERTICAL_THRESHOLD && Math.abs(effectiveX) < DISTANCE_THRESHOLD) {
@@ -421,8 +421,8 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
             }}
             drag
             dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
-            dragElastic={0.2}
-            dragTransition={{ bounceStiffness: 600, bounceDamping: 20 }}
+            dragElastic={0.3}
+            dragTransition={{ bounceStiffness: 300, bounceDamping: 30 }}
             onDragEnd={handleSwipeEnd}
             variants={cardVariants}
             initial="hidden"
