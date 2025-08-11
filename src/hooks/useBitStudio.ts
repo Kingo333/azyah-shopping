@@ -1,4 +1,3 @@
-
 import { useState, useCallback, createElement } from 'react';
 import { BitStudioClient } from '@/lib/bitstudio-client';
 import { BitStudioImage, BitStudioError } from '@/lib/bitstudio-types';
@@ -47,16 +46,10 @@ export function useBitStudio() {
       }
     }
 
-    // Show raw response for pattern matching errors
-    if (error.raw_response) {
-      console.error('BitStudio raw response:', error.raw_response);
-      // If it's a pattern error, include more details
-      if (error.raw_response.includes('pattern') || error.raw_response.includes('match')) {
-        message = `Validation error: ${error.raw_response}`;
-      }
-    }
-
-    if (error.code === 'MISSING_API_KEY') {
+    // Handle service unavailable errors
+    if (error.code === 'service_unavailable' || status === 503) {
+      message = 'BitStudio API is temporarily unavailable. Please try again in a few minutes.';
+    } else if (error.code === 'MISSING_API_KEY') {
       message = 'BitStudio API key is not configured. Please check your settings.';
       action = () => window.open('https://docs.lovable.dev', '_blank');
     } else if (error.code === 'unauthorized' || error.code === 'invalid_token') {
