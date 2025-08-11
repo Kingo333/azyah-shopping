@@ -208,9 +208,9 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
     } else if (offsetX < -DISTANCE_THRESHOLD) {
       handleDislike();
     } else {
-      // Reset position smoothly if not swiped far enough
-      animate(x, 0, { type: "spring", stiffness: 400, damping: 40 });
-      animate(y, 0, { type: "spring", stiffness: 400, damping: 40 });
+      // Reset position very gently if not swiped far enough
+      animate(x, 0, { type: "spring", stiffness: 100, damping: 20 });
+      animate(y, 0, { type: "spring", stiffness: 100, damping: 20 });
     }
   }, [x, y, index, products, handleLike, handleDislike, handleAddToWishlist]);
 
