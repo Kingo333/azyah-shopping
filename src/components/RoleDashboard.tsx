@@ -356,13 +356,13 @@ const RoleDashboard: React.FC = () => {
               </div>
               Fashion Leaderboards
             </h3>
-            <div className="flex gap-3">
-              <Button variant={activeLeaderboard === 'global' ? 'premium' : 'outline'} size="sm" onClick={() => setActiveLeaderboard('global')}>
-                <Globe className="h-4 w-4 mr-2" />
+            <div className="flex gap-2">
+              <Button variant={activeLeaderboard === 'global' ? 'premium' : 'outline'} size="sm" onClick={() => setActiveLeaderboard('global')} className="px-2 py-1 text-xs">
+                <Globe className="h-3 w-3 mr-1" />
                 Global
               </Button>
-              <Button variant={activeLeaderboard === 'country' ? 'premium' : 'outline'} size="sm" onClick={() => setActiveLeaderboard('country')}>
-                <MapPin className="h-4 w-4 mr-2" />
+              <Button variant={activeLeaderboard === 'country' ? 'premium' : 'outline'} size="sm" onClick={() => setActiveLeaderboard('country')} className="px-2 py-1 text-xs">
+                <MapPin className="h-3 w-3 mr-1" />
                 Country
               </Button>
             </div>
