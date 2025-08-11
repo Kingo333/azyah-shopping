@@ -1,246 +1,244 @@
 
-import { useState, useEffect } from "react";
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Button } from "@/components/ui/button";
-import CategoryFilter from "@/components/CategoryFilter";
-import { ArrowLeft, Heart, Search, Menu, Sparkles, ChevronDown } from "lucide-react";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useAuth } from "@/contexts/AuthContext";
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Slider } from '@/components/ui/slider';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Filter, Search, Sliders, X } from 'lucide-react';
 import SwipeDeck from '@/components/SwipeDeck';
+import { useAuth } from '@/contexts/AuthContext';
+import { TopCategory, SubCategory, getSubcategoriesForCategory } from '@/lib/categories';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 
 const Swipe = () => {
-  const navigate = useNavigate();
-  const { user, loading } = useAuth();
-  const [searchParams, setSearchParams] = useSearchParams();
-  
-  // Initialize state from URL params
-  const [selectedCategories, setSelectedCategories] = useState<string[]>(
-    searchParams.get('category') ? [searchParams.get('category')!] : []
-  );
-  const [selectedSubcategories, setSelectedSubcategories] = useState<string[]>(
-    searchParams.get('subcategory') ? [searchParams.get('subcategory')!] : []
-  );
-  const [priceRange, setPriceRange] = useState<{
-    min: number;
-    max: number;
-  }>({
-    min: parseInt(searchParams.get('minPrice') || '0'),
-    max: parseInt(searchParams.get('maxPrice') || '1000')
-  });
-  const [searchQuery, setSearchQuery] = useState<string>(searchParams.get('search') || '');
-  const [selectedCurrency, setSelectedCurrency] = useState<string>(searchParams.get('currency') || 'USD');
-  const [showFilters, setShowFilters] = useState(false);
+  const [filter, setFilter] = useState<string>('all');
+  const [subcategory, setSubcategory] = useState<string>('');
+  const [priceRange, setPriceRange] = useState<{ min: number; max: number }>({ min: 0, max: 1000 });
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [currency, setCurrency] = useState<string>('USD');
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const { user } = useAuth();
 
-  // Update URL when filters change
+  // Reset subcategory when category changes
   useEffect(() => {
-    const params = new URLSearchParams();
-    
-    if (selectedCategories[0]) params.set('category', selectedCategories[0]);
-    if (selectedSubcategories[0]) params.set('subcategory', selectedSubcategories[0]);
-    if (priceRange.min > 0) params.set('minPrice', priceRange.min.toString());
-    if (priceRange.max < 1000) params.set('maxPrice', priceRange.max.toString());
-    if (searchQuery) params.set('search', searchQuery);
-    if (selectedCurrency !== 'USD') params.set('currency', selectedCurrency);
-    
-    setSearchParams(params, { replace: true });
-  }, [selectedCategories, selectedSubcategories, priceRange, searchQuery, selectedCurrency, setSearchParams]);
+    setSubcategory('');
+  }, [filter]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="flex flex-col items-center space-y-4">
-          <div className="relative">
-            <div className="w-12 h-12 rounded-full bg-gradient-accent animate-pulse"></div>
-            <div className="absolute inset-0 w-12 h-12 rounded-full bg-gradient-accent animate-ping opacity-20"></div>
-          </div>
-          <p className="text-muted-foreground">Loading your personalized feed...</p>
-        </div>
-      </div>
-    );
-  }
+  const availableSubcategories = filter !== 'all' ? getSubcategoriesForCategory(filter as TopCategory) : [];
 
-  if (!user) {
-    navigate("/auth");
-    return null;
-  }
-
-  const getCurrentCategoryDisplay = () => {
-    if (selectedCategories.length === 0) return 'All Categories';
-    const categoryNames = selectedCategories.map(cat => 
-      cat.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
-    );
-    return categoryNames.length > 1 ? `${categoryNames[0]} +${categoryNames.length - 1}` : categoryNames[0];
+  const clearFilters = () => {
+    setFilter('all');
+    setSubcategory('');
+    setPriceRange({ min: 0, max: 1000 });
+    setSearchQuery('');
+    setCurrency('USD');
   };
 
+  const hasActiveFilters = filter !== 'all' || subcategory !== '' || priceRange.min > 0 || priceRange.max < 1000 || searchQuery !== '' || currency !== 'USD';
+
   return (
-    <div className="min-h-screen dashboard-bg flex flex-col">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-50 w-full border-b border-white/20 glass-premium shrink-0">
-        <div className="container max-w-screen-2xl mx-auto px-2 sm:px-4 py-3 sm:py-4">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center space-x-2 sm:space-x-4 flex-shrink-0">
-              <Button variant="ghost" size="sm" onClick={() => navigate("/dashboard")} className="hover:bg-accent/50 p-2">
-                <ArrowLeft className="h-4 w-4" />
-                <span className="hidden sm:inline sm:ml-2">Back</span>
-              </Button>
-              <div className="hidden md:flex items-center space-x-3">
-                <div className="h-8 w-8 rounded-xl bg-gradient-accent flex items-center justify-center">
-                  <Sparkles className="h-4 w-4 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-xl font-bold font-playfair">Discover</h1>
-                  <p className="text-xs text-muted-foreground">
-                    {getCurrentCategoryDisplay()}
-                  </p>
-                </div>
+      <div className="bg-gradient-to-r from-primary/20 to-secondary/20 p-4">
+        <div className="max-w-4xl mx-auto text-center">
+          <h1 className="text-2xl font-bold text-foreground mb-1">Your Fashion Feed</h1>
+          <p className="text-sm text-muted-foreground">Swipe through curated collections tailored just for you</p>
+        </div>
+      </div>
+
+      {/* Filter Bar */}
+      <div className="sticky top-0 z-10 bg-background border-b">
+        <div className="max-w-4xl mx-auto p-4">
+          <div className="flex items-center gap-2">
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                <Input
+                  placeholder="Search products..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
               </div>
             </div>
             
-            <div className="flex items-center gap-1 sm:gap-2 flex-1 justify-end max-w-full">
-              {/* Search Bar */}
-              <div className="relative flex-1 max-w-[160px] sm:max-w-[200px]">
-                <Search className="absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
-                <Input
-                  type="text"
-                  placeholder="Search..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-7 sm:pl-10 h-8 sm:h-9 text-sm bg-background/50 backdrop-blur-sm border-border/50 focus-visible:ring-ring/50 focus-visible:border-ring"
-                />
-              </div>
+            <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+              <SheetTrigger asChild>
+                <Button variant="outline" size="icon" className="relative">
+                  <Filter className="h-4 w-4" />
+                  {hasActiveFilters && (
+                    <Badge className="absolute -top-2 -right-2 h-4 w-4 p-0 flex items-center justify-center text-xs">
+                      !
+                    </Badge>
+                  )}
+                </Button>
+              </SheetTrigger>
+              <SheetContent>
+                <SheetHeader>
+                  <SheetTitle>Filters</SheetTitle>
+                </SheetHeader>
+                
+                <div className="space-y-6 mt-6">
+                  {/* Category Filter */}
+                  <div>
+                    <label className="text-sm font-medium">Category</label>
+                    <Select value={filter} onValueChange={setFilter}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Categories</SelectItem>
+                        <SelectItem value="clothing">Clothing</SelectItem>
+                        <SelectItem value="shoes">Shoes</SelectItem>
+                        <SelectItem value="bags">Bags</SelectItem>
+                        <SelectItem value="accessories">Accessories</SelectItem>
+                        <SelectItem value="beauty">Beauty</SelectItem>
+                        <SelectItem value="home">Home & Living</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-              <Button variant="ghost" size="sm" onClick={() => navigate("/likes")} className="hover:bg-accent/50 p-2 flex-shrink-0">
-                <Heart className="h-4 w-4" />
-                <span className="hidden lg:inline lg:ml-2">Likes</span>
-              </Button>
-              
-              {/* Filters Menu */}
-              <Popover open={showFilters} onOpenChange={setShowFilters}>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" size="sm" className="bg-gradient-feature border-0 hover:shadow-soft p-2 flex-shrink-0">
-                    <Menu className="h-4 w-4" />
-                    <span className="hidden lg:inline lg:ml-2">Filters</span>
-                    <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4 ml-1" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[90vw] max-w-sm glass-premium border-white/20 shadow-elegant z-50" align="end">
-                  <div className="space-y-4 sm:space-y-6">
-                    <div className="space-y-2">
-                      <h4 className="font-semibold text-base sm:text-lg">Filters</h4>
-                      <p className="text-xs sm:text-sm text-muted-foreground">
-                        Customize your experience
-                      </p>
-                    </div>
-                    
-                    {/* Category Filter */}
-                    <div className="space-y-3">
-                      <Label className="text-sm font-medium">Category</Label>
-                      <CategoryFilter
-                        selectedCategories={selectedCategories as any}
-                        selectedSubcategories={selectedSubcategories as any}
-                        onCategoryChange={(categories) => setSelectedCategories(categories as string[])}
-                        onSubcategoryChange={(subcategories) => setSelectedSubcategories(subcategories as string[])}
-                      />
-                    </div>
-
-                    {/* Currency Filter */}
-                    <div className="space-y-3">
-                      <Label className="text-sm font-medium">Currency</Label>
-                      <Select value={selectedCurrency} onValueChange={setSelectedCurrency}>
+                  {/* Subcategory Filter */}
+                  {availableSubcategories.length > 0 && (
+                    <div>
+                      <label className="text-sm font-medium">Subcategory</label>
+                      <Select value={subcategory} onValueChange={setSubcategory}>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select currency" />
+                          <SelectValue placeholder="Select subcategory" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="USD">USD ($)</SelectItem>
-                          <SelectItem value="EUR">EUR (€)</SelectItem>
-                          <SelectItem value="GBP">GBP (£)</SelectItem>
-                          <SelectItem value="AED">AED (د.إ)</SelectItem>
-                          <SelectItem value="SAR">SAR (﷼)</SelectItem>
-                          <SelectItem value="KWD">KWD (د.ك)</SelectItem>
-                          <SelectItem value="BHD">BHD (د.ب)</SelectItem>
-                          <SelectItem value="QAR">QAR (ر.ق)</SelectItem>
-                          <SelectItem value="OMR">OMR (ر.ع.)</SelectItem>
-                          <SelectItem value="JOD">JOD (د.أ)</SelectItem>
+                          <SelectItem value="">All Subcategories</SelectItem>
+                          {availableSubcategories.map((sub) => (
+                            <SelectItem key={sub.slug} value={sub.slug}>
+                              {sub.name}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
+                  )}
 
-                    {/* Price Range Filter */}
-                    <div className="space-y-3 sm:space-y-4">
-                      <Label className="text-sm font-medium">Price Range</Label>
-                      
-                      <div className="grid grid-cols-2 gap-2 sm:gap-3">
-                        <div className="space-y-2">
-                          <Label htmlFor="minPrice" className="text-xs font-medium">Min</Label>
-                          <Input 
-                            id="minPrice" 
-                            type="number" 
-                            min="0"
-                            placeholder="0" 
-                            value={priceRange.min || ''} 
-                            onChange={e => setPriceRange(prev => ({
-                              ...prev,
-                              min: e.target.value === '' ? 0 : Number(e.target.value)
-                            }))} 
-                            className="h-8 sm:h-9 text-sm" 
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="maxPrice" className="text-xs font-medium">Max</Label>
-                          <Input 
-                            id="maxPrice" 
-                            type="number" 
-                            min="0"
-                            placeholder="1000" 
-                            value={priceRange.max || ''} 
-                            onChange={e => setPriceRange(prev => ({
-                              ...prev,
-                              max: e.target.value === '' ? 1000 : Number(e.target.value)
-                            }))} 
-                            className="h-8 sm:h-9 text-sm" 
-                          />
-                        </div>
+                  {/* Price Range */}
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">
+                      Price Range: ${priceRange.min} - ${priceRange.max}
+                    </label>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="text-xs text-muted-foreground">Min: ${priceRange.min}</label>
+                        <Slider
+                          value={[priceRange.min]}
+                          onValueChange={([value]) => setPriceRange(prev => ({ ...prev, min: value }))}
+                          max={1000}
+                          min={0}
+                          step={10}
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs text-muted-foreground">Max: ${priceRange.max}</label>
+                        <Slider
+                          value={[priceRange.max]}
+                          onValueChange={([value]) => setPriceRange(prev => ({ ...prev, max: value }))}
+                          max={1000}
+                          min={0}
+                          step={10}
+                          className="mt-1"
+                        />
                       </div>
                     </div>
-
-                    <Button onClick={() => setShowFilters(false)} size="sm" className="w-full h-9">
-                      Apply Filters
-                    </Button>
                   </div>
-                </PopoverContent>
-              </Popover>
+
+                  {/* Currency */}
+                  <div>
+                    <label className="text-sm font-medium">Currency</label>
+                    <Select value={currency} onValueChange={setCurrency}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="USD">USD ($)</SelectItem>
+                        <SelectItem value="EUR">EUR (€)</SelectItem>
+                        <SelectItem value="GBP">GBP (£)</SelectItem>
+                        <SelectItem value="CAD">CAD ($)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Clear Filters */}
+                  {hasActiveFilters && (
+                    <Button 
+                      variant="outline" 
+                      onClick={clearFilters}
+                      className="w-full"
+                    >
+                      <X className="h-4 w-4 mr-2" />
+                      Clear All Filters
+                    </Button>
+                  )}
+                </div>
+              </SheetContent>
+            </Sheet>
+          </div>
+
+          {/* Active Filters */}
+          {hasActiveFilters && (
+            <div className="flex flex-wrap gap-2 mt-3">
+              {filter !== 'all' && (
+                <Badge variant="secondary" className="gap-1">
+                  {filter}
+                  <X 
+                    className="h-3 w-3 cursor-pointer" 
+                    onClick={() => setFilter('all')}
+                  />
+                </Badge>
+              )}
+              {subcategory && (
+                <Badge variant="secondary" className="gap-1">
+                  {subcategory}
+                  <X 
+                    className="h-3 w-3 cursor-pointer" 
+                    onClick={() => setSubcategory('')}
+                  />
+                </Badge>
+              )}
+              {(priceRange.min > 0 || priceRange.max < 1000) && (
+                <Badge variant="secondary" className="gap-1">
+                  ${priceRange.min} - ${priceRange.max}
+                  <X 
+                    className="h-3 w-3 cursor-pointer" 
+                    onClick={() => setPriceRange({ min: 0, max: 1000 })}
+                  />
+                </Badge>
+              )}
+              {currency !== 'USD' && (
+                <Badge variant="secondary" className="gap-1">
+                  {currency}
+                  <X 
+                    className="h-3 w-3 cursor-pointer" 
+                    onClick={() => setCurrency('USD')}
+                  />
+                </Badge>
+              )}
             </div>
-          </div>
+          )}
         </div>
-      </header>
+      </div>
 
-      {/* Main Content */}
-      <main className="flex-1 flex flex-col container max-w-screen-lg mx-auto px-4 py-8">
-        <div className="text-center space-y-3 mb-8">
-          <h2 className="text-2xl md:text-3xl font-bold font-playfair bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-            Your Fashion Feed
-          </h2>
-          <p className="text-muted-foreground">
-            {searchQuery ? `Searching for "${searchQuery}"` : "Swipe through curated collections tailored just for you"}
-          </p>
+      {/* Swipe Deck */}
+      <div className="flex-1 p-4">
+        <div className="max-w-md mx-auto h-[calc(100vh-200px)]">
+          <SwipeDeck
+            filter={filter}
+            subcategory={subcategory}
+            priceRange={priceRange}
+            searchQuery={searchQuery}
+            currency={currency}
+          />
         </div>
-
-        {/* Swipe Deck Container */}
-        <div className="flex-1 flex items-center justify-center min-h-[600px]">
-          <div className="relative w-full max-w-md h-[600px]">
-            <SwipeDeck 
-              filter={selectedCategories[0] || 'all'} 
-              subcategory={selectedSubcategories[0] || ''}
-              priceRange={priceRange} 
-              searchQuery={searchQuery}
-              currency={selectedCurrency}
-            />
-          </div>
-        </div>
-      </main>
+      </div>
     </div>
   );
 };
