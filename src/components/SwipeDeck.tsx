@@ -110,11 +110,9 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
   const nextCard = useCallback((direction: number = 0) => {
     setExitDirection(direction);
     setIndex(prevIndex => Math.min(prevIndex + 1, products.length - 1));
-    // Reset motion values after a brief delay
-    setTimeout(() => {
-      x.set(0);
-      y.set(0);
-    }, 100);
+    // Reset motion values immediately for next card
+    x.set(0);
+    y.set(0);
   }, [x, y, products.length]);
 
   const prevCard = useCallback(() => {
