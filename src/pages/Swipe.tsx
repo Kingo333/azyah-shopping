@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -220,10 +219,10 @@ const Swipe = () => {
       {/* Main Content */}
       <main className="flex-1 flex flex-col container max-w-screen-lg mx-auto px-4 py-8">
         <div className="text-center space-y-3 mb-8">
-          <h2 className="text-2xl md:text-3xl font-bold font-playfair bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+          <h2 className="text-xl md:text-2xl font-bold font-playfair bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
             Your Fashion Feed
           </h2>
-          <p className="text-muted-foreground">
+          <p className="text-sm text-muted-foreground">
             {searchQuery ? `Searching for "${searchQuery}"` : "Swipe through curated collections tailored just for you"}
           </p>
         </div>
