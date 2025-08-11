@@ -475,9 +475,9 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                             e.stopPropagation();
                             handleDislike();
                           }}
-                          className="h-8 w-8 rounded-full bg-destructive/10 hover:bg-destructive/20 pointer-events-auto"
+                          className="h-12 w-12 rounded-full bg-destructive/10 hover:bg-destructive/20 pointer-events-auto"
                         >
-                          <X className="h-4 w-4 text-destructive" />
+                          <X className="h-6 w-6 text-destructive" />
                         </Button>
                         <Button
                           variant="ghost"
@@ -487,9 +487,9 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                             handleAddToWishlist(currentProduct);
                           }}
                           disabled={wishlistLoading}
-                          className="h-8 w-8 rounded-full bg-accent/10 hover:bg-accent/20 pointer-events-auto"
+                          className="h-12 w-12 rounded-full bg-accent/10 hover:bg-accent/20 pointer-events-auto"
                         >
-                          <ShoppingBag className="h-4 w-4 text-accent-foreground" />
+                          <ShoppingBag className="h-6 w-6 text-accent-foreground" />
                         </Button>
                         <Button
                           variant="ghost"
@@ -498,9 +498,9 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                             e.stopPropagation();
                             handleLike(currentProduct);
                           }}
-                          className="h-8 w-8 rounded-full bg-primary/10 hover:bg-primary/20 pointer-events-auto"
+                          className="h-12 w-12 rounded-full bg-primary/10 hover:bg-primary/20 pointer-events-auto"
                         >
-                          <Heart className="h-4 w-4 text-primary" />
+                          <Heart className="h-6 w-6 text-primary" />
                         </Button>
                       </div>
                     </div>
@@ -520,36 +520,6 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
         </div>
       )}
 
-      {/* Action Buttons */}
-      {products.length > 0 && index < products.length && currentProduct && (
-        <div className="absolute bottom-4 right-6 flex flex-col gap-4">
-          <Button 
-            variant="destructive" 
-            size="icon" 
-            onClick={handleDislike}
-            className="h-12 w-12 rounded-full shadow-lg"
-          >
-            <X className="h-6 w-6" />
-          </Button>
-          <Button 
-            variant="outline" 
-            size="icon" 
-            onClick={() => handleAddToWishlist(currentProduct)}
-            disabled={wishlistLoading}
-            className="h-12 w-12 rounded-full shadow-lg bg-background"
-          >
-            <ShoppingBag className="h-6 w-6" />
-          </Button>
-          <Button 
-            variant="default" 
-            size="icon" 
-            onClick={() => handleLike(currentProduct)}
-            className="h-12 w-12 rounded-full shadow-lg"
-          >
-            <Heart className="h-6 w-6" />
-          </Button>
-        </div>
-      )}
 
       {/* Swipe Instructions */}
       <div className="absolute top-4 left-4 right-4 z-10">
