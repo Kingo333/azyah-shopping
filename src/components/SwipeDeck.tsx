@@ -6,12 +6,14 @@ import { motion, AnimatePresence, PanInfo, useMotionValue, useTransform } from '
 import { Heart, X, RotateCcw, Sparkles, ShoppingBag, TrendingUp, Users, Star, ExternalLink, Camera, Search } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { useWishlist } from '@/hooks/useWishlist';
 import ProductDetailModal from '@/components/ProductDetailModal';
 import { supabase } from '@/integrations/supabase/client';
 import { Product } from '@/types';
 import { useNavigate } from 'react-router-dom';
 import { TopCategory, SubCategory } from '@/lib/categories';
 import { convertJsonToProductAttributes } from '@/lib/type-utils';
+
 interface SwipeDeckProps {
   filter: string;
   subcategory: string;
@@ -22,6 +24,7 @@ interface SwipeDeckProps {
   searchQuery: string;
   currency?: string;
 }
+
 const cardVariants = {
   hidden: {
     opacity: 0,
@@ -42,7 +45,10 @@ const cardVariants = {
     }
   })
 };
+
 const DISTANCE_THRESHOLD = 100;
+const VERTICAL_THRESHOLD = 100;
+
 const SwipeDeck: React.FC<SwipeDeckProps> = ({
   filter,
   subcategory,
@@ -54,26 +60,29 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
   const [index, setIndex] = useState(0);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const {
-    toast
-  } = useToast();
-  const {
-    user
-  } = useAuth();
+  const { toast } = useToast();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const x = useMotionValue(0);
+  const y = useMotionValue(0);
   const rotate = useTransform(x, [-200, 0, 200], [-45, 0, 45]);
   const opacity = useTransform(x, [-200, 0, 200], [0, 1, 0]);
   const scale = useTransform(x, [-200, 0, 200], [0.8, 1, 0.8]);
   const cardRef = useRef<HTMLDivElement>(null);
+
+  const currentProduct = useMemo(() => products[index], [products, index]);
+  const { addToWishlist, isLoading: wishlistLoading } = useWishlist(currentProduct?.id);
+
   const nextCard = useCallback(() => {
     x.set(0);
     setIndex(prevIndex => Math.min(prevIndex + 1, products.length - 1));
   }, [x, products.length]);
+
   const prevCard = useCallback(() => {
     x.set(0);
     setIndex(prevIndex => Math.max(prevIndex - 1, 0));
   }, [x]);
+
   const handleLike = useCallback(async (product: Product) => {
     if (!user) {
       toast({
@@ -84,14 +93,11 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
       return;
     }
     try {
-      const {
-        error
-      } = await supabase.from('likes').insert([{
+      const { error } = await supabase.from('likes').insert([{
         user_id: user.id,
         product_id: product.id
       }]);
       if (error) {
-        // If it's a duplicate error, just show success message
         if (error.code === '23505') {
           toast({
             description: `${product.title} is already in your likes!`
@@ -114,20 +120,59 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
       });
     }
   }, [user, toast, nextCard]);
+
   const handleDislike = useCallback(() => {
     nextCard();
   }, [nextCard]);
+
+  const handleAddToWishlist = useCallback(async (product: Product) => {
+    if (!user) {
+      toast({
+        title: "Sign in required",
+        description: "You must be signed in to add to wishlist.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      await addToWishlist();
+      toast({
+        description: `${product.title} added to your wishlist!`
+      });
+      nextCard();
+    } catch (error: any) {
+      console.error("Error adding to wishlist:", error.message);
+      toast({
+        title: "Error",
+        description: "Failed to add to wishlist. Please try again.",
+        variant: "destructive"
+      });
+    }
+  }, [user, addToWishlist, toast, nextCard]);
+
   const handleSwipeEnd = useCallback((event: any, info: PanInfo) => {
     const currentProduct = products[index];
     if (!currentProduct) return;
-    if (info.offset.x > DISTANCE_THRESHOLD) {
+
+    const { x: offsetX, y: offsetY } = info.offset;
+
+    // Check for vertical swipe up first (wishlist)
+    if (offsetY < -VERTICAL_THRESHOLD && Math.abs(offsetX) < DISTANCE_THRESHOLD) {
+      handleAddToWishlist(currentProduct);
+    }
+    // Then check for horizontal swipes
+    else if (offsetX > DISTANCE_THRESHOLD) {
       handleLike(currentProduct);
-    } else if (info.offset.x < -DISTANCE_THRESHOLD) {
+    } else if (offsetX < -DISTANCE_THRESHOLD) {
       handleDislike();
     } else {
-      x.set(0); // Reset position if not swiped far enough
+      // Reset position if not swiped far enough
+      x.set(0);
+      y.set(0);
     }
-  }, [x, index, products, handleLike, handleDislike]);
+  }, [x, y, index, products, handleLike, handleDislike, handleAddToWishlist]);
+
   const fetchProducts = useCallback(async () => {
     try {
       let query = supabase.from('products').select(`
@@ -279,44 +324,67 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
       });
     }
   }, [filter, subcategory, priceRange, searchQuery, currency, toast]);
+
   useEffect(() => {
     fetchProducts();
   }, [fetchProducts]);
+
   const handleProductClick = (product: Product) => {
     setSelectedProduct(product);
     setIsModalOpen(true);
   };
-  const currentProduct = useMemo(() => products[index], [products, index]);
+
   if (products.length === 0) {
-    return <div className="flex flex-col items-center justify-center space-y-4">
+    return (
+      <div className="flex flex-col items-center justify-center space-y-4">
         <Search className="h-10 w-10 text-muted-foreground opacity-50" />
         <p className="text-muted-foreground">No products found matching your criteria.</p>
         <Button variant="outline" onClick={() => {
-        // Reset filters could be implemented here
-        window.location.reload();
-      }}>
+          window.location.reload();
+        }}>
           Reset Filters
         </Button>
-      </div>;
+      </div>
+    );
   }
-  return <div className="relative w-full h-full">
+
+  return (
+    <div className="relative w-full h-full">
       <AnimatePresence initial={false} custom={x.get()}>
-        {currentProduct && <motion.div key={currentProduct.id} ref={cardRef} className="absolute top-0 left-0 w-full h-full" style={{
-        x,
-        rotate,
-        opacity,
-        scale,
-        touchAction: 'pan-y'
-      }} drag="x" dragConstraints={{
-        left: 0,
-        right: 0
-      }} dragElastic={0.8} onDrag={(event, info) => {}} onDragEnd={handleSwipeEnd} variants={cardVariants} initial="hidden" animate="visible" exit="exit" custom={x.get()}>
+        {currentProduct && (
+          <motion.div
+            key={currentProduct.id}
+            ref={cardRef}
+            className="absolute top-0 left-0 w-full h-full"
+            style={{
+              x,
+              y,
+              rotate,
+              opacity,
+              scale,
+              touchAction: 'pan-y'
+            }}
+            drag
+            dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
+            dragElastic={0.8}
+            onDragEnd={handleSwipeEnd}
+            variants={cardVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            custom={x.get()}
+          >
             <Card className="h-full flex flex-col cursor-grab active:cursor-grabbing" onClick={() => handleProductClick(currentProduct)}>
               <CardContent className="p-4 flex flex-col h-full">
                 <div className="relative aspect-square w-full mb-4">
-                  <img src={currentProduct.media_urls?.[0] || '/placeholder.svg'} alt={currentProduct.title} className="object-cover rounded-md w-full h-full" onError={e => {
-                (e.target as HTMLImageElement).src = '/placeholder.svg';
-              }} />
+                  <img
+                    src={currentProduct.media_urls?.[0] || '/placeholder.svg'}
+                    alt={currentProduct.title}
+                    className="object-cover rounded-md w-full h-full"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = '/placeholder.svg';
+                    }}
+                  />
                 </div>
                 <div className="flex flex-col flex-grow">
                   <h3 className="text-lg font-semibold line-clamp-2">{currentProduct.title}</h3>
@@ -324,43 +392,70 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                   <div className="mt-auto flex items-end justify-between">
                     <span className="text-xl font-bold">
                       {new Intl.NumberFormat('en-US', {
-                    style: 'currency',
-                    currency: currentProduct.currency || 'USD'
-                  }).format(currentProduct.price_cents / 100)}
+                        style: 'currency',
+                        currency: currentProduct.currency || 'USD'
+                      }).format(currentProduct.price_cents / 100)}
                     </span>
-                    {currentProduct.ar_mesh_url && <Badge variant="outline" className="gap-1">
+                    {currentProduct.ar_mesh_url && (
+                      <Badge variant="outline" className="gap-1">
                         <Sparkles className="h-3 w-3" />
                         AR Ready
-                      </Badge>}
+                      </Badge>
+                    )}
                   </div>
                 </div>
               </CardContent>
             </Card>
-          </motion.div>}
+          </motion.div>
+        )}
       </AnimatePresence>
 
       {/* No More Products */}
-      {index >= products.length && <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center">
+      {index >= products.length && (
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center">
           <h2 className="text-2xl font-bold text-muted-foreground mb-2">No More Products</h2>
           <p className="text-muted-foreground">You've seen all the products for now.</p>
-        </div>}
+        </div>
+      )}
 
       {/* Action Buttons */}
-      {products.length > 0 && index < products.length && <div className="absolute bottom-4 left-0 w-full flex justify-center gap-4">
-          
+      {products.length > 0 && index < products.length && (
+        <div className="absolute bottom-4 left-0 w-full flex justify-center gap-4">
           <Button variant="destructive" size="icon" onClick={handleDislike}>
             <X className="h-5 w-5" />
+          </Button>
+          <Button 
+            variant="outline" 
+            size="icon" 
+            onClick={() => currentProduct && handleAddToWishlist(currentProduct)}
+            disabled={wishlistLoading}
+          >
+            <Heart className="h-5 w-5" />
           </Button>
           <Button variant="default" size="icon" onClick={() => currentProduct && handleLike(currentProduct)}>
             <Heart className="h-5 w-5" />
           </Button>
-        </div>}
+        </div>
+      )}
+
+      {/* Swipe Instructions */}
+      <div className="absolute top-4 left-4 right-4 z-10">
+        <div className="bg-black/50 text-white text-xs p-2 rounded-lg text-center">
+          Swipe ← to pass • Swipe → to like • Swipe ↑ to add to wishlist
+        </div>
+      </div>
 
       {/* Product Detail Modal */}
-      <ProductDetailModal product={selectedProduct!} isOpen={isModalOpen} onClose={() => {
-      setIsModalOpen(false);
-      setSelectedProduct(null);
-    }} />
-    </div>;
+      <ProductDetailModal
+        product={selectedProduct!}
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          setSelectedProduct(null);
+        }}
+      />
+    </div>
+  );
 };
+
 export default SwipeDeck;
