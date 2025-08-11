@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -111,7 +112,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
   const nextCard = useCallback((direction: number = 0) => {
     setExitDirection(direction);
     setIndex(prevIndex => Math.min(prevIndex + 1, products.length - 1));
-    // Reset motion values immediately
+    // Reset motion values smoothly
     x.set(0);
     y.set(0);
   }, [x, y, products.length]);
@@ -207,9 +208,9 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
     const { x: offsetX, y: offsetY } = offset;
     const { x: velocityX, y: velocityY } = velocity;
 
-    // Calculate effective offset including velocity
-    const effectiveX = offsetX + velocityX * 0.15;
-    const effectiveY = offsetY + velocityY * 0.15;
+    // Calculate effective offset including velocity for more responsive swipes
+    const effectiveX = offsetX + velocityX * 0.2;
+    const effectiveY = offsetY + velocityY * 0.2;
 
     // Check for vertical swipe up first (wishlist)
     if (effectiveY < -VERTICAL_THRESHOLD && Math.abs(effectiveX) < DISTANCE_THRESHOLD) {
@@ -221,7 +222,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
     } else if (effectiveX < -DISTANCE_THRESHOLD) {
       handleDislike();
     } else {
-      // Reset position if not swiped far enough
+      // Reset position with spring animation if not swiped far enough
       x.set(0);
       y.set(0);
     }
@@ -384,6 +385,23 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
     fetchProducts();
   }, [fetchProducts]);
 
+  // Prevent page scroll on mobile when swiping
+  useEffect(() => {
+    const preventScroll = (e: TouchEvent) => {
+      if (cardRef.current && cardRef.current.contains(e.target as Node)) {
+        e.preventDefault();
+      }
+    };
+
+    document.addEventListener('touchstart', preventScroll, { passive: false });
+    document.addEventListener('touchmove', preventScroll, { passive: false });
+
+    return () => {
+      document.removeEventListener('touchstart', preventScroll);
+      document.removeEventListener('touchmove', preventScroll);
+    };
+  }, []);
+
   const handleProductClick = (product: Product) => {
     setSelectedProduct(product);
     setIsModalOpen(true);
@@ -404,13 +422,13 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
   }
 
   return (
-    <div className="relative w-full h-full overflow-hidden">
+    <div className="relative w-full h-full overflow-hidden touch-none">
       <AnimatePresence initial={false} custom={exitDirection}>
         {currentProduct && (
           <motion.div
             key={currentProduct.id}
             ref={cardRef}
-            className="absolute top-0 left-0 w-full h-full touch-none"
+            className="absolute top-0 left-0 w-full h-full select-none"
             style={{
               x,
               y,
@@ -419,9 +437,14 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
               scale
             }}
             drag
-            dragConstraints={{ left: -50, right: 50, top: -50, bottom: 50 }}
-            dragElastic={0.1}
-            dragMomentum={false}
+            dragConstraints={{ left: -100, right: 100, top: -100, bottom: 100 }}
+            dragElastic={0.3}
+            dragTransition={{ 
+              bounceStiffness: 500, 
+              bounceDamping: 30,
+              power: 0.3,
+              timeConstant: 300
+            }}
             onDragEnd={handleSwipeEnd}
             variants={cardVariants}
             initial="hidden"
@@ -430,14 +453,14 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
             custom={exitDirection}
             whileDrag={{ 
               cursor: "grabbing",
-              scale: 1.02,
+              scale: 1.05,
               zIndex: 1000
             }}
           >
             <Card className="h-full flex flex-col cursor-grab active:cursor-grabbing overflow-hidden select-none">
-              <CardContent className="p-3 sm:p-4 flex flex-col h-full overflow-y-auto">
+              <CardContent className="p-3 sm:p-4 flex flex-col h-full">
                 <div 
-                  className="relative w-full mb-3 sm:mb-4 overflow-hidden rounded-md flex-shrink-0"
+                  className="relative w-full mb-3 sm:mb-4 overflow-hidden rounded-md flex-shrink-0 pointer-events-none"
                   style={{
                     height: `${getImageHeight(imageAspectRatio)}px`
                   }}
@@ -445,7 +468,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                   <img
                     src={currentProduct.media_urls?.[0] || '/placeholder.svg'}
                     alt={currentProduct.title}
-                    className="object-cover w-full h-full pointer-events-none"
+                    className="object-cover w-full h-full pointer-events-none select-none"
                     onLoad={handleImageLoad}
                     onError={(e) => {
                       (e.target as HTMLImageElement).src = '/placeholder.svg';
@@ -453,7 +476,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                     draggable={false}
                   />
                 </div>
-                <div className="flex flex-col flex-grow">
+                <div className="flex flex-col flex-grow pointer-events-auto">
                   <div className="flex items-start justify-between gap-2 mb-1">
                     <div className="flex items-center gap-2 flex-1">
                       <h3 className="text-base sm:text-lg font-semibold line-clamp-2">{currentProduct.title}</h3>
@@ -503,7 +526,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
 
       {/* Action Buttons */}
       {products.length > 0 && index < products.length && currentProduct && (
-        <div className="absolute bottom-4 right-6 flex flex-col gap-4">
+        <div className="absolute bottom-4 right-6 flex flex-col gap-4 pointer-events-auto">
           <Button 
             variant="destructive" 
             size="icon" 
@@ -533,7 +556,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
       )}
 
       {/* Swipe Instructions */}
-      <div className="absolute top-4 left-4 right-4 z-10">
+      <div className="absolute top-4 left-4 right-4 z-10 pointer-events-none">
         <div className="bg-black/50 text-white text-xs p-2 rounded-lg text-center">
           Swipe ← to pass • Swipe → to like • Swipe ↑ to add to wishlist
         </div>
@@ -553,3 +576,4 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
 };
 
 export default SwipeDeck;
+
