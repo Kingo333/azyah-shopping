@@ -1,6 +1,5 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -15,153 +14,77 @@ serve(async (req) => {
   try {
     const BITSTUDIO_API_KEY = Deno.env.get('BITSTUDIO_API_KEY');
     let BITSTUDIO_API_BASE = Deno.env.get('BITSTUDIO_API_BASE') || 'https://api.bitstudio.ai';
-    BITSTUDIO_API_BASE = BITSTUDIO_API_BASE.replace(/\/+$/, '');
+    
+    // Remove any trailing slashes and /v1 - BitStudio API doesn't use /v1
+    BITSTUDIO_API_BASE = BITSTUDIO_API_BASE.replace(/\/+$/, '').replace(/\/v1$/, '');
 
-    console.log('[status] API key present:', !!BITSTUDIO_API_KEY);
-    console.log('[status] API base URL:', BITSTUDIO_API_BASE);
-
-    if (!BITSTUDIO_API_KEY || BITSTUDIO_API_KEY.trim() === '') {
-      console.error('[status] BitStudio API key not configured');
-      return new Response(
-        JSON.stringify({ 
-          error: 'BitStudio API key not configured',
-          code: 'MISSING_API_KEY'
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
-      );
+    if (!BITSTUDIO_API_KEY) {
+      throw new Error('BitStudio API key not configured');
     }
 
-    // Get user authentication
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      console.error('[status] No authorization header provided');
-      return new Response(
-        JSON.stringify({ error: 'Authorization required' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
-      );
-    }
-
-    const token = authHeader.replace('Bearer ', '');
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        global: {
-          headers: {
-            Authorization: authHeader,
-          },
-        },
-      }
-    );
-
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    if (authError || !user) {
-      console.error('[status] Invalid authorization:', authError);
-      return new Response(
-        JSON.stringify({ error: 'Invalid authorization' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
-      );
-    }
-
-    const body = await req.json();
-    const { id } = body;
-
-    console.log('[status] Checking status for image ID:', id);
-
+    // Accept POST requests with JSON body containing the image ID
+    const { id } = await req.json();
+    
     if (!id) {
-      console.error('[status] No image ID provided');
       return new Response(
-        JSON.stringify({ 
-          error: 'Image ID is required',
-          code: 'bad_request'
-        }),
+        JSON.stringify({ error: 'Image ID is required' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
       );
     }
 
-    // Call BitStudio status API
-    const statusUrl = `${BITSTUDIO_API_BASE}/images/${id}`;
-    console.log('[status] Calling BitStudio API:', statusUrl);
+    console.log('Checking status for image ID:', id);
 
-    const response = await fetch(statusUrl, {
+    const response = await fetch(`${BITSTUDIO_API_BASE}/images/${id}`, {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${BITSTUDIO_API_KEY.trim()}`,
+        'Authorization': `Bearer ${BITSTUDIO_API_KEY}`,
       },
     });
 
-    console.log('[status] BitStudio response status:', response.status);
+    console.log('BitStudio status check response status:', response.status);
 
-    let responseText = '';
-    let responseData: any = {};
-
-    try {
-      responseText = await response.text();
-      console.log('[status] BitStudio raw response:', responseText.substring(0, 500));
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('BitStudio API error:', response.status, errorText);
       
-      try {
-        responseData = JSON.parse(responseText);
-        console.log('[status] BitStudio parsed response:', responseData);
-      } catch {
-        responseData = { error: responseText, message: responseText };
+      if (response.status === 429) {
+        return new Response(
+          JSON.stringify({ 
+            error: 'Rate limit exceeded. Please try again in a moment.',
+            code: 'RATE_LIMITED'
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 429 }
+        );
       }
-    } catch (e) {
-      responseText = `HTTP ${response.status}`;
-      responseData = { error: responseText, message: responseText };
-      console.error('[status] Failed to read BitStudio response:', e);
+      
+      if (response.status === 404) {
+        return new Response(
+          JSON.stringify({ 
+            error: 'Image not found',
+            code: 'not_found'
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 404 }
+        );
+      }
+      
+      throw new Error(`BitStudio API error: ${response.status} - ${errorText}`);
     }
 
-    if (response.ok) {
-      console.log('[status] Status check successful');
-      return new Response(
-        JSON.stringify(responseData),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Handle specific error cases
-    if (response.status === 404) {
-      return new Response(
-        JSON.stringify({ 
-          error: 'Image not found',
-          code: 'not_found',
-          bitstudio_error: responseData,
-          status: response.status
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 404 }
-      );
-    }
-
-    if (response.status === 429) {
-      return new Response(
-        JSON.stringify({ 
-          error: 'Rate limit exceeded',
-          code: 'rate_limited',
-          bitstudio_error: responseData,
-          status: response.status
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 429 }
-      );
-    }
-
-    // Generic error
+    const result = await response.json();
+    console.log('Status check result:', result);
+    
     return new Response(
-      JSON.stringify({ 
-        error: responseData.error || responseData.message || `BitStudio API error: ${response.status}`,
-        code: 'API_ERROR',
-        status: response.status,
-        bitstudio_error: responseData
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: response.status }
+      JSON.stringify(result),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
-    console.error('[status] Function error:', error);
+    console.error('Status check error:', error);
     return new Response(
       JSON.stringify({ 
         error: 'Status check failed', 
-        details: (error as any)?.message,
-        code: 'INTERNAL_ERROR'
+        code: 'status_error',
+        details: error.message 
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     );
