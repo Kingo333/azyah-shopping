@@ -459,20 +459,12 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                         currency: currentProduct.currency || 'USD'
                       }).format(currentProduct.price_cents / 100)}
                     </span>
-                    <div className="flex items-center gap-2">
-                      {/* Three circles */}
-                      <div className="flex items-center gap-1">
-                        <div className="w-2 h-2 rounded-full bg-muted-foreground/30"></div>
-                        <div className="w-2 h-2 rounded-full bg-muted-foreground/30"></div>
-                        <div className="w-2 h-2 rounded-full bg-muted-foreground/30"></div>
-                      </div>
-                      {currentProduct.ar_mesh_url && (
-                        <Badge variant="outline" className="gap-1 text-xs">
-                          <Sparkles className="h-3 w-3" />
-                          AR Ready
-                        </Badge>
-                      )}
-                    </div>
+                    {currentProduct.ar_mesh_url && (
+                      <Badge variant="outline" className="gap-1 text-xs">
+                        <Sparkles className="h-3 w-3" />
+                        AR Ready
+                      </Badge>
+                    )}
                   </div>
                 </div>
               </CardContent>
