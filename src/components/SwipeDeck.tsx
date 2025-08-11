@@ -37,7 +37,7 @@ const cardVariants = {
     y: 0,
     transition: {
       duration: 0.4,
-      ease: [0.4, 0, 0.2, 1] // easeOut bezier curve
+      ease: "easeOut"
     }
   },
   exit: (direction: number) => ({
@@ -47,7 +47,7 @@ const cardVariants = {
     scale: 0.8,
     transition: {
       duration: 0.3,
-      ease: [0.4, 0, 0.6, 1] // easeInOut bezier curve
+      ease: "easeInOut"
     }
   })
 };
