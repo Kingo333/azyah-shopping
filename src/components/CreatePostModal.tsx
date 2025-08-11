@@ -1,13 +1,12 @@
-import React, { useState, useRef } from 'react';
+
+import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Camera, Upload, X, Loader2, Plus } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Camera, X, Upload } from 'lucide-react';
 
 interface CreatePostModalProps {
   isOpen: boolean;
@@ -25,212 +24,262 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
   const [content, setContent] = useState('');
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
-  const handleImageUpload = (files: FileList | null) => {
-    if (!files) return;
+  const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
     
-    const imageFiles = Array.from(files).filter(file => file.type.startsWith('image/'));
-    if (imageFiles.length + selectedImages.length > 4) {
-      toast({
-        title: "Too many images",
-        description: "You can upload up to 4 images per post",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    setSelectedImages(prev => [...prev, ...imageFiles]);
+    // Validate file types and sizes
+    const validFiles = files.filter(file => {
+      if (!file.type.startsWith('image/')) {
+        toast({
+          description: `${file.name} is not a valid image file`,
+          variant: 'destructive'
+        });
+        return false;
+      }
+      
+      if (file.size > 10 * 1024 * 1024) { // 10MB limit
+        toast({
+          description: `${file.name} is too large (max 10MB)`,
+          variant: 'destructive'
+        });
+        return false;
+      }
+      
+      return true;
+    });
+
+    setSelectedImages(prev => [...prev, ...validFiles].slice(0, 4)); // Max 4 images
   };
 
   const removeImage = (index: number) => {
     setSelectedImages(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const uploadImage = async (file: File): Promise<string | null> => {
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+      const filePath = `post-images/${fileName}`;
+
+      console.log('Uploading image:', fileName);
+
+      const { error: uploadError } = await supabase.storage
+        .from('product-images')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (uploadError) {
+        console.error('Upload error:', uploadError);
+        throw uploadError;
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('product-images')
+        .getPublicUrl(filePath);
+
+      console.log('Image uploaded successfully:', publicUrl);
+      return publicUrl;
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      return null;
+    }
+  };
+
+  const handleSubmit = async () => {
     if (!content.trim() && selectedImages.length === 0) {
       toast({
-        title: "Empty post",
-        description: "Please add some content or images",
-        variant: "destructive"
+        description: 'Please add some content or an image',
+        variant: 'destructive'
       });
       return;
     }
 
     setIsLoading(true);
+
     try {
-      // Create post
+      // Upload images first
+      console.log('Starting to upload', selectedImages.length, 'images');
+      const imageUploadPromises = selectedImages.map(uploadImage);
+      const uploadedImageUrls = await Promise.all(imageUploadPromises);
+      
+      // Filter out failed uploads
+      const successfulUploads = uploadedImageUrls.filter(url => url !== null) as string[];
+      
+      console.log('Successfully uploaded', successfulUploads.length, 'images');
+
+      // If we had images but none uploaded successfully, show error
+      if (selectedImages.length > 0 && successfulUploads.length === 0) {
+        toast({
+          description: 'Failed to upload images. Please try again.',
+          variant: 'destructive'
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      // Create the post
       const { data: post, error: postError } = await supabase
         .from('posts')
         .insert({
-          user_id: userId,
-          content: content.trim()
+          content: content.trim() || null,
+          user_id: userId
         })
         .select()
         .single();
 
-      if (postError) throw postError;
+      if (postError) {
+        console.error('Error creating post:', postError);
+        throw postError;
+      }
 
-      // Upload images if any
-      if (selectedImages.length > 0) {
-        const imageUploadPromises = selectedImages.map(async (file, index) => {
-          const fileName = `${post.id}-${index}-${Date.now()}`;
-          const { data, error } = await supabase.storage
-            .from('post-images')
-            .upload(fileName, file);
+      console.log('Post created:', post);
 
-          if (error) throw error;
+      // Add images to post_images table
+      if (successfulUploads.length > 0) {
+        const imageData = successfulUploads.map((url, index) => ({
+          post_id: post.id,
+          image_url: url,
+          sort_order: index
+        }));
 
-          // Create post_image record
-          const { data: publicUrl } = supabase.storage
-            .from('post-images')
-            .getPublicUrl(fileName);
+        const { error: imageError } = await supabase
+          .from('post_images')
+          .insert(imageData);
 
-          return supabase.from('post_images').insert({
-            post_id: post.id,
-            image_url: publicUrl.publicUrl,
-            sort_order: index
+        if (imageError) {
+          console.error('Error saving post images:', imageError);
+          // Don't throw here - post was created successfully
+          toast({
+            description: 'Post created but some images failed to save',
+            variant: 'destructive'
           });
-        });
-
-        await Promise.all(imageUploadPromises);
+        } else {
+          console.log('Images saved successfully');
+        }
       }
 
       toast({
-        title: "Post created!",
-        description: "Your style inspiration has been shared",
-        duration: 3000
+        description: 'Post created successfully!'
       });
 
       // Reset form
       setContent('');
       setSelectedImages([]);
-      onPostCreated();
       onClose();
+      onPostCreated();
 
     } catch (error) {
       console.error('Error creating post:', error);
       toast({
-        title: "Failed to create post",
-        description: "Please try again later",
-        variant: "destructive"
+        description: 'Failed to create post. Please try again.',
+        variant: 'destructive'
       });
     } finally {
       setIsLoading(false);
     }
   };
 
+  const handleClose = () => {
+    if (!isLoading) {
+      setContent('');
+      setSelectedImages([]);
+      onClose();
+    }
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>Share Your Style Inspiration</DialogTitle>
+          <DialogTitle>Create New Post</DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Content Input */}
-          <div>
-            <Textarea
-              placeholder="What's inspiring your style today? Share your fashion thoughts, outfit details, or styling tips..."
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              className="min-h-[120px] resize-none"
-              maxLength={500}
-            />
-            <div className="flex justify-between items-center mt-2">
-              <span className="text-xs text-muted-foreground">
-                {content.length}/500 characters
-              </span>
-            </div>
-          </div>
+        <div className="space-y-4">
+          <Textarea
+            placeholder="Share your style inspiration..."
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            className="min-h-[100px] resize-none"
+            disabled={isLoading}
+          />
 
           {/* Image Upload */}
-          <div>
-            <div className="flex items-center gap-2 mb-3">
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={selectedImages.length >= 4}
+                onClick={() => document.getElementById('image-upload')?.click()}
+                disabled={isLoading || selectedImages.length >= 4}
               >
-                <Upload className="h-4 w-4 mr-2" />
-                Add Photos
+                <Camera className="h-4 w-4 mr-2" />
+                Add Images ({selectedImages.length}/4)
               </Button>
-              <span className="text-xs text-muted-foreground">
-                {selectedImages.length}/4 images
-              </span>
+              <Input
+                id="image-upload"
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handleImageSelect}
+                className="hidden"
+                disabled={isLoading}
+              />
             </div>
 
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              multiple
-              onChange={(e) => handleImageUpload(e.target.files)}
-              className="hidden"
-            />
-
-            {/* Image Preview Grid */}
+            {/* Image Previews */}
             {selectedImages.length > 0 && (
               <div className="grid grid-cols-2 gap-2">
                 {selectedImages.map((file, index) => (
-                  <motion.div
-                    key={index}
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="relative aspect-square bg-muted rounded-lg overflow-hidden"
-                  >
+                  <div key={index} className="relative group">
                     <img
                       src={URL.createObjectURL(file)}
-                      alt={`Upload ${index + 1}`}
-                      className="w-full h-full object-cover"
+                      alt={`Preview ${index + 1}`}
+                      className="w-full h-24 object-cover rounded-lg"
                     />
                     <Button
                       type="button"
-                      size="sm"
                       variant="destructive"
-                      className="absolute top-1 right-1 h-6 w-6 p-0"
+                      size="sm"
+                      className="absolute top-1 right-1 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
                       onClick={() => removeImage(index)}
+                      disabled={isLoading}
                     >
                       <X className="h-3 w-3" />
                     </Button>
-                  </motion.div>
+                  </div>
                 ))}
               </div>
             )}
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex justify-end gap-3 pt-4 border-t">
+          <div className="flex justify-end gap-2">
             <Button
-              type="button"
               variant="outline"
-              onClick={onClose}
+              onClick={handleClose}
               disabled={isLoading}
             >
               Cancel
             </Button>
             <Button
-              type="submit"
+              onClick={handleSubmit}
               disabled={isLoading || (!content.trim() && selectedImages.length === 0)}
             >
               {isLoading ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                   Posting...
-                </>
+                </div>
               ) : (
-                <>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Share Post
-                </>
+                'Post'
               )}
             </Button>
           </div>
-        </form>
+        </div>
       </DialogContent>
     </Dialog>
   );
