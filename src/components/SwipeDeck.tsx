@@ -419,21 +419,32 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
       )}
 
       {/* Action Buttons */}
-      {products.length > 0 && index < products.length && (
-        <div className="absolute bottom-4 left-0 w-full flex justify-center gap-4">
-          <Button variant="destructive" size="icon" onClick={handleDislike}>
-            <X className="h-5 w-5" />
+      {products.length > 0 && index < products.length && currentProduct && (
+        <div className="absolute bottom-4 left-0 w-full flex justify-center gap-4 px-4">
+          <Button 
+            variant="destructive" 
+            size="icon" 
+            onClick={handleDislike}
+            className="h-12 w-12 rounded-full shadow-lg"
+          >
+            <X className="h-6 w-6" />
           </Button>
           <Button 
             variant="outline" 
             size="icon" 
-            onClick={() => currentProduct && handleAddToWishlist(currentProduct)}
+            onClick={() => handleAddToWishlist(currentProduct)}
             disabled={wishlistLoading}
+            className="h-12 w-12 rounded-full shadow-lg bg-background"
           >
-            <Heart className="h-5 w-5" />
+            <ShoppingBag className="h-6 w-6" />
           </Button>
-          <Button variant="default" size="icon" onClick={() => currentProduct && handleLike(currentProduct)}>
-            <Heart className="h-5 w-5" />
+          <Button 
+            variant="default" 
+            size="icon" 
+            onClick={() => handleLike(currentProduct)}
+            className="h-12 w-12 rounded-full shadow-lg"
+          >
+            <Heart className="h-6 w-6" />
           </Button>
         </div>
       )}
