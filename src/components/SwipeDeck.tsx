@@ -406,8 +406,9 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
             }}
             drag
             dragConstraints={false}
-            dragElastic={0.2}
+            dragElastic={0.7}
             dragMomentum={false}
+            dragTransition={{ power: 0.1, timeConstant: 200 }}
             whileDrag={{ scale: 1.02 }}
             onDragEnd={handleSwipeEnd}
             variants={cardVariants}
