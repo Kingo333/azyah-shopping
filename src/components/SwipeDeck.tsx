@@ -47,8 +47,8 @@ const cardVariants = {
   })
 };
 
-const SWIPE_THRESHOLD = 75;
-const VELOCITY_THRESHOLD = 500;
+const DISTANCE_THRESHOLD = 80;
+const VERTICAL_THRESHOLD = 80;
 
 const SwipeDeck: React.FC<SwipeDeckProps> = ({
   filter,
@@ -110,11 +110,18 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
   const nextCard = useCallback((direction: number = 0) => {
     setExitDirection(direction);
     setIndex(prevIndex => Math.min(prevIndex + 1, products.length - 1));
-  }, [products.length]);
+    // Reset motion values after a brief delay
+    setTimeout(() => {
+      x.set(0);
+      y.set(0);
+    }, 100);
+  }, [x, y, products.length]);
 
   const prevCard = useCallback(() => {
+    x.set(0);
+    y.set(0);
     setIndex(prevIndex => Math.max(prevIndex - 1, 0));
-  }, []);
+  }, [x, y]);
 
   const handleLike = useCallback(async (product: Product) => {
     if (!user) {
@@ -193,7 +200,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
     }
   }, [user, addToWishlist, toast, nextCard]);
 
-  const handleDragEnd = useCallback((event: any, info: PanInfo) => {
+  const handleSwipeEnd = useCallback((event: any, info: PanInfo) => {
     const currentProduct = products[index];
     if (!currentProduct) return;
 
@@ -201,22 +208,25 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
     const { x: offsetX, y: offsetY } = offset;
     const { x: velocityX, y: velocityY } = velocity;
 
-    // Check for strong upward swipe (wishlist)
-    if (offsetY < -SWIPE_THRESHOLD || velocityY < -VELOCITY_THRESHOLD) {
-      if (Math.abs(offsetX) < SWIPE_THRESHOLD) { // Only if not also swiping horizontally
-        handleAddToWishlist(currentProduct);
-        return;
-      }
-    }
+    // Calculate effective offset including velocity
+    const effectiveX = offsetX + velocityX * 0.1;
+    const effectiveY = offsetY + velocityY * 0.1;
 
-    // Check for horizontal swipes
-    if (offsetX > SWIPE_THRESHOLD || velocityX > VELOCITY_THRESHOLD) {
-      handleLike(currentProduct);
-    } else if (offsetX < -SWIPE_THRESHOLD || velocityX < -VELOCITY_THRESHOLD) {
-      handleDislike();
+    // Check for vertical swipe up first (wishlist)
+    if (effectiveY < -VERTICAL_THRESHOLD && Math.abs(effectiveX) < DISTANCE_THRESHOLD) {
+      handleAddToWishlist(currentProduct);
     }
-    // If no threshold met, card will spring back naturally
-  }, [index, products, handleLike, handleDislike, handleAddToWishlist]);
+    // Then check for horizontal swipes
+    else if (effectiveX > DISTANCE_THRESHOLD) {
+      handleLike(currentProduct);
+    } else if (effectiveX < -DISTANCE_THRESHOLD) {
+      handleDislike();
+    } else {
+      // Reset position if not swiped far enough
+      x.set(0);
+      y.set(0);
+    }
+  }, [x, y, index, products, handleLike, handleDislike, handleAddToWishlist]);
 
   const fetchProducts = useCallback(async () => {
     try {
@@ -395,7 +405,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
   }
 
   return (
-    <div className="relative w-full h-full overflow-hidden">
+    <div className="relative w-full h-full">
       <AnimatePresence initial={false} custom={exitDirection}>
         {currentProduct && (
           <motion.div
@@ -410,9 +420,10 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
               scale
             }}
             drag
+            dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
             dragElastic={0.2}
-            dragMomentum={false}
-            onDragEnd={handleDragEnd}
+            dragTransition={{ bounceStiffness: 600, bounceDamping: 20 }}
+            onDragEnd={handleSwipeEnd}
             variants={cardVariants}
             initial="hidden"
             animate="visible"
@@ -420,11 +431,11 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
             custom={exitDirection}
             whileDrag={{ 
               cursor: "grabbing",
-              scale: 1.02
+              scale: 1.05
             }}
           >
             <Card className="h-full flex flex-col cursor-grab active:cursor-grabbing overflow-hidden">
-              <CardContent className="p-3 sm:p-4 flex flex-col h-full">
+              <CardContent className="p-3 sm:p-4 flex flex-col h-full overflow-y-auto">
                 <div 
                   className="relative w-full mb-3 sm:mb-4 overflow-hidden rounded-md flex-shrink-0"
                   style={{
@@ -434,12 +445,11 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                   <img
                     src={currentProduct.media_urls?.[0] || '/placeholder.svg'}
                     alt={currentProduct.title}
-                    className="object-cover w-full h-full pointer-events-none select-none"
+                    className="object-cover w-full h-full"
                     onLoad={handleImageLoad}
                     onError={(e) => {
                       (e.target as HTMLImageElement).src = '/placeholder.svg';
                     }}
-                    draggable={false}
                   />
                 </div>
                 <div className="flex flex-col flex-grow">
@@ -522,7 +532,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
       )}
 
       {/* Swipe Instructions */}
-      <div className="absolute top-4 left-4 right-4 z-10 pointer-events-none">
+      <div className="absolute top-4 left-4 right-4 z-10">
         <div className="bg-black/50 text-white text-xs p-2 rounded-lg text-center">
           Swipe ← to pass • Swipe → to like • Swipe ↑ to add to wishlist
         </div>
