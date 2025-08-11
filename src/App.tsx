@@ -34,7 +34,7 @@ import Analytics from '@/pages/Analytics';
 import AiStudio from '@/pages/AiStudio';
 import AiStudioTest from '@/pages/AiStudioTest';
 import NotFound from '@/pages/NotFound';
-import { ProtectedRoute } from '@/components/ProtectedRoute';
+import ProtectedRoute from '@/components/ProtectedRoute';
 import './App.css';
 
 const queryClient = new QueryClient({
