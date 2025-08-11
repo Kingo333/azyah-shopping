@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -33,6 +34,7 @@ const cardVariants = {
   visible: {
     opacity: 1,
     y: 0,
+    x: 0, // Ensure cards start at center
     transition: {
       duration: 0.5
     }
@@ -109,19 +111,32 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
 
   const nextCard = useCallback((direction: number = 0) => {
     setExitDirection(direction);
-    setIndex(prevIndex => Math.min(prevIndex + 1, products.length - 1));
-    // Reset motion values after a brief delay
-    setTimeout(() => {
-      x.set(0);
-      y.set(0);
-    }, 100);
+    setIndex(prevIndex => {
+      const newIndex = Math.min(prevIndex + 1, products.length - 1);
+      // Reset motion values immediately when changing index
+      setTimeout(() => {
+        x.set(0);
+        y.set(0);
+      }, 50); // Shorter delay for faster reset
+      return newIndex;
+    });
   }, [x, y, products.length]);
 
   const prevCard = useCallback(() => {
+    setIndex(prevIndex => {
+      const newIndex = Math.max(prevIndex - 1, 0);
+      // Reset motion values immediately
+      x.set(0);
+      y.set(0);
+      return newIndex;
+    });
+  }, [x, y]);
+
+  // Reset motion values whenever the current product changes
+  useEffect(() => {
     x.set(0);
     y.set(0);
-    setIndex(prevIndex => Math.max(prevIndex - 1, 0));
-  }, [x, y]);
+  }, [currentProduct?.id, x, y]);
 
   const handleLike = useCallback(async (product: Product) => {
     if (!user) {
@@ -406,10 +421,10 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
 
   return (
     <div className="relative w-full h-full">
-      <AnimatePresence initial={false} custom={exitDirection}>
+      <AnimatePresence initial={false} custom={exitDirection} mode="wait">
         {currentProduct && (
           <motion.div
-            key={currentProduct.id}
+            key={`${currentProduct.id}-${index}`} // Force re-render with unique key
             ref={cardRef}
             className="absolute top-0 left-0 w-full h-full"
             style={{
