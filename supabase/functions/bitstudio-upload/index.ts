@@ -24,6 +24,7 @@ serve(async (req) => {
   }
 
   try {
+    // Get the API key from environment variables
     const BITSTUDIO_API_KEY = Deno.env.get('BITSTUDIO_API_KEY');
     let BITSTUDIO_API_BASE = Deno.env.get('BITSTUDIO_API_BASE') || 'https://api.bitstudio.ai';
     
@@ -31,10 +32,11 @@ serve(async (req) => {
     BITSTUDIO_API_BASE = BITSTUDIO_API_BASE.replace(/\/+$/, '').replace(/\/v1$/, '');
 
     console.log('[upload] API key present:', !!BITSTUDIO_API_KEY);
+    console.log('[upload] API key length:', BITSTUDIO_API_KEY ? BITSTUDIO_API_KEY.length : 0);
     console.log('[upload] API base URL:', BITSTUDIO_API_BASE);
 
-    if (!BITSTUDIO_API_KEY) {
-      console.error('[upload] BitStudio API key not configured');
+    if (!BITSTUDIO_API_KEY || BITSTUDIO_API_KEY.trim() === '') {
+      console.error('[upload] BitStudio API key not configured or empty');
       return new Response(
         JSON.stringify({ 
           error: 'BitStudio API key not configured', 
@@ -123,14 +125,13 @@ serve(async (req) => {
 
     const requestUrl = `${BITSTUDIO_API_BASE}/images`;
     console.log('[upload] Making request to:', requestUrl);
-    console.log('[upload] Request headers (minus key):', { 'Content-Type': 'multipart/form-data' });
-    console.log('[upload] Request body fields:', { file: `${file.name} (${file.size} bytes)`, type });
+    console.log('[upload] Request headers (auth present):', !!BITSTUDIO_API_KEY);
 
-    // Make request to BitStudio API
+    // Make request to BitStudio API with proper headers
     const response = await fetch(requestUrl, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${BITSTUDIO_API_KEY}`,
+        'Authorization': `Bearer ${BITSTUDIO_API_KEY.trim()}`,
         // Don't set Content-Type - let FormData set boundary
       },
       body: bitStudioFormData,

@@ -13,6 +13,7 @@ serve(async (req) => {
   }
 
   try {
+    // Get the API key from environment variables
     const BITSTUDIO_API_KEY = Deno.env.get('BITSTUDIO_API_KEY');
     let BITSTUDIO_API_BASE = Deno.env.get('BITSTUDIO_API_BASE') || 'https://api.bitstudio.ai';
     
@@ -20,10 +21,11 @@ serve(async (req) => {
     BITSTUDIO_API_BASE = BITSTUDIO_API_BASE.replace(/\/+$/, '');
 
     console.log('[tryon] API key present:', !!BITSTUDIO_API_KEY);
+    console.log('[tryon] API key length:', BITSTUDIO_API_KEY ? BITSTUDIO_API_KEY.length : 0);
     console.log('[tryon] API base URL:', BITSTUDIO_API_BASE);
 
-    if (!BITSTUDIO_API_KEY) {
-      console.error('[tryon] BitStudio API key not configured');
+    if (!BITSTUDIO_API_KEY || BITSTUDIO_API_KEY.trim() === '') {
+      console.error('[tryon] BitStudio API key not configured or empty');
       throw new Error('BitStudio API key not configured');
     }
 
@@ -154,13 +156,12 @@ serve(async (req) => {
     const requestUrl = `${BITSTUDIO_API_BASE}/images/virtual-try-on`;
     
     console.log('[tryon] Request URL:', requestUrl);
-    console.log('[tryon] Request headers (minus key):', { 'Content-Type': 'application/json' });
-    console.log('[tryon] Request body:', requestBody);
+    console.log('[tryon] Request headers (auth present):', !!BITSTUDIO_API_KEY);
 
     const response = await fetch(requestUrl, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${BITSTUDIO_API_KEY}`,
+        'Authorization': `Bearer ${BITSTUDIO_API_KEY.trim()}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(requestBody),
