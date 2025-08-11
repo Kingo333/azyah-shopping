@@ -349,23 +349,31 @@ const RoleDashboard: React.FC = () => {
       {/* Fashion Leaderboards with Premium Glass Panel */}
       <GlassPanel variant="premium" className="p-8">
         <div className="space-y-6">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
             <h3 className="text-xl font-cormorant font-semibold flex items-center gap-3">
               <div className="p-2 rounded-full bg-gradient-to-br from-yellow-500/10 to-orange-500/10">
                 <Trophy className="h-5 w-5 text-yellow-500" />
               </div>
               Fashion Leaderboards
             </h3>
-            <div className="flex gap-1 sm:gap-2">
-              <Button variant={activeLeaderboard === 'global' ? 'premium' : 'outline'} size="sm" onClick={() => setActiveLeaderboard('global')} className="px-1.5 py-1 text-xs sm:px-2 sm:py-1">
-                <Globe className="h-3 w-3 mr-0.5 sm:mr-1" />
-                <span className="hidden xs:inline">Global</span>
-                <span className="xs:hidden">G</span>
+            <div className="flex gap-2">
+              <Button 
+                variant={activeLeaderboard === 'global' ? 'premium' : 'outline'} 
+                size="sm" 
+                onClick={() => setActiveLeaderboard('global')} 
+                className="flex-1 sm:flex-none"
+              >
+                <Globe className="h-3 w-3 mr-2" />
+                Global
               </Button>
-              <Button variant={activeLeaderboard === 'country' ? 'premium' : 'outline'} size="sm" onClick={() => setActiveLeaderboard('country')} className="px-1.5 py-1 text-xs sm:px-2 sm:py-1">
-                <MapPin className="h-3 w-3 mr-0.5 sm:mr-1" />
-                <span className="hidden xs:inline">Country</span>
-                <span className="xs:hidden">C</span>
+              <Button 
+                variant={activeLeaderboard === 'country' ? 'premium' : 'outline'} 
+                size="sm" 
+                onClick={() => setActiveLeaderboard('country')} 
+                className="flex-1 sm:flex-none"
+              >
+                <MapPin className="h-3 w-3 mr-2" />
+                Country
               </Button>
             </div>
           </div>
