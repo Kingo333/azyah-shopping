@@ -1,4 +1,3 @@
-
 import type { BitStudioImage, BitStudioError, AspectRatio, Resolution, Style, UpscaleFactor } from './bitstudio-types';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -34,7 +33,7 @@ export class BitStudioClient {
 
   static async uploadImage(file: File, type: string): Promise<BitStudioImage> {
     try {
-      console.log('[BitStudioClient] Starting upload:', { fileName: file.name, type });
+      console.log('[BitStudioClient] Starting upload:', { fileName: file.name, type, fileSize: file.size });
       
       // Get the session token for authentication
       const { data: { session } } = await supabase.auth.getSession();
@@ -42,16 +41,14 @@ export class BitStudioClient {
         throw { error: 'Authentication required', code: 'UNAUTHORIZED' } as BitStudioError;
       }
 
-      // Use the full Supabase Functions URL for better reliability
+      // Create FormData for the upload
       const formData = new FormData();
       formData.append('file', file);
       formData.append('type', type);
 
-      console.log('[BitStudioClient] FormData prepared:', { 
-        file: `${file.name} (${file.size} bytes)`, 
-        type: JSON.stringify(type)
-      });
+      console.log('[BitStudioClient] FormData prepared for upload');
 
+      // Use the Supabase Functions URL for upload
       const uploadUrl = `https://klwolsopucgswhtdlsps.supabase.co/functions/v1/bitstudio-upload`;
       console.log('[BitStudioClient] Upload URL:', uploadUrl);
 
@@ -65,8 +62,7 @@ export class BitStudioClient {
       });
 
       console.log('[BitStudioClient] Upload response status:', response.status);
-      console.log('[BitStudioClient] Upload response headers:', Object.fromEntries(response.headers.entries()));
-
+      
       if (!response.ok) {
         let errorData;
         try {

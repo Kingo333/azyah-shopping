@@ -24,28 +24,47 @@ serve(async (req) => {
   }
 
   try {
-    // Get the API key from environment variables
-    const BITSTUDIO_API_KEY = Deno.env.get('BITSTUDIO_API_KEY');
+    // Get the API key from environment variables with better error handling
+    let BITSTUDIO_API_KEY = Deno.env.get('BITSTUDIO_API_KEY');
     let BITSTUDIO_API_BASE = Deno.env.get('BITSTUDIO_API_BASE') || 'https://api.bitstudio.ai';
     
     // Remove any trailing slashes and /v1 - BitStudio API doesn't use /v1
     BITSTUDIO_API_BASE = BITSTUDIO_API_BASE.replace(/\/+$/, '').replace(/\/v1$/, '');
 
+    console.log('[upload] Checking API key configuration...');
     console.log('[upload] API key present:', !!BITSTUDIO_API_KEY);
     console.log('[upload] API key length:', BITSTUDIO_API_KEY ? BITSTUDIO_API_KEY.length : 0);
     console.log('[upload] API base URL:', BITSTUDIO_API_BASE);
 
-    if (!BITSTUDIO_API_KEY || BITSTUDIO_API_KEY.trim() === '') {
-      console.error('[upload] BitStudio API key not configured or empty');
+    // Clean and validate API key
+    if (!BITSTUDIO_API_KEY) {
+      console.error('[upload] BITSTUDIO_API_KEY environment variable not found');
       return new Response(
         JSON.stringify({ 
-          error: 'BitStudio API key not configured', 
-          code: 'invalid_token',
-          details: 'Please configure your BitStudio API key in the project settings'
+          error: 'BitStudio API key not configured in environment', 
+          code: 'missing_api_key',
+          details: 'The BITSTUDIO_API_KEY environment variable is not set'
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+      );
+    }
+
+    // Trim and validate the API key
+    BITSTUDIO_API_KEY = BITSTUDIO_API_KEY.trim();
+    
+    if (BITSTUDIO_API_KEY === '' || BITSTUDIO_API_KEY === 'undefined' || BITSTUDIO_API_KEY === 'null') {
+      console.error('[upload] BitStudio API key is empty or invalid:', BITSTUDIO_API_KEY);
+      return new Response(
+        JSON.stringify({ 
+          error: 'BitStudio API key is empty or invalid', 
+          code: 'invalid_api_key',
+          details: 'Please configure a valid BitStudio API key'
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
       );
     }
+
+    console.log('[upload] API key validation passed, length:', BITSTUDIO_API_KEY.length);
 
     // Parse form data
     const formData = await req.formData();
@@ -65,7 +84,7 @@ serve(async (req) => {
     });
 
     if (!file) {
-      console.error('[upload] No file provided');
+      console.error('[upload] No file provided in form data');
       return new Response(
         JSON.stringify({ error: 'No file provided', code: 'bad_request' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
@@ -116,7 +135,7 @@ serve(async (req) => {
       );
     }
 
-    console.log('[upload] Validation passed, creating FormData for BitStudio');
+    console.log('[upload] All validations passed, creating FormData for BitStudio');
 
     // Create form data for BitStudio API - preserve exact structure
     const bitStudioFormData = new FormData();
@@ -124,14 +143,19 @@ serve(async (req) => {
     bitStudioFormData.append('type', type);
 
     const requestUrl = `${BITSTUDIO_API_BASE}/images`;
-    console.log('[upload] Making request to:', requestUrl);
-    console.log('[upload] Request headers (auth present):', !!BITSTUDIO_API_KEY);
+    console.log('[upload] Making request to BitStudio URL:', requestUrl);
+    console.log('[upload] Using API key (first 10 chars):', BITSTUDIO_API_KEY.substring(0, 10) + '...');
+
+    // Test API key format - BitStudio keys typically start with specific patterns
+    if (!BITSTUDIO_API_KEY.match(/^[a-zA-Z0-9\-_]+$/)) {
+      console.warn('[upload] API key format may be invalid - contains unexpected characters');
+    }
 
     // Make request to BitStudio API with proper headers
     const response = await fetch(requestUrl, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${BITSTUDIO_API_KEY.trim()}`,
+        'Authorization': `Bearer ${BITSTUDIO_API_KEY}`,
         // Don't set Content-Type - let FormData set boundary
       },
       body: bitStudioFormData,
@@ -172,7 +196,7 @@ serve(async (req) => {
           JSON.stringify({ 
             error: 'Invalid or expired BitStudio API key', 
             code: 'invalid_token',
-            details: 'Please check your BitStudio API key configuration',
+            details: 'Please check your BitStudio API key configuration. Key length: ' + BITSTUDIO_API_KEY.length,
             bitstudio_error: errorData,
             raw_response: responseText,
             status: response.status
@@ -235,7 +259,7 @@ serve(async (req) => {
       );
     }
 
-    console.log('[upload] BitStudio API success response:', errorData);
+    console.log('[upload] BitStudio upload successful:', errorData);
     
     return new Response(
       JSON.stringify(errorData),
