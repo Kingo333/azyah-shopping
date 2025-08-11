@@ -3,7 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { motion, AnimatePresence, PanInfo, useMotionValue, useTransform } from 'framer-motion';
-import { Heart, X, RotateCcw, Sparkles, ShoppingBag, TrendingUp, Users, Star, ExternalLink, Camera, Search } from 'lucide-react';
+import { Heart, X, RotateCcw, Sparkles, ShoppingBag, TrendingUp, Users, Star, ExternalLink, Camera, Search, Info } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useWishlist } from '@/hooks/useWishlist';
@@ -383,7 +383,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
             exit="exit"
             custom={x.get()}
           >
-            <Card className="h-full flex flex-col cursor-grab active:cursor-grabbing" onClick={() => handleProductClick(currentProduct)}>
+            <Card className="h-full flex flex-col cursor-grab active:cursor-grabbing">
               <CardContent className="p-4 flex flex-col h-full">
                 <div className="relative aspect-square w-full mb-4">
                   <img
@@ -396,7 +396,21 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                   />
                 </div>
                 <div className="flex flex-col flex-grow">
-                  <h3 className="text-lg font-semibold line-clamp-2">{currentProduct.title}</h3>
+                  <div className="flex items-start justify-between gap-2 mb-1">
+                    <h3 className="text-lg font-semibold line-clamp-2 flex-1">{currentProduct.title}</h3>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleProductClick(currentProduct);
+                      }}
+                      className="flex-shrink-0 h-7 px-2 text-xs hover:bg-accent"
+                    >
+                      <Info className="h-3 w-3 mr-1" />
+                      Details
+                    </Button>
+                  </div>
                   <p className="text-sm text-muted-foreground line-clamp-1">{currentProduct.brand?.name}</p>
                   <div className="mt-auto flex items-end justify-between">
                     <span className="text-xl font-bold">
