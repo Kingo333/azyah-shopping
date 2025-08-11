@@ -459,12 +459,51 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                         currency: currentProduct.currency || 'USD'
                       }).format(currentProduct.price_cents / 100)}
                     </span>
-                    {currentProduct.ar_mesh_url && (
-                      <Badge variant="outline" className="gap-1 text-xs">
-                        <Sparkles className="h-3 w-3" />
-                        AR Ready
-                      </Badge>
-                    )}
+                    <div className="flex items-center gap-2">
+                      {currentProduct.ar_mesh_url && (
+                        <Badge variant="outline" className="gap-1 text-xs">
+                          <Sparkles className="h-3 w-3" />
+                          AR Ready
+                        </Badge>
+                      )}
+                      {/* Action Circles */}
+                      <div className="flex items-center gap-1 ml-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDislike();
+                          }}
+                          className="h-8 w-8 rounded-full bg-destructive/10 hover:bg-destructive/20 pointer-events-auto"
+                        >
+                          <X className="h-4 w-4 text-destructive" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleAddToWishlist(currentProduct);
+                          }}
+                          disabled={wishlistLoading}
+                          className="h-8 w-8 rounded-full bg-accent/10 hover:bg-accent/20 pointer-events-auto"
+                        >
+                          <ShoppingBag className="h-4 w-4 text-accent-foreground" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleLike(currentProduct);
+                          }}
+                          className="h-8 w-8 rounded-full bg-primary/10 hover:bg-primary/20 pointer-events-auto"
+                        >
+                          <Heart className="h-4 w-4 text-primary" />
+                        </Button>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </CardContent>
