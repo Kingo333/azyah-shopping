@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { motion, AnimatePresence, PanInfo, useMotionValue, useTransform } from 'framer-motion';
+import { motion, AnimatePresence, PanInfo, useMotionValue, useTransform, useAnimationControls } from 'framer-motion';
 import { Heart, X, RotateCcw, Sparkles, ShoppingBag, TrendingUp, Users, Star, ExternalLink, Camera, Search, Info } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
@@ -28,26 +28,33 @@ interface SwipeDeckProps {
 const cardVariants = {
   hidden: {
     opacity: 0,
+    scale: 0.8,
     y: 50
   },
   visible: {
     opacity: 1,
+    scale: 1,
     y: 0,
     transition: {
-      duration: 0.5
+      duration: 0.4,
+      ease: "easeOut"
     }
   },
   exit: (direction: number) => ({
     x: direction > 0 ? 300 : direction < 0 ? -300 : 0,
     y: direction === 2 ? -300 : 0,
     opacity: 0,
+    scale: 0.8,
     transition: {
-      duration: 0.3
+      duration: 0.3,
+      ease: "easeInOut"
     }
   })
 };
 
-const DISTANCE_THRESHOLD = 80;
+// Improved thresholds for better responsiveness
+const SWIPE_THRESHOLD = 100;
+const VELOCITY_THRESHOLD = 500;
 const VERTICAL_THRESHOLD = 80;
 
 const SwipeDeck: React.FC<SwipeDeckProps> = ({
@@ -63,14 +70,20 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [imageAspectRatio, setImageAspectRatio] = useState<number>(1);
   const [exitDirection, setExitDirection] = useState(0);
+  const [isAnimating, setIsAnimating] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
   const navigate = useNavigate();
+  
+  // Motion values for smooth dragging
   const x = useMotionValue(0);
   const y = useMotionValue(0);
-  const rotate = useTransform(x, [-200, 0, 200], [-25, 0, 25]);
-  const opacity = useTransform(x, [-200, -100, 0, 100, 200], [0.5, 0.8, 1, 0.8, 0.5]);
-  const scale = useTransform(x, [-200, 0, 200], [0.95, 1, 0.95]);
+  const rotate = useTransform(x, [-200, 0, 200], [-20, 0, 20]);
+  const opacity = useTransform(x, [-150, -75, 0, 75, 150], [0.5, 0.8, 1, 0.8, 0.5]);
+  
+  // Animation controls for programmatic swipes
+  const controls = useAnimationControls();
+  
   const cardRef = useRef<HTMLDivElement>(null);
 
   const currentProduct = useMemo(() => products[index], [products, index]);
@@ -81,14 +94,12 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
     const isMobile = window.innerWidth < 640;
     
     if (isMobile) {
-      // For mobile, use much more screen space for long images
-      const maxHeight = window.innerHeight * 0.65; // Increased from 0.5 to 0.65
-      const minHeight = 250; // Increased minimum height for mobile
-      const calculatedHeight = 350 / aspectRatio; // Increased base width from 320px to 350px
+      const maxHeight = window.innerHeight * 0.65;
+      const minHeight = 250;
+      const calculatedHeight = 350 / aspectRatio;
       
       return Math.max(minHeight, Math.min(maxHeight, calculatedHeight));
     } else {
-      // Desktop remains the same
       const maxHeight = window.innerHeight * 0.7;
       const minHeight = 200;
       const calculatedHeight = 400 / aspectRatio;
@@ -107,21 +118,41 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
     setImageAspectRatio(ratio);
   }, []);
 
-  const nextCard = useCallback((direction: number = 0) => {
+  // Improved card transition function
+  const nextCard = useCallback(async (direction: number = 0) => {
+    if (isAnimating || index >= products.length - 1) return;
+    
+    setIsAnimating(true);
     setExitDirection(direction);
-    setIndex(prevIndex => Math.min(prevIndex + 1, products.length - 1));
-    // Reset motion values after a brief delay
-    setTimeout(() => {
-      x.set(0);
-      y.set(0);
-    }, 100);
-  }, [x, y, products.length]);
-
-  const prevCard = useCallback(() => {
+    
+    // Animate the exit
+    await controls.start({
+      x: direction > 0 ? 300 : direction < 0 ? -300 : 0,
+      y: direction === 2 ? -300 : 0,
+      opacity: 0,
+      scale: 0.8,
+      transition: { duration: 0.3 }
+    });
+    
+    // Move to next card and reset
+    setIndex(prevIndex => prevIndex + 1);
+    
+    // Reset motion values
     x.set(0);
     y.set(0);
-    setIndex(prevIndex => Math.max(prevIndex - 1, 0));
-  }, [x, y]);
+    controls.set({ x: 0, y: 0, opacity: 1, scale: 1 });
+    
+    setIsAnimating(false);
+  }, [index, products.length, isAnimating, controls, x, y]);
+
+  const prevCard = useCallback(() => {
+    if (index <= 0) return;
+    
+    x.set(0);
+    y.set(0);
+    controls.set({ x: 0, y: 0, opacity: 1, scale: 1 });
+    setIndex(prevIndex => prevIndex - 1);
+  }, [index, x, y, controls]);
 
   const handleLike = useCallback(async (product: Product) => {
     if (!user) {
@@ -150,7 +181,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
           description: `${product.title} added to your likes!`
         });
       }
-      nextCard(1); // Right swipe direction
+      await nextCard(1);
     } catch (error: any) {
       console.error("Error liking product:", error.message);
       toast({
@@ -161,8 +192,8 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
     }
   }, [user, toast, nextCard]);
 
-  const handleDislike = useCallback(() => {
-    nextCard(-1); // Left swipe direction
+  const handleDislike = useCallback(async () => {
+    await nextCard(-1);
   }, [nextCard]);
 
   const handleAddToWishlist = useCallback(async (product: Product) => {
@@ -180,11 +211,10 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
       toast({
         description: `${product.title} added to your wishlist!`
       });
-      nextCard(2); // Up swipe direction
+      await nextCard(2);
     } catch (error: any) {
       console.error("Error adding to wishlist:", error.message);
       
-      // Handle duplicate entry error specifically
       if (error.message.includes('duplicate key value violates unique constraint')) {
         toast({
           description: `${product.title} is already in your wishlist!`
@@ -196,37 +226,47 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
           variant: "destructive"
         });
       }
-      nextCard(2); // Still move to next card even if there's an error
+      await nextCard(2);
     }
   }, [user, addToWishlist, toast, nextCard]);
 
-  const handleSwipeEnd = useCallback((event: any, info: PanInfo) => {
-    const currentProduct = products[index];
-    if (!currentProduct) return;
+  // Improved swipe detection with better thresholds
+  const handleDragEnd = useCallback(async (event: any, info: PanInfo) => {
+    if (isAnimating || !currentProduct) return;
 
     const { offset, velocity } = info;
     const { x: offsetX, y: offsetY } = offset;
     const { x: velocityX, y: velocityY } = velocity;
 
-    // Calculate effective offset including velocity
-    const effectiveX = offsetX + velocityX * 0.1;
-    const effectiveY = offsetY + velocityY * 0.1;
+    // Calculate effective movement considering velocity
+    const effectiveX = offsetX + (velocityX * 0.2);
+    const effectiveY = offsetY + (velocityY * 0.2);
 
-    // Check for vertical swipe up first (wishlist)
-    if (effectiveY < -VERTICAL_THRESHOLD && Math.abs(effectiveX) < DISTANCE_THRESHOLD) {
-      handleAddToWishlist(currentProduct);
+    // Determine swipe direction with improved logic
+    const absX = Math.abs(effectiveX);
+    const absY = Math.abs(effectiveY);
+    const hasStrongVelocity = Math.abs(velocityX) > VELOCITY_THRESHOLD || Math.abs(velocityY) > VELOCITY_THRESHOLD;
+
+    // Vertical swipe (up for wishlist)
+    if ((effectiveY < -VERTICAL_THRESHOLD || (hasStrongVelocity && velocityY < -VELOCITY_THRESHOLD)) && absY > absX) {
+      await handleAddToWishlist(currentProduct);
     }
-    // Then check for horizontal swipes
-    else if (effectiveX > DISTANCE_THRESHOLD) {
-      handleLike(currentProduct);
-    } else if (effectiveX < -DISTANCE_THRESHOLD) {
-      handleDislike();
-    } else {
-      // Reset position if not swiped far enough
-      x.set(0);
-      y.set(0);
+    // Horizontal swipes
+    else if (effectiveX > SWIPE_THRESHOLD || (hasStrongVelocity && velocityX > VELOCITY_THRESHOLD)) {
+      await handleLike(currentProduct);
     }
-  }, [x, y, index, products, handleLike, handleDislike, handleAddToWishlist]);
+    else if (effectiveX < -SWIPE_THRESHOLD || (hasStrongVelocity && velocityX < -VELOCITY_THRESHOLD)) {
+      await handleDislike();
+    }
+    else {
+      // Snap back to center
+      controls.start({
+        x: 0,
+        y: 0,
+        transition: { type: "spring", stiffness: 500, damping: 30 }
+      });
+    }
+  }, [isAnimating, currentProduct, handleLike, handleDislike, handleAddToWishlist, controls]);
 
   const fetchProducts = useCallback(async () => {
     try {
@@ -368,9 +408,10 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
         count: transformedProducts.length
       });
       setProducts(transformedProducts);
-      setIndex(0); // Reset index when products change
-      x.set(0); // Reset swipe position when products change
+      setIndex(0);
+      x.set(0);
       y.set(0);
+      controls.set({ x: 0, y: 0, opacity: 1, scale: 1 });
     } catch (error: any) {
       console.error("Error fetching products:", error.message);
       toast({
@@ -379,7 +420,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
         variant: "destructive"
       });
     }
-  }, [filter, subcategory, priceRange, searchQuery, currency, toast, x, y]);
+  }, [filter, subcategory, priceRange, searchQuery, currency, toast, x, y, controls]);
 
   useEffect(() => {
     fetchProducts();
@@ -405,37 +446,32 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
   }
 
   return (
-    <div className="relative w-full h-full">
-      <AnimatePresence initial={false} custom={exitDirection}>
+    <div className="relative w-full h-full" style={{ touchAction: 'none' }}>
+      <AnimatePresence mode="wait">
         {currentProduct && (
           <motion.div
-            key={currentProduct.id}
+            key={`${currentProduct.id}-${index}`}
             ref={cardRef}
-            className="absolute top-0 left-0 w-full h-full"
-            style={{
-              x,
-              y,
-              rotate,
-              opacity,
-              scale
-            }}
+            className="absolute inset-0 cursor-grab active:cursor-grabbing"
+            style={{ x, y, rotate, opacity }}
+            animate={controls}
             drag
             dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
-            dragElastic={0.2}
-            dragTransition={{ bounceStiffness: 600, bounceDamping: 20 }}
-            onDragEnd={handleSwipeEnd}
+            dragElastic={0.1}
+            dragTransition={{ bounceStiffness: 600, bounceDamping: 25 }}
+            onDragEnd={handleDragEnd}
             variants={cardVariants}
             initial="hidden"
             animate="visible"
             exit="exit"
             custom={exitDirection}
             whileDrag={{ 
-              cursor: "grabbing",
-              scale: 1.05
+              scale: 1.05,
+              zIndex: 20
             }}
           >
-            <Card className="h-full flex flex-col cursor-grab active:cursor-grabbing overflow-hidden">
-              <CardContent className="p-3 sm:p-4 flex flex-col h-full overflow-y-auto">
+            <Card className="h-full flex flex-col overflow-hidden shadow-lg">
+              <CardContent className="p-3 sm:p-4 flex flex-col h-full overflow-hidden">
                 <div 
                   className="relative w-full mb-3 sm:mb-4 overflow-hidden rounded-md flex-shrink-0"
                   style={{
@@ -506,7 +542,8 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
           <Button 
             variant="destructive" 
             size="icon" 
-            onClick={handleDislike}
+            onClick={() => handleDislike()}
+            disabled={isAnimating}
             className="h-12 w-12 rounded-full shadow-lg"
           >
             <X className="h-6 w-6" />
@@ -515,7 +552,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
             variant="outline" 
             size="icon" 
             onClick={() => handleAddToWishlist(currentProduct)}
-            disabled={wishlistLoading}
+            disabled={wishlistLoading || isAnimating}
             className="h-12 w-12 rounded-full shadow-lg bg-background"
           >
             <ShoppingBag className="h-6 w-6" />
@@ -524,6 +561,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
             variant="default" 
             size="icon" 
             onClick={() => handleLike(currentProduct)}
+            disabled={isAnimating}
             className="h-12 w-12 rounded-full shadow-lg"
           >
             <Heart className="h-6 w-6" />
