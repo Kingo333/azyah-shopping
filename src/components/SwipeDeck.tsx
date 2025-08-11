@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -55,7 +54,8 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
   // Transform values for visual feedback
   const rotate = useTransform(x, [-200, 0, 200], [-25, 0, 25]);
   const opacity = useTransform(x, [-200, -100, 0, 100, 200], [0.5, 0.8, 1, 0.8, 0.5]);
-  const nextCardScale = useTransform(x, [-200, 0, 200], [1, 0.95, 1]);
+  const nextCardScale = useTransform(x, [-200, 0, 200], [1.05, 0.95, 1.05]);
+  const nextCardY = useTransform(x, [-200, 0, 200], [-10, 10, -10]);
   
   const cardRef = useRef<HTMLDivElement>(null);
   const deckRef = useRef<HTMLDivElement>(null);
@@ -110,14 +110,21 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
     };
   }, []);
 
+  // Reset motion values when product changes
+  useEffect(() => {
+    x.set(0);
+    y.set(0);
+    topCardControls.set({ x: 0, y: 0, opacity: 1 });
+  }, [currentProduct?.id, x, y, topCardControls]);
+
   // Unified swipe logic for both drag and programmatic swipes
   const performSwipe = useCallback(async (direction: 'left' | 'right' | 'up', product: Product) => {
     if (isAnimating || !product) return;
     
     setIsAnimating(true);
     
-    const targetX = direction === 'right' ? 300 : direction === 'left' ? -300 : 0;
-    const targetY = direction === 'up' ? -300 : 0;
+    const targetX = direction === 'right' ? 350 : direction === 'left' ? -350 : 0;
+    const targetY = direction === 'up' ? -350 : 0;
     
     // Animate the card out
     await topCardControls.start({
@@ -142,13 +149,8 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
     // Move to next card
     setIndex(prevIndex => Math.min(prevIndex + 1, products.length - 1));
     
-    // Reset position for next card
-    x.set(0);
-    y.set(0);
-    topCardControls.set({ x: 0, y: 0, opacity: 1 });
-    
     setIsAnimating(false);
-  }, [isAnimating, topCardControls, x, y]);
+  }, [isAnimating, topCardControls]);
 
   // Handle drag end with improved decision logic
   const handleDragEnd = useCallback(async (event: any, info: PanInfo) => {
@@ -409,9 +411,6 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
       
       setProducts(transformedProducts);
       setIndex(0);
-      x.set(0);
-      y.set(0);
-      topCardControls.set({ x: 0, y: 0, opacity: 1 });
       setIsAnimating(false);
     } catch (error: any) {
       console.error("Error fetching products:", error.message);
@@ -421,7 +420,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
         variant: "destructive"
       });
     }
-  }, [filter, subcategory, priceRange, searchQuery, currency, toast, x, y, topCardControls]);
+  }, [filter, subcategory, priceRange, searchQuery, currency, toast]);
 
   useEffect(() => {
     fetchProducts();
@@ -448,127 +447,137 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
 
   return (
     <div ref={deckRef} className="relative w-full h-full" style={{ touchAction: 'none' }}>
-      {/* Next Card (Stack Effect) */}
-      {nextProduct && (
-        <motion.div
-          className="absolute top-0 left-0 w-full h-full"
-          style={{
-            scale: nextCardScale,
-            zIndex: 1
-          }}
-        >
-          <Card className="h-full flex flex-col overflow-hidden opacity-80">
-            <CardContent className="p-3 sm:p-4 flex flex-col h-full overflow-hidden">
-              <div 
-                className="relative w-full mb-3 sm:mb-4 overflow-hidden rounded-md flex-shrink-0"
-                style={{
-                  height: `${getImageHeight(imageAspectRatio)}px`
-                }}
-              >
-                <img
-                  src={nextProduct.media_urls?.[0] || '/placeholder.svg'}
-                  alt={nextProduct.title}
-                  className="object-cover w-full h-full"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = '/placeholder.svg';
+      <AnimatePresence mode="wait">
+        {/* Next Card (Stack Effect) - Fixed positioning and z-index */}
+        {nextProduct && (
+          <motion.div
+            key={`next-${nextProduct.id}-${index + 1}`}
+            className="absolute inset-0 w-full h-full"
+            style={{
+              scale: nextCardScale,
+              y: nextCardY,
+              zIndex: 0
+            }}
+            initial={{ scale: 0.9, y: 20, opacity: 0.7 }}
+            animate={{ scale: 0.95, y: 10, opacity: 0.8 }}
+            exit={{ scale: 0.9, y: 20, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            <Card className="h-full flex flex-col overflow-hidden shadow-lg">
+              <CardContent className="p-3 sm:p-4 flex flex-col h-full overflow-hidden">
+                <div 
+                  className="relative w-full mb-3 sm:mb-4 overflow-hidden rounded-md flex-shrink-0"
+                  style={{
+                    height: `${getImageHeight(imageAspectRatio)}px`
                   }}
-                />
-              </div>
-              <div className="flex flex-col flex-grow">
-                <h3 className="text-base sm:text-lg font-semibold line-clamp-2 mb-1">{nextProduct.title}</h3>
-                <p className="text-sm text-muted-foreground line-clamp-1 mb-2">{nextProduct.brand?.name}</p>
-                <span className="text-xl sm:text-xl font-bold">
-                  {new Intl.NumberFormat('en-US', {
-                    style: 'currency',
-                    currency: nextProduct.currency || 'USD'
-                  }).format(nextProduct.price_cents / 100)}
-                </span>
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
-      )}
-
-      {/* Top Card (Current Product) */}
-      {currentProduct && (
-        <motion.div
-          key={`${currentProduct.id}-${index}`}
-          ref={cardRef}
-          className="absolute top-0 left-0 w-full h-full"
-          style={{
-            x,
-            y,
-            rotate,
-            opacity,
-            zIndex: 2
-          }}
-          animate={topCardControls}
-          drag={!isAnimating}
-          dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
-          dragElastic={0.1}
-          onDragEnd={handleDragEnd}
-          whileDrag={{ 
-            cursor: "grabbing",
-            scale: 1.05,
-            zIndex: 10
-          }}
-        >
-          <Card className="h-full flex flex-col cursor-grab active:cursor-grabbing overflow-hidden">
-            <CardContent className="p-3 sm:p-4 flex flex-col h-full overflow-hidden">
-              <div 
-                className="relative w-full mb-3 sm:mb-4 overflow-hidden rounded-md flex-shrink-0"
-                style={{
-                  height: `${getImageHeight(imageAspectRatio)}px`
-                }}
-              >
-                <img
-                  src={currentProduct.media_urls?.[0] || '/placeholder.svg'}
-                  alt={currentProduct.title}
-                  className="object-cover w-full h-full"
-                  onLoad={handleImageLoad}
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = '/placeholder.svg';
-                  }}
-                />
-              </div>
-              <div className="flex flex-col flex-grow">
-                <div className="flex items-start justify-between gap-2 mb-1">
-                  <div className="flex items-center gap-2 flex-1">
-                    <h3 className="text-base sm:text-lg font-semibold line-clamp-2">{currentProduct.title}</h3>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleProductClick(currentProduct);
-                      }}
-                      className="flex-shrink-0 h-7 sm:h-7 px-2 sm:px-2 text-xs hover:bg-accent"
-                    >
-                      <Info className="h-3 w-3 mr-1" />
-                      <span className="hidden sm:inline">Details</span>
-                    </Button>
-                  </div>
+                >
+                  <img
+                    src={nextProduct.media_urls?.[0] || '/placeholder.svg'}
+                    alt={nextProduct.title}
+                    className="object-cover w-full h-full"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = '/placeholder.svg';
+                    }}
+                  />
                 </div>
-                <p className="text-sm sm:text-sm text-muted-foreground line-clamp-1 mb-2">{currentProduct.brand?.name}</p>
-                <div className="flex items-center justify-between mb-auto">
+                <div className="flex flex-col flex-grow">
+                  <h3 className="text-base sm:text-lg font-semibold line-clamp-2 mb-1">{nextProduct.title}</h3>
+                  <p className="text-sm text-muted-foreground line-clamp-1 mb-2">{nextProduct.brand?.name}</p>
                   <span className="text-xl sm:text-xl font-bold">
                     {new Intl.NumberFormat('en-US', {
                       style: 'currency',
-                      currency: currentProduct.currency || 'USD'
-                    }).format(currentProduct.price_cents / 100)}
+                      currency: nextProduct.currency || 'USD'
+                    }).format(nextProduct.price_cents / 100)}
                   </span>
-                  {currentProduct.ar_mesh_url && (
-                    <Badge variant="outline" className="gap-1 text-xs">
-                      <Sparkles className="h-3 w-3" />
-                      AR Ready
-                    </Badge>
-                  )}
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
-      )}
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+
+        {/* Top Card (Current Product) - Improved positioning */}
+        {currentProduct && (
+          <motion.div
+            key={`current-${currentProduct.id}-${index}`}
+            ref={cardRef}
+            className="absolute inset-0 w-full h-full"
+            style={{
+              x,
+              y,
+              rotate,
+              opacity,
+              zIndex: 10
+            }}
+            animate={topCardControls}
+            drag={!isAnimating}
+            dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
+            dragElastic={0.1}
+            onDragEnd={handleDragEnd}
+            whileDrag={{ 
+              cursor: "grabbing",
+              scale: 1.05,
+              zIndex: 20
+            }}
+            initial={{ x: 0, y: 0, opacity: 1 }}
+            transition={{ type: "spring", stiffness: 300, damping: 20 }}
+          >
+            <Card className="h-full flex flex-col cursor-grab active:cursor-grabbing overflow-hidden shadow-xl">
+              <CardContent className="p-3 sm:p-4 flex flex-col h-full overflow-hidden">
+                <div 
+                  className="relative w-full mb-3 sm:mb-4 overflow-hidden rounded-md flex-shrink-0"
+                  style={{
+                    height: `${getImageHeight(imageAspectRatio)}px`
+                  }}
+                >
+                  <img
+                    src={currentProduct.media_urls?.[0] || '/placeholder.svg'}
+                    alt={currentProduct.title}
+                    className="object-cover w-full h-full"
+                    onLoad={handleImageLoad}
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = '/placeholder.svg';
+                    }}
+                  />
+                </div>
+                <div className="flex flex-col flex-grow">
+                  <div className="flex items-start justify-between gap-2 mb-1">
+                    <div className="flex items-center gap-2 flex-1">
+                      <h3 className="text-base sm:text-lg font-semibold line-clamp-2">{currentProduct.title}</h3>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleProductClick(currentProduct);
+                        }}
+                        className="flex-shrink-0 h-7 sm:h-7 px-2 sm:px-2 text-xs hover:bg-accent"
+                      >
+                        <Info className="h-3 w-3 mr-1" />
+                        <span className="hidden sm:inline">Details</span>
+                      </Button>
+                    </div>
+                  </div>
+                  <p className="text-sm sm:text-sm text-muted-foreground line-clamp-1 mb-2">{currentProduct.brand?.name}</p>
+                  <div className="flex items-center justify-between mb-auto">
+                    <span className="text-xl sm:text-xl font-bold">
+                      {new Intl.NumberFormat('en-US', {
+                        style: 'currency',
+                        currency: currentProduct.currency || 'USD'
+                      }).format(currentProduct.price_cents / 100)}
+                    </span>
+                    {currentProduct.ar_mesh_url && (
+                      <Badge variant="outline" className="gap-1 text-xs">
+                        <Sparkles className="h-3 w-3" />
+                        AR Ready
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* No More Products */}
       {index >= products.length && (
