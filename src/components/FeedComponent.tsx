@@ -1,17 +1,21 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Heart, MessageCircle, Share, MoreHorizontal } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Heart, MessageCircle, Share, MoreHorizontal, Plus, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { CreatePostModal } from '@/components/CreatePostModal';
 
 interface Post {
   id: string;
   content: string;
   created_at: string;
+  user_id: string;
   user: {
     id: string;
     name: string;
@@ -42,6 +46,7 @@ const FeedComponent: React.FC<FeedComponentProps> = ({
   const { toast } = useToast();
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showCreatePost, setShowCreatePost] = useState(false);
 
   useEffect(() => {
     fetchPosts();
@@ -56,6 +61,7 @@ const FeedComponent: React.FC<FeedComponentProps> = ({
           id,
           content,
           created_at,
+          user_id,
           user:users(id, name, avatar_url),
           post_images(image_url),
           post_products(product:products(id, title, media_urls))
@@ -89,6 +95,7 @@ const FeedComponent: React.FC<FeedComponentProps> = ({
           id: post.id,
           content: post.content || '',
           created_at: post.created_at,
+          user_id: post.user_id,
           user: {
             id: post.user.id,
             name: post.user.name || post.user.id,
@@ -147,6 +154,46 @@ const FeedComponent: React.FC<FeedComponentProps> = ({
     }
   };
 
+  const handleDeletePost = async (postId: string) => {
+    if (!user) return;
+
+    try {
+      // Delete post images first
+      await supabase
+        .from('post_images')
+        .delete()
+        .eq('post_id', postId);
+
+      // Delete post likes
+      await supabase
+        .from('post_likes')
+        .delete()
+        .eq('post_id', postId);
+
+      // Delete the post
+      const { error } = await supabase
+        .from('posts')
+        .delete()
+        .eq('id', postId)
+        .eq('user_id', user.id); // Ensure user can only delete their own posts
+
+      if (error) throw error;
+
+      // Update local state
+      setPosts(prev => prev.filter(post => post.id !== postId));
+      
+      toast({
+        description: 'Post deleted successfully'
+      });
+    } catch (error) {
+      console.error('Error deleting post:', error);
+      toast({
+        description: 'Failed to delete post',
+        variant: 'destructive'
+      });
+    }
+  };
+
   const formatTimeAgo = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
@@ -194,9 +241,17 @@ const FeedComponent: React.FC<FeedComponentProps> = ({
   return (
     <div className={className}>
       {showHeader && (
-        <div className="mb-6">
-          <h2 className="text-2xl font-bold">Feed</h2>
-          <p className="text-muted-foreground">See what's trending in fashion</p>
+        <div className="mb-6 flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold">Feed</h2>
+            <p className="text-muted-foreground">See what's trending in fashion</p>
+          </div>
+          {user && (
+            <Button onClick={() => setShowCreatePost(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Create Post
+            </Button>
+          )}
         </div>
       )}
       
@@ -214,9 +269,24 @@ const FeedComponent: React.FC<FeedComponentProps> = ({
                   {formatTimeAgo(post.created_at)}
                 </p>
               </div>
-              <Button variant="ghost" size="sm">
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
+              {user && user.id === post.user_id && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm">
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem 
+                      onClick={() => handleDeletePost(post.id)}
+                      className="text-red-600 focus:text-red-600"
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete Post
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
             </CardHeader>
             
             <CardContent className="space-y-4">
@@ -276,11 +346,29 @@ const FeedComponent: React.FC<FeedComponentProps> = ({
         {posts.length === 0 && !loading && (
           <Card>
             <CardContent className="text-center py-12">
-              <p className="text-muted-foreground">No posts yet. Follow some users to see their posts!</p>
+              <p className="text-muted-foreground">No posts yet. Be the first to share something!</p>
+              {user && (
+                <Button 
+                  className="mt-4" 
+                  onClick={() => setShowCreatePost(true)}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Your First Post
+                </Button>
+              )}
             </CardContent>
           </Card>
         )}
       </div>
+
+      {user && (
+        <CreatePostModal
+          isOpen={showCreatePost}
+          onClose={() => setShowCreatePost(false)}
+          onPostCreated={fetchPosts}
+          userId={user.id}
+        />
+      )}
     </div>
   );
 };
