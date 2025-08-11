@@ -108,12 +108,11 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
   }, []);
 
   const nextCard = useCallback((direction: number = 0) => {
+    console.log('nextCard called with direction:', direction);
     setExitDirection(direction);
     setIndex(prevIndex => Math.min(prevIndex + 1, products.length - 1));
-    // Reset motion values immediately for next card
-    x.set(0);
-    y.set(0);
-  }, [x, y, products.length]);
+    // Don't reset motion values here - let the exit animation handle it
+  }, [products.length]);
 
   const prevCard = useCallback(() => {
     x.set(0);
@@ -206,20 +205,28 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
     const { x: offsetX, y: offsetY } = offset;
     const { x: velocityX, y: velocityY } = velocity;
 
+    console.log('Swipe ended:', { offsetX, offsetY, velocityX, velocityY });
+
     // Calculate effective offset including velocity
     const effectiveX = offsetX + velocityX * 0.1;
     const effectiveY = offsetY + velocityY * 0.1;
 
+    console.log('Effective values:', { effectiveX, effectiveY });
+
     // Check for vertical swipe up first (wishlist)
     if (effectiveY < -VERTICAL_THRESHOLD && Math.abs(effectiveX) < DISTANCE_THRESHOLD) {
+      console.log('Wishlist swipe detected');
       handleAddToWishlist(currentProduct);
     }
     // Then check for horizontal swipes
     else if (effectiveX > DISTANCE_THRESHOLD) {
+      console.log('Like swipe detected');
       handleLike(currentProduct);
     } else if (effectiveX < -DISTANCE_THRESHOLD) {
+      console.log('Dislike swipe detected');
       handleDislike();
     } else {
+      console.log('Swipe not far enough, resetting position');
       // Reset position if not swiped far enough
       x.set(0);
       y.set(0);
