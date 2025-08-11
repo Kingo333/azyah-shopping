@@ -5,6 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import ShopperNavigation from '@/components/ShopperNavigation';
 import TutorialTooltip from '@/components/TutorialTooltip';
 import { CreatePostModal } from '@/components/CreatePostModal';
@@ -26,7 +28,9 @@ import {
   Sparkles,
   ArrowUp,
   ArrowRight,
-  Globe
+  Globe,
+  MoreHorizontal,
+  Trash2
 } from 'lucide-react';
 
 interface FeedPost {
@@ -202,6 +206,52 @@ const FashionFeed: React.FC = () => {
     } else {
       navigator.clipboard.writeText(`${window.location.origin}/feed/${postId}`);
       toast({ description: "Link copied to clipboard!" });
+    }
+  };
+
+  const handleDeletePost = async (postId: string) => {
+    if (!user) return;
+
+    try {
+      // Delete post images first
+      await supabase
+        .from('post_images')
+        .delete()
+        .eq('post_id', postId);
+
+      // Delete post products
+      await supabase
+        .from('post_products')
+        .delete()
+        .eq('post_id', postId);
+
+      // Delete post likes
+      await supabase
+        .from('post_likes')
+        .delete()
+        .eq('post_id', postId);
+
+      // Delete the post
+      const { error } = await supabase
+        .from('posts')
+        .delete()
+        .eq('id', postId)
+        .eq('user_id', user.id); // Ensure user can only delete their own posts
+
+      if (error) throw error;
+
+      // Update local state
+      setPosts(prev => prev.filter(post => post.id !== postId));
+      
+      toast({
+        description: 'Post deleted successfully'
+      });
+    } catch (error) {
+      console.error('Error deleting post:', error);
+      toast({
+        description: 'Failed to delete post',
+        variant: 'destructive'
+      });
     }
   };
 
@@ -391,9 +441,47 @@ const FashionFeed: React.FC = () => {
                       </div>
                       <p className="text-sm text-muted-foreground">{getTimeAgo(post.created_at)}</p>
                     </div>
-                    <Button variant="ghost" size="sm" onClick={() => handleSave(post.id)}>
-                      <Bookmark className={`h-4 w-4 ${savedPosts.has(post.id) ? 'fill-current' : ''}`} />
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button variant="ghost" size="sm" onClick={() => handleSave(post.id)}>
+                        <Bookmark className={`h-4 w-4 ${savedPosts.has(post.id) ? 'fill-current' : ''}`} />
+                      </Button>
+                      {user && user.id === post.user_id && (
+                        <AlertDialog>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <AlertDialogTrigger asChild>
+                                <DropdownMenuItem className="text-red-600 focus:text-red-600">
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Delete Post
+                                </DropdownMenuItem>
+                              </AlertDialogTrigger>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This action cannot be undone. This will permanently delete your post and all associated data.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction 
+                                onClick={() => handleDeletePost(post.id)}
+                                className="bg-red-600 hover:bg-red-700"
+                              >
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      )}
+                    </div>
                   </div>
                 </CardHeader>
 
@@ -414,6 +502,10 @@ const FashionFeed: React.FC = () => {
                             src={image.image_url} 
                             alt={`Post image ${index + 1}`}
                             className="w-full h-full object-cover"
+                            onError={(e) => {
+                              console.log('Image failed to load:', image.image_url);
+                              e.currentTarget.style.display = 'none';
+                            }}
                           />
                         </div>
                       ))}
