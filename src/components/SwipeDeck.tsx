@@ -76,9 +76,14 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
 
   // Calculate image height based on aspect ratio
   const getImageHeight = useCallback((aspectRatio: number) => {
-    const maxHeight = window.innerHeight * 0.6; // 60% of viewport height
+    const maxHeight = window.innerHeight * 0.7; // Increased to 70% of viewport height
     const minHeight = 200; // Minimum height for very wide images
     const calculatedHeight = 400 / aspectRatio; // Base width of 400px
+    
+    // For very tall images (aspect ratio < 0.6), allow more height
+    if (aspectRatio < 0.6) {
+      return Math.max(minHeight, Math.min(window.innerHeight * 0.8, calculatedHeight));
+    }
     
     return Math.max(minHeight, Math.min(maxHeight, calculatedHeight));
   }, []);
@@ -399,10 +404,10 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
             exit="exit"
             custom={x.get()}
           >
-            <Card className="h-full flex flex-col cursor-grab active:cursor-grabbing">
-              <CardContent className="p-4 flex flex-col h-full">
+            <Card className="h-full flex flex-col cursor-grab active:cursor-grabbing overflow-hidden">
+              <CardContent className="p-4 flex flex-col h-full overflow-y-auto">
                 <div 
-                  className="relative w-full mb-4 overflow-hidden rounded-md"
+                  className="relative w-full mb-4 overflow-hidden rounded-md flex-shrink-0"
                   style={{
                     height: `${getImageHeight(imageAspectRatio)}px`
                   }}
