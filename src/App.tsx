@@ -1,30 +1,29 @@
-
 import React from 'react';
 import {
   BrowserRouter as Router,
   Route,
   Routes,
 } from 'react-router-dom';
-import { ThemeProvider } from '@/components/theme-provider';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ThemeProvider } from './components/theme-provider';
+import { QueryClient, QueryClientProvider } from 'react-query';
 import { Toaster } from '@/components/ui/toaster';
-import { AccessibilityProvider } from '@/components/AccessibilityProvider';
+import { AccessibilityProvider } from './contexts/AccessibilityContext';
 import { ErrorBoundary } from 'react-error-boundary';
 import { HelmetProvider } from 'react-helmet-async';
 import { AuthProvider } from './contexts/AuthContext';
 import { FeatureFlagsProvider } from './contexts/FeatureFlagsContext';
 
-import { GDPRCompliance } from '@/components/GDPRCompliance';
-import Home from '@/pages/Home';
-import Dashboard from '@/pages/Dashboard';
-import Pricing from '@/pages/Pricing';
-import Contact from '@/pages/Contact';
-import Legal from '@/pages/Legal';
-import Profile from '@/pages/Profile';
-import Auth from '@/pages/Auth';
-import ProtectedRoute from '@/components/ProtectedRoute';
-import RoleRoute from '@/components/RoleRoute';
-import AdminDashboard from '@/pages/AdminDashboard';
+import GDPRCompliance from './components/GDPRCompliance';
+import Home from './pages/Home';
+import Dashboard from './pages/Dashboard';
+import Pricing from './pages/Pricing';
+import Contact from './pages/Contact';
+import Legal from './pages/Legal';
+import Profile from './pages/Profile';
+import Auth from './pages/Auth';
+import ProtectedRoute from './components/ProtectedRoute';
+import RoleRoute from './components/RoleRoute';
+import AdminDashboard from './pages/AdminDashboard';
 import AiStudioTest from '@/pages/AiStudioTest';
 import AiStudio from '@/pages/AiStudio';
 
