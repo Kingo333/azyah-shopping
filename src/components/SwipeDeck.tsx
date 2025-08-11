@@ -415,8 +415,8 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
             exit="exit"
             custom={x.get()}
           >
-            <Card className="h-full flex flex-col cursor-grab active:cursor-grabbing overflow-hidden">
-              <CardContent className="p-3 sm:p-4 flex flex-col h-full overflow-y-auto">
+            <Card className="h-full flex flex-col cursor-grab active:cursor-grabbing overflow-hidden pointer-events-none">
+              <CardContent className="p-3 sm:p-4 flex flex-col h-full overflow-y-auto pointer-events-none">
                 <div 
                   className="relative w-full mb-3 sm:mb-4 overflow-hidden rounded-md flex-shrink-0"
                   style={{
@@ -444,7 +444,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                           e.stopPropagation();
                           handleProductClick(currentProduct);
                         }}
-                        className="flex-shrink-0 h-7 sm:h-7 px-2 sm:px-2 text-xs hover:bg-accent"
+                        className="flex-shrink-0 h-7 sm:h-7 px-2 sm:px-2 text-xs hover:bg-accent pointer-events-auto"
                       >
                         <Info className="h-3 w-3 mr-1" />
                         <span className="hidden sm:inline">Details</span>
