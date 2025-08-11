@@ -437,14 +437,14 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                       </Button>
                     </div>
                   </div>
-                  <p className="text-sm text-muted-foreground line-clamp-1">{currentProduct.brand?.name}</p>
-                  <div className="mt-auto flex items-end justify-between">
-                    <span className="text-xl font-bold">
-                      {new Intl.NumberFormat('en-US', {
-                        style: 'currency',
-                        currency: currentProduct.currency || 'USD'
-                      }).format(currentProduct.price_cents / 100)}
-                    </span>
+                  <p className="text-sm text-muted-foreground line-clamp-1 mb-2">{currentProduct.brand?.name}</p>
+                  <span className="text-xl font-bold mb-auto">
+                    {new Intl.NumberFormat('en-US', {
+                      style: 'currency',
+                      currency: currentProduct.currency || 'USD'
+                    }).format(currentProduct.price_cents / 100)}
+                  </span>
+                  <div className="mt-auto flex items-end justify-end">
                     {currentProduct.ar_mesh_url && (
                       <Badge variant="outline" className="gap-1">
                         <Sparkles className="h-3 w-3" />
