@@ -429,7 +429,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
 
       {/* Action Buttons */}
       {products.length > 0 && index < products.length && currentProduct && (
-        <div className="absolute bottom-4 left-0 w-full flex justify-center gap-4 px-4">
+        <div className="absolute bottom-4 right-4 flex flex-col gap-4">
           <Button 
             variant="destructive" 
             size="icon" 
