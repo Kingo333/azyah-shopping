@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -38,17 +37,18 @@ const cardVariants = {
       duration: 0.5
     }
   },
-  exit: (x: number) => ({
-    x: x,
+  exit: (direction: number) => ({
+    x: direction > 0 ? 300 : direction < 0 ? -300 : 0,
+    y: direction === 2 ? -300 : 0,
     opacity: 0,
     transition: {
-      duration: 0.5
+      duration: 0.3
     }
   })
 };
 
-const DISTANCE_THRESHOLD = 100;
-const VERTICAL_THRESHOLD = 100;
+const DISTANCE_THRESHOLD = 80;
+const VERTICAL_THRESHOLD = 80;
 
 const SwipeDeck: React.FC<SwipeDeckProps> = ({
   filter,
@@ -62,14 +62,15 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [imageAspectRatio, setImageAspectRatio] = useState<number>(1);
+  const [exitDirection, setExitDirection] = useState(0);
   const { toast } = useToast();
   const { user } = useAuth();
   const navigate = useNavigate();
   const x = useMotionValue(0);
   const y = useMotionValue(0);
-  const rotate = useTransform(x, [-200, 0, 200], [-45, 0, 45]);
-  const opacity = useTransform(x, [-200, 0, 200], [0, 1, 0]);
-  const scale = useTransform(x, [-200, 0, 200], [0.8, 1, 0.8]);
+  const rotate = useTransform(x, [-200, 0, 200], [-25, 0, 25]);
+  const opacity = useTransform(x, [-200, -100, 0, 100, 200], [0.5, 0.8, 1, 0.8, 0.5]);
+  const scale = useTransform(x, [-200, 0, 200], [0.95, 1, 0.95]);
   const cardRef = useRef<HTMLDivElement>(null);
 
   const currentProduct = useMemo(() => products[index], [products, index]);
@@ -106,15 +107,21 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
     setImageAspectRatio(ratio);
   }, []);
 
-  const nextCard = useCallback(() => {
-    x.set(0);
+  const nextCard = useCallback((direction: number = 0) => {
+    setExitDirection(direction);
     setIndex(prevIndex => Math.min(prevIndex + 1, products.length - 1));
-  }, [x, products.length]);
+    // Reset motion values after a brief delay
+    setTimeout(() => {
+      x.set(0);
+      y.set(0);
+    }, 100);
+  }, [x, y, products.length]);
 
   const prevCard = useCallback(() => {
     x.set(0);
+    y.set(0);
     setIndex(prevIndex => Math.max(prevIndex - 1, 0));
-  }, [x]);
+  }, [x, y]);
 
   const handleLike = useCallback(async (product: Product) => {
     if (!user) {
@@ -143,7 +150,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
           description: `${product.title} added to your likes!`
         });
       }
-      nextCard();
+      nextCard(1); // Right swipe direction
     } catch (error: any) {
       console.error("Error liking product:", error.message);
       toast({
@@ -155,7 +162,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
   }, [user, toast, nextCard]);
 
   const handleDislike = useCallback(() => {
-    nextCard();
+    nextCard(-1); // Left swipe direction
   }, [nextCard]);
 
   const handleAddToWishlist = useCallback(async (product: Product) => {
@@ -173,7 +180,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
       toast({
         description: `${product.title} added to your wishlist!`
       });
-      nextCard();
+      nextCard(2); // Up swipe direction
     } catch (error: any) {
       console.error("Error adding to wishlist:", error.message);
       
@@ -189,7 +196,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
           variant: "destructive"
         });
       }
-      nextCard(); // Still move to next card even if there's an error
+      nextCard(2); // Still move to next card even if there's an error
     }
   }, [user, addToWishlist, toast, nextCard]);
 
@@ -197,16 +204,22 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
     const currentProduct = products[index];
     if (!currentProduct) return;
 
-    const { x: offsetX, y: offsetY } = info.offset;
+    const { offset, velocity } = info;
+    const { x: offsetX, y: offsetY } = offset;
+    const { x: velocityX, y: velocityY } = velocity;
+
+    // Calculate effective offset including velocity
+    const effectiveX = offsetX + velocityX * 0.1;
+    const effectiveY = offsetY + velocityY * 0.1;
 
     // Check for vertical swipe up first (wishlist)
-    if (offsetY < -VERTICAL_THRESHOLD && Math.abs(offsetX) < DISTANCE_THRESHOLD) {
+    if (effectiveY < -VERTICAL_THRESHOLD && Math.abs(effectiveX) < DISTANCE_THRESHOLD) {
       handleAddToWishlist(currentProduct);
     }
     // Then check for horizontal swipes
-    else if (offsetX > DISTANCE_THRESHOLD) {
+    else if (effectiveX > DISTANCE_THRESHOLD) {
       handleLike(currentProduct);
-    } else if (offsetX < -DISTANCE_THRESHOLD) {
+    } else if (effectiveX < -DISTANCE_THRESHOLD) {
       handleDislike();
     } else {
       // Reset position if not swiped far enough
@@ -357,6 +370,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
       setProducts(transformedProducts);
       setIndex(0); // Reset index when products change
       x.set(0); // Reset swipe position when products change
+      y.set(0);
     } catch (error: any) {
       console.error("Error fetching products:", error.message);
       toast({
@@ -365,7 +379,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
         variant: "destructive"
       });
     }
-  }, [filter, subcategory, priceRange, searchQuery, currency, toast]);
+  }, [filter, subcategory, priceRange, searchQuery, currency, toast, x, y]);
 
   useEffect(() => {
     fetchProducts();
@@ -392,7 +406,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
 
   return (
     <div className="relative w-full h-full">
-      <AnimatePresence initial={false} custom={x.get()}>
+      <AnimatePresence initial={false} custom={exitDirection}>
         {currentProduct && (
           <motion.div
             key={currentProduct.id}
@@ -403,18 +417,22 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
               y,
               rotate,
               opacity,
-              scale,
-              touchAction: 'pan-y'
+              scale
             }}
             drag
             dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
-            dragElastic={0.8}
+            dragElastic={0.2}
+            dragTransition={{ bounceStiffness: 600, bounceDamping: 20 }}
             onDragEnd={handleSwipeEnd}
             variants={cardVariants}
             initial="hidden"
             animate="visible"
             exit="exit"
-            custom={x.get()}
+            custom={exitDirection}
+            whileDrag={{ 
+              cursor: "grabbing",
+              scale: 1.05
+            }}
           >
             <Card className="h-full flex flex-col cursor-grab active:cursor-grabbing overflow-hidden">
               <CardContent className="p-3 sm:p-4 flex flex-col h-full overflow-y-auto">
