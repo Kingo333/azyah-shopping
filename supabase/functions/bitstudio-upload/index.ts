@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
 
@@ -140,144 +139,117 @@ serve(async (req) => {
     bitStudioFormData.append('file', file);
     bitStudioFormData.append('type', type);
 
-    // Try different API endpoints based on the error patterns we're seeing
-    const possibleEndpoints = [
-      `${BITSTUDIO_API_BASE}/v1/images/upload`,
-      `${BITSTUDIO_API_BASE}/images/upload`,
-      `${BITSTUDIO_API_BASE}/upload`
-    ];
-
-    let lastError = null;
-    let lastResponse = null;
-
-    for (const endpoint of possibleEndpoints) {
-      console.log('[upload] Trying endpoint:', endpoint);
-      
-      try {
-        const response = await fetch(endpoint, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${BITSTUDIO_API_KEY.trim()}`,
-            // Don't set Content-Type - let FormData set the boundary
-          },
-          body: bitStudioFormData,
-        });
-
-        console.log('[upload] Response status for', endpoint, ':', response.status);
-        
-        if (response.status === 404) {
-          console.log('[upload] 404 on', endpoint, '- trying next endpoint');
-          continue;
-        }
-
-        if (response.status === 502 || response.status === 503) {
-          console.log('[upload] Server error on', endpoint, '- API might be temporarily down');
-          lastError = { status: response.status, endpoint };
-          continue;
-        }
-
-        lastResponse = response;
-        
-        let responseText = '';
-        let responseData: any = {};
-
-        try {
-          responseText = await response.text();
-          console.log('[upload] BitStudio raw response:', responseText.substring(0, 500));
-          
-          try {
-            responseData = JSON.parse(responseText);
-            console.log('[upload] BitStudio parsed response:', responseData);
-          } catch {
-            responseData = { error: responseText, message: responseText };
-            console.log('[upload] BitStudio non-JSON response, wrapped as:', responseData);
-          }
-        } catch (e) {
-          responseText = `HTTP ${response.status}`;
-          responseData = { error: responseText, message: responseText };
-          console.error('[upload] Failed to read BitStudio response:', e);
-        }
-
-        if (response.ok) {
-          console.log('[upload] Upload successful on endpoint:', endpoint);
-          return new Response(
-            JSON.stringify(responseData),
-            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
-        }
-
-        // Handle specific error cases
-        if (response.status === 401) {
-          return new Response(
-            JSON.stringify({ 
-              error: 'Invalid API key or unauthorized access',
-              code: 'unauthorized',
-              bitstudio_error: responseData,
-              raw_response: responseText,
-              status: response.status,
-              endpoint
-            }),
-            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
-          );
-        }
-
-        if (response.status === 400) {
-          return new Response(
-            JSON.stringify({ 
-              error: responseData.error || responseData.message || 'Invalid request parameters',
-              code: 'bad_request',
-              details: 'Check your file and type parameters',
-              bitstudio_error: responseData,
-              raw_response: responseText,
-              status: response.status,
-              endpoint
-            }),
-            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
-          );
-        }
-
-        // Store this response as the last attempt
-        lastError = {
-          status: response.status,
-          error: responseData.error || responseData.message || `BitStudio API error: ${response.status}`,
-          raw_response: responseText,
-          endpoint
-        };
-
-      } catch (fetchError) {
-        console.error('[upload] Fetch error for', endpoint, ':', fetchError);
-        lastError = {
-          error: 'Network error',
-          details: fetchError.message,
-          endpoint
-        };
-      }
-    }
-
-    // If we get here, all endpoints failed
-    console.error('[upload] All endpoints failed. Last error:', lastError);
+    // Use the CORRECT BitStudio API endpoint: POST /images (not /images/upload)
+    const endpoint = `${BITSTUDIO_API_BASE}/images`;
+    console.log('[upload] Using correct BitStudio endpoint:', endpoint);
     
-    if (lastError?.status === 502 || lastError?.status === 503) {
+    try {
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${BITSTUDIO_API_KEY.trim()}`,
+          // Don't set Content-Type - let FormData set the boundary
+        },
+        body: bitStudioFormData,
+      });
+
+      console.log('[upload] BitStudio response status:', response.status);
+      
+      let responseText = '';
+      let responseData: any = {};
+
+      try {
+        responseText = await response.text();
+        console.log('[upload] BitStudio raw response:', responseText.substring(0, 500));
+        
+        try {
+          responseData = JSON.parse(responseText);
+          console.log('[upload] BitStudio parsed response:', responseData);
+        } catch {
+          responseData = { error: responseText, message: responseText };
+          console.log('[upload] BitStudio non-JSON response, wrapped as:', responseData);
+        }
+      } catch (e) {
+        responseText = `HTTP ${response.status}`;
+        responseData = { error: responseText, message: responseText };
+        console.error('[upload] Failed to read BitStudio response:', e);
+      }
+
+      if (response.ok) {
+        console.log('[upload] Upload successful to:', endpoint);
+        return new Response(
+          JSON.stringify(responseData),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Handle specific error cases
+      if (response.status === 401) {
+        return new Response(
+          JSON.stringify({ 
+            error: 'Invalid API key or unauthorized access',
+            code: 'unauthorized',
+            bitstudio_error: responseData,
+            raw_response: responseText,
+            status: response.status,
+            endpoint
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
+        );
+      }
+
+      if (response.status === 400) {
+        return new Response(
+          JSON.stringify({ 
+            error: responseData.error || responseData.message || 'Invalid request parameters',
+            code: 'bad_request',
+            details: 'Check your file and type parameters',
+            bitstudio_error: responseData,
+            raw_response: responseText,
+            status: response.status,
+            endpoint
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+        );
+      }
+
+      if (response.status === 502 || response.status === 503) {
+        return new Response(
+          JSON.stringify({ 
+            error: 'BitStudio API is temporarily unavailable. Please try again in a few minutes.',
+            code: 'service_unavailable',
+            status: response.status,
+            details: 'The API service appears to be down or experiencing issues.'
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 503 }
+        );
+      }
+
+      // Other errors
       return new Response(
         JSON.stringify({ 
-          error: 'BitStudio API is temporarily unavailable. Please try again in a few minutes.',
-          code: 'service_unavailable',
-          status: lastError.status,
-          details: 'The API service appears to be down or experiencing issues.'
+          error: responseData.error || responseData.message || `BitStudio API error: ${response.status}`,
+          code: 'upload_error',
+          bitstudio_error: responseData,
+          raw_response: responseText,
+          status: response.status,
+          endpoint
         }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 503 }
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: response.status }
+      );
+
+    } catch (fetchError) {
+      console.error('[upload] Fetch error for', endpoint, ':', fetchError);
+      return new Response(
+        JSON.stringify({ 
+          error: 'Network error connecting to BitStudio',
+          code: 'network_error',
+          details: fetchError.message,
+          endpoint
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
       );
     }
-
-    return new Response(
-      JSON.stringify({ 
-        error: lastError?.error || 'All API endpoints failed',
-        code: 'upload_error',
-        details: 'Tried multiple endpoints but none worked',
-        last_error: lastError
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
-    );
 
   } catch (error) {
     console.error('[upload] Function error:', error);
