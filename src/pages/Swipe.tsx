@@ -217,8 +217,8 @@ const Swipe = () => {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col container max-w-screen-lg mx-auto px-4 py-4 sm:py-8">
-        <div className="text-center space-y-2 mb-2 sm:mb-8">
+      <main className="flex-1 flex flex-col container max-w-screen-lg mx-auto px-4 py-2 sm:py-8">
+        <div className="text-center space-y-1 mb-1 sm:mb-8">
           <h2 className="text-sm sm:text-2xl md:text-3xl font-bold font-playfair bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
             Your Fashion Feed
           </h2>
@@ -228,8 +228,8 @@ const Swipe = () => {
         </div>
 
         {/* Swipe Deck Container */}
-        <div className="flex-1 flex items-center justify-center min-h-[500px] sm:min-h-[600px]">
-          <div className="relative w-full max-w-[350px] sm:max-w-md h-[500px] sm:h-[600px]">
+        <div className="flex-1 flex items-start justify-center min-h-[500px] sm:min-h-[600px]">
+          <div className="relative w-full max-w-[350px] sm:max-w-md h-[calc(100vh-200px)] sm:h-[600px] max-h-[700px]">
             <SwipeDeck 
               filter={selectedCategories[0] || 'all'} 
               subcategory={selectedSubcategories[0] || ''}
