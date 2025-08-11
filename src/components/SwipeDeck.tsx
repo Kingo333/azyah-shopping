@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { motion, AnimatePresence, PanInfo, useMotionValue, useTransform } from 'framer-motion';
+import { motion, AnimatePresence, PanInfo, useMotionValue, useTransform, animate } from 'framer-motion';
 import { Heart, X, RotateCcw, Sparkles, ShoppingBag, TrendingUp, Users, Star, ExternalLink, Camera, Search, Info } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
@@ -208,9 +208,9 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
     } else if (offsetX < -DISTANCE_THRESHOLD) {
       handleDislike();
     } else {
-      // Reset position if not swiped far enough
-      x.set(0);
-      y.set(0);
+      // Reset position smoothly if not swiped far enough
+      animate(x, 0, { type: "spring", stiffness: 400, damping: 40 });
+      animate(y, 0, { type: "spring", stiffness: 400, damping: 40 });
     }
   }, [x, y, index, products, handleLike, handleDislike, handleAddToWishlist]);
 
