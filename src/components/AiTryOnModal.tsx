@@ -41,6 +41,9 @@ const AiTryOnModal: React.FC<AiTryOnModalProps> = ({ isOpen, onClose }) => {
   const [currentResult, setCurrentResult] = useState<any>(null);
   const [progress, setProgress] = useState(0);
   const [generationStatus, setGenerationStatus] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [uploadingPerson, setUploadingPerson] = useState(false);
+  const [uploadingOutfit, setUploadingOutfit] = useState(false);
 
   const personFileRef = useRef<HTMLInputElement>(null);
   const outfitFileRef = useRef<HTMLInputElement>(null);
@@ -48,9 +51,11 @@ const AiTryOnModal: React.FC<AiTryOnModalProps> = ({ isOpen, onClose }) => {
   useEffect(() => {
     if (isOpen && step === 'person') {
       const checkHealth = async () => {
+        console.log('[AiTryOnModal] Running health check...');
         const isHealthy = await healthCheck();
+        console.log('[AiTryOnModal] Health check result:', isHealthy);
         if (!isHealthy) {
-          console.log('BitStudio health check failed - user will see error toast');
+          console.log('[AiTryOnModal] BitStudio health check failed - user will see error toast');
         }
       };
       checkHealth();
@@ -85,12 +90,19 @@ const AiTryOnModal: React.FC<AiTryOnModalProps> = ({ isOpen, onClose }) => {
     if (!file || !validateFile(file)) return;
 
     try {
+      setUploadingPerson(true);
       const preview = URL.createObjectURL(file);
       
-      console.log('Uploading person image...');
+      console.log('[AiTryOnModal] Uploading person image...', {
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: file.type
+      });
+      
       const uploadResult = await uploadImage(file, BITSTUDIO_IMAGE_TYPES.PERSON);
       
       if (uploadResult) {
+        console.log('[AiTryOnModal] Person image upload successful:', uploadResult);
         setPersonImage({
           file,
           preview,
@@ -100,10 +112,14 @@ const AiTryOnModal: React.FC<AiTryOnModalProps> = ({ isOpen, onClose }) => {
         toast({
           description: 'Person photo uploaded successfully!',
         });
+      } else {
+        console.error('[AiTryOnModal] Person image upload failed - no result returned');
       }
     } catch (error: any) {
-      console.error('Person image upload error:', error);
+      console.error('[AiTryOnModal] Person image upload error:', error);
       // Error handling is done in useBitStudio hook
+    } finally {
+      setUploadingPerson(false);
     }
   };
 
@@ -112,12 +128,19 @@ const AiTryOnModal: React.FC<AiTryOnModalProps> = ({ isOpen, onClose }) => {
     if (!file || !validateFile(file)) return;
 
     try {
+      setUploadingOutfit(true);
       const preview = URL.createObjectURL(file);
       
-      console.log('Uploading outfit image...');
+      console.log('[AiTryOnModal] Uploading outfit image...', {
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: file.type
+      });
+      
       const uploadResult = await uploadImage(file, BITSTUDIO_IMAGE_TYPES.OUTFIT);
       
       if (uploadResult) {
+        console.log('[AiTryOnModal] Outfit image upload successful:', uploadResult);
         setOutfitImage({
           file,
           preview,
@@ -127,15 +150,21 @@ const AiTryOnModal: React.FC<AiTryOnModalProps> = ({ isOpen, onClose }) => {
         toast({
           description: 'Outfit photo uploaded successfully!',
         });
+      } else {
+        console.error('[AiTryOnModal] Outfit image upload failed - no result returned');
       }
     } catch (error: any) {
-      console.error('Outfit image upload error:', error);
+      console.error('[AiTryOnModal] Outfit image upload error:', error);
       // Error handling is done in useBitStudio hook
+    } finally {
+      setUploadingOutfit(false);
     }
   };
 
   const handleOutfitUrlSubmit = () => {
     if (!outfitUrl.trim()) return;
+    
+    console.log('[AiTryOnModal] Adding outfit URL:', outfitUrl);
     
     setOutfitImage({
       preview: outfitUrl,
@@ -147,8 +176,22 @@ const AiTryOnModal: React.FC<AiTryOnModalProps> = ({ isOpen, onClose }) => {
     });
   };
 
+  const canGenerate = () => {
+    const hasPersonImage = personImage?.id;
+    const hasOutfitImage = outfitImage?.id || outfitImage?.url;
+    console.log('[AiTryOnModal] Can generate check:', {
+      hasPersonImage: !!hasPersonImage,
+      hasOutfitImage: !!hasOutfitImage,
+      personId: personImage?.id,
+      outfitId: outfitImage?.id,
+      outfitUrl: outfitImage?.url,
+      isGenerating
+    });
+    return hasPersonImage && hasOutfitImage && !isGenerating;
+  };
+
   const startGeneration = async () => {
-    if (!personImage?.id || (!outfitImage?.id && !outfitImage?.url)) {
+    if (!canGenerate()) {
       toast({
         description: 'Please provide both person and outfit images.',
         variant: 'destructive'
@@ -156,6 +199,7 @@ const AiTryOnModal: React.FC<AiTryOnModalProps> = ({ isOpen, onClose }) => {
       return;
     }
 
+    setIsGenerating(true);
     setStep('generating');
     setProgress(10);
     setGenerationStatus('Initializing...');
@@ -180,7 +224,7 @@ const AiTryOnModal: React.FC<AiTryOnModalProps> = ({ isOpen, onClose }) => {
         params.prompt = prompt.trim();
       }
 
-      console.log('Starting generation with params:', params);
+      console.log('[AiTryOnModal] Starting generation with params:', params);
       setProgress(25);
       setGenerationStatus('Submitting request...');
 
@@ -209,18 +253,20 @@ const AiTryOnModal: React.FC<AiTryOnModalProps> = ({ isOpen, onClose }) => {
       clearInterval(progressInterval);
 
       if (result) {
+        console.log('[AiTryOnModal] Generation successful:', result);
         setCurrentResult(result);
         setProgress(100);
         setGenerationStatus('Complete!');
         setStep('result');
       } else {
+        console.log('[AiTryOnModal] Generation failed - no result returned');
         setStep('settings');
         setProgress(0);
         setGenerationStatus('');
       }
 
     } catch (error: any) {
-      console.error('Generation error:', error);
+      console.error('[AiTryOnModal] Generation error:', error);
       setProgress(0);
       setGenerationStatus('');
       toast({
@@ -228,6 +274,8 @@ const AiTryOnModal: React.FC<AiTryOnModalProps> = ({ isOpen, onClose }) => {
         variant: 'destructive'
       });
       setStep('settings');
+    } finally {
+      setIsGenerating(false);
     }
   };
 
@@ -319,6 +367,9 @@ const AiTryOnModal: React.FC<AiTryOnModalProps> = ({ isOpen, onClose }) => {
     setCurrentResult(null);
     setProgress(0);
     setGenerationStatus('');
+    setIsGenerating(false);
+    setUploadingPerson(false);
+    setUploadingOutfit(false);
   };
 
   const handleClose = () => {
@@ -369,13 +420,17 @@ const AiTryOnModal: React.FC<AiTryOnModalProps> = ({ isOpen, onClose }) => {
                           onClick={() => personFileRef.current?.click()} 
                           variant="outline" 
                           size="sm"
-                          disabled={loading}
+                          disabled={uploadingPerson}
                         >
+                          {uploadingPerson ? (
+                            <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                          ) : null}
                           Change Photo
                         </Button>
                         <Button 
                           onClick={() => setStep('outfit')}
                           className="flex-1"
+                          disabled={!personImage.id}
                         >
                           Next: Outfit Photo
                         </Button>
@@ -384,15 +439,15 @@ const AiTryOnModal: React.FC<AiTryOnModalProps> = ({ isOpen, onClose }) => {
                   ) : (
                     <Button 
                       onClick={() => personFileRef.current?.click()} 
-                      disabled={loading}
+                      disabled={uploadingPerson}
                       className="gap-2"
                     >
-                      {loading ? (
+                      {uploadingPerson ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
                       ) : (
                         <Upload className="h-4 w-4" />
                       )}
-                      {loading ? 'Uploading...' : 'Choose Photo'}
+                      {uploadingPerson ? 'Uploading...' : 'Choose Photo'}
                     </Button>
                   )}
 
@@ -453,6 +508,7 @@ const AiTryOnModal: React.FC<AiTryOnModalProps> = ({ isOpen, onClose }) => {
                         <Button 
                           onClick={() => setStep('settings')}
                           className="flex-1"
+                          disabled={!outfitImage.id && !outfitImage.url}
                         >
                           Next: Settings
                         </Button>
@@ -463,16 +519,16 @@ const AiTryOnModal: React.FC<AiTryOnModalProps> = ({ isOpen, onClose }) => {
                       <div className="flex gap-2">
                         <Button 
                           onClick={() => outfitFileRef.current?.click()} 
-                          disabled={loading}
+                          disabled={uploadingOutfit}
                           variant="outline"
                           className="flex-1 gap-2"
                         >
-                          {loading ? (
+                          {uploadingOutfit ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
                           ) : (
                             <Upload className="h-4 w-4" />
                           )}
-                          Upload Photo
+                          {uploadingOutfit ? 'Uploading...' : 'Upload Photo'}
                         </Button>
                       </div>
                       
@@ -588,10 +644,10 @@ const AiTryOnModal: React.FC<AiTryOnModalProps> = ({ isOpen, onClose }) => {
                   </Button>
                   <Button 
                     onClick={startGeneration}
-                    disabled={loading}
+                    disabled={!canGenerate()}
                     className="flex-1 gap-2"
                   >
-                    {loading ? (
+                    {isGenerating ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
                       <Sparkles className="h-4 w-4" />
@@ -685,17 +741,17 @@ const AiTryOnModal: React.FC<AiTryOnModalProps> = ({ isOpen, onClose }) => {
             </Card>
           )}
 
-<Alert>
-  <AlertTitle>Best photo tips</AlertTitle>
-  <AlertDescription>
-    <ul className="list-disc pl-5 space-y-1 text-sm text-muted-foreground">
-      <li>Person: single subject, full-body, front-facing, neutral pose; arms slightly away from torso.</li>
-      <li>Lighting & background: bright, even light; plain background; avoid filters, hats/sunglasses, and heavy occlusions.</li>
-      <li>Quality: high‑resolution (≥ 1024px), JPG/PNG/WebP, under 10MB.</li>
-      <li>Outfit image: product cutout or flat/ghost mannequin on a plain background, front view; preferably no model, but model photos can work.</li>
-    </ul>
-  </AlertDescription>
-</Alert>
+          <Alert>
+            <AlertTitle>Best photo tips</AlertTitle>
+            <AlertDescription>
+              <ul className="list-disc pl-5 space-y-1 text-sm text-muted-foreground">
+                <li>Person: single subject, full-body, front-facing, neutral pose; arms slightly away from torso.</li>
+                <li>Lighting & background: bright, even light; plain background; avoid filters, hats/sunglasses, and heavy occlusions.</li>
+                <li>Quality: high‑resolution (≥ 1024px), JPG/PNG/WebP, under 10MB.</li>
+                <li>Outfit image: product cutout or flat/ghost mannequin on a plain background, front view; preferably no model, but model photos can work.</li>
+              </ul>
+            </AlertDescription>
+          </Alert>
         </div>
       </DialogContent>
     </Dialog>

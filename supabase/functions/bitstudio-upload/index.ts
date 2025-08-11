@@ -7,156 +7,153 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-// Exact valid types per BitStudio API docs
-const VALID_TYPES = [
-  'virtual-try-on-person',
-  'virtual-try-on-outfit',
-  'inpaint-base',
-  'inpaint-mask', 
-  'inpaint-reference',
-  'edit',
-  'image-to-video'
-];
-
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Get the API key from environment variables with better error handling
-    let BITSTUDIO_API_KEY = Deno.env.get('BITSTUDIO_API_KEY');
+    // Get the API key from environment variables
+    const BITSTUDIO_API_KEY = Deno.env.get('BITSTUDIO_API_KEY');
     let BITSTUDIO_API_BASE = Deno.env.get('BITSTUDIO_API_BASE') || 'https://api.bitstudio.ai';
     
-    // Remove any trailing slashes and /v1 - BitStudio API doesn't use /v1
-    BITSTUDIO_API_BASE = BITSTUDIO_API_BASE.replace(/\/+$/, '').replace(/\/v1$/, '');
+    // Remove any trailing slashes
+    BITSTUDIO_API_BASE = BITSTUDIO_API_BASE.replace(/\/+$/, '');
 
-    console.log('[upload] Checking API key configuration...');
     console.log('[upload] API key present:', !!BITSTUDIO_API_KEY);
     console.log('[upload] API key length:', BITSTUDIO_API_KEY ? BITSTUDIO_API_KEY.length : 0);
+    console.log('[upload] API key first 8 chars:', BITSTUDIO_API_KEY ? BITSTUDIO_API_KEY.substring(0, 8) + '...' : 'none');
     console.log('[upload] API base URL:', BITSTUDIO_API_BASE);
 
-    // Clean and validate API key
-    if (!BITSTUDIO_API_KEY) {
-      console.error('[upload] BITSTUDIO_API_KEY environment variable not found');
+    if (!BITSTUDIO_API_KEY || BITSTUDIO_API_KEY.trim() === '') {
+      console.error('[upload] BitStudio API key not configured or empty');
       return new Response(
         JSON.stringify({ 
-          error: 'BitStudio API key not configured in environment', 
-          code: 'missing_api_key',
-          details: 'The BITSTUDIO_API_KEY environment variable is not set'
+          error: 'BitStudio API key not configured',
+          code: 'MISSING_API_KEY'
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
       );
     }
 
-    // Trim and validate the API key
-    BITSTUDIO_API_KEY = BITSTUDIO_API_KEY.trim();
-    
-    if (BITSTUDIO_API_KEY === '' || BITSTUDIO_API_KEY === 'undefined' || BITSTUDIO_API_KEY === 'null') {
-      console.error('[upload] BitStudio API key is empty or invalid:', BITSTUDIO_API_KEY);
+    // Get user from auth header first
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      console.error('[upload] No authorization header provided');
       return new Response(
-        JSON.stringify({ 
-          error: 'BitStudio API key is empty or invalid', 
-          code: 'invalid_api_key',
-          details: 'Please configure a valid BitStudio API key'
-        }),
+        JSON.stringify({ error: 'Authorization required' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
       );
     }
 
-    console.log('[upload] API key validation passed, length:', BITSTUDIO_API_KEY.length);
+    const token = authHeader.replace('Bearer ', '');
 
-    // Parse form data
+    // Create Supabase client with the user's token
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      {
+        global: {
+          headers: {
+            Authorization: authHeader,
+          },
+        },
+      }
+    );
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+
+    if (authError || !user) {
+      console.error('[upload] Invalid authorization:', authError);
+      return new Response(
+        JSON.stringify({ error: 'Invalid authorization' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
+      );
+    }
+
+    console.log('[upload] User authenticated:', user.id);
+
+    // Parse the form data
     const formData = await req.formData();
     const file = formData.get('file') as File;
-    const typeRaw = formData.get('type') as string;
-    
-    // Clean and validate type
-    const type = String(typeRaw || '').trim();
-    
-    console.log('[upload] Request details:', { 
-      fileName: file?.name, 
-      fileSize: file?.size, 
-      fileType: file?.type, 
-      typeRaw: JSON.stringify(typeRaw),
-      typeCleaned: JSON.stringify(type),
-      validTypes: VALID_TYPES
+    const type = formData.get('type') as string;
+
+    console.log('[upload] Form data received:', {
+      hasFile: !!file,
+      fileName: file?.name,
+      fileSize: file?.size,
+      fileType: file?.type,
+      typeParam: type,
+      user_id: user.id
     });
 
     if (!file) {
       console.error('[upload] No file provided in form data');
       return new Response(
-        JSON.stringify({ error: 'No file provided', code: 'bad_request' }),
+        JSON.stringify({ 
+          error: 'No file provided',
+          code: 'bad_request'
+        }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
       );
     }
 
-    // Validate file size (10MB max)
-    if (file.size > 10 * 1024 * 1024) {
-      console.error('[upload] File size exceeds limit:', file.size);
+    if (!type) {
+      console.error('[upload] No type provided in form data');
       return new Response(
-        JSON.stringify({ error: 'File size exceeds 10MB limit', code: 'bad_request' }),
+        JSON.stringify({ 
+          error: 'No type provided',
+          code: 'bad_request'
+        }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
       );
     }
 
-    // Expanded image type validation
-    const allowedTypes = [
-      'image/jpeg', 
-      'image/jpg', 
-      'image/png', 
-      'image/webp', 
-      'image/gif',
-      'image/bmp',
-      'image/tiff'
-    ];
-    
+    // Validate file size (10MB limit)
+    const maxSize = 10 * 1024 * 1024;
+    if (file.size > maxSize) {
+      console.error('[upload] File size exceeds limit:', file.size, 'bytes');
+      return new Response(
+        JSON.stringify({ 
+          error: 'File size exceeds 10MB limit',
+          code: 'bad_request'
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      );
+    }
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
     if (!allowedTypes.includes(file.type)) {
       console.error('[upload] Invalid file type:', file.type);
       return new Response(
         JSON.stringify({ 
-          error: `Invalid file type: ${file.type}. Supported formats: JPEG, PNG, WebP, GIF, BMP, TIFF`, 
-          code: 'bad_request' 
+          error: 'Invalid file type. Only JPEG, PNG, and WebP are allowed.',
+          code: 'bad_request'
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
       );
     }
 
-    // Validate type parameter against exact allowed values
-    if (!VALID_TYPES.includes(type)) {
-      console.error('[upload] Invalid type provided:', JSON.stringify(type));
-      return new Response(
-        JSON.stringify({ 
-          error: `Invalid type: "${type}". Must be one of: ${VALID_TYPES.join(', ')}`, 
-          code: 'bad_request',
-          details: 'Type validation failed - check exact spelling and hyphens'
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
-      );
-    }
-
-    console.log('[upload] All validations passed, creating FormData for BitStudio');
-
-    // Create form data for BitStudio API - preserve exact structure
+    // Create new FormData for BitStudio API
     const bitStudioFormData = new FormData();
-    bitStudioFormData.append('file', file, file.name || 'upload.png');
+    bitStudioFormData.append('file', file);
     bitStudioFormData.append('type', type);
 
-    const requestUrl = `${BITSTUDIO_API_BASE}/images`;
-    console.log('[upload] Making request to BitStudio URL:', requestUrl);
-    console.log('[upload] Using API key (first 10 chars):', BITSTUDIO_API_KEY.substring(0, 10) + '...');
+    const requestUrl = `${BITSTUDIO_API_BASE}/images/upload`;
+    
+    console.log('[upload] Making request to BitStudio:', {
+      url: requestUrl,
+      type: type,
+      hasApiKey: !!BITSTUDIO_API_KEY,
+      apiKeyLength: BITSTUDIO_API_KEY?.length
+    });
 
-    // Test API key format - BitStudio keys typically start with specific patterns
-    if (!BITSTUDIO_API_KEY.match(/^[a-zA-Z0-9\-_]+$/)) {
-      console.warn('[upload] API key format may be invalid - contains unexpected characters');
-    }
-
-    // Make request to BitStudio API with proper headers
     const response = await fetch(requestUrl, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${BITSTUDIO_API_KEY}`,
-        // Don't set Content-Type - let FormData set boundary
+        'Authorization': `Bearer ${BITSTUDIO_API_KEY.trim()}`,
+        // Don't set Content-Type - let FormData set the boundary
       },
       body: bitStudioFormData,
     });
@@ -165,104 +162,72 @@ serve(async (req) => {
     console.log('[upload] BitStudio response headers:', Object.fromEntries(response.headers.entries()));
 
     let responseText = '';
-    let errorData: any = {};
-    
+    let responseData: any = {};
+
     try {
       responseText = await response.text();
       console.log('[upload] BitStudio raw response:', responseText);
       
-      // Try to parse as JSON
       try {
-        errorData = JSON.parse(responseText);
-        console.log('[upload] BitStudio parsed response:', errorData);
+        responseData = JSON.parse(responseText);
+        console.log('[upload] BitStudio parsed response:', responseData);
       } catch {
-        // If not JSON, create error object from text
-        errorData = { error: responseText, code: 'api_error' };
-        console.log('[upload] BitStudio non-JSON response, wrapped as:', errorData);
+        responseData = { error: responseText, message: responseText };
+        console.log('[upload] BitStudio non-JSON response, wrapped as:', responseData);
       }
     } catch (e) {
       responseText = `HTTP ${response.status}`;
-      errorData = { error: responseText, code: 'api_error' };
+      responseData = { error: responseText, message: responseText };
       console.error('[upload] Failed to read BitStudio response:', e);
     }
 
     if (!response.ok) {
       console.error('[upload] BitStudio API error - Status:', response.status);
-      console.error('[upload] BitStudio API error - Body:', errorData);
+      console.error('[upload] BitStudio API error - Body:', responseData);
       
-      // Handle specific error cases with proper codes
       if (response.status === 401) {
         return new Response(
           JSON.stringify({ 
-            error: 'Invalid or expired BitStudio API key', 
-            code: 'invalid_token',
-            details: 'Please check your BitStudio API key configuration. Key length: ' + BITSTUDIO_API_KEY.length,
-            bitstudio_error: errorData,
+            error: 'Invalid API key or unauthorized access',
+            code: 'unauthorized',
+            bitstudio_error: responseData,
             raw_response: responseText,
             status: response.status
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
         );
       }
-      
-      if (response.status === 429) {
-        return new Response(
-          JSON.stringify({ 
-            error: 'Rate limit exceeded. Please try again in a moment.', 
-            code: 'RATE_LIMITED',
-            bitstudio_error: errorData,
-            raw_response: responseText,
-            status: response.status
-          }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 429 }
-        );
-      }
-
-      if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ 
-            error: 'Insufficient credits or subscription required', 
-            code: 'insufficient_credits',
-            bitstudio_error: errorData,
-            raw_response: responseText,
-            status: response.status
-          }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 402 }
-        );
-      }
 
       if (response.status === 400) {
         return new Response(
           JSON.stringify({ 
-            error: errorData?.error || 'Invalid request parameters', 
+            error: responseData.error || responseData.message || 'Invalid request parameters',
             code: 'bad_request',
-            details: errorData?.details || 'Please check your input parameters',
-            bitstudio_error: errorData,
+            details: 'Check your file and type parameters',
+            bitstudio_error: responseData,
             raw_response: responseText,
             status: response.status
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
         );
       }
-      
-      // Generic server error
+
       return new Response(
         JSON.stringify({ 
-          error: `BitStudio API error: ${response.status}`, 
-          code: 'api_error',
-          details: errorData?.error || responseText,
-          bitstudio_error: errorData,
-          raw_response: responseText,
-          status: response.status
+          error: responseData.error || responseData.message || `BitStudio API error: ${response.status}`,
+          code: 'upload_error',
+          status: response.status,
+          bitstudio_error: responseData,
+          raw_response: responseText
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: response.status }
       );
     }
 
-    console.log('[upload] BitStudio upload successful:', errorData);
+    console.log('[upload] Upload successful:', responseData);
     
     return new Response(
-      JSON.stringify(errorData),
+      JSON.stringify(responseData),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
@@ -271,8 +236,8 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         error: 'Upload failed', 
-        code: 'upload_error',
         details: (error as any)?.message,
+        code: 'INTERNAL_ERROR',
         stack: (error as any)?.stack
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
