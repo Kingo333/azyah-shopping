@@ -95,7 +95,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
       
       // For very long images (tall aspect ratio), limit height more
       if (aspectRatio < 0.6) {
-        return Math.max(minHeight, Math.min(window.innerHeight * 0.45, calculatedHeight));
+        return Math.max(minHeight, Math.min(window.innerHeight * 0.35, calculatedHeight));
       }
       
       return Math.max(minHeight, Math.min(maxHeight, calculatedHeight));
