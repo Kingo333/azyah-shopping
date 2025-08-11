@@ -429,7 +429,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                   <img
                     src={currentProduct.media_urls?.[0] || '/placeholder.svg'}
                     alt={currentProduct.title}
-                    className="object-cover w-full h-full"
+                    className="object-contain w-full h-full"
                     onLoad={handleImageLoad}
                     onError={(e) => {
                       (e.target as HTMLImageElement).src = '/placeholder.svg';
