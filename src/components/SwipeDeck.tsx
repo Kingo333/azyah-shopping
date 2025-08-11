@@ -76,7 +76,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
 
   // Calculate image height based on aspect ratio
   const getImageHeight = useCallback((aspectRatio: number) => {
-    const maxHeight = window.innerHeight * 0.5; // 50% of viewport height
+    const maxHeight = window.innerHeight * 0.6; // 60% of viewport height
     const minHeight = 200; // Minimum height for very wide images
     const calculatedHeight = 400 / aspectRatio; // Base width of 400px
     
@@ -404,9 +404,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                 <div 
                   className="relative w-full mb-4 overflow-hidden rounded-md"
                   style={{
-                    height: `${getImageHeight(imageAspectRatio)}px`,
-                    maxHeight: '60vh',
-                    minHeight: '200px'
+                    height: `${getImageHeight(imageAspectRatio)}px`
                   }}
                 >
                   <img
