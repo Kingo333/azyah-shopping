@@ -150,7 +150,6 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
       <DialogContent className="max-w-4xl h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5" />
             AI Virtual Try-On
             <Badge variant="secondary">Limited free credits (4)</Badge>
           </DialogTitle>
