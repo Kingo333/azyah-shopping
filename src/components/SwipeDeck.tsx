@@ -60,6 +60,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
   const [index, setIndex] = useState(0);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [imageAspectRatio, setImageAspectRatio] = useState<number>(1);
   const { toast } = useToast();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -72,6 +73,21 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
 
   const currentProduct = useMemo(() => products[index], [products, index]);
   const { addToWishlist, isLoading: wishlistLoading } = useWishlist(currentProduct?.id);
+
+  // Calculate image height based on aspect ratio
+  const getImageHeight = useCallback((aspectRatio: number) => {
+    const maxHeight = window.innerHeight * 0.5; // 50% of viewport height
+    const minHeight = 200; // Minimum height for very wide images
+    const calculatedHeight = 400 / aspectRatio; // Base width of 400px
+    
+    return Math.max(minHeight, Math.min(maxHeight, calculatedHeight));
+  }, []);
+
+  const handleImageLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
+    const img = e.currentTarget;
+    const ratio = img.naturalWidth / img.naturalHeight;
+    setImageAspectRatio(ratio);
+  }, []);
 
   const nextCard = useCallback(() => {
     x.set(0);
@@ -385,11 +401,19 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
           >
             <Card className="h-full flex flex-col cursor-grab active:cursor-grabbing">
               <CardContent className="p-4 flex flex-col h-full">
-                <div className="relative aspect-square w-full mb-4">
+                <div 
+                  className="relative w-full mb-4 overflow-hidden rounded-md"
+                  style={{
+                    height: `${getImageHeight(imageAspectRatio)}px`,
+                    maxHeight: '60vh',
+                    minHeight: '200px'
+                  }}
+                >
                   <img
                     src={currentProduct.media_urls?.[0] || '/placeholder.svg'}
                     alt={currentProduct.title}
-                    className="object-cover rounded-md w-full h-full"
+                    className="object-cover w-full h-full"
+                    onLoad={handleImageLoad}
                     onError={(e) => {
                       (e.target as HTMLImageElement).src = '/placeholder.svg';
                     }}
