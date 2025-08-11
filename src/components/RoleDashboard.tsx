@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Sparkles, BarChart4, Settings, HelpCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -32,7 +33,7 @@ const quickActions = [
     title: "Account Settings",
     description: "Manage your profile and preferences",
     icon: Settings,
-    href: "/account",
+    href: "/profile-settings",
     color: "green"
   },
   {
