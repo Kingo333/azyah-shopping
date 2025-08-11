@@ -3,19 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { motion, AnimatePresence, PanInfo, useMotionValue, useTransform } from 'framer-motion';
-import { 
-  Heart, 
-  X, 
-  RotateCcw, 
-  Sparkles, 
-  ShoppingBag,
-  TrendingUp,
-  Users,
-  Star,
-  ExternalLink,
-  Camera,
-  Search
-} from 'lucide-react';
+import { Heart, X, RotateCcw, Sparkles, ShoppingBag, TrendingUp, Users, Star, ExternalLink, Camera, Search } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import ProductDetailModal from '@/components/ProductDetailModal';
@@ -24,108 +12,114 @@ import { Product } from '@/types';
 import { useNavigate } from 'react-router-dom';
 import { TopCategory, SubCategory } from '@/lib/categories';
 import { convertJsonToProductAttributes } from '@/lib/type-utils';
-
 interface SwipeDeckProps {
   filter: string;
   subcategory: string;
-  priceRange: { min: number; max: number };
+  priceRange: {
+    min: number;
+    max: number;
+  };
   searchQuery: string;
   currency?: string;
 }
-
 const cardVariants = {
-  hidden: { opacity: 0, y: 50 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
+  hidden: {
+    opacity: 0,
+    y: 50
+  },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.5
+    }
+  },
   exit: (x: number) => ({
     x: x,
     opacity: 0,
-    transition: { duration: 0.5 },
-  }),
+    transition: {
+      duration: 0.5
+    }
+  })
 };
-
 const DISTANCE_THRESHOLD = 100;
-
-const SwipeDeck: React.FC<SwipeDeckProps> = ({ 
-  filter, 
-  subcategory, 
-  priceRange, 
-  searchQuery, 
-  currency = 'USD' 
+const SwipeDeck: React.FC<SwipeDeckProps> = ({
+  filter,
+  subcategory,
+  priceRange,
+  searchQuery,
+  currency = 'USD'
 }) => {
   const [products, setProducts] = useState<Product[]>([]);
   const [index, setIndex] = useState(0);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const { toast } = useToast();
-  const { user } = useAuth();
+  const {
+    toast
+  } = useToast();
+  const {
+    user
+  } = useAuth();
   const navigate = useNavigate();
-
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-200, 0, 200], [-45, 0, 45]);
   const opacity = useTransform(x, [-200, 0, 200], [0, 1, 0]);
   const scale = useTransform(x, [-200, 0, 200], [0.8, 1, 0.8]);
-
   const cardRef = useRef<HTMLDivElement>(null);
-
   const nextCard = useCallback(() => {
     x.set(0);
-    setIndex((prevIndex) => Math.min(prevIndex + 1, products.length - 1));
+    setIndex(prevIndex => Math.min(prevIndex + 1, products.length - 1));
   }, [x, products.length]);
-
   const prevCard = useCallback(() => {
     x.set(0);
-    setIndex((prevIndex) => Math.max(prevIndex - 1, 0));
+    setIndex(prevIndex => Math.max(prevIndex - 1, 0));
   }, [x]);
-
   const handleLike = useCallback(async (product: Product) => {
     if (!user) {
       toast({
         title: "Sign in required",
         description: "You must be signed in to like products.",
-        variant: "destructive",
+        variant: "destructive"
       });
       return;
     }
-
     try {
-      const { error } = await supabase
-        .from('likes')
-        .insert([{ user_id: user.id, product_id: product.id }]);
-
+      const {
+        error
+      } = await supabase.from('likes').insert([{
+        user_id: user.id,
+        product_id: product.id
+      }]);
       if (error) {
         // If it's a duplicate error, just show success message
         if (error.code === '23505') {
           toast({
-            description: `${product.title} is already in your likes!`,
+            description: `${product.title} is already in your likes!`
           });
         } else {
           throw error;
         }
       } else {
         toast({
-          description: `${product.title} added to your likes!`,
+          description: `${product.title} added to your likes!`
         });
       }
-      
       nextCard();
     } catch (error: any) {
       console.error("Error liking product:", error.message);
       toast({
         title: "Error",
         description: "Failed to like product. Please try again.",
-        variant: "destructive",
+        variant: "destructive"
       });
     }
   }, [user, toast, nextCard]);
-
   const handleDislike = useCallback(() => {
     nextCard();
   }, [nextCard]);
-
   const handleSwipeEnd = useCallback((event: any, info: PanInfo) => {
     const currentProduct = products[index];
     if (!currentProduct) return;
-
     if (info.offset.x > DISTANCE_THRESHOLD) {
       handleLike(currentProduct);
     } else if (info.offset.x < -DISTANCE_THRESHOLD) {
@@ -134,12 +128,9 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
       x.set(0); // Reset position if not swiped far enough
     }
   }, [x, index, products, handleLike, handleDislike]);
-
   const fetchProducts = useCallback(async () => {
     try {
-      let query = supabase
-        .from('products')
-        .select(`
+      let query = supabase.from('products').select(`
           id,
           title,
           price_cents,
@@ -180,8 +171,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
             cover_image_url
           ),
           attributes
-        `)
-        .eq('status', 'active');
+        `).eq('status', 'active');
 
       // Apply subcategory filter first (more specific)
       if (subcategory && subcategory !== '') {
@@ -192,7 +182,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
         // Map new "bags" category to "accessories" for database compatibility
         const dbCategory = filter === 'bags' ? 'accessories' : filter;
         query = query.eq('category_slug', dbCategory as any);
-        
+
         // If bags category is selected, filter by bag subcategories
         if (filter === 'bags') {
           query = query.in('subcategory_slug', ['handbags', 'clutches', 'totes', 'backpacks', 'wallets']);
@@ -208,7 +198,6 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
       if (priceRange.min > 0) {
         query = query.gte('price_cents', priceRange.min * 100);
       }
-
       if (priceRange.max < 1000) {
         query = query.lte('price_cents', priceRange.max * 100);
       }
@@ -219,10 +208,13 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
       }
 
       // Order by created_at for consistent results
-      query = query.order('created_at', { ascending: false });
-
-      const { data, error } = await query;
-
+      query = query.order('created_at', {
+        ascending: false
+      });
+      const {
+        data,
+        error
+      } = await query;
       if (error) throw error;
 
       // Transform the data to match Product type with proper type conversions
@@ -245,9 +237,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
         stock_qty: item.stock_qty || 0,
         min_stock_alert: item.min_stock_alert || 5,
         weight_grams: item.weight_grams,
-        dimensions: item.dimensions && typeof item.dimensions === 'object' && item.dimensions !== null 
-          ? item.dimensions as Record<string, number> 
-          : undefined,
+        dimensions: item.dimensions && typeof item.dimensions === 'object' && item.dimensions !== null ? item.dimensions as Record<string, number> : undefined,
         tags: item.tags,
         seo_title: item.seo_title,
         seo_description: item.seo_description,
@@ -260,9 +250,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
           logo_url: item.brand.logo_url,
           cover_image_url: item.brand.cover_image_url,
           bio: item.brand.bio,
-          socials: item.brand.socials && typeof item.brand.socials === 'object' && item.brand.socials !== null 
-            ? item.brand.socials as Record<string, string> 
-            : {},
+          socials: item.brand.socials && typeof item.brand.socials === 'object' && item.brand.socials !== null ? item.brand.socials as Record<string, string> : {},
           website: item.brand.website,
           contact_email: item.brand.contact_email,
           shipping_regions: item.brand.shipping_regions,
@@ -272,15 +260,13 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
         } : undefined,
         attributes: convertJsonToProductAttributes(item.attributes)
       }));
-
-      console.log('Fetched products with filters:', { 
-        filter, 
-        subcategory, 
-        priceRange, 
-        searchQuery, 
-        count: transformedProducts.length 
+      console.log('Fetched products with filters:', {
+        filter,
+        subcategory,
+        priceRange,
+        searchQuery,
+        count: transformedProducts.length
       });
-
       setProducts(transformedProducts);
       setIndex(0); // Reset index when products change
       x.set(0); // Reset swipe position when products change
@@ -289,68 +275,48 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
       toast({
         title: "Error",
         description: "Failed to fetch products. Please try again.",
-        variant: "destructive",
+        variant: "destructive"
       });
     }
   }, [filter, subcategory, priceRange, searchQuery, currency, toast]);
-
   useEffect(() => {
     fetchProducts();
   }, [fetchProducts]);
-
   const handleProductClick = (product: Product) => {
     setSelectedProduct(product);
     setIsModalOpen(true);
   };
-
   const currentProduct = useMemo(() => products[index], [products, index]);
-
   if (products.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center space-y-4">
+    return <div className="flex flex-col items-center justify-center space-y-4">
         <Search className="h-10 w-10 text-muted-foreground opacity-50" />
         <p className="text-muted-foreground">No products found matching your criteria.</p>
         <Button variant="outline" onClick={() => {
-          // Reset filters could be implemented here
-          window.location.reload();
-        }}>
+        // Reset filters could be implemented here
+        window.location.reload();
+      }}>
           Reset Filters
         </Button>
-      </div>
-    );
+      </div>;
   }
-
-  return (
-    <div className="relative w-full h-full">
+  return <div className="relative w-full h-full">
       <AnimatePresence initial={false} custom={x.get()}>
-        {currentProduct && (
-          <motion.div
-            key={currentProduct.id}
-            ref={cardRef}
-            className="absolute top-0 left-0 w-full h-full"
-            style={{ x, rotate, opacity, scale, touchAction: 'pan-y' }}
-            drag="x"
-            dragConstraints={{ left: 0, right: 0 }}
-            dragElastic={0.8}
-            onDrag={(event, info) => {}}
-            onDragEnd={handleSwipeEnd}
-            variants={cardVariants}
-            initial="hidden"
-            animate="visible"
-            exit="exit"
-            custom={x.get()}
-          >
+        {currentProduct && <motion.div key={currentProduct.id} ref={cardRef} className="absolute top-0 left-0 w-full h-full" style={{
+        x,
+        rotate,
+        opacity,
+        scale,
+        touchAction: 'pan-y'
+      }} drag="x" dragConstraints={{
+        left: 0,
+        right: 0
+      }} dragElastic={0.8} onDrag={(event, info) => {}} onDragEnd={handleSwipeEnd} variants={cardVariants} initial="hidden" animate="visible" exit="exit" custom={x.get()}>
             <Card className="h-full flex flex-col cursor-grab active:cursor-grabbing" onClick={() => handleProductClick(currentProduct)}>
               <CardContent className="p-4 flex flex-col h-full">
                 <div className="relative aspect-square w-full mb-4">
-                  <img
-                    src={currentProduct.media_urls?.[0] || '/placeholder.svg'}
-                    alt={currentProduct.title}
-                    className="object-cover rounded-md w-full h-full"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = '/placeholder.svg';
-                    }}
-                  />
+                  <img src={currentProduct.media_urls?.[0] || '/placeholder.svg'} alt={currentProduct.title} className="object-cover rounded-md w-full h-full" onError={e => {
+                (e.target as HTMLImageElement).src = '/placeholder.svg';
+              }} />
                 </div>
                 <div className="flex flex-col flex-grow">
                   <h3 className="text-lg font-semibold line-clamp-2">{currentProduct.title}</h3>
@@ -358,58 +324,43 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                   <div className="mt-auto flex items-end justify-between">
                     <span className="text-xl font-bold">
                       {new Intl.NumberFormat('en-US', {
-                        style: 'currency',
-                        currency: currentProduct.currency || 'USD',
-                      }).format(currentProduct.price_cents / 100)}
+                    style: 'currency',
+                    currency: currentProduct.currency || 'USD'
+                  }).format(currentProduct.price_cents / 100)}
                     </span>
-                    {currentProduct.ar_mesh_url && (
-                      <Badge variant="outline" className="gap-1">
+                    {currentProduct.ar_mesh_url && <Badge variant="outline" className="gap-1">
                         <Sparkles className="h-3 w-3" />
                         AR Ready
-                      </Badge>
-                    )}
+                      </Badge>}
                   </div>
                 </div>
               </CardContent>
             </Card>
-          </motion.div>
-        )}
+          </motion.div>}
       </AnimatePresence>
 
       {/* No More Products */}
-      {index >= products.length && (
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center">
+      {index >= products.length && <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center">
           <h2 className="text-2xl font-bold text-muted-foreground mb-2">No More Products</h2>
           <p className="text-muted-foreground">You've seen all the products for now.</p>
-        </div>
-      )}
+        </div>}
 
       {/* Action Buttons */}
-      {products.length > 0 && index < products.length && (
-        <div className="absolute bottom-4 left-0 w-full flex justify-center gap-4">
-          <Button variant="secondary" size="icon" onClick={prevCard} disabled={index === 0}>
-            <RotateCcw className="h-5 w-5" />
-          </Button>
+      {products.length > 0 && index < products.length && <div className="absolute bottom-4 left-0 w-full flex justify-center gap-4">
+          
           <Button variant="destructive" size="icon" onClick={handleDislike}>
             <X className="h-5 w-5" />
           </Button>
           <Button variant="default" size="icon" onClick={() => currentProduct && handleLike(currentProduct)}>
             <Heart className="h-5 w-5" />
           </Button>
-        </div>
-      )}
+        </div>}
 
       {/* Product Detail Modal */}
-      <ProductDetailModal
-        product={selectedProduct!}
-        isOpen={isModalOpen}
-        onClose={() => {
-          setIsModalOpen(false);
-          setSelectedProduct(null);
-        }}
-      />
-    </div>
-  );
+      <ProductDetailModal product={selectedProduct!} isOpen={isModalOpen} onClose={() => {
+      setIsModalOpen(false);
+      setSelectedProduct(null);
+    }} />
+    </div>;
 };
-
 export default SwipeDeck;
