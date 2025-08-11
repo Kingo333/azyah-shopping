@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -79,10 +80,10 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
     const isMobile = window.innerWidth < 640;
     
     if (isMobile) {
-      // For mobile, use a more conservative approach to ensure content fits
-      const maxHeight = window.innerHeight * 0.45; // Reduced from 0.7 to 0.45
-      const minHeight = 180; // Slightly reduced minimum height
-      const calculatedHeight = 280 / aspectRatio; // Base width of 280px for mobile
+      // For mobile, use more screen space for better visibility
+      const maxHeight = window.innerHeight * 0.5; // Increased from 0.45 to 0.5
+      const minHeight = 220; // Increased minimum height for mobile
+      const calculatedHeight = 320 / aspectRatio; // Increased base width from 280px to 320px
       
       return Math.max(minHeight, Math.min(maxHeight, calculatedHeight));
     } else {
@@ -436,7 +437,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                 <div className="flex flex-col flex-grow">
                   <div className="flex items-start justify-between gap-2 mb-1">
                     <div className="flex items-center gap-2 flex-1">
-                      <h3 className="text-sm sm:text-lg font-semibold line-clamp-2">{currentProduct.title}</h3>
+                      <h3 className="text-base sm:text-lg font-semibold line-clamp-2">{currentProduct.title}</h3>
                       <Button
                         variant="ghost"
                         size="sm"
@@ -444,16 +445,16 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                           e.stopPropagation();
                           handleProductClick(currentProduct);
                         }}
-                        className="flex-shrink-0 h-6 sm:h-7 px-1 sm:px-2 text-xs hover:bg-accent"
+                        className="flex-shrink-0 h-7 sm:h-7 px-2 sm:px-2 text-xs hover:bg-accent"
                       >
                         <Info className="h-3 w-3 mr-1" />
                         <span className="hidden sm:inline">Details</span>
                       </Button>
                     </div>
                   </div>
-                  <p className="text-xs sm:text-sm text-muted-foreground line-clamp-1 mb-2">{currentProduct.brand?.name}</p>
+                  <p className="text-sm sm:text-sm text-muted-foreground line-clamp-1 mb-2">{currentProduct.brand?.name}</p>
                   <div className="flex items-center justify-between mb-auto">
-                    <span className="text-lg sm:text-xl font-bold">
+                    <span className="text-xl sm:text-xl font-bold">
                       {new Intl.NumberFormat('en-US', {
                         style: 'currency',
                         currency: currentProduct.currency || 'USD'
