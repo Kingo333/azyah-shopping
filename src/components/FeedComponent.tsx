@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Heart, MessageCircle, Share, MoreHorizontal, Plus, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -164,6 +165,12 @@ const FeedComponent: React.FC<FeedComponentProps> = ({
         .delete()
         .eq('post_id', postId);
 
+      // Delete post products
+      await supabase
+        .from('post_products')
+        .delete()
+        .eq('post_id', postId);
+
       // Delete post likes
       await supabase
         .from('post_likes')
@@ -270,22 +277,40 @@ const FeedComponent: React.FC<FeedComponentProps> = ({
                 </p>
               </div>
               {user && user.id === post.user_id && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem 
-                      onClick={() => handleDeletePost(post.id)}
-                      className="text-red-600 focus:text-red-600"
-                    >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Delete Post
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <AlertDialog>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <AlertDialogTrigger asChild>
+                        <DropdownMenuItem className="text-red-600 focus:text-red-600">
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete Post
+                        </DropdownMenuItem>
+                      </AlertDialogTrigger>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This action cannot be undone. This will permanently delete your post and all associated data.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction 
+                        onClick={() => handleDeletePost(post.id)}
+                        className="bg-red-600 hover:bg-red-700"
+                      >
+                        Delete
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               )}
             </CardHeader>
             
@@ -295,13 +320,17 @@ const FeedComponent: React.FC<FeedComponentProps> = ({
               )}
               
               {post.images.length > 0 && (
-                <div className="grid grid-cols-2 gap-2">
-                  {post.images.slice(0, 4).map((image, index) => (
+                <div className="grid grid-cols-1 gap-2">
+                  {post.images.map((image, index) => (
                     <img
                       key={index}
                       src={image}
-                      alt="Post image"
-                      className="w-full h-48 object-cover rounded-lg"
+                      alt={`Post image ${index + 1}`}
+                      className="w-full max-w-md h-auto object-cover rounded-lg"
+                      onError={(e) => {
+                        console.log('Image failed to load:', image);
+                        e.currentTarget.style.display = 'none';
+                      }}
                     />
                   ))}
                 </div>
