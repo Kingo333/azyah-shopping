@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -47,8 +48,8 @@ const cardVariants = {
   })
 };
 
-const DISTANCE_THRESHOLD = 80;
-const VERTICAL_THRESHOLD = 80;
+const DISTANCE_THRESHOLD = 100;
+const VERTICAL_THRESHOLD = 100;
 
 const SwipeDeck: React.FC<SwipeDeckProps> = ({
   filter,
@@ -110,11 +111,9 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
   const nextCard = useCallback((direction: number = 0) => {
     setExitDirection(direction);
     setIndex(prevIndex => Math.min(prevIndex + 1, products.length - 1));
-    // Reset motion values after a brief delay
-    setTimeout(() => {
-      x.set(0);
-      y.set(0);
-    }, 100);
+    // Reset motion values immediately
+    x.set(0);
+    y.set(0);
   }, [x, y, products.length]);
 
   const prevCard = useCallback(() => {
@@ -209,8 +208,8 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
     const { x: velocityX, y: velocityY } = velocity;
 
     // Calculate effective offset including velocity
-    const effectiveX = offsetX + velocityX * 0.1;
-    const effectiveY = offsetY + velocityY * 0.1;
+    const effectiveX = offsetX + velocityX * 0.15;
+    const effectiveY = offsetY + velocityY * 0.15;
 
     // Check for vertical swipe up first (wishlist)
     if (effectiveY < -VERTICAL_THRESHOLD && Math.abs(effectiveX) < DISTANCE_THRESHOLD) {
@@ -405,13 +404,13 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
   }
 
   return (
-    <div className="relative w-full h-full">
+    <div className="relative w-full h-full overflow-hidden">
       <AnimatePresence initial={false} custom={exitDirection}>
         {currentProduct && (
           <motion.div
             key={currentProduct.id}
             ref={cardRef}
-            className="absolute top-0 left-0 w-full h-full"
+            className="absolute top-0 left-0 w-full h-full touch-none"
             style={{
               x,
               y,
@@ -420,9 +419,9 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
               scale
             }}
             drag
-            dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
-            dragElastic={0.2}
-            dragTransition={{ bounceStiffness: 600, bounceDamping: 20 }}
+            dragConstraints={{ left: -50, right: 50, top: -50, bottom: 50 }}
+            dragElastic={0.1}
+            dragMomentum={false}
             onDragEnd={handleSwipeEnd}
             variants={cardVariants}
             initial="hidden"
@@ -431,10 +430,11 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
             custom={exitDirection}
             whileDrag={{ 
               cursor: "grabbing",
-              scale: 1.05
+              scale: 1.02,
+              zIndex: 1000
             }}
           >
-            <Card className="h-full flex flex-col cursor-grab active:cursor-grabbing overflow-hidden">
+            <Card className="h-full flex flex-col cursor-grab active:cursor-grabbing overflow-hidden select-none">
               <CardContent className="p-3 sm:p-4 flex flex-col h-full overflow-y-auto">
                 <div 
                   className="relative w-full mb-3 sm:mb-4 overflow-hidden rounded-md flex-shrink-0"
@@ -445,11 +445,12 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                   <img
                     src={currentProduct.media_urls?.[0] || '/placeholder.svg'}
                     alt={currentProduct.title}
-                    className="object-cover w-full h-full"
+                    className="object-cover w-full h-full pointer-events-none"
                     onLoad={handleImageLoad}
                     onError={(e) => {
                       (e.target as HTMLImageElement).src = '/placeholder.svg';
                     }}
+                    draggable={false}
                   />
                 </div>
                 <div className="flex flex-col flex-grow">
