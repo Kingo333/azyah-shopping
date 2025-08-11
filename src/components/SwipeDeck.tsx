@@ -402,12 +402,12 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
               y,
               rotate,
               opacity,
-              scale
+              scale,
+              touchAction: 'pan-y'
             }}
             drag
             dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
-            dragElastic={0.2}
-            dragTransition={{ bounceStiffness: 600, bounceDamping: 20 }}
+            dragElastic={0.8}
             onDragEnd={handleSwipeEnd}
             variants={cardVariants}
             initial="hidden"
