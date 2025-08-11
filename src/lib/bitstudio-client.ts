@@ -1,4 +1,5 @@
-import type { BitStudioImage, BitStudioError, AspectRatio, Resolution, Style, UpscaleFactor } from './bitstudio-types';
+
+import type { BitStudioImage, BitStudioError } from './bitstudio-types';
 import { supabase } from '@/integrations/supabase/client';
 
 export class BitStudioClient {
@@ -90,7 +91,6 @@ export class BitStudioClient {
 
   static async getImage(id: string): Promise<BitStudioImage> {
     console.log('[BitStudioClient] Getting image status for ID:', id);
-    // Use POST with JSON body instead of URL parameter
     return this.makeSupabaseRequest('bitstudio-status', { id });
   }
 
@@ -100,14 +100,12 @@ export class BitStudioClient {
     outfit_image_id?: string;
     outfit_image_url?: string;
     prompt?: string;
-    resolution?: Resolution;
+    resolution?: 'standard' | 'high';
     num_images?: number;
     seed?: number;
   }): Promise<BitStudioImage[]> {
     console.log('[BitStudioClient] Starting virtual try-on with params:', params);
     
-    // The edge function returns an object: { job_id, provider_job_id, result }
-    // Normalize to always return the underlying array as the hook expects.
     const resp = await this.makeSupabaseRequest('bitstudio-tryon', params);
     console.log('[BitStudioClient] VTO response:', resp);
     
@@ -159,7 +157,7 @@ export class BitStudioClient {
         console.error(`[BitStudioClient] Poll ${retryCount + 1} error:`, error);
         
         // Handle rate limiting with exponential backoff
-        if ((error.code === 'RATE_LIMITED' || (error.status === 429)) && rateLimitRetries < maxRateLimitRetries) {
+        if ((error.code === 'rate_limited' || (error.status === 429)) && rateLimitRetries < maxRateLimitRetries) {
           const backoffDelay = Math.min(1000 * Math.pow(2, rateLimitRetries), 10000);
           console.log(`[BitStudioClient] Rate limited, waiting ${backoffDelay}ms before retry`);
           await new Promise(resolve => setTimeout(resolve, backoffDelay));
