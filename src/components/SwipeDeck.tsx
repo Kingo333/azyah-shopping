@@ -74,18 +74,29 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
   const currentProduct = useMemo(() => products[index], [products, index]);
   const { addToWishlist, isLoading: wishlistLoading } = useWishlist(currentProduct?.id);
 
-  // Calculate image height based on aspect ratio
+  // Calculate image height based on aspect ratio with better mobile optimization
   const getImageHeight = useCallback((aspectRatio: number) => {
-    const maxHeight = window.innerHeight * 0.7; // Increased to 70% of viewport height
-    const minHeight = 200; // Minimum height for very wide images
-    const calculatedHeight = 400 / aspectRatio; // Base width of 400px
+    const isMobile = window.innerWidth < 640;
     
-    // For very tall images (aspect ratio < 0.6), allow more height
-    if (aspectRatio < 0.6) {
-      return Math.max(minHeight, Math.min(window.innerHeight * 0.8, calculatedHeight));
+    if (isMobile) {
+      // For mobile, use a more conservative approach to ensure content fits
+      const maxHeight = window.innerHeight * 0.45; // Reduced from 0.7 to 0.45
+      const minHeight = 180; // Slightly reduced minimum height
+      const calculatedHeight = 280 / aspectRatio; // Base width of 280px for mobile
+      
+      return Math.max(minHeight, Math.min(maxHeight, calculatedHeight));
+    } else {
+      // Desktop remains the same
+      const maxHeight = window.innerHeight * 0.7;
+      const minHeight = 200;
+      const calculatedHeight = 400 / aspectRatio;
+      
+      if (aspectRatio < 0.6) {
+        return Math.max(minHeight, Math.min(window.innerHeight * 0.8, calculatedHeight));
+      }
+      
+      return Math.max(minHeight, Math.min(maxHeight, calculatedHeight));
     }
-    
-    return Math.max(minHeight, Math.min(maxHeight, calculatedHeight));
   }, []);
 
   const handleImageLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
@@ -405,9 +416,9 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
             custom={x.get()}
           >
             <Card className="h-full flex flex-col cursor-grab active:cursor-grabbing overflow-hidden">
-              <CardContent className="p-4 flex flex-col h-full overflow-y-auto">
+              <CardContent className="p-3 sm:p-4 flex flex-col h-full overflow-y-auto">
                 <div 
-                  className="relative w-full mb-4 overflow-hidden rounded-md flex-shrink-0"
+                  className="relative w-full mb-3 sm:mb-4 overflow-hidden rounded-md flex-shrink-0"
                   style={{
                     height: `${getImageHeight(imageAspectRatio)}px`
                   }}
@@ -425,7 +436,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                 <div className="flex flex-col flex-grow">
                   <div className="flex items-start justify-between gap-2 mb-1">
                     <div className="flex items-center gap-2 flex-1">
-                      <h3 className="text-lg font-semibold line-clamp-2">{currentProduct.title}</h3>
+                      <h3 className="text-sm sm:text-lg font-semibold line-clamp-2">{currentProduct.title}</h3>
                       <Button
                         variant="ghost"
                         size="sm"
@@ -433,23 +444,23 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                           e.stopPropagation();
                           handleProductClick(currentProduct);
                         }}
-                        className="flex-shrink-0 h-7 px-2 text-xs hover:bg-accent"
+                        className="flex-shrink-0 h-6 sm:h-7 px-1 sm:px-2 text-xs hover:bg-accent"
                       >
                         <Info className="h-3 w-3 mr-1" />
-                        Details
+                        <span className="hidden sm:inline">Details</span>
                       </Button>
                     </div>
                   </div>
-                  <p className="text-sm text-muted-foreground line-clamp-1 mb-2">{currentProduct.brand?.name}</p>
-                  <span className="text-xl font-bold mb-auto">
-                    {new Intl.NumberFormat('en-US', {
-                      style: 'currency',
-                      currency: currentProduct.currency || 'USD'
-                    }).format(currentProduct.price_cents / 100)}
-                  </span>
-                  <div className="mt-auto flex items-end justify-end">
+                  <p className="text-xs sm:text-sm text-muted-foreground line-clamp-1 mb-2">{currentProduct.brand?.name}</p>
+                  <div className="flex items-center justify-between mb-auto">
+                    <span className="text-lg sm:text-xl font-bold">
+                      {new Intl.NumberFormat('en-US', {
+                        style: 'currency',
+                        currency: currentProduct.currency || 'USD'
+                      }).format(currentProduct.price_cents / 100)}
+                    </span>
                     {currentProduct.ar_mesh_url && (
-                      <Badge variant="outline" className="gap-1">
+                      <Badge variant="outline" className="gap-1 text-xs">
                         <Sparkles className="h-3 w-3" />
                         AR Ready
                       </Badge>
