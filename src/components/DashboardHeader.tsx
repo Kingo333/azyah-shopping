@@ -53,7 +53,7 @@ const DashboardHeader: React.FC = () => {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56 glass-panel border-white/20">
-            <DropdownMenuItem onClick={() => navigate('/profile-settings')}>
+            <DropdownMenuItem onClick={() => navigate('/settings')}>
               <Settings className="mr-2 h-4 w-4" />
               Profile Settings
             </DropdownMenuItem>
