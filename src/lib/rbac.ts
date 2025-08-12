@@ -7,18 +7,18 @@ export type UserRole = 'shopper' | 'brand' | 'retailer' | 'admin';
 const ROUTE_ACCESS: Record<UserRole, string[]> = {
   shopper: [
     '/', '/dashboard', '/explore', '/swipe', '/feed', '/wishlist', '/cart', 
-    '/closets', '/forum', '/ar-tryOn', '/affiliate', '/auth', '/landing'
+    '/closets', '/forum', '/ar-tryOn', '/affiliate', '/auth', '/landing', '/settings', '/profile'
   ],
   brand: [
-    '/', '/dashboard', '/brand-portal', '/analytics', '/auth', '/landing'
+    '/', '/dashboard', '/brand-portal', '/analytics', '/auth', '/landing', '/settings', '/profile'
   ],
   retailer: [
-    '/', '/dashboard', '/retailer-portal', '/analytics', '/auth', '/landing'
+    '/', '/dashboard', '/retailer-portal', '/analytics', '/auth', '/landing', '/settings', '/profile'
   ],
   admin: [
     '/', '/dashboard', '/analytics', '/auth', '/landing', '/brand-portal', 
     '/retailer-portal', '/explore', '/swipe', '/feed', '/wishlist', '/cart', 
-    '/closets', '/forum', '/ar-tryOn', '/affiliate'
+    '/closets', '/forum', '/ar-tryOn', '/affiliate', '/settings', '/profile'
   ]
 };
 
