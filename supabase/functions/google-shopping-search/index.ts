@@ -31,6 +31,7 @@ serve(async (req) => {
     }
 
     console.log('Google Shopping search request:', { searchQuery, imageUrl, maxResults });
+    console.log('Environment check - SERPER_API_KEY exists:', !!Deno.env.get('SERPER_API_KEY'));
 
     // First, search our own catalog
     let catalogResults = [];

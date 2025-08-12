@@ -215,23 +215,34 @@ const ImageSearch: React.FC = () => {
 
   const searchExternalSources = async (query: string, imageUrl?: string) => {
     try {
+      console.log('Calling google-shopping-search with:', { query, imageUrl });
+      
       // Call our Google Shopping API edge function (now supports imageUrl for Google Lens)
       const { data, error } = await supabase.functions.invoke('google-shopping-search', {
         body: { searchQuery: query, imageUrl, maxResults: 6 }
       });
 
-      if (error) throw error;
+      console.log('Edge function response:', { data, error });
+
+      if (error) {
+        console.error('Edge function error:', error);
+        throw error;
+      }
 
       if (data?.results) {
         setExternalResults(data.results);
+        console.log('External results set:', data.results.length, 'items');
+        console.log('Sources breakdown:', data.sources);
+        
         if ((data?.sources?.external ?? 0) === 0) {
           toast({
             title: 'Online results unavailable',
-            description: 'External search may be misconfigured (SerpAPI).',
+            description: 'External search may be misconfigured. Check function logs.',
             variant: 'destructive',
           });
         }
       } else {
+        console.log('No results in data:', data);
         // Fallback to empty if API returns no results
         setExternalResults([]);
       }
