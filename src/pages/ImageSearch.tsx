@@ -224,6 +224,13 @@ const ImageSearch: React.FC = () => {
 
       if (data?.results) {
         setExternalResults(data.results);
+        if ((data?.sources?.external ?? 0) === 0) {
+          toast({
+            title: 'Online results unavailable',
+            description: 'External search may be misconfigured (SerpAPI).',
+            variant: 'destructive',
+          });
+        }
       } else {
         // Fallback to empty if API returns no results
         setExternalResults([]);
