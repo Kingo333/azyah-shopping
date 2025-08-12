@@ -11,7 +11,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { Trash2, Upload, Instagram, Twitter, Globe } from 'lucide-react';
+import { Trash2, Upload, Instagram, Twitter, Globe, Music } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -26,7 +26,11 @@ interface ProfileData {
   avatar_url: string;
   socials: {
     instagram?: string;
+    instagram_followers?: number;
     twitter?: string;
+    twitter_followers?: number;
+    tiktok?: string;
+    tiktok_followers?: number;
     website?: string;
   };
 }
@@ -89,7 +93,7 @@ const ProfileSettings: React.FC = () => {
     }));
   };
 
-  const handleSocialChange = (platform: string, value: string) => {
+  const handleSocialChange = (platform: string, value: string | number) => {
     setProfileData(prev => ({
       ...prev,
       socials: {
@@ -318,35 +322,99 @@ const ProfileSettings: React.FC = () => {
               <CardTitle>Social Links</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="instagram">Instagram</Label>
-                <div className="flex">
-                  <div className="flex items-center px-3 bg-muted border border-r-0 rounded-l-md">
-                    <Instagram className="h-4 w-4" />
+              <div className="space-y-4">
+                <Label className="text-base font-medium">Instagram</Label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="instagram" className="text-sm">Username</Label>
+                    <div className="flex">
+                      <div className="flex items-center px-3 bg-muted border border-r-0 rounded-l-md">
+                        <Instagram className="h-4 w-4" />
+                      </div>
+                      <Input
+                        id="instagram"
+                        value={profileData.socials.instagram || ''}
+                        onChange={(e) => handleSocialChange('instagram', e.target.value)}
+                        placeholder="@username"
+                        className="rounded-l-none"
+                      />
+                    </div>
                   </div>
-                  <Input
-                    id="instagram"
-                    value={profileData.socials.instagram || ''}
-                    onChange={(e) => handleSocialChange('instagram', e.target.value)}
-                    placeholder="@username"
-                    className="rounded-l-none"
-                  />
+                  <div className="space-y-2">
+                    <Label htmlFor="instagram-followers" className="text-sm">Followers</Label>
+                    <Input
+                      id="instagram-followers"
+                      type="number"
+                      value={profileData.socials.instagram_followers || ''}
+                      onChange={(e) => handleSocialChange('instagram_followers', parseInt(e.target.value) || 0)}
+                      placeholder="0"
+                      min="0"
+                    />
+                  </div>
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="twitter">Twitter/X</Label>
-                <div className="flex">
-                  <div className="flex items-center px-3 bg-muted border border-r-0 rounded-l-md">
-                    <Twitter className="h-4 w-4" />
+              <div className="space-y-4">
+                <Label className="text-base font-medium">Twitter/X</Label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="twitter" className="text-sm">Username</Label>
+                    <div className="flex">
+                      <div className="flex items-center px-3 bg-muted border border-r-0 rounded-l-md">
+                        <Twitter className="h-4 w-4" />
+                      </div>
+                      <Input
+                        id="twitter"
+                        value={profileData.socials.twitter || ''}
+                        onChange={(e) => handleSocialChange('twitter', e.target.value)}
+                        placeholder="@username"
+                        className="rounded-l-none"
+                      />
+                    </div>
                   </div>
-                  <Input
-                    id="twitter"
-                    value={profileData.socials.twitter || ''}
-                    onChange={(e) => handleSocialChange('twitter', e.target.value)}
-                    placeholder="@username"
-                    className="rounded-l-none"
-                  />
+                  <div className="space-y-2">
+                    <Label htmlFor="twitter-followers" className="text-sm">Followers</Label>
+                    <Input
+                      id="twitter-followers"
+                      type="number"
+                      value={profileData.socials.twitter_followers || ''}
+                      onChange={(e) => handleSocialChange('twitter_followers', parseInt(e.target.value) || 0)}
+                      placeholder="0"
+                      min="0"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <Label className="text-base font-medium">TikTok</Label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="tiktok" className="text-sm">Username</Label>
+                    <div className="flex">
+                      <div className="flex items-center px-3 bg-muted border border-r-0 rounded-l-md">
+                        <Music className="h-4 w-4" />
+                      </div>
+                      <Input
+                        id="tiktok"
+                        value={profileData.socials.tiktok || ''}
+                        onChange={(e) => handleSocialChange('tiktok', e.target.value)}
+                        placeholder="@username"
+                        className="rounded-l-none"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="tiktok-followers" className="text-sm">Followers</Label>
+                    <Input
+                      id="tiktok-followers"
+                      type="number"
+                      value={profileData.socials.tiktok_followers || ''}
+                      onChange={(e) => handleSocialChange('tiktok_followers', parseInt(e.target.value) || 0)}
+                      placeholder="0"
+                      min="0"
+                    />
+                  </div>
                 </div>
               </div>
 
