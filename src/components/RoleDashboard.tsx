@@ -273,7 +273,11 @@ const RoleDashboard: React.FC = () => {
               <span className="text-xs sm:text-sm">Wishlist</span>
             </Button>
             <Button 
-              onClick={() => navigate('/image-search')} 
+              onClick={() => toast({
+                title: "Coming Soon",
+                description: "Visual search feature is coming soon! Stay tuned for updates.",
+                duration: 3000
+              })} 
               variant="outline" 
               className="h-16 sm:h-20 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300"
             >
