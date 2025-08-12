@@ -512,6 +512,45 @@ export type Database = {
           },
         ]
       }
+      ingest_runs: {
+        Row: {
+          attempted: number
+          finished_at: string | null
+          id: string
+          inserted: number
+          notes: Json
+          rejected: number
+          source: string
+          started_at: string
+          status: string
+          updated: number
+        }
+        Insert: {
+          attempted?: number
+          finished_at?: string | null
+          id?: string
+          inserted?: number
+          notes?: Json
+          rejected?: number
+          source?: string
+          started_at?: string
+          status?: string
+          updated?: number
+        }
+        Update: {
+          attempted?: number
+          finished_at?: string | null
+          id?: string
+          inserted?: number
+          notes?: Json
+          rejected?: number
+          source?: string
+          started_at?: string
+          status?: string
+          updated?: number
+        }
+        Relationships: []
+      }
       likes: {
         Row: {
           created_at: string
@@ -778,24 +817,33 @@ export type Database = {
       }
       products: {
         Row: {
+          affiliate_url: string | null
           ar_mesh_url: string | null
           attributes: Json | null
           brand_id: string | null
+          category_guess: string[] | null
           category_slug: Database["public"]["Enums"]["category_type"]
           compare_at_price_cents: number | null
           created_at: string
           currency: string | null
           description: string | null
           dimensions: Json | null
+          external_id: string | null
+          external_source: string | null
           external_url: string | null
           id: string
+          image_url: string | null
+          is_partner_item: boolean
           media_urls: Json | null
+          merchant_name: string | null
           min_stock_alert: number | null
           price_cents: number
+          price_raw: string | null
           retailer_id: string | null
           seo_description: string | null
           seo_title: string | null
           sku: string
+          source_url: string | null
           status: Database["public"]["Enums"]["product_status"] | null
           stock_qty: number | null
           subcategory_slug:
@@ -807,24 +855,33 @@ export type Database = {
           weight_grams: number | null
         }
         Insert: {
+          affiliate_url?: string | null
           ar_mesh_url?: string | null
           attributes?: Json | null
           brand_id?: string | null
+          category_guess?: string[] | null
           category_slug: Database["public"]["Enums"]["category_type"]
           compare_at_price_cents?: number | null
           created_at?: string
           currency?: string | null
           description?: string | null
           dimensions?: Json | null
+          external_id?: string | null
+          external_source?: string | null
           external_url?: string | null
           id?: string
+          image_url?: string | null
+          is_partner_item?: boolean
           media_urls?: Json | null
+          merchant_name?: string | null
           min_stock_alert?: number | null
           price_cents: number
+          price_raw?: string | null
           retailer_id?: string | null
           seo_description?: string | null
           seo_title?: string | null
           sku: string
+          source_url?: string | null
           status?: Database["public"]["Enums"]["product_status"] | null
           stock_qty?: number | null
           subcategory_slug?:
@@ -836,24 +893,33 @@ export type Database = {
           weight_grams?: number | null
         }
         Update: {
+          affiliate_url?: string | null
           ar_mesh_url?: string | null
           attributes?: Json | null
           brand_id?: string | null
+          category_guess?: string[] | null
           category_slug?: Database["public"]["Enums"]["category_type"]
           compare_at_price_cents?: number | null
           created_at?: string
           currency?: string | null
           description?: string | null
           dimensions?: Json | null
+          external_id?: string | null
+          external_source?: string | null
           external_url?: string | null
           id?: string
+          image_url?: string | null
+          is_partner_item?: boolean
           media_urls?: Json | null
+          merchant_name?: string | null
           min_stock_alert?: number | null
           price_cents?: number
+          price_raw?: string | null
           retailer_id?: string | null
           seo_description?: string | null
           seo_title?: string | null
           sku?: string
+          source_url?: string | null
           status?: Database["public"]["Enums"]["product_status"] | null
           stock_qty?: number | null
           subcategory_slug?:

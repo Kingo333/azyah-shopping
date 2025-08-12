@@ -117,6 +117,17 @@ export interface Product {
   updated_at: string;
   brand?: Brand;
   retailer?: Retailer;
+
+  // Additive fields for external ingest (optional to keep type-safe and non-breaking)
+  external_source?: string | null;
+  external_id?: string | null;
+  source_url?: string | null;
+  image_url?: string | null;
+  price_raw?: string | null;
+  merchant_name?: string | null;
+  category_guess?: string[] | null;
+  is_partner_item?: boolean;
+  affiliate_url?: string | null;
 }
 
 export interface SwipeAction {

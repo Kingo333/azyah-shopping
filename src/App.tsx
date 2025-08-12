@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -32,6 +31,7 @@ import Analytics from './pages/Analytics';
 import BrandPortal from './pages/BrandPortal';
 import RetailerPortal from './pages/RetailerPortal';
 import NotFound from './pages/NotFound';
+import AdminSerperIngest from './pages/AdminSerperIngest';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -144,6 +144,11 @@ function App() {
               <Route path="/retailer-portal" element={
                 <ProtectedRoute roles={['retailer', 'admin']}>
                   <RetailerPortal />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/ingest/serper" element={
+                <ProtectedRoute roles={['admin']}>
+                  <AdminSerperIngest />
                 </ProtectedRoute>
               } />
               <Route path="*" element={<NotFound />} />

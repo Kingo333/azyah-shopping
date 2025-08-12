@@ -2,14 +2,17 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Product, SwipeAction } from '@/types';
 import { toast } from '@/hooks/use-toast';
+import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
 
 export const useProducts = (filters?: {
   category?: string;
   limit?: number;
   offset?: number;
 }) => {
+  const { isEnabled } = useFeatureFlags();
+
   return useQuery({
-    queryKey: ['products', filters],
+    queryKey: ['products', filters, { ff: isEnabled('serper_ingest') }],
     queryFn: async () => {
       let query = supabase
         .from('products')
@@ -17,8 +20,16 @@ export const useProducts = (filters?: {
           *,
           brand:brands(*)
         `)
-        .eq('status', 'active')
-        .order('created_at', { ascending: false });
+        .eq('status', 'active');
+
+      // When the Serper ingest feature is enabled, prioritize partner items first, then recency
+      if (isEnabled('serper_ingest')) {
+        query = query
+          .order('is_partner_item', { ascending: false })
+          .order('created_at', { ascending: false });
+      } else {
+        query = query.order('created_at', { ascending: false });
+      }
 
       if (filters?.category) {
         query = query.eq('category_slug', filters.category as any);
