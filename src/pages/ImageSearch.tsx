@@ -59,6 +59,7 @@ const ImageSearch: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [cameraActive, setCameraActive] = useState(false);
   const { toast } = useToast();
+  const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
 
   const tutorialSteps = [
     {
@@ -87,16 +88,36 @@ const ImageSearch: React.FC = () => {
     }
   ];
 
+  // Upload a file/blob to Supabase Storage 'search-images' bucket and return public URL
+  const uploadToSearchBucket = useCallback(async (blob: Blob, ext: string) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('You must be signed in to upload search images');
+    const path = `${user.id}/${Date.now()}.${ext}`;
+    const { error: upErr } = await supabase.storage.from('search-images').upload(path, blob, {
+      contentType: ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : 'image/jpeg',
+      upsert: true,
+    });
+    if (upErr) throw upErr;
+    const { data } = supabase.storage.from('search-images').getPublicUrl(path);
+    return data.publicUrl as string;
+  }, []);
+
   const handleImageUpload = useCallback(async (file: File) => {
     if (!file) return;
 
     setIsLoading(true);
     try {
+      // 1) Upload original file to Storage to enable Google Lens search
+      const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+      const publicUrl = await uploadToSearchBucket(file, ext);
+      setUploadedImageUrl(publicUrl);
+
+      // 2) Read for on-screen preview and local classification
       const reader = new FileReader();
       reader.onload = async (e) => {
         const imageData = e.target?.result as string;
         setSearchImage(imageData);
-        await performDualSearch(imageData);
+        await performDualSearch(imageData, publicUrl);
       };
       reader.readAsDataURL(file);
     } catch (error) {
@@ -109,9 +130,9 @@ const ImageSearch: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [toast]);
+  }, [toast, uploadToSearchBucket]);
 
-  const performDualSearch = async (imageData: string) => {
+  const performDualSearch = async (imageData: string, uploadedUrl?: string) => {
     setIsLoading(true);
     try {
       // Initialize the vision model for object detection
@@ -129,8 +150,8 @@ const ImageSearch: React.FC = () => {
       // Search internal catalog
       await searchInternalCatalog(searchQuery);
       
-      // Search external sources (mock implementation)
-      await searchExternalSources(searchQuery);
+      // Search external sources
+      await searchExternalSources(searchQuery, uploadedUrl);
       
     } catch (error) {
       console.error('Visual search error:', error);
@@ -179,11 +200,11 @@ const ImageSearch: React.FC = () => {
     }
   };
 
-  const searchExternalSources = async (query: string) => {
+  const searchExternalSources = async (query: string, imageUrl?: string) => {
     try {
-      // Call our Google Shopping API edge function
+      // Call our Google Shopping API edge function (now supports imageUrl for Google Lens)
       const { data, error } = await supabase.functions.invoke('google-shopping-search', {
-        body: { searchQuery: query, maxResults: 6 }
+        body: { searchQuery: query, imageUrl, maxResults: 6 }
       });
 
       if (error) throw error;
@@ -191,12 +212,12 @@ const ImageSearch: React.FC = () => {
       if (data?.results) {
         setExternalResults(data.results);
       } else {
-        // Fallback to mock results if API fails
+        // Fallback to empty if API returns no results
         setExternalResults([]);
       }
     } catch (error) {
       console.error('External search error:', error);
-      // Set mock results on error
+      // Fallback mock results on error
       const mockExternalResults: ExternalSearchResult[] = [
         {
           id: "ext-1",
@@ -244,7 +265,7 @@ const ImageSearch: React.FC = () => {
     }
   };
 
-  const capturePhoto = () => {
+  const capturePhoto = async () => {
     if (videoRef.current && canvasRef.current) {
       const canvas = canvasRef.current;
       const video = videoRef.current;
@@ -255,14 +276,31 @@ const ImageSearch: React.FC = () => {
       ctx?.drawImage(video, 0, 0);
       
       const imageData = canvas.toDataURL('image/jpeg');
-      setSearchImage(imageData);
       
-      // Stop camera
-      const stream = video.srcObject as MediaStream;
-      stream?.getTracks().forEach(track => track.stop());
-      setCameraActive(false);
-      
-      performDualSearch(imageData);
+      try {
+        setIsLoading(true);
+        // Convert data URL to Blob by refetching it
+        const blob = await (await fetch(imageData)).blob();
+        const publicUrl = await uploadToSearchBucket(blob, 'jpg');
+        setUploadedImageUrl(publicUrl);
+        setSearchImage(imageData);
+        
+        // Stop camera
+        const stream = video.srcObject as MediaStream;
+        stream?.getTracks().forEach(track => track.stop());
+        setCameraActive(false);
+        
+        await performDualSearch(imageData, publicUrl);
+      } catch (error) {
+        console.error('Capture/upload error:', error);
+        toast({
+          title: 'Camera Error',
+          description: 'Failed to capture or upload image.',
+          variant: 'destructive',
+        });
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
