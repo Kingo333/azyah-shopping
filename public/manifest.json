@@ -10,17 +10,17 @@
   "scope": "/",
   "icons": [
     {
-      "src": "/favicon.ico",
-      "sizes": "48x48",
-      "type": "image/x-icon"
+      "src": "/favicon.png",
+      "sizes": "48x48 32x32 16x16",
+      "type": "image/png"
     },
     {
-      "src": "/logo-192.png",
+      "src": "/favicon.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "/logo-512.png",
+      "src": "/favicon.png",
       "sizes": "512x512",
       "type": "image/png"
     }
@@ -32,21 +32,21 @@
       "short_name": "Swipe",
       "description": "Discover products with Tinder-style swiping",
       "url": "/swipe",
-      "icons": [{ "src": "/favicon.ico", "sizes": "48x48" }]
+      "icons": [{ "src": "/favicon.png", "sizes": "48x48" }]
     },
     {
       "name": "AR Try-On",
       "short_name": "AR",
       "description": "Try on products with augmented reality",
       "url": "/ar-tryon",
-      "icons": [{ "src": "/favicon.ico", "sizes": "48x48" }]
+      "icons": [{ "src": "/favicon.png", "sizes": "48x48" }]
     },
     {
       "name": "My Closets",
       "short_name": "Closets",
       "description": "View your curated fashion collections",
       "url": "/closets",
-      "icons": [{ "src": "/favicon.ico", "sizes": "48x48" }]
+      "icons": [{ "src": "/favicon.png", "sizes": "48x48" }]
     }
   ],
   "related_applications": [],
