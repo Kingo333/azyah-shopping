@@ -789,9 +789,12 @@ export type Database = {
           dimensions: Json | null
           external_url: string | null
           id: string
+          image_url: string | null
           media_urls: Json | null
+          merchant_name: string | null
           min_stock_alert: number | null
           price_cents: number
+          price_raw: string | null
           retailer_id: string | null
           seo_description: string | null
           seo_title: string | null
@@ -818,9 +821,12 @@ export type Database = {
           dimensions?: Json | null
           external_url?: string | null
           id?: string
+          image_url?: string | null
           media_urls?: Json | null
+          merchant_name?: string | null
           min_stock_alert?: number | null
           price_cents: number
+          price_raw?: string | null
           retailer_id?: string | null
           seo_description?: string | null
           seo_title?: string | null
@@ -847,9 +853,12 @@ export type Database = {
           dimensions?: Json | null
           external_url?: string | null
           id?: string
+          image_url?: string | null
           media_urls?: Json | null
+          merchant_name?: string | null
           min_stock_alert?: number | null
           price_cents?: number
+          price_raw?: string | null
           retailer_id?: string | null
           seo_description?: string | null
           seo_title?: string | null
