@@ -67,8 +67,8 @@ serve(async (req) => {
       console.error('Error searching catalog:', error);
     }
 
-    // External search via SerpAPI (Google Shopping / Lens)
-    const serpapiKey = Deno.env.get('SERPAPI_API_KEY');
+    // External search via Serper.dev API (Google Shopping / Lens)
+    const serperApiKey = Deno.env.get('SERPER_API_KEY');
     let externalResults: Array<{
       id: string;
       title: string;
@@ -82,58 +82,65 @@ serve(async (req) => {
     }> = [];
 
     try {
-      if (serpapiKey) {
-        let serpUrl = '';
+      if (serperApiKey) {
+        let serperUrl = '';
+        let requestBody: any = {};
+        
         if (imageUrl) {
-          const encodedUrl = encodeURIComponent(imageUrl);
-          serpUrl = `https://serpapi.com/search.json?engine=google_lens&url=${encodedUrl}&api_key=${serpapiKey}`;
+          serperUrl = 'https://google.serper.dev/lens';
+          requestBody = { url: imageUrl };
         } else if (searchQuery) {
-          const encodedQ = encodeURIComponent(searchQuery);
-          serpUrl = `https://serpapi.com/search.json?engine=google_shopping&q=${encodedQ}&api_key=${serpapiKey}&hl=en&gl=us`;
+          serperUrl = 'https://google.serper.dev/shopping';
+          requestBody = { q: searchQuery, num: maxResults };
         }
 
-        if (serpUrl) {
-          const serpRes = await fetch(serpUrl);
-          if (!serpRes.ok) throw new Error(`SerpAPI HTTP ${serpRes.status}`);
-          const serpData = await serpRes.json();
+        if (serperUrl) {
+          const serperRes = await fetch(serperUrl, {
+            method: 'POST',
+            headers: {
+              'X-API-KEY': serperApiKey,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(requestBody)
+          });
+          
+          if (!serperRes.ok) throw new Error(`Serper.dev HTTP ${serperRes.status}`);
+          const serperData = await serperRes.json();
 
-          const items: any[] = serpData.shopping_results || serpData.visual_matches || [];
+          console.log('Serper.dev response:', JSON.stringify(serperData, null, 2));
+
+          const items: any[] = serperData.shopping || serperData.visual || [];
           externalResults = items.slice(0, maxResults).map((item, idx) => {
-            const priceStr: string = item.price || item.extracted_price || '' as string;
+            const priceStr: string = item.price || '';
             const parsed = (() => {
-              if (typeof item.extracted_price === 'number') {
-                return { amount: item.extracted_price as number, currency: (item.currency || 'USD') as string };
-              }
               const m = typeof priceStr === 'string' ? priceStr.match(/([A-Z]{3}|\$|£|€)?\s*([\d,.]+)/) : null;
               const amount = m ? parseFloat(m[2].replace(/,/g, '')) : 0;
               let currency = 'USD';
               if (m && m[1]) {
                 const symbol = m[1];
                 currency = symbol.length === 3 ? symbol : ({ '$': 'USD', '£': 'GBP', '€': 'EUR' } as any)[symbol] || 'USD';
-              } else if (item.currency) {
-                currency = item.currency;
               }
               return { amount, currency };
             })();
 
             return {
-              id: String(item.product_id || item.offer_id || item.position || idx),
+              id: String(item.productId || item.position || idx),
               title: item.title || 'Product',
-              description: item.snippet || item.description || '',
+              description: item.snippet || '',
               price: parsed.amount,
               currency: parsed.currency,
-              image_url: item.thumbnail || item.image || item.product_thumbnail || null,
-              brand: item.source || item.store || item.vendor || 'External',
-              external_url: item.product_link || item.link || item.untracked_link || item.source_link || '#',
+              image_url: item.imageUrl || null,
+              brand: item.source || 'External',
+              external_url: item.link || '#',
               source: 'external'
             };
           });
         }
       } else {
-        console.warn('SERPAPI_API_KEY is not set; returning only catalog results');
+        console.warn('SERPER_API_KEY is not set; returning only catalog results');
       }
     } catch (e) {
-      console.error('SerpAPI fetch error:', e);
+      console.error('Serper.dev fetch error:', e);
       // fallback to empty; catalog results will still show
       externalResults = [];
     }
