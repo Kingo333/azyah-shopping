@@ -70,7 +70,7 @@ export default function Landing() {
           {/* Logo */}
           <div className="flex items-center space-x-4">
             <div className="relative w-12 h-12 rounded-lg overflow-hidden shadow-lg">
-              <img src="/favicon.png" alt="Azyah" className="w-full h-full object-cover"/>
+              <img src="/marketing/azyah-logo.png" alt="Azyah" className="w-full h-full object-cover"/>
             </div>
             <div>
               <h1 className="font-cormorant text-2xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">Azyah</h1>
