@@ -6,7 +6,7 @@ const STATIC_ASSETS = [
   '/',
   '/index.html',
   '/manifest.json',
-  '/favicon.ico'
+  '/marketing/azyah-logo.png'
 ];
 
 // API endpoints to cache
@@ -137,8 +137,8 @@ self.addEventListener('push', (event) => {
   
   const options = {
     body: event.data ? event.data.text() : 'New fashion items available!',
-    icon: '/logo-192.png',
-    badge: '/favicon.ico',
+    icon: '/marketing/azyah-logo.png',
+    badge: '/marketing/azyah-logo.png',
     vibrate: [200, 100, 200],
     data: {
       url: '/'
@@ -147,7 +147,7 @@ self.addEventListener('push', (event) => {
       {
         action: 'view',
         title: 'View Now',
-        icon: '/favicon.ico'
+        icon: '/marketing/azyah-logo.png'
       },
       {
         action: 'close',
