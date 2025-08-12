@@ -135,29 +135,42 @@ const ImageSearch: React.FC = () => {
   const performDualSearch = async (imageData: string, uploadedUrl?: string) => {
     setIsLoading(true);
     try {
-      // Initialize the vision model for object detection
-      const classifier = await pipeline(
-        'image-classification',
-        'onnx-community/mobilenetv4_conv_small.e2400_r224_in1k',
-        { device: 'webgpu' }
-      );
+      let searchQuery: string = 'fashion item';
 
-      // Analyze the image
-      const results = await classifier(imageData);
-      const topResult = Array.isArray(results) ? results[0] : results;
-      const searchQuery = (topResult as any)?.label || 'fashion item';
+      // Try WebGPU first, then gracefully fall back to WASM/CPU
+      try {
+        const classifierWebGPU = await pipeline(
+          'image-classification',
+          'onnx-community/mobilenetv4_conv_small.e2400_r224_in1k',
+          { device: 'webgpu' }
+        );
+        const results = await classifierWebGPU(imageData);
+        const topResult = Array.isArray(results) ? results[0] : results;
+        searchQuery = (topResult as any)?.label || searchQuery;
+      } catch (gpuErr) {
+        console.warn('WebGPU classification failed, falling back to WASM/CPU', gpuErr);
+        try {
+          const classifierCPU = await pipeline(
+            'image-classification',
+            'onnx-community/mobilenetv4_conv_small.e2400_r224_in1k'
+          );
+          const results = await classifierCPU(imageData);
+          const topResult = Array.isArray(results) ? results[0] : results;
+          searchQuery = (topResult as any)?.label || searchQuery;
+        } catch (cpuErr) {
+          console.error('Classification fallback failed, using generic query', cpuErr);
+        }
+      }
       
-      // Search internal catalog
+      // Always proceed with searches
       await searchInternalCatalog(searchQuery);
-      
-      // Search external sources
       await searchExternalSources(searchQuery, uploadedUrl);
       
     } catch (error) {
       console.error('Visual search error:', error);
       toast({
         title: "Search Error",
-        description: "Failed to analyze the image. Please try again.",
+        description: "Continuing with a generic search.",
         variant: "destructive",
       });
     } finally {
