@@ -67,32 +67,76 @@ serve(async (req) => {
       console.error('Error searching catalog:', error);
     }
 
-    // Note: Google Shopping API integration would require API keys
-    // For now, we'll return catalog results and placeholder external results
-    const externalResults = [
-      {
-        id: 'ext-1',
-        title: `Similar ${searchQuery || 'Fashion Item'} - Designer Brand`,
-        description: 'High-quality fashion item from external retailer',
-        price: 89.99,
-        currency: 'USD',
-        image_url: '/placeholder.svg',
-        brand: 'External Brand',
-        external_url: 'https://example-retailer.com/product',
-        source: 'external'
-      },
-      {
-        id: 'ext-2',
-        title: `${searchQuery || 'Fashion Item'} - Premium Collection`,
-        description: 'Premium fashion item from partner store',
-        price: 129.99,
-        currency: 'USD',
-        image_url: '/placeholder.svg',
-        brand: 'Partner Brand',
-        external_url: 'https://example-partner.com/product',
-        source: 'external'
+    // External search via SerpAPI (Google Shopping / Lens)
+    const serpapiKey = Deno.env.get('SERPAPI_API_KEY');
+    let externalResults: Array<{
+      id: string;
+      title: string;
+      description?: string;
+      price: number;
+      currency: string;
+      image_url: string | null;
+      brand: string;
+      external_url: string;
+      source: string;
+    }> = [];
+
+    try {
+      if (serpapiKey) {
+        let serpUrl = '';
+        if (imageUrl) {
+          const encodedUrl = encodeURIComponent(imageUrl);
+          serpUrl = `https://serpapi.com/search.json?engine=google_lens&url=${encodedUrl}&api_key=${serpapiKey}`;
+        } else if (searchQuery) {
+          const encodedQ = encodeURIComponent(searchQuery);
+          serpUrl = `https://serpapi.com/search.json?engine=google_shopping&q=${encodedQ}&api_key=${serpapiKey}&hl=en&gl=us`;
+        }
+
+        if (serpUrl) {
+          const serpRes = await fetch(serpUrl);
+          if (!serpRes.ok) throw new Error(`SerpAPI HTTP ${serpRes.status}`);
+          const serpData = await serpRes.json();
+
+          const items: any[] = serpData.shopping_results || serpData.visual_matches || [];
+          externalResults = items.slice(0, maxResults).map((item, idx) => {
+            const priceStr: string = item.price || item.extracted_price || '' as string;
+            const parsed = (() => {
+              if (typeof item.extracted_price === 'number') {
+                return { amount: item.extracted_price as number, currency: (item.currency || 'USD') as string };
+              }
+              const m = typeof priceStr === 'string' ? priceStr.match(/([A-Z]{3}|\$|£|€)?\s*([\d,.]+)/) : null;
+              const amount = m ? parseFloat(m[2].replace(/,/g, '')) : 0;
+              let currency = 'USD';
+              if (m && m[1]) {
+                const symbol = m[1];
+                currency = symbol.length === 3 ? symbol : ({ '$': 'USD', '£': 'GBP', '€': 'EUR' } as any)[symbol] || 'USD';
+              } else if (item.currency) {
+                currency = item.currency;
+              }
+              return { amount, currency };
+            })();
+
+            return {
+              id: String(item.product_id || item.offer_id || item.position || idx),
+              title: item.title || 'Product',
+              description: item.snippet || item.description || '',
+              price: parsed.amount,
+              currency: parsed.currency,
+              image_url: item.thumbnail || item.image || item.product_thumbnail || null,
+              brand: item.source || item.store || item.vendor || 'External',
+              external_url: item.product_link || item.link || item.untracked_link || item.source_link || '#',
+              source: 'external'
+            };
+          });
+        }
+      } else {
+        console.warn('SERPAPI_API_KEY is not set; returning only catalog results');
       }
-    ];
+    } catch (e) {
+      console.error('SerpAPI fetch error:', e);
+      // fallback to empty; catalog results will still show
+      externalResults = [];
+    }
 
     // Combine and sort results
     const allResults = [
