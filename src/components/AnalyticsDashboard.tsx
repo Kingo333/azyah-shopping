@@ -15,8 +15,10 @@ import {
   Users,
   Target,
   Calendar,
-  Download
+  Download,
+  ExternalLink
 } from 'lucide-react';
+import { InfoTooltip } from '@/components/ui/info-tooltip';
 import { useAnalyticsOverview, useConversionFunnel, useTimeSeriesAnalytics } from '@/hooks/useAnalytics';
 import { motion } from 'framer-motion';
 
@@ -135,55 +137,61 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
     }]
   });
 
-  // Metric cards data
+  // Metric cards data with clearer terminology and tooltips
   const metricCards = [
     {
-      title: 'Impressions',
+      title: 'Product Views',
       value: overview?.impressions || 0,
       icon: Eye,
       color: 'text-blue-600',
       bgColor: 'bg-blue-50',
-      change: '+12.5%'
+      change: '+12.5%',
+      tooltip: 'Number of times products were viewed in your catalog'
     },
     {
-      title: 'Click Rate',
+      title: 'External Store Clicks',
       value: `${overview?.ctr || 0}%`,
-      icon: MousePointer,
+      icon: ExternalLink,
       color: 'text-green-600',
       bgColor: 'bg-green-50',
-      change: '+8.2%'
+      change: '+8.2%',
+      tooltip: 'Percentage of views that resulted in clicks to external retailer websites'
     },
     {
-      title: 'Wishlist Adds',
+      title: 'Wishlist Additions',
       value: overview?.wishlist_adds || 0,
       icon: Heart,
       color: 'text-pink-600',
       bgColor: 'bg-pink-50',
-      change: '+15.3%'
+      change: '+15.3%',
+      tooltip: 'Number of times users saved products to their wishlist'
     },
     {
-      title: 'Conversions',
+      title: 'Tracked Conversions',
       value: overview?.conversions || 0,
       icon: ShoppingCart,
       color: 'text-purple-600',
       bgColor: 'bg-purple-50',
-      change: '+22.1%'
+      change: '+22.1%',
+      tooltip: 'Estimated conversions when users click through to purchase on external sites'
     },
     {
-      title: 'Revenue',
+      title: 'Estimated Revenue',
       value: overview ? `$${(overview.revenue_cents / 100).toFixed(2)}` : '$0.00',
       icon: DollarSign,
       color: 'text-emerald-600',
       bgColor: 'bg-emerald-50',
-      change: '+18.7%'
+      change: '+18.7%',
+      tooltip: 'Projected revenue based on clickthrough rates and estimated order values'
     },
     {
-      title: 'AR Views',
+      title: 'AR Try-On Views',
       value: overview?.ar_views || 0,
       icon: Target,
       color: 'text-orange-600',
       bgColor: 'bg-orange-50',
-      change: '+45.2%'
+      change: '+45.2%',
+      tooltip: 'Number of times users tried on products using AR technology'
     }
   ];
 
@@ -247,9 +255,12 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground">
-                      {metric.title}
-                    </p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-medium text-muted-foreground">
+                        {metric.title}
+                      </p>
+                      <InfoTooltip content={metric.tooltip} />
+                    </div>
                     <p className="text-2xl font-bold">{metric.value}</p>
                     <Badge variant="secondary" className="mt-1">
                       {metric.change}
@@ -277,16 +288,19 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle>Performance Trends</CardTitle>
+                <div className="flex items-center gap-2">
+                  <CardTitle>Performance Trends</CardTitle>
+                  <InfoTooltip content="Track how your metrics change over time. Select different metrics to see their trends." />
+                </div>
                 <Select value={selectedMetric} onValueChange={(value: any) => setSelectedMetric(value)}>
                   <SelectTrigger className="w-40">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="impressions">Impressions</SelectItem>
-                    <SelectItem value="clicks">Clicks</SelectItem>
+                    <SelectItem value="impressions">Product Views</SelectItem>
+                    <SelectItem value="clicks">External Clicks</SelectItem>
                     <SelectItem value="conversions">Conversions</SelectItem>
-                    <SelectItem value="revenue">Revenue</SelectItem>
+                    <SelectItem value="revenue">Est. Revenue</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -311,7 +325,10 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
         <TabsContent value="funnel" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Conversion Funnel</CardTitle>
+              <div className="flex items-center gap-2">
+                <CardTitle>Customer Journey Funnel</CardTitle>
+                <InfoTooltip content="Shows how users progress from viewing products to making purchases. Each stage shows conversion rates to the next level." />
+              </div>
             </CardHeader>
             <CardContent>
               <div className="h-80">
@@ -334,25 +351,28 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <Card>
               <CardHeader>
-                <CardTitle>Top Performing Products</CardTitle>
+                <div className="flex items-center gap-2">
+                  <CardTitle>Top Performing Products</CardTitle>
+                  <InfoTooltip content="Products ranked by views, likes, and estimated revenue. Performance based on user interactions within the app." />
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
                   {[
-                    { name: 'Summer Dress Collection', views: 1250, conversions: 45 },
-                    { name: 'Designer Handbag', views: 980, conversions: 38 },
-                    { name: 'Luxury Watch', views: 850, conversions: 32 },
-                    { name: 'Fashion Sneakers', views: 720, conversions: 28 }
+                    { name: 'Summer Dress Collection', views: 1250, likes: 45, estRevenue: '$2,850' },
+                    { name: 'Designer Handbag', views: 980, likes: 38, estRevenue: '$2,240' },
+                    { name: 'Luxury Watch', views: 850, likes: 32, estRevenue: '$1,980' },
+                    { name: 'Fashion Sneakers', views: 720, likes: 28, estRevenue: '$1,650' }
                   ].map((product, index) => (
                     <div key={index} className="flex items-center justify-between p-3 bg-accent/30 rounded-lg">
                       <div>
                         <p className="font-medium">{product.name}</p>
                         <p className="text-sm text-muted-foreground">
-                          {product.views} views • {product.conversions} conversions
+                          {product.views} views • {product.likes} likes • {product.estRevenue} est. revenue
                         </p>
                       </div>
                       <Badge variant="secondary">
-                        {((product.conversions / product.views) * 100).toFixed(1)}%
+                        {((product.likes / product.views) * 100).toFixed(1)}% engagement
                       </Badge>
                     </div>
                   ))}
@@ -362,29 +382,39 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
 
             <Card>
               <CardHeader>
-                <CardTitle>Real-time Activity</CardTitle>
+                <div className="flex items-center gap-2">
+                  <CardTitle>Real-time Activity</CardTitle>
+                  <InfoTooltip content="Live feed of user interactions with your products. Shows recent views, wishlist additions, and AR try-ons." />
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
                   <div className="flex items-center gap-3 p-3 border rounded-lg">
                     <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
                     <div className="flex-1">
-                      <p className="text-sm">New product view</p>
+                      <p className="text-sm">Product viewed in catalog</p>
                       <p className="text-xs text-muted-foreground">2 minutes ago</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3 p-3 border rounded-lg">
                     <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
                     <div className="flex-1">
-                      <p className="text-sm">Wishlist addition</p>
+                      <p className="text-sm">Product saved to wishlist</p>
                       <p className="text-xs text-muted-foreground">5 minutes ago</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3 p-3 border rounded-lg">
                     <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse" />
                     <div className="flex-1">
-                      <p className="text-sm">AR try-on started</p>
+                      <p className="text-sm">AR try-on session started</p>
                       <p className="text-xs text-muted-foreground">8 minutes ago</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 p-3 border rounded-lg">
+                    <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse" />
+                    <div className="flex-1">
+                      <p className="text-sm">User clicked "Shop Now" button</p>
+                      <p className="text-xs text-muted-foreground">12 minutes ago</p>
                     </div>
                   </div>
                 </div>

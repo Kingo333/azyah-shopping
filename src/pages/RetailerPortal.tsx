@@ -15,6 +15,7 @@ import {
   Users,
   ShoppingBag
 } from 'lucide-react';
+import { InfoTooltip } from '@/components/ui/info-tooltip';
 import { AddProductModal } from '@/components/AddProductModal';
 import { EditProductModal } from '@/components/EditProductModal';
 import { AnalyticsDashboard } from '@/components/AnalyticsDashboard';
@@ -336,7 +337,7 @@ const RetailerPortal = () => {
           </TabsContent>
 
           <TabsContent value="analytics">
-            <AnalyticsDashboard />
+            <AnalyticsDashboard retailerId={retailer?.id} />
           </TabsContent>
 
           <TabsContent value="settings">

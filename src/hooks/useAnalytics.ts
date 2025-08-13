@@ -261,12 +261,12 @@ export const useConversionFunnel = (params: {
 
       const wishlistCount = wishlistAdds?.length || 0;
 
-      // Build funnel stages
+      // Build funnel stages with clearer terminology
       const stages = [
-        { stage: 'Impressions', count: impressions, percentage: 100 },
-        { stage: 'Clicks', count: clicks, percentage: impressions > 0 ? (clicks / impressions) * 100 : 0 },
-        { stage: 'Wishlist', count: wishlistCount, percentage: impressions > 0 ? (wishlistCount / impressions) * 100 : 0 },
-        { stage: 'Purchases', count: purchases, percentage: impressions > 0 ? (purchases / impressions) * 100 : 0 }
+        { stage: 'Product Views', count: impressions, percentage: 100 },
+        { stage: 'External Store Clicks', count: clicks, percentage: impressions > 0 ? (clicks / impressions) * 100 : 0 },
+        { stage: 'Wishlist Additions', count: wishlistCount, percentage: impressions > 0 ? (wishlistCount / impressions) * 100 : 0 },
+        { stage: 'Tracked Conversions', count: purchases, percentage: impressions > 0 ? (purchases / impressions) * 100 : 0 }
       ];
 
       // Calculate conversion rates between stages

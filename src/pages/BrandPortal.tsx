@@ -19,6 +19,7 @@ import { EditProductModal } from '@/components/EditProductModal';
 import { BrandProductDetailModal } from '@/components/BrandProductDetailModal';
 import { LogoUpload } from '@/components/LogoUpload';
 import { Plus, Edit, Trash2, Upload, BarChart3, TrendingUp, Eye, Heart, ShoppingBag, DollarSign, Download, Filter } from 'lucide-react';
+import { InfoTooltip } from '@/components/ui/info-tooltip';
 import type { Product } from '@/types';
 
 interface Brand {
@@ -408,8 +409,11 @@ const BrandPortal: React.FC = () => {
                       <div className="w-8 h-8 bg-blue-100 rounded-xl flex items-center justify-center">
                         <Eye className="h-4 w-4 text-blue-500" />
                       </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Shopper Views</p>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1">
+                          <p className="text-sm text-muted-foreground">Product Views</p>
+                          <InfoTooltip content="Number of times shoppers viewed your products in the catalog" />
+                        </div>
                         <p className="text-lg sm:text-xl font-bold font-playfair">{analytics.totalViews}</p>
                       </div>
                     </div>
@@ -421,8 +425,11 @@ const BrandPortal: React.FC = () => {
                       <div className="w-8 h-8 bg-red-100 rounded-xl flex items-center justify-center">
                         <Heart className="h-4 w-4 text-red-500" />
                       </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Shopper Likes</p>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1">
+                          <p className="text-sm text-muted-foreground">Likes</p>
+                          <InfoTooltip content="Number of times shoppers liked your products" />
+                        </div>
                         <p className="text-lg sm:text-xl font-bold font-playfair">{analytics.totalLikes}</p>
                       </div>
                     </div>
@@ -434,8 +441,11 @@ const BrandPortal: React.FC = () => {
                       <div className="w-8 h-8 bg-green-100 rounded-xl flex items-center justify-center">
                         <DollarSign className="h-4 w-4 text-green-500" />
                       </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Revenue</p>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1">
+                          <p className="text-sm text-muted-foreground">Est. Revenue</p>
+                          <InfoTooltip content="Estimated revenue based on product views and engagement. Revenue from external store purchases is not directly tracked." />
+                        </div>
                         <p className="text-lg sm:text-xl font-bold font-playfair">${analytics.totalRevenue.toFixed(0)}</p>
                       </div>
                     </div>
@@ -446,35 +456,65 @@ const BrandPortal: React.FC = () => {
               <div className="grid lg:grid-cols-2 gap-4 sm:gap-6">
                 <ImprovedAnalyticsFunnel data={funnelData || []} loading={funnelLoading} />
                 
-                <AnalyticsTable
-                  title="Top Products"
-                  data={topProductsData}
-                  columns={[
-                    { key: 'rank', label: '#', sortable: false },
-                    { key: 'name', label: 'Product', sortable: true },
-                    { key: 'views', label: 'Views', sortable: true },
-                    { key: 'likes', label: 'Likes', sortable: true },
-                    { key: 'revenue', label: 'Revenue', sortable: true }
-                  ]}
-                  loading={analyticsLoading}
-                />
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center gap-2">
+                      <CardTitle>Top Products</CardTitle>
+                      <InfoTooltip content="Your best performing products based on views, likes, and estimated revenue from user engagement" />
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <AnalyticsTable
+                      title=""
+                      data={topProductsData}
+                      columns={[
+                        { key: 'rank', label: '#', sortable: false },
+                        { key: 'name', label: 'Product', sortable: true },
+                        { key: 'views', label: 'Views', sortable: true },
+                        { key: 'likes', label: 'Likes', sortable: true },
+                        { key: 'revenue', label: 'Est. Revenue', sortable: true }
+                      ]}
+                      loading={analyticsLoading}
+                    />
+                  </CardContent>
+                </Card>
               </div>
 
               <div className="grid lg:grid-cols-2 gap-4 sm:gap-6">
-                <AnalyticsChart
-                  title="Impressions Over Time"
-                  data={timeSeriesData || []}
-                  type="area"
-                  metric="impressions"
-                  loading={timeSeriesLoading}
-                />
-                <AnalyticsChart
-                  title="Revenue Trend"
-                  data={timeSeriesData?.map(d => ({ ...d, value: d.value * 45 })) || []}
-                  type="bar"
-                  metric="revenue"
-                  loading={timeSeriesLoading}
-                />
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center gap-2">
+                      <CardTitle>Product Views Over Time</CardTitle>
+                      <InfoTooltip content="Shows how many times your products were viewed in the catalog each day" />
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <AnalyticsChart
+                      title=""
+                      data={timeSeriesData || []}
+                      type="area"
+                      metric="impressions"
+                      loading={timeSeriesLoading}
+                    />
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center gap-2">
+                      <CardTitle>Estimated Revenue Trend</CardTitle>
+                      <InfoTooltip content="Projected revenue based on user engagement. Actual purchases happen on external retailer websites." />
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <AnalyticsChart
+                      title=""
+                      data={timeSeriesData?.map(d => ({ ...d, value: d.value * 45 })) || []}
+                      type="bar"
+                      metric="revenue"
+                      loading={timeSeriesLoading}
+                    />
+                  </CardContent>
+                </Card>
               </div>
             </div>
           </TabsContent>
