@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -63,7 +63,10 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
     };
   };
 
-  const dateFilter = getDateFilter(dateRange);
+  // Memoize stable values to prevent query key changes
+  const dateFilter = useMemo(() => getDateFilter(dateRange), [dateRange]);
+  const entityId = useMemo(() => brandId || retailerId, [brandId, retailerId]);
+  const entityType = useMemo(() => brandId ? 'brand' : 'retailer', [brandId, retailerId]);
   
   const overviewQuery = useAnalyticsOverview({
     ...dateFilter,
@@ -81,17 +84,54 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
     selectedMetric,
     'day',
     dateFilter,
-    brandId || retailerId,
-    brandId ? 'brand' : 'retailer'
+    entityId,
+    entityType
   );
 
-  // Extract data with fallbacks
-  const overview = overviewQuery.data;
-  const funnelData = funnelQuery.data;
-  const timeSeriesData = timeSeriesQuery.data;
+  // Debug logging for React Query states
+  console.log('Analytics Debug Info:', {
+    overviewQuery: {
+      isLoading: overviewQuery.isLoading,
+      isError: overviewQuery.isError,
+      error: overviewQuery.error,
+      data: overviewQuery.data,
+      status: overviewQuery.status
+    },
+    funnelQuery: {
+      isLoading: funnelQuery.isLoading,
+      isError: funnelQuery.isError,
+      data: funnelQuery.data,
+      status: funnelQuery.status
+    },
+    timeSeriesQuery: {
+      isLoading: timeSeriesQuery.isLoading,
+      isError: timeSeriesQuery.isError,
+      data: timeSeriesQuery.data,
+      status: timeSeriesQuery.status
+    }
+  });
+
+  // Extract data with explicit fallbacks and validation
+  const overview = overviewQuery.data || {
+    impressions: 0,
+    clicks: 0,
+    ctr: 0,
+    wishlist_adds: 0,
+    conversions: 0,
+    revenue_cents: 0,
+    ar_views: 0
+  };
+  
+  const funnelData = funnelQuery.data || [];
+  const timeSeriesData = timeSeriesQuery.data || [];
+  
   const isOverviewLoading = overviewQuery.isLoading;
   const isFunnelLoading = funnelQuery.isLoading;
   const isTimeSeriesLoading = timeSeriesQuery.isLoading;
+  
+  const hasOverviewError = overviewQuery.isError;
+  const hasFunnelError = funnelQuery.isError;
+  const hasTimeSeriesError = timeSeriesQuery.isError;
 
   // Chart configurations
   const getLineChartOption = () => ({
@@ -158,11 +198,11 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
     'Tracked Conversions': 'Estimated purchases when users buy on external retailer sites'
   };
 
-  // Metric cards data with actual data or fallbacks
-  const metricCards = [
+  // Metric cards data with explicit data validation
+  const metricCards = useMemo(() => [
     {
       title: 'Product Views',
-      value: overview?.impressions || 0,
+      value: overview.impressions,
       icon: Eye,
       color: 'text-blue-600',
       bgColor: 'bg-blue-50',
@@ -171,7 +211,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
     },
     {
       title: 'External Store Clicks',
-      value: `${overview?.ctr || 0}%`,
+      value: `${overview.ctr.toFixed(1)}%`,
       icon: ExternalLink,
       color: 'text-green-600',
       bgColor: 'bg-green-50',
@@ -180,7 +220,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
     },
     {
       title: 'Wishlist Additions',
-      value: overview?.wishlist_adds || 0,
+      value: overview.wishlist_adds,
       icon: Heart,
       color: 'text-pink-600',
       bgColor: 'bg-pink-50',
@@ -189,7 +229,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
     },
     {
       title: 'Tracked Conversions',
-      value: overview?.conversions || 0,
+      value: overview.conversions,
       icon: ShoppingCart,
       color: 'text-purple-600',
       bgColor: 'bg-purple-50',
@@ -198,7 +238,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
     },
     {
       title: 'Estimated Revenue',
-      value: overview ? `$${(overview.revenue_cents / 100).toFixed(2)}` : '$0.00',
+      value: `$${(overview.revenue_cents / 100).toFixed(2)}`,
       icon: DollarSign,
       color: 'text-emerald-600',
       bgColor: 'bg-emerald-50',
@@ -207,16 +247,17 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
     },
     {
       title: 'AR Try-On Views',
-      value: overview?.ar_views || 0,
+      value: overview.ar_views,
       icon: Target,
       color: 'text-orange-600',
       bgColor: 'bg-orange-50',
       change: '+45.2%',
       tooltip: 'Number of times users tried on products using AR technology'
     }
-  ];
+  ], [overview]);
 
-  if (isOverviewLoading) {
+  // Show loading state or error handling
+  if (isOverviewLoading || isFunnelLoading) {
     return (
       <div className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -228,6 +269,32 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
             </Card>
           ))}
         </div>
+      </div>
+    );
+  }
+
+  // Show error state if queries failed
+  if (hasOverviewError) {
+    return (
+      <div className="space-y-6">
+        <Card>
+          <CardContent className="p-6">
+            <div className="text-center">
+              <p className="text-muted-foreground">Failed to load analytics data. Please try again.</p>
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  overviewQuery.refetch();
+                  funnelQuery.refetch();
+                  timeSeriesQuery.refetch();
+                }}
+                className="mt-4"
+              >
+                Retry
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }

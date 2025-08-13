@@ -151,7 +151,7 @@ export const useAnalyticsOverview = (params: {
 }) => {
   return useQuery({
     queryKey: ['analytics-overview', params.startDate, params.endDate, params.brandId, params.retailerId],
-    queryFn: async () => {
+    queryFn: async (): Promise<AnalyticsOverview> => {
       const { startDate, endDate, brandId, retailerId } = params;
       
       console.log('useAnalyticsOverview queryFn executing with:', { startDate, endDate, brandId, retailerId });
@@ -258,8 +258,9 @@ export const useAnalyticsOverview = (params: {
       return result;
     },
     enabled: !!(params.startDate && params.endDate),
-    staleTime: 5000,
-    refetchInterval: false
+    staleTime: 30000,
+    refetchInterval: false,
+    retry: 1
   });
 };
 
@@ -272,7 +273,7 @@ export const useConversionFunnel = (params: {
 }) => {
   return useQuery({
     queryKey: ['conversion-funnel', params.startDate, params.endDate, params.brandId, params.retailerId],
-    queryFn: async () => {
+    queryFn: async (): Promise<ConversionFunnelData[]> => {
       const { startDate, endDate, brandId, retailerId } = params;
       
       // Get products for filtering
@@ -357,8 +358,9 @@ export const useConversionFunnel = (params: {
       return result;
     },
     enabled: !!(params.startDate && params.endDate),
-    staleTime: 5000,
-    refetchInterval: false
+    staleTime: 30000,
+    refetchInterval: false,
+    retry: 1
   });
 };
 
@@ -451,8 +453,9 @@ export const useTimeSeriesAnalytics = (
       return result;
     },
     enabled: !!(dateFilter.startDate && dateFilter.endDate),
-    staleTime: 5000,
-    refetchInterval: false
+    staleTime: 30000,
+    refetchInterval: false,
+    retry: 1
   });
 };
 
