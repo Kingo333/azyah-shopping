@@ -9,9 +9,6 @@ export interface User {
   bio?: string;
   socials?: Record<string, string>;
   website?: string;
-  phone?: string;
-  shipping_address?: Address;
-  billing_address?: Address;
   preferences?: UserPreferences;
   created_at: string;
   updated_at: string;
@@ -171,8 +168,6 @@ export interface Order {
   shipping_cents: number;
   total_cents: number;
   currency: string;
-  shipping_address?: Address;
-  billing_address?: Address;
   payment_method?: Record<string, any>;
   tracking_number?: string;
   notes?: string;

@@ -966,51 +966,42 @@ export type Database = {
       users: {
         Row: {
           avatar_url: string | null
-          billing_address: Json | null
           bio: string | null
           country: string | null
           created_at: string
           email: string
           id: string
           name: string | null
-          phone: string | null
           preferences: Json | null
           role: Database["public"]["Enums"]["user_role"]
-          shipping_address: Json | null
           socials: Json | null
           updated_at: string
           website: string | null
         }
         Insert: {
           avatar_url?: string | null
-          billing_address?: Json | null
           bio?: string | null
           country?: string | null
           created_at?: string
           email: string
           id?: string
           name?: string | null
-          phone?: string | null
           preferences?: Json | null
           role?: Database["public"]["Enums"]["user_role"]
-          shipping_address?: Json | null
           socials?: Json | null
           updated_at?: string
           website?: string | null
         }
         Update: {
           avatar_url?: string | null
-          billing_address?: Json | null
           bio?: string | null
           country?: string | null
           created_at?: string
           email?: string
           id?: string
           name?: string | null
-          phone?: string | null
           preferences?: Json | null
           role?: Database["public"]["Enums"]["user_role"]
-          shipping_address?: Json | null
           socials?: Json | null
           updated_at?: string
           website?: string | null
