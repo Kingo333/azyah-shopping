@@ -151,104 +151,115 @@ export const useAnalyticsOverview = (params: {
 }) => {
   return useQuery({
     queryKey: ['analytics-overview', params.startDate, params.endDate, params.brandId, params.retailerId],
-    queryFn: async (): Promise<AnalyticsOverview> => {
+    queryFn: async () => {
       const { startDate, endDate, brandId, retailerId } = params;
       
       console.log('useAnalyticsOverview queryFn executing with:', { startDate, endDate, brandId, retailerId });
       
-      try {
-        // Get products for filtering
-        let productIds: string[] = [];
+      // Get products for filtering
+      let productIds: string[] = [];
+      
+      if (brandId || retailerId) {
+        const { data: products, error: productsError } = await supabase
+          .from('products')
+          .select('id')
+          .eq(brandId ? 'brand_id' : 'retailer_id', brandId || retailerId)
+          .eq('status', 'active');
         
-        if (brandId || retailerId) {
-          const { data: products, error: productsError } = await supabase
-            .from('products')
-            .select('id')
-            .eq(brandId ? 'brand_id' : 'retailer_id', brandId || retailerId)
-            .eq('status', 'active');
-          
-          if (productsError) {
-            console.error('Error fetching products:', productsError);
-            throw productsError;
-          }
-          
-          productIds = products?.map(p => p.id) || [];
-          console.log('Product IDs found for filtering:', productIds.length);
-        }
-
-        // Get events within date range, filter by brand/retailer directly
-        let eventsQuery = supabase
-          .from('events')
-          .select('event_type, product_id, created_at')
-          .gte('created_at', startDate)
-          .lte('created_at', endDate);
-
-        // Filter directly by brand_id or retailer_id if specified
-        if (brandId) {
-          eventsQuery = eventsQuery.eq('brand_id', brandId);
-        } else if (retailerId) {
-          eventsQuery = eventsQuery.eq('retailer_id', retailerId);
-        }
-
-        const { data: events, error: eventsError } = await eventsQuery;
-        
-        if (eventsError) {
-          console.error('Error fetching events:', eventsError);
-          throw eventsError;
+        if (productsError) {
+          console.error('Error fetching products:', productsError);
+          return {
+            impressions: 0,
+            clicks: 0,
+            ctr: 0,
+            wishlist_adds: 0,
+            conversions: 0,
+            revenue_cents: 0,
+            ar_views: 0
+          };
         }
         
-        console.log('Events query result:', { 
-          events: events?.length, 
-          brandId,
-          retailerId,
-          sampleEvents: events?.slice(0, 3)
-        });
-
-        const impressions = events?.filter(e => e.event_type === 'product_view').length || 0;
-        const clicks = events?.filter(e => e.event_type === 'product_click').length || 0;
-        const conversions = events?.filter(e => e.event_type === 'purchase').length || 0;
-        const ar_views = events?.filter(e => e.event_type === 'ar_view').length || 0;
-
-        // Get wishlist adds in date range
-        let wishlistQuery = supabase
-          .from('wishlist_items')
-          .select('product_id')
-          .gte('added_at', startDate)
-          .lte('added_at', endDate);
-
-        if (productIds.length > 0) {
-          wishlistQuery = wishlistQuery.in('product_id', productIds);
-        }
-
-        const { data: wishlistAdds, error: wishlistError } = await wishlistQuery;
-        
-        if (wishlistError) {
-          console.error('Error fetching wishlist adds:', wishlistError);
-        }
-
-        const ctr = impressions > 0 ? (clicks / impressions) * 100 : 0;
-        
-        const result = {
-          impressions,
-          clicks,
-          ctr: Math.round(ctr * 100) / 100,
-          wishlist_adds: wishlistAdds?.length || 0,
-          conversions,
-          revenue_cents: conversions * 4500, // Estimated average order value
-          ar_views
-        };
-        
-        console.log('useAnalyticsOverview queryFn returning result:', result);
-        
-        return result;
-      } catch (error) {
-        console.error('useAnalyticsOverview queryFn error:', error);
-        throw error;
+        productIds = products?.map(p => p.id) || [];
+        console.log('Product IDs found for filtering:', productIds.length);
       }
+
+      // Get events within date range, filter by brand/retailer directly
+      let eventsQuery = supabase
+        .from('events')
+        .select('event_type, product_id, created_at')
+        .gte('created_at', startDate)
+        .lte('created_at', endDate);
+
+      // Filter directly by brand_id or retailer_id if specified
+      if (brandId) {
+        eventsQuery = eventsQuery.eq('brand_id', brandId);
+      } else if (retailerId) {
+        eventsQuery = eventsQuery.eq('retailer_id', retailerId);
+      }
+
+      const { data: events, error: eventsError } = await eventsQuery;
+      
+      if (eventsError) {
+        console.error('Error fetching events:', eventsError);
+        return {
+          impressions: 0,
+          clicks: 0,
+          ctr: 0,
+          wishlist_adds: 0,
+          conversions: 0,
+          revenue_cents: 0,
+          ar_views: 0
+        };
+      }
+      
+      console.log('Events query result:', { 
+        events: events?.length, 
+        brandId,
+        retailerId,
+        sampleEvents: events?.slice(0, 3)
+      });
+
+      const impressions = events?.filter(e => e.event_type === 'product_view').length || 0;
+      const clicks = events?.filter(e => e.event_type === 'product_click').length || 0;
+      const conversions = events?.filter(e => e.event_type === 'purchase').length || 0;
+      const ar_views = events?.filter(e => e.event_type === 'ar_view').length || 0;
+
+      // Get wishlist adds in date range
+      let wishlistQuery = supabase
+        .from('wishlist_items')
+        .select('product_id')
+        .gte('added_at', startDate)
+        .lte('added_at', endDate);
+
+      if (productIds.length > 0) {
+        wishlistQuery = wishlistQuery.in('product_id', productIds);
+      }
+
+      const { data: wishlistAdds, error: wishlistError } = await wishlistQuery;
+      
+      if (wishlistError) {
+        console.error('Error fetching wishlist adds:', wishlistError);
+      }
+
+      const ctr = impressions > 0 ? (clicks / impressions) * 100 : 0;
+      
+      const result = {
+        impressions,
+        clicks,
+        ctr: Math.round(ctr * 100) / 100,
+        wishlist_adds: wishlistAdds?.length || 0,
+        conversions,
+        revenue_cents: conversions * 4500, // Estimated average order value
+        ar_views
+      };
+      
+      console.log('useAnalyticsOverview queryFn returning result:', result);
+      
+      return result;
     },
     enabled: !!(params.startDate && params.endDate),
-    refetchInterval: 30000,
-    staleTime: 10000
+    staleTime: 5000,
+    refetchInterval: false
   });
 };
 
@@ -261,98 +272,93 @@ export const useConversionFunnel = (params: {
 }) => {
   return useQuery({
     queryKey: ['conversion-funnel', params.startDate, params.endDate, params.brandId, params.retailerId],
-    queryFn: async (): Promise<ConversionFunnelData[]> => {
+    queryFn: async () => {
       const { startDate, endDate, brandId, retailerId } = params;
       
-      try {
-        // Get products for filtering
-        let productIds: string[] = [];
+      // Get products for filtering
+      let productIds: string[] = [];
+      
+      if (brandId || retailerId) {
+        const { data: products, error: productsError } = await supabase
+          .from('products')
+          .select('id')
+          .eq(brandId ? 'brand_id' : 'retailer_id', brandId || retailerId)
+          .eq('status', 'active');
         
-        if (brandId || retailerId) {
-          const { data: products, error: productsError } = await supabase
-            .from('products')
-            .select('id')
-            .eq(brandId ? 'brand_id' : 'retailer_id', brandId || retailerId)
-            .eq('status', 'active');
-          
-          if (productsError) {
-            console.error('Error fetching products for funnel:', productsError);
-            throw productsError;
-          }
-          
-          productIds = products?.map(p => p.id) || [];
+        if (productsError) {
+          console.error('Error fetching products for funnel:', productsError);
+          return [];
         }
-
-        // Get event counts with proper filtering
-        let eventsQuery = supabase
-          .from('events')
-          .select('event_type')
-          .gte('created_at', startDate)
-          .lte('created_at', endDate);
-
-        // Filter by brand_id or retailer_id directly
-        if (brandId) {
-          eventsQuery = eventsQuery.eq('brand_id', brandId);
-        } else if (retailerId) {
-          eventsQuery = eventsQuery.eq('retailer_id', retailerId);
-        } else if (productIds.length > 0) {
-          eventsQuery = eventsQuery.in('product_id', productIds);
-        }
-
-        const { data: events, error: eventsError } = await eventsQuery;
         
-        if (eventsError) {
-          console.error('Error fetching events for funnel:', eventsError);
-          throw eventsError;
-        }
-
-        const impressions = events?.filter(e => e.event_type === 'product_view').length || 0;
-        const clicks = events?.filter(e => e.event_type === 'product_click').length || 0;
-        const purchases = events?.filter(e => e.event_type === 'purchase').length || 0;
-
-        // Get wishlist data
-        let wishlistQuery = supabase
-          .from('wishlist_items')
-          .select('product_id')
-          .gte('added_at', startDate)
-          .lte('added_at', endDate);
-
-        if (productIds.length > 0) {
-          wishlistQuery = wishlistQuery.in('product_id', productIds);
-        }
-
-        const { data: wishlistAdds, error: wishlistError } = await wishlistQuery;
-        
-        if (wishlistError) {
-          console.error('Error fetching wishlist for funnel:', wishlistError);
-        }
-
-        const wishlistCount = wishlistAdds?.length || 0;
-
-        // Build funnel stages with clearer terminology
-        const stages = [
-          { stage: 'Product Views', count: impressions, percentage: 100 },
-          { stage: 'External Store Clicks', count: clicks, percentage: impressions > 0 ? (clicks / impressions) * 100 : 0 },
-          { stage: 'Wishlist Additions', count: wishlistCount, percentage: impressions > 0 ? (wishlistCount / impressions) * 100 : 0 },
-          { stage: 'Tracked Conversions', count: purchases, percentage: impressions > 0 ? (purchases / impressions) * 100 : 0 }
-        ];
-
-        // Calculate conversion rates between stages
-        const result = stages.map((stage, index) => ({
-          ...stage,
-          conversion_rate: index === 0 ? 100 : stages[index - 1].count > 0 ? (stage.count / stages[index - 1].count) * 100 : 0
-        }));
-        
-        console.log('Conversion funnel result:', result);
-        return result;
-      } catch (error) {
-        console.error('useConversionFunnel queryFn error:', error);
-        throw error;
+        productIds = products?.map(p => p.id) || [];
       }
+
+      // Get event counts with proper filtering
+      let eventsQuery = supabase
+        .from('events')
+        .select('event_type')
+        .gte('created_at', startDate)
+        .lte('created_at', endDate);
+
+      // Filter by brand_id or retailer_id directly
+      if (brandId) {
+        eventsQuery = eventsQuery.eq('brand_id', brandId);
+      } else if (retailerId) {
+        eventsQuery = eventsQuery.eq('retailer_id', retailerId);
+      } else if (productIds.length > 0) {
+        eventsQuery = eventsQuery.in('product_id', productIds);
+      }
+
+      const { data: events, error: eventsError } = await eventsQuery;
+      
+      if (eventsError) {
+        console.error('Error fetching events for funnel:', eventsError);
+        return [];
+      }
+
+      const impressions = events?.filter(e => e.event_type === 'product_view').length || 0;
+      const clicks = events?.filter(e => e.event_type === 'product_click').length || 0;
+      const purchases = events?.filter(e => e.event_type === 'purchase').length || 0;
+
+      // Get wishlist data
+      let wishlistQuery = supabase
+        .from('wishlist_items')
+        .select('product_id')
+        .gte('added_at', startDate)
+        .lte('added_at', endDate);
+
+      if (productIds.length > 0) {
+        wishlistQuery = wishlistQuery.in('product_id', productIds);
+      }
+
+      const { data: wishlistAdds, error: wishlistError } = await wishlistQuery;
+      
+      if (wishlistError) {
+        console.error('Error fetching wishlist for funnel:', wishlistError);
+      }
+
+      const wishlistCount = wishlistAdds?.length || 0;
+
+      // Build funnel stages with clearer terminology
+      const stages = [
+        { stage: 'Product Views', count: impressions, percentage: 100 },
+        { stage: 'External Store Clicks', count: clicks, percentage: impressions > 0 ? (clicks / impressions) * 100 : 0 },
+        { stage: 'Wishlist Additions', count: wishlistCount, percentage: impressions > 0 ? (wishlistCount / impressions) * 100 : 0 },
+        { stage: 'Tracked Conversions', count: purchases, percentage: impressions > 0 ? (purchases / impressions) * 100 : 0 }
+      ];
+
+      // Calculate conversion rates between stages
+      const result = stages.map((stage, index) => ({
+        ...stage,
+        conversion_rate: index === 0 ? 100 : stages[index - 1].count > 0 ? (stage.count / stages[index - 1].count) * 100 : 0
+      }));
+      
+      console.log('Conversion funnel result:', result);
+      return result;
     },
     enabled: !!(params.startDate && params.endDate),
-    refetchInterval: 30000,
-    staleTime: 10000
+    staleTime: 5000,
+    refetchInterval: false
   });
 };
 
@@ -366,92 +372,87 @@ export const useTimeSeriesAnalytics = (
 ) => {
   return useQuery({
     queryKey: ['time-series', metric, interval, dateFilter.startDate, dateFilter.endDate, entityId, entityType],
-    queryFn: async (): Promise<TimeSeriesData[]> => {
-      try {
-        // Get products for filtering if entity specified
-        let productIds: string[] = [];
+    queryFn: async () => {
+      // Get products for filtering if entity specified
+      let productIds: string[] = [];
+      
+      if (entityId && entityType) {
+        const { data: products, error: productsError } = await supabase
+          .from('products')
+          .select('id')
+          .eq(entityType === 'brand' ? 'brand_id' : 'retailer_id', entityId)
+          .eq('status', 'active');
         
-        if (entityId && entityType) {
-          const { data: products, error: productsError } = await supabase
-            .from('products')
-            .select('id')
-            .eq(entityType === 'brand' ? 'brand_id' : 'retailer_id', entityId)
-            .eq('status', 'active');
-          
-          if (productsError) {
-            console.error('Error fetching products for time series:', productsError);
-            throw productsError;
-          }
-          
-          productIds = products?.map(p => p.id) || [];
+        if (productsError) {
+          console.error('Error fetching products for time series:', productsError);
+          return [];
         }
-
-        const eventType = metric === 'impressions' ? 'product_view' : 
-                        metric === 'clicks' ? 'product_click' : 
-                        metric === 'conversions' ? 'purchase' : 'product_view';
-
-        // Get events data with proper filtering
-        let eventsQuery = supabase
-          .from('events')
-          .select('created_at, event_type')
-          .eq('event_type', eventType)
-          .gte('created_at', dateFilter.startDate)
-          .lte('created_at', dateFilter.endDate)
-          .order('created_at');
-
-        // Filter by brand_id or retailer_id directly
-        if (entityId && entityType === 'brand') {
-          eventsQuery = eventsQuery.eq('brand_id', entityId);
-        } else if (entityId && entityType === 'retailer') {
-          eventsQuery = eventsQuery.eq('retailer_id', entityId);
-        } else if (productIds.length > 0) {
-          eventsQuery = eventsQuery.in('product_id', productIds);
-        }
-
-        const { data: events, error: eventsError } = await eventsQuery;
         
-        if (eventsError) {
-          console.error('Error fetching events for time series:', eventsError);
-          throw eventsError;
-        }
-
-        // Group by date
-        const dateGroups: Record<string, number> = {};
-        const startDate = new Date(dateFilter.startDate);
-        const endDate = new Date(dateFilter.endDate);
-        
-        // Initialize all dates with 0
-        for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
-          const dateKey = d.toISOString().split('T')[0];
-          dateGroups[dateKey] = 0;
-        }
-
-        // Count events by date
-        events?.forEach(event => {
-          const dateKey = new Date(event.created_at).toISOString().split('T')[0];
-          if (dateGroups.hasOwnProperty(dateKey)) {
-            dateGroups[dateKey]++;
-          }
-        });
-
-        // Convert to array format
-        const result = Object.entries(dateGroups).map(([date, value]) => ({
-          date,
-          value,
-          revenue: metric === 'revenue' ? value * 45 : undefined,
-          conversions: metric === 'conversions' ? value : undefined
-        }));
-        
-        console.log('Time series result for', metric, ':', result.length, 'data points');
-        return result;
-      } catch (error) {
-        console.error('useTimeSeriesAnalytics queryFn error:', error);
-        throw error;
+        productIds = products?.map(p => p.id) || [];
       }
+
+      const eventType = metric === 'impressions' ? 'product_view' : 
+                      metric === 'clicks' ? 'product_click' : 
+                      metric === 'conversions' ? 'purchase' : 'product_view';
+
+      // Get events data with proper filtering
+      let eventsQuery = supabase
+        .from('events')
+        .select('created_at, event_type')
+        .eq('event_type', eventType)
+        .gte('created_at', dateFilter.startDate)
+        .lte('created_at', dateFilter.endDate)
+        .order('created_at');
+
+      // Filter by brand_id or retailer_id directly
+      if (entityId && entityType === 'brand') {
+        eventsQuery = eventsQuery.eq('brand_id', entityId);
+      } else if (entityId && entityType === 'retailer') {
+        eventsQuery = eventsQuery.eq('retailer_id', entityId);
+      } else if (productIds.length > 0) {
+        eventsQuery = eventsQuery.in('product_id', productIds);
+      }
+
+      const { data: events, error: eventsError } = await eventsQuery;
+      
+      if (eventsError) {
+        console.error('Error fetching events for time series:', eventsError);
+        return [];
+      }
+
+      // Group by date
+      const dateGroups: Record<string, number> = {};
+      const startDate = new Date(dateFilter.startDate);
+      const endDate = new Date(dateFilter.endDate);
+      
+      // Initialize all dates with 0
+      for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+        const dateKey = d.toISOString().split('T')[0];
+        dateGroups[dateKey] = 0;
+      }
+
+      // Count events by date
+      events?.forEach(event => {
+        const dateKey = new Date(event.created_at).toISOString().split('T')[0];
+        if (dateGroups.hasOwnProperty(dateKey)) {
+          dateGroups[dateKey]++;
+        }
+      });
+
+      // Convert to array format
+      const result = Object.entries(dateGroups).map(([date, value]) => ({
+        date,
+        value,
+        revenue: metric === 'revenue' ? value * 45 : undefined,
+        conversions: metric === 'conversions' ? value : undefined
+      }));
+      
+      console.log('Time series result for', metric, ':', result.length, 'data points');
+      return result;
     },
     enabled: !!(dateFilter.startDate && dateFilter.endDate),
-    refetchInterval: 30000,
-    staleTime: 10000
+    staleTime: 5000,
+    refetchInterval: false
   });
 };
 

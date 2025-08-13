@@ -85,21 +85,6 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
     brandId ? 'brand' : 'retailer'
   );
 
-  // Enhanced debugging
-  console.log('=== AnalyticsDashboard Debug ===');
-  console.log('Props:', { brandId, retailerId });
-  console.log('Date filter:', dateFilter);
-  console.log('Overview query state:', {
-    data: overviewQuery.data,
-    isLoading: overviewQuery.isLoading,
-    isError: overviewQuery.isError,
-    error: overviewQuery.error,
-    status: overviewQuery.status,
-    fetchStatus: overviewQuery.fetchStatus
-  });
-  console.log('Overview query data type:', typeof overviewQuery.data);
-  console.log('Overview query data value:', overviewQuery.data);
-
   // Extract data with fallbacks
   const overview = overviewQuery.data;
   const funnelData = funnelQuery.data;
@@ -231,8 +216,6 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
     }
   ];
 
-  console.log('Metric cards data:', metricCards.map(card => ({ title: card.title, value: card.value })));
-
   if (isOverviewLoading) {
     return (
       <div className="space-y-6">
@@ -251,14 +234,6 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Debug Info */}
-      <div className="bg-yellow-100 p-4 rounded text-sm">
-        <p><strong>Debug Info:</strong></p>
-        <p>Overview loading: {String(isOverviewLoading)}</p>
-        <p>Overview data: {JSON.stringify(overview)}</p>
-        <p>Brand ID: {brandId}</p>
-        <p>Query status: {overviewQuery.status}</p>
-      </div>
 
       {/* Header Controls */}
       <div className="flex items-center justify-between">
