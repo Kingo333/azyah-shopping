@@ -10,10 +10,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useCategories } from '@/hooks/useCategories';
-import { useAnalytics, useConversionFunnel, useTimeSeriesAnalytics } from '@/hooks/useAnalytics';
-import ImprovedAnalyticsFunnel from '@/components/analytics/ImprovedAnalyticsFunnel';
-import AnalyticsChart from '@/components/analytics/AnalyticsChart';
-import AnalyticsTable from '@/components/analytics/AnalyticsTable';
+import { useAnalytics } from '@/hooks/useAnalytics';
+import { AnalyticsDashboard } from '@/components/AnalyticsDashboard';
 import { AddProductModal } from '@/components/AddProductModal';
 import { EditProductModal } from '@/components/EditProductModal';
 import { BrandProductDetailModal } from '@/components/BrandProductDetailModal';
@@ -44,24 +42,6 @@ const BrandPortal: React.FC = () => {
   const { user } = useAuth();
   const { categories } = useCategories();
   const { data: analyticsData, isLoading: analyticsLoading } = useAnalytics(brand?.id, 'brand');
-  
-  const dateRange = {
-    startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-    endDate: new Date().toISOString().split('T')[0]
-  };
-  
-  const { data: funnelData, isLoading: funnelLoading } = useConversionFunnel({
-    ...dateRange,
-    brandId: brand?.id
-  });
-
-  const { data: timeSeriesData, isLoading: timeSeriesLoading } = useTimeSeriesAnalytics(
-    'impressions',
-    'day',
-    dateRange,
-    brand?.id,
-    'brand'
-  );
 
   useEffect(() => {
     if (user) {
@@ -387,136 +367,7 @@ const BrandPortal: React.FC = () => {
           </TabsContent>
 
           <TabsContent value="analytics" className="mt-4 sm:mt-6">
-            <div className="space-y-4 sm:space-y-6">
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
-                <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm rounded-2xl">
-                  <CardContent className="p-3 sm:p-4">
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 sm:w-8 sm:h-8 bg-primary/10 rounded-xl flex items-center justify-center">
-                        <ShoppingBag className="h-3 w-3 sm:h-4 sm:w-4 text-primary" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-xs sm:text-sm text-muted-foreground">Products</p>
-                        <p className="text-lg sm:text-xl font-bold font-playfair">{analytics.totalProducts}</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-                
-                <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm rounded-2xl">
-                  <CardContent className="p-3 sm:p-4">
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 bg-blue-100 rounded-xl flex items-center justify-center">
-                        <Eye className="h-4 w-4 text-blue-500" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1">
-                          <p className="text-sm text-muted-foreground">Product Views</p>
-                          <InfoTooltip content="Number of times shoppers viewed your products in the catalog" />
-                        </div>
-                        <p className="text-lg sm:text-xl font-bold font-playfair">{analytics.totalViews}</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm rounded-2xl">
-                  <CardContent className="p-3 sm:p-4">
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 bg-red-100 rounded-xl flex items-center justify-center">
-                        <Heart className="h-4 w-4 text-red-500" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1">
-                          <p className="text-sm text-muted-foreground">Likes</p>
-                          <InfoTooltip content="Number of times shoppers liked your products" />
-                        </div>
-                        <p className="text-lg sm:text-xl font-bold font-playfair">{analytics.totalLikes}</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm rounded-2xl">
-                  <CardContent className="p-3 sm:p-4">
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 bg-green-100 rounded-xl flex items-center justify-center">
-                        <DollarSign className="h-4 w-4 text-green-500" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1">
-                          <p className="text-sm text-muted-foreground">Est. Revenue</p>
-                          <InfoTooltip content="Estimated revenue based on product views and engagement. Revenue from external store purchases is not directly tracked." />
-                        </div>
-                        <p className="text-lg sm:text-xl font-bold font-playfair">${analytics.totalRevenue.toFixed(0)}</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              <div className="grid lg:grid-cols-2 gap-4 sm:gap-6">
-                <ImprovedAnalyticsFunnel data={funnelData || []} loading={funnelLoading} />
-                
-                <Card>
-                  <CardHeader>
-                    <div className="flex items-center gap-2">
-                      <CardTitle>Top Products</CardTitle>
-                      <InfoTooltip content="Your best performing products based on views, likes, and estimated revenue from user engagement" />
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <AnalyticsTable
-                      title=""
-                      data={topProductsData}
-                      columns={[
-                        { key: 'rank', label: '#', sortable: false },
-                        { key: 'name', label: 'Product', sortable: true },
-                        { key: 'views', label: 'Views', sortable: true },
-                        { key: 'likes', label: 'Likes', sortable: true },
-                        { key: 'revenue', label: 'Est. Revenue', sortable: true }
-                      ]}
-                      loading={analyticsLoading}
-                    />
-                  </CardContent>
-                </Card>
-              </div>
-
-              <div className="grid lg:grid-cols-2 gap-4 sm:gap-6">
-                <Card>
-                  <CardHeader>
-                    <div className="flex items-center gap-2">
-                      <CardTitle>Product Views Over Time</CardTitle>
-                      <InfoTooltip content="Shows how many times your products were viewed in the catalog each day" />
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <AnalyticsChart
-                      title=""
-                      data={timeSeriesData || []}
-                      type="area"
-                      metric="impressions"
-                      loading={timeSeriesLoading}
-                    />
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader>
-                    <div className="flex items-center gap-2">
-                      <CardTitle>Estimated Revenue Trend</CardTitle>
-                      <InfoTooltip content="Projected revenue based on user engagement. Actual purchases happen on external retailer websites." />
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <AnalyticsChart
-                      title=""
-                      data={timeSeriesData?.map(d => ({ ...d, value: d.value * 45 })) || []}
-                      type="bar"
-                      metric="revenue"
-                      loading={timeSeriesLoading}
-                    />
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
+            <AnalyticsDashboard brandId={brand?.id} />
           </TabsContent>
 
           <TabsContent value="settings" className="mt-4 sm:mt-6">
