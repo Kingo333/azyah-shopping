@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -33,7 +33,8 @@ const BrandPortal: React.FC = () => {
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
   const [products, setProducts] = useState<any[]>([]);
   const [brand, setBrand] = useState<Brand | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [brandLoading, setBrandLoading] = useState(true);
+  const [productsLoading, setProductsLoading] = useState(false);
   const [isAddProductModalOpen, setIsAddProductModalOpen] = useState(false);
   const [isEditProductModalOpen, setIsEditProductModalOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
@@ -42,30 +43,18 @@ const BrandPortal: React.FC = () => {
   const { user } = useAuth();
   const { categories } = useCategories();
   const { data: analyticsData, isLoading: analyticsLoading } = useAnalytics(brand?.id, 'brand');
+  const mountedRef = useRef(true);
 
-  useEffect(() => {
-    if (user) {
-      fetchBrandData();
-    }
-  }, [user]);
-
-  useEffect(() => {
-    if (brand?.id) {
-      fetchProducts();
-      console.log('Brand ID for analytics:', brand.id);
-    }
-  }, [brand?.id]);
-
-  const fetchBrandData = async () => {
+  const fetchBrandData = useCallback(async () => {
     if (!user?.id) {
       console.log('No user ID available');
-      setLoading(false);
+      setBrandLoading(false);
       return;
     }
 
     try {
       console.log('Fetching brand for user:', user.id);
-      setLoading(true);
+      setBrandLoading(true);
       
       const { data, error } = await supabase
         .from('brands')
@@ -77,25 +66,34 @@ const BrandPortal: React.FC = () => {
       
       if (error) {
         console.error('Error fetching brand:', error);
-        setBrand(null);
+        if (mountedRef.current) {
+          setBrand(null);
+        }
         return;
       }
       
       console.log('Setting brand data:', data);
-      setBrand(data);
+      if (mountedRef.current) {
+        setBrand(data);
+      }
       
     } catch (error) { 
       console.error('Error in fetchBrandData:', error);
-      setBrand(null);
+      if (mountedRef.current) {
+        setBrand(null);
+      }
     } finally {
-      setLoading(false);
+      if (mountedRef.current) {
+        setBrandLoading(false);
+      }
     }
-  };
+  }, [user?.id]);
 
-  const fetchProducts = async () => {
+  const fetchProducts = useCallback(async () => {
     if (!brand?.id) return;
     
     try {
+      setProductsLoading(true);
       const { data, error } = await supabase
         .from('products')
         .select(`
@@ -117,14 +115,38 @@ const BrandPortal: React.FC = () => {
         description: p.description || ''
       }));
       
-      setProducts(formatted);
+      if (mountedRef.current) {
+        setProducts(formatted);
+      }
     } catch (error) {
       console.error('Error fetching products:', error);
       toast({ title: "Error", description: "Failed to fetch products", variant: "destructive" });
     } finally { 
-      setLoading(false); 
+      if (mountedRef.current) {
+        setProductsLoading(false);
+      }
     }
-  };
+  }, [brand?.id, toast]);
+
+  useEffect(() => {
+    if (user) {
+      fetchBrandData();
+    }
+  }, [user, fetchBrandData]);
+
+  useEffect(() => {
+    if (brand?.id) {
+      fetchProducts();
+      console.log('Brand ID for analytics:', brand.id);
+    }
+  }, [brand?.id, fetchProducts]);
+
+  useEffect(() => {
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
 
   const handleLogoUpdate = (logoUrl: string | null) => {
     if (brand) {
@@ -232,7 +254,7 @@ const BrandPortal: React.FC = () => {
     </div>
   );
 
-  if (loading) return (
+  if (brandLoading) return (
     <div className="min-h-screen flex items-center justify-center p-4">
       <div className="text-center">
         <h2 className="text-xl font-semibold mb-2">Loading Brand Portal...</h2>
@@ -331,7 +353,7 @@ const BrandPortal: React.FC = () => {
                 )}
               </div>
 
-              {loading ? (
+              {productsLoading ? (
                 <div className="text-center py-8">Loading products...</div>
               ) : products.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">No products yet. Create your first product!</div>
