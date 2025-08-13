@@ -137,6 +137,14 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
     }]
   });
 
+  // Funnel stage explanations
+  const funnelStageTooltips = {
+    'Product Views': 'Users browsing and viewing products in your catalog',
+    'External Store Clicks': 'Users clicking "Shop Now" to visit the retailer\'s website',
+    'Wishlist Additions': 'Users saving products to their wishlist for later',
+    'Tracked Conversions': 'Estimated purchases when users buy on external retailer sites'
+  };
+
   // Metric cards data with clearer terminology and tooltips
   const metricCards = [
     {
@@ -342,6 +350,19 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
                     style={{ height: '100%', width: '100%' }}
                   />
                 )}
+              </div>
+              
+              {/* Funnel Stage Explanations */}
+              <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                {Object.entries(funnelStageTooltips).map(([stage, explanation]) => (
+                  <div key={stage} className="flex items-start gap-2 p-3 bg-accent/30 rounded-lg">
+                    <InfoTooltip content={explanation} />
+                    <div>
+                      <p className="font-medium">{stage}</p>
+                      <p className="text-muted-foreground text-xs">{explanation}</p>
+                    </div>
+                  </div>
+                ))}
               </div>
             </CardContent>
           </Card>
