@@ -56,24 +56,38 @@ const BrandPortal: React.FC = () => {
   }, [brand?.id]);
 
   const fetchBrandData = async () => {
+    if (!user?.id) {
+      console.log('No user ID available');
+      setLoading(false);
+      return;
+    }
+
     try {
-      console.log('Fetching brand for user:', user?.id);
+      console.log('Fetching brand for user:', user.id);
+      setLoading(true);
+      
       const { data, error } = await supabase
         .from('brands')
         .select('*')
-        .eq('owner_user_id', user?.id)
+        .eq('owner_user_id', user.id)
         .maybeSingle();
       
       console.log('Brand query result:', { data, error });
       
       if (error) {
         console.error('Error fetching brand:', error);
+        setBrand(null);
         return;
       }
       
+      console.log('Setting brand data:', data);
       setBrand(data);
+      
     } catch (error) { 
-      console.error('Error in fetchBrandData:', error); 
+      console.error('Error in fetchBrandData:', error);
+      setBrand(null);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -213,6 +227,15 @@ const BrandPortal: React.FC = () => {
       <div className="text-center">
         <h2 className="text-xl font-semibold mb-2">Access Restricted</h2>
         <p className="text-muted-foreground">Please log in to access the brand portal.</p>
+      </div>
+    </div>
+  );
+
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center p-4">
+      <div className="text-center">
+        <h2 className="text-xl font-semibold mb-2">Loading Brand Portal...</h2>
+        <p className="text-muted-foreground">Please wait while we fetch your brand information.</p>
       </div>
     </div>
   );
