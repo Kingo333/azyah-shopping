@@ -402,6 +402,75 @@ export type Database = {
         }
         Relationships: []
       }
+      crawl_sessions: {
+        Row: {
+          backoff_until: string | null
+          created_at: string | null
+          domain: string
+          error_details: Json | null
+          id: string
+          job_id: string | null
+          last_request_at: string | null
+          rate_limit_hits: number | null
+          session_metrics: Json | null
+          source_id: string
+          status: string | null
+          updated_at: string | null
+          urls_discovered: number | null
+          urls_failed: number | null
+          urls_processed: number | null
+        }
+        Insert: {
+          backoff_until?: string | null
+          created_at?: string | null
+          domain: string
+          error_details?: Json | null
+          id?: string
+          job_id?: string | null
+          last_request_at?: string | null
+          rate_limit_hits?: number | null
+          session_metrics?: Json | null
+          source_id: string
+          status?: string | null
+          updated_at?: string | null
+          urls_discovered?: number | null
+          urls_failed?: number | null
+          urls_processed?: number | null
+        }
+        Update: {
+          backoff_until?: string | null
+          created_at?: string | null
+          domain?: string
+          error_details?: Json | null
+          id?: string
+          job_id?: string | null
+          last_request_at?: string | null
+          rate_limit_hits?: number | null
+          session_metrics?: Json | null
+          source_id?: string
+          status?: string | null
+          updated_at?: string | null
+          urls_discovered?: number | null
+          urls_failed?: number | null
+          urls_processed?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crawl_sessions_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "import_jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crawl_sessions_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "import_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       events: {
         Row: {
           brand_id: string | null
@@ -635,39 +704,60 @@ export type Database = {
       }
       import_sources: {
         Row: {
+          consent_given: boolean | null
+          crawl_settings: Json | null
           crawl_strategy: string
           created_at: string
           domain: string
           id: string
           last_crawl_at: string | null
+          last_robots_check: string | null
+          max_concurrent: number | null
           name: string
           notes: string | null
+          owner_contact: string | null
+          rate_limit_rps: number | null
+          respect_robots: boolean | null
           robots_allowed: boolean | null
           status: string
           updated_at: string
           user_id: string
         }
         Insert: {
+          consent_given?: boolean | null
+          crawl_settings?: Json | null
           crawl_strategy?: string
           created_at?: string
           domain: string
           id?: string
           last_crawl_at?: string | null
+          last_robots_check?: string | null
+          max_concurrent?: number | null
           name: string
           notes?: string | null
+          owner_contact?: string | null
+          rate_limit_rps?: number | null
+          respect_robots?: boolean | null
           robots_allowed?: boolean | null
           status?: string
           updated_at?: string
           user_id: string
         }
         Update: {
+          consent_given?: boolean | null
+          crawl_settings?: Json | null
           crawl_strategy?: string
           created_at?: string
           domain?: string
           id?: string
           last_crawl_at?: string | null
+          last_robots_check?: string | null
+          max_concurrent?: number | null
           name?: string
           notes?: string | null
+          owner_contact?: string | null
+          rate_limit_rps?: number | null
+          respect_robots?: boolean | null
           robots_allowed?: boolean | null
           status?: string
           updated_at?: string
@@ -1033,6 +1123,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      robots_cache: {
+        Row: {
+          allows_crawling: boolean | null
+          created_at: string | null
+          domain: string
+          id: string
+          last_fetched: string | null
+          robots_content: string | null
+          updated_at: string | null
+          user_agent_checked: string | null
+        }
+        Insert: {
+          allows_crawling?: boolean | null
+          created_at?: string | null
+          domain: string
+          id?: string
+          last_fetched?: string | null
+          robots_content?: string | null
+          updated_at?: string | null
+          user_agent_checked?: string | null
+        }
+        Update: {
+          allows_crawling?: boolean | null
+          created_at?: string | null
+          domain?: string
+          id?: string
+          last_fetched?: string | null
+          robots_content?: string | null
+          updated_at?: string | null
+          user_agent_checked?: string | null
+        }
+        Relationships: []
       }
       swipes: {
         Row: {

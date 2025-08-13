@@ -7,9 +7,11 @@ import { Progress } from '@/components/ui/progress';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/components/ui/use-toast';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Loader2, Globe, Package, CheckCircle, AlertCircle } from 'lucide-react';
+import { Loader2, Globe, Package, CheckCircle, AlertCircle, Shield, Clock, Zap } from 'lucide-react';
 
 interface ImportWizardModalProps {
   open: boolean;
@@ -36,19 +38,27 @@ export const ImportWizardModal = ({ open, onOpenChange, brandId, retailerId }: I
   const [loading, setLoading] = useState(false);
   const [websiteUrl, setWebsiteUrl] = useState('');
   const [websiteName, setWebsiteName] = useState('');
+  const [ownershipConsent, setOwnershipConsent] = useState(false);
+  const [respectRobots, setRespectRobots] = useState(true);
+  const [robotsStatus, setRobotsStatus] = useState<'checking' | 'allowed' | 'blocked' | null>(null);
   const [discoveredUrls, setDiscoveredUrls] = useState<string[]>([]);
   const [extractedProducts, setExtractedProducts] = useState<DiscoveredProduct[]>([]);
   const [progress, setProgress] = useState(0);
   const [jobId, setJobId] = useState<string | null>(null);
+  const [crawlMetrics, setCrawlMetrics] = useState<any>(null);
 
   const resetWizard = () => {
     setStep(1);
     setWebsiteUrl('');
     setWebsiteName('');
+    setOwnershipConsent(false);
+    setRespectRobots(true);
+    setRobotsStatus(null);
     setDiscoveredUrls([]);
     setExtractedProducts([]);
     setProgress(0);
     setJobId(null);
+    setCrawlMetrics(null);
     setLoading(false);
   };
 
@@ -77,11 +87,48 @@ export const ImportWizardModal = ({ open, onOpenChange, brandId, retailerId }: I
       return;
     }
 
+    if (!ownershipConsent) {
+      toast({
+        title: "Consent Required",
+        description: "Please confirm that you own or have permission to import from this website",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
     setProgress(10);
 
+    // Check robots.txt first if enabled
+    if (respectRobots) {
+      setRobotsStatus('checking');
+      try {
+        const domain = new URL(websiteUrl).hostname;
+        const { data: robotsResult } = await supabase.functions.invoke('robots-checker', {
+          body: { domain, userAgent: 'AzyahImporter/1.0 (+contact: support@azyah.com)' }
+        });
+
+        if (robotsResult && !robotsResult.allowed) {
+          setRobotsStatus('blocked');
+          toast({
+            title: "Robots.txt Restriction",
+            description: "This website's robots.txt file disallows crawling. Please get permission from the site owner.",
+            variant: "destructive",
+          });
+          setLoading(false);
+          return;
+        }
+        setRobotsStatus('allowed');
+      } catch (error) {
+        console.warn('Robots check failed, proceeding with caution:', error);
+        setRobotsStatus('allowed');
+      }
+    }
+
+    setProgress(25);
+
     try {
-      // Create import source
+      // Create import source with safe scraping settings
       const domain = new URL(websiteUrl).hostname;
       const { data: source, error: sourceError } = await supabase
         .from('import_sources')
@@ -90,26 +137,43 @@ export const ImportWizardModal = ({ open, onOpenChange, brandId, retailerId }: I
           domain,
           name: websiteName || domain,
           status: 'active',
+          consent_given: ownershipConsent,
+          respect_robots: respectRobots,
+          crawl_settings: {
+            maxDepth: 2,
+            maxUrls: 50,
+            politeDelay: 1000,
+            respectRobots
+          }
         })
         .select()
         .single();
 
       if (sourceError) throw sourceError;
 
-      setProgress(30);
+      setProgress(45);
 
-      // Call discovery function
+      // Call discovery function with safe scraping
       const { data: discoveryResult, error: discoveryError } = await supabase.functions.invoke('website-discovery', {
-        body: { url: websiteUrl, maxUrls: 20 }
+        body: { 
+          url: websiteUrl, 
+          maxUrls: 50,
+          sourceId: source.id,
+          respectRobots
+        }
       });
 
       if (discoveryError) throw discoveryError;
 
       if (!discoveryResult.success) {
+        if (discoveryResult.robotsBlocked) {
+          setRobotsStatus('blocked');
+        }
         throw new Error(discoveryResult.error || 'Discovery failed');
       }
 
-      setProgress(60);
+      setProgress(70);
+      setCrawlMetrics(discoveryResult.metrics);
 
       if (discoveryResult.productUrls.length === 0) {
         toast({
@@ -288,7 +352,7 @@ export const ImportWizardModal = ({ open, onOpenChange, brandId, retailerId }: I
           {/* Step 1: Enter Website URL */}
           {step === 1 && (
             <div className="space-y-4">
-              <div className="grid grid-cols-1 gap-4">
+              <div className="space-y-4">
                 <div>
                   <Label htmlFor="websiteUrl">Website URL</Label>
                   <Input
@@ -301,6 +365,7 @@ export const ImportWizardModal = ({ open, onOpenChange, brandId, retailerId }: I
                     Enter your website homepage or a collection/category page
                   </p>
                 </div>
+                
                 <div>
                   <Label htmlFor="websiteName">Store Name (Optional)</Label>
                   <Input
@@ -310,23 +375,79 @@ export const ImportWizardModal = ({ open, onOpenChange, brandId, retailerId }: I
                     onChange={(e) => setWebsiteName(e.target.value)}
                   />
                 </div>
+
+                {/* Safe Scraping Consent */}
+                <Alert className="border-orange-200 bg-orange-50 dark:bg-orange-950/20">
+                  <Shield className="h-4 w-4 text-orange-600" />
+                  <AlertDescription className="text-orange-800 dark:text-orange-200">
+                    <div className="space-y-3">
+                      <div className="flex items-start space-x-2">
+                        <Checkbox
+                          id="ownershipConsent"
+                          checked={ownershipConsent}
+                          onCheckedChange={(checked) => setOwnershipConsent(checked as boolean)}
+                          className="mt-0.5"
+                        />
+                        <label htmlFor="ownershipConsent" className="text-sm font-medium cursor-pointer">
+                          I own/manage this website and authorize product import
+                        </label>
+                      </div>
+                      
+                      <div className="flex items-start space-x-2">
+                        <Checkbox
+                          id="respectRobots"
+                          checked={respectRobots}
+                          onCheckedChange={(checked) => setRespectRobots(checked as boolean)}
+                          className="mt-0.5"
+                        />
+                        <label htmlFor="respectRobots" className="text-sm cursor-pointer">
+                          Respect robots.txt restrictions (recommended)
+                        </label>
+                      </div>
+
+                      {robotsStatus && (
+                        <div className="flex items-center gap-2 text-xs">
+                          {robotsStatus === 'checking' && (
+                            <>
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                              <span>Checking robots.txt...</span>
+                            </>
+                          )}
+                          {robotsStatus === 'allowed' && (
+                            <>
+                              <CheckCircle className="w-3 h-3 text-green-600" />
+                              <span className="text-green-700">Robots.txt allows crawling</span>
+                            </>
+                          )}
+                          {robotsStatus === 'blocked' && (
+                            <>
+                              <AlertCircle className="w-3 h-3 text-red-600" />
+                              <span className="text-red-700">Robots.txt restricts crawling</span>
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </AlertDescription>
+                </Alert>
               </div>
 
               <div className="bg-blue-50 dark:bg-blue-950/20 p-4 rounded-lg">
-                <h3 className="font-medium text-blue-900 dark:text-blue-100 mb-2">
-                  How it works:
+                <h3 className="font-medium text-blue-900 dark:text-blue-100 mb-2 flex items-center gap-2">
+                  <Zap className="w-4 h-4" />
+                  Safe Scraping Mode
                 </h3>
                 <ul className="text-sm text-blue-700 dark:text-blue-300 space-y-1">
-                  <li>• We'll scan your website for product pages</li>
-                  <li>• Extract product information (title, price, images)</li>
-                  <li>• Let you review and approve before importing</li>
-                  <li>• Products will appear in your Azyah swipe feed</li>
+                  <li>• <Clock className="w-3 h-3 inline mr-1" />Respectful 1 request/second rate limiting</li>
+                  <li>• <Shield className="w-3 h-3 inline mr-1" />Honors robots.txt and site policies</li>
+                  <li>• <Package className="w-3 h-3 inline mr-1" />Professional identification with contact info</li>
+                  <li>• <CheckCircle className="w-3 h-3 inline mr-1" />Quality filtering for product data</li>
                 </ul>
               </div>
 
               <Button 
                 onClick={handleDiscoverProducts} 
-                disabled={loading || !websiteUrl}
+                disabled={loading || !websiteUrl || !ownershipConsent}
                 className="w-full"
               >
                 {loading ? (
@@ -350,6 +471,21 @@ export const ImportWizardModal = ({ open, onOpenChange, brandId, retailerId }: I
                 <p className="text-muted-foreground">
                   Found {discoveredUrls.length} product pages. Extracting product information...
                 </p>
+                
+                {crawlMetrics && (
+                  <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg text-sm">
+                    <div className="grid grid-cols-2 gap-2 text-left">
+                      <div>URLs Processed: {crawlMetrics.urlsProcessed}</div>
+                      <div>Failed: {crawlMetrics.urlsFailed}</div>
+                      {crawlMetrics.rateLimited && (
+                        <div className="col-span-2 text-orange-600 dark:text-orange-400">
+                          <AlertCircle className="w-3 h-3 inline mr-1" />
+                          Rate limiting detected - using safe delays
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
               
               <Progress value={progress} className="w-full" />

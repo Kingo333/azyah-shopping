@@ -25,8 +25,12 @@ serve(async (req) => {
 
     const response = await fetch(url, {
       headers: {
-        'User-Agent': 'Azyah Product Importer (+support@azyah.com)'
-      }
+        'User-Agent': 'AzyahImporter/1.0 (+contact: support@azyah.com)',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Cache-Control': 'no-cache',
+      },
+      signal: AbortSignal.timeout(30000), // 30 second timeout
     });
 
     if (!response.ok) {
@@ -181,15 +185,33 @@ serve(async (req) => {
         }
       }
       
-      // Images - look for product images
+      // Images - look for product images with quality filtering
       const imgMatches = html.match(/<img[^>]+src=["'](.*?)["'][^>]*>/gi);
       if (imgMatches) {
         const images = [];
-        for (const imgMatch of imgMatches.slice(0, 10)) { // Limit to 10 images
+        for (const imgMatch of imgMatches.slice(0, 15)) { // Check more images for better quality
           const srcMatch = imgMatch.match(/src=["'](.*?)["']/i);
           if (srcMatch && srcMatch[1] && !srcMatch[1].includes('data:')) {
-            const fullUrl = new URL(srcMatch[1], url).toString();
-            images.push(fullUrl);
+            try {
+              const fullUrl = new URL(srcMatch[1], url).toString();
+              
+              // Basic quality filtering - avoid tiny icons and common UI elements
+              const lowQualityPatterns = [
+                'icon', 'logo', 'badge', 'arrow', 'button', 'social',
+                'facebook', 'twitter', 'instagram', 'pinterest',
+                'loading', 'spinner', 'placeholder'
+              ];
+              
+              const isLowQuality = lowQualityPatterns.some(pattern => 
+                fullUrl.toLowerCase().includes(pattern)
+              );
+              
+              if (!isLowQuality && images.length < 10) {
+                images.push(fullUrl);
+              }
+            } catch (error) {
+              // Invalid URL, skip
+            }
           }
         }
         product.images = images;
@@ -200,10 +222,31 @@ serve(async (req) => {
       }
     }
 
-    // Quality check
-    if (!product.title || !product.images?.length) {
+    // Enhanced quality check with minimum requirements
+    const qualityIssues = [];
+    
+    if (!product.title || product.title.length < 3) {
+      qualityIssues.push('Missing or too short title');
+    }
+    
+    if (!product.images?.length) {
+      qualityIssues.push('No images found');
+    } else {
+      // Additional image quality checks could be added here
+      const validImages = product.images.filter(img => 
+        img && img.startsWith('http') && img.length > 10
+      );
+      if (validImages.length === 0) {
+        qualityIssues.push('No valid image URLs');
+      } else {
+        product.images = validImages;
+      }
+    }
+
+    if (qualityIssues.length > 0) {
       return new Response(JSON.stringify({ 
-        error: 'Could not extract required product data (title and images)',
+        error: 'Product quality check failed',
+        issues: qualityIssues,
         success: false 
       }), {
         status: 400,
@@ -217,14 +260,28 @@ serve(async (req) => {
       product.sku = urlPath.split('/').pop()?.replace(/[^a-zA-Z0-9]/g, '') || `imported-${Date.now()}`;
     }
 
-    // Set defaults
+    // Set defaults and metadata
     product.external_url = url;
     product.currency = product.currency || 'USD';
     product.extracted_data = {
-      extraction_method: product.title ? 'json-ld' : 'open-graph',
+      extraction_method: product.title ? (product.sku ? 'json-ld' : 'open-graph') : 'dom-heuristics',
       original_html_title: html.match(/<title[^>]*>(.*?)<\/title>/is)?.[1]?.replace(/<[^>]*>/g, '').trim(),
-      extraction_timestamp: new Date().toISOString()
+      extraction_timestamp: new Date().toISOString(),
+      user_agent: 'AzyahImporter/1.0 (+contact: support@azyah.com)',
+      safe_scraping: true,
+      quality_score: calculateQualityScore(product)
     };
+
+    // Helper function to calculate quality score
+    function calculateQualityScore(prod: any): number {
+      let score = 0;
+      if (prod.title && prod.title.length > 10) score += 30;
+      if (prod.description && prod.description.length > 20) score += 20;
+      if (prod.price_cents && prod.price_cents > 0) score += 25;
+      if (prod.images && prod.images.length >= 2) score += 15;
+      if (prod.brand) score += 10;
+      return score;
+    }
 
     console.log('Product extraction complete:', {
       title: product.title,
