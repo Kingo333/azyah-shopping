@@ -1,18 +1,7 @@
-import React, { useMemo } from 'react';
-import {
-  ReactFlow,
-  Background,
-  Controls,
-  useNodesState,
-  useEdgesState,
-  Node,
-  Edge,
-  MarkerType,
-  Handle,
-  Position,
-} from '@xyflow/react';
-import '@xyflow/react/dist/style.css';
-import { Eye, ExternalLink, Heart, ShoppingCart } from 'lucide-react';
+import React from 'react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Eye, ExternalLink, Heart, ShoppingCart, ArrowRight, TrendingDown } from 'lucide-react';
 
 interface CustomerJourneyFlowProps {
   funnelData: Array<{
@@ -23,150 +12,120 @@ interface CustomerJourneyFlowProps {
   }>;
 }
 
-// Custom node component for funnel stages
-const FunnelNode = ({ data }: { data: any }) => {
-  const Icon = data.icon;
-  
+interface StageCardProps {
+  stage: {
+    stage: string;
+    count: number;
+    percentage: number;
+    conversion_rate: number;
+  };
+  index: number;
+  isLast: boolean;
+}
+
+const StageCard: React.FC<StageCardProps> = ({ stage, index, isLast }) => {
+  const stageConfig = {
+    'Product Views': {
+      icon: Eye,
+      color: 'text-blue-600',
+      bgColor: 'bg-blue-50',
+      borderColor: 'border-blue-200',
+      description: 'Users browse your catalog'
+    },
+    'External Store Clicks': {
+      icon: ExternalLink,
+      color: 'text-green-600',
+      bgColor: 'bg-green-50',
+      borderColor: 'border-green-200',
+      description: 'Users click "Shop Now"'
+    },
+    'Wishlist Additions': {
+      icon: Heart,
+      color: 'text-pink-600',
+      bgColor: 'bg-pink-50',
+      borderColor: 'border-pink-200',
+      description: 'Users save products'
+    },
+    'Actual Purchases': {
+      icon: ShoppingCart,
+      color: 'text-purple-600',
+      bgColor: 'bg-purple-50',
+      borderColor: 'border-purple-200',
+      description: 'Users complete purchase'
+    }
+  };
+
+  const config = stageConfig[stage.stage as keyof typeof stageConfig] || {
+    icon: Eye,
+    color: 'text-gray-600',
+    bgColor: 'bg-gray-50',
+    borderColor: 'border-gray-200',
+    description: stage.stage
+  };
+
+  const Icon = config.icon;
+
   return (
-    <div className="bg-white border-2 border-border rounded-lg p-4 shadow-lg min-w-[200px] relative">
-      <Handle
-        type="target"
-        position={Position.Left}
-        style={{ background: '#8b5cf6', width: 8, height: 8 }}
-      />
-      <Handle
-        type="source"
-        position={Position.Right}
-        style={{ background: '#8b5cf6', width: 8, height: 8 }}
-      />
-      
-      <div className="flex items-center gap-3 mb-2">
-        <div className={`p-2 rounded-full ${data.bgColor}`}>
-          <Icon className={`h-5 w-5 ${data.color}`} />
-        </div>
-        <div>
-          <h3 className="font-semibold text-sm">{data.stage}</h3>
-          <p className="text-xs text-muted-foreground">{data.description}</p>
-        </div>
-      </div>
-      
-      <div className="space-y-1">
-        <div className="flex justify-between items-center">
-          <span className="text-lg font-bold">{data.count.toLocaleString()}</span>
-          <span className="text-sm text-muted-foreground">{data.percentage}%</span>
-        </div>
-        
-        {data.conversionRate && (
-          <div className="text-xs text-green-600 font-medium">
-            {data.conversionRate}% conversion
+    <div className="flex flex-col items-center">
+      {/* Stage Card */}
+      <Card className={`w-full max-w-xs border-2 ${config.borderColor} hover:shadow-lg transition-all duration-300 animate-fade-in`} 
+            style={{ animationDelay: `${index * 150}ms` }}>
+        <CardContent className="p-4">
+          {/* Header */}
+          <div className="flex items-center gap-3 mb-3">
+            <div className={`p-2 rounded-full ${config.bgColor}`}>
+              <Icon className={`h-5 w-5 ${config.color}`} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="font-semibold text-sm truncate">{stage.stage}</h3>
+              <p className="text-xs text-muted-foreground">{config.description}</p>
+            </div>
           </div>
-        )}
-        
-        <div className="w-full bg-muted rounded-full h-2">
-          <div 
-            className={`h-2 rounded-full ${data.progressColor}`}
-            style={{ width: `${data.percentage}%` }}
-          />
+          
+          {/* Metrics */}
+          <div className="space-y-2">
+            <div className="flex justify-between items-baseline">
+              <span className="text-2xl font-bold">{stage.count.toLocaleString()}</span>
+              <Badge variant="secondary" className="text-xs">
+                {stage.percentage.toFixed(1)}%
+              </Badge>
+            </div>
+            
+            {/* Conversion Rate */}
+            {index > 0 && stage.conversion_rate > 0 && (
+              <div className="flex items-center gap-1">
+                <TrendingDown className="h-3 w-3 text-orange-500" />
+                <span className="text-xs text-orange-600 font-medium">
+                  {stage.conversion_rate.toFixed(1)}% conversion
+                </span>
+              </div>
+            )}
+            
+            {/* Progress Bar */}
+            <div className="w-full bg-muted rounded-full h-2">
+              <div 
+                className={`h-2 rounded-full transition-all duration-700 ${config.color.replace('text-', 'bg-')}`}
+                style={{ 
+                  width: `${stage.percentage}%`,
+                  animationDelay: `${index * 200 + 500}ms`
+                }}
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Arrow Connector */}
+      {!isLast && (
+        <div className="flex items-center justify-center my-4 lg:hidden">
+          <ArrowRight className="h-6 w-6 text-muted-foreground animate-pulse" />
         </div>
-      </div>
+      )}
     </div>
   );
 };
 
-const nodeTypes = {
-  funnelStage: FunnelNode,
-};
-
 export const CustomerJourneyFlow: React.FC<CustomerJourneyFlowProps> = ({ funnelData }) => {
-  const { initialNodes, initialEdges } = useMemo(() => {
-    if (!funnelData || funnelData.length === 0) {
-      return { initialNodes: [], initialEdges: [] };
-    }
-
-    // Map funnel stages to visual elements
-    const stageConfig = {
-      'Product Views': {
-        icon: Eye,
-        color: 'text-blue-600',
-        bgColor: 'bg-blue-50',
-        progressColor: 'bg-blue-500',
-        description: 'Users browse products'
-      },
-      'External Store Clicks': {
-        icon: ExternalLink,
-        color: 'text-green-600',
-        bgColor: 'bg-green-50',
-        progressColor: 'bg-green-500',
-        description: 'Users click "Shop Now"'
-      },
-      'Wishlist Additions': {
-        icon: Heart,
-        color: 'text-pink-600',
-        bgColor: 'bg-pink-50',
-        progressColor: 'bg-pink-500',
-        description: 'Users save products'
-      },
-      'Actual Purchases': {
-        icon: ShoppingCart,
-        color: 'text-purple-600',
-        bgColor: 'bg-purple-50',
-        progressColor: 'bg-purple-500',
-        description: 'Users complete purchase'
-      }
-    };
-
-    const nodes: Node[] = funnelData.map((stage, index) => {
-      const config = stageConfig[stage.stage as keyof typeof stageConfig] || {
-        icon: Eye,
-        color: 'text-gray-600',
-        bgColor: 'bg-gray-50',
-        progressColor: 'bg-gray-500',
-        description: stage.stage
-      };
-
-      return {
-        id: `stage-${index}`,
-        type: 'funnelStage',
-        position: { x: index * 280, y: 50 },
-        data: {
-          stage: stage.stage,
-          count: stage.count,
-          percentage: stage.percentage,
-          conversionRate: index > 0 ? stage.conversion_rate : null,
-          ...config
-        },
-        draggable: false,
-      };
-    });
-
-    const edges: Edge[] = [];
-    for (let i = 0; i < nodes.length - 1; i++) {
-      edges.push({
-        id: `edge-${i}`,
-        source: `stage-${i}`,
-        target: `stage-${i + 1}`,
-        type: 'smoothstep',
-        animated: true,
-        style: { strokeWidth: 3, stroke: '#8b5cf6' },
-        markerEnd: {
-          type: MarkerType.ArrowClosed,
-          color: '#8b5cf6',
-        },
-        label: funnelData[i + 1] ? `${funnelData[i + 1].conversion_rate}%` : '',
-        labelStyle: { 
-          fontSize: 12, 
-          fontWeight: 'bold',
-          fill: '#8b5cf6'
-        },
-      });
-    }
-
-    return { initialNodes: nodes, initialEdges: edges };
-  }, [funnelData]);
-
-  const [nodes] = useNodesState(initialNodes);
-  const [edges] = useEdgesState(initialEdges);
-
   if (!funnelData || funnelData.length === 0) {
     return (
       <div className="h-64 flex items-center justify-center text-muted-foreground">
@@ -176,27 +135,82 @@ export const CustomerJourneyFlow: React.FC<CustomerJourneyFlowProps> = ({ funnel
   }
 
   return (
-    <div className="h-64 w-full">
-      <ReactFlow
-        nodes={nodes}
-        edges={edges}
-        nodeTypes={nodeTypes}
-        fitView
-        attributionPosition="bottom-left"
-        proOptions={{ hideAttribution: true }}
-        style={{ backgroundColor: 'transparent' }}
-        nodesDraggable={false}
-        nodesConnectable={false}
-        elementsSelectable={false}
-        zoomOnScroll={false}
-        zoomOnPinch={false}
-        zoomOnDoubleClick={false}
-        panOnScroll={false}
-        panOnDrag={false}
-      >
-        <Background color="#f1f5f9" gap={16} />
-        <Controls showZoom={false} showFitView={false} showInteractive={false} />
-      </ReactFlow>
+    <div className="w-full">
+      {/* Desktop View - Horizontal Layout */}
+      <div className="hidden lg:flex items-center justify-between gap-4 py-4">
+        {funnelData.map((stage, index) => (
+          <React.Fragment key={stage.stage}>
+            <div className="flex-1">
+              <StageCard stage={stage} index={index} isLast={index === funnelData.length - 1} />
+            </div>
+            
+            {index < funnelData.length - 1 && (
+              <div className="flex flex-col items-center px-2">
+                <ArrowRight className="h-6 w-6 text-primary animate-pulse" />
+                {funnelData[index + 1] && (
+                  <span className="text-xs text-muted-foreground mt-1 font-medium">
+                    {funnelData[index + 1].conversion_rate.toFixed(1)}%
+                  </span>
+                )}
+              </div>
+            )}
+          </React.Fragment>
+        ))}
+      </div>
+
+      {/* Mobile View - Vertical Layout */}
+      <div className="lg:hidden space-y-2">
+        {funnelData.map((stage, index) => (
+          <StageCard 
+            key={stage.stage} 
+            stage={stage} 
+            index={index} 
+            isLast={index === funnelData.length - 1} 
+          />
+        ))}
+      </div>
+
+      {/* Summary Stats */}
+      <div className="mt-6 grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="border-dashed">
+          <CardContent className="p-3 text-center">
+            <p className="text-lg font-bold text-blue-600">
+              {funnelData[0]?.count.toLocaleString() || '0'}
+            </p>
+            <p className="text-xs text-muted-foreground">Total Views</p>
+          </CardContent>
+        </Card>
+        
+        <Card className="border-dashed">
+          <CardContent className="p-3 text-center">
+            <p className="text-lg font-bold text-green-600">
+              {funnelData[1]?.count.toLocaleString() || '0'}
+            </p>
+            <p className="text-xs text-muted-foreground">Shop Clicks</p>
+          </CardContent>
+        </Card>
+        
+        <Card className="border-dashed">
+          <CardContent className="p-3 text-center">
+            <p className="text-lg font-bold text-pink-600">
+              {funnelData[2]?.count.toLocaleString() || '0'}
+            </p>
+            <p className="text-xs text-muted-foreground">Wishlist Saves</p>
+          </CardContent>
+        </Card>
+        
+        <Card className="border-dashed">
+          <CardContent className="p-3 text-center">
+            <p className="text-lg font-bold text-purple-600">
+              {funnelData.length > 3 ? 
+                ((funnelData[3]?.count || 0) / (funnelData[0]?.count || 1) * 100).toFixed(1) : 
+                '0'
+              }%
+            </p>
+            <p className="text-xs text-muted-foreground">Overall Rate</p>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };

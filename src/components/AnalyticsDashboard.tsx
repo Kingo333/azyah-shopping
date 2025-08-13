@@ -519,7 +519,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
                 {/* Customer Journey Flow */}
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold">Customer Journey Flow</h3>
-                  <div className="h-80">
+                  <div className="min-h-[400px]">
                     {isFunnelLoading ? (
                       <div className="flex items-center justify-center h-full">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
@@ -642,19 +642,24 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
                      </div>
                    ) : (
                      realtimeActivityQuery.data.map((activity) => (
-                       <div key={activity.id} className="flex items-center gap-3 p-3 border rounded-lg">
+                       <div key={activity.id} className="flex items-center gap-3 p-3 border rounded-lg hover:bg-accent/50 transition-colors">
                          <div className={`w-2 h-2 rounded-full animate-pulse ${
                            activity.type === 'view' ? 'bg-blue-500' :
                            activity.type === 'click' ? 'bg-green-500' :
                            activity.type === 'like' ? 'bg-red-500' :
                            'bg-purple-500'
                          }`} />
-                         <div className="flex-1">
-                           <p className="text-sm">
+                         <div className="flex-1 min-w-0">
+                           <p className="text-sm truncate">
                              {activity.type === 'view' ? 'Product viewed' :
                               activity.type === 'click' ? 'Shop Now clicked' :
                               activity.type === 'like' ? 'Product liked' :
                               'Added to wishlist'} - {activity.product_title}
+                             {activity.count && activity.count > 1 && (
+                               <Badge variant="secondary" className="ml-2 text-xs">
+                                 {activity.count}x
+                               </Badge>
+                             )}
                            </p>
                            <p className="text-xs text-muted-foreground">{activity.time_ago}</p>
                          </div>

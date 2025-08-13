@@ -7,6 +7,7 @@ export interface ActivityEvent {
   product_title: string;
   timestamp: string;
   time_ago: string;
+  count?: number;
 }
 
 export const useRealtimeActivity = (brandId?: string, retailerId?: string, limit: number = 10) => {
@@ -112,12 +113,35 @@ export const useRealtimeActivity = (brandId?: string, retailerId?: string, limit
         }
       });
 
-      // Sort by timestamp and limit
-      const recentActivities = activities
+      // Sort by timestamp and merge duplicates with counts
+      const sortedActivities = activities
+        .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+      // Merge activities by type and product
+      const mergedActivities: (ActivityEvent & { count: number })[] = [];
+      const activityMap = new Map<string, ActivityEvent & { count: number }>();
+
+      sortedActivities.forEach(activity => {
+        const key = `${activity.type}-${activity.product_title}`;
+        if (activityMap.has(key)) {
+          const existing = activityMap.get(key)!;
+          existing.count += 1;
+          // Keep the most recent timestamp
+          if (new Date(activity.timestamp) > new Date(existing.timestamp)) {
+            existing.timestamp = activity.timestamp;
+            existing.time_ago = activity.time_ago;
+          }
+        } else {
+          activityMap.set(key, { ...activity, count: 1 });
+        }
+      });
+
+      // Convert back to array and sort by timestamp
+      const recentActivities = Array.from(activityMap.values())
         .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
         .slice(0, limit);
 
-      console.log('Recent activities:', recentActivities);
+      console.log('Recent activities (merged):', recentActivities);
       return recentActivities;
     },
     enabled: !!(brandId || retailerId),
