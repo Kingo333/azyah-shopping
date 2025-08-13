@@ -31,7 +31,6 @@ export interface AnalyticsOverview {
   wishlist_adds: number;
   conversions: number;
   revenue_cents: number;
-  ar_views: number;
 }
 
 export interface TimeSeriesData {
@@ -174,8 +173,7 @@ export const useAnalyticsOverview = (params: {
             ctr: 0,
             wishlist_adds: 0,
             conversions: 0,
-            revenue_cents: 0,
-            ar_views: 0
+            revenue_cents: 0
           };
         }
         
@@ -207,8 +205,7 @@ export const useAnalyticsOverview = (params: {
           ctr: 0,
           wishlist_adds: 0,
           conversions: 0,
-          revenue_cents: 0,
-          ar_views: 0
+          revenue_cents: 0
         };
       }
       
@@ -222,7 +219,6 @@ export const useAnalyticsOverview = (params: {
       const impressions = events?.filter(e => e.event_type === 'product_view').length || 0;
       const clicks = events?.filter(e => e.event_type === 'product_click').length || 0;
       const conversions = events?.filter(e => e.event_type === 'purchase').length || 0;
-      const ar_views = events?.filter(e => e.event_type === 'ar_view').length || 0;
 
       // Get wishlist adds in date range
       let wishlistQuery = supabase
@@ -249,8 +245,7 @@ export const useAnalyticsOverview = (params: {
         ctr: Math.round(ctr * 100) / 100,
         wishlist_adds: wishlistAdds?.length || 0,
         conversions,
-        revenue_cents: conversions * 4500, // Estimated average order value
-        ar_views
+        revenue_cents: clicks * 4500 // Revenue estimated from Shop Now clicks with average order value
       };
       
       console.log('useAnalyticsOverview queryFn returning result:', result);

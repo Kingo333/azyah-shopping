@@ -118,8 +118,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
     ctr: 0,
     wishlist_adds: 0,
     conversions: 0,
-    revenue_cents: 0,
-    ar_views: 0
+    revenue_cents: 0
   };
   
   const funnelData = funnelQuery.data || [];
@@ -210,13 +209,13 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
       tooltip: 'Number of times products were viewed in your catalog'
     },
     {
-      title: 'External Store Clicks',
-      value: `${overview.ctr.toFixed(1)}%`,
+      title: 'Shop Now Clicks',
+      value: overview.clicks,
       icon: ExternalLink,
       color: 'text-green-600',
       bgColor: 'bg-green-50',
       change: '+8.2%',
-      tooltip: 'Percentage of views that resulted in clicks to external retailer websites'
+      tooltip: 'Number of times users clicked "Shop Now" to visit retailer websites'
     },
     {
       title: 'Wishlist Additions',
@@ -243,16 +242,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
       color: 'text-emerald-600',
       bgColor: 'bg-emerald-50',
       change: '+18.7%',
-      tooltip: 'Projected revenue based on clickthrough rates and estimated order values'
-    },
-    {
-      title: 'AR Try-On Views',
-      value: overview.ar_views,
-      icon: Target,
-      color: 'text-orange-600',
-      bgColor: 'bg-orange-50',
-      change: '+45.2%',
-      tooltip: 'Number of times users tried on products using AR technology'
+      tooltip: 'Revenue estimated from Shop Now clicks and average order values'
     }
   ], [overview]);
 
@@ -300,31 +290,28 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
   }
 
   return (
-    <div className="space-y-6">
-
-      {/* Header Controls */}
-      <div className="flex items-center justify-between">
+    <div className="space-y-4 lg:space-y-6">
+      {/* Header with controls */}
+      <div className="flex flex-col gap-4 lg:flex-row lg:justify-between lg:items-center">
         <div>
-          <h2 className="text-2xl font-bold">Analytics Dashboard</h2>
-          <p className="text-muted-foreground">
-            Track performance and engagement metrics
-          </p>
+          <h2 className="text-xl lg:text-2xl font-bold text-foreground">Analytics Dashboard</h2>
+          <p className="text-sm lg:text-base text-muted-foreground">Track your performance metrics and insights</p>
         </div>
         
-        <div className="flex items-center gap-4">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <Select value={dateRange} onValueChange={setDateRange}>
-            <SelectTrigger className="w-32">
-              <SelectValue />
+            <SelectTrigger className="w-full sm:w-[140px]">
+              <SelectValue placeholder="Select range" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="1d">Last 24h</SelectItem>
+              <SelectItem value="1d">Last 24 hours</SelectItem>
               <SelectItem value="7d">Last 7 days</SelectItem>
               <SelectItem value="30d">Last 30 days</SelectItem>
               <SelectItem value="90d">Last 90 days</SelectItem>
             </SelectContent>
           </Select>
           
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" className="w-full sm:w-auto">
             <Download className="h-4 w-4 mr-2" />
             Export
           </Button>
@@ -332,7 +319,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
       </div>
 
       {/* Metric Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
         {metricCards.map((metric, index) => (
           <motion.div
             key={metric.title}
@@ -396,7 +383,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
             </CardHeader>
             <CardContent>
               {/* Data Summary Stats */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 mb-6">
                 {(() => {
                   const values = timeSeriesData?.map(d => d.value) || [];
                   const total = values.reduce((sum, val) => sum + (val || 0), 0);
@@ -475,7 +462,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
               </div>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                 {/* Enhanced Visual Funnel */}
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold">Conversion Flow</h3>
@@ -541,7 +528,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
               </div>
               
               {/* Conversion Insights */}
-              <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <Card className="p-4">
                   <div className="text-center">
                     <p className="text-2xl font-bold text-green-600">
@@ -639,12 +626,12 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
                     </div>
                   </div>
                   <div className="flex items-center gap-3 p-3 border rounded-lg">
-                    <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse" />
-                    <div className="flex-1">
-                      <p className="text-sm">AR try-on session started</p>
-                      <p className="text-xs text-muted-foreground">8 minutes ago</p>
-                    </div>
-                  </div>
+                     <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse" />
+                     <div className="flex-1">
+                       <p className="text-sm">Product added to cart</p>
+                       <p className="text-xs text-muted-foreground">8 minutes ago</p>
+                     </div>
+                   </div>
                   <div className="flex items-center gap-3 p-3 border rounded-lg">
                     <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse" />
                     <div className="flex-1">
