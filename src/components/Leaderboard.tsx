@@ -15,7 +15,6 @@ interface LeaderboardUser {
   name: string;
   avatar_url: string;
   country: string;
-  email: string;
   score: number;
   rank: number;
   stats: {
@@ -57,8 +56,8 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ type = 'global', country }) =
         dateFilter = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
       }
 
-      // Get user stats with proper closet item counting
-      let userQuery = supabase.from('users').select('*');
+      // Get user stats with proper closet item counting using public profiles
+      let userQuery = supabase.from('public_profiles').select('*');
       
       if (type === 'country' && selectedCountry) {
         userQuery = userQuery.eq('country', selectedCountry);
@@ -123,7 +122,6 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ type = 'global', country }) =
           name: user.name || 'Anonymous',
           avatar_url: user.avatar_url || '',
           country: user.country || '',
-          email: user.email,
           score,
           rank: 0, // Will be set below
           stats: {

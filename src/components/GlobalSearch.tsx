@@ -60,12 +60,11 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ isOpen, onClose }) => {
         })));
       }
 
-      // Search users (shoppers)
+      // Search users (shoppers) using public profiles
       const { data: users } = await supabase
-        .from('users')
-        .select('id, name, email, avatar_url')
+        .from('public_profiles')
+        .select('id, name, avatar_url')
         .ilike('name', `%${searchQuery}%`)
-        .eq('role', 'shopper')
         .limit(10);
 
       if (users && user) {
@@ -81,8 +80,8 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ isOpen, onClose }) => {
         searchResults.push(...users.map(userData => ({
           id: userData.id,
           type: 'user' as const,
-          title: userData.name || userData.email.split('@')[0],
-          subtitle: userData.email,
+          title: userData.name || 'Anonymous User',
+          subtitle: 'Fashion Enthusiast',
           image: userData.avatar_url,
           isFollowing: followingIds.has(userData.id)
         })));

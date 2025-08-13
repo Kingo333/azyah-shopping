@@ -26,16 +26,11 @@ import {
 interface UserProfile {
   id: string;
   name: string;
-  email: string;
   avatar_url: string;
   country: string;
   bio: string;
   website: string;
-  socials: {
-    instagram?: string;
-    twitter?: string;
-    website?: string;
-  };
+  created_at: string;
 }
 
 interface UserPost {
@@ -81,7 +76,7 @@ const UserProfile: React.FC = () => {
       if (!id) throw new Error('User ID required');
       
       const { data, error } = await supabase
-        .from('users')
+        .from('public_profiles')
         .select('*')
         .eq('id', id)
         .single();
@@ -235,8 +230,8 @@ const UserProfile: React.FC = () => {
   return (
     <div className="min-h-screen dashboard-bg">
       <SEOHead 
-        title={`${userProfile.name || userProfile.email} - User Profile`}
-        description={`View ${userProfile.name || userProfile.email}'s fashion profile, posts, and public closets`}
+        title={`${userProfile.name || 'Anonymous User'} - User Profile`}
+        description={`View ${userProfile.name || 'Anonymous User'}'s fashion profile, posts, and public closets`}
       />
       
       <div className="container mx-auto max-w-4xl p-4">
@@ -252,13 +247,13 @@ const UserProfile: React.FC = () => {
             <Avatar className="w-32 h-32 mx-auto md:mx-0 border-4 border-white/20">
               <AvatarImage src={userProfile.avatar_url} />
               <AvatarFallback className="text-3xl bg-gradient-to-br from-primary/10 to-accent/10">
-                {userProfile.name?.[0] || userProfile.email[0]}
+                {userProfile.name?.[0] || 'A'}
               </AvatarFallback>
             </Avatar>
 
             <div className="flex-1 text-center md:text-left">
               <h1 className="text-3xl font-cormorant font-bold mb-3">
-                {userProfile.name || userProfile.email.split('@')[0]}
+                {userProfile.name || 'Anonymous User'}
               </h1>
               
               {userProfile.bio && (
@@ -278,28 +273,6 @@ const UserProfile: React.FC = () => {
 
               {/* Social Links */}
               <div className="flex gap-4 justify-center md:justify-start">
-                {userProfile.socials?.instagram && (
-                  <Button 
-                    variant="premium" 
-                    size="sm"
-                    onClick={() => window.open(`https://instagram.com/${userProfile.socials.instagram}`, '_blank')}
-                    className="hover:scale-105 transition-transform"
-                  >
-                    <Instagram className="h-4 w-4 mr-2" />
-                    Instagram
-                  </Button>
-                )}
-                {userProfile.socials?.twitter && (
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => window.open(`https://twitter.com/${userProfile.socials.twitter}`, '_blank')}
-                    className="hover:scale-105 transition-transform"
-                  >
-                    <Twitter className="h-4 w-4 mr-2" />
-                    Twitter
-                  </Button>
-                )}
                 {userProfile.website && (
                   <Button 
                     variant="outline" 
