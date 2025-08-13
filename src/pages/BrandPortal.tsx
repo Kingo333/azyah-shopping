@@ -52,6 +52,7 @@ const BrandPortal: React.FC = () => {
   useEffect(() => {
     if (brand?.id) {
       fetchProducts();
+      console.log('Brand ID for analytics:', brand.id);
     }
   }, [brand?.id]);
 
