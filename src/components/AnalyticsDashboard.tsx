@@ -469,52 +469,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
               </div>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                {/* Enhanced Visual Funnel */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Conversion Flow</h3>
-                  <div className="space-y-3">
-                    {funnelData.map((stage, index) => {
-                      const nextStage = funnelData[index + 1];
-                      const dropOffRate = nextStage ? 
-                        ((stage.count - nextStage.count) / stage.count * 100).toFixed(1) : 
-                        '0';
-                      
-                      return (
-                        <div key={stage.stage} className="relative">
-                          <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-primary/5 to-transparent rounded-lg border">
-                            <div className="flex items-center gap-3 flex-1">
-                              <div className={`w-3 h-3 rounded-full ${
-                                index === 0 ? 'bg-green-500' :
-                                index === 1 ? 'bg-blue-500' :
-                                index === 2 ? 'bg-purple-500' : 'bg-orange-500'
-                              }`} />
-                              <div className="flex-1">
-                                <p className="font-medium">{stage.stage}</p>
-                                <p className="text-sm text-muted-foreground">
-                                  {stage.count.toLocaleString()} users ({stage.percentage.toFixed(1)}%)
-                                </p>
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <p className="text-2xl font-bold">{stage.count.toLocaleString()}</p>
-                              {nextStage && (
-                                <p className="text-sm text-red-500">
-                                  -{dropOffRate}% drop-off
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                          {index < funnelData.length - 1 && (
-                            <div className="flex justify-center my-2">
-                              <div className="w-0.5 h-4 bg-border" />
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
+              <div className="space-y-6">
 
                 {/* Customer Journey Flow */}
                 <div className="space-y-4">
