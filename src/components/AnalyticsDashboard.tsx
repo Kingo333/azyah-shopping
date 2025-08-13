@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { InfoTooltip } from '@/components/ui/info-tooltip';
 import { useAnalyticsOverview, useConversionFunnel, useTimeSeriesAnalytics } from '@/hooks/useAnalytics';
+import { CustomerJourneyFlow } from '@/components/CustomerJourneyFlow';
 import { motion } from 'framer-motion';
 
 interface AnalyticsDashboardProps {
@@ -509,19 +510,20 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
                   </div>
                 </div>
 
-                {/* Classic Funnel Chart */}
+                {/* Customer Journey Flow */}
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Visual Funnel</h3>
+                  <h3 className="text-lg font-semibold">Customer Journey Flow</h3>
                   <div className="h-80">
                     {isFunnelLoading ? (
                       <div className="flex items-center justify-center h-full">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
                       </div>
+                    ) : hasFunnelError ? (
+                      <div className="flex items-center justify-center h-full text-destructive">
+                        Error loading funnel data
+                      </div>
                     ) : (
-                      <ReactECharts 
-                        option={getFunnelChartOption()} 
-                        style={{ height: '100%', width: '100%' }}
-                      />
+                      <CustomerJourneyFlow funnelData={funnelData} />
                     )}
                   </div>
                 </div>
