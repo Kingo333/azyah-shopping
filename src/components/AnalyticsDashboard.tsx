@@ -21,6 +21,8 @@ import {
 } from 'lucide-react';
 import { InfoTooltip } from '@/components/ui/info-tooltip';
 import { useAnalyticsOverview, useConversionFunnel, useTimeSeriesAnalytics } from '@/hooks/useAnalytics';
+import { useTopProducts } from '@/hooks/useTopProducts';
+import { useRealtimeActivity } from '@/hooks/useRealtimeActivity';
 import { CustomerJourneyFlow } from '@/components/CustomerJourneyFlow';
 import { motion } from 'framer-motion';
 
@@ -88,6 +90,10 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
     entityId,
     entityType
   );
+
+  // New queries for real product data
+  const topProductsQuery = useTopProducts(brandId, retailerId, 6);
+  const realtimeActivityQuery = useRealtimeActivity(brandId, retailerId, 8);
 
   // Debug logging for React Query states
   console.log('Analytics Debug Info:', {
@@ -580,27 +586,36 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
                   <InfoTooltip content="Products ranked by views, likes, and estimated revenue. Performance based on user interactions within the app." />
                 </div>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {[
-                    { name: 'Summer Dress Collection', views: 1250, likes: 45, estRevenue: '$2,850' },
-                    { name: 'Designer Handbag', views: 980, likes: 38, estRevenue: '$2,240' },
-                    { name: 'Luxury Watch', views: 850, likes: 32, estRevenue: '$1,980' },
-                    { name: 'Fashion Sneakers', views: 720, likes: 28, estRevenue: '$1,650' }
-                  ].map((product, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 bg-accent/30 rounded-lg">
-                      <div>
-                        <p className="font-medium">{product.name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {product.views} views • {product.likes} likes • {product.estRevenue} est. revenue
-                        </p>
-                      </div>
-                      <Badge variant="secondary">
-                        {((product.likes / product.views) * 100).toFixed(1)}% engagement
-                      </Badge>
-                    </div>
-                  ))}
-                </div>
+               <CardContent>
+                 <div className="space-y-3">
+                   {topProductsQuery.isLoading ? (
+                     <div className="flex items-center justify-center py-8">
+                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+                     </div>
+                   ) : topProductsQuery.error ? (
+                     <div className="text-center py-8 text-destructive">
+                       Error loading products
+                     </div>
+                   ) : !topProductsQuery.data || topProductsQuery.data.length === 0 ? (
+                     <div className="text-center py-8 text-muted-foreground">
+                       No product data available yet
+                     </div>
+                   ) : (
+                     topProductsQuery.data.map((product, index) => (
+                       <div key={product.id} className="flex items-center justify-between p-3 bg-accent/30 rounded-lg">
+                         <div>
+                           <p className="font-medium">{product.title}</p>
+                           <p className="text-sm text-muted-foreground">
+                             {product.views} views • {product.likes} likes • ${product.est_revenue} est. revenue
+                           </p>
+                         </div>
+                         <Badge variant="secondary">
+                           {product.engagement_rate.toFixed(1)}% engagement
+                         </Badge>
+                       </div>
+                     ))
+                   )}
+                 </div>
               </CardContent>
             </Card>
 
@@ -611,37 +626,42 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
                   <InfoTooltip content="Live feed of user interactions with your products. Shows recent views, wishlist additions, and AR try-ons." />
                 </div>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3 p-3 border rounded-lg">
-                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                    <div className="flex-1">
-                      <p className="text-sm">Product viewed in catalog</p>
-                      <p className="text-xs text-muted-foreground">2 minutes ago</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3 p-3 border rounded-lg">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
-                    <div className="flex-1">
-                      <p className="text-sm">Product saved to wishlist</p>
-                      <p className="text-xs text-muted-foreground">5 minutes ago</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3 p-3 border rounded-lg">
-                     <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse" />
-                     <div className="flex-1">
-                       <p className="text-sm">Product added to cart</p>
-                       <p className="text-xs text-muted-foreground">8 minutes ago</p>
+               <CardContent>
+                 <div className="space-y-3">
+                   {realtimeActivityQuery.isLoading ? (
+                     <div className="flex items-center justify-center py-8">
+                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
                      </div>
-                   </div>
-                  <div className="flex items-center gap-3 p-3 border rounded-lg">
-                    <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse" />
-                    <div className="flex-1">
-                      <p className="text-sm">User clicked "Shop Now" button</p>
-                      <p className="text-xs text-muted-foreground">12 minutes ago</p>
-                    </div>
-                  </div>
-                </div>
+                   ) : realtimeActivityQuery.error ? (
+                     <div className="text-center py-8 text-destructive">
+                       Error loading activity
+                     </div>
+                   ) : !realtimeActivityQuery.data || realtimeActivityQuery.data.length === 0 ? (
+                     <div className="text-center py-8 text-muted-foreground">
+                       No recent activity
+                     </div>
+                   ) : (
+                     realtimeActivityQuery.data.map((activity) => (
+                       <div key={activity.id} className="flex items-center gap-3 p-3 border rounded-lg">
+                         <div className={`w-2 h-2 rounded-full animate-pulse ${
+                           activity.type === 'view' ? 'bg-blue-500' :
+                           activity.type === 'click' ? 'bg-green-500' :
+                           activity.type === 'like' ? 'bg-red-500' :
+                           'bg-purple-500'
+                         }`} />
+                         <div className="flex-1">
+                           <p className="text-sm">
+                             {activity.type === 'view' ? 'Product viewed' :
+                              activity.type === 'click' ? 'Shop Now clicked' :
+                              activity.type === 'like' ? 'Product liked' :
+                              'Added to wishlist'} - {activity.product_title}
+                           </p>
+                           <p className="text-xs text-muted-foreground">{activity.time_ago}</p>
+                         </div>
+                       </div>
+                     ))
+                   )}
+                 </div>
               </CardContent>
             </Card>
           </div>

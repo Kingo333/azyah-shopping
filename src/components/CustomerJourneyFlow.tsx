@@ -8,6 +8,8 @@ import {
   Node,
   Edge,
   MarkerType,
+  Handle,
+  Position,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { Eye, ExternalLink, Heart, ShoppingCart } from 'lucide-react';
@@ -26,7 +28,18 @@ const FunnelNode = ({ data }: { data: any }) => {
   const Icon = data.icon;
   
   return (
-    <div className="bg-white border-2 border-border rounded-lg p-4 shadow-lg min-w-[200px]">
+    <div className="bg-white border-2 border-border rounded-lg p-4 shadow-lg min-w-[200px] relative">
+      <Handle
+        type="target"
+        position={Position.Left}
+        style={{ background: '#8b5cf6', width: 8, height: 8 }}
+      />
+      <Handle
+        type="source"
+        position={Position.Right}
+        style={{ background: '#8b5cf6', width: 8, height: 8 }}
+      />
+      
       <div className="flex items-center gap-3 mb-2">
         <div className={`p-2 rounded-full ${data.bgColor}`}>
           <Icon className={`h-5 w-5 ${data.color}`} />
