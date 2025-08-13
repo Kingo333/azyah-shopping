@@ -2,7 +2,8 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { TrendingUp, Users, Eye, Heart, ShoppingCart } from 'lucide-react';
+import { TrendingUp, Users, Eye, Heart, ShoppingCart, ExternalLink } from 'lucide-react';
+import { InfoTooltip } from '@/components/ui/info-tooltip';
 import { motion } from 'framer-motion';
 
 interface FunnelData {
@@ -18,15 +19,39 @@ interface ImprovedAnalyticsFunnelProps {
 }
 
 const ImprovedAnalyticsFunnel: React.FC<ImprovedAnalyticsFunnelProps> = ({ data, loading }) => {
+  // Stage explanations with clear tooltips
+  const getStageTooltip = (stage: string) => {
+    switch (stage.toLowerCase()) {
+      case 'impressions':
+      case 'product views':
+        return 'Users browsing and viewing products in your catalog';
+      case 'clicks':
+      case 'external store clicks':
+        return 'Users clicking "Shop Now" to visit the retailer\'s website';
+      case 'wishlist':
+      case 'wishlist additions':
+        return 'Users saving products to their wishlist for later';
+      case 'purchases':
+      case 'tracked conversions':
+        return 'Estimated purchases when users buy on external retailer sites';
+      default:
+        return 'User interaction metric in the conversion funnel';
+    }
+  };
+
   const getStageIcon = (stage: string) => {
     switch (stage.toLowerCase()) {
       case 'impressions':
+      case 'product views':
         return Eye;
       case 'clicks':
-        return Users;
+      case 'external store clicks':
+        return ExternalLink;
       case 'wishlist':
+      case 'wishlist additions':
         return Heart;
       case 'purchases':
+      case 'tracked conversions':
         return ShoppingCart;
       default:
         return TrendingUp;
@@ -89,7 +114,10 @@ const ImprovedAnalyticsFunnel: React.FC<ImprovedAnalyticsFunnelProps> = ({ data,
                     <Icon className="w-5 h-5" />
                   </div>
                   <div>
-                    <div className="font-medium text-sm">{item.stage}</div>
+                    <div className="flex items-center gap-1">
+                      <span className="font-medium text-sm">{item.stage}</span>
+                      <InfoTooltip content={getStageTooltip(item.stage)} />
+                    </div>
                     <div className="text-xs text-muted-foreground">
                       {item.conversion_rate.toFixed(1)}% conversion
                     </div>
