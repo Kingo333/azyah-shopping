@@ -16,7 +16,8 @@ import { AddProductModal } from '@/components/AddProductModal';
 import { EditProductModal } from '@/components/EditProductModal';
 import { BrandProductDetailModal } from '@/components/BrandProductDetailModal';
 import { LogoUpload } from '@/components/LogoUpload';
-import { Plus, Edit, Trash2, Upload, BarChart3, TrendingUp, Eye, Heart, ShoppingBag, DollarSign, Download, Filter } from 'lucide-react';
+import { ImportWizardModal } from '@/components/ImportWizardModal';
+import { Plus, Edit, Trash2, Upload, BarChart3, TrendingUp, Eye, Heart, ShoppingBag, DollarSign, Download, Filter, Globe } from 'lucide-react';
 import { InfoTooltip } from '@/components/ui/info-tooltip';
 import type { Product } from '@/types';
 
@@ -38,6 +39,7 @@ const BrandPortal: React.FC = () => {
   const [isAddProductModalOpen, setIsAddProductModalOpen] = useState(false);
   const [isEditProductModalOpen, setIsEditProductModalOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const { toast } = useToast();
   const { user } = useAuth();
@@ -328,6 +330,14 @@ const BrandPortal: React.FC = () => {
           </div>
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <Button 
+              variant="outline"
+              className="rounded-xl flex-1 sm:flex-none"
+              onClick={() => setIsImportModalOpen(true)}
+            >
+              <Globe className="h-4 w-4 mr-2" />
+              Import from Website
+            </Button>
+            <Button 
               className="rounded-xl bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 flex-1 sm:flex-none"
               onClick={() => setIsAddProductModalOpen(true)}
             >
@@ -487,6 +497,12 @@ const BrandPortal: React.FC = () => {
           />
         </>
       )}
+
+      <ImportWizardModal
+        open={isImportModalOpen}
+        onOpenChange={setIsImportModalOpen}
+        brandId={brand?.id}
+      />
     </div>
   );
 };

@@ -512,6 +512,169 @@ export type Database = {
           },
         ]
       }
+      import_jobs: {
+        Row: {
+          created_at: string
+          error_log: string | null
+          finished_at: string | null
+          id: string
+          pages_crawled: number | null
+          products_extracted: number | null
+          products_imported: number | null
+          source_id: string
+          started_at: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          error_log?: string | null
+          finished_at?: string | null
+          id?: string
+          pages_crawled?: number | null
+          products_extracted?: number | null
+          products_imported?: number | null
+          source_id: string
+          started_at?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          error_log?: string | null
+          finished_at?: string | null
+          id?: string
+          pages_crawled?: number | null
+          products_extracted?: number | null
+          products_imported?: number | null
+          source_id?: string
+          started_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "import_jobs_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "import_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      import_products_staging: {
+        Row: {
+          created_at: string
+          currency: string | null
+          description: string | null
+          external_url: string
+          extracted_data: Json | null
+          id: string
+          images: Json | null
+          job_id: string
+          price_cents: number | null
+          status: string
+          suggested_attributes: Json | null
+          suggested_category:
+            | Database["public"]["Enums"]["category_type"]
+            | null
+          suggested_subcategory:
+            | Database["public"]["Enums"]["subcategory_type"]
+            | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          currency?: string | null
+          description?: string | null
+          external_url: string
+          extracted_data?: Json | null
+          id?: string
+          images?: Json | null
+          job_id: string
+          price_cents?: number | null
+          status?: string
+          suggested_attributes?: Json | null
+          suggested_category?:
+            | Database["public"]["Enums"]["category_type"]
+            | null
+          suggested_subcategory?:
+            | Database["public"]["Enums"]["subcategory_type"]
+            | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          currency?: string | null
+          description?: string | null
+          external_url?: string
+          extracted_data?: Json | null
+          id?: string
+          images?: Json | null
+          job_id?: string
+          price_cents?: number | null
+          status?: string
+          suggested_attributes?: Json | null
+          suggested_category?:
+            | Database["public"]["Enums"]["category_type"]
+            | null
+          suggested_subcategory?:
+            | Database["public"]["Enums"]["subcategory_type"]
+            | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "import_products_staging_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "import_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      import_sources: {
+        Row: {
+          crawl_strategy: string
+          created_at: string
+          domain: string
+          id: string
+          last_crawl_at: string | null
+          name: string
+          notes: string | null
+          robots_allowed: boolean | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          crawl_strategy?: string
+          created_at?: string
+          domain: string
+          id?: string
+          last_crawl_at?: string | null
+          name: string
+          notes?: string | null
+          robots_allowed?: boolean | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          crawl_strategy?: string
+          created_at?: string
+          domain?: string
+          id?: string
+          last_crawl_at?: string | null
+          name?: string
+          notes?: string | null
+          robots_allowed?: boolean | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       likes: {
         Row: {
           created_at: string
