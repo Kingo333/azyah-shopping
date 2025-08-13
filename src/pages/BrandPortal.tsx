@@ -62,28 +62,36 @@ const BrandPortal: React.FC = () => {
         .eq('owner_user_id', user.id)
         .maybeSingle();
       
-      console.log('Brand query result:', { data, error });
+      console.log('Brand query completed - data:', data, 'error:', error);
       
       if (error) {
-        console.error('Error fetching brand:', error);
+        console.error('Supabase error fetching brand:', error);
         if (mountedRef.current) {
           setBrand(null);
+          setBrandLoading(false);
         }
         return;
       }
       
-      console.log('Setting brand data:', data);
+      if (!data) {
+        console.log('No brand found for user');
+        if (mountedRef.current) {
+          setBrand(null);
+          setBrandLoading(false);
+        }
+        return;
+      }
+      
+      console.log('Successfully setting brand data:', data);
       if (mountedRef.current) {
         setBrand(data);
+        setBrandLoading(false);
       }
       
     } catch (error) { 
-      console.error('Error in fetchBrandData:', error);
+      console.error('Exception in fetchBrandData:', error);
       if (mountedRef.current) {
         setBrand(null);
-      }
-    } finally {
-      if (mountedRef.current) {
         setBrandLoading(false);
       }
     }
