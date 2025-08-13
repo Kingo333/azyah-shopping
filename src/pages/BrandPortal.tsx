@@ -57,16 +57,23 @@ const BrandPortal: React.FC = () => {
 
   const fetchBrandData = async () => {
     try {
+      console.log('Fetching brand for user:', user?.id);
       const { data, error } = await supabase
         .from('brands')
         .select('*')
         .eq('owner_user_id', user?.id)
-        .single();
+        .maybeSingle();
       
-      if (error && error.code !== 'PGRST116') throw error;
+      console.log('Brand query result:', { data, error });
+      
+      if (error) {
+        console.error('Error fetching brand:', error);
+        return;
+      }
+      
       setBrand(data);
     } catch (error) { 
-      console.error('Error fetching brand data:', error); 
+      console.error('Error in fetchBrandData:', error); 
     }
   };
 
