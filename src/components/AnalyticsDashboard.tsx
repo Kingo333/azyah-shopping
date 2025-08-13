@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -64,19 +65,19 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
 
   const dateFilter = getDateFilter(dateRange);
   
-  const { data: overview, isLoading: overviewLoading } = useAnalyticsOverview({
+  const overviewQuery = useAnalyticsOverview({
     ...dateFilter,
     brandId,
     retailerId
   });
 
-  const { data: funnelData, isLoading: funnelLoading } = useConversionFunnel({
+  const funnelQuery = useConversionFunnel({
     ...dateFilter,
     brandId,
     retailerId
   });
 
-  const { data: timeSeriesData, isLoading: timeSeriesLoading } = useTimeSeriesAnalytics(
+  const timeSeriesQuery = useTimeSeriesAnalytics(
     selectedMetric,
     'day',
     dateFilter,
@@ -84,11 +85,28 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
     brandId ? 'brand' : 'retailer'
   );
 
-  // Add debugging
-  console.log('AnalyticsDashboard received brandId:', brandId);
-  console.log('AnalyticsDashboard overview loading:', overviewLoading);
-  console.log('AnalyticsDashboard overview data:', overview);
-  console.log('AnalyticsDashboard overview type:', typeof overview);
+  // Enhanced debugging
+  console.log('=== AnalyticsDashboard Debug ===');
+  console.log('Props:', { brandId, retailerId });
+  console.log('Date filter:', dateFilter);
+  console.log('Overview query state:', {
+    data: overviewQuery.data,
+    isLoading: overviewQuery.isLoading,
+    isError: overviewQuery.isError,
+    error: overviewQuery.error,
+    status: overviewQuery.status,
+    fetchStatus: overviewQuery.fetchStatus
+  });
+  console.log('Overview query data type:', typeof overviewQuery.data);
+  console.log('Overview query data value:', overviewQuery.data);
+
+  // Extract data with fallbacks
+  const overview = overviewQuery.data;
+  const funnelData = funnelQuery.data;
+  const timeSeriesData = timeSeriesQuery.data;
+  const isOverviewLoading = overviewQuery.isLoading;
+  const isFunnelLoading = funnelQuery.isLoading;
+  const isTimeSeriesLoading = timeSeriesQuery.isLoading;
 
   // Chart configurations
   const getLineChartOption = () => ({
@@ -155,7 +173,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
     'Tracked Conversions': 'Estimated purchases when users buy on external retailer sites'
   };
 
-  // Metric cards data with clearer terminology and tooltips
+  // Metric cards data with actual data or fallbacks
   const metricCards = [
     {
       title: 'Product Views',
@@ -213,18 +231,9 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
     }
   ];
 
-  // Check if this is empty state - force showing data when we have valid numbers
-  const isEmpty = !overviewLoading && !overview;
-  
-  // Force show analytics if we have any data (debugging)
-  const hasData = overview && (
-    (overview.impressions && overview.impressions > 0) ||
-    (overview.clicks && overview.clicks > 0) ||
-    (overview.wishlist_adds && overview.wishlist_adds > 0) ||
-    (overview.conversions && overview.conversions > 0)
-  );
+  console.log('Metric cards data:', metricCards.map(card => ({ title: card.title, value: card.value })));
 
-  if (overviewLoading) {
+  if (isOverviewLoading) {
     return (
       <div className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -240,15 +249,17 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
     );
   }
 
-  // Force show analytics dashboard instead of empty state (debugging)
-  // Remove this after fixing the React Query issue
-  if (isEmpty && !hasData) {
-    console.log('Showing empty state despite having data - this is the bug');
-    // Force return the analytics dashboard instead
-  }
-
   return (
     <div className="space-y-6">
+      {/* Debug Info */}
+      <div className="bg-yellow-100 p-4 rounded text-sm">
+        <p><strong>Debug Info:</strong></p>
+        <p>Overview loading: {String(isOverviewLoading)}</p>
+        <p>Overview data: {JSON.stringify(overview)}</p>
+        <p>Brand ID: {brandId}</p>
+        <p>Query status: {overviewQuery.status}</p>
+      </div>
+
       {/* Header Controls */}
       <div className="flex items-center justify-between">
         <div>
@@ -343,7 +354,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
             </CardHeader>
             <CardContent>
               <div className="h-80">
-                {timeSeriesLoading ? (
+                {isTimeSeriesLoading ? (
                   <div className="flex items-center justify-center h-full">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
                   </div>
@@ -368,7 +379,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
             </CardHeader>
             <CardContent>
               <div className="h-80">
-                {funnelLoading ? (
+                {isFunnelLoading ? (
                   <div className="flex items-center justify-center h-full">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
                   </div>
