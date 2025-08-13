@@ -71,14 +71,22 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
   });
 
   const { data: funnelData, isLoading: funnelLoading } = useConversionFunnel({
-    ...dateFilter
+    ...dateFilter,
+    brandId,
+    retailerId
   });
 
   const { data: timeSeriesData, isLoading: timeSeriesLoading } = useTimeSeriesAnalytics(
     selectedMetric,
     'day',
-    dateFilter
+    dateFilter,
+    brandId || retailerId,
+    brandId ? 'brand' : 'retailer'
   );
+
+  // Add debugging
+  console.log('AnalyticsDashboard received brandId:', brandId);
+  console.log('AnalyticsDashboard overview data:', overview);
 
   // Chart configurations
   const getLineChartOption = () => ({

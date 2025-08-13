@@ -154,6 +154,8 @@ export const useAnalyticsOverview = (params: {
     queryFn: async (): Promise<AnalyticsOverview> => {
       const { startDate, endDate, brandId, retailerId } = params;
       
+      console.log('useAnalyticsOverview called with:', { startDate, endDate, brandId, retailerId });
+      
       // Get products for filtering
       let productIds: string[] = [];
       
@@ -181,7 +183,15 @@ export const useAnalyticsOverview = (params: {
         eventsQuery = eventsQuery.eq('retailer_id', retailerId);
       }
 
-      const { data: events } = await eventsQuery;
+      const { data: events, error: eventsError } = await eventsQuery;
+      
+      console.log('Events query result:', { 
+        events: events?.length, 
+        error: eventsError,
+        brandId,
+        retailerId,
+        sampleEvents: events?.slice(0, 3)
+      });
 
       const impressions = events?.filter(e => e.event_type === 'product_view').length || 0;
       const clicks = events?.filter(e => e.event_type === 'product_click').length || 0;
@@ -203,7 +213,7 @@ export const useAnalyticsOverview = (params: {
 
       const ctr = impressions > 0 ? (clicks / impressions) * 100 : 0;
       
-      return {
+      const result = {
         impressions,
         clicks,
         ctr: Math.round(ctr * 100) / 100,
@@ -212,6 +222,10 @@ export const useAnalyticsOverview = (params: {
         revenue_cents: conversions * 4500, // Estimated average order value
         ar_views
       };
+      
+      console.log('useAnalyticsOverview final result:', result);
+      
+      return result;
     },
     refetchInterval: 30000
   });
