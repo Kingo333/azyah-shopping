@@ -10,13 +10,13 @@ const ROUTE_ACCESS: Record<UserRole, string[]> = {
     '/closets', '/forum', '/ar-tryOn', '/affiliate', '/auth', '/landing', '/settings', '/profile'
   ],
   brand: [
-    '/', '/dashboard', '/brand-portal', '/analytics', '/auth', '/landing', '/settings', '/profile'
+    '/', '/dashboard', '/brand-portal', '/auth', '/landing', '/settings', '/profile'
   ],
   retailer: [
-    '/', '/dashboard', '/retailer-portal', '/analytics', '/auth', '/landing', '/settings', '/profile'
+    '/', '/dashboard', '/retailer-portal', '/auth', '/landing', '/settings', '/profile'
   ],
   admin: [
-    '/', '/dashboard', '/analytics', '/auth', '/landing', '/brand-portal', 
+    '/', '/dashboard', '/auth', '/landing', '/brand-portal', 
     '/retailer-portal', '/explore', '/swipe', '/feed', '/wishlist', '/cart', 
     '/closets', '/forum', '/ar-tryOn', '/affiliate', '/settings', '/profile'
   ]

@@ -203,6 +203,14 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
     }
   ];
 
+  // Check if this is empty state
+  const isEmpty = !overviewLoading && (
+    !overview?.impressions && 
+    !overview?.clicks && 
+    !overview?.wishlist_adds && 
+    !overview?.conversions
+  );
+
   if (overviewLoading) {
     return (
       <div className="space-y-6">
@@ -215,6 +223,45 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
             </Card>
           ))}
         </div>
+      </div>
+    );
+  }
+
+  // Empty state with demo data
+  if (isEmpty) {
+    return (
+      <div className="space-y-6">
+        {/* Header Controls */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold">Analytics Dashboard</h2>
+            <p className="text-muted-foreground">
+              Track performance and engagement metrics
+            </p>
+          </div>
+        </div>
+
+        {/* Empty State Card */}
+        <Card className="text-center py-12">
+          <CardContent>
+            <div className="max-w-md mx-auto space-y-4">
+              <div className="w-16 h-16 mx-auto bg-muted rounded-full flex items-center justify-center">
+                <TrendingUp className="h-8 w-8 text-muted-foreground" />
+              </div>
+              <h3 className="text-xl font-semibold">No Analytics Data Yet</h3>
+              <p className="text-muted-foreground">
+                Analytics will appear here once users start interacting with your products. 
+                Share your products to start collecting data!
+              </p>
+              <div className="space-y-2 text-sm text-muted-foreground">
+                <p>• <strong>Product Views</strong> - When users browse your catalog</p>
+                <p>• <strong>Store Clicks</strong> - When users click "Shop Now"</p>
+                <p>• <strong>Wishlist Adds</strong> - When users save items</p>
+                <p>• <strong>Conversions</strong> - Estimated purchases from external sites</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }

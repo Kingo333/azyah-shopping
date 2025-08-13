@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Heart, Plus, Trash2, Eye, EyeOff, Grid, List, ExternalLink } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { useProductAnalytics } from '@/hooks/useAnalytics';
 
 interface Wishlist {
   id: string;
@@ -41,6 +42,7 @@ interface WishlistItem {
 export const WishlistManager: React.FC = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { trackProductView, trackProductClick } = useProductAnalytics();
   const [selectedWishlist, setSelectedWishlist] = useState<string>('');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [newWishlistTitle, setNewWishlistTitle] = useState('');
@@ -176,6 +178,7 @@ export const WishlistManager: React.FC = () => {
 
   const handleShopNow = (product: WishlistItem['product']) => {
     if (product.external_url) {
+      trackProductClick(product.id, 'wishlist_shop_now');
       window.open(product.external_url, '_blank', 'noopener,noreferrer');
     } else {
       toast({

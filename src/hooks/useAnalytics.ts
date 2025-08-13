@@ -167,15 +167,18 @@ export const useAnalyticsOverview = (params: {
         productIds = products?.map(p => p.id) || [];
       }
 
-      // Get events within date range
-      const eventsQuery = supabase
+      // Get events within date range, filter by brand/retailer directly
+      let eventsQuery = supabase
         .from('events')
         .select('event_type, product_id, created_at')
         .gte('created_at', startDate)
         .lte('created_at', endDate);
 
-      if (productIds.length > 0) {
-        eventsQuery.in('product_id', productIds);
+      // Filter directly by brand_id or retailer_id if specified
+      if (brandId) {
+        eventsQuery = eventsQuery.eq('brand_id', brandId);
+      } else if (retailerId) {
+        eventsQuery = eventsQuery.eq('retailer_id', retailerId);
       }
 
       const { data: events } = await eventsQuery;
@@ -186,12 +189,17 @@ export const useAnalyticsOverview = (params: {
       const ar_views = events?.filter(e => e.event_type === 'ar_view').length || 0;
 
       // Get wishlist adds in date range
-      const { data: wishlistAdds } = await supabase
+      let wishlistQuery = supabase
         .from('wishlist_items')
         .select('product_id')
         .gte('added_at', startDate)
-        .lte('added_at', endDate)
-        .in('product_id', productIds.length > 0 ? productIds : []);
+        .lte('added_at', endDate);
+
+      if (productIds.length > 0) {
+        wishlistQuery = wishlistQuery.in('product_id', productIds);
+      }
+
+      const { data: wishlistAdds } = await wishlistQuery;
 
       const ctr = impressions > 0 ? (clicks / impressions) * 100 : 0;
       
@@ -359,11 +367,20 @@ export const useProductAnalytics = () => {
     console.log('Tracking product view:', productId, context);
     
     try {
+      // Get product to find brand_id and retailer_id
+      const { data: product } = await supabase
+        .from('products')
+        .select('brand_id, retailer_id')
+        .eq('id', productId)
+        .single();
+
       const { error } = await supabase
         .from('events')
         .insert({
           event_type: 'product_view',
           product_id: productId,
+          brand_id: product?.brand_id,
+          retailer_id: product?.retailer_id,
           event_data: { context },
           session_id: crypto.randomUUID(),
           created_at: new Date().toISOString()
@@ -381,11 +398,20 @@ export const useProductAnalytics = () => {
     console.log('Tracking product click:', productId, context);
     
     try {
+      // Get product to find brand_id and retailer_id
+      const { data: product } = await supabase
+        .from('products')
+        .select('brand_id, retailer_id')
+        .eq('id', productId)
+        .single();
+
       const { error } = await supabase
         .from('events')
         .insert({
           event_type: 'product_click',
           product_id: productId,
+          brand_id: product?.brand_id,
+          retailer_id: product?.retailer_id,
           event_data: { context },
           session_id: crypto.randomUUID(),
           created_at: new Date().toISOString()
@@ -403,11 +429,20 @@ export const useProductAnalytics = () => {
     console.log('Tracking wishlist add:', productId);
     
     try {
+      // Get product to find brand_id and retailer_id
+      const { data: product } = await supabase
+        .from('products')
+        .select('brand_id, retailer_id')
+        .eq('id', productId)
+        .single();
+
       const { error } = await supabase
         .from('events')
         .insert({
           event_type: 'wishlist_add',
           product_id: productId,
+          brand_id: product?.brand_id,
+          retailer_id: product?.retailer_id,
           event_data: {},
           session_id: crypto.randomUUID(),
           created_at: new Date().toISOString()
@@ -425,11 +460,20 @@ export const useProductAnalytics = () => {
     console.log('Tracking add to cart:', productId, size, color);
     
     try {
+      // Get product to find brand_id and retailer_id
+      const { data: product } = await supabase
+        .from('products')
+        .select('brand_id, retailer_id')
+        .eq('id', productId)
+        .single();
+
       const { error } = await supabase
         .from('events')
         .insert({
           event_type: 'add_to_cart',
           product_id: productId,
+          brand_id: product?.brand_id,
+          retailer_id: product?.retailer_id,
           event_data: { size, color },
           session_id: crypto.randomUUID(),
           created_at: new Date().toISOString()

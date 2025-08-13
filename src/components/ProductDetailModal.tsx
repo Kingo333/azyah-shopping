@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,7 @@ import { EnhancedProductGallery } from './EnhancedProductGallery';
 import { AdvancedSizeColorSelector } from './AdvancedSizeColorSelector';
 import { AddToClosetModal } from './AddToClosetModal';
 import { useToast } from '@/hooks/use-toast';
+import { useProductAnalytics } from '@/hooks/useAnalytics';
 
 interface ProductDetailModalProps {
   product?: Product | null;
@@ -22,10 +23,18 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   onClose
 }) => {
   const { toast } = useToast();
+  const { trackProductView, trackProductClick } = useProductAnalytics();
 
   const [selectedSize, setSelectedSize] = useState('');
   const [selectedColor, setSelectedColor] = useState('');
   const [isClosetModalOpen, setIsClosetModalOpen] = useState(false);
+
+  // Track product view when modal opens
+  useEffect(() => {
+    if (product && isOpen) {
+      trackProductView(product.id, 'product_detail_modal');
+    }
+  }, [product, isOpen, trackProductView]);
 
   const images = useMemo<string[]>(() => {
     const media = (product?.media_urls ?? []) as unknown as string[];
@@ -37,7 +46,8 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   const compareAtCents = product?.compare_at_price_cents ?? null;
 
   const handleShopNow = () => {
-    if (product?.external_url) {
+    if (product?.external_url && product?.id) {
+      trackProductClick(product.id, 'shop_now_button');
       window.open(product.external_url, '_blank', 'noopener,noreferrer');
     } else {
       toast({ description: 'Shop link not available for this product', variant: 'destructive' });

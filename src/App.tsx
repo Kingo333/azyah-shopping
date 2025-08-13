@@ -28,7 +28,7 @@ import FeaturedBrands from './pages/FeaturedBrands';
 import TopInfluencers from './pages/TopInfluencers';
 import ImageSearch from './pages/ImageSearch';
 import Affiliate from './pages/Affiliate';
-import Analytics from './pages/Analytics';
+
 import BrandPortal from './pages/BrandPortal';
 import RetailerPortal from './pages/RetailerPortal';
 import NotFound from './pages/NotFound';
@@ -129,11 +129,6 @@ function App() {
               <Route path="/affiliate" element={
                 <ProtectedRoute>
                   <Affiliate />
-                </ProtectedRoute>
-              } />
-              <Route path="/analytics" element={
-                <ProtectedRoute roles={['brand', 'retailer', 'admin']}>
-                  <Analytics />
                 </ProtectedRoute>
               } />
               <Route path="/brand-portal" element={
