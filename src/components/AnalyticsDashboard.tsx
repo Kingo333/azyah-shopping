@@ -395,6 +395,38 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
               </div>
             </CardHeader>
             <CardContent>
+              {/* Data Summary Stats */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                {(() => {
+                  const values = timeSeriesData?.map(d => d.value) || [];
+                  const total = values.reduce((sum, val) => sum + (val || 0), 0);
+                  const average = values.length > 0 ? total / values.length : 0;
+                  const max = values.length > 0 ? Math.max(...values) : 0;
+                  const min = values.length > 0 ? Math.min(...values) : 0;
+                  
+                  return (
+                    <>
+                      <div className="text-center p-3 bg-blue-50 rounded-lg">
+                        <p className="text-lg font-bold text-blue-600">{total.toLocaleString()}</p>
+                        <p className="text-xs text-muted-foreground">Total</p>
+                      </div>
+                      <div className="text-center p-3 bg-green-50 rounded-lg">
+                        <p className="text-lg font-bold text-green-600">{Math.round(average).toLocaleString()}</p>
+                        <p className="text-xs text-muted-foreground">Daily Average</p>
+                      </div>
+                      <div className="text-center p-3 bg-purple-50 rounded-lg">
+                        <p className="text-lg font-bold text-purple-600">{max.toLocaleString()}</p>
+                        <p className="text-xs text-muted-foreground">Peak Day</p>
+                      </div>
+                      <div className="text-center p-3 bg-orange-50 rounded-lg">
+                        <p className="text-lg font-bold text-orange-600">{min.toLocaleString()}</p>
+                        <p className="text-xs text-muted-foreground">Lowest Day</p>
+                      </div>
+                    </>
+                  );
+                })()}
+              </div>
+
               <div className="h-80">
                 {isTimeSeriesLoading ? (
                   <div className="flex items-center justify-center h-full">
@@ -406,6 +438,29 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
                     style={{ height: '100%', width: '100%' }}
                   />
                 )}
+              </div>
+
+              {/* Additional Insights */}
+              <div className="mt-4 p-4 bg-accent/30 rounded-lg">
+                <h4 className="font-medium mb-2">Quick Insights</h4>
+                <div className="text-sm text-muted-foreground space-y-1">
+                  {(() => {
+                    const values = timeSeriesData?.map(d => d.value) || [];
+                    if (values.length < 2) return <p>Not enough data for trend analysis</p>;
+                    
+                    const recent = values.slice(-3).reduce((sum, val) => sum + (val || 0), 0) / 3;
+                    const earlier = values.slice(0, 3).reduce((sum, val) => sum + (val || 0), 0) / 3;
+                    const trend = recent > earlier ? 'increasing' : recent < earlier ? 'decreasing' : 'stable';
+                    const trendColor = trend === 'increasing' ? 'text-green-600' : trend === 'decreasing' ? 'text-red-600' : 'text-muted-foreground';
+                    
+                    return (
+                      <>
+                        <p>Your {selectedMetric} trend is <span className={`font-medium ${trendColor}`}>{trend}</span> over the selected period.</p>
+                        <p>Recent 3-day average: <span className="font-medium">{Math.round(recent).toLocaleString()}</span></p>
+                      </>
+                    );
+                  })()}
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -420,30 +475,108 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
               </div>
             </CardHeader>
             <CardContent>
-              <div className="h-80">
-                {isFunnelLoading ? (
-                  <div className="flex items-center justify-center h-full">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Enhanced Visual Funnel */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Conversion Flow</h3>
+                  <div className="space-y-3">
+                    {funnelData.map((stage, index) => {
+                      const nextStage = funnelData[index + 1];
+                      const dropOffRate = nextStage ? 
+                        ((stage.count - nextStage.count) / stage.count * 100).toFixed(1) : 
+                        '0';
+                      
+                      return (
+                        <div key={stage.stage} className="relative">
+                          <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-primary/5 to-transparent rounded-lg border">
+                            <div className="flex items-center gap-3 flex-1">
+                              <div className={`w-3 h-3 rounded-full ${
+                                index === 0 ? 'bg-green-500' :
+                                index === 1 ? 'bg-blue-500' :
+                                index === 2 ? 'bg-purple-500' : 'bg-orange-500'
+                              }`} />
+                              <div className="flex-1">
+                                <p className="font-medium">{stage.stage}</p>
+                                <p className="text-sm text-muted-foreground">
+                                  {stage.count.toLocaleString()} users ({stage.percentage.toFixed(1)}%)
+                                </p>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-2xl font-bold">{stage.count.toLocaleString()}</p>
+                              {nextStage && (
+                                <p className="text-sm text-red-500">
+                                  -{dropOffRate}% drop-off
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          {index < funnelData.length - 1 && (
+                            <div className="flex justify-center my-2">
+                              <div className="w-0.5 h-4 bg-border" />
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
-                ) : (
-                  <ReactECharts 
-                    option={getFunnelChartOption()} 
-                    style={{ height: '100%', width: '100%' }}
-                  />
-                )}
+                </div>
+
+                {/* Classic Funnel Chart */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Visual Funnel</h3>
+                  <div className="h-80">
+                    {isFunnelLoading ? (
+                      <div className="flex items-center justify-center h-full">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+                      </div>
+                    ) : (
+                      <ReactECharts 
+                        option={getFunnelChartOption()} 
+                        style={{ height: '100%', width: '100%' }}
+                      />
+                    )}
+                  </div>
+                </div>
               </div>
               
-              {/* Funnel Stage Explanations */}
-              <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                {Object.entries(funnelStageTooltips).map(([stage, explanation]) => (
-                  <div key={stage} className="flex items-start gap-2 p-3 bg-accent/30 rounded-lg">
-                    <InfoTooltip content={explanation} />
-                    <div>
-                      <p className="font-medium">{stage}</p>
-                      <p className="text-muted-foreground text-xs">{explanation}</p>
-                    </div>
+              {/* Conversion Insights */}
+              <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Card className="p-4">
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-green-600">
+                      {funnelData.length > 1 ? 
+                        ((funnelData[1]?.count || 0) / (funnelData[0]?.count || 1) * 100).toFixed(1) : 
+                        '0'
+                      }%
+                    </p>
+                    <p className="text-sm text-muted-foreground">View to Click Rate</p>
                   </div>
-                ))}
+                </Card>
+                
+                <Card className="p-4">
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-purple-600">
+                      {funnelData.length > 2 ? 
+                        ((funnelData[2]?.count || 0) / (funnelData[0]?.count || 1) * 100).toFixed(1) : 
+                        '0'
+                      }%
+                    </p>
+                    <p className="text-sm text-muted-foreground">View to Wishlist Rate</p>
+                  </div>
+                </Card>
+                
+                <Card className="p-4">
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-orange-600">
+                      {funnelData.length > 3 ? 
+                        ((funnelData[3]?.count || 0) / (funnelData[0]?.count || 1) * 100).toFixed(1) : 
+                        '0'
+                      }%
+                    </p>
+                    <p className="text-sm text-muted-foreground">Overall Conversion Rate</p>
+                  </div>
+                </Card>
               </div>
             </CardContent>
           </Card>
