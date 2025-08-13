@@ -519,17 +519,61 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
                 {/* Customer Journey Flow */}
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold">Customer Journey Flow</h3>
-                  <div className="min-h-[400px]">
+                  <div className="space-y-4">
                     {isFunnelLoading ? (
-                      <div className="flex items-center justify-center h-full">
+                      <div className="flex items-center justify-center py-8">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
                       </div>
                     ) : hasFunnelError ? (
-                      <div className="flex items-center justify-center h-full text-destructive">
+                      <div className="text-center py-8 text-destructive">
                         Error loading funnel data
                       </div>
+                    ) : funnelData.length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        No funnel data available
+                      </div>
                     ) : (
-                      <CustomerJourneyFlow funnelData={funnelData} />
+                      <div className="space-y-3">
+                        {funnelData.map((stage, index) => {
+                          const stageIcons = {
+                            'Product Views': { icon: Eye, color: 'bg-blue-100 text-blue-600' },
+                            'External Store Clicks': { icon: ExternalLink, color: 'bg-green-100 text-green-600' },
+                            'Wishlist Additions': { icon: Heart, color: 'bg-pink-100 text-pink-600' },
+                            'Actual Purchases': { icon: ShoppingCart, color: 'bg-purple-100 text-purple-600' }
+                          };
+                          
+                          const config = stageIcons[stage.stage as keyof typeof stageIcons] || 
+                            { icon: Eye, color: 'bg-gray-100 text-gray-600' };
+                          const Icon = config.icon;
+                          
+                          return (
+                            <div key={stage.stage} className="flex items-center gap-4 p-3 bg-accent/30 rounded-lg">
+                              <div className={`p-2 rounded-full ${config.color}`}>
+                                <Icon className="h-4 w-4" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center justify-between">
+                                  <span className="font-medium text-sm truncate">{stage.stage}</span>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-lg font-bold">{stage.count.toLocaleString()}</span>
+                                    {index > 0 && (
+                                      <Badge variant="outline" className="text-xs">
+                                        {stage.conversion_rate.toFixed(1)}%
+                                      </Badge>
+                                    )}
+                                  </div>
+                                </div>
+                                <div className="w-full bg-muted rounded-full h-2 mt-2">
+                                  <div 
+                                    className="h-2 rounded-full bg-primary transition-all duration-700"
+                                    style={{ width: `${stage.percentage}%` }}
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
                     )}
                   </div>
                 </div>
