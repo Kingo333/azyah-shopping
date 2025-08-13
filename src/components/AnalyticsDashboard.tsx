@@ -206,7 +206,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
       color: 'text-blue-600',
       bgColor: 'bg-blue-50',
       change: '+12.5%',
-      tooltip: 'Number of times products were viewed in your catalog'
+      tooltip: 'Total times your products were viewed by users'
     },
     {
       title: 'Shop Now Clicks',
@@ -215,34 +215,34 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
       color: 'text-green-600',
       bgColor: 'bg-green-50',
       change: '+8.2%',
-      tooltip: 'Number of times users clicked "Shop Now" to visit retailer websites'
+      tooltip: 'Users who clicked "Shop Now" to visit retailer websites - your main traffic driver'
     },
     {
-      title: 'Wishlist Additions',
+      title: 'Wishlist Saves',
       value: overview.wishlist_adds,
       icon: Heart,
       color: 'text-pink-600',
       bgColor: 'bg-pink-50',
       change: '+15.3%',
-      tooltip: 'Number of times users saved products to their wishlist'
+      tooltip: 'Products saved to wishlists - indicates strong purchase intent'
     },
     {
-      title: 'Tracked Conversions',
+      title: 'Actual Purchases',
       value: overview.conversions,
       icon: ShoppingCart,
       color: 'text-purple-600',
       bgColor: 'bg-purple-50',
       change: '+22.1%',
-      tooltip: 'Estimated conversions when users click through to purchase on external sites'
+      tooltip: 'Confirmed purchases completed after clicking through to retailer sites'
     },
     {
-      title: 'Estimated Revenue',
+      title: 'Revenue Generated',
       value: `$${(overview.revenue_cents / 100).toFixed(2)}`,
       icon: DollarSign,
       color: 'text-emerald-600',
       bgColor: 'bg-emerald-50',
       change: '+18.7%',
-      tooltip: 'Revenue estimated from Shop Now clicks and average order values'
+      tooltip: 'Total revenue from Shop Now clicks leading to purchases'
     }
   ], [overview]);
 
