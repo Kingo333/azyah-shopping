@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -40,21 +39,53 @@ const ToyReplica = () => {
   }, []);
 
   const runDiagnostics = async () => {
-    console.log('Running diagnostics...');
+    console.log('Running enhanced diagnostics...');
     
-    // Test storage buckets
+    if (!user) {
+      setDiagnostics(prev => ({ ...prev, storage: { status: 'error', message: 'User not authenticated' } }));
+      return;
+    }
+
+    // Test storage with actual upload/download test
     try {
-      const { data: buckets, error } = await supabase.storage.listBuckets();
-      const hasSourceBucket = buckets?.some(b => b.name === 'toy-replica-source');
-      const hasResultBucket = buckets?.some(b => b.name === 'toy-replica-result');
+      // Create a tiny test image (1x1 pixel PNG in base64)
+      const testImageBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChAI/hE5VQgAAAABJRU5ErkJggg==';
+      const testImageBlob = new Blob([Uint8Array.from(atob(testImageBase64), c => c.charCodeAt(0))], { type: 'image/png' });
+      const testFileName = `${user.id}/diagnostic-test-${Date.now()}.png`;
+
+      console.log('Testing storage upload with:', testFileName);
       
-      if (hasSourceBucket && hasResultBucket) {
-        setDiagnostics(prev => ({ ...prev, storage: { status: 'success', message: 'Both buckets exist' } }));
+      // Test upload to source bucket
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('toy-replica-source')
+        .upload(testFileName, testImageBlob, {
+          contentType: 'image/png',
+          upsert: true
+        });
+
+      if (uploadError) {
+        console.error('Storage upload test failed:', uploadError);
+        setDiagnostics(prev => ({ ...prev, storage: { status: 'error', message: `Upload failed: ${uploadError.message}` } }));
       } else {
-        setDiagnostics(prev => ({ ...prev, storage: { status: 'error', message: `Missing buckets: ${!hasSourceBucket ? 'toy-replica-source ' : ''}${!hasResultBucket ? 'toy-replica-result' : ''}` } }));
+        // Test download from source bucket
+        const { data: downloadData, error: downloadError } = await supabase.storage
+          .from('toy-replica-source')
+          .download(testFileName);
+
+        if (downloadError) {
+          console.error('Storage download test failed:', downloadError);
+          setDiagnostics(prev => ({ ...prev, storage: { status: 'error', message: `Download failed: ${downloadError.message}` } }));
+        } else {
+          console.log('Storage test successful');
+          setDiagnostics(prev => ({ ...prev, storage: { status: 'success', message: 'Upload/download test passed' } }));
+          
+          // Clean up test file
+          await supabase.storage.from('toy-replica-source').remove([testFileName]);
+        }
       }
     } catch (error) {
-      setDiagnostics(prev => ({ ...prev, storage: { status: 'error', message: `Storage error: ${error}` } }));
+      console.error('Storage test error:', error);
+      setDiagnostics(prev => ({ ...prev, storage: { status: 'error', message: `Storage test error: ${error}` } }));
     }
 
     // Test database access
@@ -102,9 +133,16 @@ const ToyReplica = () => {
   };
 
   const handleFileUploaded = (fileName: string) => {
+    console.log('File uploaded successfully:', fileName);
     setUploadedFileName(fileName);
     setDiagnostics(prev => ({ ...prev, uploader: { status: 'success', message: `File uploaded: ${fileName}` } }));
     handleGenerate(fileName);
+  };
+
+  const handleUploadError = (error: string) => {
+    console.error('Upload error:', error);
+    setLastError(`Upload error: ${error}`);
+    setDiagnostics(prev => ({ ...prev, uploader: { status: 'error', message: error } }));
   };
 
   const handleGenerate = async (fileName?: string) => {
@@ -361,6 +399,7 @@ const ToyReplica = () => {
               <ToyReplicaUploader
                 onFileUploaded={handleFileUploaded}
                 onUploadStart={() => setUploading(true)}
+                onUploadError={handleUploadError}
                 disabled={generating || uploading}
               />
 

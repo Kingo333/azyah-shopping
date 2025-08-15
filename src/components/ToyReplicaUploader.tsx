@@ -9,12 +9,14 @@ import { Upload, X, Image } from 'lucide-react';
 interface ToyReplicaUploaderProps {
   onFileUploaded: (fileName: string) => void;
   onUploadStart: () => void;
+  onUploadError?: (error: string) => void;
   disabled?: boolean;
 }
 
 export const ToyReplicaUploader: React.FC<ToyReplicaUploaderProps> = ({
   onFileUploaded,
   onUploadStart,
+  onUploadError,
   disabled = false
 }) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -31,20 +33,24 @@ export const ToyReplicaUploader: React.FC<ToyReplicaUploaderProps> = ({
     console.log('Validating file:', file.name, file.type, file.size);
     
     if (!allowedTypes.includes(file.type)) {
+      const errorMsg = "Please upload a JPG, JPEG, PNG, or WebP image.";
       toast({
         title: "Invalid File Type",
-        description: "Please upload a JPG, JPEG, PNG, or WebP image.",
+        description: errorMsg,
         variant: "destructive"
       });
+      onUploadError?.(errorMsg);
       return false;
     }
 
     if (file.size > maxSizeBytes) {
+      const errorMsg = "Please upload an image smaller than 10MB.";
       toast({
         title: "File Too Large",
-        description: "Please upload an image smaller than 10MB.",
+        description: errorMsg,
         variant: "destructive"
       });
+      onUploadError?.(errorMsg);
       return false;
     }
 
@@ -82,11 +88,13 @@ export const ToyReplicaUploader: React.FC<ToyReplicaUploaderProps> = ({
 
   const uploadFile = async () => {
     if (!selectedFile || !user) {
+      const errorMsg = "Please select a file and make sure you're logged in.";
       toast({
         title: "Upload Failed",
-        description: "Please select a file and make sure you're logged in.",
+        description: errorMsg,
         variant: "destructive"
       });
+      onUploadError?.(errorMsg);
       return;
     }
 
@@ -98,6 +106,7 @@ export const ToyReplicaUploader: React.FC<ToyReplicaUploaderProps> = ({
       const fileName = `${user.id}/${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
 
       console.log('Uploading file to:', fileName);
+      console.log('User ID:', user.id);
       console.log('File details:', {
         name: selectedFile.name,
         type: selectedFile.type,
@@ -115,13 +124,28 @@ export const ToyReplicaUploader: React.FC<ToyReplicaUploaderProps> = ({
 
       if (error) {
         console.error('Upload error details:', error);
-        throw error;
+        let errorMessage = error.message;
+        
+        // Provide more specific error messages
+        if (error.message.includes('row-level security')) {
+          errorMessage = "Storage permissions error. Please check that you're logged in correctly.";
+        } else if (error.message.includes('duplicate')) {
+          errorMessage = "A file with this name already exists. Please try again.";
+        } else if (error.message.includes('size')) {
+          errorMessage = "File is too large. Please use a smaller image.";
+        }
+        
+        onUploadError?.(errorMessage);
+        throw new Error(errorMessage);
       }
 
       if (!data) {
-        throw new Error('No data returned from upload');
+        const errorMsg = "No data returned from upload - this may indicate a permissions issue.";
+        onUploadError?.(errorMsg);
+        throw new Error(errorMsg);
       }
 
+      console.log('Upload successful, file path:', data.path);
       onFileUploaded(fileName);
       
       toast({
@@ -131,11 +155,13 @@ export const ToyReplicaUploader: React.FC<ToyReplicaUploaderProps> = ({
 
     } catch (error) {
       console.error('Upload failed:', error);
+      const errorMsg = error instanceof Error ? error.message : "Could not upload your photo. Please try again.";
       toast({
         title: "Upload Failed",
-        description: error instanceof Error ? error.message : "Could not upload your photo. Please try again.",
+        description: errorMsg,
         variant: "destructive"
       });
+      onUploadError?.(errorMsg);
     } finally {
       setUploading(false);
     }
