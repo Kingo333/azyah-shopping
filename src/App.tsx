@@ -13,6 +13,8 @@ import Auth from './pages/Auth';
 import Landing from './pages/Landing';
 import UserProfile from './pages/UserProfile';
 import ProfileSettings from './pages/ProfileSettings';
+import PaymentSuccess from './pages/PaymentSuccess';
+import PaymentCancel from './pages/PaymentCancel';
 import Swipe from './pages/Swipe';
 import Wishlist from './pages/Wishlist';
 import Likes from './pages/Likes';
@@ -73,6 +75,8 @@ function App() {
                       <ProfileSettings />
                     </ProtectedRoute>
                   } />
+                  <Route path="/payment-success" element={<PaymentSuccess />} />
+                  <Route path="/payment-cancel" element={<PaymentCancel />} />
                   <Route path="/swipe" element={
                     <ProtectedRoute roles={['shopper', 'admin']}>
                       <Swipe />

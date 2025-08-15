@@ -2,3 +2,6 @@ project_id = "klwolsopucgswhtdlsps"
 
 [functions.google-shopping-search]
 verify_jwt = false
+
+[functions.ziina-webhook]
+verify_jwt = false

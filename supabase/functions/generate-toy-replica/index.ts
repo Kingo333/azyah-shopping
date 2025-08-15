@@ -80,29 +80,55 @@ serve(async (req) => {
       });
     }
 
-    // Check generation limit for the user (4 generations per user)
-    const { count, error: countError } = await supabase
-      .from('toy_replicas')
-      .select('*', { count: 'exact', head: true })
+    // Check premium subscription status
+    const { data: subscription } = await supabase
+      .from('subscriptions')
+      .select('status, current_period_end')
       .eq('user_id', toyReplica.user_id)
-      .eq('status', 'succeeded');
+      .maybeSingle();
 
-    if (countError) {
-      console.error('Failed to count user generations:', countError);
-      return new Response(JSON.stringify({ error: "Failed to check generation limit" }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
+    const now = new Date();
+    const isPremiumActive = subscription && 
+      (subscription.status === 'active' || subscription.status === 'canceled') &&
+      subscription.current_period_end && 
+      new Date(subscription.current_period_end) >= now;
 
-    if (count >= 4) {
-      console.log(`User ${toyReplica.user_id} has reached generation limit: ${count}/4`);
-      return new Response(JSON.stringify({ 
-        error: "You have reached your limit of 4 Toy Replica generations." 
-      }), {
-        status: 403,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+    console.log('Premium subscription check:', {
+      userId: toyReplica.user_id,
+      subscription: subscription,
+      isPremiumActive: isPremiumActive
+    });
+
+    // If not premium, enforce 4 total generation limit
+    if (!isPremiumActive) {
+      const { count, error: countError } = await supabase
+        .from('toy_replicas')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', toyReplica.user_id)
+        .eq('status', 'succeeded');
+
+      if (countError) {
+        console.error('Failed to count user generations:', countError);
+        return new Response(JSON.stringify({ error: "Failed to check generation limit" }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      console.log(`Basic user ${toyReplica.user_id} has ${count}/4 generations used`);
+
+      if ((count ?? 0) >= 4) {
+        console.log(`User ${toyReplica.user_id} has reached generation limit: ${count}/4`);
+        return new Response(JSON.stringify({ 
+          error: "Limit reached. Upgrade to Premium for full access.",
+          upgrade_required: true
+        }), {
+          status: 403,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    } else {
+      console.log(`Premium user ${toyReplica.user_id} has unlimited generations`);
     }
 
     // Update status to processing

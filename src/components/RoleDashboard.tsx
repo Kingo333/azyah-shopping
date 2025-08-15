@@ -13,6 +13,7 @@ import GlobalSearch from '@/components/GlobalSearch';
 import DashboardHeader from '@/components/DashboardHeader';
 import AffiliateHub from '@/components/AffiliateHub';
 import AiStudioModal from '@/components/AiStudioModal';
+import PremiumBanner from '@/components/PremiumBanner';
 import { Heart, ShoppingBag, Search, Sparkles, Package, BarChart3, Users, Settings, Store, TrendingUp, Plus, Eye, DollarSign, Globe, Bell, LogOut, User, Archive, Trophy, MapPin, Blocks } from 'lucide-react';
 import Leaderboard from '@/components/Leaderboard';
 
@@ -221,6 +222,9 @@ const RoleDashboard: React.FC = () => {
 
   const renderShopperDashboard = () => (
     <div className="space-y-4">
+      {/* Premium Banner */}
+      <PremiumBanner />
+      
       {/* Quick Actions with Premium Glass Panel */}
       <GlassPanel variant="premium" className="p-8">
         <div className="space-y-6">
