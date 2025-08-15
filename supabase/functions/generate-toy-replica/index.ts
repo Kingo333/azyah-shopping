@@ -30,7 +30,19 @@ serve(async (req) => {
     });
   }
 
+  let requestBody: any = null;
+  
   try {
+    // Parse request body once at the beginning
+    requestBody = await req.json();
+    const { toyReplicaId, sourceUrl } = requestBody;
+
+    if (!toyReplicaId || !sourceUrl) {
+      throw new Error('Missing required parameters: toyReplicaId and sourceUrl');
+    }
+
+    console.log('Processing toy replica generation:', { toyReplicaId, sourceUrl });
+
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Get the authorization header
@@ -50,14 +62,6 @@ serve(async (req) => {
     if (!openAIApiKey) {
       throw new Error('OpenAI API key not configured');
     }
-
-    const { toyReplicaId, sourceUrl } = await req.json();
-
-    if (!toyReplicaId || !sourceUrl) {
-      throw new Error('Missing required parameters');
-    }
-
-    console.log('Processing toy replica generation:', { toyReplicaId, sourceUrl });
 
     // Update status to processing
     await supabase
@@ -169,10 +173,8 @@ serve(async (req) => {
     console.error('Error in generate-toy-replica function:', error);
     
     // Try to update database with error status if we have the toyReplicaId
-    try {
-      const body = await req.json();
-      const { toyReplicaId } = body;
-      if (toyReplicaId) {
+    if (requestBody?.toyReplicaId) {
+      try {
         const supabase = createClient(supabaseUrl, supabaseServiceKey);
         await supabase
           .from('toy_replicas')
@@ -180,10 +182,10 @@ serve(async (req) => {
             status: 'failed',
             error: error.message
           })
-          .eq('id', toyReplicaId);
+          .eq('id', requestBody.toyReplicaId);
+      } catch (dbError) {
+        console.error('Failed to update error status:', dbError);
       }
-    } catch (dbError) {
-      console.error('Failed to update error status:', dbError);
     }
 
     return new Response(JSON.stringify({ 
