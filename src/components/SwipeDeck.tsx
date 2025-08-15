@@ -120,7 +120,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
     setIndex(prevIndex => Math.max(prevIndex - 1, 0));
   }, [x, y]);
 
-  const handleLike = useCallback(async (product: Product) => {
+  const handleLike = useCallback((product: Product) => {
     if (!user) {
       toast({
         title: "Sign in required",
@@ -130,36 +130,33 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
       return;
     }
 
-    // Move to next card immediately for smooth animation
+    // Move to next card IMMEDIATELY for instant animation
     nextCard();
 
-    // Handle async operation in background
-    try {
-      const { error } = await supabase.from('likes').insert([{
-        user_id: user.id,
-        product_id: product.id
-      }]);
+    // Fire-and-forget database operation (no await, no blocking)
+    supabase.from('likes').insert([{
+      user_id: user.id,
+      product_id: product.id
+    }]).then(({ error }) => {
       if (error) {
         if (error.code === '23505') {
           toast({
             description: `${product.title} is already in your likes!`
           });
         } else {
-          throw error;
+          console.error("Error liking product:", error.message);
+          toast({
+            title: "Error",
+            description: "Failed to like product. Please try again.",
+            variant: "destructive"
+          });
         }
       } else {
         toast({
           description: `${product.title} added to your likes!`
         });
       }
-    } catch (error: any) {
-      console.error("Error liking product:", error.message);
-      toast({
-        title: "Error",
-        description: "Failed to like product. Please try again.",
-        variant: "destructive"
-      });
-    }
+    });
   }, [user, toast, nextCard]);
 
   const handleDislike = useCallback(() => {
