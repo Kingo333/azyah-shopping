@@ -110,13 +110,15 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
 
   const nextCard = useCallback(() => {
     x.set(0);
+    y.set(0);
     setIndex(prevIndex => Math.min(prevIndex + 1, products.length - 1));
-  }, [x, products.length]);
+  }, [x, y, products.length]);
 
   const prevCard = useCallback(() => {
     x.set(0);
+    y.set(0);
     setIndex(prevIndex => Math.max(prevIndex - 1, 0));
-  }, [x]);
+  }, [x, y]);
 
   const handleLike = useCallback(async (product: Product) => {
     if (!user) {
@@ -127,6 +129,11 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
       });
       return;
     }
+
+    // Move to next card immediately for smooth animation
+    nextCard();
+
+    // Handle async operation in background
     try {
       const { error } = await supabase.from('likes').insert([{
         user_id: user.id,
@@ -145,7 +152,6 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
           description: `${product.title} added to your likes!`
         });
       }
-      nextCard();
     } catch (error: any) {
       console.error("Error liking product:", error.message);
       toast({
@@ -170,12 +176,15 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
       return;
     }
 
+    // Move to next card immediately for smooth animation
+    nextCard();
+
+    // Handle async operation in background
     try {
       await addToWishlist();
       toast({
         description: `${product.title} added to your wishlist!`
       });
-      nextCard();
     } catch (error: any) {
       console.error("Error adding to wishlist:", error.message);
       
@@ -191,7 +200,6 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
           variant: "destructive"
         });
       }
-      nextCard(); // Still move to next card even if there's an error
     }
   }, [user, addToWishlist, toast, nextCard]);
 
@@ -359,6 +367,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
       setProducts(transformedProducts);
       setIndex(0); // Reset index when products change
       x.set(0); // Reset swipe position when products change
+      y.set(0); // Reset vertical swipe position when products change
     } catch (error: any) {
       console.error("Error fetching products:", error.message);
       toast({
@@ -367,7 +376,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
         variant: "destructive"
       });
     }
-  }, [filter, subcategory, priceRange, searchQuery, currency, toast]);
+  }, [filter, subcategory, priceRange, searchQuery, currency, toast, x, y]);
 
   useEffect(() => {
     fetchProducts();
