@@ -34,7 +34,7 @@ serve(async (req) => {
   let requestBody: any = null;
   
   try {
-    // Parse request body once at the beginning
+    // Parse request body
     requestBody = await req.json();
     const { toyReplicaId, sourceUrl } = requestBody;
 
@@ -137,6 +137,7 @@ serve(async (req) => {
       throw new Error('Failed to get image analysis from Vision API');
     }
 
+    console.log('Analysis completed:', analysisText);
     console.log('Step 2: Generating LEGO image based on analysis...');
 
     // Step 2: Create the final LEGO generation prompt
