@@ -1,166 +1,52 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Sparkles, Loader2, Download, Copy, RotateCcw, Settings, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import { Sparkles, Loader2, Download, Copy, RotateCcw } from 'lucide-react';
 import { BackButton } from '@/components/ui/back-button';
 import { ToyReplicaUploader } from '@/components/ToyReplicaUploader';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 const ToyReplica = () => {
-  const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
+  const [toyReplicaId, setToyReplicaId] = useState<string | null>(null);
+  const [fileName, setFileName] = useState<string | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [result, setResult] = useState<string | null>(null);
-  const [diagnosticsOpen, setDiagnosticsOpen] = useState(false);
-  const [diagnostics, setDiagnostics] = useState({
-    uploader: { status: 'unknown', message: '' },
-    storage: { status: 'unknown', message: '' },
-    function: { status: 'unknown', message: '' },
-    apiKey: { status: 'unknown', message: '' },
-    cors: { status: 'unknown', message: '' }
-  });
-  const [lastError, setLastError] = useState<string>('');
   
   const { toast } = useToast();
   const { user } = useAuth();
 
-  // Check URL params for diagnostics mode
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('diagnostics') === 'true') {
-      setDiagnosticsOpen(true);
-      runDiagnostics();
-    }
-  }, []);
-
-  const runDiagnostics = async () => {
-    console.log('Running enhanced diagnostics...');
-    
-    if (!user) {
-      setDiagnostics(prev => ({ ...prev, storage: { status: 'error', message: 'User not authenticated' } }));
-      return;
-    }
-
-    // Test storage with actual upload/download test
-    try {
-      // Create a tiny test image (1x1 pixel PNG in base64)
-      const testImageBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChAI/hE5VQgAAAABJRU5ErkJggg==';
-      const testImageBlob = new Blob([Uint8Array.from(atob(testImageBase64), c => c.charCodeAt(0))], { type: 'image/png' });
-      const testFileName = `${user.id}/diagnostic-test-${Date.now()}.png`;
-
-      console.log('Testing storage upload with:', testFileName);
-      
-      // Test upload to source bucket
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('toy-replica-source')
-        .upload(testFileName, testImageBlob, {
-          contentType: 'image/png',
-          upsert: true
-        });
-
-      if (uploadError) {
-        console.error('Storage upload test failed:', uploadError);
-        setDiagnostics(prev => ({ ...prev, storage: { status: 'error', message: `Upload failed: ${uploadError.message}` } }));
-      } else {
-        // Test download from source bucket
-        const { data: downloadData, error: downloadError } = await supabase.storage
-          .from('toy-replica-source')
-          .download(testFileName);
-
-        if (downloadError) {
-          console.error('Storage download test failed:', downloadError);
-          setDiagnostics(prev => ({ ...prev, storage: { status: 'error', message: `Download failed: ${downloadError.message}` } }));
-        } else {
-          console.log('Storage test successful');
-          setDiagnostics(prev => ({ ...prev, storage: { status: 'success', message: 'Upload/download test passed' } }));
-          
-          // Clean up test file
-          await supabase.storage.from('toy-replica-source').remove([testFileName]);
-        }
-      }
-    } catch (error) {
-      console.error('Storage test error:', error);
-      setDiagnostics(prev => ({ ...prev, storage: { status: 'error', message: `Storage test error: ${error}` } }));
-    }
-
-    // Test edge function health
-    try {
-      const { data, error } = await supabase.functions.invoke('generate-toy-replica', {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' }
-      });
-      
-      if (!error && data?.ok) {
-        setDiagnostics(prev => ({ ...prev, function: { status: 'success', message: `Function OK, model: ${data.model}` } }));
-        setDiagnostics(prev => ({ ...prev, apiKey: { status: data.hasKey ? 'success' : 'error', message: data.hasKey ? 'API key present' : 'API key missing' } }));
-      } else {
-        setDiagnostics(prev => ({ ...prev, function: { status: 'error', message: `Function error: ${error?.message || 'Unknown'}` } }));
-      }
-    } catch (error) {
-      setDiagnostics(prev => ({ ...prev, function: { status: 'error', message: `Function unreachable: ${error}` } }));
-    }
-
-    // CORS test - if we get here, CORS is working
-    setDiagnostics(prev => ({ ...prev, cors: { status: 'success', message: 'CORS OK (function callable)' } }));
+  const handleFileUploaded = (id: string, file: string, preview: string) => {
+    console.log('File uploaded successfully:', { id, file, preview });
+    setToyReplicaId(id);
+    setFileName(file);
+    setPreviewUrl(preview);
+    setUploading(false);
   };
 
-  const handleFileUploaded = (fileName: string) => {
-    console.log('File uploaded successfully:', fileName);
-    setUploadedFileName(fileName);
-    setDiagnostics(prev => ({ ...prev, uploader: { status: 'success', message: `File uploaded: ${fileName}` } }));
-    handleGenerate(fileName);
+  const handleUploadStart = () => {
+    setUploading(true);
   };
 
   const handleUploadError = (error: string) => {
     console.error('Upload error:', error);
-    setLastError(`Upload error: ${error}`);
-    setDiagnostics(prev => ({ ...prev, uploader: { status: 'error', message: error } }));
-  };
-
-  const generateToyReplica = async (sourceFileName: string): Promise<string> => {
-    // Get signed URL for the uploaded file
-    const { data: signedUrlData, error: signedUrlError } = await supabase.storage
-      .from('toy-replica-source')
-      .createSignedUrl(sourceFileName, 300); // 5 minutes
-
-    if (signedUrlError || !signedUrlData) {
-      throw new Error(`Failed to create signed URL: ${signedUrlError?.message}`);
-    }
-
-    console.log('Calling edge function with sourceUrl:', signedUrlData.signedUrl);
-
-    const response = await fetch('/functions/v1/generate-toy-replica', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sourceUrl: signedUrlData.signedUrl }),
+    setUploading(false);
+    toast({
+      title: "Upload Failed",
+      description: error,
+      variant: "destructive"
     });
-
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok) {
-      // Show the actual server error instead of generic "non-2xx"
-      throw new Error(data?.error || `Edge function ${response.status}`);
-    }
-
-    if (!data.b64_png) {
-      throw new Error('No image data returned from function');
-    }
-
-    return `data:image/png;base64,${data.b64_png}`;
   };
 
-  const handleGenerate = async (fileName?: string) => {
-    const sourceFileName = fileName || uploadedFileName;
-    if (!sourceFileName) return;
-
-    if (!user) {
-      const errorMsg = "Please log in to generate toy replicas.";
-      setLastError(errorMsg);
+  const handleGenerate = async () => {
+    if (!toyReplicaId || !user) {
       toast({
-        title: "Authentication Required",
-        description: errorMsg,
+        title: "Error",
+        description: "Please upload an image first and make sure you're logged in",
         variant: "destructive"
       });
       return;
@@ -170,11 +56,22 @@ const ToyReplica = () => {
     setResult(null);
     
     try {
-      console.log('Starting toy replica generation for:', sourceFileName);
+      console.log('Starting toy replica generation for:', toyReplicaId);
       
-      const resultDataUrl = await generateToyReplica(sourceFileName);
+      const response = await supabase.functions.invoke('generate-toy-replica', {
+        body: { toyReplicaId }
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message || 'Generation failed');
+      }
+
+      const { resultUrl } = response.data;
+      if (!resultUrl) {
+        throw new Error('No result URL returned');
+      }
       
-      setResult(resultDataUrl);
+      setResult(resultUrl);
       toast({
         title: "Success!",
         description: "Your LEGO mini-figure has been created!",
@@ -182,7 +79,6 @@ const ToyReplica = () => {
     } catch (error) {
       console.error('Error generating toy replica:', error);
       const errorMsg = error instanceof Error ? error.message : 'Unknown error occurred';
-      setLastError(errorMsg);
       toast({
         title: "Generation Failed",
         description: errorMsg,
@@ -240,31 +136,19 @@ const ToyReplica = () => {
   };
 
   const handleRegenerate = () => {
-    if (uploadedFileName) {
+    if (toyReplicaId) {
       handleGenerate();
     }
   };
 
   const handleClear = () => {
-    setUploadedFileName(null);
-    setResult(null);
-  };
-
-  const copyLastError = () => {
-    navigator.clipboard.writeText(lastError).then(() => {
-      toast({
-        title: "Copied",
-        description: "Error message copied to clipboard",
-      });
-    });
-  };
-
-  const StatusIcon = ({ status }: { status: string }) => {
-    switch (status) {
-      case 'success': return <CheckCircle className="h-4 w-4 text-green-500" />;
-      case 'error': return <XCircle className="h-4 w-4 text-red-500" />;
-      default: return <AlertCircle className="h-4 w-4 text-yellow-500" />;
+    setToyReplicaId(null);
+    setFileName(null);
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
     }
+    setPreviewUrl(null);
+    setResult(null);
   };
 
   return (
@@ -281,69 +165,6 @@ const ToyReplica = () => {
           </p>
         </div>
 
-        {/* Diagnostics Panel */}
-        <Collapsible open={diagnosticsOpen} onOpenChange={setDiagnosticsOpen} className="mb-6">
-          <CollapsibleTrigger asChild>
-            <Button variant="outline" className="w-full justify-between">
-              <span className="flex items-center gap-2">
-                <Settings className="h-4 w-4" />
-                Diagnostics Mode
-              </span>
-            </Button>
-          </CollapsibleTrigger>
-          <CollapsibleContent>
-            <Card className="mt-2">
-              <CardHeader>
-                <CardTitle className="text-lg">System Diagnostics</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <StatusIcon status={diagnostics.uploader.status} />
-                  <span className="font-medium">Uploader:</span>
-                  <span className="text-sm text-muted-foreground">{diagnostics.uploader.message || 'Not tested'}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <StatusIcon status={diagnostics.storage.status} />
-                  <span className="font-medium">Storage:</span>
-                  <span className="text-sm text-muted-foreground">{diagnostics.storage.message || 'Not tested'}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <StatusIcon status={diagnostics.function.status} />
-                  <span className="font-medium">Edge Function:</span>
-                  <span className="text-sm text-muted-foreground">{diagnostics.function.message || 'Not tested'}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <StatusIcon status={diagnostics.apiKey.status} />
-                  <span className="font-medium">API Key:</span>
-                  <span className="text-sm text-muted-foreground">{diagnostics.apiKey.message || 'Not tested'}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <StatusIcon status={diagnostics.cors.status} />
-                  <span className="font-medium">CORS:</span>
-                  <span className="text-sm text-muted-foreground">{diagnostics.cors.message || 'Not tested'}</span>
-                </div>
-                
-                <div className="flex gap-2 pt-2">
-                  <Button onClick={runDiagnostics} variant="outline" size="sm">
-                    Refresh Diagnostics
-                  </Button>
-                  {lastError && (
-                    <Button onClick={copyLastError} variant="outline" size="sm">
-                      Copy Last Error
-                    </Button>
-                  )}
-                </div>
-                
-                {lastError && (
-                  <div className="p-2 bg-red-50 border border-red-200 rounded text-sm text-red-700">
-                    <strong>Last Error:</strong> {lastError}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </CollapsibleContent>
-        </Collapsible>
-
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card>
             <CardHeader>
@@ -352,18 +173,30 @@ const ToyReplica = () => {
             <CardContent className="space-y-4">
               <ToyReplicaUploader
                 onFileUploaded={handleFileUploaded}
-                onUploadStart={() => setUploading(true)}
+                onUploadStart={handleUploadStart}
                 onUploadError={handleUploadError}
                 disabled={generating || uploading}
               />
 
-              {uploadedFileName && (
+              {toyReplicaId && !generating && !uploading && (
+                <Button 
+                  onClick={handleGenerate}
+                  className="w-full"
+                  disabled={!toyReplicaId}
+                >
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  Generate
+                </Button>
+              )}
+
+              {toyReplicaId && (
                 <Button 
                   onClick={handleClear}
                   variant="outline"
                   className="w-full"
+                  disabled={generating}
                 >
-                  Clear & Start Over
+                  Clear
                 </Button>
               )}
 
@@ -412,7 +245,6 @@ const ToyReplica = () => {
                       className="w-full rounded-lg"
                       onError={(e) => {
                         console.error('Image failed to load:', result);
-                        setLastError(`Image load error: ${result}`);
                         toast({
                           title: "Image Load Error",
                           description: "Failed to load the generated image",
