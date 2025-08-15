@@ -1157,6 +1157,45 @@ export type Database = {
         }
         Relationships: []
       }
+      subscriptions: {
+        Row: {
+          created_at: string | null
+          current_period_end: string | null
+          current_period_start: string | null
+          id: string
+          last_payment_intent_id: string | null
+          last_payment_status: string | null
+          plan: string
+          status: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string
+          last_payment_intent_id?: string | null
+          last_payment_status?: string | null
+          plan?: string
+          status?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string
+          last_payment_intent_id?: string | null
+          last_payment_status?: string | null
+          plan?: string
+          status?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       swipes: {
         Row: {
           action: Database["public"]["Enums"]["swipe_action"]
