@@ -10,8 +10,9 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSubscription } from '@/hooks/useSubscription';
 import { supabase } from '@/integrations/supabase/client';
-import { Trash2, Upload, Instagram, Twitter, Globe, Music } from 'lucide-react';
+import { Trash2, Upload, Instagram, Twitter, Globe, Music, Crown, CreditCard, Calendar } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -37,6 +38,7 @@ interface ProfileData {
 
 const ProfileSettings: React.FC = () => {
   const { user, signOut } = useAuth();
+  const { subscription, isPremium, createPaymentIntent, cancelSubscription } = useSubscription();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
@@ -433,6 +435,168 @@ const ProfileSettings: React.FC = () => {
                   />
                 </div>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Subscription Management */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Crown className="h-5 w-5" />
+                Subscription
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {isPremium ? (
+                <div className="space-y-4">
+                  <div className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 rounded-lg border border-purple-200 dark:border-purple-800">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="p-2 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 text-white">
+                        <Crown className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-foreground">Premium Active</h3>
+                        <p className="text-sm text-muted-foreground">
+                          You have full access to all premium features
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span className="text-muted-foreground">Status:</span>
+                        <p className="font-medium capitalize">{subscription?.status}</p>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Plan:</span>
+                        <p className="font-medium">Premium Shopper</p>
+                      </div>
+                      {subscription?.current_period_end && (
+                        <>
+                          <div>
+                            <span className="text-muted-foreground">Active Until:</span>
+                            <p className="font-medium">
+                              {new Date(subscription.current_period_end).toLocaleDateString('en-US', {
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric'
+                              })}
+                            </p>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">Renewal:</span>
+                            <p className="font-medium">Manual</p>
+                          </div>
+                        </>
+                      )}
+                    </div>
+
+                    <Separator className="my-4" />
+
+                    <div className="space-y-3">
+                      <h4 className="font-medium text-sm">Premium Benefits:</h4>
+                      <ul className="space-y-1 text-sm text-muted-foreground">
+                        <li className="flex items-center gap-2">
+                          <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
+                          Unlimited Toy Replica generations
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
+                          Priority customer support
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
+                          Full access to premium features
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+
+                  {subscription?.status === 'active' && (
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <Button 
+                        variant="outline" 
+                        onClick={cancelSubscription}
+                        className="flex-1"
+                      >
+                        <Calendar className="h-4 w-4 mr-2" />
+                        Cancel Premium
+                      </Button>
+                      <Button 
+                        onClick={() => createPaymentIntent()}
+                        className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+                      >
+                        <CreditCard className="h-4 w-4 mr-2" />
+                        Renew Early
+                      </Button>
+                    </div>
+                  )}
+
+                  {subscription?.status === 'canceled' && (
+                    <div className="p-3 bg-orange-50 dark:bg-orange-950/20 rounded-lg border border-orange-200 dark:border-orange-800">
+                      <p className="text-sm text-orange-800 dark:text-orange-200 mb-2">
+                        Your subscription has been canceled but remains active until {' '}
+                        {subscription?.current_period_end && 
+                          new Date(subscription.current_period_end).toLocaleDateString()
+                        }.
+                      </p>
+                      <Button 
+                        onClick={() => createPaymentIntent()}
+                        size="sm"
+                        className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+                      >
+                        <CreditCard className="h-4 w-4 mr-2" />
+                        Reactivate Premium
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="p-4 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-900/50 dark:to-gray-800/50 rounded-lg border">
+                    <div className="text-center space-y-3">
+                      <div className="w-12 h-12 mx-auto rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                        <Crown className="h-6 w-6 text-gray-500" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-foreground">Basic Plan</h3>
+                        <p className="text-sm text-muted-foreground">
+                          Limited access to premium features
+                        </p>
+                      </div>
+                    </div>
+
+                    <Separator className="my-4" />
+
+                    <div className="space-y-3">
+                      <h4 className="font-medium text-sm">Current Limitations:</h4>
+                      <ul className="space-y-1 text-sm text-muted-foreground">
+                        <li className="flex items-center gap-2">
+                          <div className="w-1.5 h-1.5 bg-orange-500 rounded-full"></div>
+                          4 Toy Replica generations maximum
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <div className="w-1.5 h-1.5 bg-orange-500 rounded-full"></div>
+                          Limited access to premium features
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <div className="w-1.5 h-1.5 bg-orange-500 rounded-full"></div>
+                          Standard customer support
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+
+                  <Button 
+                    onClick={() => createPaymentIntent()}
+                    className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
+                    size="lg"
+                  >
+                    <Crown className="h-4 w-4 mr-2" />
+                    Upgrade to Premium - 40 AED/month
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
 

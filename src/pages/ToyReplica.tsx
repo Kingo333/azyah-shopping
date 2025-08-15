@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
+import { useSubscription } from '@/hooks/useSubscription';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Sparkles, Loader2, Download, Copy, RotateCcw, Info } from 'lucide-react';
+import { Sparkles, Loader2, Download, Copy, RotateCcw, Info, Crown, AlertTriangle } from 'lucide-react';
 import { BackButton } from '@/components/ui/back-button';
 import { ToyReplicaUploader } from '@/components/ToyReplicaUploader';
 
@@ -17,12 +19,14 @@ const ToyReplica = () => {
   const [result, setResult] = useState<string | null>(null);
   const [generationsUsed, setGenerationsUsed] = useState<number>(0);
   const [loadingCount, setLoadingCount] = useState(true);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   
   const { toast } = useToast();
   const { user } = useAuth();
+  const { isPremium, createPaymentIntent } = useSubscription();
 
   const GENERATION_LIMIT = 4;
-  const remainingGenerations = GENERATION_LIMIT - generationsUsed;
+  const remainingGenerations = isPremium ? Infinity : Math.max(0, GENERATION_LIMIT - generationsUsed);
 
   // Fetch user's generation count
   useEffect(() => {
@@ -86,12 +90,8 @@ const ToyReplica = () => {
       return;
     }
 
-    if (remainingGenerations <= 0) {
-      toast({
-        title: "Generation Limit Reached",
-        description: "You have used all 4 of your Toy Replica generations.",
-        variant: "destructive"
-      });
+    if (!isPremium && remainingGenerations <= 0) {
+      setShowUpgradeModal(true);
       return;
     }
 
@@ -213,27 +213,38 @@ const ToyReplica = () => {
           {/* Generation Counter */}
           <div className="mt-4 p-3 bg-muted/50 rounded-lg border">
             <div className="flex items-center gap-2">
-              <Info className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm font-medium">
-                {loadingCount ? (
-                  "Loading..."
-                ) : (
-                  <>
-                    Generations remaining: <span className={`font-bold ${remainingGenerations <= 1 ? 'text-destructive' : 'text-primary'}`}>
-                      {remainingGenerations}
-                    </span> / {GENERATION_LIMIT}
-                  </>
-                )}
-              </span>
+              {isPremium ? (
+                <>
+                  <Crown className="h-4 w-4 text-purple-500" />
+                  <span className="text-sm font-medium">
+                    Premium: <span className="font-bold text-purple-600">Unlimited</span> generations
+                  </span>
+                </>
+              ) : (
+                <>
+                  <Info className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">
+                    {loadingCount ? (
+                      "Loading..."
+                    ) : (
+                      <>
+                        Generations remaining: <span className={`font-bold ${remainingGenerations <= 1 ? 'text-destructive' : 'text-primary'}`}>
+                          {remainingGenerations}
+                        </span> / {GENERATION_LIMIT}
+                      </>
+                    )}
+                  </span>
+                </>
+              )}
             </div>
-            {!loadingCount && remainingGenerations <= 1 && remainingGenerations > 0 && (
+            {!isPremium && !loadingCount && remainingGenerations <= 1 && remainingGenerations > 0 && (
               <p className="text-xs text-muted-foreground mt-1">
-                This is your last generation!
+                This is your last generation! <Button variant="link" className="text-xs p-0 h-auto" onClick={() => setShowUpgradeModal(true)}>Upgrade to Premium</Button>
               </p>
             )}
-            {!loadingCount && remainingGenerations <= 0 && (
+            {!isPremium && !loadingCount && remainingGenerations <= 0 && (
               <p className="text-xs text-destructive mt-1">
-                You have reached your generation limit.
+                You have reached your generation limit. <Button variant="link" className="text-xs p-0 h-auto text-destructive" onClick={() => setShowUpgradeModal(true)}>Upgrade now</Button>
               </p>
             )}
           </div>
@@ -376,6 +387,46 @@ const ToyReplica = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Upgrade Modal */}
+        <AlertDialog open={showUpgradeModal} onOpenChange={setShowUpgradeModal}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2">
+                <Crown className="h-5 w-5 text-purple-500" />
+                Upgrade to Premium
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                You've reached your generation limit of {GENERATION_LIMIT} Toy Replicas. 
+                Upgrade to Premium for unlimited generations and full access to all features.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <div className="py-4">
+              <div className="space-y-2 text-sm">
+                <h4 className="font-medium">Premium Benefits:</h4>
+                <ul className="space-y-1 text-muted-foreground">
+                  <li>• Unlimited Toy Replica generations</li>
+                  <li>• Priority customer support</li>
+                  <li>• Full access to premium features</li>
+                </ul>
+                <p className="text-lg font-semibold mt-4">Only 40 AED / month</p>
+              </div>
+            </div>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Maybe Later</AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={() => {
+                  setShowUpgradeModal(false);
+                  createPaymentIntent();
+                }}
+                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+              >
+                <Crown className="h-4 w-4 mr-2" />
+                Upgrade Now
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );
