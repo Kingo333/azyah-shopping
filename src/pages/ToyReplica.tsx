@@ -14,12 +14,10 @@ const ToyReplica = () => {
   const [generating, setGenerating] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [result, setResult] = useState<string | null>(null);
-  const [currentReplicaId, setCurrentReplicaId] = useState<string | null>(null);
   const [diagnosticsOpen, setDiagnosticsOpen] = useState(false);
   const [diagnostics, setDiagnostics] = useState({
     uploader: { status: 'unknown', message: '' },
     storage: { status: 'unknown', message: '' },
-    database: { status: 'unknown', message: '' },
     function: { status: 'unknown', message: '' },
     apiKey: { status: 'unknown', message: '' },
     cors: { status: 'unknown', message: '' }
@@ -88,29 +86,6 @@ const ToyReplica = () => {
       setDiagnostics(prev => ({ ...prev, storage: { status: 'error', message: `Storage test error: ${error}` } }));
     }
 
-    // Test database access
-    try {
-      const testId = crypto.randomUUID();
-      const { error: insertError } = await supabase
-        .from('toy_replicas')
-        .insert({
-          id: testId,
-          user_id: user?.id || 'test',
-          source_url: 'test',
-          status: 'queued'
-        });
-      
-      if (!insertError) {
-        // Clean up test row
-        await supabase.from('toy_replicas').delete().eq('id', testId);
-        setDiagnostics(prev => ({ ...prev, database: { status: 'success', message: 'DB insert/delete OK' } }));
-      } else {
-        setDiagnostics(prev => ({ ...prev, database: { status: 'error', message: `DB error: ${insertError.message}` } }));
-      }
-    } catch (error) {
-      setDiagnostics(prev => ({ ...prev, database: { status: 'error', message: `DB error: ${error}` } }));
-    }
-
     // Test edge function health
     try {
       const { data, error } = await supabase.functions.invoke('generate-toy-replica', {
@@ -145,6 +120,37 @@ const ToyReplica = () => {
     setDiagnostics(prev => ({ ...prev, uploader: { status: 'error', message: error } }));
   };
 
+  const generateToyReplica = async (sourceFileName: string): Promise<string> => {
+    // Get signed URL for the uploaded file
+    const { data: signedUrlData, error: signedUrlError } = await supabase.storage
+      .from('toy-replica-source')
+      .createSignedUrl(sourceFileName, 300); // 5 minutes
+
+    if (signedUrlError || !signedUrlData) {
+      throw new Error(`Failed to create signed URL: ${signedUrlError?.message}`);
+    }
+
+    console.log('Calling edge function with sourceUrl:', signedUrlData.signedUrl);
+
+    const response = await fetch('/functions/v1/generate-toy-replica', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sourceUrl: signedUrlData.signedUrl }),
+    });
+
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      // Show the actual server error instead of generic "non-2xx"
+      throw new Error(data?.error || `Edge function ${response.status}`);
+    }
+
+    if (!data.b64_png) {
+      throw new Error('No image data returned from function');
+    }
+
+    return `data:image/png;base64,${data.b64_png}`;
+  };
+
   const handleGenerate = async (fileName?: string) => {
     const sourceFileName = fileName || uploadedFileName;
     if (!sourceFileName) return;
@@ -164,68 +170,22 @@ const ToyReplica = () => {
     setResult(null);
     
     try {
-      // Create a new toy replica record
-      const replicaId = crypto.randomUUID();
-      setCurrentReplicaId(replicaId);
-
-      const { error: insertError } = await supabase
-        .from('toy_replicas')
-        .insert({
-          id: replicaId,
-          user_id: user.id,
-          source_url: sourceFileName,
-          status: 'queued'
-        });
-
-      if (insertError) throw insertError;
-
-      console.log('Calling generate-toy-replica function with:', { 
-        toyReplicaId: replicaId, 
-        sourceUrl: sourceFileName 
-      });
+      console.log('Starting toy replica generation for:', sourceFileName);
       
-      const { data, error } = await supabase.functions.invoke('generate-toy-replica', {
-        body: {
-          toyReplicaId: replicaId,
-          sourceUrl: sourceFileName
-        }
+      const resultDataUrl = await generateToyReplica(sourceFileName);
+      
+      setResult(resultDataUrl);
+      toast({
+        title: "Success!",
+        description: "Your LEGO mini-figure has been created!",
       });
-
-      console.log('Generate toy replica response:', { data, error });
-
-      if (error) {
-        console.error('Toy replica generation failed:', error);
-        setLastError(`Generation failed: ${error.message}`);
-        toast({
-          title: "Generation Failed",
-          description: error.message || "Failed to generate toy replica. Please check if the OpenAI API key is configured properly.",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      if (data?.result_url) {
-        setResult(data.result_url);
-        toast({
-          title: "Success!",
-          description: "Your LEGO mini-figure has been created!",
-        });
-      } else {
-        const errorMsg = "No image was generated. Please try again.";
-        setLastError(errorMsg);
-        toast({
-          title: "No Result",
-          description: errorMsg,
-          variant: "destructive"
-        });
-      }
     } catch (error) {
       console.error('Error generating toy replica:', error);
-      const errorMsg = `Unexpected error: ${error instanceof Error ? error.message : 'Unknown error'}`;
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error occurred';
       setLastError(errorMsg);
       toast({
-        title: "Error",
-        description: "An unexpected error occurred. Please try again.",
+        title: "Generation Failed",
+        description: errorMsg,
         variant: "destructive"
       });
     } finally {
@@ -288,7 +248,6 @@ const ToyReplica = () => {
   const handleClear = () => {
     setUploadedFileName(null);
     setResult(null);
-    setCurrentReplicaId(null);
   };
 
   const copyLastError = () => {
@@ -347,11 +306,6 @@ const ToyReplica = () => {
                   <StatusIcon status={diagnostics.storage.status} />
                   <span className="font-medium">Storage:</span>
                   <span className="text-sm text-muted-foreground">{diagnostics.storage.message || 'Not tested'}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <StatusIcon status={diagnostics.database.status} />
-                  <span className="font-medium">Database:</span>
-                  <span className="text-sm text-muted-foreground">{diagnostics.database.message || 'Not tested'}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <StatusIcon status={diagnostics.function.status} />
