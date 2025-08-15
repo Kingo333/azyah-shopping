@@ -1,7 +1,9 @@
+
 import { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { CredentialsSchema } from '@/lib/password-validation';
 
 interface AuthContextType {
   user: User | null;
@@ -41,6 +43,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signUp = async (email: string, password: string, userData?: any) => {
+    // Validate credentials before sending to Supabase
+    const validation = CredentialsSchema.safeParse({ email, password });
+    if (!validation.success) {
+      const error = { message: validation.error.issues[0].message };
+      toast({
+        title: "Invalid Password",
+        description: error.message,
+        variant: "destructive"
+      });
+      return { error };
+    }
+
     const redirectUrl = `${window.location.origin}/dashboard`;
     
     const { error } = await supabase.auth.signUp({
@@ -54,7 +68,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     if (error) {
       toast({
-        title: "Signup Failed",
+        title: "Signup Failed", 
         description: error.message,
         variant: "destructive"
       });

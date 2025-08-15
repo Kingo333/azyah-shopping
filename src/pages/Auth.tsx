@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Navigate, useSearchParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -8,6 +9,8 @@ import { GlassPanel } from '@/components/ui/glass-panel';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2, Sparkles, Heart, Star, ShoppingBag, Store, Building2, ArrowLeft } from 'lucide-react';
+import { checkPasswordStrength } from '@/lib/password-validation';
+import { PasswordStrengthIndicator } from '@/components/PasswordStrengthIndicator';
 
 const Auth = () => {
   const { user, signUp, signIn, loading } = useAuth();
@@ -16,6 +19,11 @@ const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('signin');
   const [selectedRole, setSelectedRole] = useState<string>('');
+  const [signupForm, setSignupForm] = useState({
+    email: '',
+    password: '',
+    name: ''
+  });
 
   useEffect(() => {
     // Pre-select role from URL params and switch to signup
@@ -66,6 +74,12 @@ const Auth = () => {
     }
     setIsLoading(false);
   };
+
+  const handleSignupFormChange = (field: string, value: string) => {
+    setSignupForm(prev => ({ ...prev, [field]: value }));
+  };
+
+  const passwordStrength = checkPasswordStrength(signupForm.email, signupForm.password);
 
   if (loading) {
     return (
@@ -188,6 +202,8 @@ const Auth = () => {
                       type="text"
                       placeholder="Enter your full name"
                       required
+                      value={signupForm.name}
+                      onChange={(e) => handleSignupFormChange('name', e.target.value)}
                       className="h-12 glass-panel border-white/20"
                     />
                   </div>
@@ -199,6 +215,8 @@ const Auth = () => {
                       type="email"
                       placeholder="Enter your email"
                       required
+                      value={signupForm.email}
+                      onChange={(e) => handleSignupFormChange('email', e.target.value)}
                       className="h-12 glass-panel border-white/20"
                     />
                   </div>
@@ -208,10 +226,16 @@ const Auth = () => {
                       id="signup-password"
                       name="password"
                       type="password"
-                      placeholder="Create a strong password"
+                      placeholder="Create a strong password (8+ characters)"
                       required
-                      minLength={6}
+                      minLength={8}
+                      value={signupForm.password}
+                      onChange={(e) => handleSignupFormChange('password', e.target.value)}
                       className="h-12 glass-panel border-white/20"
+                    />
+                    <PasswordStrengthIndicator 
+                      strength={passwordStrength} 
+                      password={signupForm.password}
                     />
                   </div>
                   <div className="space-y-4">
@@ -319,7 +343,7 @@ const Auth = () => {
                     variant="premium"
                     size="lg"
                     className="w-full h-12"
-                    disabled={isLoading || !selectedRole}
+                    disabled={isLoading || !selectedRole || !passwordStrength.isValid}
                   >
                     {isLoading ? (
                       <>
