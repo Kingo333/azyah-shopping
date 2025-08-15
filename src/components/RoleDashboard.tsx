@@ -176,36 +176,42 @@ const RoleDashboard: React.FC = () => {
     try {
       console.log('Checking Toy Replica functionality...');
       
-      // Test with proper parameters that the edge function expects
+      // Test if OpenAI API key is configured by checking edge function
       const { data, error } = await supabase.functions.invoke('generate-toy-replica', {
         body: { 
-          sourceUrl: 'test', // Send a test URL instead of test: true
-          prompt: 'Test connection to OpenAI API'
+          test: true // Send test flag to check configuration without processing
         }
       });
       
       if (error) {
         console.error('Toy Replica test failed:', error);
-        toast({
-          title: "Configuration Issue",
-          description: "OpenAI API key may not be configured properly. Please check your settings.",
-          variant: "destructive"
-        });
+        if (error.message?.includes('OPENAI_API_KEY')) {
+          toast({
+            title: "OpenAI API Key Missing",
+            description: "Please configure your OpenAI API key in Supabase to enable Toy Replica generation.",
+            variant: "destructive"
+          });
+        } else {
+          toast({
+            title: "Configuration Issue",
+            description: "Toy Replica feature may not be properly configured. Please check your settings.",
+            variant: "destructive"
+          });
+        }
         return false;
       }
-      
-      console.log('Toy Replica test successful:', data);
+
+      console.log('Toy Replica functionality is properly configured');
       toast({
         title: "Toy Replica Ready",
-        description: "AI toy generation is working properly!",
-        duration: 3000
+        description: "LEGO-style generation is configured and ready to use!"
       });
       return true;
     } catch (error) {
-      console.error('Error testing Toy Replica:', error);
+      console.error('Error checking Toy Replica status:', error);
       toast({
-        title: "Connection Error",
-        description: "Unable to connect to AI service. Please try again later.",
+        title: "Test Failed",
+        description: "Unable to verify Toy Replica configuration",
         variant: "destructive"
       });
       return false;
