@@ -6,7 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Upload, Sparkles, Loader2 } from 'lucide-react';
+import { Upload, Sparkles, Loader2, Download, Copy } from 'lucide-react';
+import { BackButton } from '@/components/ui/back-button';
 
 const ToyReplica = () => {
   const [sourceUrl, setSourceUrl] = useState('');
@@ -81,10 +82,57 @@ const ToyReplica = () => {
     }
   };
 
+  const handleDownload = async () => {
+    if (!result) return;
+    
+    try {
+      const response = await fetch(result);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `toy-replica-${Date.now()}.png`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toast({
+        title: "Downloaded",
+        description: "Image saved to your downloads folder",
+      });
+    } catch (error) {
+      console.error('Download failed:', error);
+      toast({
+        title: "Download Failed",
+        description: "Could not download the image",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleCopyUrl = () => {
+    if (!result) return;
+    
+    navigator.clipboard.writeText(result).then(() => {
+      toast({
+        title: "Copied",
+        description: "Image URL copied to clipboard",
+      });
+    }).catch(() => {
+      toast({
+        title: "Copy Failed",
+        description: "Could not copy URL to clipboard",
+        variant: "destructive"
+      });
+    });
+  };
+
   return (
     <div className="min-h-screen bg-background p-4">
       <div className="container mx-auto max-w-4xl">
         <div className="mb-6">
+          <BackButton className="mb-4" />
           <h1 className="text-3xl font-bold flex items-center gap-3">
             <Sparkles className="h-8 w-8 text-primary" />
             AI Toy Replica Generator
@@ -172,13 +220,24 @@ const ToyReplica = () => {
                       });
                     }}
                   />
-                  <Button 
-                    onClick={() => window.open(result, '_blank')}
-                    variant="outline"
-                    className="w-full"
-                  >
-                    View Full Size
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button 
+                      onClick={handleDownload}
+                      variant="outline"
+                      className="flex-1"
+                    >
+                      <Download className="h-4 w-4 mr-2" />
+                      Download
+                    </Button>
+                    <Button 
+                      onClick={handleCopyUrl}
+                      variant="outline"
+                      className="flex-1"
+                    >
+                      <Copy className="h-4 w-4 mr-2" />
+                      Copy URL
+                    </Button>
+                  </div>
                 </div>
               )}
               
