@@ -17,6 +17,7 @@ import { EditProductModal } from '@/components/EditProductModal';
 import { BrandProductDetailModal } from '@/components/BrandProductDetailModal';
 import { LogoUpload } from '@/components/LogoUpload';
 import { ImportWizardModal } from '@/components/ImportWizardModal';
+import { BulkImportActions } from '@/components/BulkImportActions';
 import { Plus, Edit, Trash2, Upload, BarChart3, TrendingUp, Eye, Heart, ShoppingBag, DollarSign, Download, Filter, Globe } from 'lucide-react';
 import { InfoTooltip } from '@/components/ui/info-tooltip';
 import type { Product } from '@/types';
@@ -460,6 +461,11 @@ const BrandPortal: React.FC = () => {
                   <Button className="w-full sm:w-auto">Save Changes</Button>
                 </CardContent>
               </Card>
+              
+              <BulkImportActions 
+                brandId={brand.id}
+                onProductsDeleted={fetchProducts}
+              />
             </div>
           </TabsContent>
         </Tabs>

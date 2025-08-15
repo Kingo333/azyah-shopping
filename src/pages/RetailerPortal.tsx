@@ -20,6 +20,7 @@ import { AddProductModal } from '@/components/AddProductModal';
 import { EditProductModal } from '@/components/EditProductModal';
 import { AnalyticsDashboard } from '@/components/AnalyticsDashboard';
 import RetailerBrandsList from '@/components/RetailerBrandsList';
+import { BulkImportActions } from '@/components/BulkImportActions';
 import { useRetailerBrands } from '@/hooks/useRetailerBrands';
 import { Product } from '@/types';
 import { convertJsonToProductAttributes } from '@/lib/type-utils';
@@ -341,14 +342,21 @@ const RetailerPortal = () => {
           </TabsContent>
 
           <TabsContent value="settings">
-            <Card>
-              <CardHeader>
-                <CardTitle>Store Settings</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">Store settings coming soon...</p>
-              </CardContent>
-            </Card>
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Store Settings</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground">Store settings coming soon...</p>
+                </CardContent>
+              </Card>
+              
+              <BulkImportActions 
+                retailerId={retailer?.id}
+                onProductsDeleted={fetchProducts}
+              />
+            </div>
           </TabsContent>
         </Tabs>
 

@@ -301,6 +301,8 @@ export const ImportWizardModal = ({ open, onOpenChange, brandId, retailerId }: I
             attributes: {
               imported: true,
               import_date: new Date().toISOString(),
+              import_job_id: jobId,
+              import_source_url: websiteUrl,
             }
           };
 
