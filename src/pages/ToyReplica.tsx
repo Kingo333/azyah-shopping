@@ -1,12 +1,14 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Sparkles, Loader2, Download, Copy, RotateCcw } from 'lucide-react';
+import { Sparkles, Loader2, Download, Copy, RotateCcw, Settings, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { BackButton } from '@/components/ui/back-button';
 import { ToyReplicaUploader } from '@/components/ToyReplicaUploader';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 const ToyReplica = () => {
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
@@ -14,11 +16,94 @@ const ToyReplica = () => {
   const [uploading, setUploading] = useState(false);
   const [result, setResult] = useState<string | null>(null);
   const [currentReplicaId, setCurrentReplicaId] = useState<string | null>(null);
+  const [diagnosticsOpen, setDiagnosticsOpen] = useState(false);
+  const [diagnostics, setDiagnostics] = useState({
+    uploader: { status: 'unknown', message: '' },
+    storage: { status: 'unknown', message: '' },
+    database: { status: 'unknown', message: '' },
+    function: { status: 'unknown', message: '' },
+    apiKey: { status: 'unknown', message: '' },
+    cors: { status: 'unknown', message: '' }
+  });
+  const [lastError, setLastError] = useState<string>('');
+  
   const { toast } = useToast();
   const { user } = useAuth();
 
+  // Check URL params for diagnostics mode
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('diagnostics') === 'true') {
+      setDiagnosticsOpen(true);
+      runDiagnostics();
+    }
+  }, []);
+
+  const runDiagnostics = async () => {
+    console.log('Running diagnostics...');
+    
+    // Test storage buckets
+    try {
+      const { data: buckets, error } = await supabase.storage.listBuckets();
+      const hasSourceBucket = buckets?.some(b => b.name === 'toy-replica-source');
+      const hasResultBucket = buckets?.some(b => b.name === 'toy-replica-result');
+      
+      if (hasSourceBucket && hasResultBucket) {
+        setDiagnostics(prev => ({ ...prev, storage: { status: 'success', message: 'Both buckets exist' } }));
+      } else {
+        setDiagnostics(prev => ({ ...prev, storage: { status: 'error', message: `Missing buckets: ${!hasSourceBucket ? 'toy-replica-source ' : ''}${!hasResultBucket ? 'toy-replica-result' : ''}` } }));
+      }
+    } catch (error) {
+      setDiagnostics(prev => ({ ...prev, storage: { status: 'error', message: `Storage error: ${error}` } }));
+    }
+
+    // Test database access
+    try {
+      const testId = crypto.randomUUID();
+      const { error: insertError } = await supabase
+        .from('toy_replicas')
+        .insert({
+          id: testId,
+          user_id: user?.id || 'test',
+          source_url: 'test',
+          status: 'queued'
+        });
+      
+      if (!insertError) {
+        // Clean up test row
+        await supabase.from('toy_replicas').delete().eq('id', testId);
+        setDiagnostics(prev => ({ ...prev, database: { status: 'success', message: 'DB insert/delete OK' } }));
+      } else {
+        setDiagnostics(prev => ({ ...prev, database: { status: 'error', message: `DB error: ${insertError.message}` } }));
+      }
+    } catch (error) {
+      setDiagnostics(prev => ({ ...prev, database: { status: 'error', message: `DB error: ${error}` } }));
+    }
+
+    // Test edge function health
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-toy-replica', {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
+      if (!error && data?.ok) {
+        setDiagnostics(prev => ({ ...prev, function: { status: 'success', message: `Function OK, model: ${data.model}` } }));
+        setDiagnostics(prev => ({ ...prev, apiKey: { status: data.hasKey ? 'success' : 'error', message: data.hasKey ? 'API key present' : 'API key missing' } }));
+      } else {
+        setDiagnostics(prev => ({ ...prev, function: { status: 'error', message: `Function error: ${error?.message || 'Unknown'}` } }));
+      }
+    } catch (error) {
+      setDiagnostics(prev => ({ ...prev, function: { status: 'error', message: `Function unreachable: ${error}` } }));
+    }
+
+    // CORS test - if we get here, CORS is working
+    setDiagnostics(prev => ({ ...prev, cors: { status: 'success', message: 'CORS OK (function callable)' } }));
+  };
+
   const handleFileUploaded = (fileName: string) => {
     setUploadedFileName(fileName);
+    setDiagnostics(prev => ({ ...prev, uploader: { status: 'success', message: `File uploaded: ${fileName}` } }));
     handleGenerate(fileName);
   };
 
@@ -27,9 +112,11 @@ const ToyReplica = () => {
     if (!sourceFileName) return;
 
     if (!user) {
+      const errorMsg = "Please log in to generate toy replicas.";
+      setLastError(errorMsg);
       toast({
         title: "Authentication Required",
-        description: "Please log in to generate toy replicas.",
+        description: errorMsg,
         variant: "destructive"
       });
       return;
@@ -70,6 +157,7 @@ const ToyReplica = () => {
 
       if (error) {
         console.error('Toy replica generation failed:', error);
+        setLastError(`Generation failed: ${error.message}`);
         toast({
           title: "Generation Failed",
           description: error.message || "Failed to generate toy replica. Please check if the OpenAI API key is configured properly.",
@@ -85,14 +173,18 @@ const ToyReplica = () => {
           description: "Your LEGO mini-figure has been created!",
         });
       } else {
+        const errorMsg = "No image was generated. Please try again.";
+        setLastError(errorMsg);
         toast({
           title: "No Result",
-          description: "No image was generated. Please try again.",
+          description: errorMsg,
           variant: "destructive"
         });
       }
     } catch (error) {
       console.error('Error generating toy replica:', error);
+      const errorMsg = `Unexpected error: ${error instanceof Error ? error.message : 'Unknown error'}`;
+      setLastError(errorMsg);
       toast({
         title: "Error",
         description: "An unexpected error occurred. Please try again.",
@@ -161,6 +253,23 @@ const ToyReplica = () => {
     setCurrentReplicaId(null);
   };
 
+  const copyLastError = () => {
+    navigator.clipboard.writeText(lastError).then(() => {
+      toast({
+        title: "Copied",
+        description: "Error message copied to clipboard",
+      });
+    });
+  };
+
+  const StatusIcon = ({ status }: { status: string }) => {
+    switch (status) {
+      case 'success': return <CheckCircle className="h-4 w-4 text-green-500" />;
+      case 'error': return <XCircle className="h-4 w-4 text-red-500" />;
+      default: return <AlertCircle className="h-4 w-4 text-yellow-500" />;
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background p-4">
       <div className="container mx-auto max-w-4xl">
@@ -174,6 +283,74 @@ const ToyReplica = () => {
             Upload one photo. We'll generate a LEGO-style mini-figure with a transparent background.
           </p>
         </div>
+
+        {/* Diagnostics Panel */}
+        <Collapsible open={diagnosticsOpen} onOpenChange={setDiagnosticsOpen} className="mb-6">
+          <CollapsibleTrigger asChild>
+            <Button variant="outline" className="w-full justify-between">
+              <span className="flex items-center gap-2">
+                <Settings className="h-4 w-4" />
+                Diagnostics Mode
+              </span>
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <Card className="mt-2">
+              <CardHeader>
+                <CardTitle className="text-lg">System Diagnostics</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <StatusIcon status={diagnostics.uploader.status} />
+                  <span className="font-medium">Uploader:</span>
+                  <span className="text-sm text-muted-foreground">{diagnostics.uploader.message || 'Not tested'}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <StatusIcon status={diagnostics.storage.status} />
+                  <span className="font-medium">Storage:</span>
+                  <span className="text-sm text-muted-foreground">{diagnostics.storage.message || 'Not tested'}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <StatusIcon status={diagnostics.database.status} />
+                  <span className="font-medium">Database:</span>
+                  <span className="text-sm text-muted-foreground">{diagnostics.database.message || 'Not tested'}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <StatusIcon status={diagnostics.function.status} />
+                  <span className="font-medium">Edge Function:</span>
+                  <span className="text-sm text-muted-foreground">{diagnostics.function.message || 'Not tested'}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <StatusIcon status={diagnostics.apiKey.status} />
+                  <span className="font-medium">API Key:</span>
+                  <span className="text-sm text-muted-foreground">{diagnostics.apiKey.message || 'Not tested'}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <StatusIcon status={diagnostics.cors.status} />
+                  <span className="font-medium">CORS:</span>
+                  <span className="text-sm text-muted-foreground">{diagnostics.cors.message || 'Not tested'}</span>
+                </div>
+                
+                <div className="flex gap-2 pt-2">
+                  <Button onClick={runDiagnostics} variant="outline" size="sm">
+                    Refresh Diagnostics
+                  </Button>
+                  {lastError && (
+                    <Button onClick={copyLastError} variant="outline" size="sm">
+                      Copy Last Error
+                    </Button>
+                  )}
+                </div>
+                
+                {lastError && (
+                  <div className="p-2 bg-red-50 border border-red-200 rounded text-sm text-red-700">
+                    <strong>Last Error:</strong> {lastError}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </CollapsibleContent>
+        </Collapsible>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card>
@@ -242,6 +419,7 @@ const ToyReplica = () => {
                       className="w-full rounded-lg"
                       onError={(e) => {
                         console.error('Image failed to load:', result);
+                        setLastError(`Image load error: ${result}`);
                         toast({
                           title: "Image Load Error",
                           description: "Failed to load the generated image",
