@@ -3,6 +3,7 @@ import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { Upload, X, Image } from 'lucide-react';
 
 interface ToyReplicaUploaderProps {
@@ -21,11 +22,14 @@ export const ToyReplicaUploader: React.FC<ToyReplicaUploaderProps> = ({
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
   const maxSizeBytes = 10 * 1024 * 1024; // 10MB
 
   const validateFile = (file: File): boolean => {
+    console.log('Validating file:', file.name, file.type, file.size);
+    
     if (!allowedTypes.includes(file.type)) {
       toast({
         title: "Invalid File Type",
@@ -77,20 +81,46 @@ export const ToyReplicaUploader: React.FC<ToyReplicaUploaderProps> = ({
   };
 
   const uploadFile = async () => {
-    if (!selectedFile) return;
+    if (!selectedFile || !user) {
+      toast({
+        title: "Upload Failed",
+        description: "Please select a file and make sure you're logged in.",
+        variant: "destructive"
+      });
+      return;
+    }
 
     setUploading(true);
     onUploadStart();
 
     try {
       const fileExt = selectedFile.name.split('.').pop();
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+      const fileName = `${user.id}/${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+
+      console.log('Uploading file to:', fileName);
+      console.log('File details:', {
+        name: selectedFile.name,
+        type: selectedFile.type,
+        size: selectedFile.size
+      });
 
       const { data, error } = await supabase.storage
         .from('toy-replica-source')
-        .upload(fileName, selectedFile);
+        .upload(fileName, selectedFile, {
+          contentType: selectedFile.type,
+          upsert: false
+        });
 
-      if (error) throw error;
+      console.log('Upload result:', { data, error });
+
+      if (error) {
+        console.error('Upload error details:', error);
+        throw error;
+      }
+
+      if (!data) {
+        throw new Error('No data returned from upload');
+      }
 
       onFileUploaded(fileName);
       
@@ -103,7 +133,7 @@ export const ToyReplicaUploader: React.FC<ToyReplicaUploaderProps> = ({
       console.error('Upload failed:', error);
       toast({
         title: "Upload Failed",
-        description: "Could not upload your photo. Please try again.",
+        description: error instanceof Error ? error.message : "Could not upload your photo. Please try again.",
         variant: "destructive"
       });
     } finally {
