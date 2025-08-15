@@ -26,19 +26,26 @@ const ToyReplica = () => {
     }
 
     setLoading(true);
+    setResult(null);
+    
     try {
+      console.log('Calling toy replica function with:', { sourceUrl: sourceUrl.trim(), prompt: prompt.trim() });
+      
       const { data, error } = await supabase.functions.invoke('generate-toy-replica', {
         body: {
+          toyReplicaId: `toy-${Date.now()}`, // Generate a unique ID
           sourceUrl: sourceUrl.trim(),
           prompt: prompt.trim() || 'Generate a toy replica of this item'
         }
       });
 
+      console.log('Toy replica response:', { data, error });
+
       if (error) {
         console.error('Toy Replica generation failed:', error);
         toast({
           title: "Generation Failed",
-          description: error.message || "Failed to generate toy replica",
+          description: error.message || "Failed to generate toy replica. Please check if the OpenAI API key is configured properly.",
           variant: "destructive"
         });
         return;
@@ -50,12 +57,23 @@ const ToyReplica = () => {
           title: "Success!",
           description: "Your toy replica has been generated",
         });
+      } else if (data?.message) {
+        toast({
+          title: "Info",
+          description: data.message,
+        });
+      } else {
+        toast({
+          title: "No Result",
+          description: "No image was generated. Please try again.",
+          variant: "destructive"
+        });
       }
     } catch (error) {
       console.error('Error generating toy replica:', error);
       toast({
         title: "Error",
-        description: "An unexpected error occurred",
+        description: "An unexpected error occurred. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -107,7 +125,7 @@ const ToyReplica = () => {
 
               <Button 
                 onClick={handleGenerate} 
-                disabled={loading}
+                disabled={loading || !sourceUrl.trim()}
                 className="w-full"
               >
                 {loading ? (
@@ -145,6 +163,14 @@ const ToyReplica = () => {
                     src={result} 
                     alt="Generated toy replica" 
                     className="w-full rounded-lg shadow-lg"
+                    onError={(e) => {
+                      console.error('Image failed to load:', result);
+                      toast({
+                        title: "Image Load Error",
+                        description: "Failed to load the generated image",
+                        variant: "destructive"
+                      });
+                    }}
                   />
                   <Button 
                     onClick={() => window.open(result, '_blank')}
