@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -12,7 +13,7 @@ import GlobalSearch from '@/components/GlobalSearch';
 import DashboardHeader from '@/components/DashboardHeader';
 import AffiliateHub from '@/components/AffiliateHub';
 import AiStudioModal from '@/components/AiStudioModal';
-import { Heart, ShoppingBag, Search, Sparkles, Camera, BarChart3, Users, Package, Settings, Store, TrendingUp, Plus, Eye, DollarSign, Globe, Bell, LogOut, User, Archive, Trophy, MapPin } from 'lucide-react';
+import { Heart, ShoppingBag, Search, Sparkles, Package, BarChart3, Users, Settings, Store, TrendingUp, Plus, Eye, DollarSign, Globe, Bell, LogOut, User, Archive, Trophy, MapPin } from 'lucide-react';
 import Leaderboard from '@/components/Leaderboard';
 
 interface UserProfile {
@@ -171,6 +172,50 @@ const RoleDashboard: React.FC = () => {
     }).format(cents / 100);
   };
 
+  const checkToyReplicaStatus = async () => {
+    try {
+      console.log('Checking Toy Replica functionality...');
+      
+      // Test if the edge function exists and OpenAI key is configured
+      const { data, error } = await supabase.functions.invoke('generate-toy-replica', {
+        body: { test: true }
+      });
+      
+      if (error) {
+        console.error('Toy Replica test failed:', error);
+        toast({
+          title: "Configuration Issue",
+          description: "OpenAI API key may not be configured. Please check your settings.",
+          variant: "destructive"
+        });
+        return false;
+      }
+      
+      console.log('Toy Replica test successful:', data);
+      toast({
+        title: "Toy Replica Ready",
+        description: "AI toy generation is working properly!",
+        duration: 3000
+      });
+      return true;
+    } catch (error) {
+      console.error('Error testing Toy Replica:', error);
+      toast({
+        title: "Connection Error",
+        description: "Unable to connect to AI service. Please try again later.",
+        variant: "destructive"
+      });
+      return false;
+    }
+  };
+
+  const handleToyReplicaClick = async () => {
+    const isWorking = await checkToyReplicaStatus();
+    if (isWorking) {
+      navigate('/toy-replica');
+    }
+  };
+
   // Show loading spinner
   if (loading) {
     console.log('Showing loading spinner');
@@ -273,16 +318,15 @@ const RoleDashboard: React.FC = () => {
               <span className="text-xs sm:text-sm">Wishlist</span>
             </Button>
             <Button 
-              onClick={() => toast({
-                title: "Coming Soon",
-                description: "Visual search feature is coming soon! Stay tuned for updates.",
-                duration: 3000
-              })} 
+              onClick={handleToyReplicaClick}
               variant="outline" 
-              className="h-16 sm:h-20 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300"
+              className="h-16 sm:h-20 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300 relative bg-gradient-to-br from-green-50 to-blue-50 dark:from-green-950/20 dark:to-blue-950/20 border-green-200 dark:border-green-800"
             >
-              <Camera className="h-5 w-5 sm:h-6 sm:w-6" />
-              <span className="text-xs sm:text-sm">Scan</span>
+              <Package className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
+              <span className="text-xs sm:text-sm text-green-600">Toy Replica</span>
+              <Badge variant="secondary" className="absolute -top-1 -right-1 text-xs px-1 py-0 h-4">
+                AI
+              </Badge>
             </Button>
           </div>
         </div>
