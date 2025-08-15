@@ -176,16 +176,19 @@ const RoleDashboard: React.FC = () => {
     try {
       console.log('Checking Toy Replica functionality...');
       
-      // Test if the edge function exists and OpenAI key is configured
+      // Test with proper parameters that the edge function expects
       const { data, error } = await supabase.functions.invoke('generate-toy-replica', {
-        body: { test: true }
+        body: { 
+          sourceUrl: 'test', // Send a test URL instead of test: true
+          prompt: 'Test connection to OpenAI API'
+        }
       });
       
       if (error) {
         console.error('Toy Replica test failed:', error);
         toast({
           title: "Configuration Issue",
-          description: "OpenAI API key may not be configured. Please check your settings.",
+          description: "OpenAI API key may not be configured properly. Please check your settings.",
           variant: "destructive"
         });
         return false;
