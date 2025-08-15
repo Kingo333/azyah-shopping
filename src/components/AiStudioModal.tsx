@@ -181,10 +181,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                   {outfitImageId && <Badge variant="outline" className="mt-1">Uploaded</Badge>}
                 </div>
                 
-                <div>
-                  <Label htmlFor="prompt">Prompt (Optional)</Label>
-                  <Textarea id="prompt" placeholder="Describe any specific styling or modifications..." value={prompt} onChange={e => setPrompt(e.target.value)} className="mt-1" />
-                </div>
+                
                 
                 <Button onClick={handleVirtualTryOn} disabled={loading || !personImageId || !outfitImageId} className="w-full">
                   {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Wand2 className="h-4 w-4 mr-2" />}
