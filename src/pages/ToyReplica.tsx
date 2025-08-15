@@ -2,48 +2,63 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Upload, Sparkles, Loader2, Download, Copy } from 'lucide-react';
+import { Sparkles, Loader2, Download, Copy, RotateCcw } from 'lucide-react';
 import { BackButton } from '@/components/ui/back-button';
+import { ToyReplicaUploader } from '@/components/ToyReplicaUploader';
 
 const ToyReplica = () => {
-  const [sourceUrl, setSourceUrl] = useState('');
-  const [prompt, setPrompt] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
+  const [generating, setGenerating] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [result, setResult] = useState<string | null>(null);
+  const [currentReplicaId, setCurrentReplicaId] = useState<string | null>(null);
   const { toast } = useToast();
 
-  const handleGenerate = async () => {
-    if (!sourceUrl.trim()) {
-      toast({
-        title: "Missing Source",
-        description: "Please provide a source URL or description",
-        variant: "destructive"
-      });
-      return;
-    }
+  const handleFileUploaded = (fileName: string) => {
+    setUploadedFileName(fileName);
+    handleGenerate(fileName);
+  };
 
-    setLoading(true);
+  const handleGenerate = async (fileName?: string) => {
+    const sourceFileName = fileName || uploadedFileName;
+    if (!sourceFileName) return;
+
+    setGenerating(true);
     setResult(null);
     
     try {
-      console.log('Calling toy replica function with:', { sourceUrl: sourceUrl.trim(), prompt: prompt.trim() });
+      // Create a new toy replica record
+      const replicaId = crypto.randomUUID();
+      setCurrentReplicaId(replicaId);
+
+      const { error: insertError } = await supabase
+        .from('toy_replicas')
+        .insert({
+          id: replicaId,
+          source_url: sourceFileName,
+          status: 'queued'
+        });
+
+      if (insertError) throw insertError;
+
+      console.log('Calling generate-toy-replica function with:', { 
+        toyReplicaId: replicaId, 
+        sourceUrl: sourceFileName 
+      });
       
       const { data, error } = await supabase.functions.invoke('generate-toy-replica', {
         body: {
-          toyReplicaId: `toy-${Date.now()}`, // Generate a unique ID
-          sourceUrl: sourceUrl.trim(),
-          prompt: prompt.trim() || 'Generate a toy replica of this item'
+          toyReplicaId: replicaId,
+          sourceUrl: sourceFileName
         }
       });
 
-      console.log('Toy replica response:', { data, error });
+      console.log('Generate toy replica response:', { data, error });
 
       if (error) {
-        console.error('Toy Replica generation failed:', error);
+        console.error('Toy replica generation failed:', error);
         toast({
           title: "Generation Failed",
           description: error.message || "Failed to generate toy replica. Please check if the OpenAI API key is configured properly.",
@@ -56,12 +71,7 @@ const ToyReplica = () => {
         setResult(data.result_url);
         toast({
           title: "Success!",
-          description: "Your toy replica has been generated",
-        });
-      } else if (data?.message) {
-        toast({
-          title: "Info",
-          description: data.message,
+          description: "Your LEGO mini-figure has been created!",
         });
       } else {
         toast({
@@ -78,7 +88,7 @@ const ToyReplica = () => {
         variant: "destructive"
       });
     } finally {
-      setLoading(false);
+      setGenerating(false);
     }
   };
 
@@ -91,7 +101,7 @@ const ToyReplica = () => {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `toy-replica-${Date.now()}.png`;
+      a.download = `lego-minifigure-${Date.now()}.png`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -99,7 +109,7 @@ const ToyReplica = () => {
       
       toast({
         title: "Downloaded",
-        description: "Image saved to your downloads folder",
+        description: "LEGO mini-figure saved to your downloads folder",
       });
     } catch (error) {
       console.error('Download failed:', error);
@@ -128,6 +138,18 @@ const ToyReplica = () => {
     });
   };
 
+  const handleRegenerate = () => {
+    if (uploadedFileName) {
+      handleGenerate();
+    }
+  };
+
+  const handleClear = () => {
+    setUploadedFileName(null);
+    setResult(null);
+    setCurrentReplicaId(null);
+  };
+
   return (
     <div className="min-h-screen bg-background p-4">
       <div className="container mx-auto max-w-4xl">
@@ -135,91 +157,88 @@ const ToyReplica = () => {
           <BackButton className="mb-4" />
           <h1 className="text-3xl font-bold flex items-center gap-3">
             <Sparkles className="h-8 w-8 text-primary" />
-            AI Toy Replica Generator
+            Toy Replica
           </h1>
           <p className="text-muted-foreground mt-2">
-            Transform any product into a toy replica using AI
+            Upload one photo. We'll generate a LEGO-style mini-figure with a transparent background.
           </p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Upload className="h-5 w-5" />
-                Input
-              </CardTitle>
+              <CardTitle>Upload Photo</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="sourceUrl">Source URL or Description</Label>
-                <Input
-                  id="sourceUrl"
-                  placeholder="Enter product URL or describe the item..."
-                  value={sourceUrl}
-                  onChange={(e) => setSourceUrl(e.target.value)}
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="prompt">Custom Instructions (Optional)</Label>
-                <Input
-                  id="prompt"
-                  placeholder="e.g., Make it colorful, add cute features..."
-                  value={prompt}
-                  onChange={(e) => setPrompt(e.target.value)}
-                />
-              </div>
+              <ToyReplicaUploader
+                onFileUploaded={handleFileUploaded}
+                onUploadStart={() => setUploading(true)}
+                disabled={generating || uploading}
+              />
 
-              <Button 
-                onClick={handleGenerate} 
-                disabled={loading || !sourceUrl.trim()}
-                className="w-full"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Generating...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="h-4 w-4 mr-2" />
-                    Generate Toy Replica
-                  </>
-                )}
-              </Button>
+              {uploadedFileName && (
+                <Button 
+                  onClick={handleClear}
+                  variant="outline"
+                  className="w-full"
+                >
+                  Clear & Start Over
+                </Button>
+              )}
+
+              <div className="text-xs text-muted-foreground p-3 bg-muted/50 rounded">
+                <strong>Note:</strong> Keep it family-friendly and your own photo.
+              </div>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle>Result</CardTitle>
+              <CardTitle>Your LEGO Mini-Figure</CardTitle>
             </CardHeader>
             <CardContent>
-              {loading && (
+              {uploading && (
                 <div className="flex items-center justify-center py-12">
                   <div className="text-center">
                     <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-                    <p>Generating your toy replica...</p>
+                    <p>Uploading photo...</p>
+                  </div>
+                </div>
+              )}
+
+              {generating && !uploading && (
+                <div className="flex items-center justify-center py-12">
+                  <div className="text-center">
+                    <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+                    <p>Building your mini-figure...</p>
+                    <p className="text-sm text-muted-foreground mt-2">This may take a moment</p>
                   </div>
                 </div>
               )}
               
-              {result && !loading && (
+              {result && !generating && !uploading && (
                 <div className="space-y-4">
-                  <img 
-                    src={result} 
-                    alt="Generated toy replica" 
-                    className="w-full rounded-lg shadow-lg"
-                    onError={(e) => {
-                      console.error('Image failed to load:', result);
-                      toast({
-                        title: "Image Load Error",
-                        description: "Failed to load the generated image",
-                        variant: "destructive"
-                      });
+                  <div 
+                    className="relative bg-checkerboard rounded-lg p-4"
+                    style={{
+                      backgroundImage: `url("data:image/svg+xml,%3csvg width='20' height='20' xmlns='http://www.w3.org/2000/svg'%3e%3crect width='10' height='10' fill='%23f1f5f9'/%3e%3crect x='10' y='10' width='10' height='10' fill='%23f1f5f9'/%3e%3c/svg%3e")`,
+                      backgroundSize: '20px 20px'
                     }}
-                  />
+                  >
+                    <img 
+                      src={result} 
+                      alt="Generated LEGO mini-figure" 
+                      className="w-full rounded-lg"
+                      onError={(e) => {
+                        console.error('Image failed to load:', result);
+                        toast({
+                          title: "Image Load Error",
+                          description: "Failed to load the generated image",
+                          variant: "destructive"
+                        });
+                      }}
+                    />
+                  </div>
                   <div className="flex gap-2">
                     <Button 
                       onClick={handleDownload}
@@ -227,7 +246,7 @@ const ToyReplica = () => {
                       className="flex-1"
                     >
                       <Download className="h-4 w-4 mr-2" />
-                      Download
+                      Download PNG
                     </Button>
                     <Button 
                       onClick={handleCopyUrl}
@@ -235,15 +254,24 @@ const ToyReplica = () => {
                       className="flex-1"
                     >
                       <Copy className="h-4 w-4 mr-2" />
-                      Copy URL
+                      Copy Link
                     </Button>
                   </div>
+                  <Button 
+                    onClick={handleRegenerate}
+                    variant="outline"
+                    className="w-full"
+                    disabled={generating}
+                  >
+                    <RotateCcw className="h-4 w-4 mr-2" />
+                    Regenerate
+                  </Button>
                 </div>
               )}
               
-              {!result && !loading && (
+              {!result && !generating && !uploading && (
                 <div className="flex items-center justify-center py-12 text-muted-foreground">
-                  <p>Your generated toy replica will appear here</p>
+                  <p>Your LEGO mini-figure will appear here</p>
                 </div>
               )}
             </CardContent>
