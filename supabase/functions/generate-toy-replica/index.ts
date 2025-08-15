@@ -31,7 +31,7 @@ serve(async (req) => {
     });
   }
 
-  let requestBody: any = null;
+  let requestBody = null;
   
   try {
     // Parse request body
@@ -65,11 +65,15 @@ serve(async (req) => {
     }
 
     // Update status to processing
-    await supabase
+    const { error: updateError } = await supabase
       .from('toy_replicas')
       .update({ status: 'processing' })
       .eq('id', toyReplicaId)
       .eq('user_id', user.id);
+
+    if (updateError) {
+      console.error('Failed to update status to processing:', updateError);
+    }
 
     // Download the source image from Supabase storage
     const { data: imageData, error: downloadError } = await supabase.storage
@@ -219,7 +223,7 @@ Additional requirements:
     const resultUrl = publicUrlData.publicUrl;
 
     // Update database with success
-    await supabase
+    const { error: finalUpdateError } = await supabase
       .from('toy_replicas')
       .update({ 
         status: 'succeeded',
@@ -227,6 +231,10 @@ Additional requirements:
       })
       .eq('id', toyReplicaId)
       .eq('user_id', user.id);
+
+    if (finalUpdateError) {
+      console.error('Failed to update final status:', finalUpdateError);
+    }
 
     console.log('Toy replica generation completed successfully');
 
@@ -244,13 +252,17 @@ Additional requirements:
     if (requestBody?.toyReplicaId) {
       try {
         const supabase = createClient(supabaseUrl, supabaseServiceKey);
-        await supabase
+        const { error: dbError } = await supabase
           .from('toy_replicas')
           .update({ 
             status: 'failed',
             error: error.message
           })
           .eq('id', requestBody.toyReplicaId);
+        
+        if (dbError) {
+          console.error('Failed to update error status:', dbError);
+        }
       } catch (dbError) {
         console.error('Failed to update error status:', dbError);
       }
