@@ -1,6 +1,5 @@
-
 import { useState } from 'react';
-import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
@@ -10,25 +9,6 @@ export const useCartManager = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { trackAddToCart } = useProductAnalytics();
-
-  // Query to get cart item count
-  const { data: cartItems } = useQuery({
-    queryKey: ['cart_items', user?.id],
-    queryFn: async () => {
-      if (!user) return [];
-      
-      const { data, error } = await supabase
-        .from('cart_items')
-        .select('quantity')
-        .eq('user_id', user.id);
-
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!user?.id
-  });
-
-  const itemCount = cartItems?.reduce((total, item) => total + item.quantity, 0) || 0;
 
   const addToCart = useMutation({
     mutationFn: async ({ 
@@ -103,7 +83,6 @@ export const useCartManager = () => {
 
   return {
     addToCart: addToCart.mutate,
-    isAdding: addToCart.isPending,
-    itemCount
+    isAdding: addToCart.isPending
   };
 };

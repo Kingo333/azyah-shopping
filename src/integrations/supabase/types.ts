@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
+  // Allows to automatically instanciate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.12 (cd3cf9e)"
@@ -1198,39 +1198,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      toy_replicas: {
-        Row: {
-          created_at: string
-          error: string | null
-          id: string
-          result_url: string | null
-          source_url: string | null
-          status: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          error?: string | null
-          id?: string
-          result_url?: string | null
-          source_url?: string | null
-          status?: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          error?: string | null
-          id?: string
-          result_url?: string | null
-          source_url?: string | null
-          status?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
       }
       tryon_jobs: {
         Row: {

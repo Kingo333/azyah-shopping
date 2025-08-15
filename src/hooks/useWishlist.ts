@@ -10,36 +10,20 @@ export const useWishlist = (productId?: string) => {
   const queryClient = useQueryClient();
   const [wishlist, setWishlist] = useState<WishlistItem | null>(null);
 
-  // Get user's wishlists with items
+  // Get user's default wishlist
   const { data: userWishlists } = useQuery({
     queryKey: ['wishlists', user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
       
-      const { data: wishlists, error } = await supabase
+      const { data, error } = await supabase
         .from('wishlists')
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-
-      // Get items for each wishlist
-      const wishlistsWithItems = await Promise.all(
-        (wishlists || []).map(async (wishlist) => {
-          const { data: items } = await supabase
-            .from('wishlist_items')
-            .select('*')
-            .eq('wishlist_id', wishlist.id);
-          
-          return {
-            ...wishlist,
-            items: items || []
-          };
-        })
-      );
-
-      return wishlistsWithItems as (Wishlist & { items: WishlistItem[] })[];
+      return data as Wishlist[];
     },
     enabled: !!user?.id
   });
@@ -92,7 +76,6 @@ export const useWishlist = (productId?: string) => {
       setWishlist(data);
       queryClient.invalidateQueries({ queryKey: ['wishlist-item'] });
       queryClient.invalidateQueries({ queryKey: ['wishlist-products'] });
-      queryClient.invalidateQueries({ queryKey: ['wishlists'] });
     }
   });
 
@@ -109,7 +92,6 @@ export const useWishlist = (productId?: string) => {
       setWishlist(null);
       queryClient.invalidateQueries({ queryKey: ['wishlist-item'] });
       queryClient.invalidateQueries({ queryKey: ['wishlist-products'] });
-      queryClient.invalidateQueries({ queryKey: ['wishlists'] });
     }
   });
 
@@ -118,7 +100,6 @@ export const useWishlist = (productId?: string) => {
     isInWishlist: !!wishlist,
     addToWishlist: addToWishlistMutation.mutateAsync,
     removeFromWishlist: removeFromWishlistMutation.mutateAsync,
-    isLoading: addToWishlistMutation.isPending || removeFromWishlistMutation.isPending,
-    data: userWishlists
+    isLoading: addToWishlistMutation.isPending || removeFromWishlistMutation.isPending
   };
 };

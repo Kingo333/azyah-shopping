@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -27,7 +28,6 @@ import FeaturedBrands from './pages/FeaturedBrands';
 import TopInfluencers from './pages/TopInfluencers';
 import ImageSearch from './pages/ImageSearch';
 import Affiliate from './pages/Affiliate';
-import ToyReplica from './pages/ToyReplica';
 
 import BrandPortal from './pages/BrandPortal';
 import RetailerPortal from './pages/RetailerPortal';
@@ -129,11 +129,6 @@ function App() {
               <Route path="/affiliate" element={
                 <ProtectedRoute>
                   <Affiliate />
-                </ProtectedRoute>
-              } />
-              <Route path="/toy-replica" element={
-                <ProtectedRoute>
-                  <ToyReplica />
                 </ProtectedRoute>
               } />
               <Route path="/brand-portal" element={

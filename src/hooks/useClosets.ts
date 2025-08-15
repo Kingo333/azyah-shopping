@@ -11,7 +11,6 @@ export interface Closet {
   is_public: boolean;
   created_at: string;
   updated_at: string;
-  items?: ClosetItem[];
 }
 
 export interface ClosetItem {
@@ -48,30 +47,14 @@ export const useClosets = () => {
     queryFn: async () => {
       if (!user?.id) return [];
 
-      const { data: closets, error } = await supabase
+      const { data, error } = await supabase
         .from('closets')
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-
-      // Get items for each closet
-      const closetsWithItems = await Promise.all(
-        (closets || []).map(async (closet) => {
-          const { data: items } = await supabase
-            .from('closet_items')
-            .select('*')
-            .eq('closet_id', closet.id);
-          
-          return {
-            ...closet,
-            items: items || []
-          };
-        })
-      );
-
-      return closetsWithItems as Closet[];
+      return data as Closet[];
     },
     enabled: !!user?.id
   });
