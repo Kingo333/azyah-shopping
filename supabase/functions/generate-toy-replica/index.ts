@@ -33,38 +33,6 @@ serve(async (req) => {
   try {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Test endpoint for diagnostics
-    if (url.pathname.endsWith('/test')) {
-      // Get the authorization header
-      const authHeader = req.headers.get('Authorization');
-      if (!authHeader) {
-        throw new Error('No authorization header');
-      }
-
-      // Verify the JWT token
-      const token = authHeader.replace('Bearer ', '');
-      const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-      
-      if (authError || !user) {
-        throw new Error('Invalid authentication');
-      }
-
-      // Test bucket access
-      const { data: buckets } = await supabase.storage.listBuckets();
-      const hasSourceBucket = buckets?.some(b => b.name === 'toy-replica-source');
-      const hasResultBucket = buckets?.some(b => b.name === 'toy-replica-result');
-
-      return new Response(JSON.stringify({
-        ok: true,
-        bucketsOK: hasSourceBucket && hasResultBucket,
-        rlsOK: true,
-        userId: user.id
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    // Main generation endpoint
     // Get the authorization header
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
@@ -133,6 +101,8 @@ serve(async (req) => {
       }),
     });
 
+    console.log('OpenAI response status:', openAIResponse.status);
+
     if (!openAIResponse.ok) {
       const errorText = await openAIResponse.text();
       console.error('OpenAI API error:', errorText);
@@ -140,7 +110,7 @@ serve(async (req) => {
     }
 
     const openAIResult = await openAIResponse.json();
-    console.log('OpenAI response received, has data:', !!openAIResult.data);
+    console.log('OpenAI response received');
 
     if (!openAIResult.data || !openAIResult.data[0] || !openAIResult.data[0].b64_json) {
       throw new Error('Invalid response from OpenAI API - missing b64_json data');
@@ -150,8 +120,13 @@ serve(async (req) => {
     const resultImageBase64 = openAIResult.data[0].b64_json;
     const resultImageBuffer = Uint8Array.from(atob(resultImageBase64), c => c.charCodeAt(0));
 
+    // Generate unique filename for result
+    const timestamp = Date.now();
+    const resultFileName = `${user.id}/${toyReplicaId}-${timestamp}.png`;
+    
+    console.log('Uploading result to:', resultFileName);
+    
     // Upload result to toy-replica-result bucket
-    const resultFileName = `${user.id}/${toyReplicaId}.png`;
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from('toy-replica-result')
       .upload(resultFileName, resultImageBuffer, {
@@ -195,7 +170,7 @@ serve(async (req) => {
     
     // Try to update database with error status if we have the toyReplicaId
     try {
-      const body = await req.clone().json().catch(() => ({}));
+      const body = await req.json();
       const { toyReplicaId } = body;
       if (toyReplicaId) {
         const supabase = createClient(supabaseUrl, supabaseServiceKey);
