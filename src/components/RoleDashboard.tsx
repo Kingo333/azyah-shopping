@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -12,7 +13,7 @@ import GlobalSearch from '@/components/GlobalSearch';
 import DashboardHeader from '@/components/DashboardHeader';
 import AffiliateHub from '@/components/AffiliateHub';
 import AiStudioModal from '@/components/AiStudioModal';
-import { Heart, ShoppingBag, Search, Sparkles, Package, BarChart3, Users, Settings, Store, TrendingUp, Plus, Eye, DollarSign, Globe, Bell, LogOut, User, Archive, Trophy, MapPin } from 'lucide-react';
+import { Heart, ShoppingBag, Search, Sparkles, Package, BarChart3, Users, Settings, Store, TrendingUp, Plus, Eye, DollarSign, Globe, Bell, LogOut, User, Archive, Trophy, MapPin, Blocks } from 'lucide-react';
 import Leaderboard from '@/components/Leaderboard';
 
 interface UserProfile {
@@ -171,41 +172,8 @@ const RoleDashboard: React.FC = () => {
     }).format(cents / 100);
   };
 
-  const checkToyReplicaStatus = async () => {
-    try {
-      console.log('Testing Toy Replica functionality...');
-      
-      // Simple test to check if the function exists and responds
-      const { data, error } = await supabase.functions.invoke('generate-toy-replica', {
-        body: { 
-          toyReplicaId: 'test-connection',
-          sourceUrl: 'test-url',
-          prompt: 'Test connection'
-        }
-      });
-      
-      // Even if we get an error, if the function responds, it means it exists
-      console.log('Toy Replica function response:', { data, error });
-      
-      toast({
-        title: "Toy Replica Ready",
-        description: "Click to start generating toy replicas!",
-        duration: 3000
-      });
-      return true;
-    } catch (error) {
-      console.error('Error testing Toy Replica:', error);
-      toast({
-        title: "Service Unavailable",
-        description: "Toy Replica service may not be configured. Please check your setup.",
-        variant: "destructive"
-      });
-      return false;
-    }
-  };
-
   const handleToyReplicaClick = async () => {
-    // Always navigate to the toy replica page
+    // Navigate to the toy replica page
     navigate('/toy-replica');
   };
 
@@ -315,7 +283,7 @@ const RoleDashboard: React.FC = () => {
               variant="outline" 
               className="h-16 sm:h-20 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300 relative bg-gradient-to-br from-green-50 to-blue-50 dark:from-green-950/20 dark:to-blue-950/20 border-green-200 dark:border-green-800"
             >
-              <Package className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
+              <Blocks className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
               <span className="text-xs sm:text-sm text-green-600">Toy Replica</span>
               <Badge variant="secondary" className="absolute -top-1 -right-1 text-xs px-1 py-0 h-4">
                 AI
