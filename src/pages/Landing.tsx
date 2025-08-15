@@ -249,7 +249,7 @@ export default function Landing() {
           {/* Visual */}
           <div className="relative">
             <div className="aspect-[4/5] bg-gradient-to-br from-primary/5 to-primary/10 rounded-lg overflow-hidden shadow-lg border border-primary/10">
-              <img src="/marketing/hero-visual.png" alt="Azyah luxury fashion discovery hero" className="w-full h-full object-cover" loading="eager" fetchPriority="high" decoding="async"/>
+              <img src="/marketing/hero-visual.png" alt="Azyah luxury fashion discovery hero" className="w-full h-full object-cover" loading="eager" fetchpriority="high" decoding="async"/>
             </div>
             <div className="absolute -top-4 -right-4 w-24 h-24 bg-primary/20 rounded-full blur-xl animate-pulse"/>
             <div className="absolute -bottom-4 -left-4 w-32 h-32 bg-primary/10 rounded-full blur-xl animate-pulse"/>
