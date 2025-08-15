@@ -1,11 +1,10 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Sparkles, Loader2, Download, Copy, RotateCcw } from 'lucide-react';
+import { Sparkles, Loader2, Download, Copy, RotateCcw, Info } from 'lucide-react';
 import { BackButton } from '@/components/ui/back-button';
 import { ToyReplicaUploader } from '@/components/ToyReplicaUploader';
 
@@ -16,9 +15,44 @@ const ToyReplica = () => {
   const [generating, setGenerating] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [result, setResult] = useState<string | null>(null);
+  const [generationsUsed, setGenerationsUsed] = useState<number>(0);
+  const [loadingCount, setLoadingCount] = useState(true);
   
   const { toast } = useToast();
   const { user } = useAuth();
+
+  const GENERATION_LIMIT = 4;
+  const remainingGenerations = GENERATION_LIMIT - generationsUsed;
+
+  // Fetch user's generation count
+  useEffect(() => {
+    const fetchGenerationCount = async () => {
+      if (!user) {
+        setLoadingCount(false);
+        return;
+      }
+
+      try {
+        const { count, error } = await supabase
+          .from('toy_replicas')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', user.id)
+          .eq('status', 'succeeded');
+
+        if (error) {
+          console.error('Failed to fetch generation count:', error);
+        } else {
+          setGenerationsUsed(count || 0);
+        }
+      } catch (error) {
+        console.error('Error fetching generation count:', error);
+      } finally {
+        setLoadingCount(false);
+      }
+    };
+
+    fetchGenerationCount();
+  }, [user]);
 
   const handleFileUploaded = (id: string, file: string, preview: string) => {
     console.log('File uploaded successfully:', { id, file, preview });
@@ -52,6 +86,15 @@ const ToyReplica = () => {
       return;
     }
 
+    if (remainingGenerations <= 0) {
+      toast({
+        title: "Generation Limit Reached",
+        description: "You have used all 4 of your Toy Replica generations.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setGenerating(true);
     setResult(null);
     
@@ -72,6 +115,9 @@ const ToyReplica = () => {
       }
       
       setResult(resultUrl);
+      // Update the counter after successful generation
+      setGenerationsUsed(prev => prev + 1);
+      
       toast({
         title: "Success!",
         description: "Your LEGO mini-figure has been created!",
@@ -163,6 +209,34 @@ const ToyReplica = () => {
           <p className="text-muted-foreground mt-2">
             Upload one photo. We'll generate a LEGO-style mini-figure with a transparent background.
           </p>
+          
+          {/* Generation Counter */}
+          <div className="mt-4 p-3 bg-muted/50 rounded-lg border">
+            <div className="flex items-center gap-2">
+              <Info className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-medium">
+                {loadingCount ? (
+                  "Loading..."
+                ) : (
+                  <>
+                    Generations remaining: <span className={`font-bold ${remainingGenerations <= 1 ? 'text-destructive' : 'text-primary'}`}>
+                      {remainingGenerations}
+                    </span> / {GENERATION_LIMIT}
+                  </>
+                )}
+              </span>
+            </div>
+            {!loadingCount && remainingGenerations <= 1 && remainingGenerations > 0 && (
+              <p className="text-xs text-muted-foreground mt-1">
+                This is your last generation!
+              </p>
+            )}
+            {!loadingCount && remainingGenerations <= 0 && (
+              <p className="text-xs text-destructive mt-1">
+                You have reached your generation limit.
+              </p>
+            )}
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -175,10 +249,10 @@ const ToyReplica = () => {
                 onFileUploaded={handleFileUploaded}
                 onUploadStart={handleUploadStart}
                 onUploadError={handleUploadError}
-                disabled={generating || uploading}
+                disabled={generating || uploading || remainingGenerations <= 0}
               />
 
-              {toyReplicaId && !generating && !uploading && (
+              {toyReplicaId && !generating && !uploading && remainingGenerations > 0 && (
                 <Button 
                   onClick={handleGenerate}
                   className="w-full"
@@ -187,6 +261,17 @@ const ToyReplica = () => {
                   <Sparkles className="h-4 w-4 mr-2" />
                   Generate
                 </Button>
+              )}
+
+              {remainingGenerations <= 0 && !loadingCount && (
+                <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+                  <p className="text-sm text-destructive font-medium">
+                    Generation limit reached
+                  </p>
+                  <p className="text-xs text-destructive/80 mt-1">
+                    You have used all {GENERATION_LIMIT} of your Toy Replica generations.
+                  </p>
+                </div>
               )}
 
               {toyReplicaId && (
@@ -275,7 +360,7 @@ const ToyReplica = () => {
                     onClick={handleRegenerate}
                     variant="outline"
                     className="w-full"
-                    disabled={generating}
+                    disabled={generating || remainingGenerations <= 0}
                   >
                     <RotateCcw className="h-4 w-4 mr-2" />
                     Regenerate
