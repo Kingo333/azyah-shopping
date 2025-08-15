@@ -80,6 +80,31 @@ serve(async (req) => {
       });
     }
 
+    // Check generation limit for the user (4 generations per user)
+    const { count, error: countError } = await supabase
+      .from('toy_replicas')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', toyReplica.user_id)
+      .eq('status', 'succeeded');
+
+    if (countError) {
+      console.error('Failed to count user generations:', countError);
+      return new Response(JSON.stringify({ error: "Failed to check generation limit" }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (count >= 4) {
+      console.log(`User ${toyReplica.user_id} has reached generation limit: ${count}/4`);
+      return new Response(JSON.stringify({ 
+        error: "You have reached your limit of 4 Toy Replica generations." 
+      }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     // Update status to processing
     await supabase
       .from('toy_replicas')
@@ -121,6 +146,7 @@ serve(async (req) => {
     form.set("prompt", LEGO_PROMPT);
     form.set("size", "1024x1024");
     form.set("background", "transparent");
+    form.set("quality", "medium"); // Force medium quality ($0.04 cost)
     
     // Add the image file
     const imageBlob = new Blob([imageBytes], { type: imageMime });
