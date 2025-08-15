@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useSubscription } from '@/hooks/useSubscription';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,6 +10,22 @@ const PaymentCancel: React.FC = () => {
   const { createPaymentIntent } = useSubscription();
   const [searchParams] = useSearchParams();
   const paymentIntentId = searchParams.get('payment_intent_id');
+  const [countdown, setCountdown] = useState(10);
+
+  // Auto-redirect to dashboard after 10 seconds
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          navigate('/dashboard');
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [navigate]);
 
   const handleRetryPayment = async () => {
     await createPaymentIntent();
@@ -92,22 +108,27 @@ const PaymentCancel: React.FC = () => {
               </ul>
             </div>
 
+            {/* Auto-redirect notice */}
+            <div className="text-center text-sm text-muted-foreground bg-blue-50 dark:bg-blue-950/20 rounded-lg p-3 border">
+              <p>Redirecting to dashboard in {countdown} seconds...</p>
+            </div>
+
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row gap-3">
               <Button 
-                onClick={handleRetryPayment}
-                className="flex-1 bg-purple-600 hover:bg-purple-700 text-white"
-              >
-                <CreditCard className="h-4 w-4 mr-2" />
-                Try Again
-              </Button>
-              <Button 
-                variant="outline" 
                 onClick={() => navigate('/dashboard')}
-                className="flex-1"
+                className="flex-1 bg-primary hover:bg-primary/90"
               >
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Back to Dashboard
+              </Button>
+              <Button 
+                variant="outline"
+                onClick={handleRetryPayment}
+                className="flex-1"
+              >
+                <CreditCard className="h-4 w-4 mr-2" />
+                Try Again
               </Button>
             </div>
 
