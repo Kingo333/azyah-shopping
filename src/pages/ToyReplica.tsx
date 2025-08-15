@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -146,7 +145,7 @@ export default function ToyReplica() {
         if (statusError) throw statusError;
 
         if (statusData.status === 'succeeded') {
-          setResult(statusData);
+          setResult(statusData as ToyReplica);
           setProgress(100);
           setProgressText("Complete!");
           break;

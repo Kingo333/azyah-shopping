@@ -1,22 +1,24 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Heart, ShoppingCart, Shirt, TrendingUp, Sparkles, Users } from 'lucide-react';
 import { AiTryOnUploader } from '@/components/AiTryOnUploader';
-import { AffiliateHub } from '@/components/AffiliateHub';
+import AffiliateHub from '@/components/AffiliateHub';
 import { PersonalizationEngine } from '@/components/PersonalizationEngine';
 import { ToyReplicaQuickAction } from '@/components/ToyReplicaQuickAction';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCartManager } from '@/hooks/useCartManager';
 import { useWishlist } from '@/hooks/useWishlist';
 import { useClosets } from '@/hooks/useClosets';
+import { Product } from '@/types';
 
 export default function Index() {
   const { user } = useAuth();
   const { itemCount: cartItemCount } = useCartManager();
   const { data: wishlistData } = useWishlist();
   const { data: closetsData } = useClosets();
+  const [recommendations, setRecommendations] = useState<Product[]>([]);
 
   const wishlistCount = wishlistData?.reduce((acc, wishlist) => acc + (wishlist.items?.length || 0), 0) || 0;
   const closetCount = closetsData?.reduce((acc, closet) => acc + (closet.items?.length || 0), 0) || 0;
@@ -42,6 +44,14 @@ export default function Index() {
     },
   ];
 
+  const handleRecommendationsUpdate = (products: Product[] | ((prev: Product[]) => Product[])) => {
+    if (typeof products === 'function') {
+      setRecommendations(products);
+    } else {
+      setRecommendations(products);
+    }
+  };
+
   return (
     <div className="space-y-8">
       {/* Welcome Section */}
@@ -49,7 +59,7 @@ export default function Index() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold mb-2">
-              Welcome back, {user?.name || 'Fashion Explorer'}! 
+              Welcome back, {user?.email?.split('@')[0] || 'Fashion Explorer'}! 
               <Sparkles className="inline-block ml-2 h-6 w-6 text-primary" />
             </h1>
             <p className="text-muted-foreground">
@@ -112,7 +122,7 @@ export default function Index() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <PersonalizationEngine />
+            <PersonalizationEngine onRecommendationsUpdate={handleRecommendationsUpdate} />
           </CardContent>
         </Card>
 
