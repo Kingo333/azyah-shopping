@@ -15,8 +15,7 @@ export const checkPasswordStrength = (email: string, password: string) => {
     hasUppercase: /[A-Z]/.test(password),
     hasNumber: /\d/.test(password),
     hasSymbol: /[^A-Za-z0-9]/.test(password),
-    notCommon: !WEAK_PASSWORDS.includes(password.toLowerCase()),
-    notEmailBased: !password.toLowerCase().includes(email.split("@")[0].toLowerCase())
+    notCommon: !WEAK_PASSWORDS.includes(password.toLowerCase())
   };
 
   const characterTypes = [
@@ -31,7 +30,7 @@ export const checkPasswordStrength = (email: string, password: string) => {
   return {
     ...checks,
     hasThreeTypes,
-    isValid: checks.minLength && hasThreeTypes && checks.notCommon && checks.notEmailBased,
+    isValid: checks.minLength && hasThreeTypes && checks.notCommon,
     score: Object.values(checks).filter(Boolean).length
   };
 };

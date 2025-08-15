@@ -13,8 +13,7 @@ export const PasswordStrengthIndicator = ({ strength, password }: PasswordStreng
   const requirements = [
     { key: 'minLength', label: 'At least 8 characters', met: strength.minLength },
     { key: 'hasThreeTypes', label: 'Mix of 3 types: lowercase, uppercase, numbers, symbols', met: strength.hasThreeTypes },
-    { key: 'notCommon', label: 'Not a common password', met: strength.notCommon },
-    { key: 'notEmailBased', label: 'Doesn\'t contain your email', met: strength.notEmailBased }
+    { key: 'notCommon', label: 'Not a common password', met: strength.notCommon }
   ];
 
   const strengthColors = {
@@ -25,9 +24,9 @@ export const PasswordStrengthIndicator = ({ strength, password }: PasswordStreng
   };
 
   const getStrengthLabel = () => {
-    if (strength.score <= 4) return { label: 'Weak', color: strengthColors.weak };
-    if (strength.score <= 5) return { label: 'Fair', color: strengthColors.fair };
-    if (strength.score <= 6) return { label: 'Good', color: strengthColors.good };
+    if (strength.score <= 3) return { label: 'Weak', color: strengthColors.weak };
+    if (strength.score <= 4) return { label: 'Fair', color: strengthColors.fair };
+    if (strength.score <= 5) return { label: 'Good', color: strengthColors.good };
     return { label: 'Strong', color: strengthColors.strong };
   };
 
