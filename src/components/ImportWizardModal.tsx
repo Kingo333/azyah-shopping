@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/components/ui/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2, Globe, Package, CheckCircle, AlertCircle, Shield, Clock, Zap } from 'lucide-react';
@@ -36,6 +37,7 @@ export const ImportWizardModal = ({ open, onOpenChange, brandId, retailerId }: I
   
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [loadingState, setLoadingState] = useState<'idle' | 'validating' | 'checking-robots' | 'creating-source' | 'discovering' | 'processing'>('idle');
   const [websiteUrl, setWebsiteUrl] = useState('');
   const [websiteName, setWebsiteName] = useState('');
   const [ownershipConsent, setOwnershipConsent] = useState(false);
@@ -49,6 +51,7 @@ export const ImportWizardModal = ({ open, onOpenChange, brandId, retailerId }: I
 
   const resetWizard = () => {
     setStep(1);
+    setLoadingState('idle');
     setWebsiteUrl('');
     setWebsiteName('');
     setOwnershipConsent(false);
@@ -97,10 +100,15 @@ export const ImportWizardModal = ({ open, onOpenChange, brandId, retailerId }: I
     }
 
     setLoading(true);
+    setLoadingState('validating');
     setProgress(10);
+
+    // Brief delay to show validation state
+    await new Promise(resolve => setTimeout(resolve, 500));
 
     // Check robots.txt first if enabled
     if (respectRobots) {
+      setLoadingState('checking-robots');
       setRobotsStatus('checking');
       try {
         const domain = new URL(websiteUrl).hostname;
@@ -110,6 +118,7 @@ export const ImportWizardModal = ({ open, onOpenChange, brandId, retailerId }: I
 
         if (robotsResult && !robotsResult.allowed) {
           setRobotsStatus('blocked');
+          setLoadingState('idle');
           toast({
             title: "Robots.txt Restriction",
             description: "This website's robots.txt file disallows crawling. Please get permission from the site owner.",
@@ -125,6 +134,7 @@ export const ImportWizardModal = ({ open, onOpenChange, brandId, retailerId }: I
       }
     }
 
+    setLoadingState('creating-source');
     setProgress(25);
 
     try {
@@ -151,6 +161,7 @@ export const ImportWizardModal = ({ open, onOpenChange, brandId, retailerId }: I
 
       if (sourceError) throw sourceError;
 
+      setLoadingState('discovering');
       setProgress(45);
 
       // Call discovery function with safe scraping
@@ -186,6 +197,7 @@ export const ImportWizardModal = ({ open, onOpenChange, brandId, retailerId }: I
       }
 
       setDiscoveredUrls(discoveryResult.productUrls);
+      setLoadingState('processing');
       setProgress(100);
       setStep(2);
 
@@ -206,6 +218,7 @@ export const ImportWizardModal = ({ open, onOpenChange, brandId, retailerId }: I
 
     } catch (error: any) {
       console.error('Discovery error:', error);
+      setLoadingState('idle');
       toast({
         title: "Discovery Failed",
         description: error.message || "Failed to discover products from the website",
@@ -353,14 +366,62 @@ export const ImportWizardModal = ({ open, onOpenChange, brandId, retailerId }: I
           {step === 1 && (
             <div className="space-y-4">
               <div className="space-y-4">
-                <div>
+                <div className="relative">
                   <Label htmlFor="websiteUrl">Website URL</Label>
-                  <Input
-                    id="websiteUrl"
-                    placeholder="https://example.com or https://example.com/collections/dresses"
-                    value={websiteUrl}
-                    onChange={(e) => setWebsiteUrl(e.target.value)}
-                  />
+                  <div className="relative">
+                    <Input
+                      id="websiteUrl"
+                      placeholder="https://example.com or https://example.com/collections/dresses"
+                      value={websiteUrl}
+                      onChange={(e) => setWebsiteUrl(e.target.value)}
+                      disabled={loading}
+                      className={loading ? "pr-10" : ""}
+                    />
+                    {loading && (
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                        <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Loading State Indicator */}
+                  {loading && (
+                    <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground animate-fade-in">
+                      <div className="flex items-center gap-1">
+                        {loadingState === 'validating' && (
+                          <>
+                            <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
+                            <span>Validating URL...</span>
+                          </>
+                        )}
+                        {loadingState === 'checking-robots' && (
+                          <>
+                            <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse" />
+                            <span>Checking robots.txt...</span>
+                          </>
+                        )}
+                        {loadingState === 'creating-source' && (
+                          <>
+                            <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse" />
+                            <span>Setting up import source...</span>
+                          </>
+                        )}
+                        {loadingState === 'discovering' && (
+                          <>
+                            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                            <span>Discovering product pages...</span>
+                          </>
+                        )}
+                        {loadingState === 'processing' && (
+                          <>
+                            <div className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse" />
+                            <span>Starting product extraction...</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  
                   <p className="text-sm text-muted-foreground mt-1">
                     Enter your website homepage or a collection/category page
                   </p>
@@ -368,12 +429,17 @@ export const ImportWizardModal = ({ open, onOpenChange, brandId, retailerId }: I
                 
                 <div>
                   <Label htmlFor="websiteName">Store Name (Optional)</Label>
-                  <Input
-                    id="websiteName"
-                    placeholder="My Fashion Store"
-                    value={websiteName}
-                    onChange={(e) => setWebsiteName(e.target.value)}
-                  />
+                  {loading ? (
+                    <Skeleton className="h-10 w-full" />
+                  ) : (
+                    <Input
+                      id="websiteName"
+                      placeholder="My Fashion Store"
+                      value={websiteName}
+                      onChange={(e) => setWebsiteName(e.target.value)}
+                      disabled={loading}
+                    />
+                  )}
                 </div>
 
                 {/* Safe Scraping Consent */}
@@ -448,13 +514,20 @@ export const ImportWizardModal = ({ open, onOpenChange, brandId, retailerId }: I
               <Button 
                 onClick={handleDiscoverProducts} 
                 disabled={loading || !websiteUrl || !ownershipConsent}
-                className="w-full"
+                className="w-full transition-all duration-200"
               >
                 {loading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Discovering Products...
-                  </>
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span className="animate-fade-in">
+                      {loadingState === 'validating' && 'Validating URL...'}
+                      {loadingState === 'checking-robots' && 'Checking Permissions...'}
+                      {loadingState === 'creating-source' && 'Setting Up Import...'}
+                      {loadingState === 'discovering' && 'Discovering Products...'}
+                      {loadingState === 'processing' && 'Starting Extraction...'}
+                      {loadingState === 'idle' && 'Processing...'}
+                    </span>
+                  </div>
                 ) : (
                   'Discover Products'
                 )}
