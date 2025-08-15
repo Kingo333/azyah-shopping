@@ -1,9 +1,9 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { Sparkles, Loader2, Download, Copy, RotateCcw } from 'lucide-react';
 import { BackButton } from '@/components/ui/back-button';
 import { ToyReplicaUploader } from '@/components/ToyReplicaUploader';
@@ -15,6 +15,7 @@ const ToyReplica = () => {
   const [result, setResult] = useState<string | null>(null);
   const [currentReplicaId, setCurrentReplicaId] = useState<string | null>(null);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const handleFileUploaded = (fileName: string) => {
     setUploadedFileName(fileName);
@@ -24,6 +25,15 @@ const ToyReplica = () => {
   const handleGenerate = async (fileName?: string) => {
     const sourceFileName = fileName || uploadedFileName;
     if (!sourceFileName) return;
+
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to generate toy replicas.",
+        variant: "destructive"
+      });
+      return;
+    }
 
     setGenerating(true);
     setResult(null);
@@ -37,6 +47,7 @@ const ToyReplica = () => {
         .from('toy_replicas')
         .insert({
           id: replicaId,
+          user_id: user.id,
           source_url: sourceFileName,
           status: 'queued'
         });
