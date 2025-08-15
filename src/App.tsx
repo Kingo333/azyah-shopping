@@ -1,4 +1,5 @@
 
+
 import {
   BrowserRouter as Router,
   Route,
@@ -42,6 +43,7 @@ function App() {
         <Toaster />
         <Routes>
           <Route path="/" element={<Index />} />
+          <Route path="/dashboard" element={<RoleDashboard />} />
           <Route path="/toy-replica" element={<ProtectedRoute><ToyReplica /></ProtectedRoute>} />
         </Routes>
       </div>
