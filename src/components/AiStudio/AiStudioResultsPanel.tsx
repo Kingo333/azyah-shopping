@@ -83,13 +83,13 @@ export const AiStudioResultsPanel: React.FC<AiStudioResultsPanelProps> = ({
       {/* Main Result Display */}
       <div className="flex-1 flex flex-col gap-3 min-h-0">
         {/* Current Result */}
-        <div className="flex-1 min-h-[200px] lg:min-h-[200px]">
-          <GlassPanel variant="custom" className="h-full flex items-center justify-center lg:h-full">
+        <div className="flex-1 min-h-[120px] lg:min-h-[200px]">
+          <GlassPanel variant="custom" className="h-full flex items-center justify-center">
             {loading ? (
-              <div className="text-center space-y-3">
-                <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
+              <div className="text-center space-y-2">
+                <Loader2 className="h-6 w-6 animate-spin mx-auto text-primary" />
                 <div>
-                  <p className="text-base font-medium">Generating your try-on...</p>
+                  <p className="text-sm font-medium">Generating your try-on...</p>
                   <p className="text-xs text-muted-foreground">This may take a few moments</p>
                 </div>
               </div>
@@ -112,17 +112,13 @@ export const AiStudioResultsPanel: React.FC<AiStudioResultsPanelProps> = ({
                 </div>
               </div>
             ) : (
-              <div className="text-center space-y-3 p-4">
-                <Sparkles className="h-12 w-12 mx-auto text-muted-foreground/50" />
+              <div className="text-center space-y-2 p-3">
+                <Sparkles className="h-8 w-8 mx-auto text-muted-foreground/50" />
                 <div>
-                  <h4 className="text-lg font-medium mb-1">Ready to generate</h4>
-                  <p className="text-sm text-muted-foreground">Upload both images to start</p>
-                  <div className="mt-2 text-xs text-muted-foreground">
-                    {remainingGenerations > 0 ? (
-                      <span>{remainingGenerations} remaining {isPremium ? 'today' : 'lifetime'}</span>
-                    ) : (
-                      <span className="text-destructive">{isPremium ? 'Daily' : 'Lifetime'} limit reached</span>
-                    )}
+                  <h4 className="text-base font-medium mb-1">Ready to generate</h4>
+                  <p className="text-xs text-muted-foreground">Upload both images to start</p>
+                  <div className="mt-1 text-xs text-muted-foreground">
+                    <span>3/4 remaining</span>
                   </div>
                 </div>
               </div>
