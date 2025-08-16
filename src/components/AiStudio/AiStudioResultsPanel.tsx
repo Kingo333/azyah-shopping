@@ -82,7 +82,7 @@ export const AiStudioResultsPanel: React.FC<AiStudioResultsPanelProps> = ({
       )}
 
       {/* Main Result Display */}
-      <div className="flex-1 flex flex-col min-h-0">
+      <div className="flex flex-col min-h-0">
         {/* Current Result */}
         <div className="flex-shrink-0">
           <GlassPanel variant="custom" className="h-[318px] lg:h-[448px] flex items-center justify-center">
