@@ -22,6 +22,15 @@ export const useAiAssets = () => {
   const fetchAssets = async () => {
     if (!user) {
       console.log('[useAiAssets] No user available for fetching assets');
+      setAssets([]);
+      return;
+    }
+    
+    // Check if we have a valid session
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      console.log('[useAiAssets] No valid session found');
+      setAssets([]);
       return;
     }
     
@@ -39,11 +48,26 @@ export const useAiAssets = () => {
 
       if (error) {
         console.error('[useAiAssets] Database error fetching AI assets:', error);
-        toast({
-          title: 'Database Error',
-          description: 'Unable to fetch your AI assets. Please try refreshing the page.',
-          variant: 'destructive'
+        console.error('[useAiAssets] Error details:', { 
+          code: error.code, 
+          message: error.message, 
+          details: error.details 
         });
+        
+        // Check if it's an auth-related error
+        if (error.code === 'PGRST301' || error.message?.includes('JWT')) {
+          toast({
+            title: 'Authentication Error',
+            description: 'Please sign in again to view your AI assets.',
+            variant: 'destructive'
+          });
+        } else {
+          toast({
+            title: 'Database Error',
+            description: 'Unable to fetch your AI assets. Please try refreshing the page.',
+            variant: 'destructive'
+          });
+        }
         setAssets([]);
       } else {
         console.log('[useAiAssets] Successfully fetched', data?.length || 0, 'assets');
