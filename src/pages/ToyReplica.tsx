@@ -210,7 +210,7 @@ const ToyReplica = () => {
           </p>
           
           {/* Generation Counter */}
-          <GlassPanel variant="subtle" className="mt-6 p-4 bg-white/70 border-gray-300">
+          <GlassPanel variant="subtle" className="mt-6 p-4 bg-gray-200/40 border-gray-400/30">
             <div className="flex items-center gap-2">
               {isPremium ? (
                 <>
@@ -250,7 +250,7 @@ const ToyReplica = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <GlassPanel variant="default" className="p-6 bg-white/80 border-gray-300">
+          <GlassPanel variant="default" className="p-6 bg-gray-200/30 border-gray-400/25">
             <div className="mb-6">
               <h2 className="text-xl font-semibold text-gray-800 mb-2">Upload Photo</h2>
             </div>
@@ -301,7 +301,7 @@ const ToyReplica = () => {
             </div>
           </GlassPanel>
 
-          <GlassPanel variant="default" className="p-6 bg-white/80 border-gray-300">
+          <GlassPanel variant="default" className="p-6 bg-gray-200/30 border-gray-400/25">
             <div className="mb-6">
               <h2 className="text-xl font-semibold text-gray-800 mb-2">Your LEGO Mini-Figure</h2>
             </div>
