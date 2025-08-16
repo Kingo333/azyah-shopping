@@ -14,6 +14,7 @@ interface AiStudioResultsPanelProps {
   onDownload: () => void;
   onResultSelect: (result: any) => void;
   onDeleteAssets?: (assetIds: string[]) => void;
+  hideReadyToGenerate?: boolean;
 }
 
 export const AiStudioResultsPanel: React.FC<AiStudioResultsPanelProps> = ({
@@ -24,7 +25,8 @@ export const AiStudioResultsPanel: React.FC<AiStudioResultsPanelProps> = ({
   isPremium,
   onDownload,
   onResultSelect,
-  onDeleteAssets
+  onDeleteAssets,
+  hideReadyToGenerate = false
 }) => {
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedAssets, setSelectedAssets] = useState<string[]>([]);
@@ -96,7 +98,7 @@ export const AiStudioResultsPanel: React.FC<AiStudioResultsPanelProps> = ({
                   )}
                 </div>
               </div>
-            ) : (
+            ) : !hideReadyToGenerate ? (
               <div className="text-center space-y-3 p-4">
                 <Sparkles className="h-12 w-12 mx-auto text-muted-foreground/50" />
                 <div>
@@ -111,7 +113,7 @@ export const AiStudioResultsPanel: React.FC<AiStudioResultsPanelProps> = ({
                   </div>
                 </div>
               </div>
-            )}
+            ) : null}
           </GlassPanel>
         </div>
 

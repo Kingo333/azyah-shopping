@@ -348,6 +348,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                   onDownload={() => {}}
                   onResultSelect={setCurrentResult}
                   onDeleteAssets={deleteAssets}
+                  hideReadyToGenerate={true}
                 />
               </div>
             </div>
