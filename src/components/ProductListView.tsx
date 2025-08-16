@@ -143,9 +143,9 @@ const ProductListView: React.FC<ProductListViewProps> = ({ products, isLoading }
                 size="sm"
                 onClick={handleAddToWishlist}
                 disabled={wishlistLoading}
-                className="flex-1"
+                className="flex-1 h-7 text-[10px] md:text-xs px-2"
               >
-                <ShoppingBag className="h-3 w-3 mr-1" />
+                <ShoppingBag className="h-2.5 w-2.5 mr-1" />
                 Wishlist
               </Button>
             );
@@ -172,54 +172,54 @@ const ProductListView: React.FC<ProductListViewProps> = ({ products, isLoading }
                     )}
                   </div>
                   
-                  <div className="p-2 md:p-4 space-y-2">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <h3 className="font-medium line-clamp-2 text-sm md:text-base">{product.title}</h3>
-                        {product.brand && (
-                          <p className="text-xs md:text-sm text-muted-foreground">{product.brand.name}</p>
-                        )}
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleProductClick(product)}
-                        className="flex-shrink-0 h-7 px-2 text-xs hover:bg-accent"
-                      >
-                        <Info className="h-3 w-3" />
-                      </Button>
-                    </div>
-                    
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-sm md:text-base">
-                        {formatPrice(product.price_cents, product.currency)}
-                      </span>
-                    </div>
+                   <div className="p-1.5 md:p-3 space-y-1.5">
+                     <div className="flex items-start justify-between">
+                       <div className="flex-1 min-w-0">
+                         <h3 className="font-medium line-clamp-2 text-xs md:text-sm leading-tight">{product.title}</h3>
+                         {product.brand && (
+                           <p className="text-[10px] md:text-xs text-muted-foreground mt-0.5">{product.brand.name}</p>
+                         )}
+                       </div>
+                       <Button
+                         variant="ghost"
+                         size="sm"
+                         onClick={() => handleProductClick(product)}
+                         className="flex-shrink-0 h-6 w-6 p-0 hover:bg-accent"
+                       >
+                         <Info className="h-3 w-3" />
+                       </Button>
+                     </div>
+                     
+                     <div className="flex items-center justify-between">
+                       <span className="font-bold text-xs md:text-sm">
+                         {formatPrice(product.price_cents, product.currency)}
+                       </span>
+                     </div>
 
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleLike(product)}
-                        className="flex-1"
-                      >
-                        <Heart className="h-3 w-3 mr-1" />
-                        Like
-                      </Button>
-                      <WishlistButton productId={product.id} />
-                    </div>
+                     <div className="flex gap-1.5">
+                       <Button
+                         variant="outline"
+                         size="sm"
+                         onClick={() => handleLike(product)}
+                         className="flex-1 h-7 text-[10px] md:text-xs px-2"
+                       >
+                         <Heart className="h-2.5 w-2.5 mr-1" />
+                         Like
+                       </Button>
+                       <WishlistButton productId={product.id} />
+                     </div>
 
-                    {product.external_url && (
-                      <Button
-                        variant="default"
-                        size="sm"
-                        onClick={() => window.open(product.external_url, '_blank', 'noopener,noreferrer')}
-                        className="w-full"
-                      >
-                        <ExternalLink className="h-3 w-3 mr-1" />
-                        Shop Now
-                      </Button>
-                    )}
+                     {product.external_url && (
+                       <Button
+                         variant="default"
+                         size="sm"
+                         onClick={() => window.open(product.external_url, '_blank', 'noopener,noreferrer')}
+                         className="w-full h-7 text-[10px] md:text-xs"
+                       >
+                         <ExternalLink className="h-2.5 w-2.5 mr-1" />
+                         Shop Now
+                       </Button>
+                     )}
                   </div>
                 </div>
               </CardContent>

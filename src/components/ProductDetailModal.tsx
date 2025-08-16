@@ -91,7 +91,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 </div>
                 
                 {/* Image Gallery */}
-                <div>
+                <div className="aspect-[4/5]">
                   <EnhancedProductGallery
                     images={images}
                     productTitle={product.title}
@@ -104,18 +104,18 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
               {/* Scrollable Content Area */}
               <div className="flex-1 min-h-0 overflow-y-auto bg-background">
-                <div className="p-4 space-y-4 pb-40">
+                <div className="p-3 space-y-3 pb-40">
                   {/* Product Header */}
-                  <div className="space-y-2">
-                    <h1 className="text-xl font-bold leading-tight">{product.title}</h1>
-                    <p className="text-muted-foreground text-sm">{product.brand?.name}</p>
-                    <div className="flex items-center gap-3">
-                      <span className="text-2xl font-bold text-primary">
+                  <div className="space-y-1.5">
+                    <h1 className="text-lg font-bold leading-tight">{product.title}</h1>
+                    <p className="text-muted-foreground text-xs">{product.brand?.name}</p>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xl font-bold text-primary">
                         {new Intl.NumberFormat('en-US', { style: 'currency', currency: priceCurrency })
                           .format(priceCents / 100)}
                       </span>
                       {compareAtCents && (
-                        <span className="text-lg text-muted-foreground line-through">
+                        <span className="text-base text-muted-foreground line-through">
                           {new Intl.NumberFormat('en-US', { style: 'currency', currency: priceCurrency })
                             .format(compareAtCents / 100)}
                         </span>
@@ -124,7 +124,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   </div>
 
                   {/* Size and Color Selection with Size Chart */}
-                  <div className="space-y-4">
+                  <div className="space-y-3">
                     <AdvancedSizeColorSelector
                       sizes={availableSizes}
                       colors={availableColors}
@@ -146,21 +146,21 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   <Accordion type="single" collapsible defaultValue="details">
                     {product.description && (
                       <AccordionItem value="description">
-                        <AccordionTrigger className="text-base font-semibold">Description</AccordionTrigger>
+                        <AccordionTrigger className="text-sm font-semibold">Description</AccordionTrigger>
                         <AccordionContent>
-                          <p className="text-muted-foreground text-sm leading-relaxed">{product.description}</p>
+                          <p className="text-muted-foreground text-xs leading-relaxed">{product.description}</p>
                         </AccordionContent>
                       </AccordionItem>
                     )}
                     <AccordionItem value="details">
-                      <AccordionTrigger className="text-base font-semibold">Product Details</AccordionTrigger>
+                      <AccordionTrigger className="text-sm font-semibold">Product Details</AccordionTrigger>
                       <AccordionContent>
-                        <div className="bg-muted/50 rounded-lg p-3 space-y-2">
-                          <div className="flex justify-between text-sm">
+                        <div className="bg-muted/50 rounded-lg p-2 space-y-1.5">
+                          <div className="flex justify-between text-xs">
                             <span className="text-muted-foreground">SKU:</span>
                             <span className="font-medium">{product.sku}</span>
                           </div>
-                          <div className="flex justify-between text-sm">
+                          <div className="flex justify-between text-xs">
                             <span className="text-muted-foreground">Category:</span>
                             <span className="font-medium capitalize">{product.category_slug?.replace('_', ' ')}</span>
                           </div>
@@ -172,23 +172,23 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               </div>
 
               {/* Fixed Bottom Actions */}
-              <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-lg border-t border-border p-4 space-y-3 pb-mobile-safe">
+              <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-lg border-t border-border p-3 space-y-2 pb-mobile-safe">
                 <div className="flex gap-2">
                   <Button 
                     variant="outline" 
                     size="sm" 
-                    className="flex-1 gap-2 h-11"
+                    className="flex-1 gap-1.5 h-9 text-xs"
                   >
-                    <Heart className="h-4 w-4" />
+                    <Heart className="h-3 w-3" />
                     Wishlist
                   </Button>
                   <Button
                     onClick={() => setIsClosetModalOpen(true)}
                     variant="outline"
                     size="sm"
-                    className="flex-1 gap-2 h-11"
+                    className="flex-1 gap-1.5 h-9 text-xs"
                   >
-                    <ShoppingBag className="h-4 w-4" />
+                    <ShoppingBag className="h-3 w-3" />
                     Add to Closet
                   </Button>
                 </div>
@@ -197,18 +197,18 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   <Button
                     onClick={handleShopNow}
                     size="lg"
-                    className="w-full gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold h-12 shadow-lg"
+                    className="w-full gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold h-10 shadow-lg text-sm"
                   >
-                    <ExternalLink className="h-5 w-5" />
+                    <ExternalLink className="h-4 w-4" />
                     Shop Now
                   </Button>
                 ) : (
                   <Button 
                     disabled 
                     size="lg"
-                    className="w-full gap-2 opacity-50 cursor-not-allowed h-12"
+                    className="w-full gap-2 opacity-50 cursor-not-allowed h-10 text-sm"
                   >
-                    <ShoppingBag className="h-5 w-5" />
+                    <ShoppingBag className="h-4 w-4" />
                     Shop Link Not Available
                   </Button>
                 )}
@@ -216,7 +216,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
             </div>
 
             {/* Desktop Layout */}
-            <div className="hidden md:grid md:grid-cols-2 h-full">
+            <div className="hidden md:grid md:grid-cols-[45%_55%] h-full">
               {/* Image Gallery */}
               <div className="relative h-full">
                 <EnhancedProductGallery
@@ -237,18 +237,18 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
               {/* Product Details */}
               <div className="flex flex-col h-full glass-subtle border-white/10">
-                <div className="p-6 space-y-6 flex-1 overflow-y-auto">
+                <div className="p-4 space-y-4 flex-1 overflow-y-auto">
                   {/* Header */}
                   <div>
-                    <h2 className="text-2xl font-bold font-playfair line-clamp-2 mb-2">{product.title}</h2>
-                    <p className="text-muted-foreground">{product.brand?.name}</p>
-                    <div className="flex items-center gap-4 mt-2">
-                      <span className="text-2xl font-bold">
+                    <h2 className="text-xl font-bold font-playfair line-clamp-2 mb-1.5">{product.title}</h2>
+                    <p className="text-muted-foreground text-sm">{product.brand?.name}</p>
+                    <div className="flex items-center gap-3 mt-1.5">
+                      <span className="text-xl font-bold">
                         {new Intl.NumberFormat('en-US', { style: 'currency', currency: priceCurrency })
                           .format(priceCents / 100)}
                       </span>
                       {compareAtCents && (
-                        <span className="text-lg text-muted-foreground line-through">
+                        <span className="text-base text-muted-foreground line-through">
                           {new Intl.NumberFormat('en-US', { style: 'currency', currency: priceCurrency })
                             .format(compareAtCents / 100)}
                         </span>

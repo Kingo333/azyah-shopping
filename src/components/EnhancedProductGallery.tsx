@@ -39,7 +39,7 @@ export const EnhancedProductGallery: React.FC<EnhancedProductGalleryProps> = ({
   return (
     <div className="space-y-4">
       {/* Main Image Display */}
-      <div className="relative aspect-square overflow-hidden rounded-lg bg-accent group">
+      <div className="relative aspect-square md:aspect-[4/5] overflow-hidden rounded-lg bg-accent group">
         <motion.img
           key={selectedImage}
           src={images[selectedImage] || '/placeholder.svg'}
