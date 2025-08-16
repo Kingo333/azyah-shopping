@@ -222,7 +222,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                       <h3 className="text-base font-semibold">Generated Result</h3>
                       <div className="text-xs text-muted-foreground">
                         {remainingGenerations > 0 ? (
-                          <span>{remainingGenerations}/{maxGenerations} remaining {isPremium ? 'today' : 'Free lifetime limit'}</span>
+                          <span>{remainingGenerations}/{maxGenerations} {isPremium ? 'Premium credits' : 'Free credits'}</span>
                         ) : (
                           <span className="text-destructive">{isPremium ? 'Daily' : 'Lifetime'} limit reached</span>
                         )}
