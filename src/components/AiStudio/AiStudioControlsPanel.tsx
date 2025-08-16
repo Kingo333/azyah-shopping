@@ -53,38 +53,40 @@ export const AiStudioControlsPanel: React.FC<AiStudioControlsPanelProps> = ({
 
   return (
     <div className="space-y-3">
-      {/* Advanced Settings */}
-      <GlassPanel variant="custom" className="p-3">
-        <Button
-          variant="ghost"
-          onClick={onShowSettingsToggle}
-          className="w-full justify-between text-sm h-8"
-        >
-          Advanced Settings
-          {showSettings ? (
-            <ChevronUp className="h-3 w-3" />
-          ) : (
-            <ChevronDown className="h-3 w-3" />
-          )}
-        </Button>
-        
-        {showSettings && (
-          <div className="mt-3 space-y-2">
-            <div>
-              <Label className="text-xs">Resolution</Label>
-              <Select value={resolution} onValueChange={onResolutionChange}>
-                <SelectTrigger className="mt-1 h-8 text-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="standard">Standard</SelectItem>
-                  <SelectItem value="high">High Quality</SelectItem>
-                </SelectContent>
-              </Select>
+      {/* Advanced Settings - Hidden */}
+      {false && (
+        <GlassPanel variant="custom" className="p-3">
+          <Button
+            variant="ghost"
+            onClick={onShowSettingsToggle}
+            className="w-full justify-between text-sm h-8"
+          >
+            Advanced Settings
+            {showSettings ? (
+              <ChevronUp className="h-3 w-3" />
+            ) : (
+              <ChevronDown className="h-3 w-3" />
+            )}
+          </Button>
+          
+          {showSettings && (
+            <div className="mt-3 space-y-2">
+              <div>
+                <Label className="text-xs">Resolution</Label>
+                <Select value={resolution} onValueChange={onResolutionChange}>
+                  <SelectTrigger className="mt-1 h-8 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="standard">Standard</SelectItem>
+                    <SelectItem value="high">High Quality</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-          </div>
-        )}
-      </GlassPanel>
+          )}
+        </GlassPanel>
+      )}
 
       {/* Upload Panel */}
       <div className="space-y-3">
