@@ -203,8 +203,9 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
           />
 
           {/* Main Content */}
-          <div className="flex-1 flex flex-col lg:flex-row gap-6 p-6 overflow-hidden min-h-0">
+          <div className="flex-1 flex flex-col lg:flex-row gap-4 p-4 md:p-6 min-h-0">
             {/* Results Section */}
+            <div className="flex-1 min-h-0 overflow-auto">
             <AiStudioResultsPanel 
               loading={loading}
               currentResult={currentResult}
@@ -215,8 +216,10 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
               onResultSelect={setCurrentResult}
             />
 
+            </div>
+
             {/* Controls Section */}
-            <div className="w-full lg:w-96 flex-shrink-0 flex flex-col gap-4 max-h-full overflow-y-auto">
+            <div className="w-full lg:w-96 flex-shrink-0 flex flex-col gap-4 max-h-full overflow-y-auto p-1">
               {/* Upload Panel */}
               <AiStudioUploadPanel 
                 personFile={personFile}

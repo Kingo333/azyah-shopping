@@ -25,9 +25,9 @@ export const AiStudioResultsPanel: React.FC<AiStudioResultsPanelProps> = ({
   onResultSelect
 }) => {
   return (
-    <div className="flex-1 flex flex-col min-h-0">
+    <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between mb-4 flex-shrink-0">
+      <div className="flex items-center justify-between mb-3 flex-shrink-0">
         <h3 className="text-lg font-semibold">Generated Result</h3>
         {currentResult?.path && (
           <Button onClick={onDownload} size="sm" variant="outline">
@@ -38,9 +38,10 @@ export const AiStudioResultsPanel: React.FC<AiStudioResultsPanelProps> = ({
       </div>
 
       {/* Main Result Display */}
-      <div className="flex-1 flex flex-col gap-4 min-h-0">
+      <div className="flex-1 flex flex-col gap-3 min-h-0">
         {/* Current Result */}
-        <GlassPanel variant="custom" className="flex-1 flex items-center justify-center min-h-[300px] max-h-[500px]">
+        <div className="flex-1 min-h-[250px] max-h-[400px]">
+        <GlassPanel variant="custom" className="h-full flex items-center justify-center">
           {loading ? (
             <div className="text-center space-y-4">
               <Loader2 className="h-12 w-12 animate-spin mx-auto text-primary" />
@@ -84,12 +85,13 @@ export const AiStudioResultsPanel: React.FC<AiStudioResultsPanelProps> = ({
             </div>
           )}
         </GlassPanel>
+        </div>
 
         {/* Results Gallery */}
-        <div className="flex-shrink-0">
-          <h4 className="text-sm font-medium mb-3">Your Results</h4>
+        <div className="flex-shrink-0 max-h-40 overflow-hidden">
+          <h4 className="text-sm font-medium mb-2">Your Results</h4>
           {assets.length > 0 ? (
-            <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2 max-h-32 overflow-y-auto">
+            <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-1.5 overflow-y-auto max-h-28">
               {assets.slice(0, 16).map((asset) => (
                 <GlassPanel 
                   key={asset.id} 
