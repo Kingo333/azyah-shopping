@@ -214,7 +214,7 @@ const ToyReplica = () => {
           </p>
           
           {/* Generation Counter */}
-          <GlassPanel variant="subtle" className="mt-6 p-4 bg-gray-400/30 border-gray-500/30 backdrop-blur-md">
+          <div className="mt-6 p-4 bg-white/15 backdrop-blur-[20px] rounded-[20px] border border-white/30 shadow-[0_8px_32px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,0.5),inset_0_-1px_0_rgba(255,255,255,0.1)] relative overflow-hidden before:content-[''] before:absolute before:top-0 before:left-0 before:right-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/80 before:to-transparent after:content-[''] after:absolute after:top-0 after:left-0 after:w-px after:h-full after:bg-gradient-to-b after:from-white/80 after:via-transparent after:to-white/30">
             <div className="flex items-center gap-2">
               {isPremium ? (
                 <>
@@ -250,11 +250,11 @@ const ToyReplica = () => {
                 You have reached your generation limit. <Button variant="link" className="text-xs p-0 h-auto text-red-600 hover:text-red-700" onClick={() => setShowUpgradeModal(true)}>Upgrade now</Button>
               </p>
             )}
-          </GlassPanel>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <GlassPanel variant="default" className="p-6 bg-gray-400/25 border-gray-500/25 backdrop-blur-lg">
+          <div className="p-6 bg-white/15 backdrop-blur-[20px] rounded-[20px] border border-white/30 shadow-[0_8px_32px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,0.5),inset_0_-1px_0_rgba(255,255,255,0.1)] relative overflow-hidden before:content-[''] before:absolute before:top-0 before:left-0 before:right-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/80 before:to-transparent after:content-[''] after:absolute after:top-0 after:left-0 after:w-px after:h-full after:bg-gradient-to-b after:from-white/80 after:via-transparent after:to-white/30">
             <div className="mb-6">
               <h2 className="text-xl font-semibold text-gray-800 mb-2">Upload Photo</h2>
             </div>
@@ -303,9 +303,9 @@ const ToyReplica = () => {
                 <strong className="text-gray-800">Note:</strong> Keep it family-friendly and your own photo.
               </div>
             </div>
-          </GlassPanel>
+          </div>
 
-          <GlassPanel variant="default" className="p-6 bg-gray-400/25 border-gray-500/25 backdrop-blur-lg">
+          <div className="p-6 bg-white/15 backdrop-blur-[20px] rounded-[20px] border border-white/30 shadow-[0_8px_32px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,0.5),inset_0_-1px_0_rgba(255,255,255,0.1)] relative overflow-hidden before:content-[''] before:absolute before:top-0 before:left-0 before:right-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/80 before:to-transparent after:content-[''] after:absolute after:top-0 after:left-0 after:w-px after:h-full after:bg-gradient-to-b after:from-white/80 after:via-transparent after:to-white/30">
             <div className="mb-6">
               <h2 className="text-xl font-semibold text-gray-800 mb-2">Your LEGO Mini-Figure</h2>
             </div>
@@ -388,7 +388,7 @@ const ToyReplica = () => {
                 </div>
               )}
             </div>
-          </GlassPanel>
+          </div>
         </div>
 
         {/* Upgrade Modal */}
