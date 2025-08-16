@@ -173,9 +173,9 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
             </DialogHeader>
           </div>
 
-          <div className="flex-1 flex flex-col gap-3 md:gap-6 p-3 md:p-6 overflow-auto">
+          <div className="flex-1 flex flex-col lg:flex-row gap-3 md:gap-6 p-3 md:p-6 overflow-hidden">
             {/* Results Section */}
-            <div className="flex-1 flex flex-col space-y-2 md:space-y-4">
+            <div className="flex-1 flex flex-col space-y-2 md:space-y-4 min-h-0 lg:max-h-full overflow-auto">
               <div className="flex items-center justify-between">
                 <h3 className="text-base md:text-lg font-semibold">Generated Result</h3>
                 {currentResult?.path && (
@@ -251,7 +251,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
             </div>
 
             {/* Controls Section */}
-            <div className="w-full space-y-3 md:space-y-4">
+            <div className="w-full lg:w-80 flex-shrink-0 space-y-3 md:space-y-4 overflow-auto">
               {/* Person Upload */}
               <GlassPanel variant="custom" className="p-3 md:p-4">
                 <div className="space-y-2 md:space-y-3">
