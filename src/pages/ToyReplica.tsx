@@ -202,7 +202,7 @@ const ToyReplica = () => {
       <div className="container mx-auto max-w-4xl">
         <div className="mb-6">
           <BackButton 
-            onBack={() => window.location.href = '/feed'} 
+            onBack={() => window.location.href = '/dashboard'} 
             className="mb-4 text-gray-700 hover:text-gray-900 hover:bg-gray-200 border-gray-300" 
             variant="outline" 
           />
