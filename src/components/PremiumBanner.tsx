@@ -20,22 +20,14 @@ const PremiumBanner: React.FC = () => {
     <GlassPanel className="relative overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-r from-accent/10 to-accent-cartier/10" />
       <div className="relative flex flex-col sm:flex-row items-center justify-between gap-4 p-6">
-        <div className="flex items-center gap-3 text-center sm:text-left">
-          <div className="p-2 rounded-full bg-accent/20 text-accent">
-            <Crown className="h-5 w-5" />
-          </div>
-          <div>
-            <h3 className="text-lg font-semibold bg-gradient-to-r from-accent to-accent-cartier bg-clip-text text-transparent">
-              Unlock Premium Access
-            </h3>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <span>40 AED/month</span>
-              <span>•</span>
-              <div className="flex items-center gap-1">
-                <Sparkles className="h-3 w-3" />
-                <span>Unlimited AI generations</span>
-              </div>
-            </div>
+        <div className="text-center sm:text-left">
+          <h3 className="text-lg font-semibold bg-gradient-to-r from-accent to-accent-cartier bg-clip-text text-transparent">
+            Unlock Premium Access
+          </h3>
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <span>40 AED/month</span>
+            <span>•</span>
+            <span>Unlimited AI generations</span>
           </div>
         </div>
         
@@ -47,9 +39,7 @@ const PremiumBanner: React.FC = () => {
         >
           {loading ? (
             <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
-          ) : (
-            <Crown className="h-4 w-4 mr-2 group-hover:rotate-12 transition-transform duration-200" />
-          )}
+          ) : null}
           Upgrade Now
           <ArrowRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform duration-200" />
         </Button>
