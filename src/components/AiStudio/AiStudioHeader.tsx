@@ -25,7 +25,6 @@ export const AiStudioHeader: React.FC<AiStudioHeaderProps> = ({
             </div>
             AI Studio
             <Badge variant="secondary" className="text-xs">
-              <Sparkles className="h-3 w-3 mr-1" />
               AI try-on
             </Badge>
           </DialogTitle>
