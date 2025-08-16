@@ -2,30 +2,44 @@ import React from 'react';
 import { DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Sparkles, Wand2, Crown } from 'lucide-react';
+import { Sparkles, Wand2, Crown, X } from 'lucide-react';
 
 interface AiStudioHeaderProps {
   isPremium: boolean;
   onUpgradeClick: () => void;
+  onClose: () => void;
 }
 
 export const AiStudioHeader: React.FC<AiStudioHeaderProps> = ({
   isPremium,
-  onUpgradeClick
+  onUpgradeClick,
+  onClose
 }) => {
   return (
     <div className="flex-shrink-0 p-3 md:p-4 border-b border-border/50 bg-background/95 backdrop-blur-sm">
       <DialogHeader>
-        <DialogTitle className="flex items-center gap-2 text-lg md:text-xl">
-          <div className="p-1.5 rounded-lg bg-primary/10">
-            <Wand2 className="h-4 w-4 md:h-5 md:w-5 text-primary" />
-          </div>
-          AI Studio
-          <Badge variant="secondary" className="ml-auto text-xs">
-            <Sparkles className="h-3 w-3 mr-1" />
-            BitStudio
-          </Badge>
-        </DialogTitle>
+        <div className="flex items-center justify-between">
+          <DialogTitle className="flex items-center gap-2 text-lg md:text-xl">
+            <div className="p-1.5 rounded-lg bg-primary/10">
+              <Wand2 className="h-4 w-4 md:h-5 md:w-5 text-primary" />
+            </div>
+            AI Studio
+            <Badge variant="secondary" className="text-xs">
+              <Sparkles className="h-3 w-3 mr-1" />
+              BitStudio
+            </Badge>
+          </DialogTitle>
+          
+          {/* Close Button */}
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="h-8 w-8 p-0 lg:hidden"
+            onClick={onClose}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
         
         {/* Premium Benefits Section - Compact */}
         {!isPremium && (

@@ -198,13 +198,14 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
   return (
     <Dialog open={open} onOpenChange={v => { if (!v) onClose(); }}>
       {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
-      <DialogContent className="max-w-[95vw] w-[95vw] h-[100dvh] max-h-[100dvh] p-0 border-0 md:max-w-7xl md:h-[95vh] md:max-h-[95vh] overflow-hidden">
+      <DialogContent className="max-w-[95vw] w-[95vw] h-[100dvh] max-h-[100dvh] p-0 border-0 md:max-w-7xl md:h-[95vh] md:max-h-[95vh] overflow-hidden touch-pan-y">
         <div className="h-full flex flex-col bg-gradient-to-br from-background via-background/95 to-muted/50">
           {/* Header */}
           <div className="flex-shrink-0 z-10">
             <AiStudioHeader 
               isPremium={isPremium}
               onUpgradeClick={handleUpgradeClick}
+              onClose={onClose}
             />
           </div>
 
@@ -212,8 +213,8 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
           <div className="flex-1 flex flex-col lg:flex-row min-h-0 relative">
             {/* Mobile: Single scroll container with results at top */}
             <div className="flex flex-col lg:hidden h-full">
-              <div className="flex-1 overflow-y-auto overscroll-contain">
-                <div className="p-3 space-y-4 pb-8">
+              <div className="flex-1 overflow-y-auto overscroll-contain webkit-overflow-scrolling-touch" style={{ touchAction: 'pan-y' }}>
+                <div className="p-3 space-y-4 pb-8 min-h-full">
                   {/* Current Result Display - Mobile (at very top) */}
                   <div className="min-h-[250px]">
                     <div className="flex items-center justify-between mb-3">
