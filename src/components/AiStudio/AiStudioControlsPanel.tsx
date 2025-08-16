@@ -78,16 +78,6 @@ export const AiStudioControlsPanel: React.FC<AiStudioControlsPanelProps> = ({
                 </SelectContent>
               </Select>
             </div>
-            
-            <div>
-              <Label className="text-xs">Prompt (Optional)</Label>
-              <Input
-                value={prompt}
-                onChange={(e) => onPromptChange(e.target.value)}
-                placeholder="Describe styling preferences..."
-                className="mt-1 h-8 text-xs"
-              />
-            </div>
           </div>
         )}
       </GlassPanel>
