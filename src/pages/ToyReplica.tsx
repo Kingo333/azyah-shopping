@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { GlassPanel } from '@/components/ui/glass-panel';
 import { Button } from '@/components/ui/button';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
@@ -198,37 +198,36 @@ const ToyReplica = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background p-4">
+    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black p-4">
       <div className="container mx-auto max-w-4xl">
         <div className="mb-6">
           <BackButton className="mb-4" />
-          <h1 className="text-3xl font-bold flex items-center gap-3">
-            <Sparkles className="h-8 w-8 text-primary" />
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-white to-white/70 bg-clip-text text-transparent">
             Toy Replica
           </h1>
-          <p className="text-muted-foreground mt-2">
+          <p className="text-white/60 mt-3 text-lg font-light">
             Upload one photo. We'll generate a LEGO-style mini-figure with a transparent background.
           </p>
           
           {/* Generation Counter */}
-          <div className="mt-4 p-3 bg-muted/50 rounded-lg border">
+          <GlassPanel variant="subtle" className="mt-6 p-4">
             <div className="flex items-center gap-2">
               {isPremium ? (
                 <>
                   <Crown className="h-4 w-4 text-purple-500" />
-                  <span className="text-sm font-medium">
-                    Premium: <span className="font-bold text-purple-600">Unlimited</span> generations
+                  <span className="text-sm font-medium text-white/90">
+                    Premium: <span className="font-bold text-purple-400">Unlimited</span> generations
                   </span>
                 </>
               ) : (
                 <>
                   <Info className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm font-medium">
+                  <span className="text-sm font-medium text-white/90">
                     {loadingCount ? (
                       "Loading..."
                     ) : (
                       <>
-                        Generations remaining: <span className={`font-bold ${remainingGenerations <= 1 ? 'text-destructive' : 'text-primary'}`}>
+                        Generations remaining: <span className={`font-bold ${remainingGenerations <= 1 ? 'text-red-400' : 'text-purple-400'}`}>
                           {remainingGenerations}
                         </span> / {GENERATION_LIMIT}
                       </>
@@ -238,24 +237,24 @@ const ToyReplica = () => {
               )}
             </div>
             {!isPremium && !loadingCount && remainingGenerations <= 1 && remainingGenerations > 0 && (
-              <p className="text-xs text-muted-foreground mt-1">
-                This is your last generation! <Button variant="link" className="text-xs p-0 h-auto" onClick={() => setShowUpgradeModal(true)}>Upgrade to Premium</Button>
+              <p className="text-xs text-white/60 mt-2">
+                This is your last generation! <Button variant="link" className="text-xs p-0 h-auto text-purple-400 hover:text-purple-300" onClick={() => setShowUpgradeModal(true)}>Upgrade to Premium</Button>
               </p>
             )}
             {!isPremium && !loadingCount && remainingGenerations <= 0 && (
-              <p className="text-xs text-destructive mt-1">
-                You have reached your generation limit. <Button variant="link" className="text-xs p-0 h-auto text-destructive" onClick={() => setShowUpgradeModal(true)}>Upgrade now</Button>
+              <p className="text-xs text-red-400 mt-2">
+                You have reached your generation limit. <Button variant="link" className="text-xs p-0 h-auto text-red-400 hover:text-red-300" onClick={() => setShowUpgradeModal(true)}>Upgrade now</Button>
               </p>
             )}
-          </div>
+          </GlassPanel>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Upload Photo</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <GlassPanel variant="premium" className="p-6">
+            <div className="mb-6">
+              <h2 className="text-xl font-semibold text-white/90 mb-2">Upload Photo</h2>
+            </div>
+            <div className="space-y-4">
               <ToyReplicaUploader
                 onFileUploaded={handleFileUploaded}
                 onUploadStart={handleUploadStart}
@@ -275,11 +274,11 @@ const ToyReplica = () => {
               )}
 
               {remainingGenerations <= 0 && !loadingCount && (
-                <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
-                  <p className="text-sm text-destructive font-medium">
+                <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg backdrop-blur-sm">
+                  <p className="text-sm text-red-400 font-medium">
                     Generation limit reached
                   </p>
-                  <p className="text-xs text-destructive/80 mt-1">
+                  <p className="text-xs text-red-300/80 mt-1">
                     You have used all {GENERATION_LIMIT} of your Toy Replica generations.
                   </p>
                 </div>
@@ -296,32 +295,32 @@ const ToyReplica = () => {
                 </Button>
               )}
 
-              <div className="text-xs text-muted-foreground p-3 bg-muted/50 rounded">
-                <strong>Note:</strong> Keep it family-friendly and your own photo.
+              <div className="text-xs text-white/50 p-3 bg-black/20 rounded-lg border border-white/10">
+                <strong className="text-white/70">Note:</strong> Keep it family-friendly and your own photo.
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </GlassPanel>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Your LEGO Mini-Figure</CardTitle>
-            </CardHeader>
-            <CardContent>
+          <GlassPanel variant="premium" className="p-6">
+            <div className="mb-6">
+              <h2 className="text-xl font-semibold text-white/90 mb-2">Your LEGO Mini-Figure</h2>
+            </div>
+            <div>
               {uploading && (
-                <div className="flex items-center justify-center py-12">
+                <div className="flex items-center justify-center py-16">
                   <div className="text-center">
-                    <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-                    <p>Uploading photo...</p>
+                    <Loader2 className="h-10 w-10 animate-spin mx-auto mb-4 text-purple-400" />
+                    <p className="text-white/80 font-medium">Uploading photo...</p>
                   </div>
                 </div>
               )}
 
               {generating && !uploading && (
-                <div className="flex items-center justify-center py-12">
+                <div className="flex items-center justify-center py-16">
                   <div className="text-center">
-                    <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-                    <p>Building your mini-figure...</p>
-                    <p className="text-sm text-muted-foreground mt-2">This may take a moment</p>
+                    <Loader2 className="h-10 w-10 animate-spin mx-auto mb-4 text-purple-400" />
+                    <p className="text-white/80 font-medium">Building your mini-figure...</p>
+                    <p className="text-sm text-white/60 mt-2">This may take a moment</p>
                   </div>
                 </div>
               )}
@@ -380,12 +379,12 @@ const ToyReplica = () => {
               )}
               
               {!result && !generating && !uploading && (
-                <div className="flex items-center justify-center py-12 text-muted-foreground">
-                  <p>Your LEGO mini-figure will appear here</p>
+                <div className="flex items-center justify-center py-16 text-white/50">
+                  <p className="font-medium">Your LEGO mini-figure will appear here</p>
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </GlassPanel>
         </div>
 
         {/* Upgrade Modal */}
