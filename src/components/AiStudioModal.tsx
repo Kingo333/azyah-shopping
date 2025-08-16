@@ -206,54 +206,51 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
 
           {/* Main Content - Mobile First Layout */}
           <div className="flex-1 flex flex-col lg:flex-row min-h-0 relative">
-            {/* Mobile: Controls at top, Results below */}
+            {/* Mobile: Single scroll container with results at top */}
             <div className="flex flex-col lg:hidden h-full">
-              {/* Controls Section - Mobile */}
-              <div className="flex-shrink-0 max-h-[45vh] z-20 bg-background/95 backdrop-blur-sm border-b border-border/20">
-                <div className="p-3 space-y-2 overflow-y-auto max-h-[45vh] overscroll-contain">
-                  {/* Upload Panel */}
-                  <AiStudioUploadPanel 
-                    personFile={personFile}
-                    outfitFile={outfitFile}
-                    personImageId={personImageId}
-                    outfitImageId={outfitImageId}
-                    onPersonUpload={handlePersonUpload}
-                    onOutfitUpload={handleOutfitUpload}
-                  />
-
-                  {/* Controls Panel */}
-                  <AiStudioControlsPanel 
+              <div className="flex-1 overflow-y-auto p-3 space-y-4">
+                {/* Results Section - Mobile (at top) */}
+                <div className="min-h-[300px]">
+                  <AiStudioResultsPanel 
                     loading={loading}
-                    showSettings={showSettings}
-                    prompt={prompt}
-                    resolution={resolution}
+                    currentResult={currentResult}
+                    assets={assets}
                     remainingGenerations={remainingGenerations}
-                    maxGenerations={maxGenerations}
                     isPremium={isPremium}
-                    personImageId={personImageId}
-                    outfitImageId={outfitImageId}
-                    onShowSettingsToggle={() => setShowSettings(!showSettings)}
-                    onPromptChange={setPrompt}
-                    onResolutionChange={setResolution}
-                    onGenerate={handleVirtualTryOn}
+                    onDownload={downloadImage}
+                    onResultSelect={setCurrentResult}
                   />
-
-                  {/* Help Panel */}
-                  <AiStudioHelpPanel error={error} />
                 </div>
-              </div>
-              
-              {/* Results Section - Mobile */}
-              <div className="flex-1 min-h-0 p-3 z-10">
-                <AiStudioResultsPanel 
-                  loading={loading}
-                  currentResult={currentResult}
-                  assets={assets}
-                  remainingGenerations={remainingGenerations}
-                  isPremium={isPremium}
-                  onDownload={downloadImage}
-                  onResultSelect={setCurrentResult}
+                
+                {/* Upload Panel */}
+                <AiStudioUploadPanel 
+                  personFile={personFile}
+                  outfitFile={outfitFile}
+                  personImageId={personImageId}
+                  outfitImageId={outfitImageId}
+                  onPersonUpload={handlePersonUpload}
+                  onOutfitUpload={handleOutfitUpload}
                 />
+
+                {/* Controls Panel */}
+                <AiStudioControlsPanel 
+                  loading={loading}
+                  showSettings={showSettings}
+                  prompt={prompt}
+                  resolution={resolution}
+                  remainingGenerations={remainingGenerations}
+                  maxGenerations={maxGenerations}
+                  isPremium={isPremium}
+                  personImageId={personImageId}
+                  outfitImageId={outfitImageId}
+                  onShowSettingsToggle={() => setShowSettings(!showSettings)}
+                  onPromptChange={setPrompt}
+                  onResolutionChange={setResolution}
+                  onGenerate={handleVirtualTryOn}
+                />
+
+                {/* Help Panel */}
+                <AiStudioHelpPanel error={error} />
               </div>
             </div>
 

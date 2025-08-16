@@ -88,9 +88,9 @@ export const AiStudioResultsPanel: React.FC<AiStudioResultsPanelProps> = ({
         </div>
 
         {/* Results Gallery */}
-        <div className="flex-shrink-0 max-h-32">
+        <div className="flex-shrink-0">
           <h4 className="text-sm font-medium mb-2">Your Results</h4>
-          <div className="h-24 overflow-y-auto scrollbar-thin">
+          <div className="min-h-24">
             {assets.length > 0 ? (
               <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 gap-1">
                 {assets.slice(0, 20).map((asset) => (
