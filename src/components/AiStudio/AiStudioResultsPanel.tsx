@@ -83,7 +83,7 @@ export const AiStudioResultsPanel: React.FC<AiStudioResultsPanelProps> = ({
       {/* Main Result Display */}
       <div className="flex-1 flex flex-col gap-3 min-h-0">
         {/* Current Result */}
-        <div className="flex-1 min-h-[150px] lg:min-h-[200px]">
+        <div className="flex-1 min-h-[200px] lg:min-h-[200px]">
           <GlassPanel variant="custom" className="h-full flex items-center justify-center lg:h-full">
             {loading ? (
               <div className="text-center space-y-3">
@@ -112,13 +112,12 @@ export const AiStudioResultsPanel: React.FC<AiStudioResultsPanelProps> = ({
                 </div>
               </div>
             ) : (
-              <div className="text-center space-y-2 p-3">
-                <Sparkles className="h-8 w-8 mx-auto text-muted-foreground/50" />
+              <div className="text-center space-y-3 p-4">
+                <Sparkles className="h-12 w-12 mx-auto text-muted-foreground/50" />
                 <div>
-                  <h4 className="text-base font-medium mb-1">Ready to generate</h4>
-                  <p className="text-xs text-muted-foreground">Upload both images to start</p>
-                  {/* Hide credits on mobile since they're shown at the top */}
-                  <div className="mt-1 text-xs text-muted-foreground hidden lg:block">
+                  <h4 className="text-lg font-medium mb-1">Ready to generate</h4>
+                  <p className="text-sm text-muted-foreground">Upload both images to start</p>
+                  <div className="mt-2 text-xs text-muted-foreground">
                     {remainingGenerations > 0 ? (
                       <span>{remainingGenerations} remaining {isPremium ? 'today' : 'lifetime'}</span>
                     ) : (

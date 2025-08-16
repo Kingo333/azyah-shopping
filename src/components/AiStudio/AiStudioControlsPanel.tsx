@@ -53,6 +53,39 @@ export const AiStudioControlsPanel: React.FC<AiStudioControlsPanelProps> = ({
 
   return (
     <div className="space-y-3">
+      {/* Advanced Settings */}
+      <GlassPanel variant="custom" className="p-3">
+        <Button
+          variant="ghost"
+          onClick={onShowSettingsToggle}
+          className="w-full justify-between text-sm h-8"
+        >
+          Advanced Settings
+          {showSettings ? (
+            <ChevronUp className="h-3 w-3" />
+          ) : (
+            <ChevronDown className="h-3 w-3" />
+          )}
+        </Button>
+        
+        {showSettings && (
+          <div className="mt-3 space-y-2">
+            <div>
+              <Label className="text-xs">Resolution</Label>
+              <Select value={resolution} onValueChange={onResolutionChange}>
+                <SelectTrigger className="mt-1 h-8 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="standard">Standard</SelectItem>
+                  <SelectItem value="high">High Quality</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        )}
+      </GlassPanel>
+
       {/* Upload Panel */}
       <div className="space-y-3">
         <div className="grid grid-cols-2 gap-2">
@@ -143,50 +176,6 @@ export const AiStudioControlsPanel: React.FC<AiStudioControlsPanelProps> = ({
           </>
         )}
       </Button>
-
-      {/* Pro Tips */}
-      <GlassPanel variant="custom" className="p-3">
-        <h4 className="text-sm font-medium mb-2 text-primary">Pro Tips</h4>
-        <ul className="text-xs text-muted-foreground space-y-1">
-          <li>• Use well-lit, clear images for best results</li>
-          <li>• Person should face forward in the photo</li>
-          <li>• Outfit should be clearly visible</li>
-        </ul>
-      </GlassPanel>
-
-      {/* Advanced Settings - Moved below Pro Tips */}
-      <GlassPanel variant="custom" className="p-3">
-        <Button
-          variant="ghost"
-          onClick={onShowSettingsToggle}
-          className="w-full justify-between text-sm h-8"
-        >
-          Advanced Settings
-          {showSettings ? (
-            <ChevronUp className="h-3 w-3" />
-          ) : (
-            <ChevronDown className="h-3 w-3" />
-          )}
-        </Button>
-        
-        {showSettings && (
-          <div className="mt-3 space-y-2">
-            <div>
-              <Label className="text-xs">Resolution</Label>
-              <Select value={resolution} onValueChange={onResolutionChange}>
-                <SelectTrigger className="mt-1 h-8 text-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="standard">Standard</SelectItem>
-                  <SelectItem value="high">High Quality</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        )}
-      </GlassPanel>
-
     </div>
   );
 };
