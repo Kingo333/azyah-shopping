@@ -1037,6 +1037,7 @@ export type Database = {
           country: string | null
           created_at: string | null
           id: string
+          is_public: boolean
           name: string | null
           website: string | null
         }
@@ -1046,6 +1047,7 @@ export type Database = {
           country?: string | null
           created_at?: string | null
           id: string
+          is_public?: boolean
           name?: string | null
           website?: string | null
         }
@@ -1055,6 +1057,7 @@ export type Database = {
           country?: string | null
           created_at?: string | null
           id?: string
+          is_public?: boolean
           name?: string | null
           website?: string | null
         }
@@ -1562,6 +1565,18 @@ export type Database = {
           plan: string
           status: string
           subscription_id: string
+        }[]
+      }
+      get_public_profile: {
+        Args: { profile_user_id: string }
+        Returns: {
+          avatar_url: string
+          bio: string
+          country: string
+          created_at: string
+          display_name: string
+          user_id: string
+          website: string
         }[]
       }
       get_trending_categories: {
