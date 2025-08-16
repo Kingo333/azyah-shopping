@@ -257,22 +257,22 @@ export const PersonalizationEngine: React.FC<PersonalizationEngineProps> = ({
     }
   }, [swipeHistory, analyzeSwipePatterns, generateRecommendations]);
 
-  // Collaborative filtering: find similar users and their preferences
+  // Collaborative filtering: find similar users based on public preferences only
   const findSimilarUsers = React.useCallback(async () => {
     if (!user || !swipePatterns) return;
 
     try {
-      // Find users with similar swipe patterns
+      // Find users with similar preferences (using stored preferences only, not swipe data)
       const { data: otherUsers } = await supabase
         .from('users')
         .select('id, preferences')
         .neq('id', user.id)
         .not('preferences', 'is', null)
-        .limit(100);
+        .limit(50);
 
       if (!otherUsers) return;
 
-      // Calculate similarity scores
+      // Calculate similarity scores based on stored preferences only
       const similarities = otherUsers.map(otherUser => {
         let similarity = 0;
         const otherPrefs = otherUser.preferences as unknown as UserPreferences;
@@ -281,7 +281,7 @@ export const PersonalizationEngine: React.FC<PersonalizationEngineProps> = ({
         if (otherPrefs.preferred_categories) {
           const commonCategories = Object.keys(swipePatterns.category_preferences)
             .filter(cat => otherPrefs.preferred_categories.includes(cat));
-          similarity += commonCategories.length * 0.3;
+          similarity += commonCategories.length * 0.4;
         }
 
         // Compare price ranges
@@ -293,38 +293,37 @@ export const PersonalizationEngine: React.FC<PersonalizationEngineProps> = ({
             otherPrefs.price_range.min,
             swipePatterns.price_sensitivity * 0.7
           ));
-          similarity += (priceOverlap / swipePatterns.price_sensitivity) * 0.2;
+          similarity += (priceOverlap / swipePatterns.price_sensitivity) * 0.3;
         }
 
         return { userId: otherUser.id, similarity };
-      }).filter(s => s.similarity > 0.3);
+      }).filter(s => s.similarity > 0.4);
 
-      // Get recommendations from similar users
+      // Get product recommendations based on similar user preferences
+      // Use product data instead of individual swipe behavior
       if (similarities.length > 0) {
-        const similarUserIds = similarities
-          .sort((a, b) => b.similarity - a.similarity)
-          .slice(0, 5)
-          .map(s => s.userId);
+        const topCategories = Object.entries(swipePatterns.category_preferences)
+          .sort(([,a], [,b]) => b - a)
+          .slice(0, 3)
+          .map(([category]) => category);
 
-        const { data: similarUserSwipes } = await supabase
-          .from('swipes')
+        // Query products in preferred categories with good ratings
+        const { data: recommendedProducts } = await supabase
+          .from('products')
           .select(`
-            product_id,
-            product:products(*)
+            *,
+            brand:brands(*),
+            retailer:retailers(*)
           `)
-          .in('user_id', similarUserIds)
-          .eq('action', 'right')
-          .not('product_id', 'in', `(${swipeHistory.map(s => s.product_id).join(',')})`)
-          .limit(10);
+          .eq('status', 'active')
+          .in('category_slug', topCategories as any)
+          .order('created_at', { ascending: false })
+          .limit(8);
 
-        if (similarUserSwipes) {
-          const collaborativeRecommendations = similarUserSwipes
-            .map(s => s.product)
-            .filter(Boolean);
-          
+        if (recommendedProducts) {
           // Merge with existing recommendations
           onRecommendationsUpdate((prevRecommendations: Product[]) => [
-            ...collaborativeRecommendations.map(convertSupabaseProduct),
+            ...recommendedProducts.map(convertSupabaseProduct),
             ...prevRecommendations,
           ]);
         }
@@ -332,12 +331,12 @@ export const PersonalizationEngine: React.FC<PersonalizationEngineProps> = ({
     } catch (error) {
       console.error('Error finding similar users:', error);
     }
-  }, [user, swipePatterns, swipeHistory, onRecommendationsUpdate]);
+  }, [user, swipePatterns, onRecommendationsUpdate]);
 
-  // Run collaborative filtering periodically
+  // Run collaborative filtering periodically (less frequently)
   useEffect(() => {
     if (swipePatterns && swipeHistory && swipeHistory.length > 10) {
-      const timer = setTimeout(findSimilarUsers, 2000);
+      const timer = setTimeout(findSimilarUsers, 5000);
       return () => clearTimeout(timer);
     }
   }, [swipePatterns, findSimilarUsers, swipeHistory]);

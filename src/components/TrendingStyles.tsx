@@ -14,10 +14,10 @@ interface TrendingStyle {
   growth: number;
   recent_products: Array<{
     id: string;
-    title: string;
-    media_urls: any;
-    price_cents: number;
-    currency: string;
+  title: string;
+  image_url: string;
+  price_cents: number;
+  currency: string;
   }>;
 }
 
@@ -32,112 +32,47 @@ const TrendingStyles: React.FC<TrendingStylesProps> = ({ limit = 6, showMore = t
   const { data: trendingStyles, isLoading } = useQuery({
     queryKey: ['trending-styles', limit],
     queryFn: async () => {
-      // First try to get popular categories from recent swipes and likes
-      const { data: categoryData, error: categoryError } = await supabase
-        .from('swipes')
-        .select(`
-          product_id,
-          created_at,
-          action,
-          products!inner (
-            id,
-            category_slug,
-            subcategory_slug,
-            title,
-            media_urls,
-            price_cents,
-            currency
-          )
-        `)
-        .eq('action', 'right')
-        .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
-        .order('created_at', { ascending: false });
-
-      if (categoryError) throw categoryError;
-
-      // Process data to get trending categories
-      const categoryMap = new Map<string, TrendingStyle>();
-      
-      categoryData?.forEach((swipe) => {
-        const product = swipe.products;
-        const key = `${product.category_slug}-${product.subcategory_slug}`;
-        
-        if (categoryMap.has(key)) {
-          const existing = categoryMap.get(key)!;
-          existing.count += 1;
-          if (existing.recent_products.length < 3) {
-            existing.recent_products.push({
-              id: product.id,
-              title: product.title,
-              media_urls: product.media_urls,
-              price_cents: product.price_cents,
-              currency: product.currency
-            });
-          }
-        } else {
-          categoryMap.set(key, {
-            category: product.category_slug,
-            subcategory: product.subcategory_slug || product.category_slug,
-            count: 1,
-            growth: Math.floor(Math.random() * 50) + 10, // Simulated growth %
-            recent_products: [{
-              id: product.id,
-              title: product.title,
-              media_urls: product.media_urls,
-              price_cents: product.price_cents,
-              currency: product.currency
-            }]
-          });
-        }
-      });
-
-      // If no swipe data available, fallback to showing categories with available products
-      if (categoryMap.size === 0) {
-        const { data: products, error: productsError } = await supabase
-          .from('products')
-          .select('id, category_slug, subcategory_slug, title, media_urls, price_cents, currency')
-          .eq('status', 'active')
-          .order('created_at', { ascending: false });
-
-        if (productsError) throw productsError;
-
-        products?.forEach((product) => {
-          const key = `${product.category_slug}-${product.subcategory_slug}`;
-          
-          if (categoryMap.has(key)) {
-            const existing = categoryMap.get(key)!;
-            existing.count += 1;
-            if (existing.recent_products.length < 3) {
-              existing.recent_products.push({
-                id: product.id,
-                title: product.title,
-                media_urls: product.media_urls,
-                price_cents: product.price_cents,
-                currency: product.currency
-              });
-            }
-          } else {
-            categoryMap.set(key, {
-              category: product.category_slug,
-              subcategory: product.subcategory_slug || product.category_slug,
-              count: 1,
-              growth: Math.floor(Math.random() * 30) + 5, // Lower simulated growth for fallback
-              recent_products: [{
-                id: product.id,
-                title: product.title,
-                media_urls: product.media_urls,
-                price_cents: product.price_cents,
-                currency: product.currency
-              }]
-            });
-          }
+      // Use the secure trending categories function
+      const { data: trendingData, error: trendingError } = await supabase
+        .rpc('get_trending_categories', {
+          days_back: 7,
+          limit_count: limit
         });
+
+      if (trendingError) {
+        console.error('Error fetching trending data:', trendingError);
+        
+        // Fallback to the secure fallback function for product-based trending
+        const { data: fallbackData, error: fallbackError } = await supabase
+          .rpc('get_fallback_trending_categories', {
+            limit_count: limit
+          });
+
+        if (fallbackError) {
+          console.error('Error fetching fallback trending data:', fallbackError);
+          throw fallbackError;
+        }
+
+        // Convert fallback data to expected format
+        return (fallbackData || []).map((item: any) => ({
+          category: item.category_slug,
+          subcategory: item.subcategory_slug,
+          count: item.product_count,
+          growth: Math.floor(Math.random() * 30) + 5, // Simulated growth for products
+          recent_products: item.recent_products || []
+        }));
       }
 
-      return Array.from(categoryMap.values())
-        .sort((a, b) => b.count - a.count)
-        .slice(0, limit);
-    }
+      // Convert trending data to expected format
+      return (trendingData || []).map((item: any) => ({
+        category: item.category_slug,
+        subcategory: item.subcategory_slug,
+        count: item.swipe_count,
+        growth: item.growth_percentage,
+        recent_products: item.recent_products || []
+      }));
+    },
+    staleTime: 1000 * 60 * 15, // 15 minutes
   });
 
   const formatCategoryName = (category: string, subcategory?: string) => {
@@ -208,13 +143,13 @@ const TrendingStyles: React.FC<TrendingStylesProps> = ({ limit = 6, showMore = t
             
             <CardContent>
               <div className="flex gap-2 mb-3">
-                {style.recent_products.slice(0, 3).map((product) => (
-                  <div key={product.id} className="relative group/product">
-                    <img
-                      src={product.media_urls?.[0] || '/placeholder.svg'}
-                      alt={product.title}
-                      className="w-16 h-16 object-cover rounded-md"
-                    />
+                   {style.recent_products.slice(0, 3).map((product) => (
+                     <div key={product.id} className="relative group/product">
+                       <img
+                         src={product.image_url || '/placeholder.svg'}
+                         alt={product.title}
+                         className="w-16 h-16 object-cover rounded-md"
+                       />
                     <div className="absolute inset-0 bg-black/60 opacity-0 group-hover/product:opacity-100 transition-opacity rounded-md flex items-center justify-center">
                       <Button
                         size="sm"
