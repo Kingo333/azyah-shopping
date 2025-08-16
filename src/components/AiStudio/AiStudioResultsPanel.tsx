@@ -128,7 +128,7 @@ export const AiStudioResultsPanel: React.FC<AiStudioResultsPanelProps> = ({
         </div>
 
         {/* Results Gallery */}
-        <div className="flex-1 mt-1 min-h-0">
+        <div className="lg:flex-1 mt-1 min-h-0">
           <div className="flex items-center justify-between mb-2">
             <h4 className="text-sm font-medium">Your Results</h4>
             {assets.length > 0 && (
