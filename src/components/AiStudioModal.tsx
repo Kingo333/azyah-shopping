@@ -194,8 +194,8 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
   return (
     <Dialog open={open} onOpenChange={v => { if (!v) onClose(); }}>
       {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
-      <DialogContent className="max-w-[95vw] max-h-[95vh] h-[95vh] p-0 border-0 md:max-w-7xl">
-        <div className="h-full flex flex-col bg-gradient-to-br from-background via-background/95 to-muted/50">
+      <DialogContent className="max-w-[95vw] max-h-[95vh] h-[95vh] p-0 border-0 md:max-w-7xl overflow-hidden">
+        <div className="h-full flex flex-col bg-gradient-to-br from-background via-background/95 to-muted/50 overflow-hidden">
           {/* Header */}
           <AiStudioHeader 
             isPremium={isPremium}
@@ -203,7 +203,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
           />
 
           {/* Main Content */}
-          <div className="flex-1 flex flex-col lg:flex-row gap-3 px-3 pb-3 min-h-0 overflow-y-auto">
+          <div className="flex-1 flex flex-col lg:flex-row gap-3 px-3 pb-3 min-h-0 overflow-y-auto touch-pan-y overscroll-contain">
             {/* Results Section */}
             <div className="flex-1 min-h-0 flex flex-col">
               <AiStudioResultsPanel 
