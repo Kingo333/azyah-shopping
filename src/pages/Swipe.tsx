@@ -2,13 +2,17 @@ import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import CategoryFilter from "@/components/CategoryFilter";
-import { ArrowLeft, Heart, Search, Menu, Sparkles, ChevronDown } from "lucide-react";
+import { ArrowLeft, Heart, Search, Menu, Sparkles, ChevronDown, List, LayoutGrid } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
 import SwipeDeck from '@/components/SwipeDeck';
+import ProductListView from '@/components/ProductListView';
+import { usePersonalizedProducts } from '@/hooks/usePersonalizedProducts';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 const Swipe = () => {
   const navigate = useNavigate();
@@ -32,6 +36,35 @@ const Swipe = () => {
   const [searchQuery, setSearchQuery] = useState<string>(searchParams.get('search') || '');
   const [selectedCurrency, setSelectedCurrency] = useState<string>(searchParams.get('currency') || 'USD');
   const [showFilters, setShowFilters] = useState(false);
+  const [viewMode, setViewMode] = useState<'swipe' | 'list'>('swipe');
+
+  // Check user's swipe count to determine when to show list view option
+  const { data: swipeCount } = useQuery({
+    queryKey: ['user-swipe-count', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return 0;
+      
+      const { count, error } = await supabase
+        .from('swipes')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id);
+      
+      if (error) throw error;
+      return count || 0;
+    },
+    enabled: !!user?.id
+  });
+
+  const showListToggle = (swipeCount || 0) >= 5; // Show list view after 5 swipes
+
+  // Use the personalized products hook for list view
+  const { products, isLoading: productsLoading } = usePersonalizedProducts({
+    filter: selectedCategories[0] || 'all',
+    subcategory: selectedSubcategories[0] || '',
+    priceRange,
+    searchQuery,
+    currency: selectedCurrency
+  });
 
   // Update URL when filters change
   useEffect(() => {
@@ -115,6 +148,21 @@ const Swipe = () => {
                 <Heart className="h-4 w-4" />
                 <span className="hidden lg:inline lg:ml-2">Likes</span>
               </Button>
+
+              {/* View Mode Toggle - Only show after sufficient swipes */}
+              {showListToggle && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setViewMode(viewMode === 'swipe' ? 'list' : 'swipe')}
+                  className="bg-gradient-feature border-0 hover:shadow-soft p-2 flex-shrink-0"
+                >
+                  {viewMode === 'swipe' ? <List className="h-4 w-4" /> : <LayoutGrid className="h-4 w-4" />}
+                  <span className="hidden lg:inline lg:ml-2">
+                    {viewMode === 'swipe' ? 'List' : 'Swipe'}
+                  </span>
+                </Button>
+              )}
               
               {/* Filters Menu */}
               <Popover open={showFilters} onOpenChange={setShowFilters}>
@@ -227,18 +275,27 @@ const Swipe = () => {
           </p>
         </div>
 
-        {/* Swipe Deck Container */}
-        <div className="flex-1 flex items-start justify-center min-h-[500px] sm:min-h-[600px]">
-          <div className="relative w-full max-w-[350px] sm:max-w-md h-[calc(100vh-200px)] sm:h-[600px] max-h-[700px]">
-            <SwipeDeck 
-              filter={selectedCategories[0] || 'all'} 
-              subcategory={selectedSubcategories[0] || ''}
-              priceRange={priceRange} 
-              searchQuery={searchQuery}
-              currency={selectedCurrency}
+        {/* Content Container */}
+        {viewMode === 'swipe' ? (
+          <div className="flex-1 flex items-start justify-center min-h-[500px] sm:min-h-[600px]">
+            <div className="relative w-full max-w-[350px] sm:max-w-md h-[calc(100vh-200px)] sm:h-[600px] max-h-[700px]">
+              <SwipeDeck 
+                filter={selectedCategories[0] || 'all'} 
+                subcategory={selectedSubcategories[0] || ''}
+                priceRange={priceRange} 
+                searchQuery={searchQuery}
+                currency={selectedCurrency}
+              />
+            </div>
+          </div>
+        ) : (
+          <div className="flex-1">
+            <ProductListView 
+              products={products}
+              isLoading={productsLoading}
             />
           </div>
-        </div>
+        )}
       </main>
     </div>
   );
