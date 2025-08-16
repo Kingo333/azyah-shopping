@@ -68,8 +68,11 @@ export function useBitStudio() {
       action = () => window.open('https://docs.lovable.dev', '_blank');
     } else if (error.code === 'RATE_LIMITED') {
       message = 'Rate limit exceeded. Please try again in a moment.';
-    } else if (error.code === 'insufficient_credits' || error.code === 'no_active_subscription') {
-      message = 'Insufficient credits or subscription required';
+    } else if (error.code === 'insufficient_credits') {
+      message = 'Insufficient credits to complete this operation. Please upgrade your plan.';
+      action = () => window.open('https://bitstudio.ai/billing', '_blank');
+    } else if (error.code === 'no_active_subscription') {
+      message = 'No active subscription found. Please subscribe to continue.';
       action = () => window.open('https://bitstudio.ai/billing', '_blank');
     } else if (error.code === 'bad_request' || error.code === 'invalid_aspect_ratio' || error.code === 'invalid_resolution') {
       message = error.details || error.error || 'Invalid parameters. Please check your inputs.';

@@ -90,8 +90,43 @@ export class BitStudioClient {
 
   static async getImage(id: string): Promise<BitStudioImage> {
     console.log('[BitStudioClient] Getting image status for ID:', id);
-    // Use POST with JSON body instead of URL parameter
-    return this.makeSupabaseRequest('bitstudio-status', { id });
+    
+    // Get auth session for direct API call
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) {
+      throw { error: 'Authentication required', code: 'UNAUTHORIZED' } as BitStudioError;
+    }
+
+    // Call status function with image ID in URL path (BitStudio expects GET /images/{id})
+    const statusUrl = `https://klwolsopucgswhtdlsps.supabase.co/functions/v1/bitstudio-status/${id}`;
+    console.log('[BitStudioClient] Status URL:', statusUrl);
+
+    const response = await fetch(statusUrl, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${session.access_token}`,
+        'Content-Type': 'application/json',
+      }
+    });
+
+    if (!response.ok) {
+      let errorData;
+      try {
+        const responseText = await response.text();
+        errorData = JSON.parse(responseText);
+      } catch {
+        errorData = { 
+          error: `HTTP ${response.status}`, 
+          code: 'FETCH_ERROR' 
+        };
+      }
+      console.error('[BitStudioClient] Status check error:', response.status, errorData);
+      throw errorData as BitStudioError;
+    }
+
+    const result = await response.json() as BitStudioImage;
+    console.log('[BitStudioClient] Status check result:', result);
+    return result;
   }
 
   static async virtualTryOn(params: {
@@ -123,56 +158,80 @@ export class BitStudioClient {
 
   static async pollUntilComplete(id: string, maxWaitMs = 180000): Promise<BitStudioImage> {
     const startTime = Date.now();
-    let delay = 2000; // Start with 2 seconds
-    let retryCount = 0;
-    let rateLimitRetries = 0;
-    const maxRateLimitRetries = 3;
+    let attempts = 0;
+    const maxAttempts = Math.ceil(maxWaitMs / 2000);
     
-    console.log(`[BitStudioClient] Starting polling for image ${id}`);
+    console.log(`[BitStudioClient] Starting polling for image ${id} (max ${maxWaitMs}ms)`);
     
-    while (Date.now() - startTime < maxWaitMs) {
+    while (attempts < maxAttempts) {
       try {
         const result = await this.getImage(id);
         
-        console.log(`[BitStudioClient] Poll ${retryCount + 1}: Status = ${result.status}`);
+        console.log(`[BitStudioClient] Poll ${attempts + 1}: Status = ${result.status}`);
         
+        // Check for completion
         if (result.status === 'completed') {
           console.log('[BitStudioClient] Image generation completed successfully');
           return result;
         }
         
+        // Check for failure  
         if (result.status === 'failed') {
           const errorMsg = result.error || 'Generation failed';
           console.error('[BitStudioClient] Generation failed:', errorMsg);
-          throw { error: errorMsg, code: 'GENERATION_FAILED' };
+          throw { error: errorMsg, code: 'GENERATION_FAILED' } as BitStudioError;
         }
         
-        // Reset rate limit retries on successful request
-        rateLimitRetries = 0;
+        // Check timeout
+        if (Date.now() - startTime >= maxWaitMs) {
+          throw { error: 'Timeout: Image generation took too long (max 3 minutes)', code: 'TIMEOUT' } as BitStudioError;
+        }
         
-        // Exponential backoff with jitter
-        await new Promise(resolve => setTimeout(resolve, delay + Math.random() * 1000));
-        delay = Math.min(delay * 1.2, 6000); // Max 6 seconds
-        retryCount++;
+        // Exponential backoff with jitter (2s, 3s, 4.5s, 6.75s, max 10s)
+        const baseDelay = Math.min(2000 * Math.pow(1.5, attempts), 10000);
+        const jitter = Math.random() * 500;
+        const delay = baseDelay + jitter;
+        
+        await new Promise(resolve => setTimeout(resolve, delay));
+        attempts++;
         
       } catch (error: any) {
-        console.error(`[BitStudioClient] Poll ${retryCount + 1} error:`, error);
+        console.error(`[BitStudioClient] Poll ${attempts + 1} error:`, error);
         
         // Handle rate limiting with exponential backoff
-        if ((error.code === 'RATE_LIMITED' || (error.status === 429)) && rateLimitRetries < maxRateLimitRetries) {
-          const backoffDelay = Math.min(1000 * Math.pow(2, rateLimitRetries), 10000);
-          console.log(`[BitStudioClient] Rate limited, waiting ${backoffDelay}ms before retry`);
-          await new Promise(resolve => setTimeout(resolve, backoffDelay));
-          rateLimitRetries++;
+        if (error.code === 'RATE_LIMITED' || error.status === 429) {
+          const retryDelay = 5000 + (attempts * 2000) + (Math.random() * 2000);
+          console.log(`[BitStudioClient] Rate limited, waiting ${Math.round(retryDelay)}ms before retry`);
+          await new Promise(resolve => setTimeout(resolve, retryDelay));
+          attempts++;
           continue;
         }
         
-        // If we've exceeded rate limit retries or it's a different error, throw
+        // Handle credit/subscription errors
+        if (error.code === 'insufficient_credits' || error.code === 'no_active_subscription') {
+          throw { error: 'Insufficient credits or subscription required', code: error.code } as BitStudioError;
+        }
+        
+        // For authentication or permanent errors, don't retry
+        if (error.code === 'UNAUTHORIZED' || error.status === 401 || error.status === 403) {
+          throw error;
+        }
+        
+        // For temporary errors, retry with backoff
+        if (attempts < 3) {
+          const retryDelay = 2000 * (attempts + 1);
+          console.log(`[BitStudioClient] Temporary error, retrying in ${retryDelay}ms:`, error.message || error.error);
+          await new Promise(resolve => setTimeout(resolve, retryDelay));
+          attempts++;
+          continue;
+        }
+        
+        // After max retries, rethrow
         throw error;
       }
     }
     
     console.error('[BitStudioClient] Polling timeout after', maxWaitMs, 'ms');
-    throw { error: 'Timeout waiting for result', code: 'TIMEOUT' };
+    throw { error: 'Timeout: Maximum polling attempts reached', code: 'TIMEOUT' } as BitStudioError;
   }
 }

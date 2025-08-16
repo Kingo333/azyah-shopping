@@ -22,12 +22,14 @@ serve(async (req) => {
       throw new Error('BitStudio API key not configured');
     }
 
-    // Accept POST requests with JSON body containing the image ID
-    const { id } = await req.json();
+    // Extract image ID from URL path - BitStudio expects GET /images/{id}
+    const url = new URL(req.url);
+    const pathParts = url.pathname.split('/');
+    const id = pathParts[pathParts.length - 1]; // Get the last part of the path
     
-    if (!id) {
+    if (!id || id === 'bitstudio-status') {
       return new Response(
-        JSON.stringify({ error: 'Image ID is required' }),
+        JSON.stringify({ error: 'Image ID is required in URL path' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
       );
     }

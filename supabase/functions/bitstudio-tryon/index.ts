@@ -70,6 +70,7 @@ serve(async (req) => {
       person_image_url,
       outfit_image_id,
       outfit_image_url,
+      outfit_asset_id,
       resolution = 'standard',
       num_images = 1,
       seed,
@@ -150,6 +151,7 @@ serve(async (req) => {
     if (person_image_url) requestBody.person_image_url = person_image_url;
     if (outfit_image_id) requestBody.outfit_image_id = outfit_image_id;
     if (outfit_image_url) requestBody.outfit_image_url = outfit_image_url;
+    if (outfit_asset_id) requestBody.outfit_asset_id = outfit_asset_id;
     if (seed !== undefined) requestBody.seed = seed;
     if (prompt && prompt.trim()) requestBody.prompt = prompt.trim();
 
@@ -207,6 +209,19 @@ serve(async (req) => {
           }
         })
         .eq('id', jobData.id);
+
+      if (response.status === 402) {
+        return new Response(
+          JSON.stringify({ 
+            error: 'Insufficient credits or subscription required',
+            code: 'insufficient_credits',
+            bitstudio_error: responseData,
+            raw_response: responseText,
+            status: response.status
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 402 }
+        );
+      }
 
       if (response.status === 429) {
         return new Response(
