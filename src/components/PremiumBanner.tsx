@@ -27,7 +27,7 @@ const PremiumBanner: React.FC = () => {
           <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-xs sm:text-sm text-muted-foreground">
             <span className="font-medium">40 AED/month</span>
             <span className="hidden sm:inline">•</span>
-            <span className="leading-tight">20 AI Try-ons daily • Unlimited Replica generation • UGC collabs</span>
+            <span className="leading-tight">20 AI Try-ons daily • Unlimited replica • UGC collabs</span>
           </div>
         </div>
         
