@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { GlassPanel } from '@/components/ui/glass-panel';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Download, Sparkles, Wand2, Upload } from 'lucide-react';
+import { Loader2, Download, Sparkles, Wand2, Upload, Crown } from 'lucide-react';
 import { useBitStudio } from '@/hooks/useBitStudio';
 import { BITSTUDIO_IMAGE_TYPES } from '@/lib/bitstudio-types';
 import { useToast } from '@/hooks/use-toast';
@@ -198,6 +198,26 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                   BitStudio
                 </Badge>
               </DialogTitle>
+              
+              {/* Premium Benefits Section */}
+              {!isPremium && (
+                <div className="mt-4 p-3 bg-gradient-to-r from-primary/5 to-accent/5 rounded-lg border border-primary/20">
+                  <div className="flex items-start gap-3">
+                    <Crown className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                    <div className="space-y-1">
+                      <h4 className="text-sm font-medium text-foreground">Premium Benefits</h4>
+                      <div className="text-xs text-muted-foreground space-y-0.5">
+                        <div>• 20 AI Try-ons daily (vs 4 lifetime)</div>
+                        <div>• Unlimited AI generation on Replica</div>
+                        <div>• Access to UGC collabs</div>
+                      </div>
+                      <Button size="sm" variant="outline" className="mt-2 h-7 text-xs">
+                        Upgrade to Premium
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </DialogHeader>
           </div>
 
