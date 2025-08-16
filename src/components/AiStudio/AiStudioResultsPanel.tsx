@@ -55,16 +55,15 @@ export const AiStudioResultsPanel: React.FC<AiStudioResultsPanelProps> = ({
   };
   return (
     <div className="h-full flex flex-col min-h-0">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-3 flex-shrink-0">
-        <h3 className="text-base font-semibold">Generated Result</h3>
-        {currentResult?.path && (
+      {/* Download Button */}
+      {currentResult?.path && (
+        <div className="flex justify-end mb-3 flex-shrink-0">
           <Button onClick={onDownload} size="sm" variant="outline" className="h-8 text-xs">
             <Download className="h-3 w-3 mr-1" />
             Download
           </Button>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Main Result Display */}
       <div className="flex-1 flex flex-col gap-3 min-h-0">
