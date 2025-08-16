@@ -14,7 +14,6 @@ interface AiStudioResultsPanelProps {
   onDownload: () => void;
   onResultSelect: (result: any) => void;
   onDeleteAssets?: (assetIds: string[]) => void;
-  hideReadyToGenerate?: boolean;
 }
 
 export const AiStudioResultsPanel: React.FC<AiStudioResultsPanelProps> = ({
@@ -25,8 +24,7 @@ export const AiStudioResultsPanel: React.FC<AiStudioResultsPanelProps> = ({
   isPremium,
   onDownload,
   onResultSelect,
-  onDeleteAssets,
-  hideReadyToGenerate = false
+  onDeleteAssets
 }) => {
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedAssets, setSelectedAssets] = useState<string[]>([]);
@@ -70,7 +68,7 @@ export const AiStudioResultsPanel: React.FC<AiStudioResultsPanelProps> = ({
       {/* Main Result Display */}
       <div className="flex-1 flex flex-col gap-3 min-h-0">
         {/* Current Result */}
-        <div className={`${!hideReadyToGenerate || currentResult?.path || loading ? 'flex-1 min-h-[200px]' : 'h-0'}`}>
+        <div className="flex-1 min-h-[200px]">
           <GlassPanel variant="custom" className="h-full flex items-center justify-center">
             {loading ? (
               <div className="text-center space-y-3">
@@ -98,7 +96,7 @@ export const AiStudioResultsPanel: React.FC<AiStudioResultsPanelProps> = ({
                   )}
                 </div>
               </div>
-            ) : !hideReadyToGenerate ? (
+            ) : (
               <div className="text-center space-y-3 p-4">
                 <Sparkles className="h-12 w-12 mx-auto text-muted-foreground/50" />
                 <div>
@@ -113,7 +111,7 @@ export const AiStudioResultsPanel: React.FC<AiStudioResultsPanelProps> = ({
                   </div>
                 </div>
               </div>
-            ) : null}
+            )}
           </GlassPanel>
         </div>
 
