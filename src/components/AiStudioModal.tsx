@@ -12,6 +12,7 @@ import { BITSTUDIO_IMAGE_TYPES } from '@/lib/bitstudio-types';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useAiAssets } from '@/hooks/useAiAssets';
+import { useSubscription } from '@/hooks/useSubscription';
 export interface AiStudioModalProps {
   open: boolean;
   onClose: () => void;
@@ -46,6 +47,11 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
   } = useBitStudio();
   const { toast } = useToast();
   const { assets, loading: assetsLoading, fetchAssets, saveAsset } = useAiAssets();
+  const { isPremium } = useSubscription();
+
+  // Generation limits based on user type
+  const maxGenerations = isPremium ? 30 : 4;
+  const remainingGenerations = maxGenerations - assets.length;
 
   useEffect(() => {
     if (open) {
@@ -112,6 +118,17 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
       toast({
         title: 'Missing Images',
         description: 'Please upload both person and outfit images',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    if (remainingGenerations <= 0) {
+      toast({
+        title: 'Generation Limit Reached',
+        description: isPremium 
+          ? 'You have reached your daily limit of 30 generations' 
+          : 'You have reached your daily limit of 4 generations. Upgrade to Premium for 30 daily generations.',
         variant: 'destructive'
       });
       return;
@@ -186,7 +203,8 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                 )}
               </div>
               
-              <GlassPanel variant="custom" className="flex-1 flex items-center justify-center min-h-[200px] md:min-h-[400px]">
+              {/* Top Half - Ready to Generate */}
+              <GlassPanel variant="custom" className="flex-1 flex items-center justify-center min-h-[200px] md:min-h-[300px]">
                 {loading ? (
                   <div className="text-center">
                     <Loader2 className="h-8 w-8 md:h-12 md:w-12 animate-spin mx-auto mb-2 md:mb-4 text-primary" />
@@ -216,14 +234,21 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                     <Sparkles className="h-12 w-12 md:h-16 md:w-16 mx-auto mb-2 md:mb-4 text-muted-foreground/50" />
                     <h4 className="text-lg md:text-xl font-medium mb-1 md:mb-2">Ready to generate</h4>
                     <p className="text-sm md:text-base text-muted-foreground">Upload both images below to start</p>
+                    <div className="mt-3 text-xs text-muted-foreground">
+                      {remainingGenerations > 0 ? (
+                        <span>{remainingGenerations} generations remaining today</span>
+                      ) : (
+                        <span className="text-destructive">Daily limit reached</span>
+                      )}
+                    </div>
                   </div>
                 )}
               </GlassPanel>
 
-              {/* Previous Results Gallery */}
-              {assets.length > 0 && (
-                <div className="mt-4 md:mt-6">
-                  <h4 className="text-sm md:text-md font-medium mb-2 md:mb-3">Previous Results</h4>
+              {/* Bottom Half - Results Saved */}
+              <div className="space-y-2 md:space-y-3">
+                <h4 className="text-sm md:text-md font-medium">Results Saved Today</h4>
+                {assets.length > 0 ? (
                   <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 md:gap-3">
                     {assets.slice(0, 12).map((asset) => (
                       <GlassPanel 
@@ -246,8 +271,12 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                       </GlassPanel>
                     ))}
                   </div>
-                </div>
-              )}
+                ) : (
+                  <GlassPanel variant="custom" className="p-4 text-center">
+                    <p className="text-sm text-muted-foreground">No results saved today</p>
+                  </GlassPanel>
+                )}
+              </div>
             </div>
 
             {/* Controls Section */}
@@ -355,10 +384,20 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                 )}
               </GlassPanel>
 
+              {/* Generation Counter */}
+              <div className="text-center space-y-1">
+                <p className="text-sm font-medium">
+                  {remainingGenerations} / {maxGenerations} generations remaining
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {isPremium ? 'Premium daily limit' : 'Free daily limit'}
+                </p>
+              </div>
+
               {/* Generate Button */}
               <Button 
                 onClick={handleVirtualTryOn} 
-                disabled={loading || !personImageId || !outfitImageId} 
+                disabled={loading || !personImageId || !outfitImageId || remainingGenerations <= 0} 
                 className="w-full h-10 md:h-12 text-sm md:text-lg"
                 size="lg"
               >
@@ -367,6 +406,8 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                     <Loader2 className="h-4 w-4 md:h-5 md:w-5 animate-spin mr-2" />
                     Generating...
                   </>
+                ) : remainingGenerations <= 0 ? (
+                  'Daily Limit Reached'
                 ) : (
                   <>
                     <Wand2 className="h-4 w-4 md:h-5 md:w-5 mr-2" />
