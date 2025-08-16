@@ -226,7 +226,7 @@ const RoleDashboard: React.FC = () => {
       <PremiumBanner />
       
       {/* Quick Actions with Premium Glass Panel */}
-      <GlassPanel variant="premium" className="p-8">
+      <div className="p-8 bg-white/15 backdrop-blur-[20px] rounded-[20px] border border-white/30 shadow-[0_8px_32px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,0.5),inset_0_-1px_0_rgba(255,255,255,0.1)] relative overflow-hidden before:content-[''] before:absolute before:top-0 before:left-0 before:right-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/80 before:to-transparent after:content-[''] after:absolute after:top-0 after:left-0 after:w-px after:h-full after:bg-gradient-to-b after:from-white/80 after:via-transparent after:to-white/30">
         <div className="space-y-6">
           <h2 className="text-2xl font-cormorant font-semibold flex items-center gap-3 text-foreground/90">
             Quick Actions
@@ -295,12 +295,12 @@ const RoleDashboard: React.FC = () => {
             </Button>
           </div>
         </div>
-      </GlassPanel>
+      </div>
 
       {/* Global Search and Affiliate Hub Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Global Search with Premium Glass Panel */}
-        <GlassPanel variant="premium" className="p-8">
+        <div className="p-8 bg-white/15 backdrop-blur-[20px] rounded-[20px] border border-white/30 shadow-[0_8px_32px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,0.5),inset_0_-1px_0_rgba(255,255,255,0.1)] relative overflow-hidden before:content-[''] before:absolute before:top-0 before:left-0 before:right-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/80 before:to-transparent after:content-[''] after:absolute after:top-0 after:left-0 after:w-px after:h-full after:bg-gradient-to-b after:from-white/80 after:via-transparent after:to-white/30">
           <div className="space-y-5">
             <h3 className="text-xl font-cormorant font-semibold flex items-center gap-3">
               <div className="p-2 rounded-full bg-gradient-to-br from-primary/10 to-accent-cartier/10">
@@ -316,25 +316,25 @@ const RoleDashboard: React.FC = () => {
               Open Global Search
             </Button>
           </div>
-        </GlassPanel>
+        </div>
 
         {/* Affiliate Hub - Desktop with Premium Glass Panel */}
         <div className="hidden lg:block">
-          <GlassPanel variant="premium" className="p-8">
+          <div className="p-8 bg-white/15 backdrop-blur-[20px] rounded-[20px] border border-white/30 shadow-[0_8px_32px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,0.5),inset_0_-1px_0_rgba(255,255,255,0.1)] relative overflow-hidden before:content-[''] before:absolute before:top-0 before:left-0 before:right-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/80 before:to-transparent after:content-[''] after:absolute after:top-0 after:left-0 after:w-px after:h-full after:bg-gradient-to-b after:from-white/80 after:via-transparent after:to-white/30">
             <AffiliateHub showTitle={false} />
-          </GlassPanel>
+          </div>
         </div>
       </div>
 
       {/* Affiliate Hub - Mobile with Premium Glass Panel */}
       <div className="block lg:hidden">
-        <GlassPanel variant="premium" className="p-8">
+        <div className="p-8 bg-white/15 backdrop-blur-[20px] rounded-[20px] border border-white/30 shadow-[0_8px_32px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,0.5),inset_0_-1px_0_rgba(255,255,255,0.1)] relative overflow-hidden before:content-[''] before:absolute before:top-0 before:left-0 before:right-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/80 before:to-transparent after:content-[''] after:absolute after:top-0 after:left-0 after:w-px after:h-full after:bg-gradient-to-b after:from-white/80 after:via-transparent after:to-white/30">
           <AffiliateHub />
-        </GlassPanel>
+        </div>
       </div>
 
       {/* Closets Preview with Premium Glass Panel */}
-      <GlassPanel variant="premium" className="p-8">
+      <div className="p-8 bg-white/15 backdrop-blur-[20px] rounded-[20px] border border-white/30 shadow-[0_8px_32px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,0.5),inset_0_-1px_0_rgba(255,255,255,0.1)] relative overflow-hidden before:content-[''] before:absolute before:top-0 before:left-0 before:right-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/80 before:to-transparent after:content-[''] after:absolute after:top-0 after:left-0 after:w-px after:h-full after:bg-gradient-to-b after:from-white/80 after:via-transparent after:to-white/30">
         <div className="space-y-5">
           <div className="flex items-center justify-between">
             <h3 className="text-xl font-cormorant font-semibold flex items-center gap-3">
@@ -357,10 +357,10 @@ const RoleDashboard: React.FC = () => {
             </p>
           </div>
         </div>
-      </GlassPanel>
+      </div>
 
       {/* Fashion Leaderboards with Premium Glass Panel */}
-      <GlassPanel variant="premium" className="p-8">
+      <div className="p-8 bg-white/15 backdrop-blur-[20px] rounded-[20px] border border-white/30 shadow-[0_8px_32px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,0.5),inset_0_-1px_0_rgba(255,255,255,0.1)] relative overflow-hidden before:content-[''] before:absolute before:top-0 before:left-0 before:right-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/80 before:to-transparent after:content-[''] after:absolute after:top-0 after:left-0 after:w-px after:h-full after:bg-gradient-to-b after:from-white/80 after:via-transparent after:to-white/30">
         <div className="space-y-6">
           <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
             <h3 className="text-xl font-cormorant font-semibold flex items-center gap-3">
@@ -392,7 +392,7 @@ const RoleDashboard: React.FC = () => {
           </div>
           <Leaderboard type={activeLeaderboard} country={user?.user_metadata?.country} />
         </div>
-      </GlassPanel>
+      </div>
     </div>
   );
 
@@ -400,7 +400,7 @@ const RoleDashboard: React.FC = () => {
     <div className="space-y-4">
       {/* Quick Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <GlassPanel variant="premium" className="p-6">
+        <div className="p-6 bg-white/15 backdrop-blur-[20px] rounded-[20px] border border-white/30 shadow-[0_8px_32px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,0.5),inset_0_-1px_0_rgba(255,255,255,0.1)] relative overflow-hidden before:content-[''] before:absolute before:top-0 before:left-0 before:right-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/80 before:to-transparent after:content-[''] after:absolute after:top-0 after:left-0 after:w-px after:h-full after:bg-gradient-to-b after:from-white/80 after:via-transparent after:to-white/30">
           <div className="flex items-center gap-4">
             <div className="p-3 rounded-xl bg-gradient-to-br from-blue-500/10 to-blue-600/10">
               <Package className="h-6 w-6 text-blue-500" />
@@ -410,9 +410,9 @@ const RoleDashboard: React.FC = () => {
               <p className="text-2xl font-bold text-foreground">{stats.totalProducts || 0}</p>
             </div>
           </div>
-        </GlassPanel>
+        </div>
 
-        <GlassPanel variant="premium" className="p-6">
+        <div className="p-6 bg-white/15 backdrop-blur-[20px] rounded-[20px] border border-white/30 shadow-[0_8px_32px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,0.5),inset_0_-1px_0_rgba(255,255,255,0.1)] relative overflow-hidden before:content-[''] before:absolute before:top-0 before:left-0 before:right-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/80 before:to-transparent after:content-[''] after:absolute after:top-0 after:left-0 after:w-px after:h-full after:bg-gradient-to-b after:from-white/80 after:via-transparent after:to-white/30">
           <div className="flex items-center gap-4">
             <div className="p-3 rounded-xl bg-gradient-to-br from-green-500/10 to-green-600/10">
               <Eye className="h-6 w-6 text-green-500" />
@@ -422,9 +422,9 @@ const RoleDashboard: React.FC = () => {
               <p className="text-2xl font-bold text-foreground">{stats.totalViews || 0}</p>
             </div>
           </div>
-        </GlassPanel>
+        </div>
 
-        <GlassPanel variant="premium" className="p-6">
+        <div className="p-6 bg-white/15 backdrop-blur-[20px] rounded-[20px] border border-white/30 shadow-[0_8px_32px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,0.5),inset_0_-1px_0_rgba(255,255,255,0.1)] relative overflow-hidden before:content-[''] before:absolute before:top-0 before:left-0 before:right-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/80 before:to-transparent after:content-[''] after:absolute after:top-0 after:left-0 after:w-px after:h-full after:bg-gradient-to-b after:from-white/80 after:via-transparent after:to-white/30">
           <div className="flex items-center gap-4">
             <div className="p-3 rounded-xl bg-gradient-to-br from-purple-500/10 to-purple-600/10">
               <ShoppingBag className="h-6 w-6 text-purple-500" />
@@ -434,9 +434,9 @@ const RoleDashboard: React.FC = () => {
               <p className="text-2xl font-bold text-foreground">{stats.totalSales || 0}</p>
             </div>
           </div>
-        </GlassPanel>
+        </div>
 
-        <GlassPanel variant="premium" className="p-6">
+        <div className="p-6 bg-white/15 backdrop-blur-[20px] rounded-[20px] border border-white/30 shadow-[0_8px_32px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,0.5),inset_0_-1px_0_rgba(255,255,255,0.1)] relative overflow-hidden before:content-[''] before:absolute before:top-0 before:left-0 before:right-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/80 before:to-transparent after:content-[''] after:absolute after:top-0 after:left-0 after:w-px after:h-full after:bg-gradient-to-b after:from-white/80 after:via-transparent after:to-white/30">
           <div className="flex items-center gap-4">
             <div className="p-3 rounded-xl bg-gradient-to-br from-green-500/10 to-emerald-600/10">
               <DollarSign className="h-6 w-6 text-green-500" />
@@ -446,11 +446,11 @@ const RoleDashboard: React.FC = () => {
               <p className="text-2xl font-bold text-foreground">{formatPrice(stats.totalRevenue || 0)}</p>
             </div>
           </div>
-        </GlassPanel>
+        </div>
       </div>
 
       {/* Quick Actions */}
-      <GlassPanel variant="premium" className="p-8">
+      <div className="p-8 bg-white/15 backdrop-blur-[20px] rounded-[20px] border border-white/30 shadow-[0_8px_32px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,0.5),inset_0_-1px_0_rgba(255,255,255,0.1)] relative overflow-hidden before:content-[''] before:absolute before:top-0 before:left-0 before:right-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/80 before:to-transparent after:content-[''] after:absolute after:top-0 after:left-0 after:w-px after:h-full after:bg-gradient-to-b after:from-white/80 after:via-transparent after:to-white/30">
         <div className="space-y-6">
           <h3 className="text-xl font-cormorant font-semibold">Brand Management</h3>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -468,7 +468,7 @@ const RoleDashboard: React.FC = () => {
             </Button>
           </div>
         </div>
-      </GlassPanel>
+      </div>
     </div>
   );
 
@@ -476,7 +476,7 @@ const RoleDashboard: React.FC = () => {
     <div className="space-y-4">
       {/* Quick Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <GlassPanel variant="premium" className="p-6">
+        <div className="p-6 bg-white/15 backdrop-blur-[20px] rounded-[20px] border border-white/30 shadow-[0_8px_32px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,0.5),inset_0_-1px_0_rgba(255,255,255,0.1)] relative overflow-hidden before:content-[''] before:absolute before:top-0 before:left-0 before:right-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/80 before:to-transparent after:content-[''] after:absolute after:top-0 after:left-0 after:w-px after:h-full after:bg-gradient-to-b after:from-white/80 after:via-transparent after:to-white/30">
           <div className="flex items-center gap-4">
             <div className="p-3 rounded-xl bg-gradient-to-br from-blue-500/10 to-blue-600/10">
               <Store className="h-6 w-6 text-blue-500" />
@@ -486,9 +486,9 @@ const RoleDashboard: React.FC = () => {
               <p className="text-2xl font-bold text-foreground">5</p>
             </div>
           </div>
-        </GlassPanel>
+        </div>
 
-        <GlassPanel variant="premium" className="p-6">
+        <div className="p-6 bg-white/15 backdrop-blur-[20px] rounded-[20px] border border-white/30 shadow-[0_8px_32px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,0.5),inset_0_-1px_0_rgba(255,255,255,0.1)] relative overflow-hidden before:content-[''] before:absolute before:top-0 before:left-0 before:right-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/80 before:to-transparent after:content-[''] after:absolute after:top-0 after:left-0 after:w-px after:h-full after:bg-gradient-to-b after:from-white/80 after:via-transparent after:to-white/30">
           <div className="flex items-center gap-4">
             <div className="p-3 rounded-xl bg-gradient-to-br from-green-500/10 to-green-600/10">
               <Package className="h-6 w-6 text-green-500" />
@@ -498,9 +498,9 @@ const RoleDashboard: React.FC = () => {
               <p className="text-2xl font-bold text-foreground">{stats.totalProducts || 0}</p>
             </div>
           </div>
-        </GlassPanel>
+        </div>
 
-        <GlassPanel variant="premium" className="p-6">
+        <div className="p-6 bg-white/15 backdrop-blur-[20px] rounded-[20px] border border-white/30 shadow-[0_8px_32px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,0.5),inset_0_-1px_0_rgba(255,255,255,0.1)] relative overflow-hidden before:content-[''] before:absolute before:top-0 before:left-0 before:right-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/80 before:to-transparent after:content-[''] after:absolute after:top-0 after:left-0 after:w-px after:h-full after:bg-gradient-to-b after:from-white/80 after:via-transparent after:to-white/30">
           <div className="flex items-center gap-4">
             <div className="p-3 rounded-xl bg-gradient-to-br from-purple-500/10 to-purple-600/10">
               <TrendingUp className="h-6 w-6 text-purple-500" />
@@ -510,9 +510,9 @@ const RoleDashboard: React.FC = () => {
               <p className="text-2xl font-bold text-foreground">{stats.totalSales || 0}</p>
             </div>
           </div>
-        </GlassPanel>
+        </div>
 
-        <GlassPanel variant="premium" className="p-6">
+        <div className="p-6 bg-white/15 backdrop-blur-[20px] rounded-[20px] border border-white/30 shadow-[0_8px_32px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,0.5),inset_0_-1px_0_rgba(255,255,255,0.1)] relative overflow-hidden before:content-[''] before:absolute before:top-0 before:left-0 before:right-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/80 before:to-transparent after:content-[''] after:absolute after:top-0 after:left-0 after:w-px after:h-full after:bg-gradient-to-b after:from-white/80 after:via-transparent after:to-white/30">
           <div className="flex items-center gap-4">
             <div className="p-3 rounded-xl bg-gradient-to-br from-green-500/10 to-emerald-600/10">
               <DollarSign className="h-6 w-6 text-green-500" />
@@ -522,11 +522,11 @@ const RoleDashboard: React.FC = () => {
               <p className="text-2xl font-bold text-foreground">{formatPrice(stats.totalRevenue || 0)}</p>
             </div>
           </div>
-        </GlassPanel>
+        </div>
       </div>
 
       {/* Quick Actions */}
-      <GlassPanel variant="premium" className="p-8">
+      <div className="p-8 bg-white/15 backdrop-blur-[20px] rounded-[20px] border border-white/30 shadow-[0_8px_32px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,0.5),inset_0_-1px_0_rgba(255,255,255,0.1)] relative overflow-hidden before:content-[''] before:absolute before:top-0 before:left-0 before:right-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/80 before:to-transparent after:content-[''] after:absolute after:top-0 after:left-0 after:w-px after:h-full after:bg-gradient-to-b after:from-white/80 after:via-transparent after:to-white/30">
         <div className="space-y-6">
           <h3 className="text-xl font-cormorant font-semibold">Retailer Management</h3>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -544,7 +544,7 @@ const RoleDashboard: React.FC = () => {
             </Button>
           </div>
         </div>
-      </GlassPanel>
+      </div>
     </div>
   );
 
