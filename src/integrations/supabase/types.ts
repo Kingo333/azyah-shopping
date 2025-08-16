@@ -71,6 +71,13 @@ export type Database = {
             foreignKeyName: "affiliate_links_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "public_user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "affiliate_links_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
@@ -208,6 +215,13 @@ export type Database = {
             foreignKeyName: "brands_owner_user_id_fkey"
             columns: ["owner_user_id"]
             isOneToOne: false
+            referencedRelation: "public_user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "brands_owner_user_id_fkey"
+            columns: ["owner_user_id"]
+            isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
@@ -250,6 +264,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cart_items_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "public_user_profiles"
             referencedColumns: ["id"]
           },
           {
@@ -540,6 +561,13 @@ export type Database = {
             foreignKeyName: "events_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "public_user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
@@ -569,7 +597,21 @@ export type Database = {
             foreignKeyName: "follows_follower_id_fkey"
             columns: ["follower_id"]
             isOneToOne: false
+            referencedRelation: "public_user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "follows_follower_id_fkey"
+            columns: ["follower_id"]
+            isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "follows_following_id_fkey"
+            columns: ["following_id"]
+            isOneToOne: false
+            referencedRelation: "public_user_profiles"
             referencedColumns: ["id"]
           },
           {
@@ -846,6 +888,13 @@ export type Database = {
             foreignKeyName: "post_likes_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "public_user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_likes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
@@ -907,6 +956,13 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "posts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "public_user_profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "posts_user_id_fkey"
             columns: ["user_id"]
@@ -1063,6 +1119,13 @@ export type Database = {
             foreignKeyName: "public_profiles_id_fkey"
             columns: ["id"]
             isOneToOne: true
+            referencedRelation: "public_user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "public_profiles_id_fkey"
+            columns: ["id"]
+            isOneToOne: true
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
@@ -1119,6 +1182,13 @@ export type Database = {
             foreignKeyName: "retailers_owner_user_id_fkey"
             columns: ["owner_user_id"]
             isOneToOne: false
+            referencedRelation: "public_user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "retailers_owner_user_id_fkey"
+            columns: ["owner_user_id"]
+            isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
@@ -1154,6 +1224,36 @@ export type Database = {
           robots_content?: string | null
           updated_at?: string | null
           user_agent_checked?: string | null
+        }
+        Relationships: []
+      }
+      security_audit_log: {
+        Row: {
+          accessed_user_id: string | null
+          action: string
+          created_at: string | null
+          id: string
+          ip_address: unknown | null
+          table_name: string
+          user_id: string | null
+        }
+        Insert: {
+          accessed_user_id?: string | null
+          action: string
+          created_at?: string | null
+          id?: string
+          ip_address?: unknown | null
+          table_name: string
+          user_id?: string | null
+        }
+        Update: {
+          accessed_user_id?: string | null
+          action?: string
+          created_at?: string | null
+          id?: string
+          ip_address?: unknown | null
+          table_name?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -1227,6 +1327,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "swipes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "public_user_profiles"
             referencedColumns: ["id"]
           },
           {
@@ -1441,6 +1548,13 @@ export type Database = {
             foreignKeyName: "wishlists_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "public_user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wishlists_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
@@ -1448,12 +1562,62 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      public_user_profiles: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          country: string | null
+          created_at: string | null
+          id: string | null
+          name: string | null
+          website: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          country?: string | null
+          created_at?: string | null
+          id?: string | null
+          name?: string | null
+          website?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          country?: string | null
+          created_at?: string | null
+          id?: string | null
+          name?: string | null
+          website?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
+      admin_get_user_data: {
+        Args: { user_id_param: string }
+        Returns: {
+          avatar_url: string | null
+          bio: string | null
+          country: string | null
+          created_at: string
+          email: string
+          id: string
+          name: string | null
+          preferences: Json | null
+          role: Database["public"]["Enums"]["user_role"]
+          socials: Json | null
+          updated_at: string
+          website: string | null
+        }[]
+      }
       create_admin_user: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      get_current_user_role: {
+        Args: Record<PropertyKey, never>
+        Returns: Database["public"]["Enums"]["user_role"]
       }
       get_fallback_trending_categories: {
         Args: { limit_count?: number }
