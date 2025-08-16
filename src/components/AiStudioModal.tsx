@@ -252,7 +252,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
             
             {/* Mobile: Simple scrollable container */}
             <div className="lg:hidden">
-              <div className="p-3 space-y-4 pb-20 overflow-y-auto" style={{ height: 'calc(100dvh - 100px)' }}>
+              <div className="p-3 space-y-2 pb-20 overflow-y-auto" style={{ height: 'calc(100dvh - 100px)' }}>
                 {/* Results Panel - Mobile */}
                 <AiStudioResultsPanel 
                   loading={loading}
