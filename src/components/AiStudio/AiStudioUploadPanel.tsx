@@ -23,10 +23,10 @@ export const AiStudioUploadPanel: React.FC<AiStudioUploadPanelProps> = ({
   onOutfitUpload
 }) => {
   return (
-    <div className="space-y-3">
+    <div className="space-y-2 lg:space-y-3">
       {/* Person Upload */}
-      <GlassPanel variant="custom" className="p-3">
-        <div className="space-y-2">
+      <GlassPanel variant="custom" className="p-2 lg:p-3">
+        <div className="space-y-1.5 lg:space-y-2">
           <div className="flex items-center gap-2">
             <Upload className="h-3 w-3" />
             <Label className="text-sm font-medium">Person Image</Label>
@@ -42,7 +42,7 @@ export const AiStudioUploadPanel: React.FC<AiStudioUploadPanelProps> = ({
               <img 
                 src={URL.createObjectURL(personFile)} 
                 alt="Person preview" 
-                className="w-full h-24 object-cover rounded-md"
+                className="w-full h-12 sm:h-16 lg:h-20 object-cover rounded-md"
               />
               {personImageId && (
                 <Badge className="absolute top-1 right-1 text-xs h-5">
@@ -55,8 +55,8 @@ export const AiStudioUploadPanel: React.FC<AiStudioUploadPanelProps> = ({
       </GlassPanel>
 
       {/* Outfit Upload */}
-      <GlassPanel variant="custom" className="p-3">
-        <div className="space-y-2">
+      <GlassPanel variant="custom" className="p-2 lg:p-3">
+        <div className="space-y-1.5 lg:space-y-2">
           <div className="flex items-center gap-2">
             <Upload className="h-3 w-3" />
             <Label className="text-sm font-medium">Outfit Image</Label>
@@ -72,7 +72,7 @@ export const AiStudioUploadPanel: React.FC<AiStudioUploadPanelProps> = ({
               <img 
                 src={URL.createObjectURL(outfitFile)} 
                 alt="Outfit preview" 
-                className="w-full h-24 object-cover rounded-md"
+                className="w-full h-12 sm:h-16 lg:h-20 object-cover rounded-md"
               />
               {outfitImageId && (
                 <Badge className="absolute top-1 right-1 text-xs h-5">

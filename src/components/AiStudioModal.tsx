@@ -203,7 +203,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
           />
 
           {/* Main Content */}
-          <div className="flex-1 flex flex-col lg:flex-row gap-3 px-3 pb-3 min-h-0 overflow-y-auto touch-pan-y overscroll-contain">
+          <div className="flex-1 flex flex-col lg:flex-row gap-2 lg:gap-3 px-2 lg:px-3 pb-2 lg:pb-3 min-h-0 overflow-y-auto touch-pan-y overscroll-contain">
             {/* Results Section */}
             <div className="flex-1 min-h-0 flex flex-col">
               <AiStudioResultsPanel 
@@ -219,7 +219,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
 
             {/* Controls Section */}
             <div className="w-full lg:w-80 flex-shrink-0 flex flex-col min-h-0">
-              <div className="flex-1 space-y-3 overflow-y-auto scrollbar-thin">
+              <div className="flex-1 space-y-2 lg:space-y-3 overflow-y-auto scrollbar-thin touch-pan-y">
                 {/* Upload Panel */}
                 <AiStudioUploadPanel 
                   personFile={personFile}
