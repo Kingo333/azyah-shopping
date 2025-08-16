@@ -25,7 +25,7 @@ export const AiStudioUploadPanel: React.FC<AiStudioUploadPanelProps> = ({
   return (
     <div className="space-y-2 lg:space-y-3">
       {/* Person Upload */}
-      <GlassPanel variant="custom" className="p-2 lg:p-3">
+      <GlassPanel variant="custom" className="p-2 lg:p-3 shadow-lg shadow-black/20 border border-white/30 md:shadow-none md:border-white/20">
         <div className="space-y-1.5 lg:space-y-2">
           <div className="flex items-center gap-2">
             <Upload className="h-3 w-3" />
@@ -55,7 +55,7 @@ export const AiStudioUploadPanel: React.FC<AiStudioUploadPanelProps> = ({
       </GlassPanel>
 
       {/* Outfit Upload */}
-      <GlassPanel variant="custom" className="p-2 lg:p-3">
+      <GlassPanel variant="custom" className="p-2 lg:p-3 shadow-lg shadow-black/20 border border-white/30 md:shadow-none md:border-white/20">
         <div className="space-y-1.5 lg:space-y-2">
           <div className="flex items-center gap-2">
             <Upload className="h-3 w-3" />

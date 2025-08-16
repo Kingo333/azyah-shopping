@@ -22,7 +22,7 @@ export const AiStudioHelpPanel: React.FC<AiStudioHelpPanelProps> = ({
   return (
     <div className="space-y-2">
       {/* Pro Tips */}
-      <Alert className="text-xs p-3">
+      <Alert className="text-xs p-3 shadow-md shadow-black/15 border border-white/30 md:shadow-none md:border-border">
         <Sparkles className="h-3 w-3" />
         <AlertTitle className="text-xs">Pro Tips</AlertTitle>
         <AlertDescription className="text-xs">
@@ -36,7 +36,7 @@ export const AiStudioHelpPanel: React.FC<AiStudioHelpPanelProps> = ({
       </Alert>
 
       {/* Advanced Settings */}
-      <GlassPanel variant="custom" className="p-3">
+      <GlassPanel variant="custom" className="p-3 shadow-md shadow-black/15 border border-white/30 md:shadow-none md:border-white/20">
         <Button
           variant="ghost"
           onClick={() => setShowAdvanced(!showAdvanced)}
@@ -76,7 +76,7 @@ export const AiStudioHelpPanel: React.FC<AiStudioHelpPanelProps> = ({
 
       {/* Error Display */}
       {error && (
-        <Alert variant="destructive" className="text-xs p-3">
+        <Alert variant="destructive" className="text-xs p-3 shadow-md shadow-red-500/15 border border-red-500/30 md:shadow-none">
           <AlertCircle className="h-3 w-3" />
           <AlertTitle className="text-xs">Error</AlertTitle>
           <AlertDescription className="text-xs">

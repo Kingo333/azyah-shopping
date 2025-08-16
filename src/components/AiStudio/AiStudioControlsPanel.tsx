@@ -67,7 +67,7 @@ export const AiStudioControlsPanel: React.FC<AiStudioControlsPanelProps> = ({
                 onChange={onPersonUpload}
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
               />
-              <GlassPanel variant="custom" className={`h-20 flex flex-col items-center justify-center transition-colors cursor-pointer hover:border-primary/50 ${personImageId ? 'border-green-500/50 bg-green-500/5' : uploadingPerson ? 'border-primary/50 bg-primary/5' : 'border-dashed'}`}>
+              <GlassPanel variant="custom" className={`h-20 flex flex-col items-center justify-center transition-colors cursor-pointer hover:border-primary/50 shadow-md shadow-black/15 border border-white/30 md:shadow-none md:border-white/20 ${personImageId ? 'border-green-500/50 bg-green-500/5' : uploadingPerson ? 'border-primary/50 bg-primary/5' : 'border-dashed'}`}>
                 {uploadingPerson ? (
                   <div className="text-center">
                     <Loader2 className="h-4 w-4 mx-auto mb-1 animate-spin text-primary" />
@@ -98,7 +98,7 @@ export const AiStudioControlsPanel: React.FC<AiStudioControlsPanelProps> = ({
                 onChange={onOutfitUpload}
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
               />
-              <GlassPanel variant="custom" className={`h-20 flex flex-col items-center justify-center transition-colors cursor-pointer hover:border-primary/50 ${outfitImageId ? 'border-green-500/50 bg-green-500/5' : uploadingOutfit ? 'border-primary/50 bg-primary/5' : 'border-dashed'}`}>
+              <GlassPanel variant="custom" className={`h-20 flex flex-col items-center justify-center transition-colors cursor-pointer hover:border-primary/50 shadow-md shadow-black/15 border border-white/30 md:shadow-none md:border-white/20 ${outfitImageId ? 'border-green-500/50 bg-green-500/5' : uploadingOutfit ? 'border-primary/50 bg-primary/5' : 'border-dashed'}`}>
                 {uploadingOutfit ? (
                   <div className="text-center">
                     <Loader2 className="h-4 w-4 mx-auto mb-1 animate-spin text-primary" />
