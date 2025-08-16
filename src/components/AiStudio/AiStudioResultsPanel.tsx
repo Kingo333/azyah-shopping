@@ -55,9 +55,24 @@ export const AiStudioResultsPanel: React.FC<AiStudioResultsPanelProps> = ({
   };
   return (
     <div className="h-full flex flex-col min-h-0">
-      {/* Download Button */}
+      {/* Mobile Header - only show when we have results */}
+      <div className="lg:hidden flex-shrink-0">
+        {(loading || currentResult?.path) && (
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-base font-semibold">Generated Result</h3>
+            {currentResult?.path && (
+              <Button onClick={onDownload} size="sm" variant="outline" className="h-8 text-xs">
+                <Download className="h-3 w-3 mr-1" />
+                Download
+              </Button>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Desktop Download Button */}
       {currentResult?.path && (
-        <div className="flex justify-end mb-3 flex-shrink-0">
+        <div className="hidden lg:flex justify-end mb-3 flex-shrink-0">
           <Button onClick={onDownload} size="sm" variant="outline" className="h-8 text-xs">
             <Download className="h-3 w-3 mr-1" />
             Download
@@ -68,8 +83,8 @@ export const AiStudioResultsPanel: React.FC<AiStudioResultsPanelProps> = ({
       {/* Main Result Display */}
       <div className="flex-1 flex flex-col gap-3 min-h-0">
         {/* Current Result */}
-        <div className="flex-1 min-h-[200px]">
-          <GlassPanel variant="custom" className="h-full flex items-center justify-center">
+        <div className="flex-1 min-h-[200px] lg:min-h-[200px]">
+          <GlassPanel variant="custom" className="h-full flex items-center justify-center lg:h-full">
             {loading ? (
               <div className="text-center space-y-3">
                 <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />

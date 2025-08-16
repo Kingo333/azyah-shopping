@@ -253,64 +253,17 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
             {/* Mobile: Simple scrollable container */}
             <div className="lg:hidden">
               <div className="p-3 space-y-4 pb-20 overflow-y-auto" style={{ height: 'calc(100dvh - 100px)' }}>
-                {/* Current Result Display - Mobile (at very top) */}
-                <div className="min-h-[250px]">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-base font-semibold">Generated Result</h3>
-                      <div className="text-xs text-muted-foreground">
-                        {remainingGenerations > 0 ? (
-                          <span>{remainingGenerations}/{maxGenerations} {isPremium ? 'Premium credits' : 'Free credits'}</span>
-                        ) : (
-                          <span className="text-destructive">{isPremium ? 'Daily' : 'Lifetime'} limit reached</span>
-                        )}
-                      </div>
-                    </div>
-                    {currentResult?.path && (
-                      <Button onClick={downloadImage} size="sm" variant="outline" className="h-8 text-xs">
-                        <Download className="h-3 w-3 mr-1" />
-                        Download
-                      </Button>
-                    )}
-                  </div>
-                  <GlassPanel variant="custom" className="h-[250px] flex items-center justify-center">
-                    {loading ? (
-                      <div className="text-center space-y-3">
-                        <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
-                        <div>
-                          <p className="text-base font-medium">Generating your try-on...</p>
-                          <p className="text-xs text-muted-foreground">This may take a few moments</p>
-                        </div>
-                      </div>
-                    ) : currentResult?.path ? (
-                      <div className="w-full h-full flex flex-col p-3">
-                        <img 
-                          src={currentResult.path} 
-                          alt="Virtual try-on result"
-                          className="w-full flex-1 object-contain rounded-lg"
-                        />
-                        <div className="mt-2 flex items-center justify-center gap-2 flex-shrink-0">
-                          <Badge variant={currentResult.status === 'completed' ? 'default' : 'secondary'} className="text-xs">
-                            {currentResult.status}
-                          </Badge>
-                          {currentResult.credits_used && (
-                            <span className="text-xs text-muted-foreground">
-                              Credits: {currentResult.credits_used}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="text-center space-y-3 p-4">
-                        <Sparkles className="h-12 w-12 mx-auto text-muted-foreground/50" />
-                        <div>
-                          <h4 className="text-lg font-medium mb-1">Ready to generate</h4>
-                          <p className="text-sm text-muted-foreground">Upload both image to generate</p>
-                        </div>
-                      </div>
-                    )}
-                  </GlassPanel>
-                </div>
+                {/* Results Panel - Mobile */}
+                <AiStudioResultsPanel 
+                  loading={loading}
+                  currentResult={currentResult}
+                  assets={assets}
+                  remainingGenerations={remainingGenerations}
+                  isPremium={isPremium}
+                  onDownload={downloadImage}
+                  onResultSelect={setCurrentResult}
+                  onDeleteAssets={deleteAssets}
+                />
                 
                 {/* Controls Panel */}
                 <AiStudioControlsPanel 
@@ -337,18 +290,6 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
 
                 {/* Help Panel */}
                 <AiStudioHelpPanel error={error} />
-
-                {/* Results Gallery - Mobile (after help panel) */}
-                <AiStudioResultsPanel 
-                  loading={false}
-                  currentResult={null}
-                  assets={assets}
-                  remainingGenerations={remainingGenerations}
-                  isPremium={isPremium}
-                  onDownload={() => {}}
-                  onResultSelect={setCurrentResult}
-                  onDeleteAssets={deleteAssets}
-                />
               </div>
             </div>
 
