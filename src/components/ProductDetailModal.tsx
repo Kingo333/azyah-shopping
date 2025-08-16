@@ -216,109 +216,116 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
             </div>
 
             {/* Desktop Layout */}
-            <div className="hidden md:grid md:grid-cols-[45%_55%] h-full">
-              {/* Image Gallery */}
-              <div className="relative h-full">
-                <EnhancedProductGallery
-                  images={images}
-                  productTitle={product.title}
-                  productId={product.id}
-                  hasARMesh={false}
-                />
-                <Button
-                  variant="ghost"
-                  aria-label="Close product details"
-                  onClick={onClose}
-                  className="absolute top-4 right-4 z-20 bg-background/60 hover:bg-background/80 backdrop-blur-md rounded-full h-8 w-8 md:block"
-                >
-                  <X className="h-5 w-5" />
-                </Button>
-              </div>
+            <div className="hidden md:flex h-full relative">
+              {/* Close Button */}
+              <Button
+                variant="ghost"
+                aria-label="Close product details"
+                onClick={onClose}
+                className="absolute top-4 right-4 z-30 bg-background/60 hover:bg-background/80 backdrop-blur-md rounded-full h-8 w-8"
+              >
+                <X className="h-5 w-5" />
+              </Button>
 
-              {/* Product Details */}
-              <div className="flex flex-col h-full glass-subtle border-white/10">
-                <div className="p-4 space-y-4 flex-1 overflow-y-auto">
-                  {/* Header */}
-                  <div>
-                    <h2 className="text-xl font-bold font-playfair line-clamp-2 mb-1.5">{product.title}</h2>
-                    <p className="text-muted-foreground text-sm">{product.brand?.name}</p>
-                    <div className="flex items-center gap-3 mt-1.5">
-                      <span className="text-xl font-bold">
-                        {new Intl.NumberFormat('en-US', { style: 'currency', currency: priceCurrency })
-                          .format(priceCents / 100)}
-                      </span>
-                      {compareAtCents && (
-                        <span className="text-base text-muted-foreground line-through">
-                          {new Intl.NumberFormat('en-US', { style: 'currency', currency: priceCurrency })
-                            .format(compareAtCents / 100)}
-                        </span>
-                      )}
-                    </div>
+              {/* Scrollable Content Container */}
+              <div className="flex-1 overflow-y-auto pb-20">
+                <div className="p-6 space-y-6">
+                  {/* Smaller Image Gallery */}
+                  <div className="w-full max-w-sm mx-auto">
+                    <EnhancedProductGallery
+                      images={images}
+                      productTitle={product.title}
+                      productId={product.id}
+                      hasARMesh={false}
+                    />
                   </div>
+                  
+                  {/* Product Details Content */}
+                  <div className="max-w-lg mx-auto space-y-4">
+                    {/* Header */}
+                    <div>
+                      <h2 className="text-xl font-bold font-playfair line-clamp-2 mb-1.5">{product.title}</h2>
+                      <p className="text-muted-foreground text-sm">{product.brand?.name}</p>
+                      <div className="flex items-center gap-3 mt-1.5">
+                        <span className="text-xl font-bold">
+                          {new Intl.NumberFormat('en-US', { style: 'currency', currency: priceCurrency })
+                            .format(priceCents / 100)}
+                        </span>
+                        {compareAtCents && (
+                          <span className="text-base text-muted-foreground line-through">
+                            {new Intl.NumberFormat('en-US', { style: 'currency', currency: priceCurrency })
+                              .format(compareAtCents / 100)}
+                          </span>
+                        )}
+                      </div>
+                    </div>
 
-                  {/* Size and Color Selection */}
-                  <AdvancedSizeColorSelector
-                    sizes={availableSizes}
-                    colors={availableColors}
-                    selectedSize={selectedSize}
-                    selectedColor={selectedColor}
-                    onSizeSelect={setSelectedSize}
-                    onColorSelect={setSelectedColor}
-                    sizeChart={{
-                      "XS": "Chest: 32-34, Waist: 24-26",
-                      "S": "Chest: 34-36, Waist: 26-28", 
-                      "M": "Chest: 36-38, Waist: 28-30",
-                      "L": "Chest: 38-40, Waist: 30-32",
-                      "XL": "Chest: 40-42, Waist: 32-34"
-                    }}
-                    sizeChartImage="/placeholder.svg"
-                  />
+                    {/* Size and Color Selection */}
+                    <AdvancedSizeColorSelector
+                      sizes={availableSizes}
+                      colors={availableColors}
+                      selectedSize={selectedSize}
+                      selectedColor={selectedColor}
+                      onSizeSelect={setSelectedSize}
+                      onColorSelect={setSelectedColor}
+                      sizeChart={{
+                        "XS": "Chest: 32-34, Waist: 24-26",
+                        "S": "Chest: 34-36, Waist: 26-28", 
+                        "M": "Chest: 36-38, Waist: 28-30",
+                        "L": "Chest: 38-40, Waist: 30-32",
+                        "XL": "Chest: 40-42, Waist: 32-34"
+                      }}
+                      sizeChartImage="/placeholder.svg"
+                    />
 
-                  <Accordion type="single" collapsible defaultValue="details">
-                    {product.description && (
-                      <AccordionItem value="description">
-                        <AccordionTrigger className="text-base font-semibold">Description</AccordionTrigger>
+                    <Accordion type="single" collapsible defaultValue="details">
+                      {product.description && (
+                        <AccordionItem value="description">
+                          <AccordionTrigger className="text-base font-semibold">Description</AccordionTrigger>
+                          <AccordionContent>
+                            <p className="text-muted-foreground text-sm leading-relaxed">{product.description}</p>
+                          </AccordionContent>
+                        </AccordionItem>
+                      )}
+                      <AccordionItem value="details">
+                        <AccordionTrigger className="text-base font-semibold">Product Details</AccordionTrigger>
                         <AccordionContent>
-                          <p className="text-muted-foreground text-sm leading-relaxed">{product.description}</p>
+                          <div className="grid grid-cols-2 gap-2 text-sm">
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">SKU:</span>
+                              <span>{product.sku}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">Category:</span>
+                              <span className="capitalize">{product.category_slug?.replace('_', ' ')}</span>
+                            </div>
+                          </div>
                         </AccordionContent>
                       </AccordionItem>
-                    )}
-                    <AccordionItem value="details">
-                      <AccordionTrigger className="text-base font-semibold">Product Details</AccordionTrigger>
-                      <AccordionContent>
-                        <div className="grid grid-cols-2 gap-2 text-sm">
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">SKU:</span>
-                            <span>{product.sku}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Category:</span>
-                            <span className="capitalize">{product.category_slug?.replace('_', ' ')}</span>
-                          </div>
-                        </div>
-                      </AccordionContent>
-                    </AccordionItem>
-                  </Accordion>
+                    </Accordion>
+                  </div>
+                </div>
+              </div>
+
+              {/* Fixed Action Buttons */}
+              <div className="absolute bottom-0 left-0 right-0 z-20 glass-premium backdrop-blur-md border-t border-white/20 p-4 space-y-3">
+                <div className="flex gap-2 max-w-lg mx-auto">
+                  <Button variant="outline" size="sm" className="flex-1 gap-2 text-sm h-10">
+                    <Heart className="h-4 w-4" />
+                    Wishlist
+                  </Button>
+                  <Button
+                    onClick={() => setIsClosetModalOpen(true)}
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 gap-2 text-sm h-10"
+                  >
+                    <ShoppingBag className="h-4 w-4" />
+                    Add to Closet
+                  </Button>
                 </div>
 
-                {/* Sticky Footer */}
-                <div className="sticky bottom-0 z-10 glass-premium backdrop-blur-md border-t border-white/20 p-6 space-y-3">
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" className="flex-1 gap-2 text-sm h-10">
-                      <Heart className="h-4 w-4" />
-                      Wishlist
-                    </Button>
-                    <Button
-                      onClick={() => setIsClosetModalOpen(true)}
-                      variant="outline"
-                      size="sm"
-                      className="flex-1 gap-2 text-sm h-10"
-                    >
-                      <ShoppingBag className="h-4 w-4" />
-                      Add to Closet
-                    </Button>
-                  </div>
-
+                <div className="max-w-lg mx-auto">
                   {product.external_url ? (
                     <Button
                       onClick={handleShopNow}
