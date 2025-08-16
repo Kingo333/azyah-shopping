@@ -1455,6 +1455,26 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      get_fallback_trending_categories: {
+        Args: { limit_count?: number }
+        Returns: {
+          category_slug: Database["public"]["Enums"]["category_type"]
+          product_count: number
+          recent_products: Json
+          subcategory_slug: Database["public"]["Enums"]["subcategory_type"]
+        }[]
+      }
+      get_trending_categories: {
+        Args: { days_back?: number; limit_count?: number }
+        Returns: {
+          category_slug: Database["public"]["Enums"]["category_type"]
+          growth_percentage: number
+          like_count: number
+          recent_products: Json
+          subcategory_slug: Database["public"]["Enums"]["subcategory_type"]
+          swipe_count: number
+        }[]
+      }
       validate_category_subcategory: {
         Args: {
           cat: Database["public"]["Enums"]["category_type"]
