@@ -194,61 +194,117 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
   return (
     <Dialog open={open} onOpenChange={v => { if (!v) onClose(); }}>
       {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
-      <DialogContent className="max-w-[95vw] max-h-[95vh] h-[95vh] p-0 border-0 md:max-w-7xl overflow-hidden">
-        <div className="h-full flex flex-col bg-gradient-to-br from-background via-background/95 to-muted/50 overflow-hidden">
+      <DialogContent className="max-w-[95vw] w-[95vw] h-[100dvh] max-h-[100dvh] p-0 border-0 md:max-w-7xl md:h-[95vh] md:max-h-[95vh] overflow-hidden">
+        <div className="h-full flex flex-col bg-gradient-to-br from-background via-background/95 to-muted/50">
           {/* Header */}
-          <AiStudioHeader 
-            isPremium={isPremium}
-            onUpgradeClick={handleUpgradeClick}
-          />
+          <div className="flex-shrink-0 z-10">
+            <AiStudioHeader 
+              isPremium={isPremium}
+              onUpgradeClick={handleUpgradeClick}
+            />
+          </div>
 
-          {/* Main Content */}
-          <div className="flex-1 flex flex-col lg:flex-row gap-2 lg:gap-3 px-2 lg:px-3 pb-2 lg:pb-3 min-h-0 overflow-y-auto touch-pan-y overscroll-contain">
-            {/* Results Section */}
-            <div className="flex-1 min-h-0 flex flex-col">
-              <AiStudioResultsPanel 
-                loading={loading}
-                currentResult={currentResult}
-                assets={assets}
-                remainingGenerations={remainingGenerations}
-                isPremium={isPremium}
-                onDownload={downloadImage}
-                onResultSelect={setCurrentResult}
-              />
+          {/* Main Content - Mobile First Layout */}
+          <div className="flex-1 flex flex-col lg:flex-row min-h-0 relative">
+            {/* Mobile: Controls at top, Results below */}
+            <div className="flex flex-col lg:hidden h-full">
+              {/* Controls Section - Mobile */}
+              <div className="flex-shrink-0 max-h-[45vh] z-20 bg-background/95 backdrop-blur-sm border-b border-border/20">
+                <div className="p-3 space-y-2 overflow-y-auto max-h-[45vh] overscroll-contain">
+                  {/* Upload Panel */}
+                  <AiStudioUploadPanel 
+                    personFile={personFile}
+                    outfitFile={outfitFile}
+                    personImageId={personImageId}
+                    outfitImageId={outfitImageId}
+                    onPersonUpload={handlePersonUpload}
+                    onOutfitUpload={handleOutfitUpload}
+                  />
+
+                  {/* Controls Panel */}
+                  <AiStudioControlsPanel 
+                    loading={loading}
+                    showSettings={showSettings}
+                    prompt={prompt}
+                    resolution={resolution}
+                    remainingGenerations={remainingGenerations}
+                    maxGenerations={maxGenerations}
+                    isPremium={isPremium}
+                    personImageId={personImageId}
+                    outfitImageId={outfitImageId}
+                    onShowSettingsToggle={() => setShowSettings(!showSettings)}
+                    onPromptChange={setPrompt}
+                    onResolutionChange={setResolution}
+                    onGenerate={handleVirtualTryOn}
+                  />
+
+                  {/* Help Panel */}
+                  <AiStudioHelpPanel error={error} />
+                </div>
+              </div>
+              
+              {/* Results Section - Mobile */}
+              <div className="flex-1 min-h-0 p-3 z-10">
+                <AiStudioResultsPanel 
+                  loading={loading}
+                  currentResult={currentResult}
+                  assets={assets}
+                  remainingGenerations={remainingGenerations}
+                  isPremium={isPremium}
+                  onDownload={downloadImage}
+                  onResultSelect={setCurrentResult}
+                />
+              </div>
             </div>
 
-            {/* Controls Section */}
-            <div className="w-full lg:w-80 flex-shrink-0 flex flex-col min-h-0">
-              <div className="flex-1 space-y-2 lg:space-y-3 overflow-y-auto scrollbar-thin touch-pan-y">
-                {/* Upload Panel */}
-                <AiStudioUploadPanel 
-                  personFile={personFile}
-                  outfitFile={outfitFile}
-                  personImageId={personImageId}
-                  outfitImageId={outfitImageId}
-                  onPersonUpload={handlePersonUpload}
-                  onOutfitUpload={handleOutfitUpload}
-                />
-
-                {/* Controls Panel */}
-                <AiStudioControlsPanel 
+            {/* Desktop Layout */}
+            <div className="hidden lg:flex flex-1 gap-3 p-3 min-h-0">
+              {/* Results Section - Desktop */}
+              <div className="flex-1 min-h-0">
+                <AiStudioResultsPanel 
                   loading={loading}
-                  showSettings={showSettings}
-                  prompt={prompt}
-                  resolution={resolution}
+                  currentResult={currentResult}
+                  assets={assets}
                   remainingGenerations={remainingGenerations}
-                  maxGenerations={maxGenerations}
                   isPremium={isPremium}
-                  personImageId={personImageId}
-                  outfitImageId={outfitImageId}
-                  onShowSettingsToggle={() => setShowSettings(!showSettings)}
-                  onPromptChange={setPrompt}
-                  onResolutionChange={setResolution}
-                  onGenerate={handleVirtualTryOn}
+                  onDownload={downloadImage}
+                  onResultSelect={setCurrentResult}
                 />
+              </div>
 
-                {/* Help Panel */}
-                <AiStudioHelpPanel error={error} />
+              {/* Controls Section - Desktop */}
+              <div className="w-80 flex-shrink-0 min-h-0">
+                <div className="h-full space-y-3 overflow-y-auto scrollbar-thin">
+                  {/* Upload Panel */}
+                  <AiStudioUploadPanel 
+                    personFile={personFile}
+                    outfitFile={outfitFile}
+                    personImageId={personImageId}
+                    outfitImageId={outfitImageId}
+                    onPersonUpload={handlePersonUpload}
+                    onOutfitUpload={handleOutfitUpload}
+                  />
+
+                  {/* Controls Panel */}
+                  <AiStudioControlsPanel 
+                    loading={loading}
+                    showSettings={showSettings}
+                    prompt={prompt}
+                    resolution={resolution}
+                    remainingGenerations={remainingGenerations}
+                    maxGenerations={maxGenerations}
+                    isPremium={isPremium}
+                    personImageId={personImageId}
+                    outfitImageId={outfitImageId}
+                    onShowSettingsToggle={() => setShowSettings(!showSettings)}
+                    onPromptChange={setPrompt}
+                    onResolutionChange={setResolution}
+                    onGenerate={handleVirtualTryOn}
+                  />
+
+                  {/* Help Panel */}
+                  <AiStudioHelpPanel error={error} />
+                </div>
               </div>
             </div>
           </div>

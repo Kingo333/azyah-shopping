@@ -13,16 +13,11 @@ const GlassPanel = React.forwardRef<HTMLDivElement, GlassPanelProps>(
         <div
           ref={ref}
           className={cn(
-            // Custom glass card styling
-            "relative overflow-hidden rounded-[20px]",
-            "bg-[rgba(255,255,255,0.23)] backdrop-blur-[9px]",
-            "border border-[rgba(255,255,255,0.3)]",
-            "shadow-[0_8px_32px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,0.5),inset_0_-1px_0_rgba(255,255,255,0.1),inset_0_0_14px_7px_rgba(255,255,255,0.7)]",
-            // Pseudo-element styles will be handled by CSS
-            "before:content-[''] before:absolute before:top-0 before:left-0 before:right-0 before:h-px",
-            "before:bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.8),transparent)]",
-            "after:content-[''] after:absolute after:top-0 after:left-0 after:w-px after:h-full",
-            "after:bg-[linear-gradient(180deg,rgba(255,255,255,0.8),transparent,rgba(255,255,255,0.3))]",
+            // Custom glass card styling - simplified for mobile
+            "relative overflow-hidden rounded-lg md:rounded-[20px]",
+            "bg-background/80 md:bg-[rgba(255,255,255,0.23)] backdrop-blur-sm md:backdrop-blur-[9px]",
+            "border border-border/30 md:border-[rgba(255,255,255,0.3)]",
+            "shadow-sm md:shadow-[0_8px_32px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,0.5),inset_0_-1px_0_rgba(255,255,255,0.1),inset_0_0_14px_7px_rgba(255,255,255,0.7)]",
             className
           )}
           {...props}
