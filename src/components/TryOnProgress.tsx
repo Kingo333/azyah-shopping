@@ -19,10 +19,10 @@ export const TryOnProgress: React.FC<TryOnProgressProps> = () => {
     <Card>
       <CardContent className="p-6 text-center">
         <p className="text-muted-foreground mb-4">
-          AI Try-On progress tracking is now integrated into the new AI Studio interface.
+          AI Try-On progress tracking is now integrated into the dashboard AI Studio.
         </p>
-        <Button onClick={() => navigate('/ai-studio')} className="gap-2">
-          Go to AI Studio
+        <Button onClick={() => navigate('/dashboard')} className="gap-2">
+          Go to Dashboard
           <ArrowRight className="h-4 w-4" />
         </Button>
       </CardContent>

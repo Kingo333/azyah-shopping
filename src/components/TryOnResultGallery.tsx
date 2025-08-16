@@ -22,10 +22,10 @@ export const TryOnResultGallery: React.FC<TryOnResultGalleryProps> = () => {
     <Card>
       <CardContent className="p-6 text-center">
         <p className="text-muted-foreground mb-4">
-          AI Try-On results are now displayed in the new AI Studio interface.
+          AI Try-On results are now displayed in the dashboard AI Studio.
         </p>
-        <Button onClick={() => navigate('/ai-studio')} className="gap-2">
-          Go to AI Studio
+        <Button onClick={() => navigate('/dashboard')} className="gap-2">
+          Go to Dashboard
           <ArrowRight className="h-4 w-4" />
         </Button>
       </CardContent>
