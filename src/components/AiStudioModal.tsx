@@ -155,17 +155,17 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
   return (
     <Dialog open={open} onOpenChange={v => { if (!v) onClose(); }}>
       {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
-      <DialogContent className="max-w-7xl h-[95vh] p-0 border-0">
+      <DialogContent className="max-w-[95vw] max-h-[95vh] h-[95vh] p-0 border-0 md:max-w-7xl">
         <div className="h-full flex flex-col bg-gradient-to-br from-background via-background/95 to-muted/50">
           {/* Header */}
-          <div className="flex-shrink-0 p-6 border-b border-border/50">
+          <div className="flex-shrink-0 p-3 md:p-6 border-b border-border/50">
             <DialogHeader>
-              <DialogTitle className="flex items-center gap-3 text-2xl">
-                <div className="p-2 rounded-lg bg-primary/10">
-                  <Wand2 className="h-6 w-6 text-primary" />
+              <DialogTitle className="flex items-center gap-2 md:gap-3 text-lg md:text-2xl">
+                <div className="p-1.5 md:p-2 rounded-lg bg-primary/10">
+                  <Wand2 className="h-4 w-4 md:h-6 md:w-6 text-primary" />
                 </div>
                 AI Studio
-                <Badge variant="secondary" className="ml-auto">
+                <Badge variant="secondary" className="ml-auto text-xs">
                   <Sparkles className="h-3 w-3 mr-1" />
                   BitStudio
                 </Badge>
@@ -173,31 +173,31 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
             </DialogHeader>
           </div>
 
-          <div className="flex-1 flex flex-col lg:flex-row gap-6 p-6 overflow-hidden">
+          <div className="flex-1 flex flex-col gap-3 md:gap-6 p-3 md:p-6 overflow-auto">
             {/* Results Section */}
-            <div className="flex-1 flex flex-col space-y-4">
+            <div className="flex-1 flex flex-col space-y-2 md:space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold">Generated Result</h3>
+                <h3 className="text-base md:text-lg font-semibold">Generated Result</h3>
                 {currentResult?.path && (
-                  <Button onClick={downloadImage} size="sm" variant="outline">
-                    <Download className="h-4 w-4 mr-2" />
+                  <Button onClick={downloadImage} size="sm" variant="outline" className="text-xs md:text-sm">
+                    <Download className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
                     Download
                   </Button>
                 )}
               </div>
               
-              <GlassPanel variant="custom" className="flex-1 flex items-center justify-center min-h-[400px]">
+              <GlassPanel variant="custom" className="flex-1 flex items-center justify-center min-h-[200px] md:min-h-[400px]">
                 {loading ? (
                   <div className="text-center">
-                    <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4 text-primary" />
-                    <p className="text-lg font-medium">Generating your try-on...</p>
-                    <p className="text-sm text-muted-foreground mt-1">This may take a few moments</p>
+                    <Loader2 className="h-8 w-8 md:h-12 md:w-12 animate-spin mx-auto mb-2 md:mb-4 text-primary" />
+                    <p className="text-sm md:text-lg font-medium">Generating your try-on...</p>
+                    <p className="text-xs md:text-sm text-muted-foreground mt-1">This may take a few moments</p>
                   </div>
                 ) : currentResult?.path ? (
                   <div className="w-full h-full flex flex-col">
                     <img 
                       src={currentResult.path} 
-                      alt="Virtual try-on result" 
+                      alt="Virtual try-on result"
                       className="w-full h-full object-contain rounded-lg"
                     />
                     <div className="mt-4 flex items-center justify-center">
@@ -213,34 +213,34 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                   </div>
                 ) : (
                   <div className="text-center">
-                    <Sparkles className="h-16 w-16 mx-auto mb-4 text-muted-foreground/50" />
-                    <h4 className="text-xl font-medium mb-2">Ready to generate</h4>
-                    <p className="text-muted-foreground">Upload both images below to start</p>
+                    <Sparkles className="h-12 w-12 md:h-16 md:w-16 mx-auto mb-2 md:mb-4 text-muted-foreground/50" />
+                    <h4 className="text-lg md:text-xl font-medium mb-1 md:mb-2">Ready to generate</h4>
+                    <p className="text-sm md:text-base text-muted-foreground">Upload both images below to start</p>
                   </div>
                 )}
               </GlassPanel>
 
               {/* Previous Results Gallery */}
               {assets.length > 0 && (
-                <div className="mt-6">
-                  <h4 className="text-md font-medium mb-3">Previous Results</h4>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                    {assets.slice(0, 8).map((asset) => (
+                <div className="mt-4 md:mt-6">
+                  <h4 className="text-sm md:text-md font-medium mb-2 md:mb-3">Previous Results</h4>
+                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 md:gap-3">
+                    {assets.slice(0, 12).map((asset) => (
                       <GlassPanel 
                         key={asset.id} 
                         variant="custom" 
-                        className="aspect-square p-2 cursor-pointer hover:scale-105 transition-transform"
+                        className="aspect-square p-1 md:p-2 cursor-pointer hover:scale-105 transition-transform"
                         onClick={() => setCurrentResult({ path: asset.asset_url, status: 'completed' })}
                       >
                         {asset.asset_url ? (
                           <img 
                             src={asset.asset_url} 
                             alt="Previous result" 
-                            className="w-full h-full object-cover rounded-lg"
+                            className="w-full h-full object-cover rounded-md"
                           />
                         ) : (
-                          <div className="w-full h-full bg-muted rounded-lg flex items-center justify-center">
-                            <Sparkles className="h-6 w-6 text-muted-foreground" />
+                          <div className="w-full h-full bg-muted rounded-md flex items-center justify-center">
+                            <Sparkles className="h-4 w-4 md:h-6 md:w-6 text-muted-foreground" />
                           </div>
                         )}
                       </GlassPanel>
@@ -251,30 +251,30 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
             </div>
 
             {/* Controls Section */}
-            <div className="w-full lg:w-80 flex-shrink-0 space-y-4">
+            <div className="w-full space-y-3 md:space-y-4">
               {/* Person Upload */}
-              <GlassPanel variant="custom" className="p-4">
-                <div className="space-y-3">
+              <GlassPanel variant="custom" className="p-3 md:p-4">
+                <div className="space-y-2 md:space-y-3">
                   <div className="flex items-center gap-2">
-                    <Upload className="h-4 w-4" />
-                    <Label className="font-medium">Person Image</Label>
+                    <Upload className="h-3 w-3 md:h-4 md:w-4" />
+                    <Label className="text-sm md:text-base font-medium">Person Image</Label>
                   </div>
                   <div className="space-y-2">
                     <Input 
                       type="file" 
                       accept="image/*" 
                       onChange={handlePersonUpload}
-                      className="w-full"
+                      className="w-full text-xs md:text-sm"
                     />
                     {personFile && (
                       <div className="mt-2 relative">
                         <img 
                           src={URL.createObjectURL(personFile)} 
                           alt="Person preview" 
-                          className="w-full h-32 object-cover rounded-lg"
+                          className="w-full h-24 md:h-32 object-cover rounded-lg"
                         />
                         {personImageId && (
-                          <Badge className="absolute top-2 right-2">
+                          <Badge className="absolute top-1 right-1 md:top-2 md:right-2 text-xs">
                             Uploaded
                           </Badge>
                         )}
@@ -285,28 +285,28 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
               </GlassPanel>
 
               {/* Outfit Upload */}
-              <GlassPanel variant="custom" className="p-4">
-                <div className="space-y-3">
+              <GlassPanel variant="custom" className="p-3 md:p-4">
+                <div className="space-y-2 md:space-y-3">
                   <div className="flex items-center gap-2">
-                    <Upload className="h-4 w-4" />
-                    <Label className="font-medium">Outfit Image</Label>
+                    <Upload className="h-3 w-3 md:h-4 md:w-4" />
+                    <Label className="text-sm md:text-base font-medium">Outfit Image</Label>
                   </div>
                   <div className="space-y-2">
                     <Input 
                       type="file" 
                       accept="image/*" 
                       onChange={handleOutfitUpload}
-                      className="w-full"
+                      className="w-full text-xs md:text-sm"
                     />
                     {outfitFile && (
                       <div className="mt-2 relative">
                         <img 
                           src={URL.createObjectURL(outfitFile)} 
                           alt="Outfit preview" 
-                          className="w-full h-32 object-cover rounded-lg"
+                          className="w-full h-24 md:h-32 object-cover rounded-lg"
                         />
                         {outfitImageId && (
-                          <Badge className="absolute top-2 right-2">
+                          <Badge className="absolute top-1 right-1 md:top-2 md:right-2 text-xs">
                             Uploaded
                           </Badge>
                         )}
@@ -317,22 +317,22 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
               </GlassPanel>
 
               {/* Settings Panel */}
-              <GlassPanel variant="custom" className="p-4">
+              <GlassPanel variant="custom" className="p-3 md:p-4">
                 <Button
                   variant="ghost"
                   onClick={() => setShowSettings(!showSettings)}
-                  className="w-full justify-between"
+                  className="w-full justify-between text-sm md:text-base h-8 md:h-10"
                 >
                   Advanced Settings
-                  <Sparkles className="h-4 w-4" />
+                  <Sparkles className="h-3 w-3 md:h-4 md:w-4" />
                 </Button>
                 
                 {showSettings && (
-                  <div className="mt-4 space-y-3">
+                  <div className="mt-3 md:mt-4 space-y-2 md:space-y-3">
                     <div>
-                      <Label className="text-sm">Resolution</Label>
+                      <Label className="text-xs md:text-sm">Resolution</Label>
                       <Select value={resolution} onValueChange={(value: any) => setResolution(value)}>
-                        <SelectTrigger className="mt-1">
+                        <SelectTrigger className="mt-1 h-8 md:h-10 text-xs md:text-sm">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -343,12 +343,12 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                     </div>
                     
                     <div>
-                      <Label className="text-sm">Prompt (Optional)</Label>
+                      <Label className="text-xs md:text-sm">Prompt (Optional)</Label>
                       <Input
                         value={prompt}
                         onChange={(e) => setPrompt(e.target.value)}
                         placeholder="Describe styling preferences..."
-                        className="mt-1"
+                        className="mt-1 h-8 md:h-10 text-xs md:text-sm"
                       />
                     </div>
                   </div>
@@ -359,28 +359,28 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
               <Button 
                 onClick={handleVirtualTryOn} 
                 disabled={loading || !personImageId || !outfitImageId} 
-                className="w-full h-12 text-lg"
+                className="w-full h-10 md:h-12 text-sm md:text-lg"
                 size="lg"
               >
                 {loading ? (
                   <>
-                    <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                    <Loader2 className="h-4 w-4 md:h-5 md:w-5 animate-spin mr-2" />
                     Generating...
                   </>
                 ) : (
                   <>
-                    <Wand2 className="h-5 w-5 mr-2" />
+                    <Wand2 className="h-4 w-4 md:h-5 md:w-5 mr-2" />
                     Generate Try-On
                   </>
                 )}
               </Button>
 
               {/* Help Alert */}
-              <Alert>
-                <Sparkles className="h-4 w-4" />
-                <AlertTitle>Pro Tips</AlertTitle>
+              <Alert className="text-xs md:text-sm">
+                <Sparkles className="h-3 w-3 md:h-4 md:w-4" />
+                <AlertTitle className="text-xs md:text-sm">Pro Tips</AlertTitle>
                 <AlertDescription className="text-xs">
-                  <ul className="space-y-1 mt-2">
+                  <ul className="space-y-1 mt-1 md:mt-2">
                     <li>• Use front-facing, full-body person photos</li>
                     <li>• Plain backgrounds work best</li>
                     <li>• High resolution images (1024px+)</li>
@@ -390,9 +390,9 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
               </Alert>
 
               {error && (
-                <Alert variant="destructive">
-                  <AlertTitle>Error</AlertTitle>
-                  <AlertDescription className="text-sm">{error}</AlertDescription>
+                <Alert variant="destructive" className="text-xs md:text-sm">
+                  <AlertTitle className="text-xs md:text-sm">Error</AlertTitle>
+                  <AlertDescription className="text-xs">{error}</AlertDescription>
                 </Alert>
               )}
             </div>
