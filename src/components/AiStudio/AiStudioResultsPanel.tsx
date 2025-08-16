@@ -112,10 +112,10 @@ export const AiStudioResultsPanel: React.FC<AiStudioResultsPanelProps> = ({
                 </div>
               </div>
             ) : (
-              <div className="text-center space-y-2 p-3">
-                <Sparkles className="h-8 w-8 mx-auto text-muted-foreground/50" />
+              <div className="text-center space-y-1 p-2">
+                <Sparkles className="h-6 w-6 lg:h-8 lg:w-8 mx-auto text-muted-foreground/50" />
                 <div>
-                  <h4 className="text-base font-medium mb-1">Ready to generate</h4>
+                  <h4 className="text-sm lg:text-base font-medium mb-0.5">Ready to generate</h4>
                   <p className="text-xs text-muted-foreground">Upload both images to start</p>
                   <div className="mt-1 text-xs text-muted-foreground">
                     <span>3/4 remaining</span>
