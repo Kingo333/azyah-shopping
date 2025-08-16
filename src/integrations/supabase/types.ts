@@ -1478,18 +1478,7 @@ export type Database = {
       }
     }
     Views: {
-      public_user_profiles: {
-        Row: {
-          avatar_url: string | null
-          bio: string | null
-          country: string | null
-          created_at: string | null
-          id: string | null
-          name: string | null
-          website: string | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       admin_get_user_data: {
