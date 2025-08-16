@@ -20,10 +20,15 @@ export const useAiAssets = () => {
   const { toast } = useToast();
 
   const fetchAssets = async () => {
-    if (!user) return;
+    if (!user) {
+      console.log('[useAiAssets] No user available for fetching assets');
+      return;
+    }
     
     setLoading(true);
     try {
+      console.log('[useAiAssets] Fetching assets for user:', user.id);
+      
       const { data, error } = await supabase
         .from('ai_assets')
         .select('*')
@@ -33,13 +38,24 @@ export const useAiAssets = () => {
         .limit(50);
 
       if (error) {
-        console.error('Error fetching AI assets:', error);
+        console.error('[useAiAssets] Database error fetching AI assets:', error);
+        toast({
+          title: 'Database Error',
+          description: 'Unable to fetch your AI assets. Please try refreshing the page.',
+          variant: 'destructive'
+        });
         setAssets([]);
       } else {
+        console.log('[useAiAssets] Successfully fetched', data?.length || 0, 'assets');
         setAssets(data || []);
       }
     } catch (error: any) {
-      console.error('Error fetching AI assets:', error);
+      console.error('[useAiAssets] Network error fetching AI assets:', error);
+      toast({
+        title: 'Connection Error',
+        description: 'Network error while fetching AI assets. Please check your connection and try again.',
+        variant: 'destructive'
+      });
       setAssets([]);
     } finally {
       setLoading(false);
@@ -47,29 +63,41 @@ export const useAiAssets = () => {
   };
 
   const saveAsset = async (assetUrl: string, jobId?: string, title?: string) => {
-    if (!user) return null;
+    if (!user) {
+      console.log('[useAiAssets] No user available for saving asset');
+      return null;
+    }
 
     try {
+      console.log('[useAiAssets] Saving asset:', { assetUrl, jobId, title, userId: user.id });
+      
+      const assetData = {
+        user_id: user.id,
+        job_id: jobId,
+        asset_url: assetUrl,
+        asset_type: 'tryon_result',
+        title: title || `AI Try-On ${new Date().toLocaleDateString()}`
+      };
+
       const { data, error } = await supabase
         .from('ai_assets')
-        .insert([{
-          user_id: user.id,
-          job_id: jobId,
-          asset_url: assetUrl,
-          asset_type: 'tryon_result',
-          title: title || `AI Try-On ${new Date().toLocaleDateString()}`
-        }])
+        .insert([assetData])
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('[useAiAssets] Database error saving asset:', error);
+        throw error;
+      }
       
+      console.log('[useAiAssets] Asset saved successfully:', data);
       setAssets(prev => [data, ...prev]);
       return data;
     } catch (error: any) {
-      console.error('Error saving asset:', error);
+      console.error('[useAiAssets] Error saving asset:', error);
       toast({
-        description: 'Failed to save result',
+        title: 'Save Failed',
+        description: 'Failed to save the AI result. Please try again.',
         variant: 'destructive'
       });
       return null;

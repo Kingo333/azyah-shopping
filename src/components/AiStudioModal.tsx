@@ -75,6 +75,16 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
     }
   }, [open, fetchAssets]);
 
+  // Effect to show helpful messages when images are uploaded
+  useEffect(() => {
+    if (personImageId && outfitImageId && !loading && !currentResult) {
+      toast({
+        title: 'Ready to Generate',
+        description: 'Both images uploaded successfully! Click "Generate Try-On" to see the result.',
+      });
+    }
+  }, [personImageId, outfitImageId, loading, currentResult, toast]);
+
   // File validation helper
   const validateFile = (file: File): boolean => {
     if (file.size > 10 * 1024 * 1024) {
@@ -96,21 +106,33 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
     return true;
   };
 
+  // State for tracking upload status
+  const [uploadingPerson, setUploadingPerson] = useState(false);
+  const [uploadingOutfit, setUploadingOutfit] = useState(false);
+
   // File upload handlers
-  const handleFileUpload = async (file: File, type: string, setImageId: (id: string) => void) => {
+  const handleFileUpload = async (file: File, type: string, setImageId: (id: string) => void, setUploading: (uploading: boolean) => void) => {
     if (!file || !validateFile(file)) return;
     try {
+      setUploading(true);
       clearError();
       const result = await uploadImage(file, type);
       if (result?.id) {
         setImageId(result.id);
         toast({
           title: 'Upload Complete',
-          description: 'Image uploaded successfully'
+          description: `${type === BITSTUDIO_IMAGE_TYPES.PERSON ? 'Person' : 'Outfit'} image uploaded successfully`
         });
       }
     } catch (err) {
       console.error('Upload error:', err);
+      toast({
+        title: 'Upload Failed',
+        description: `Failed to upload ${type === BITSTUDIO_IMAGE_TYPES.PERSON ? 'person' : 'outfit'} image. Please try again.`,
+        variant: 'destructive'
+      });
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -118,7 +140,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
     const file = e.target.files?.[0];
     if (file) {
       setPersonFile(file);
-      handleFileUpload(file, BITSTUDIO_IMAGE_TYPES.PERSON, setPersonImageId);
+      handleFileUpload(file, BITSTUDIO_IMAGE_TYPES.PERSON, setPersonImageId, setUploadingPerson);
     }
   };
 
@@ -126,7 +148,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
     const file = e.target.files?.[0];
     if (file) {
       setOutfitFile(file);
-      handleFileUpload(file, BITSTUDIO_IMAGE_TYPES.OUTFIT, setOutfitImageId);
+      handleFileUpload(file, BITSTUDIO_IMAGE_TYPES.OUTFIT, setOutfitImageId, setUploadingOutfit);
     }
   };
 
@@ -152,20 +174,38 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
       return;
     }
 
-    const result = await virtualTryOn({
-      person_image_id: personImageId,
-      outfit_image_id: outfitImageId,
-      resolution: resolution as 'standard' | 'high',
-      num_images: numImages,
-      prompt: prompt || undefined
-    });
+    try {
+      const result = await virtualTryOn({
+        person_image_id: personImageId,
+        outfit_image_id: outfitImageId,
+        resolution: resolution as 'standard' | 'high',
+        num_images: numImages,
+        prompt: prompt || undefined
+      });
 
-    if (result) {
-      setCurrentResult(result);
-      // Save the result
-      if (result.path) {
-        await saveAsset(result.path, result.id, `Virtual Try-On ${new Date().toLocaleDateString()}`);
+      if (result) {
+        setCurrentResult(result);
+        
+        // Save the result to database and refresh assets
+        if (result.path) {
+          const savedAsset = await saveAsset(result.path, result.id, `Virtual Try-On ${new Date().toLocaleDateString()}`);
+          if (savedAsset) {
+            // Refresh the assets list
+            await fetchAssets();
+            toast({
+              title: 'Try-On Complete',
+              description: 'Result saved successfully',
+            });
+          }
+        }
       }
+    } catch (error) {
+      console.error('Virtual try-on failed:', error);
+      toast({
+        title: 'Try-On Failed',
+        description: 'There was an error generating your try-on. Please try again.',
+        variant: 'destructive'
+      });
     }
   };
 
@@ -277,6 +317,8 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                 {/* Controls Panel */}
                 <AiStudioControlsPanel 
                   loading={loading}
+                  uploadingPerson={uploadingPerson}
+                  uploadingOutfit={uploadingOutfit}
                   showSettings={showSettings}
                   prompt={prompt}
                   resolution={resolution}
@@ -354,6 +396,8 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                   {/* Controls Panel */}
                   <AiStudioControlsPanel 
                     loading={loading}
+                    uploadingPerson={uploadingPerson}
+                    uploadingOutfit={uploadingOutfit}
                     showSettings={showSettings}
                     prompt={prompt}
                     resolution={resolution}

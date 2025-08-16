@@ -8,6 +8,8 @@ import { Loader2, Wand2, Sparkles, ChevronDown, ChevronUp, Upload, User, Shirt }
 
 interface AiStudioControlsPanelProps {
   loading: boolean;
+  uploadingPerson?: boolean;
+  uploadingOutfit?: boolean;
   showSettings: boolean;
   prompt: string;
   resolution: 'standard' | 'high';
@@ -28,6 +30,8 @@ interface AiStudioControlsPanelProps {
 
 export const AiStudioControlsPanel: React.FC<AiStudioControlsPanelProps> = ({
   loading,
+  uploadingPerson = false,
+  uploadingOutfit = false,
   showSettings,
   prompt,
   resolution,
@@ -95,8 +99,13 @@ export const AiStudioControlsPanel: React.FC<AiStudioControlsPanelProps> = ({
                 onChange={onPersonUpload}
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
               />
-              <GlassPanel variant="custom" className={`h-20 flex flex-col items-center justify-center transition-colors cursor-pointer hover:border-primary/50 ${personImageId ? 'border-green-500/50 bg-green-500/5' : 'border-dashed'}`}>
-                {personFile ? (
+              <GlassPanel variant="custom" className={`h-20 flex flex-col items-center justify-center transition-colors cursor-pointer hover:border-primary/50 ${personImageId ? 'border-green-500/50 bg-green-500/5' : uploadingPerson ? 'border-primary/50 bg-primary/5' : 'border-dashed'}`}>
+                {uploadingPerson ? (
+                  <div className="text-center">
+                    <Loader2 className="h-4 w-4 mx-auto mb-1 animate-spin text-primary" />
+                    <p className="text-xs text-primary font-medium">Uploading...</p>
+                  </div>
+                ) : personFile && personImageId ? (
                   <div className="text-center">
                     <User className="h-4 w-4 mx-auto mb-1 text-green-500" />
                     <p className="text-xs text-green-500 font-medium">Uploaded</p>
@@ -121,8 +130,13 @@ export const AiStudioControlsPanel: React.FC<AiStudioControlsPanelProps> = ({
                 onChange={onOutfitUpload}
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
               />
-              <GlassPanel variant="custom" className={`h-20 flex flex-col items-center justify-center transition-colors cursor-pointer hover:border-primary/50 ${outfitImageId ? 'border-green-500/50 bg-green-500/5' : 'border-dashed'}`}>
-                {outfitFile ? (
+              <GlassPanel variant="custom" className={`h-20 flex flex-col items-center justify-center transition-colors cursor-pointer hover:border-primary/50 ${outfitImageId ? 'border-green-500/50 bg-green-500/5' : uploadingOutfit ? 'border-primary/50 bg-primary/5' : 'border-dashed'}`}>
+                {uploadingOutfit ? (
+                  <div className="text-center">
+                    <Loader2 className="h-4 w-4 mx-auto mb-1 animate-spin text-primary" />
+                    <p className="text-xs text-primary font-medium">Uploading...</p>
+                  </div>
+                ) : outfitFile && outfitImageId ? (
                   <div className="text-center">
                     <Shirt className="h-4 w-4 mx-auto mb-1 text-green-500" />
                     <p className="text-xs text-green-500 font-medium">Uploaded</p>
