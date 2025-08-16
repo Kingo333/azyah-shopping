@@ -23,30 +23,30 @@ export const AiStudioUploadPanel: React.FC<AiStudioUploadPanelProps> = ({
   onOutfitUpload
 }) => {
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {/* Person Upload */}
-      <GlassPanel variant="custom" className="p-4">
-        <div className="space-y-3">
+      <GlassPanel variant="custom" className="p-3">
+        <div className="space-y-2">
           <div className="flex items-center gap-2">
-            <Upload className="h-4 w-4" />
-            <Label className="font-medium">Person Image</Label>
+            <Upload className="h-3 w-3" />
+            <Label className="text-sm font-medium">Person Image</Label>
           </div>
           <Input 
             type="file" 
             accept="image/*" 
             onChange={onPersonUpload}
-            className="w-full"
+            className="w-full h-8 text-xs"
           />
           {personFile && (
             <div className="relative">
               <img 
                 src={URL.createObjectURL(personFile)} 
                 alt="Person preview" 
-                className="w-full h-32 object-cover rounded-lg"
+                className="w-full h-24 object-cover rounded-md"
               />
               {personImageId && (
-                <Badge className="absolute top-2 right-2 text-xs">
-                  Uploaded
+                <Badge className="absolute top-1 right-1 text-xs h-5">
+                  ✓
                 </Badge>
               )}
             </div>
@@ -55,28 +55,28 @@ export const AiStudioUploadPanel: React.FC<AiStudioUploadPanelProps> = ({
       </GlassPanel>
 
       {/* Outfit Upload */}
-      <GlassPanel variant="custom" className="p-4">
-        <div className="space-y-3">
+      <GlassPanel variant="custom" className="p-3">
+        <div className="space-y-2">
           <div className="flex items-center gap-2">
-            <Upload className="h-4 w-4" />
-            <Label className="font-medium">Outfit Image</Label>
+            <Upload className="h-3 w-3" />
+            <Label className="text-sm font-medium">Outfit Image</Label>
           </div>
           <Input 
             type="file" 
             accept="image/*" 
             onChange={onOutfitUpload}
-            className="w-full"
+            className="w-full h-8 text-xs"
           />
           {outfitFile && (
             <div className="relative">
               <img 
                 src={URL.createObjectURL(outfitFile)} 
                 alt="Outfit preview" 
-                className="w-full h-32 object-cover rounded-lg"
+                className="w-full h-24 object-cover rounded-md"
               />
               {outfitImageId && (
-                <Badge className="absolute top-2 right-2 text-xs">
-                  Uploaded
+                <Badge className="absolute top-1 right-1 text-xs h-5">
+                  ✓
                 </Badge>
               )}
             </div>

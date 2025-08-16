@@ -40,28 +40,28 @@ export const AiStudioControlsPanel: React.FC<AiStudioControlsPanelProps> = ({
   const canGenerate = !loading && personImageId && outfitImageId && remainingGenerations > 0;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {/* Advanced Settings */}
-      <GlassPanel variant="custom" className="p-4">
+      <GlassPanel variant="custom" className="p-3">
         <Button
           variant="ghost"
           onClick={onShowSettingsToggle}
-          className="w-full justify-between text-sm h-9"
+          className="w-full justify-between text-sm h-8"
         >
           Advanced Settings
           {showSettings ? (
-            <ChevronUp className="h-4 w-4" />
+            <ChevronUp className="h-3 w-3" />
           ) : (
-            <ChevronDown className="h-4 w-4" />
+            <ChevronDown className="h-3 w-3" />
           )}
         </Button>
         
         {showSettings && (
-          <div className="mt-4 space-y-3">
+          <div className="mt-3 space-y-2">
             <div>
-              <Label className="text-sm">Resolution</Label>
+              <Label className="text-xs">Resolution</Label>
               <Select value={resolution} onValueChange={onResolutionChange}>
-                <SelectTrigger className="mt-1 h-9">
+                <SelectTrigger className="mt-1 h-8 text-xs">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -72,12 +72,12 @@ export const AiStudioControlsPanel: React.FC<AiStudioControlsPanelProps> = ({
             </div>
             
             <div>
-              <Label className="text-sm">Prompt (Optional)</Label>
+              <Label className="text-xs">Prompt (Optional)</Label>
               <Input
                 value={prompt}
                 onChange={(e) => onPromptChange(e.target.value)}
                 placeholder="Describe styling preferences..."
-                className="mt-1 h-9"
+                className="mt-1 h-8 text-xs"
               />
             </div>
           </div>
@@ -85,9 +85,9 @@ export const AiStudioControlsPanel: React.FC<AiStudioControlsPanelProps> = ({
       </GlassPanel>
 
       {/* Generation Status */}
-      <div className="text-center space-y-2 p-4">
+      <div className="text-center space-y-1 p-3">
         <div className="text-sm font-medium">
-          {remainingGenerations} / {maxGenerations} generations remaining
+          {remainingGenerations} / {maxGenerations} remaining
         </div>
         <div className="text-xs text-muted-foreground">
           {isPremium ? 'Premium daily limit' : 'Free lifetime limit'}
@@ -98,12 +98,12 @@ export const AiStudioControlsPanel: React.FC<AiStudioControlsPanelProps> = ({
       <Button 
         onClick={onGenerate} 
         disabled={!canGenerate} 
-        className="w-full h-12 text-lg font-medium"
+        className="w-full h-10 text-sm font-medium"
         size="lg"
       >
         {loading ? (
           <>
-            <Loader2 className="h-5 w-5 animate-spin mr-2" />
+            <Loader2 className="h-4 w-4 animate-spin mr-2" />
             Generating...
           </>
         ) : remainingGenerations <= 0 ? (
@@ -112,7 +112,7 @@ export const AiStudioControlsPanel: React.FC<AiStudioControlsPanelProps> = ({
           'Upload Both Images'
         ) : (
           <>
-            <Wand2 className="h-5 w-5 mr-2" />
+            <Wand2 className="h-4 w-4 mr-2" />
             Generate Try-On
           </>
         )}

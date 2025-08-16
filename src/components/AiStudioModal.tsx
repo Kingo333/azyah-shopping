@@ -203,52 +203,53 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
           />
 
           {/* Main Content */}
-          <div className="flex-1 flex flex-col lg:flex-row gap-4 p-4 md:p-6 min-h-0">
+          <div className="flex-1 flex flex-col lg:flex-row gap-3 px-3 pb-3 min-h-0 overflow-hidden">
             {/* Results Section */}
-            <div className="flex-1 min-h-0 overflow-auto">
-            <AiStudioResultsPanel 
-              loading={loading}
-              currentResult={currentResult}
-              assets={assets}
-              remainingGenerations={remainingGenerations}
-              isPremium={isPremium}
-              onDownload={downloadImage}
-              onResultSelect={setCurrentResult}
-            />
-
+            <div className="flex-1 min-h-0 flex flex-col">
+              <AiStudioResultsPanel 
+                loading={loading}
+                currentResult={currentResult}
+                assets={assets}
+                remainingGenerations={remainingGenerations}
+                isPremium={isPremium}
+                onDownload={downloadImage}
+                onResultSelect={setCurrentResult}
+              />
             </div>
 
             {/* Controls Section */}
-            <div className="w-full lg:w-96 flex-shrink-0 flex flex-col gap-4 max-h-full overflow-y-auto p-1">
-              {/* Upload Panel */}
-              <AiStudioUploadPanel 
-                personFile={personFile}
-                outfitFile={outfitFile}
-                personImageId={personImageId}
-                outfitImageId={outfitImageId}
-                onPersonUpload={handlePersonUpload}
-                onOutfitUpload={handleOutfitUpload}
-              />
+            <div className="w-full lg:w-80 flex-shrink-0 flex flex-col min-h-0">
+              <div className="flex-1 space-y-3 overflow-y-auto scrollbar-thin">
+                {/* Upload Panel */}
+                <AiStudioUploadPanel 
+                  personFile={personFile}
+                  outfitFile={outfitFile}
+                  personImageId={personImageId}
+                  outfitImageId={outfitImageId}
+                  onPersonUpload={handlePersonUpload}
+                  onOutfitUpload={handleOutfitUpload}
+                />
 
-              {/* Controls Panel */}
-              <AiStudioControlsPanel 
-                loading={loading}
-                showSettings={showSettings}
-                prompt={prompt}
-                resolution={resolution}
-                remainingGenerations={remainingGenerations}
-                maxGenerations={maxGenerations}
-                isPremium={isPremium}
-                personImageId={personImageId}
-                outfitImageId={outfitImageId}
-                onShowSettingsToggle={() => setShowSettings(!showSettings)}
-                onPromptChange={setPrompt}
-                onResolutionChange={setResolution}
-                onGenerate={handleVirtualTryOn}
-              />
+                {/* Controls Panel */}
+                <AiStudioControlsPanel 
+                  loading={loading}
+                  showSettings={showSettings}
+                  prompt={prompt}
+                  resolution={resolution}
+                  remainingGenerations={remainingGenerations}
+                  maxGenerations={maxGenerations}
+                  isPremium={isPremium}
+                  personImageId={personImageId}
+                  outfitImageId={outfitImageId}
+                  onShowSettingsToggle={() => setShowSettings(!showSettings)}
+                  onPromptChange={setPrompt}
+                  onResolutionChange={setResolution}
+                  onGenerate={handleVirtualTryOn}
+                />
 
-              {/* Help Panel */}
-              <AiStudioHelpPanel error={error} />
+                {/* Help Panel */}
+                <AiStudioHelpPanel error={error} />
+              </div>
             </div>
           </div>
         </div>

@@ -25,13 +25,13 @@ export const AiStudioResultsPanel: React.FC<AiStudioResultsPanelProps> = ({
   onResultSelect
 }) => {
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col min-h-0">
       {/* Header */}
       <div className="flex items-center justify-between mb-3 flex-shrink-0">
-        <h3 className="text-lg font-semibold">Generated Result</h3>
+        <h3 className="text-base font-semibold">Generated Result</h3>
         {currentResult?.path && (
-          <Button onClick={onDownload} size="sm" variant="outline">
-            <Download className="h-4 w-4 mr-2" />
+          <Button onClick={onDownload} size="sm" variant="outline" className="h-8 text-xs">
+            <Download className="h-3 w-3 mr-1" />
             Download
           </Button>
         )}
@@ -40,84 +40,86 @@ export const AiStudioResultsPanel: React.FC<AiStudioResultsPanelProps> = ({
       {/* Main Result Display */}
       <div className="flex-1 flex flex-col gap-3 min-h-0">
         {/* Current Result */}
-        <div className="flex-1 min-h-[250px] max-h-[400px]">
-        <GlassPanel variant="custom" className="h-full flex items-center justify-center">
-          {loading ? (
-            <div className="text-center space-y-4">
-              <Loader2 className="h-12 w-12 animate-spin mx-auto text-primary" />
-              <div>
-                <p className="text-lg font-medium">Generating your try-on...</p>
-                <p className="text-sm text-muted-foreground">This may take a few moments</p>
+        <div className="flex-1 min-h-[200px]">
+          <GlassPanel variant="custom" className="h-full flex items-center justify-center">
+            {loading ? (
+              <div className="text-center space-y-3">
+                <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
+                <div>
+                  <p className="text-base font-medium">Generating your try-on...</p>
+                  <p className="text-xs text-muted-foreground">This may take a few moments</p>
+                </div>
               </div>
-            </div>
-          ) : currentResult?.path ? (
-            <div className="w-full h-full flex flex-col p-4">
-              <img 
-                src={currentResult.path} 
-                alt="Virtual try-on result"
-                className="w-full flex-1 object-contain rounded-lg"
-              />
-              <div className="mt-3 flex items-center justify-center gap-3 flex-shrink-0">
-                <Badge variant={currentResult.status === 'completed' ? 'default' : 'secondary'}>
-                  {currentResult.status}
-                </Badge>
-                {currentResult.credits_used && (
-                  <span className="text-xs text-muted-foreground">
-                    Credits used: {currentResult.credits_used}
-                  </span>
-                )}
-              </div>
-            </div>
-          ) : (
-            <div className="text-center space-y-4">
-              <Sparkles className="h-16 w-16 mx-auto text-muted-foreground/50" />
-              <div>
-                <h4 className="text-xl font-medium mb-2">Ready to generate</h4>
-                <p className="text-base text-muted-foreground">Upload both images to start</p>
-                <div className="mt-3 text-sm text-muted-foreground">
-                  {remainingGenerations > 0 ? (
-                    <span>{remainingGenerations} generations remaining {isPremium ? 'today' : 'lifetime'}</span>
-                  ) : (
-                    <span className="text-destructive">{isPremium ? 'Daily' : 'Lifetime'} limit reached</span>
+            ) : currentResult?.path ? (
+              <div className="w-full h-full flex flex-col p-3">
+                <img 
+                  src={currentResult.path} 
+                  alt="Virtual try-on result"
+                  className="w-full flex-1 object-contain rounded-lg"
+                />
+                <div className="mt-2 flex items-center justify-center gap-2 flex-shrink-0">
+                  <Badge variant={currentResult.status === 'completed' ? 'default' : 'secondary'} className="text-xs">
+                    {currentResult.status}
+                  </Badge>
+                  {currentResult.credits_used && (
+                    <span className="text-xs text-muted-foreground">
+                      Credits: {currentResult.credits_used}
+                    </span>
                   )}
                 </div>
               </div>
-            </div>
-          )}
-        </GlassPanel>
+            ) : (
+              <div className="text-center space-y-3 p-4">
+                <Sparkles className="h-12 w-12 mx-auto text-muted-foreground/50" />
+                <div>
+                  <h4 className="text-lg font-medium mb-1">Ready to generate</h4>
+                  <p className="text-sm text-muted-foreground">Upload both images to start</p>
+                  <div className="mt-2 text-xs text-muted-foreground">
+                    {remainingGenerations > 0 ? (
+                      <span>{remainingGenerations} remaining {isPremium ? 'today' : 'lifetime'}</span>
+                    ) : (
+                      <span className="text-destructive">{isPremium ? 'Daily' : 'Lifetime'} limit reached</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+          </GlassPanel>
         </div>
 
         {/* Results Gallery */}
-        <div className="flex-shrink-0 max-h-40 overflow-hidden">
+        <div className="flex-shrink-0 max-h-32">
           <h4 className="text-sm font-medium mb-2">Your Results</h4>
-          {assets.length > 0 ? (
-            <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-1.5 overflow-y-auto max-h-28">
-              {assets.slice(0, 16).map((asset) => (
-                <GlassPanel 
-                  key={asset.id} 
-                  variant="custom" 
-                  className="aspect-square p-1 cursor-pointer hover:scale-105 transition-transform"
-                  onClick={() => onResultSelect({ path: asset.asset_url, status: 'completed' })}
-                >
-                  {asset.asset_url ? (
-                    <img 
-                      src={asset.asset_url} 
-                      alt="Previous result" 
-                      className="w-full h-full object-cover rounded-md"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-muted rounded-md flex items-center justify-center">
-                      <Sparkles className="h-4 w-4 text-muted-foreground" />
-                    </div>
-                  )}
-                </GlassPanel>
-              ))}
-            </div>
-          ) : (
-            <GlassPanel variant="custom" className="p-4 text-center">
-              <p className="text-sm text-muted-foreground">No results generated yet</p>
-            </GlassPanel>
-          )}
+          <div className="h-24 overflow-y-auto scrollbar-thin">
+            {assets.length > 0 ? (
+              <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 gap-1">
+                {assets.slice(0, 20).map((asset) => (
+                  <GlassPanel 
+                    key={asset.id} 
+                    variant="custom" 
+                    className="aspect-square p-0.5 cursor-pointer hover:scale-105 transition-transform"
+                    onClick={() => onResultSelect({ path: asset.asset_url, status: 'completed' })}
+                  >
+                    {asset.asset_url ? (
+                      <img 
+                        src={asset.asset_url} 
+                        alt="Previous result" 
+                        className="w-full h-full object-cover rounded-sm"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-muted rounded-sm flex items-center justify-center">
+                        <Sparkles className="h-3 w-3 text-muted-foreground" />
+                      </div>
+                    )}
+                  </GlassPanel>
+                ))}
+              </div>
+            ) : (
+              <GlassPanel variant="custom" className="p-3 text-center h-20 flex items-center justify-center">
+                <p className="text-xs text-muted-foreground">No results generated yet</p>
+              </GlassPanel>
+            )}
+          </div>
         </div>
       </div>
     </div>
