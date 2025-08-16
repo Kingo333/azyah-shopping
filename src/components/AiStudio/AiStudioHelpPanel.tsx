@@ -30,7 +30,16 @@ export const AiStudioHelpPanel: React.FC<AiStudioHelpPanelProps> = ({
         <Alert variant="destructive" className="text-xs p-3">
           <AlertCircle className="h-3 w-3" />
           <AlertTitle className="text-xs">Error</AlertTitle>
-          <AlertDescription className="text-xs">{error}</AlertDescription>
+          <AlertDescription className="text-xs">
+            {error}
+            {error.includes('load failed') && (
+              <div className="mt-1">
+                <p>• Check your internet connection</p>
+                <p>• Ensure images are valid JPEG/PNG files</p>
+                <p>• Try uploading smaller images (&lt;10MB)</p>
+              </div>
+            )}
+          </AlertDescription>
         </Alert>
       )}
     </div>
