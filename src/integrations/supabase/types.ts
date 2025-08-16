@@ -1478,9 +1478,48 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      subscription_status: {
+        Row: {
+          created_at: string | null
+          current_period_end: string | null
+          id: string | null
+          plan: string | null
+          status: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          current_period_end?: string | null
+          id?: string | null
+          plan?: string | null
+          status?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          current_period_end?: string | null
+          id?: string | null
+          plan?: string | null
+          status?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
+      admin_get_subscription_details: {
+        Args: { target_user_id: string }
+        Returns: {
+          created_at: string
+          current_period_end: string
+          current_period_start: string
+          last_payment_status: string
+          plan: string
+          status: string
+          subscription_id: string
+          user_email: string
+        }[]
+      }
       admin_get_user_data: {
         Args: { user_id_param: string }
         Returns: {
@@ -1513,6 +1552,16 @@ export type Database = {
           product_count: number
           recent_products: Json
           subcategory_slug: Database["public"]["Enums"]["subcategory_type"]
+        }[]
+      }
+      get_my_subscription_status: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          expires_at: string
+          is_active: boolean
+          plan: string
+          status: string
+          subscription_id: string
         }[]
       }
       get_trending_categories: {
