@@ -50,7 +50,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
   const { isPremium } = useSubscription();
 
   // Generation limits based on user type
-  const maxGenerations = isPremium ? 30 : 4;
+  const maxGenerations = isPremium ? 20 : 4;
   
   // For premium users, count today's generations; for free users, count all lifetime generations
   const relevantAssets = isPremium 
@@ -138,8 +138,8 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
       toast({
         title: 'Generation Limit Reached',
         description: isPremium 
-          ? 'You have reached your daily limit of 30 generations' 
-          : 'You have reached your lifetime limit of 4 generations. Upgrade to Premium for 30 daily generations.',
+          ? 'You have reached your daily limit of 20 try-ons' 
+          : 'You have reached your lifetime limit of 4 generations. Upgrade to Premium for 20 daily try-ons.',
         variant: 'destructive'
       });
       return;

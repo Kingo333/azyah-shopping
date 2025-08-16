@@ -190,7 +190,7 @@ export default function Landing() {
         <div className="container max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Crown className="w-5 h-5" />
-            <span className="font-medium text-sm">Premium Access: 30 daily AI generations, exclusive features & more</span>
+            <span className="font-medium text-sm">Premium: 20 AI Try-ons daily • Unlimited AI generation on Replica • Access to UGC collabs</span>
           </div>
           <Button 
             variant="secondary" 
