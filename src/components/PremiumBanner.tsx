@@ -19,22 +19,22 @@ const PremiumBanner: React.FC = () => {
   return (
     <GlassPanel className="relative overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-r from-accent/10 to-accent-cartier/10" />
-      <div className="relative flex flex-col sm:flex-row items-center justify-between gap-4 p-6">
-        <div className="text-center sm:text-left">
-          <h3 className="text-lg font-semibold bg-gradient-to-r from-accent to-accent-cartier bg-clip-text text-transparent">
+      <div className="relative flex flex-col sm:flex-row items-center justify-between gap-3 p-4 sm:p-6">
+        <div className="text-center sm:text-left w-full sm:w-auto">
+          <h3 className="text-base sm:text-lg font-semibold bg-gradient-to-r from-accent to-accent-cartier bg-clip-text text-transparent mb-1">
             Unlock Premium Access
           </h3>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <span>40 AED/month</span>
-            <span>•</span>
-            <span>20 AI Try-ons daily • Unlimited Replica generation • UGC collabs</span>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-xs sm:text-sm text-muted-foreground">
+            <span className="font-medium">40 AED/month</span>
+            <span className="hidden sm:inline">•</span>
+            <span className="leading-tight">20 AI Try-ons daily • Unlimited Replica generation • UGC collabs</span>
           </div>
         </div>
         
         <Button 
           onClick={handleUpgrade}
           disabled={loading}
-          className="bg-gradient-to-r from-accent to-accent-cartier hover:from-accent/90 hover:to-accent-cartier/90 text-white shadow-lg hover:shadow-xl transition-all duration-200 group"
+          className="bg-gradient-to-r from-accent to-accent-cartier hover:from-accent/90 hover:to-accent-cartier/90 text-white shadow-lg hover:shadow-xl transition-all duration-200 group w-full sm:w-auto"
           size="sm"
         >
           {loading ? (
