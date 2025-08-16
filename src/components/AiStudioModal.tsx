@@ -221,10 +221,10 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
             </DialogHeader>
           </div>
 
-          <div className="flex-1 flex flex-col lg:flex-row gap-3 md:gap-6 p-3 md:p-6 overflow-hidden">
+          <div className="flex-1 flex flex-col lg:flex-row gap-4 md:gap-6 p-3 md:p-6 overflow-hidden min-h-0">
             {/* Results Section */}
-            <div className="flex-1 flex flex-col space-y-2 md:space-y-4 min-h-0 lg:max-h-full overflow-auto">
-              <div className="flex items-center justify-between">
+            <div className="flex-1 flex flex-col space-y-3 md:space-y-4 min-h-0 overflow-hidden">
+              <div className="flex items-center justify-between flex-shrink-0">
                 <h3 className="text-base md:text-lg font-semibold">Generated Result</h3>
                 {currentResult?.path && (
                   <Button onClick={downloadImage} size="sm" variant="outline" className="text-xs md:text-sm">
@@ -234,50 +234,52 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                 )}
               </div>
               
-              {/* Top Half - Ready to Generate */}
-              <GlassPanel variant="custom" className="flex-1 flex items-center justify-center min-h-[200px] md:min-h-[300px]">
-                {loading ? (
-                  <div className="text-center">
-                    <Loader2 className="h-8 w-8 md:h-12 md:w-12 animate-spin mx-auto mb-2 md:mb-4 text-primary" />
-                    <p className="text-sm md:text-lg font-medium">Generating your try-on...</p>
-                    <p className="text-xs md:text-sm text-muted-foreground mt-1">This may take a few moments</p>
-                  </div>
-                ) : currentResult?.path ? (
-                  <div className="w-full h-full flex flex-col">
-                    <img 
-                      src={currentResult.path} 
-                      alt="Virtual try-on result"
-                      className="w-full h-full object-contain rounded-lg"
-                    />
-                    <div className="mt-4 flex items-center justify-center">
-                      <Badge variant={currentResult.status === 'completed' ? 'default' : 'secondary'}>
-                        {currentResult.status}
-                      </Badge>
-                      {currentResult.credits_used && (
-                        <span className="ml-2 text-xs text-muted-foreground">
-                          Credits used: {currentResult.credits_used}
-                        </span>
-                      )}
+              {/* Main Content Area - Split into two sections */}
+              <div className="flex-1 flex flex-col gap-3 md:gap-4 min-h-0">
+                {/* Top Half - Ready to Generate */}
+                <GlassPanel variant="custom" className="flex-1 flex items-center justify-center min-h-[200px] max-h-[400px]">
+                  {loading ? (
+                    <div className="text-center">
+                      <Loader2 className="h-8 w-8 md:h-12 md:w-12 animate-spin mx-auto mb-2 md:mb-4 text-primary" />
+                      <p className="text-sm md:text-lg font-medium">Generating your try-on...</p>
+                      <p className="text-xs md:text-sm text-muted-foreground mt-1">This may take a few moments</p>
                     </div>
-                  </div>
-                ) : (
-                  <div className="text-center">
-                    <Sparkles className="h-12 w-12 md:h-16 md:w-16 mx-auto mb-2 md:mb-4 text-muted-foreground/50" />
-                    <h4 className="text-lg md:text-xl font-medium mb-1 md:mb-2">Ready to generate</h4>
-                    <p className="text-sm md:text-base text-muted-foreground">Upload both images below to start</p>
-                    <div className="mt-3 text-xs text-muted-foreground">
-                      {remainingGenerations > 0 ? (
-                        <span>{remainingGenerations} generations remaining {isPremium ? 'today' : 'lifetime'}</span>
-                      ) : (
-                        <span className="text-destructive">{isPremium ? 'Daily' : 'Lifetime'} limit reached</span>
-                      )}
+                  ) : currentResult?.path ? (
+                    <div className="w-full h-full flex flex-col p-2">
+                      <img 
+                        src={currentResult.path} 
+                        alt="Virtual try-on result"
+                        className="w-full flex-1 object-contain rounded-lg"
+                      />
+                      <div className="mt-2 flex items-center justify-center flex-shrink-0">
+                        <Badge variant={currentResult.status === 'completed' ? 'default' : 'secondary'}>
+                          {currentResult.status}
+                        </Badge>
+                        {currentResult.credits_used && (
+                          <span className="ml-2 text-xs text-muted-foreground">
+                            Credits used: {currentResult.credits_used}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                )}
-              </GlassPanel>
+                  ) : (
+                    <div className="text-center">
+                      <Sparkles className="h-12 w-12 md:h-16 md:w-16 mx-auto mb-2 md:mb-4 text-muted-foreground/50" />
+                      <h4 className="text-lg md:text-xl font-medium mb-1 md:mb-2">Ready to generate</h4>
+                      <p className="text-sm md:text-base text-muted-foreground">Upload both images below to start</p>
+                      <div className="mt-3 text-xs text-muted-foreground">
+                        {remainingGenerations > 0 ? (
+                          <span>{remainingGenerations} generations remaining {isPremium ? 'today' : 'lifetime'}</span>
+                        ) : (
+                          <span className="text-destructive">{isPremium ? 'Daily' : 'Lifetime'} limit reached</span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </GlassPanel>
 
-              {/* Bottom Half - Results Saved */}
-              <div className="space-y-2 md:space-y-3">
+                {/* Bottom Half - Results Saved */}
+                <div className="space-y-2 md:space-y-3 flex-shrink-0 max-h-48 overflow-y-auto">
                 <h4 className="text-sm md:text-md font-medium">Your Results</h4>
                 {assets.length > 0 ? (
                   <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 md:gap-3">
@@ -309,9 +311,10 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                 )}
               </div>
             </div>
+            </div>
 
             {/* Controls Section */}
-            <div className="w-full lg:w-80 flex-shrink-0 space-y-3 md:space-y-4 overflow-auto">
+            <div className="w-full lg:w-80 flex-shrink-0 space-y-3 md:space-y-4 max-h-full overflow-y-auto">
               {/* Person Upload */}
               <GlassPanel variant="custom" className="p-3 md:p-4">
                 <div className="space-y-2 md:space-y-3">
