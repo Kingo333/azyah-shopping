@@ -289,7 +289,11 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                 />
 
                 {/* Help Panel */}
-                <AiStudioHelpPanel error={error} />
+                <AiStudioHelpPanel 
+                  error={error}
+                  resolution={resolution}
+                  onResolutionChange={setResolution}
+                />
               </div>
             </div>
 
@@ -336,7 +340,11 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                   />
 
                   {/* Help Panel */}
-                  <AiStudioHelpPanel error={error} />
+                  <AiStudioHelpPanel 
+                    error={error}
+                    resolution={resolution}
+                    onResolutionChange={setResolution}
+                  />
                 </div>
               </div>
             </div>
