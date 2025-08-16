@@ -59,7 +59,7 @@ export const AiStudioControlsPanel: React.FC<AiStudioControlsPanelProps> = ({
         <div className="grid grid-cols-2 gap-2">
           {/* Person Upload */}
           <div>
-            <Label className="text-xs block mb-1">Person Image</Label>
+            <Label className={`text-xs block mb-1 transition-colors ${personImageId ? 'text-green-500' : ''}`}>Person Image</Label>
             <div className="relative">
               <input
                 type="file"
@@ -74,9 +74,15 @@ export const AiStudioControlsPanel: React.FC<AiStudioControlsPanelProps> = ({
                     <p className="text-xs text-primary font-medium">Uploading...</p>
                   </div>
                 ) : personFile && personImageId ? (
-                  <div className="text-center">
-                    <User className="h-4 w-4 mx-auto mb-1 text-green-500" />
-                    <p className="text-xs text-green-500 font-medium">Uploaded</p>
+                  <div className="relative w-full h-full">
+                    <img 
+                      src={URL.createObjectURL(personFile)} 
+                      alt="Person preview" 
+                      className="w-full h-full object-cover rounded-md"
+                    />
+                    <div className="absolute inset-0 bg-black/20 flex items-center justify-center rounded-md">
+                      <User className="h-4 w-4 text-white" />
+                    </div>
                   </div>
                 ) : (
                   <div className="text-center">
@@ -90,7 +96,7 @@ export const AiStudioControlsPanel: React.FC<AiStudioControlsPanelProps> = ({
 
           {/* Outfit Upload */}
           <div>
-            <Label className="text-xs block mb-1">Outfit Image</Label>
+            <Label className={`text-xs block mb-1 transition-colors ${outfitImageId ? 'text-green-500' : ''}`}>Outfit Image</Label>
             <div className="relative">
               <input
                 type="file"
@@ -105,9 +111,15 @@ export const AiStudioControlsPanel: React.FC<AiStudioControlsPanelProps> = ({
                     <p className="text-xs text-primary font-medium">Uploading...</p>
                   </div>
                 ) : outfitFile && outfitImageId ? (
-                  <div className="text-center">
-                    <Shirt className="h-4 w-4 mx-auto mb-1 text-green-500" />
-                    <p className="text-xs text-green-500 font-medium">Uploaded</p>
+                  <div className="relative w-full h-full">
+                    <img 
+                      src={URL.createObjectURL(outfitFile)} 
+                      alt="Outfit preview" 
+                      className="w-full h-full object-cover rounded-md"
+                    />
+                    <div className="absolute inset-0 bg-black/20 flex items-center justify-center rounded-md">
+                      <Shirt className="h-4 w-4 text-white" />
+                    </div>
                   </div>
                 ) : (
                   <div className="text-center">
