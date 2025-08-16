@@ -24,22 +24,16 @@ export const useAiAssets = () => {
     
     setLoading(true);
     try {
-      // Get today's date for filtering
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      
       const { data, error } = await supabase
         .from('ai_assets')
         .select('*')
         .eq('user_id', user.id)
         .eq('asset_type', 'tryon_result')
-        .gte('created_at', today.toISOString())
         .order('created_at', { ascending: false })
-        .limit(20);
+        .limit(50);
 
       if (error) {
         console.error('Error fetching AI assets:', error);
-        // Don't show toast error for failed asset loading
         setAssets([]);
       } else {
         setAssets(data || []);

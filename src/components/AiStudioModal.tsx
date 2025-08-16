@@ -51,7 +51,18 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
 
   // Generation limits based on user type
   const maxGenerations = isPremium ? 30 : 4;
-  const remainingGenerations = maxGenerations - assets.length;
+  
+  // For premium users, count today's generations; for free users, count all lifetime generations
+  const relevantAssets = isPremium 
+    ? assets.filter(asset => {
+        const assetDate = new Date(asset.created_at);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        return assetDate >= today;
+      })
+    : assets;
+    
+  const remainingGenerations = maxGenerations - relevantAssets.length;
 
   useEffect(() => {
     if (open) {
@@ -128,7 +139,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
         title: 'Generation Limit Reached',
         description: isPremium 
           ? 'You have reached your daily limit of 30 generations' 
-          : 'You have reached your daily limit of 4 generations. Upgrade to Premium for 30 daily generations.',
+          : 'You have reached your lifetime limit of 4 generations. Upgrade to Premium for 30 daily generations.',
         variant: 'destructive'
       });
       return;
@@ -236,9 +247,9 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                     <p className="text-sm md:text-base text-muted-foreground">Upload both images below to start</p>
                     <div className="mt-3 text-xs text-muted-foreground">
                       {remainingGenerations > 0 ? (
-                        <span>{remainingGenerations} generations remaining today</span>
+                        <span>{remainingGenerations} generations remaining {isPremium ? 'today' : 'lifetime'}</span>
                       ) : (
-                        <span className="text-destructive">Daily limit reached</span>
+                        <span className="text-destructive">{isPremium ? 'Daily' : 'Lifetime'} limit reached</span>
                       )}
                     </div>
                   </div>
@@ -247,7 +258,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
 
               {/* Bottom Half - Results Saved */}
               <div className="space-y-2 md:space-y-3">
-                <h4 className="text-sm md:text-md font-medium">Results Saved Today</h4>
+                <h4 className="text-sm md:text-md font-medium">Your Results</h4>
                 {assets.length > 0 ? (
                   <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 md:gap-3">
                     {assets.slice(0, 12).map((asset) => (
@@ -273,7 +284,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                   </div>
                 ) : (
                   <GlassPanel variant="custom" className="p-4 text-center">
-                    <p className="text-sm text-muted-foreground">No results saved today</p>
+                    <p className="text-sm text-muted-foreground">No results generated yet</p>
                   </GlassPanel>
                 )}
               </div>
@@ -390,7 +401,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                   {remainingGenerations} / {maxGenerations} generations remaining
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  {isPremium ? 'Premium daily limit' : 'Free daily limit'}
+                  {isPremium ? 'Premium daily limit' : 'Free lifetime limit'}
                 </p>
               </div>
 
@@ -407,7 +418,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                     Generating...
                   </>
                 ) : remainingGenerations <= 0 ? (
-                  'Daily Limit Reached'
+                  isPremium ? 'Daily Limit Reached' : 'Lifetime Limit Reached'
                 ) : (
                   <>
                     <Wand2 className="h-4 w-4 md:h-5 md:w-5 mr-2" />
