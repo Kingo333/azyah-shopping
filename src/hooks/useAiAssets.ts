@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { useDebounce } from '@/hooks/use-debounce';
 
 export interface AiAsset {
   id: string;
@@ -16,75 +17,116 @@ export interface AiAsset {
 export const useAiAssets = () => {
   const [assets, setAssets] = useState<AiAsset[]>([]);
   const [loading, setLoading] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
   const { user } = useAuth();
   const { toast } = useToast();
+  const isRequestInProgress = useRef(false);
+  const debouncedUser = useDebounce(user, 300);
 
-  const fetchAssets = async () => {
-    if (!user) {
+  const fetchAssets = useCallback(async (isRetry = false) => {
+    if (!debouncedUser) {
       console.log('[useAiAssets] No user available for fetching assets');
       setAssets([]);
       return;
     }
     
-    // Check if we have a valid session
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      console.log('[useAiAssets] No valid session found');
-      setAssets([]);
+    // Prevent duplicate requests
+    if (isRequestInProgress.current && !isRetry) {
+      console.log('[useAiAssets] Request already in progress, skipping duplicate call');
       return;
     }
     
-    setLoading(true);
+    isRequestInProgress.current = true;
+    
     try {
-      console.log('[useAiAssets] Fetching assets for user:', user.id);
+      // Check if we have a valid session and refresh if needed
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !session) {
+        console.log('[useAiAssets] No valid session found, attempting to refresh');
+        const { error: refreshError } = await supabase.auth.refreshSession();
+        if (refreshError) {
+          console.log('[useAiAssets] Session refresh failed');
+          setAssets([]);
+          return;
+        }
+      }
+      
+      setLoading(true);
+      console.log('[useAiAssets] Fetching assets for user:', debouncedUser.id);
       
       const { data, error } = await supabase
         .from('ai_assets')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', debouncedUser.id)
         .eq('asset_type', 'tryon_result')
         .order('created_at', { ascending: false })
         .limit(50);
 
       if (error) {
         console.error('[useAiAssets] Database error fetching AI assets:', error);
-        console.error('[useAiAssets] Error details:', { 
-          code: error.code, 
-          message: error.message, 
-          details: error.details 
-        });
         
-        // Check if it's an auth-related error
+        // Handle auth-related errors with retry
         if (error.code === 'PGRST301' || error.message?.includes('JWT')) {
-          toast({
-            title: 'Authentication Error',
-            description: 'Please sign in again to view your AI assets.',
-            variant: 'destructive'
-          });
+          if (retryCount < 2 && !isRetry) {
+            console.log('[useAiAssets] Auth error, retrying with session refresh...');
+            setRetryCount(prev => prev + 1);
+            await supabase.auth.refreshSession();
+            setTimeout(() => fetchAssets(true), 1000);
+            return;
+          } else {
+            toast({
+              title: 'Authentication Error',
+              description: 'Please sign in again to view your AI assets.',
+              variant: 'destructive'
+            });
+          }
         } else {
-          toast({
-            title: 'Database Error',
-            description: 'Unable to fetch your AI assets. Please try refreshing the page.',
-            variant: 'destructive'
-          });
+          // Only show error toast if it's not a retry attempt
+          if (!isRetry || retryCount === 0) {
+            toast({
+              title: 'Error Loading Assets',
+              description: 'Unable to fetch your AI assets. Retrying...',
+              variant: 'destructive'
+            });
+          }
+          
+          // Retry logic for network errors
+          if (retryCount < 3) {
+            setRetryCount(prev => prev + 1);
+            setTimeout(() => fetchAssets(true), 2000 * (retryCount + 1));
+            return;
+          }
         }
         setAssets([]);
       } else {
         console.log('[useAiAssets] Successfully fetched', data?.length || 0, 'assets');
         setAssets(data || []);
+        setRetryCount(0); // Reset retry count on success
       }
     } catch (error: any) {
       console.error('[useAiAssets] Network error fetching AI assets:', error);
-      toast({
-        title: 'Connection Error',
-        description: 'Network error while fetching AI assets. Please check your connection and try again.',
-        variant: 'destructive'
-      });
+      
+      // Only show error toast and retry for actual network errors
+      if (!isRetry || retryCount === 0) {
+        toast({
+          title: 'Connection Error',
+          description: 'Network error while fetching AI assets. Retrying...',
+          variant: 'destructive'
+        });
+      }
+      
+      if (retryCount < 3) {
+        setRetryCount(prev => prev + 1);
+        setTimeout(() => fetchAssets(true), 2000 * (retryCount + 1));
+        return;
+      }
+      
       setAssets([]);
     } finally {
       setLoading(false);
+      isRequestInProgress.current = false;
     }
-  };
+  }, [debouncedUser, retryCount, toast]);
 
   const saveAsset = async (assetUrl: string, jobId?: string, title?: string) => {
     if (!user) {
@@ -116,6 +158,7 @@ export const useAiAssets = () => {
       
       console.log('[useAiAssets] Asset saved successfully:', data);
       setAssets(prev => [data, ...prev]);
+      setRetryCount(0); // Reset retry count on successful save
       return data;
     } catch (error: any) {
       console.error('[useAiAssets] Error saving asset:', error);
@@ -129,8 +172,10 @@ export const useAiAssets = () => {
   };
 
   useEffect(() => {
-    fetchAssets();
-  }, [user]);
+    if (debouncedUser) {
+      fetchAssets();
+    }
+  }, [debouncedUser?.id]); // Only depend on user ID, not the fetchAssets function
 
   const deleteAssets = async (assetIds: string[]) => {
     if (!user) {

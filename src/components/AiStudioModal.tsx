@@ -73,7 +73,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
     if (open) {
       fetchAssets();
     }
-  }, [open, fetchAssets]);
+  }, [open]); // Remove fetchAssets dependency to prevent infinite loop
 
   // Effect to show helpful messages when images are uploaded
   useEffect(() => {
@@ -186,12 +186,10 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
       if (result) {
         setCurrentResult(result);
         
-        // Save the result to database and refresh assets
+        // Save the result to database (assets list is updated automatically by saveAsset)
         if (result.path) {
           const savedAsset = await saveAsset(result.path, result.id, `Virtual Try-On ${new Date().toLocaleDateString()}`);
           if (savedAsset) {
-            // Refresh the assets list
-            await fetchAssets();
             toast({
               title: 'Try-On Complete',
               description: 'Result saved successfully',
