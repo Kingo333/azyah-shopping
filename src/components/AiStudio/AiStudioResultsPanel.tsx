@@ -70,7 +70,7 @@ export const AiStudioResultsPanel: React.FC<AiStudioResultsPanelProps> = ({
       {/* Main Result Display */}
       <div className="flex-1 flex flex-col gap-3 min-h-0">
         {/* Current Result */}
-        <div className="flex-1 min-h-[200px]">
+        <div className={`${!hideReadyToGenerate || currentResult?.path || loading ? 'flex-1 min-h-[200px]' : 'h-0'}`}>
           <GlassPanel variant="custom" className="h-full flex items-center justify-center">
             {loading ? (
               <div className="text-center space-y-3">
