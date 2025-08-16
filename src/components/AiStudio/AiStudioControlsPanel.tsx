@@ -74,16 +74,11 @@ export const AiStudioControlsPanel: React.FC<AiStudioControlsPanelProps> = ({
                     <p className="text-xs text-primary font-medium">Uploading...</p>
                   </div>
                 ) : personFile && personImageId ? (
-                  <div className="relative w-full h-full">
-                    <img 
-                      src={URL.createObjectURL(personFile)} 
-                      alt="Person preview" 
-                      className="w-full h-full object-cover rounded-md"
-                    />
-                    <div className="absolute inset-0 bg-black/20 flex items-center justify-center rounded-md">
-                      <User className="h-4 w-4 text-white" />
-                    </div>
-                  </div>
+                  <img 
+                    src={URL.createObjectURL(personFile)} 
+                    alt="Person preview" 
+                    className="w-full h-full object-cover rounded-md"
+                  />
                 ) : (
                   <div className="text-center">
                     <Upload className="h-4 w-4 mx-auto mb-1 text-muted-foreground" />
@@ -111,16 +106,11 @@ export const AiStudioControlsPanel: React.FC<AiStudioControlsPanelProps> = ({
                     <p className="text-xs text-primary font-medium">Uploading...</p>
                   </div>
                 ) : outfitFile && outfitImageId ? (
-                  <div className="relative w-full h-full">
-                    <img 
-                      src={URL.createObjectURL(outfitFile)} 
-                      alt="Outfit preview" 
-                      className="w-full h-full object-cover rounded-md"
-                    />
-                    <div className="absolute inset-0 bg-black/20 flex items-center justify-center rounded-md">
-                      <Shirt className="h-4 w-4 text-white" />
-                    </div>
-                  </div>
+                  <img 
+                    src={URL.createObjectURL(outfitFile)} 
+                    alt="Outfit preview" 
+                    className="w-full h-full object-cover rounded-md"
+                  />
                 ) : (
                   <div className="text-center">
                     <Upload className="h-4 w-4 mx-auto mb-1 text-muted-foreground" />
