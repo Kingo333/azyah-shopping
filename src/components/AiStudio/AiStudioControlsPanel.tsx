@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { GlassPanel } from '@/components/ui/glass-panel';
-import { Loader2, Wand2, Sparkles, ChevronDown, ChevronUp } from 'lucide-react';
+import { Loader2, Wand2, Sparkles, ChevronDown, ChevronUp, Upload, User, Shirt } from 'lucide-react';
 
 interface AiStudioControlsPanelProps {
   loading: boolean;
@@ -16,10 +16,14 @@ interface AiStudioControlsPanelProps {
   isPremium: boolean;
   personImageId: string | null;
   outfitImageId: string | null;
+  personFile: File | null;
+  outfitFile: File | null;
   onShowSettingsToggle: () => void;
   onPromptChange: (value: string) => void;
   onResolutionChange: (value: 'standard' | 'high') => void;
   onGenerate: () => void;
+  onPersonUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onOutfitUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
 export const AiStudioControlsPanel: React.FC<AiStudioControlsPanelProps> = ({
@@ -32,10 +36,14 @@ export const AiStudioControlsPanel: React.FC<AiStudioControlsPanelProps> = ({
   isPremium,
   personImageId,
   outfitImageId,
+  personFile,
+  outfitFile,
   onShowSettingsToggle,
   onPromptChange,
   onResolutionChange,
-  onGenerate
+  onGenerate,
+  onPersonUpload,
+  onOutfitUpload
 }) => {
   const canGenerate = !loading && personImageId && outfitImageId && remainingGenerations > 0;
 
@@ -84,13 +92,60 @@ export const AiStudioControlsPanel: React.FC<AiStudioControlsPanelProps> = ({
         )}
       </GlassPanel>
 
-      {/* Generation Status */}
-      <div className="text-center space-y-1 p-3">
-        <div className="text-sm font-medium">
-          {remainingGenerations} / {maxGenerations} remaining
-        </div>
-        <div className="text-xs text-muted-foreground">
-          {isPremium ? 'Premium daily limit' : 'Free lifetime limit'}
+      {/* Upload Panel */}
+      <div className="space-y-3">
+        <div className="grid grid-cols-2 gap-2">
+          {/* Person Upload */}
+          <div>
+            <Label className="text-xs block mb-1">Person Image</Label>
+            <div className="relative">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={onPersonUpload}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+              />
+              <GlassPanel variant="custom" className={`h-20 flex flex-col items-center justify-center transition-colors cursor-pointer hover:border-primary/50 ${personImageId ? 'border-green-500/50 bg-green-500/5' : 'border-dashed'}`}>
+                {personFile ? (
+                  <div className="text-center">
+                    <User className="h-4 w-4 mx-auto mb-1 text-green-500" />
+                    <p className="text-xs text-green-500 font-medium">Uploaded</p>
+                  </div>
+                ) : (
+                  <div className="text-center">
+                    <Upload className="h-4 w-4 mx-auto mb-1 text-muted-foreground" />
+                    <p className="text-xs text-muted-foreground">Person</p>
+                  </div>
+                )}
+              </GlassPanel>
+            </div>
+          </div>
+
+          {/* Outfit Upload */}
+          <div>
+            <Label className="text-xs block mb-1">Outfit Image</Label>
+            <div className="relative">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={onOutfitUpload}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+              />
+              <GlassPanel variant="custom" className={`h-20 flex flex-col items-center justify-center transition-colors cursor-pointer hover:border-primary/50 ${outfitImageId ? 'border-green-500/50 bg-green-500/5' : 'border-dashed'}`}>
+                {outfitFile ? (
+                  <div className="text-center">
+                    <Shirt className="h-4 w-4 mx-auto mb-1 text-green-500" />
+                    <p className="text-xs text-green-500 font-medium">Uploaded</p>
+                  </div>
+                ) : (
+                  <div className="text-center">
+                    <Upload className="h-4 w-4 mx-auto mb-1 text-muted-foreground" />
+                    <p className="text-xs text-muted-foreground">Outfit</p>
+                  </div>
+                )}
+              </GlassPanel>
+            </div>
+          </div>
         </div>
       </div>
 

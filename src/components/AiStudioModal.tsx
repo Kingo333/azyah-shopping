@@ -218,7 +218,16 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                 {/* Current Result Display - Mobile (at very top) */}
                 <div className="min-h-[250px]">
                   <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-base font-semibold">Generated Result</h3>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-base font-semibold">Generated Result</h3>
+                      <div className="text-xs text-muted-foreground">
+                        {remainingGenerations > 0 ? (
+                          <span>{remainingGenerations}/{maxGenerations} remaining {isPremium ? 'today' : 'Free lifetime limit'}</span>
+                        ) : (
+                          <span className="text-destructive">{isPremium ? 'Daily' : 'Lifetime'} limit reached</span>
+                        )}
+                      </div>
+                    </div>
                     {currentResult?.path && (
                       <Button onClick={downloadImage} size="sm" variant="outline" className="h-8 text-xs">
                         <Download className="h-3 w-3 mr-1" />
@@ -259,29 +268,12 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                         <div>
                           <h4 className="text-lg font-medium mb-1">Ready to generate</h4>
                           <p className="text-sm text-muted-foreground">Upload both image to generate</p>
-                          <div className="mt-2 text-xs text-muted-foreground">
-                            {remainingGenerations > 0 ? (
-                              <span>{remainingGenerations} remaining {isPremium ? 'today' : 'lifetime'}</span>
-                            ) : (
-                              <span className="text-destructive">{isPremium ? 'Daily' : 'Lifetime'} limit reached</span>
-                            )}
-                          </div>
                         </div>
                       </div>
                     )}
                   </GlassPanel>
                 </div>
                 
-                {/* Upload Panel */}
-                <AiStudioUploadPanel 
-                  personFile={personFile}
-                  outfitFile={outfitFile}
-                  personImageId={personImageId}
-                  outfitImageId={outfitImageId}
-                  onPersonUpload={handlePersonUpload}
-                  onOutfitUpload={handleOutfitUpload}
-                />
-
                 {/* Controls Panel */}
                 <AiStudioControlsPanel 
                   loading={loading}
@@ -293,10 +285,14 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                   isPremium={isPremium}
                   personImageId={personImageId}
                   outfitImageId={outfitImageId}
+                  personFile={personFile}
+                  outfitFile={outfitFile}
                   onShowSettingsToggle={() => setShowSettings(!showSettings)}
                   onPromptChange={setPrompt}
                   onResolutionChange={setResolution}
                   onGenerate={handleVirtualTryOn}
+                  onPersonUpload={handlePersonUpload}
+                  onOutfitUpload={handleOutfitUpload}
                 />
 
                 {/* Help Panel */}
@@ -355,16 +351,6 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
               {/* Controls Section - Desktop */}
               <div className="w-80 flex-shrink-0 min-h-0">
                 <div className="h-full space-y-3 overflow-y-auto scrollbar-thin">
-                  {/* Upload Panel */}
-                  <AiStudioUploadPanel 
-                    personFile={personFile}
-                    outfitFile={outfitFile}
-                    personImageId={personImageId}
-                    outfitImageId={outfitImageId}
-                    onPersonUpload={handlePersonUpload}
-                    onOutfitUpload={handleOutfitUpload}
-                  />
-
                   {/* Controls Panel */}
                   <AiStudioControlsPanel 
                     loading={loading}
@@ -376,10 +362,14 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                     isPremium={isPremium}
                     personImageId={personImageId}
                     outfitImageId={outfitImageId}
+                    personFile={personFile}
+                    outfitFile={outfitFile}
                     onShowSettingsToggle={() => setShowSettings(!showSettings)}
                     onPromptChange={setPrompt}
                     onResolutionChange={setResolution}
                     onGenerate={handleVirtualTryOn}
+                    onPersonUpload={handlePersonUpload}
+                    onOutfitUpload={handleOutfitUpload}
                   />
 
                   {/* Help Panel */}
