@@ -198,36 +198,36 @@ const ToyReplica = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200 p-4">
       <div className="container mx-auto max-w-4xl">
         <div className="mb-6">
-          <BackButton fallbackPath="/feed" className="mb-4 text-white/80 hover:text-white hover:bg-white/10 border-white/20" variant="outline" />
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-white to-white/70 bg-clip-text text-transparent">
+          <BackButton fallbackPath="/feed" className="mb-4 text-gray-700 hover:text-gray-900 hover:bg-gray-200 border-gray-300" variant="outline" />
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
             Toy Replica
           </h1>
-          <p className="text-white/60 mt-3 text-lg font-light">
+          <p className="text-gray-600 mt-3 text-lg font-light">
             Upload one photo. We'll generate a LEGO-style mini-figure with a transparent background.
           </p>
           
           {/* Generation Counter */}
-          <GlassPanel variant="subtle" className="mt-6 p-4">
+          <GlassPanel variant="subtle" className="mt-6 p-4 bg-white/70 border-gray-300">
             <div className="flex items-center gap-2">
               {isPremium ? (
                 <>
                   <Crown className="h-4 w-4 text-purple-500" />
-                  <span className="text-sm font-medium text-white/90">
-                    Premium: <span className="font-bold text-purple-400">Unlimited</span> generations
+                  <span className="text-sm font-medium text-gray-800">
+                    Premium: <span className="font-bold text-purple-600">Unlimited</span> generations
                   </span>
                 </>
               ) : (
                 <>
                   <Info className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm font-medium text-white/90">
+                  <span className="text-sm font-medium text-gray-800">
                     {loadingCount ? (
                       "Loading..."
                     ) : (
                       <>
-                        Generations remaining: <span className={`font-bold ${remainingGenerations <= 1 ? 'text-red-400' : 'text-purple-400'}`}>
+                        Generations remaining: <span className={`font-bold ${remainingGenerations <= 1 ? 'text-red-600' : 'text-purple-600'}`}>
                           {remainingGenerations}
                         </span> / {GENERATION_LIMIT}
                       </>
@@ -237,22 +237,22 @@ const ToyReplica = () => {
               )}
             </div>
             {!isPremium && !loadingCount && remainingGenerations <= 1 && remainingGenerations > 0 && (
-              <p className="text-xs text-white/60 mt-2">
-                This is your last generation! <Button variant="link" className="text-xs p-0 h-auto text-purple-400 hover:text-purple-300" onClick={() => setShowUpgradeModal(true)}>Upgrade to Premium</Button>
+              <p className="text-xs text-gray-600 mt-2">
+                This is your last generation! <Button variant="link" className="text-xs p-0 h-auto text-purple-600 hover:text-purple-700" onClick={() => setShowUpgradeModal(true)}>Upgrade to Premium</Button>
               </p>
             )}
             {!isPremium && !loadingCount && remainingGenerations <= 0 && (
-              <p className="text-xs text-red-400 mt-2">
-                You have reached your generation limit. <Button variant="link" className="text-xs p-0 h-auto text-red-400 hover:text-red-300" onClick={() => setShowUpgradeModal(true)}>Upgrade now</Button>
+              <p className="text-xs text-red-600 mt-2">
+                You have reached your generation limit. <Button variant="link" className="text-xs p-0 h-auto text-red-600 hover:text-red-700" onClick={() => setShowUpgradeModal(true)}>Upgrade now</Button>
               </p>
             )}
           </GlassPanel>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <GlassPanel variant="premium" className="p-6">
+          <GlassPanel variant="default" className="p-6 bg-white/80 border-gray-300">
             <div className="mb-6">
-              <h2 className="text-xl font-semibold text-white/90 mb-2">Upload Photo</h2>
+              <h2 className="text-xl font-semibold text-gray-800 mb-2">Upload Photo</h2>
             </div>
             <div className="space-y-4">
               <ToyReplicaUploader
@@ -274,11 +274,11 @@ const ToyReplica = () => {
               )}
 
               {remainingGenerations <= 0 && !loadingCount && (
-                <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg backdrop-blur-sm">
-                  <p className="text-sm text-red-400 font-medium">
+                <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-sm text-red-700 font-medium">
                     Generation limit reached
                   </p>
-                  <p className="text-xs text-red-300/80 mt-1">
+                  <p className="text-xs text-red-600 mt-1">
                     You have used all {GENERATION_LIMIT} of your Toy Replica generations.
                   </p>
                 </div>
@@ -295,22 +295,22 @@ const ToyReplica = () => {
                 </Button>
               )}
 
-              <div className="text-xs text-white/50 p-3 bg-black/20 rounded-lg border border-white/10">
-                <strong className="text-white/70">Note:</strong> Keep it family-friendly and your own photo.
+              <div className="text-xs text-gray-600 p-3 bg-gray-100 rounded-lg border border-gray-200">
+                <strong className="text-gray-800">Note:</strong> Keep it family-friendly and your own photo.
               </div>
             </div>
           </GlassPanel>
 
-          <GlassPanel variant="premium" className="p-6">
+          <GlassPanel variant="default" className="p-6 bg-white/80 border-gray-300">
             <div className="mb-6">
-              <h2 className="text-xl font-semibold text-white/90 mb-2">Your LEGO Mini-Figure</h2>
+              <h2 className="text-xl font-semibold text-gray-800 mb-2">Your LEGO Mini-Figure</h2>
             </div>
             <div>
               {uploading && (
                 <div className="flex items-center justify-center py-16">
                   <div className="text-center">
-                    <Loader2 className="h-10 w-10 animate-spin mx-auto mb-4 text-purple-400" />
-                    <p className="text-white/80 font-medium">Uploading photo...</p>
+                    <Loader2 className="h-10 w-10 animate-spin mx-auto mb-4 text-purple-600" />
+                    <p className="text-gray-700 font-medium">Uploading photo...</p>
                   </div>
                 </div>
               )}
@@ -318,9 +318,9 @@ const ToyReplica = () => {
               {generating && !uploading && (
                 <div className="flex items-center justify-center py-16">
                   <div className="text-center">
-                    <Loader2 className="h-10 w-10 animate-spin mx-auto mb-4 text-purple-400" />
-                    <p className="text-white/80 font-medium">Building your mini-figure...</p>
-                    <p className="text-sm text-white/60 mt-2">This may take a moment</p>
+                    <Loader2 className="h-10 w-10 animate-spin mx-auto mb-4 text-purple-600" />
+                    <p className="text-gray-700 font-medium">Building your mini-figure...</p>
+                    <p className="text-sm text-gray-600 mt-2">This may take a moment</p>
                   </div>
                 </div>
               )}
@@ -379,7 +379,7 @@ const ToyReplica = () => {
               )}
               
               {!result && !generating && !uploading && (
-                <div className="flex items-center justify-center py-16 text-white/50">
+                <div className="flex items-center justify-center py-16 text-gray-500">
                   <p className="font-medium">Your LEGO mini-figure will appear here</p>
                 </div>
               )}
