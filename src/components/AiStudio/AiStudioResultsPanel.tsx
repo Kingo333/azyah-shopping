@@ -55,7 +55,7 @@ export const AiStudioResultsPanel: React.FC<AiStudioResultsPanelProps> = ({
   };
 
   return (
-    <div className="h-full flex flex-col min-h-0">
+    <div className="flex flex-col min-h-0">
       {/* Mobile Header - only show when we have results */}
       <div className="lg:hidden flex-shrink-0">
         {(loading || currentResult?.path) && (
