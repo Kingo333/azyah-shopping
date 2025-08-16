@@ -202,8 +202,8 @@ const ToyReplica = () => {
       <div className="container mx-auto max-w-4xl">
         <div className="mb-6">
           <BackButton 
-            onBack={() => window.location.href = '/dashboard'} 
-            className="mb-4 text-gray-700 hover:text-gray-900 hover:bg-gray-200 border-gray-300" 
+            fallbackPath="/dashboard"
+            className="mb-4 text-gray-700 hover:text-gray-900 hover:bg-gray-200 border-gray-300 transition-all duration-300 ease-in-out transform hover:scale-105" 
             variant="outline" 
           />
           <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
