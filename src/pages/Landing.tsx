@@ -185,6 +185,24 @@ export default function Landing() {
         )}
       </header>
 
+      {/* PREMIUM BANNER */}
+      <div className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground py-3 px-6">
+        <div className="container max-w-7xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Crown className="w-5 h-5" />
+            <span className="font-medium text-sm">Premium Access: 30 daily AI generations, exclusive features & more</span>
+          </div>
+          <Button 
+            variant="secondary" 
+            size="sm" 
+            className="text-xs px-4 py-1 h-7"
+            onClick={() => navigate("/auth")}
+          >
+            Learn More
+          </Button>
+        </div>
+      </div>
+
       {/* HERO */}
       <section id="discover" className="relative bg-gradient-to-br from-background to-primary/5 pt-20 pb-32 lg:pt-32 lg:pb-40">
         <div className="absolute top-20 left-10 w-32 h-32 bg-primary/10 rounded-full blur-3xl animate-pulse"/>

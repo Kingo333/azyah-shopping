@@ -27,7 +27,7 @@ const PremiumBanner: React.FC = () => {
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <span>40 AED/month</span>
             <span>•</span>
-            <span>Unlimited AI generations</span>
+            <span>30 daily AI generations & exclusive features</span>
           </div>
         </div>
         
