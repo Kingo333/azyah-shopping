@@ -1,17 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { GlassPanel } from '@/components/ui/glass-panel';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Download, Sparkles, Wand2 } from 'lucide-react';
+import { Loader2, Download, Sparkles, Wand2, Upload } from 'lucide-react';
 import { useBitStudio } from '@/hooks/useBitStudio';
 import { BITSTUDIO_IMAGE_TYPES } from '@/lib/bitstudio-types';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { useAiAssets } from '@/hooks/useAiAssets';
 export interface AiStudioModalProps {
   open: boolean;
   onClose: () => void;
@@ -25,11 +25,13 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
   // File uploads
   const [personFile, setPersonFile] = useState<File | null>(null);
   const [outfitFile, setOutfitFile] = useState<File | null>(null);
+  const [outfitUrl, setOutfitUrl] = useState('');
 
   // Form data
   const [prompt, setPrompt] = useState('');
   const [resolution, setResolution] = useState<'standard' | 'high'>('standard');
   const [numImages, setNumImages] = useState(1);
+  const [showSettings, setShowSettings] = useState(false);
 
   // Results
   const [currentResult, setCurrentResult] = useState<any>(null);
@@ -42,9 +44,14 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
     virtualTryOn,
     clearError
   } = useBitStudio();
-  const {
-    toast
-  } = useToast();
+  const { toast } = useToast();
+  const { assets, loading: assetsLoading, fetchAssets, saveAsset } = useAiAssets();
+
+  useEffect(() => {
+    if (open) {
+      fetchAssets();
+    }
+  }, [open, fetchAssets]);
 
   // File validation helper
   const validateFile = (file: File): boolean => {
@@ -118,6 +125,10 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
     });
     if (result) {
       setCurrentResult(result);
+      // Save the result
+      if (result.path) {
+        await saveAsset(result.path, result.id, `Virtual Try-On ${new Date().toLocaleDateString()}`);
+      }
     }
   };
   const downloadImage = async () => {
@@ -141,153 +152,254 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
       });
     }
   };
-  return <Dialog open={open} onOpenChange={v => {
-    if (!v) onClose();
-  }}>
-      {trigger && <DialogTrigger asChild>
-          {trigger}
-        </DialogTrigger>}
-      <DialogContent className="max-w-4xl h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            AI Virtual Try-On
-            <Badge variant="secondary">Limited free credits (4)</Badge>
-          </DialogTitle>
-        </DialogHeader>
-        
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Controls */}
-          <div className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Wand2 className="h-4 w-4" />
-                  Virtual Try-On
-                </CardTitle>
-                <CardDescription>
-                  Upload a person and outfit to see how they look together
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label htmlFor="person-upload">Person Image</Label>
-                  <Input id="person-upload" type="file" accept="image/*" onChange={handlePersonUpload} className="mt-1" />
-                  {personImageId && <Badge variant="outline" className="mt-1">Uploaded</Badge>}
+  return (
+    <Dialog open={open} onOpenChange={v => { if (!v) onClose(); }}>
+      {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
+      <DialogContent className="max-w-7xl h-[95vh] p-0 border-0">
+        <div className="h-full flex flex-col bg-gradient-to-br from-background via-background/95 to-muted/50">
+          {/* Header */}
+          <div className="flex-shrink-0 p-6 border-b border-border/50">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-3 text-2xl">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <Wand2 className="h-6 w-6 text-primary" />
                 </div>
-                
-                <div>
-                  <Label htmlFor="outfit-upload">Outfit Image</Label>
-                  <Input id="outfit-upload" type="file" accept="image/*" onChange={handleOutfitUpload} className="mt-1" />
-                  {outfitImageId && <Badge variant="outline" className="mt-1">Uploaded</Badge>}
-                </div>
-                
-                
-                
-                <Button onClick={handleVirtualTryOn} disabled={loading || !personImageId || !outfitImageId} className="w-full">
-                  {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Wand2 className="h-4 w-4 mr-2" />}
-                  Generate Try-On
-                </Button>
-              </CardContent>
-            </Card>
-            
-            {/* Settings */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Settings</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label>Resolution</Label>
-                    <Select value={resolution} onValueChange={(value: any) => setResolution(value)}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="standard">Standard</SelectItem>
-                        <SelectItem value="high">High</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div>
-                    <Label>Number of Images</Label>
-                    <Select value={numImages.toString()} onValueChange={value => setNumImages(parseInt(value))}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="1">1</SelectItem>
-                        <SelectItem value="2">2</SelectItem>
-                        <SelectItem value="3">3</SelectItem>
-                        <SelectItem value="4">4</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            <Alert className="mt-2">
-              <AlertTitle>Best photo tips</AlertTitle>
-              <AlertDescription>
-                <ul className="list-disc pl-5 space-y-1 text-sm text-muted-foreground">
-                  <li>Person: single subject, full-body, front-facing, neutral pose; arms slightly away.</li>
-                  <li>Lighting & background: bright, even light; plain background; avoid filters and obstructions.</li>
-                  <li>Quality: high‑resolution (≥ 1024px), JPG/PNG/WebP, under 10MB.</li>
-                  <li>Outfit: product cutout or flat/ghost mannequin on plain background; front view; preferably no model, but model photos can work.</li>
-                </ul>
-              </AlertDescription>
-            </Alert>
-            {error && <Card className="border-destructive">
-                <CardContent className="pt-6">
-                  <p className="text-sm text-destructive">{error}</p>
-                </CardContent>
-              </Card>}
+                AI Studio
+                <Badge variant="secondary" className="ml-auto">
+                  <Sparkles className="h-3 w-3 mr-1" />
+                  BitStudio
+                </Badge>
+              </DialogTitle>
+            </DialogHeader>
           </div>
-          
-          {/* Results */}
-          <div className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Result</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {loading ? <div className="aspect-square bg-muted rounded-lg flex items-center justify-center">
-                    <div className="text-center">
-                      <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" />
-                      <p className="text-sm text-muted-foreground">Generating try-on...</p>
+
+          <div className="flex-1 flex flex-col lg:flex-row gap-6 p-6 overflow-hidden">
+            {/* Results Section */}
+            <div className="flex-1 flex flex-col space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold">Generated Result</h3>
+                {currentResult?.path && (
+                  <Button onClick={downloadImage} size="sm" variant="outline">
+                    <Download className="h-4 w-4 mr-2" />
+                    Download
+                  </Button>
+                )}
+              </div>
+              
+              <GlassPanel variant="custom" className="flex-1 flex items-center justify-center min-h-[400px]">
+                {loading ? (
+                  <div className="text-center">
+                    <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4 text-primary" />
+                    <p className="text-lg font-medium">Generating your try-on...</p>
+                    <p className="text-sm text-muted-foreground mt-1">This may take a few moments</p>
+                  </div>
+                ) : currentResult?.path ? (
+                  <div className="w-full h-full flex flex-col">
+                    <img 
+                      src={currentResult.path} 
+                      alt="Virtual try-on result" 
+                      className="w-full h-full object-contain rounded-lg"
+                    />
+                    <div className="mt-4 flex items-center justify-center">
+                      <Badge variant={currentResult.status === 'completed' ? 'default' : 'secondary'}>
+                        {currentResult.status}
+                      </Badge>
+                      {currentResult.credits_used && (
+                        <span className="ml-2 text-xs text-muted-foreground">
+                          Credits used: {currentResult.credits_used}
+                        </span>
+                      )}
                     </div>
-                  </div> : currentResult ? <div className="space-y-4">
-                    {currentResult.path ? <img src={currentResult.path} alt="Virtual try-on result" className="w-full rounded-lg" /> : <div className="aspect-square bg-muted rounded-lg flex items-center justify-center">
-                        <p className="text-sm text-muted-foreground">Processing...</p>
-                      </div>}
-                    
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-1">
-                        <Badge variant={currentResult.status === 'completed' ? 'default' : 'secondary'}>
-                          {currentResult.status}
-                        </Badge>
-                        {currentResult.credits_used && <p className="text-xs text-muted-foreground">
-                            Credits used: {currentResult.credits_used}
-                          </p>}
+                  </div>
+                ) : (
+                  <div className="text-center">
+                    <Sparkles className="h-16 w-16 mx-auto mb-4 text-muted-foreground/50" />
+                    <h4 className="text-xl font-medium mb-2">Ready to generate</h4>
+                    <p className="text-muted-foreground">Upload both images below to start</p>
+                  </div>
+                )}
+              </GlassPanel>
+
+              {/* Previous Results Gallery */}
+              {assets.length > 0 && (
+                <div className="mt-6">
+                  <h4 className="text-md font-medium mb-3">Previous Results</h4>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                    {assets.slice(0, 8).map((asset) => (
+                      <GlassPanel 
+                        key={asset.id} 
+                        variant="custom" 
+                        className="aspect-square p-2 cursor-pointer hover:scale-105 transition-transform"
+                        onClick={() => setCurrentResult({ path: asset.asset_url, status: 'completed' })}
+                      >
+                        {asset.asset_url ? (
+                          <img 
+                            src={asset.asset_url} 
+                            alt="Previous result" 
+                            className="w-full h-full object-cover rounded-lg"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-muted rounded-lg flex items-center justify-center">
+                            <Sparkles className="h-6 w-6 text-muted-foreground" />
+                          </div>
+                        )}
+                      </GlassPanel>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Controls Section */}
+            <div className="w-full lg:w-80 flex-shrink-0 space-y-4">
+              {/* Person Upload */}
+              <GlassPanel variant="custom" className="p-4">
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Upload className="h-4 w-4" />
+                    <Label className="font-medium">Person Image</Label>
+                  </div>
+                  <div className="space-y-2">
+                    <Input 
+                      type="file" 
+                      accept="image/*" 
+                      onChange={handlePersonUpload}
+                      className="w-full"
+                    />
+                    {personFile && (
+                      <div className="mt-2 relative">
+                        <img 
+                          src={URL.createObjectURL(personFile)} 
+                          alt="Person preview" 
+                          className="w-full h-32 object-cover rounded-lg"
+                        />
+                        {personImageId && (
+                          <Badge className="absolute top-2 right-2">
+                            Uploaded
+                          </Badge>
+                        )}
                       </div>
-                      
-                      {currentResult.path && <Button onClick={downloadImage} size="sm" variant="outline">
-                          <Download className="h-4 w-4 mr-2" />
-                          Download
-                        </Button>}
+                    )}
+                  </div>
+                </div>
+              </GlassPanel>
+
+              {/* Outfit Upload */}
+              <GlassPanel variant="custom" className="p-4">
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Upload className="h-4 w-4" />
+                    <Label className="font-medium">Outfit Image</Label>
+                  </div>
+                  <div className="space-y-2">
+                    <Input 
+                      type="file" 
+                      accept="image/*" 
+                      onChange={handleOutfitUpload}
+                      className="w-full"
+                    />
+                    {outfitFile && (
+                      <div className="mt-2 relative">
+                        <img 
+                          src={URL.createObjectURL(outfitFile)} 
+                          alt="Outfit preview" 
+                          className="w-full h-32 object-cover rounded-lg"
+                        />
+                        {outfitImageId && (
+                          <Badge className="absolute top-2 right-2">
+                            Uploaded
+                          </Badge>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </GlassPanel>
+
+              {/* Settings Panel */}
+              <GlassPanel variant="custom" className="p-4">
+                <Button
+                  variant="ghost"
+                  onClick={() => setShowSettings(!showSettings)}
+                  className="w-full justify-between"
+                >
+                  Advanced Settings
+                  <Sparkles className="h-4 w-4" />
+                </Button>
+                
+                {showSettings && (
+                  <div className="mt-4 space-y-3">
+                    <div>
+                      <Label className="text-sm">Resolution</Label>
+                      <Select value={resolution} onValueChange={(value: any) => setResolution(value)}>
+                        <SelectTrigger className="mt-1">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="standard">Standard</SelectItem>
+                          <SelectItem value="high">High Quality</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
-                  </div> : <div className="aspect-square bg-muted rounded-lg flex items-center justify-center">
-                    <div className="text-center">
-                      <Sparkles className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                      <p className="text-sm text-muted-foreground">Your virtual try-on will appear here</p>
+                    
+                    <div>
+                      <Label className="text-sm">Prompt (Optional)</Label>
+                      <Input
+                        value={prompt}
+                        onChange={(e) => setPrompt(e.target.value)}
+                        placeholder="Describe styling preferences..."
+                        className="mt-1"
+                      />
                     </div>
-                  </div>}
-              </CardContent>
-            </Card>
+                  </div>
+                )}
+              </GlassPanel>
+
+              {/* Generate Button */}
+              <Button 
+                onClick={handleVirtualTryOn} 
+                disabled={loading || !personImageId || !outfitImageId} 
+                className="w-full h-12 text-lg"
+                size="lg"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Wand2 className="h-5 w-5 mr-2" />
+                    Generate Try-On
+                  </>
+                )}
+              </Button>
+
+              {/* Help Alert */}
+              <Alert>
+                <Sparkles className="h-4 w-4" />
+                <AlertTitle>Pro Tips</AlertTitle>
+                <AlertDescription className="text-xs">
+                  <ul className="space-y-1 mt-2">
+                    <li>• Use front-facing, full-body person photos</li>
+                    <li>• Plain backgrounds work best</li>
+                    <li>• High resolution images (1024px+)</li>
+                    <li>• Outfit should be clearly visible</li>
+                  </ul>
+                </AlertDescription>
+              </Alert>
+
+              {error && (
+                <Alert variant="destructive">
+                  <AlertTitle>Error</AlertTitle>
+                  <AlertDescription className="text-sm">{error}</AlertDescription>
+                </Alert>
+              )}
+            </div>
           </div>
         </div>
       </DialogContent>
-    </Dialog>;
+    </Dialog>
+  );
 };
 export default AiStudioModal;
