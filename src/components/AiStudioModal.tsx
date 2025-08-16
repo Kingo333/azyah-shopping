@@ -253,6 +253,17 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
             {/* Mobile: Simple scrollable container */}
             <div className="lg:hidden">
               <div className="p-3 space-y-4 pb-20 overflow-y-auto" style={{ height: 'calc(100dvh - 100px)' }}>
+                {/* Credits Display - Mobile Top */}
+                <div className="flex items-center justify-center">
+                  <div className="text-sm text-muted-foreground text-center">
+                    {remainingGenerations > 0 ? (
+                      <span>{remainingGenerations}/{maxGenerations} {isPremium ? 'Premium credits' : 'Free credits'}</span>
+                    ) : (
+                      <span className="text-destructive">{isPremium ? 'Daily' : 'Lifetime'} limit reached</span>
+                    )}
+                  </div>
+                </div>
+
                 {/* Results Panel - Mobile */}
                 <AiStudioResultsPanel 
                   loading={loading}
