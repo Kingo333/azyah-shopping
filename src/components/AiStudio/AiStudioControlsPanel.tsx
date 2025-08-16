@@ -77,7 +77,7 @@ export const AiStudioControlsPanel: React.FC<AiStudioControlsPanelProps> = ({
                   <img 
                     src={URL.createObjectURL(personFile)} 
                     alt="Person preview" 
-                    className="w-full h-full object-cover rounded-md"
+                    className="w-full h-full object-contain rounded-md"
                   />
                 ) : (
                   <div className="text-center">
@@ -109,7 +109,7 @@ export const AiStudioControlsPanel: React.FC<AiStudioControlsPanelProps> = ({
                   <img 
                     src={URL.createObjectURL(outfitFile)} 
                     alt="Outfit preview" 
-                    className="w-full h-full object-cover rounded-md"
+                    className="w-full h-full object-contain rounded-md"
                   />
                 ) : (
                   <div className="text-center">
