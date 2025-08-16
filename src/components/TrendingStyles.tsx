@@ -32,7 +32,7 @@ const TrendingStyles: React.FC<TrendingStylesProps> = ({ limit = 6, showMore = t
   const { data: trendingStyles, isLoading } = useQuery({
     queryKey: ['trending-styles', limit],
     queryFn: async () => {
-      // Get popular categories from recent swipes and likes
+      // First try to get popular categories from recent swipes and likes
       const { data: categoryData, error: categoryError } = await supabase
         .from('swipes')
         .select(`
@@ -40,6 +40,7 @@ const TrendingStyles: React.FC<TrendingStylesProps> = ({ limit = 6, showMore = t
           created_at,
           action,
           products!inner (
+            id,
             category_slug,
             subcategory_slug,
             title,
@@ -66,7 +67,7 @@ const TrendingStyles: React.FC<TrendingStylesProps> = ({ limit = 6, showMore = t
           existing.count += 1;
           if (existing.recent_products.length < 3) {
             existing.recent_products.push({
-              id: swipe.product_id,
+              id: product.id,
               title: product.title,
               media_urls: product.media_urls,
               price_cents: product.price_cents,
@@ -80,7 +81,7 @@ const TrendingStyles: React.FC<TrendingStylesProps> = ({ limit = 6, showMore = t
             count: 1,
             growth: Math.floor(Math.random() * 50) + 10, // Simulated growth %
             recent_products: [{
-              id: swipe.product_id,
+              id: product.id,
               title: product.title,
               media_urls: product.media_urls,
               price_cents: product.price_cents,
@@ -89,6 +90,49 @@ const TrendingStyles: React.FC<TrendingStylesProps> = ({ limit = 6, showMore = t
           });
         }
       });
+
+      // If no swipe data available, fallback to showing categories with available products
+      if (categoryMap.size === 0) {
+        const { data: products, error: productsError } = await supabase
+          .from('products')
+          .select('id, category_slug, subcategory_slug, title, media_urls, price_cents, currency')
+          .eq('status', 'active')
+          .order('created_at', { ascending: false });
+
+        if (productsError) throw productsError;
+
+        products?.forEach((product) => {
+          const key = `${product.category_slug}-${product.subcategory_slug}`;
+          
+          if (categoryMap.has(key)) {
+            const existing = categoryMap.get(key)!;
+            existing.count += 1;
+            if (existing.recent_products.length < 3) {
+              existing.recent_products.push({
+                id: product.id,
+                title: product.title,
+                media_urls: product.media_urls,
+                price_cents: product.price_cents,
+                currency: product.currency
+              });
+            }
+          } else {
+            categoryMap.set(key, {
+              category: product.category_slug,
+              subcategory: product.subcategory_slug || product.category_slug,
+              count: 1,
+              growth: Math.floor(Math.random() * 30) + 5, // Lower simulated growth for fallback
+              recent_products: [{
+                id: product.id,
+                title: product.title,
+                media_urls: product.media_urls,
+                price_cents: product.price_cents,
+                currency: product.currency
+              }]
+            });
+          }
+        });
+      }
 
       return Array.from(categoryMap.values())
         .sort((a, b) => b.count - a.count)
