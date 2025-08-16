@@ -132,10 +132,51 @@ export const useAiAssets = () => {
     fetchAssets();
   }, [user]);
 
+  const deleteAssets = async (assetIds: string[]) => {
+    if (!user) {
+      console.log('[useAiAssets] No user available for deleting assets');
+      return false;
+    }
+
+    try {
+      console.log('[useAiAssets] Deleting assets:', assetIds);
+      
+      const { error } = await supabase
+        .from('ai_assets')
+        .delete()
+        .in('id', assetIds)
+        .eq('user_id', user.id); // Ensure users can only delete their own assets
+
+      if (error) {
+        console.error('[useAiAssets] Database error deleting assets:', error);
+        throw error;
+      }
+      
+      console.log('[useAiAssets] Assets deleted successfully');
+      setAssets(prev => prev.filter(asset => !assetIds.includes(asset.id)));
+      
+      toast({
+        title: 'Assets Deleted',
+        description: `${assetIds.length} image${assetIds.length > 1 ? 's' : ''} deleted successfully.`,
+      });
+      
+      return true;
+    } catch (error: any) {
+      console.error('[useAiAssets] Error deleting assets:', error);
+      toast({
+        title: 'Delete Failed',
+        description: 'Failed to delete the selected images. Please try again.',
+        variant: 'destructive'
+      });
+      return false;
+    }
+  };
+
   return {
     assets,
     loading,
     fetchAssets,
-    saveAsset
+    saveAsset,
+    deleteAssets
   };
 };

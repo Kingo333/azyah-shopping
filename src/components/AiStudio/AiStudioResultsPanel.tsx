@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { GlassPanel } from '@/components/ui/glass-panel';
-import { Loader2, Download, Sparkles } from 'lucide-react';
+import { Loader2, Download, Sparkles, Trash2, Check } from 'lucide-react';
 import { AiAsset } from '@/hooks/useAiAssets';
 
 interface AiStudioResultsPanelProps {
@@ -13,6 +13,7 @@ interface AiStudioResultsPanelProps {
   isPremium: boolean;
   onDownload: () => void;
   onResultSelect: (result: any) => void;
+  onDeleteAssets?: (assetIds: string[]) => void;
 }
 
 export const AiStudioResultsPanel: React.FC<AiStudioResultsPanelProps> = ({
@@ -22,8 +23,36 @@ export const AiStudioResultsPanel: React.FC<AiStudioResultsPanelProps> = ({
   remainingGenerations,
   isPremium,
   onDownload,
-  onResultSelect
+  onResultSelect,
+  onDeleteAssets
 }) => {
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [selectedAssets, setSelectedAssets] = useState<string[]>([]);
+
+  const handleAssetClick = (asset: AiAsset) => {
+    if (isSelectionMode) {
+      setSelectedAssets(prev => 
+        prev.includes(asset.id) 
+          ? prev.filter(id => id !== asset.id)
+          : [...prev, asset.id]
+      );
+    } else {
+      onResultSelect({ path: asset.asset_url, status: 'completed' });
+    }
+  };
+
+  const handleDeleteSelected = () => {
+    if (onDeleteAssets && selectedAssets.length > 0) {
+      onDeleteAssets(selectedAssets);
+      setSelectedAssets([]);
+      setIsSelectionMode(false);
+    }
+  };
+
+  const handleCancelSelection = () => {
+    setSelectedAssets([]);
+    setIsSelectionMode(false);
+  };
   return (
     <div className="h-full flex flex-col min-h-0">
       {/* Header */}
@@ -89,31 +118,86 @@ export const AiStudioResultsPanel: React.FC<AiStudioResultsPanelProps> = ({
 
         {/* Results Gallery */}
         <div className="flex-shrink-0">
-          <h4 className="text-sm font-medium mb-2">Your Results</h4>
+          <div className="flex items-center justify-between mb-2">
+            <h4 className="text-sm font-medium">Your Results</h4>
+            {assets.length > 0 && (
+              <div className="flex items-center gap-2">
+                {isSelectionMode ? (
+                  <>
+                    <span className="text-xs text-muted-foreground">
+                      {selectedAssets.length} selected
+                    </span>
+                    <Button 
+                      onClick={handleDeleteSelected} 
+                      size="sm" 
+                      variant="destructive" 
+                      className="h-6 text-xs"
+                      disabled={selectedAssets.length === 0}
+                    >
+                      <Trash2 className="h-3 w-3 mr-1" />
+                      Delete
+                    </Button>
+                    <Button 
+                      onClick={handleCancelSelection} 
+                      size="sm" 
+                      variant="outline" 
+                      className="h-6 text-xs"
+                    >
+                      Cancel
+                    </Button>
+                  </>
+                ) : (
+                  <Button 
+                    onClick={() => setIsSelectionMode(true)} 
+                    size="sm" 
+                    variant="outline" 
+                    className="h-6 text-xs"
+                  >
+                    Select
+                  </Button>
+                )}
+              </div>
+            )}
+          </div>
           <div className="min-h-24">
             {assets.length > 0 ? (
-              <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 gap-1">
-                {assets.slice(0, 20).map((asset) => (
-                  <GlassPanel 
-                    key={asset.id} 
-                    variant="custom" 
-                    className="aspect-square p-0.5 cursor-pointer hover:scale-105 transition-transform"
-                    onClick={() => onResultSelect({ path: asset.asset_url, status: 'completed' })}
-                  >
-                    {asset.asset_url ? (
-                      <img 
-                        src={asset.asset_url} 
-                        alt="Previous result" 
-                        className="w-full h-full object-cover rounded-sm"
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-muted rounded-sm flex items-center justify-center">
-                        <Sparkles className="h-3 w-3 text-muted-foreground" />
-                      </div>
-                    )}
-                  </GlassPanel>
-                ))}
-              </div>
+              <>
+                <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 gap-1">
+                  {assets.slice(0, 20).map((asset) => (
+                    <div key={asset.id} className="relative">
+                      <GlassPanel 
+                        variant="custom" 
+                        className={`aspect-square p-0.5 cursor-pointer hover:scale-105 transition-transform ${
+                          isSelectionMode && selectedAssets.includes(asset.id) 
+                            ? 'ring-2 ring-primary ring-offset-1' 
+                            : ''
+                        }`}
+                        onClick={() => handleAssetClick(asset)}
+                      >
+                        {asset.asset_url ? (
+                          <img 
+                            src={asset.asset_url} 
+                            alt="Previous result" 
+                            className="w-full h-full object-cover rounded-sm"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-muted rounded-sm flex items-center justify-center">
+                            <Sparkles className="h-3 w-3 text-muted-foreground" />
+                          </div>
+                        )}
+                      </GlassPanel>
+                      {isSelectionMode && selectedAssets.includes(asset.id) && (
+                        <div className="absolute top-1 right-1 bg-primary text-primary-foreground rounded-full p-0.5">
+                          <Check className="h-2 w-2" />
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground mt-2 text-center">
+                  Tap and hold image to view full image
+                </p>
+              </>
             ) : (
               <GlassPanel variant="custom" className="p-3 text-center h-20 flex items-center justify-center">
                 <p className="text-xs text-muted-foreground">No results generated yet</p>

@@ -51,7 +51,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
   } = useBitStudio();
   
   const { toast } = useToast();
-  const { assets, loading: assetsLoading, fetchAssets, saveAsset } = useAiAssets();
+  const { assets, loading: assetsLoading, fetchAssets, saveAsset, deleteAssets } = useAiAssets();
   const { isPremium, createPaymentIntent } = useSubscription();
 
   // Generation limits based on user type
@@ -341,37 +341,16 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                 <AiStudioHelpPanel error={error} />
 
                 {/* Results Gallery - Mobile (after help panel) */}
-                <div>
-                  <h4 className="text-sm font-medium mb-2">Your Results</h4>
-                  {assets.length > 0 ? (
-                    <div className="grid grid-cols-6 sm:grid-cols-8 gap-1">
-                      {assets.slice(0, 20).map((asset) => (
-                        <GlassPanel 
-                          key={asset.id} 
-                          variant="custom" 
-                          className="aspect-square p-0.5 cursor-pointer hover:scale-105 transition-transform"
-                          onClick={() => setCurrentResult({ path: asset.asset_url, status: 'completed' })}
-                        >
-                          {asset.asset_url ? (
-                            <img 
-                              src={asset.asset_url} 
-                              alt="Previous result" 
-                              className="w-full h-full object-cover rounded-sm"
-                            />
-                          ) : (
-                            <div className="w-full h-full bg-muted rounded-sm flex items-center justify-center">
-                              <Sparkles className="h-3 w-3 text-muted-foreground" />
-                            </div>
-                          )}
-                        </GlassPanel>
-                      ))}
-                    </div>
-                  ) : (
-                    <GlassPanel variant="custom" className="p-3 text-center h-20 flex items-center justify-center">
-                      <p className="text-xs text-muted-foreground">No results generated yet</p>
-                    </GlassPanel>
-                  )}
-                </div>
+                <AiStudioResultsPanel 
+                  loading={false}
+                  currentResult={null}
+                  assets={assets}
+                  remainingGenerations={remainingGenerations}
+                  isPremium={isPremium}
+                  onDownload={() => {}}
+                  onResultSelect={setCurrentResult}
+                  onDeleteAssets={deleteAssets}
+                />
               </div>
             </div>
 
@@ -387,6 +366,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                   isPremium={isPremium}
                   onDownload={downloadImage}
                   onResultSelect={setCurrentResult}
+                  onDeleteAssets={deleteAssets}
                 />
               </div>
 
