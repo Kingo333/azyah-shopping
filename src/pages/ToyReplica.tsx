@@ -201,7 +201,11 @@ const ToyReplica = () => {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200 p-4">
       <div className="container mx-auto max-w-4xl">
         <div className="mb-6">
-          <BackButton fallbackPath="/feed" className="mb-4 text-gray-700 hover:text-gray-900 hover:bg-gray-200 border-gray-300" variant="outline" />
+          <BackButton 
+            onBack={() => window.location.href = '/feed'} 
+            className="mb-4 text-gray-700 hover:text-gray-900 hover:bg-gray-200 border-gray-300" 
+            variant="outline" 
+          />
           <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
             Toy Replica
           </h1>
