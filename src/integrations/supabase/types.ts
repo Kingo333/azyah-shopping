@@ -1557,6 +1557,19 @@ export type Database = {
           subcategory_slug: Database["public"]["Enums"]["subcategory_type"]
         }[]
       }
+      get_my_profile: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          user_avatar_url: string
+          user_bio: string
+          user_country: string
+          user_created_at: string
+          user_id: string
+          user_name: string
+          user_role: Database["public"]["Enums"]["user_role"]
+          user_website: string
+        }[]
+      }
       get_my_subscription_status: {
         Args: Record<PropertyKey, never>
         Returns: {
