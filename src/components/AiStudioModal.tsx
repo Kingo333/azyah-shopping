@@ -198,8 +198,8 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
   return (
     <Dialog open={open} onOpenChange={v => { if (!v) onClose(); }}>
       {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
-      <DialogContent className="max-w-[95vw] w-[95vw] h-[100dvh] max-h-[100dvh] p-0 border-0 md:max-w-7xl md:h-[95vh] md:max-h-[95vh] md:overflow-hidden">
-        <div className="h-full flex flex-col bg-gradient-to-br from-background via-background/95 to-muted/50">
+      <DialogContent className="max-w-[95vw] w-[95vw] h-[100dvh] p-0 border-0 md:max-w-7xl md:h-[95vh] md:max-h-[95vh] md:overflow-hidden">
+        <div className="h-full flex flex-col bg-gradient-to-br from-background via-background/95 to-muted/50 md:overflow-hidden">
           {/* Header */}
           <div className="flex-shrink-0 z-10">
             <AiStudioHeader 
@@ -210,16 +210,11 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
           </div>
 
           {/* Main Content - Mobile First Layout */}
-          <div className="flex-1 flex flex-col lg:flex-row min-h-0 relative">
+          <div className="flex-1 lg:flex lg:flex-row lg:min-h-0 relative">
             
-            {/* Mobile: Single scroll container - Remove all height restrictions */}
-            <div className="lg:hidden flex-1 overflow-y-auto" 
-                 style={{ 
-                   touchAction: 'pan-y', 
-                   WebkitOverflowScrolling: 'touch',
-                   overscrollBehavior: 'contain'
-                 }}>
-              <div className="p-3 space-y-4 pb-20">
+            {/* Mobile: Simple scrollable container */}
+            <div className="lg:hidden">
+              <div className="p-3 space-y-4 pb-20 overflow-y-auto" style={{ height: 'calc(100dvh - 100px)' }}>
                 {/* Current Result Display - Mobile (at very top) */}
                 <div className="min-h-[250px]">
                   <div className="flex items-center justify-between mb-3">
@@ -263,7 +258,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                         <Sparkles className="h-12 w-12 mx-auto text-muted-foreground/50" />
                         <div>
                           <h4 className="text-lg font-medium mb-1">Ready to generate</h4>
-                          <p className="text-sm text-muted-foreground">Upload both images to start</p>
+                          <p className="text-sm text-muted-foreground">Upload both image to generate</p>
                           <div className="mt-2 text-xs text-muted-foreground">
                             {remainingGenerations > 0 ? (
                               <span>{remainingGenerations} remaining {isPremium ? 'today' : 'lifetime'}</span>
