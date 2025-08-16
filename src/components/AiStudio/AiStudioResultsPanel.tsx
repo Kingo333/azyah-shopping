@@ -96,22 +96,7 @@ export const AiStudioResultsPanel: React.FC<AiStudioResultsPanelProps> = ({
                   )}
                 </div>
               </div>
-            ) : (
-              <div className="text-center space-y-3 p-4">
-                <Sparkles className="h-12 w-12 mx-auto text-muted-foreground/50" />
-                <div>
-                  <h4 className="text-lg font-medium mb-1">Ready to generate</h4>
-                  <p className="text-sm text-muted-foreground">Upload both images to start</p>
-                  <div className="mt-2 text-xs text-muted-foreground">
-                    {remainingGenerations > 0 ? (
-                      <span>{remainingGenerations} remaining {isPremium ? 'today' : 'lifetime'}</span>
-                    ) : (
-                      <span className="text-destructive">{isPremium ? 'Daily' : 'Lifetime'} limit reached</span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
+            ) : null}
           </GlassPanel>
         </div>
 
