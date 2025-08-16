@@ -59,7 +59,7 @@ export const AiStudioControlsPanel: React.FC<AiStudioControlsPanelProps> = ({
         <div className="grid grid-cols-2 gap-2">
           {/* Person Upload */}
           <div>
-            <Label className={`text-xs block mb-1 transition-colors ${personImageId ? 'text-green-500' : ''}`}>Person Image</Label>
+            <Label className={`text-xs block mb-1 transition-colors font-semibold ${personImageId ? 'text-green-600' : ''}`}>📷 Person Image</Label>
             <div className="relative">
               <input
                 type="file"
@@ -96,7 +96,7 @@ export const AiStudioControlsPanel: React.FC<AiStudioControlsPanelProps> = ({
 
           {/* Outfit Upload */}
           <div>
-            <Label className={`text-xs block mb-1 transition-colors ${outfitImageId ? 'text-green-500' : ''}`}>Outfit Image</Label>
+            <Label className={`text-xs block mb-1 transition-colors font-semibold ${outfitImageId ? 'text-green-600' : ''}`}>👕 Outfit Image</Label>
             <div className="relative">
               <input
                 type="file"
