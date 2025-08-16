@@ -203,7 +203,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
           />
 
           {/* Main Content */}
-          <div className="flex-1 flex flex-col lg:flex-row gap-3 px-3 pb-3 min-h-0 overflow-hidden">
+          <div className="flex-1 flex flex-col lg:flex-row gap-3 px-3 pb-3 min-h-0 overflow-y-auto">
             {/* Results Section */}
             <div className="flex-1 min-h-0 flex flex-col">
               <AiStudioResultsPanel 
