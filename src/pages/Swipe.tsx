@@ -7,6 +7,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/contexts/AuthContext";
 import SwipeDeck from '@/components/SwipeDeck';
 import ProductListView from '@/components/ProductListView';
@@ -132,6 +133,19 @@ const Swipe = () => {
             </div>
             
             <div className="flex items-center gap-1 sm:gap-2 flex-1 justify-end max-w-full">
+              {/* View Mode Toggle - Only show after sufficient swipes */}
+              {showListToggle && (
+                <div className="flex items-center gap-2 mr-2">
+                  <LayoutGrid className="h-4 w-4 text-muted-foreground" />
+                  <Switch
+                    checked={viewMode === 'list'}
+                    onCheckedChange={(checked) => setViewMode(checked ? 'list' : 'swipe')}
+                    className="data-[state=checked]:bg-primary"
+                  />
+                  <List className="h-4 w-4 text-muted-foreground" />
+                </div>
+              )}
+
               {/* Search Bar */}
               <div className="relative flex-1 max-w-[160px] sm:max-w-[200px]">
                 <Search className="absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
@@ -148,21 +162,6 @@ const Swipe = () => {
                 <Heart className="h-4 w-4" />
                 <span className="hidden lg:inline lg:ml-2">Likes</span>
               </Button>
-
-              {/* View Mode Toggle - Only show after sufficient swipes */}
-              {showListToggle && (
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => setViewMode(viewMode === 'swipe' ? 'list' : 'swipe')}
-                  className="bg-gradient-feature border-0 hover:shadow-soft p-2 flex-shrink-0"
-                >
-                  {viewMode === 'swipe' ? <List className="h-4 w-4" /> : <LayoutGrid className="h-4 w-4" />}
-                  <span className="hidden lg:inline lg:ml-2">
-                    {viewMode === 'swipe' ? 'List' : 'Swipe'}
-                  </span>
-                </Button>
-              )}
               
               {/* Filters Menu */}
               <Popover open={showFilters} onOpenChange={setShowFilters}>
