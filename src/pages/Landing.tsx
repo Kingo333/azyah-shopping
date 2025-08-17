@@ -238,9 +238,9 @@ export default function Landing() {
                 
                 <div className="space-y-4">
                   <h1 className="font-cormorant text-6xl lg:text-8xl xl:text-9xl font-bold leading-[0.85] tracking-tight">
-                    <span className="block text-white">Curated</span>
-                    <span className="block bg-gradient-to-r from-primary via-primary to-primary/80 bg-clip-text text-transparent italic">Luxury</span>
-                    <span className="block text-white">Awaits</span>
+                    <span className="block text-white">Discover</span>
+                    <span className="block bg-gradient-to-r from-primary via-primary to-primary/80 bg-clip-text text-transparent italic">Fashion</span>
+                    <span className="block text-white">Your Way</span>
                   </h1>
                   <p className="text-xl lg:text-2xl text-gray-200 max-w-lg leading-relaxed font-medium">
                     Smart fashion discovery that learns your style.
