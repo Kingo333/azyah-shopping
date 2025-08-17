@@ -280,7 +280,7 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
                           <Button
                             size="sm"
                             variant="ghost"
-                            className="h-6 w-6 p-0 text-white hover:text-green-400"
+                            className="h-6 w-6 p-0 text-white hover:text-red-400"
                             onClick={(e) => {
                               e.stopPropagation();
                               handleShopNow(product.id);
