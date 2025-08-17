@@ -236,11 +236,11 @@ export default function Landing() {
                 
                 <div className="space-y-4">
                   <h1 className="font-cormorant text-6xl lg:text-8xl xl:text-9xl font-bold leading-[0.85] tracking-tight">
-                    <span className="block text-foreground">Discover</span>
+                    <span className="block text-white">Discover</span>
                     <span className="block bg-gradient-to-r from-primary via-primary to-primary/80 bg-clip-text text-transparent italic">Fashion</span>
-                    <span className="block text-foreground">Through Swipe</span>
+                    <span className="block text-white">Through Swipe</span>
                   </h1>
-                  <p className="text-xl lg:text-2xl text-muted-foreground max-w-lg leading-relaxed font-medium">
+                  <p className="text-xl lg:text-2xl text-gray-200 max-w-lg leading-relaxed font-medium">
                     Experience the future of fashion shopping with AI-powered curation and personalized style discovery.
                   </p>
                 </div>
@@ -272,13 +272,13 @@ export default function Landing() {
                     ))}
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-foreground">50,000+ Members</p>
-                    <p className="text-xs text-primary font-medium">Global Community</p>
+                    <p className="text-sm font-semibold text-gray-200">50,000+ Members</p>
+                    <p className="text-xs text-gray-300 font-medium">Global Community</p>
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
                   {[...Array(5)].map((_, i) => <Star key={i} className="w-5 h-5 fill-primary text-primary"/>)}
-                  <span className="text-sm font-semibold ml-2">4.9/5</span>
+                  <span className="text-sm font-semibold ml-2 text-gray-200">4.9/5</span>
                 </div>
               </div>
             </div>
@@ -332,11 +332,11 @@ export default function Landing() {
         <div className="absolute inset-0 bg-gradient-to-br from-primary/8 via-transparent to-primary/12 opacity-80"/>
         <div className="container max-w-7xl mx-auto px-6 lg:px-12 relative">
           <div className="text-center mb-16">
-            <h2 className="font-cormorant text-4xl lg:text-6xl font-bold mb-4">
+            <h2 className="font-cormorant text-4xl lg:text-6xl font-bold mb-4 text-gray-800">
               Trending Styles
               <span className="block text-primary italic">Every Woman Needs</span>
             </h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+            <p className="text-lg text-gray-700 max-w-2xl mx-auto">
               Discover our curated collection of must-have pieces, handpicked by fashion experts and loved by our community.
             </p>
           </div>
@@ -532,11 +532,11 @@ export default function Landing() {
         <div className="absolute inset-0 bg-gradient-to-tr from-primary/12 via-transparent to-primary/18 opacity-60"/>
         <div className="container max-w-7xl mx-auto px-6 lg:px-12 relative">
           <div className="text-center mb-20">
-            <h2 className="font-cormorant text-4xl lg:text-6xl font-bold mb-6">
+            <h2 className="font-cormorant text-4xl lg:text-6xl font-bold mb-6 text-gray-800">
               Uncompromising Quality,
               <span className="block text-primary italic">Unmatched Design</span>
             </h2>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
+            <p className="text-xl text-gray-700 max-w-3xl mx-auto leading-relaxed">
               Every piece in our collection is carefully selected for its exceptional quality and design excellence.
             </p>
           </div>
@@ -573,14 +573,14 @@ export default function Landing() {
               ["Premium Materials", "Only the finest fabrics and materials make it into our collections."],
               ["Expert Curation", "Our fashion experts handpick every piece for quality and style."],
               ["Sustainable Practice", "We partner with brands committed to ethical and sustainable fashion."]
-            ].map(([title, desc]) => (
-              <div key={title} className="text-center space-y-4">
-                <div className="w-16 h-16 bg-gradient-to-r from-primary/20 to-primary/10 rounded-xl flex items-center justify-center mx-auto">
-                  <CheckCircle className="w-8 h-8 text-primary"/>
-                </div>
-                <h3 className="font-cormorant text-xl font-bold">{title}</h3>
-                <p className="text-muted-foreground">{desc}</p>
-              </div>
+             ].map(([title, desc]) => (
+               <div key={title} className="text-center space-y-4">
+                 <div className="w-16 h-16 bg-gradient-to-r from-primary/20 to-primary/10 rounded-xl flex items-center justify-center mx-auto">
+                   <CheckCircle className="w-8 h-8 text-primary"/>
+                 </div>
+                 <h3 className="font-cormorant text-xl font-bold text-gray-800">{title}</h3>
+                 <p className="text-gray-700">{desc}</p>
+               </div>
             ))}
           </div>
         </div>
@@ -652,7 +652,7 @@ export default function Landing() {
               Frequently Asked
               <span className="block text-primary italic">Questions</span>
             </h2>
-            <p className="text-xl text-muted-foreground">
+            <p className="text-xl text-gray-200">
               Everything you need to know about Azyah and our premium fashion discovery platform.
             </p>
           </div>
@@ -679,7 +679,7 @@ export default function Landing() {
           </div>
 
           <div className="text-center mt-12">
-            <p className="text-muted-foreground mb-6">Still have questions?</p>
+            <p className="text-gray-200 mb-6">Still have questions?</p>
             <Button 
               variant="outline" 
               size="lg" 
