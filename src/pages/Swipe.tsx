@@ -162,9 +162,9 @@ const Swipe = () => {
                         <List className="h-4 w-4 text-muted-foreground" />
                       </div>
                     </TooltipTrigger>
-                    <TooltipContent className="bg-background border-primary/20 shadow-lg max-w-[250px]">
+                    <TooltipContent className="bg-background border-primary/20 shadow-lg max-w-[200px]">
                       <p className="text-sm">
-                        Switch between swipe and grid views anytime! The AI learns your taste and improves recommendations.
+                        Switch views anytime! AI learns your taste.
                       </p>
                     </TooltipContent>
                   </Tooltip>
