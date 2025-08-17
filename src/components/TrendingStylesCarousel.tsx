@@ -253,8 +253,8 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
                         alt={product.title}
                         className="w-full aspect-square object-cover rounded-lg"
                       />
-                      <div className="absolute inset-0 bg-black/60 opacity-100 md:opacity-0 md:group-hover/product:opacity-100 transition-opacity rounded-md flex items-center justify-center">
-                        <div className="flex gap-1">
+                      <div className="absolute inset-0 bg-black/60 opacity-100 md:opacity-0 md:group-hover/product:opacity-100 transition-opacity rounded-md flex flex-col items-center justify-center gap-2">
+                        <div className="flex gap-2">
                           <Button
                             size="sm"
                             variant="ghost"
@@ -277,19 +277,18 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
                           >
                             <ShoppingBag className="h-3 w-3" />
                           </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-auto w-auto px-2 py-1 text-red-400 hover:text-red-500 hover:bg-red-400/20 flex items-center gap-1"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleShopNow(product.id);
-                            }}
-                          >
-                            <ExternalLink className="h-3 w-3" />
-                            <span className="text-xs font-medium">Shop</span>
-                          </Button>
                         </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-xs font-medium px-3 py-1 h-auto bg-red-500 text-white border-red-500 hover:bg-red-600 hover:border-red-600"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleShopNow(product.id);
+                          }}
+                        >
+                          Shop
+                        </Button>
                       </div>
                     </div>
                   ))}
