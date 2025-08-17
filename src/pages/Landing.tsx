@@ -318,13 +318,13 @@ export default function Landing() {
                   <div className="text-xs font-medium text-center">Swipe Direction</div>
                   <div className="flex space-x-2 mt-2">
                     <div className="w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center">
-                      <span className="text-xs">L</span>
+                      <span className="text-xs">←</span>
                     </div>
                     <div className="w-6 h-6 bg-primary/20 rounded-full flex items-center justify-center">
-                      <span className="text-xs">R</span>
+                      <span className="text-xs">→</span>
                     </div>
                     <div className="w-6 h-6 bg-accent/20 rounded-full flex items-center justify-center">
-                      <span className="text-xs">U</span>
+                      <span className="text-xs">↑</span>
                     </div>
                   </div>
                 </div>
