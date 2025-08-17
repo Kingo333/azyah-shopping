@@ -15,11 +15,6 @@ import {
   Globe,
   Crown,
   ChevronRight,
-  Shirt,
-  Search,
-  TrendingUp,
-  Zap,
-  Plus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SEOHead } from "@/components/SEOHead";
@@ -63,68 +58,124 @@ export default function Landing() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-pink-100">
+    <div className="min-h-screen bg-background">
       <SEOHead
-        title="Divine Drape — Luxury Fashion Discovery"
-        description="Discover luxury fashion through AI-powered curation and personalized style discovery."
+        title="Azyah — Luxury Fashion Discovery"
+        description="Swipe to discover luxury fashion, AI curation, AR try-on, and a global community."
         canonical="https://azyah.app/"
       />
-      
-      {/* Navigation */}
-      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-pink-200/30">
-        <div className="container max-w-7xl mx-auto px-6 lg:px-12 h-16 flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <div className="text-2xl font-bold bg-gradient-to-r from-pink-400 to-pink-600 bg-clip-text text-transparent">
-              Divine Drape
+      {/* NAV */}
+      <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-md border-b border-primary/10">
+        <div className="container max-w-7xl mx-auto px-6 lg:px-12 h-20 flex items-center justify-between">
+          {/* Logo */}
+          <div className="flex items-center space-x-4">
+            <div className="relative w-12 h-12 rounded-lg overflow-hidden shadow-lg">
+              <img src="/marketing/azyah-logo.png" alt="Azyah" className="w-full h-full object-cover"/>
+            </div>
+            <div>
+              <h1 className="font-cormorant text-2xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">Azyah</h1>
+              <p className="text-xs text-primary/70 uppercase tracking-wider">
+                Fashion Discovery
+              </p>
             </div>
           </div>
 
-          <nav className="hidden lg:flex items-center space-x-8">
-            {["Home", "Shop", "About", "FAQ"].map((item) => (
+          {/* Desktop links */}
+          <nav className="hidden lg:flex items-center space-x-12">
+            {[
+              ["Discover", "#discover"],
+              ["Features", "#features"],
+              ["For Brands", "#brands"],
+              ["For Retailers", "#retailers"],
+            ].map(([label, href]) => (
               <button
-                key={item}
-                className="text-gray-700 hover:text-pink-500 transition-colors text-sm font-medium"
+                key={href}
+                onClick={() => scrollToSection(href)}
+                className="relative text-sm font-medium text-muted-foreground hover:text-primary transition-colors group"
               >
-                {item}
+                {label}
+                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all group-hover:w-full"/>
               </button>
             ))}
           </nav>
 
+          {/* CTA + Actions */}
           <div className="hidden lg:flex items-center space-x-4">
-            <Button variant="ghost" size="sm" onClick={() => navigate("/auth")}>
-              Login
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate("/auth")}
+            >
+              Sign In
             </Button>
-            <Button 
-              className="bg-pink-500 hover:bg-pink-600 text-white rounded-full px-6"
+            <Button
+              variant="default"
+              size="sm"
               onClick={() => navigate("/auth")}
             >
               Start Shopping
             </Button>
           </div>
 
+          {/* Mobile burger */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="lg:hidden p-2"
+            aria-label="Toggle menu"
+            className="lg:hidden p-2 rounded-lg hover:bg-primary/10"
           >
-            {mobileMenuOpen ? <X className="w-6 h-6"/> : <Menu className="w-6 h-6"/>}
+            {mobileMenuOpen ? <X className="w-6 h-6 text-primary"/> : <Menu className="w-6 h-6 text-primary"/>}
           </button>
         </div>
 
+        {/* Mobile drawer */}
         {mobileMenuOpen && (
-          <div className="lg:hidden bg-white/95 backdrop-blur-md border-t border-pink-200/30 py-6 px-6">
+          <div
+            role="dialog"
+            aria-modal="true"
+            className="lg:hidden bg-background/95 backdrop-blur-md border-t border-primary/10 py-6 px-6 space-y-6"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                setMobileMenuOpen(false);
+              }
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') {
+                setMobileMenuOpen(false);
+              }
+            }}
+          >
             <nav className="flex flex-col space-y-4">
-              {["Home", "Shop", "About", "FAQ"].map((item) => (
-                <button key={item} className="text-left text-gray-700 hover:text-pink-500">
-                  {item}
+              {[
+                ["Discover", "#discover"],
+                ["Features", "#features"],
+                ["For Brands", "#brands"],
+                ["For Retailers", "#retailers"],
+              ].map(([label, href]) => (
+                <button 
+                  key={href} 
+                  onClick={() => {
+                    scrollToSection(href);
+                    setMobileMenuOpen(false);
+                  }}
+                  className="text-lg text-muted-foreground hover:text-primary text-left"
+                >
+                  {label}
                 </button>
               ))}
             </nav>
-            <div className="mt-4 space-y-3">
-              <Button variant="ghost" className="w-full" onClick={() => navigate("/auth")}>
-                Login
+            <div className="border-t border-primary/10 pt-4 space-y-3">
+              <Button 
+                variant="ghost" 
+                size="lg" 
+                className="justify-start w-full" 
+                onClick={() => navigate("/auth")}
+              >
+                Sign In
               </Button>
               <Button 
-                className="w-full bg-pink-500 hover:bg-pink-600 text-white"
+                variant="default" 
+                size="lg" 
+                className="justify-start w-full" 
                 onClick={() => navigate("/auth")}
               >
                 Start Shopping
@@ -134,262 +185,240 @@ export default function Landing() {
         )}
       </header>
 
-      {/* Hero Section */}
-      <section className="relative min-h-screen flex items-center">
-        <div className="absolute inset-0 bg-gradient-to-br from-pink-400/20 via-transparent to-pink-300/10" />
-        
-        <div className="container max-w-7xl mx-auto px-6 lg:px-12 grid lg:grid-cols-2 gap-16 items-center">
-          {/* Left Content */}
-          <div className="space-y-8 relative z-10">
-            {/* Join Community Badge */}
-            <div className="inline-flex items-center bg-gradient-to-r from-pink-100 to-white rounded-full px-4 py-2 border border-pink-200">
-              <div className="flex -space-x-1 mr-3">
-                {[...Array(4)].map((_, i) => (
-                  <div key={i} className="w-6 h-6 rounded-full bg-gradient-to-r from-pink-300 to-pink-500 border-2 border-white" />
-                ))}
-              </div>
-              <span className="text-sm font-medium text-pink-700">Join the Community of Fashion</span>
-              <Plus className="w-4 h-4 ml-2 text-pink-500" />
-            </div>
+      {/* PREMIUM BANNER */}
+      <div className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground py-3 px-6">
+        <div className="container max-w-7xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Crown className="w-5 h-5" />
+            <span className="font-medium text-sm">Premium: 20 AI Try-ons daily • Unlimited AI generation on Replica • Access to UGC collabs</span>
+          </div>
+          <Button 
+            variant="secondary" 
+            size="sm" 
+            className="text-xs px-4 py-1 h-7"
+            onClick={() => navigate("/auth")}
+          >
+            Learn More
+          </Button>
+        </div>
+      </div>
 
-            {/* Large Typography */}
-            <div className="space-y-4">
-              <h1 className="text-7xl lg:text-9xl font-black leading-none tracking-tight">
-                <span className="block text-transparent bg-clip-text bg-gradient-to-r from-pink-300 to-pink-600">
-                  DIVINE
-                </span>
-                <span className="block text-gray-900">
-                  DRAPE
-                </span>
+      {/* HERO */}
+      <section id="discover" className="relative bg-gradient-to-br from-background to-primary/5 pt-20 pb-32 lg:pt-32 lg:pb-40">
+        <div className="absolute top-20 left-10 w-32 h-32 bg-primary/10 rounded-full blur-3xl animate-pulse"/>
+        <div className="absolute bottom-20 right-10 w-24 h-24 bg-primary/5 rounded-full blur-2xl animate-pulse"/>
+
+        <div className="container max-w-7xl mx-auto px-6 lg:px-12 grid lg:grid-cols-2 gap-16 items-center transition-all duration-1000"
+             style={{ opacity: isVisible ? 1 : 0, transform: `translateY(${isVisible ? 0 : 32}px)` }}>
+          {/* Copy */}
+          <div className="space-y-10">
+            <div className="space-y-6">
+              <span className="inline-flex items-center space-x-3 bg-primary/10 border border-primary/20 rounded-full px-4 py-2">
+                <span className="text-sm font-medium bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent uppercase tracking-wider">Fashion Discovery</span>
+              </span>
+              <h1 className="font-cormorant text-6xl lg:text-8xl font-bold leading-[0.9]">
+                Discover
+                <span className="block bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent italic">Fashion</span>
+                <span className="block">Through Swipe</span>
               </h1>
+              <p className="text-xl lg:text-2xl text-muted-foreground max-w-lg leading-relaxed">
+                Experience the future of fashion shopping with AI-powered curation and personalized style discovery.
+              </p>
             </div>
 
-            {/* New Collection Card */}
-            <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-pink-200/50 max-w-md">
-              <h3 className="font-bold text-gray-900 mb-2">New Collection</h3>
-              <p className="text-gray-600 text-sm mb-4">
-                Discover the latest trends in women's fashion, crafted for every style and occasion.
-              </p>
-              <Button 
-                className="bg-white text-gray-900 border border-gray-200 hover:bg-gray-50 rounded-full px-6"
+            <div className="flex flex-col sm:flex-row gap-4">
+              <Button
+                variant="premium"
+                size="lg"
+                className="group px-8 py-4"
                 onClick={() => navigate("/auth")}
               >
-                View All
+                Shop Now
+                <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform"/>
+              </Button>
+              <Button
+                variant="outline"
+                size="lg"
+                className="px-8 py-4"
+              >
+                <Play className="mr-2 w-5 h-5"/> Watch Film
               </Button>
             </div>
 
-            {/* Small Product Grid */}
-            <div className="grid grid-cols-2 gap-3 max-w-xs">
-              {[1,2,3,4].map((i) => (
-                <div key={i} className="aspect-square bg-gradient-to-br from-pink-100 to-pink-200 rounded-xl p-4 flex items-center justify-center">
-                  <Shirt className="w-8 h-8 text-pink-500" />
+            <div className="flex items-center space-x-8 pt-8">
+              <div className="flex items-center space-x-3">
+                <div className="flex -space-x-2">
+                  {[...Array(5)].map((_, i) => (
+                    <div key={i} className="w-10 h-10 rounded-full bg-gradient-to-r from-primary to-primary/70 border-2 border-background"/>
+                  ))}
                 </div>
-              ))}
+                <div>
+                  <p className="text-sm font-medium">50,000+ Members</p>
+                  <p className="text-xs text-primary/70">Global Community</p>
+                </div>
+              </div>
+              <div className="flex items-center space-x-2">
+                {[...Array(5)].map((_, i) => <Star key={i} className="w-4 h-4 fill-primary text-primary"/>)}
+                <span className="text-sm font-medium">4.9/5</span>
+              </div>
             </div>
           </div>
 
-          {/* Right Content - Model Image */}
+          {/* Visual */}
           <div className="relative">
-            <div className="aspect-[3/4] bg-gradient-to-br from-pink-200 to-pink-300 rounded-3xl overflow-hidden relative">
-              {/* Placeholder for model image */}
-              <div className="absolute inset-0 bg-gradient-to-t from-pink-400/30 to-transparent" />
-              <div className="absolute bottom-8 left-8 text-white">
-                <div className="w-12 h-12 bg-white/20 rounded-full backdrop-blur-sm flex items-center justify-center mb-4">
-                  <Heart className="w-6 h-6" />
-                </div>
-                <h3 className="font-bold text-lg">Trending Styles</h3>
-                <p className="text-white/80">Every Woman Needs</p>
-              </div>
+            <div className="aspect-[4/5] bg-gradient-to-br from-primary/5 to-primary/10 rounded-lg overflow-hidden shadow-lg border border-primary/10">
+              <img src="/marketing/hero-visual.png" alt="Azyah luxury fashion discovery hero" className="w-full h-full object-cover" loading="eager" fetchPriority="high" decoding="async"/>
             </div>
-
-            {/* Floating Elements */}
-            <div className="absolute -top-4 -right-4 w-16 h-16 bg-pink-400 rounded-full opacity-20 animate-pulse" />
-            <div className="absolute -bottom-4 -left-4 w-24 h-24 bg-pink-300 rounded-full opacity-30 animate-pulse" />
+            <div className="absolute -top-4 -right-4 w-24 h-24 bg-primary/20 rounded-full blur-xl animate-pulse"/>
+            <div className="absolute -bottom-4 -left-4 w-32 h-32 bg-primary/10 rounded-full blur-xl animate-pulse"/>
           </div>
         </div>
       </section>
 
-      {/* Trending Styles Grid */}
-      <section className="py-24 bg-gradient-to-b from-gray-900 to-black text-white">
-        <div className="container max-w-7xl mx-auto px-6 lg:px-12">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl lg:text-6xl font-bold mb-4">
-              Trending Styles
+      {/* FEATURES */}
+      <section id="features" className="relative py-24 lg:py-32 bg-gradient-to-b from-primary/5 to-background">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(var(--primary)_/_0.05),transparent_50%)]"/>
+        <div className="container max-w-7xl mx-auto px-6 lg:px-12 relative">
+          <div className="text-center mb-20">
+            <h2 className="font-cormorant text-5xl lg:text-7xl font-bold mb-6">The Future of
+              <span className="block bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent italic">Fashion Discovery</span>
             </h2>
-            <h3 className="text-2xl lg:text-3xl font-light mb-8">
-              Every Woman Needs
-            </h3>
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+              AI-powered personalization • Quality brand partnerships • Curated collections
+            </p>
+            <div className="w-24 h-1 bg-gradient-to-r from-primary to-primary/70 mx-auto mt-8 rounded-full"/>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-16">
+          <div className="grid lg:grid-cols-3 gap-8">
             {[
-              { name: "Casual Chic", color: "from-amber-400 to-orange-500" },
-              { name: "Business Pro", color: "from-blue-400 to-indigo-500" },
-              { name: "Evening Glam", color: "from-purple-400 to-pink-500" },
-              { name: "Street Style", color: "from-green-400 to-teal-500" },
-              { name: "Vintage Vibes", color: "from-yellow-400 to-orange-500" },
-              { name: "Minimalist", color: "from-gray-400 to-slate-500" },
-              { name: "Boho Chic", color: "from-pink-400 to-rose-500" },
-              { name: "Sport Luxe", color: "from-cyan-400 to-blue-500" },
-            ].map((style, i) => (
-              <div key={i} className="group cursor-pointer">
-                <div className={`aspect-square bg-gradient-to-br ${style.color} rounded-2xl mb-4 flex items-center justify-center relative overflow-hidden group-hover:scale-105 transition-transform duration-300`}>
-                  <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors" />
-                  <Shirt className="w-12 h-12 text-white relative z-10" />
+              ["AI Curation", "/marketing/ai-curation-icon.png", "Our advanced AI learns your unique style and curates personalized collections.", ["Personalized recommendations","Style learning algorithm","Trend forecasting"]],
+              ["Exclusive Access", "/marketing/exclusive-access-icon.png", "Access limited collections and early releases from premium brands.", ["Pre-launch access","Limited collections","VIP perks"]],
+              ["Global Community", "/marketing/global-community-icon.png", "Connect with enthusiasts worldwide and share discoveries.", ["Style inspiration","Global trends","Community sharing"]],
+            ].map(([title, icon, desc, bullets]) => (
+              <article key={title as string} className="group bg-card/50 backdrop-blur-sm rounded-lg p-10 shadow-lg hover:shadow-xl border border-primary/10 hover:border-primary/20 transition-all duration-300">
+                <div className="w-16 h-16 relative rounded-lg shadow-md group-hover:shadow-lg transition-shadow">
+                  <img src={icon as string} alt={title as string} className="w-full h-full object-cover rounded-lg" loading="lazy" decoding="async"/>
                 </div>
-                <h4 className="text-sm font-medium text-center">{style.name}</h4>
-              </div>
-            ))}
-          </div>
-
-          <div className="text-center">
-            <Button 
-              className="bg-pink-500 hover:bg-pink-600 text-white rounded-full px-8 py-3"
-              onClick={() => navigate("/auth")}
-            >
-              View All Categories
-            </Button>
-          </div>
-        </div>
-      </section>
-
-      {/* Quality Section */}
-      <section className="py-24 bg-gradient-to-b from-gray-900 to-black text-white">
-        <div className="container max-w-7xl mx-auto px-6 lg:px-12">
-          <div className="grid lg:grid-cols-2 gap-16 items-center">
-            <div>
-              <h2 className="text-4xl lg:text-5xl font-bold mb-6">
-                Uncompromising Quality,
-                <br />
-                Unmatched Design
-              </h2>
-              
-              <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20">
-                <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mb-6">
-                  <Crown className="w-8 h-8 text-white" />
-                </div>
-                <p className="text-white/80 mb-6 leading-relaxed">
-                  Luxury skincare that nourishes your skin from within, designed for radiant beauty and 
-                  lasting results. Luxury skincare that nourishes your skin from within, designed for radiant 
-                  beauty and lasting results.
-                </p>
-                <Button 
-                  className="bg-pink-500 hover:bg-pink-600 text-white rounded-full px-6"
-                  onClick={() => navigate("/auth")}
-                >
-                  Learn More
-                </Button>
-              </div>
-            </div>
-
-            <div className="relative">
-              <div className="aspect-square bg-gradient-to-br from-pink-500/20 to-purple-500/20 rounded-full flex items-center justify-center">
-                <div className="w-64 h-64 bg-white/10 rounded-full backdrop-blur-sm flex items-center justify-center">
-                  <div className="text-center">
-                    <Sparkles className="w-16 h-16 text-white mx-auto mb-4" />
-                    <p className="text-white font-medium">Premium Quality</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* FAQ Section */}
-      <section className="py-24 bg-gradient-to-b from-gray-900 to-black text-white">
-        <div className="container max-w-4xl mx-auto px-6 lg:px-12">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl lg:text-5xl font-bold mb-8">
-              Frequently Asked Questions
-            </h2>
-          </div>
-
-          <div className="space-y-4">
-            {[
-              "Do You Accept Returns And Exchanges?",
-              "How Do You Ensure The Quality Of Your Work?",
-              "How Can I Track My Order?",
-              "What Sizes Do You Offer?"
-            ].map((question, i) => (
-              <div key={i} className="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 p-6 hover:bg-white/10 transition-colors cursor-pointer group">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-medium">{question}</h3>
-                  <ChevronRight className="w-5 h-5 text-white/60 group-hover:text-white transition-colors" />
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="flex justify-center mt-12 space-x-4">
-            <div className="w-12 h-12 bg-pink-500 rounded-full flex items-center justify-center">
-              <span className="text-white font-bold">C</span>
-            </div>
-            <div className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center">
-              <span className="text-white font-bold">I</span>
-            </div>
-            <div className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center">
-              <span className="text-white font-bold">A</span>
-            </div>
-            <div className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center">
-              <span className="text-white font-bold">F</span>
-            </div>
-          </div>
-
-          <div className="text-center mt-16">
-            <p className="text-white/60 mb-8">Follow us and get a chance to win 80% off</p>
-            <Button 
-              className="bg-pink-500 hover:bg-pink-600 text-white rounded-full px-8 py-3"
-              onClick={() => navigate("/auth")}
-            >
-              Follow Us
-            </Button>
-          </div>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="py-16 bg-gray-900 text-white">
-        <div className="container max-w-7xl mx-auto px-6 lg:px-12">
-          <div className="grid lg:grid-cols-4 gap-8 mb-12">
-            <div className="space-y-4">
-              <div className="text-2xl font-bold bg-gradient-to-r from-pink-400 to-pink-600 bg-clip-text text-transparent">
-                Divine Drape
-              </div>
-              <p className="text-gray-400 text-sm">
-                The world's most exclusive luxury fashion discovery platform.
-              </p>
-            </div>
-            
-            {[
-              ["Platform", ["Discover", "Collections", "Community", "Premium"]],
-              ["Partners", ["For Brands", "For Retailers", "Analytics", "Support"]],
-              ["Company", ["About", "Careers", "Press", "Contact"]],
-            ].map(([title, links]) => (
-              <div key={title as string} className="space-y-4">
-                <h4 className="font-medium text-white">{title}</h4>
-                <ul className="space-y-2">
-                  {(links as string[]).map(link => (
-                    <li key={link}>
-                      <button className="text-sm text-gray-400 hover:text-white transition-colors">
-                        {link}
-                      </button>
+                <h3 className="font-serif text-2xl font-bold mt-6">{title}</h3>
+                <p className="text-muted-foreground mt-4">{desc}</p>
+                <ul className="space-y-2 mt-6">
+                  {(bullets as string[]).map(b => (
+                    <li key={b} className="flex items-center space-x-3 text-sm text-muted-foreground">
+                      <CheckCircle className="w-4 h-4 text-primary flex-shrink-0"/>
+                      <span>{b}</span>
                     </li>
                   ))}
                 </ul>
-              </div>
+              </article>
             ))}
           </div>
-          
-          <div className="pt-8 border-t border-gray-800 flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
-            <p className="text-sm text-gray-400">© 2024 Divine Drape. All rights reserved.</p>
-            <div className="flex space-x-6">
-              {["Privacy Policy", "Terms of Service", "Cookie Policy"].map(link => (
-                <button key={link} className="text-sm text-gray-400 hover:text-white transition-colors">
-                  {link}
-                </button>
+        </div>
+      </section>
+
+      {/* PARTNER CTA */}
+      <section id="brands" className="py-24 lg:py-32">
+        <div className="container max-w-7xl mx-auto px-6 lg:px-12 grid lg:grid-cols-2 gap-16 items-center">
+          <div className="space-y-10">
+            <h2 className="font-cormorant text-5xl lg:text-6xl font-bold">Partner with
+              <span className="block text-primary italic">Azyah</span>
+            </h2>
+            <p className="text-xl text-muted-foreground">Showcase collections to a curated audience.</p>
+            <div className="grid sm:grid-cols-2 gap-6">
+              {[
+                ["For Brands", "/auth?role=brand"],
+                ["For Retailers", "/auth?role=retailer"],
+              ].map(([label, href]) => (
+                <div key={label} className="space-y-4">
+                  <h3 className="font-cormorant text-2xl font-bold">{label}</h3>
+                  <p className="text-muted-foreground">
+                    {label === "For Brands" ? "Show your line to fashion lovers." : "Expand reach with AI analytics."}
+                  </p>
+                  <Button 
+                    variant="outline" 
+                    className="w-full"
+                    onClick={() => navigate(href as string)}
+                  >
+                    Join as {label.split(" ")[1]} <ChevronRight className="ml-2 w-4 h-4"/>
+                  </Button>
+                </div>
               ))}
             </div>
+          </div>
+
+          <div className="relative">
+            <div className="aspect-[4/3] bg-muted rounded-lg shadow-lg flex items-center justify-center">
+              <div className="text-center space-y-4">
+                <div className="flex items-center justify-center space-x-4">
+                  <Crown className="w-12 h-12 text-primary"/>
+                  <Globe className="w-12 h-12 text-primary"/>
+                </div>
+                <p className="text-muted-foreground">Partner Excellence</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* FINAL CTA */}
+      <section id="retailers" className="relative py-24 lg:py-32 bg-foreground text-background overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent"/>
+        <div className="container max-w-7xl mx-auto px-6 lg:px-12 text-center relative space-y-10">
+          <h2 className="font-cormorant text-5xl lg:text-7xl font-bold">
+            Begin Your <span className="block text-primary italic">Luxury Journey</span>
+          </h2>
+          <p className="text-xl lg:text-2xl text-background/80 max-w-3xl mx-auto">
+            Join the exclusive community that discovers, curates & celebrates luxury fashion.
+          </p>
+          <Button 
+            variant="secondary" 
+            size="lg" 
+            className="px-10 py-4"
+            onClick={() => navigate("/auth")}
+          >
+            Start Your Journey <ArrowRight className="ml-2 w-5 h-5"/>
+          </Button>
+          <p className="text-background/60 text-sm uppercase tracking-wider">Exclusive • Curated • Personal</p>
+        </div>
+      </section>
+
+      {/* FOOTER */}
+      <footer className="py-16 bg-muted/30 border-t border-border">
+        <div className="container max-w-7xl mx-auto px-6 lg:px-12 grid lg:grid-cols-4 gap-8">
+          <div className="space-y-4">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
+                <Heart className="w-5 h-5 text-primary-foreground"/>
+              </div>
+              <div>
+                <h3 className="font-cormorant text-xl font-bold">Azyah</h3>
+                <p className="text-xs text-muted-foreground uppercase">Fashion Discovery</p>
+              </div>
+            </div>
+            <p className="text-sm text-muted-foreground">The world's most exclusive luxury fashion discovery platform.</p>
+          </div>
+          {[
+            ["Platform", ["Discover", "Collections", "Community", "Premium"]],
+            ["Partners", ["For Brands", "For Retailers", "Analytics", "Support"]],
+            ["Company", ["About", "Careers", "Press", "Contact"]],
+          ].map(([title, links]) => (
+            <div key={title as string}>
+              <h4 className="font-medium text-foreground mb-4">{title}</h4>
+              <ul className="space-y-2 text-sm text-muted-foreground">
+                {(links as string[]).map(l => 
+                  <li key={l}>
+                    <button className="hover:text-foreground transition-colors">{l}</button>
+                  </li>
+                )}
+              </ul>
+            </div>
+          ))}
+        </div>
+        <div className="container max-w-7xl mx-auto px-6 lg:px-12 mt-12 pt-8 border-t border-border flex flex-col md:flex-row items-center justify-between">
+          <p className="text-sm text-muted-foreground">©2024 Azyah. All rights reserved.</p>
+          <div className="flex items-center space-x-6 text-sm text-muted-foreground mt-4 md:mt-0">
+            {["Privacy", "Terms", "Cookies"].map(l => 
+              <button key={l} className="hover:text-foreground transition-colors">{l}</button>
+            )}
           </div>
         </div>
       </footer>
