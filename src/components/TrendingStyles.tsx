@@ -1,11 +1,12 @@
 import React from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { TrendingUp, ArrowRight } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { TrendingUp, Heart, ShoppingBag, ExternalLink } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
 
 interface TrendingStyle {
   category: string;
@@ -27,7 +28,8 @@ interface TrendingStylesProps {
 }
 
 const TrendingStyles: React.FC<TrendingStylesProps> = ({ limit = 6, showMore = true }) => {
-  const navigate = useNavigate();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
 
   const { data: trendingStyles, isLoading } = useQuery({
     queryKey: ['trending-styles', limit],
@@ -90,6 +92,97 @@ const TrendingStyles: React.FC<TrendingStylesProps> = ({ limit = 6, showMore = t
     }).format(cents / 100);
   };
 
+  const addToLikesMutation = useMutation({
+    mutationFn: async (productId: string) => {
+      if (!user?.id) throw new Error('User not authenticated');
+      
+      const { error } = await supabase
+        .from('likes')
+        .insert({
+          user_id: user.id,
+          product_id: productId
+        });
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({
+        title: "Added to likes",
+        description: "Item has been added to your likes."
+      });
+    }
+  });
+
+  const addToWishlistMutation = useMutation({
+    mutationFn: async (productId: string) => {
+      if (!user?.id) throw new Error('User not authenticated');
+      
+      // Get or create default wishlist
+      let { data: wishlists } = await supabase
+        .from('wishlists')
+        .select('id')
+        .eq('user_id', user.id)
+        .limit(1);
+
+      let wishlistId = wishlists?.[0]?.id;
+
+      if (!wishlistId) {
+        const { data: newWishlist, error: wishlistError } = await supabase
+          .from('wishlists')
+          .insert({
+            user_id: user.id,
+            title: 'My Wishlist'
+          })
+          .select('id')
+          .single();
+
+        if (wishlistError) throw wishlistError;
+        wishlistId = newWishlist.id;
+      }
+
+      const { error } = await supabase
+        .from('wishlist_items')
+        .insert({
+          wishlist_id: wishlistId,
+          product_id: productId
+        });
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({
+        title: "Added to wishlist",
+        description: "Item has been added to your wishlist."
+      });
+    }
+  });
+
+  const handleShopNow = async (productId: string) => {
+    try {
+      const { data: product } = await supabase
+        .from('products')
+        .select('external_url')
+        .eq('id', productId)
+        .single();
+
+      if (product?.external_url) {
+        window.open(product.external_url, '_blank', 'noopener,noreferrer');
+      } else {
+        toast({
+          title: "Shop link not available",
+          description: "This product doesn't have a shop link available.",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to open shop link.",
+        variant: "destructive"
+      });
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -116,13 +209,7 @@ const TrendingStyles: React.FC<TrendingStylesProps> = ({ limit = 6, showMore = t
         {trendingStyles?.map((style, index) => (
           <Card 
             key={`${style.category}-${style.subcategory}`}
-            className="group hover:shadow-lg transition-all duration-300 cursor-pointer"
-            onClick={() => navigate('/swipe', { 
-              state: { 
-                category: style.category, 
-                subcategory: style.subcategory 
-              } 
-            })}
+            className="group hover:shadow-lg transition-all duration-300"
           >
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
@@ -140,61 +227,59 @@ const TrendingStyles: React.FC<TrendingStylesProps> = ({ limit = 6, showMore = t
             </CardHeader>
             
             <CardContent>
-              <div className="flex gap-2 mb-3">
-                   {style.recent_products.slice(0, 3).map((product) => (
-                     <div key={product.id} className="relative group/product">
-                       <img
-                         src={product.image_url || '/placeholder.svg'}
-                         alt={product.title}
-                         className="w-16 h-16 object-cover rounded-md"
-                       />
-                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover/product:opacity-100 transition-opacity rounded-md flex items-center justify-center">
-                      <Button
-                        size="sm"
-                        className="text-xs py-1 px-2 h-auto bg-primary hover:bg-primary-glow"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          // Navigate to external product page - will implement proper link
-                          window.open(`/product/${product.id}`, '_blank');
-                        }}
-                      >
-                        Buy Now
-                      </Button>
+              <div className="grid grid-cols-3 gap-2 mb-4">
+                {style.recent_products.slice(0, 3).map((product) => (
+                  <div key={product.id} className="relative group/product">
+                    <img
+                      src={product.image_url || '/placeholder.svg'}
+                      alt={product.title}
+                      className="w-full aspect-square object-cover rounded-md"
+                    />
+                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover/product:opacity-100 transition-opacity rounded-md flex flex-col items-center justify-center gap-1">
+                      <div className="flex gap-1">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-6 w-6 p-0 text-white hover:text-red-400"
+                          onClick={() => addToLikesMutation.mutate(product.id)}
+                        >
+                          <Heart className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-6 w-6 p-0 text-white hover:text-blue-400"
+                          onClick={() => addToWishlistMutation.mutate(product.id)}
+                        >
+                          <ShoppingBag className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-6 w-6 p-0 text-white hover:text-green-400"
+                          onClick={() => handleShopNow(product.id)}
+                        >
+                          <ExternalLink className="h-3 w-3" />
+                        </Button>
+                      </div>
+                      <span className="text-white text-xs font-medium">
+                        {formatPrice(product.price_cents, product.currency)}
+                      </span>
                     </div>
                   </div>
                 ))}
               </div>
               
               <div className="space-y-2">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">
-                    {style.count} likes this week
-                  </span>
-                  <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                <div className="text-center text-sm text-muted-foreground">
+                  {style.count} products trending
                 </div>
                 
-                {/* Price range for trending products */}
                 {style.recent_products.length > 0 && (
-                  <div className="flex items-center justify-between">
+                  <div className="text-center">
                     <span className="text-xs text-muted-foreground">
                       From {formatPrice(Math.min(...style.recent_products.map(p => p.price_cents)))}
                     </span>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-6 text-xs py-0 px-2 hover:bg-primary hover:text-primary-foreground"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigate('/swipe', { 
-                          state: { 
-                            category: style.category, 
-                            subcategory: style.subcategory 
-                          } 
-                        });
-                      }}
-                    >
-                      Shop Style
-                    </Button>
                   </div>
                 )}
               </div>
@@ -207,11 +292,10 @@ const TrendingStyles: React.FC<TrendingStylesProps> = ({ limit = 6, showMore = t
         <div className="text-center">
           <Button 
             variant="outline" 
-            onClick={() => navigate('/trending-styles')}
+            onClick={() => window.location.href = '/trending-styles'}
             className="hover:bg-primary hover:text-primary-foreground"
           >
             View All Trending Styles
-            <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
         </div>
       )}

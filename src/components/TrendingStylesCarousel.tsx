@@ -1,6 +1,7 @@
 import React from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -11,8 +12,8 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
-import { TrendingUp, ArrowRight } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { TrendingUp, Heart, ShoppingBag, ExternalLink } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
 
 interface TrendingStyle {
   category: string;
@@ -33,7 +34,8 @@ interface TrendingStylesCarouselProps {
 }
 
 const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit = 8 }) => {
-  const navigate = useNavigate();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
 
   const { data: trendingStyles, isLoading } = useQuery({
     queryKey: ['trending-styles-carousel', limit],
@@ -96,6 +98,97 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
     }).format(cents / 100);
   };
 
+  const addToLikesMutation = useMutation({
+    mutationFn: async (productId: string) => {
+      if (!user?.id) throw new Error('User not authenticated');
+      
+      const { error } = await supabase
+        .from('likes')
+        .insert({
+          user_id: user.id,
+          product_id: productId
+        });
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({
+        title: "Added to likes",
+        description: "Item has been added to your likes."
+      });
+    }
+  });
+
+  const addToWishlistMutation = useMutation({
+    mutationFn: async (productId: string) => {
+      if (!user?.id) throw new Error('User not authenticated');
+      
+      // Get or create default wishlist
+      let { data: wishlists } = await supabase
+        .from('wishlists')
+        .select('id')
+        .eq('user_id', user.id)
+        .limit(1);
+
+      let wishlistId = wishlists?.[0]?.id;
+
+      if (!wishlistId) {
+        const { data: newWishlist, error: wishlistError } = await supabase
+          .from('wishlists')
+          .insert({
+            user_id: user.id,
+            title: 'My Wishlist'
+          })
+          .select('id')
+          .single();
+
+        if (wishlistError) throw wishlistError;
+        wishlistId = newWishlist.id;
+      }
+
+      const { error } = await supabase
+        .from('wishlist_items')
+        .insert({
+          wishlist_id: wishlistId,
+          product_id: productId
+        });
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({
+        title: "Added to wishlist",
+        description: "Item has been added to your wishlist."
+      });
+    }
+  });
+
+  const handleShopNow = async (productId: string) => {
+    try {
+      const { data: product } = await supabase
+        .from('products')
+        .select('external_url')
+        .eq('id', productId)
+        .single();
+
+      if (product?.external_url) {
+        window.open(product.external_url, '_blank', 'noopener,noreferrer');
+      } else {
+        toast({
+          title: "Shop link not available",
+          description: "This product doesn't have a shop link available.",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to open shop link.",
+        variant: "destructive"
+      });
+    }
+  };
+
   if (isLoading) {
     return (
       <Carousel className="w-full">
@@ -133,15 +226,7 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
       <CarouselContent className="-ml-2 md:-ml-4">
         {trendingStyles.map((style, index) => (
           <CarouselItem key={`${style.category}-${style.subcategory}`} className="pl-2 md:pl-4 md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
-            <Card 
-              className="group hover:shadow-lg transition-all duration-300 cursor-pointer h-full"
-              onClick={() => navigate('/swipe', { 
-                state: { 
-                  category: style.category, 
-                  subcategory: style.subcategory 
-                } 
-              })}
-            >
+            <Card className="group hover:shadow-lg transition-all duration-300 h-full">
               <CardContent className="p-4 h-full flex flex-col">
                 {/* Header */}
                 <div className="flex items-center justify-between mb-3">
@@ -159,7 +244,7 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
                   {formatCategoryName(style.category, style.subcategory)}
                 </h4>
 
-                {/* Product Images */}
+                {/* Product Images with Actions */}
                 <div className="flex gap-2 mb-3 flex-1">
                   {style.recent_products.slice(0, 2).map((product) => (
                     <div key={product.id} className="relative group/product flex-1">
@@ -169,40 +254,57 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
                         className="w-full h-16 object-cover rounded-md"
                       />
                       <div className="absolute inset-0 bg-black/60 opacity-0 group-hover/product:opacity-100 transition-opacity rounded-md flex items-center justify-center">
-                        <span className="text-white text-xs font-medium">View</span>
+                        <div className="flex gap-1">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 w-6 p-0 text-white hover:text-red-400"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              addToLikesMutation.mutate(product.id);
+                            }}
+                          >
+                            <Heart className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 w-6 p-0 text-white hover:text-blue-400"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              addToWishlistMutation.mutate(product.id);
+                            }}
+                          >
+                            <ShoppingBag className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 w-6 p-0 text-white hover:text-green-400"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleShopNow(product.id);
+                            }}
+                          >
+                            <ExternalLink className="h-3 w-3" />
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   ))}
                 </div>
 
-                {/* Stats and Action */}
+                {/* Stats */}
                 <div className="space-y-2 mt-auto">
                   <div className="text-xs text-muted-foreground">
                     {style.count} products trending
                   </div>
                   
                   {style.recent_products.length > 0 && (
-                    <div className="flex items-center justify-between">
+                    <div className="text-center">
                       <span className="text-xs text-muted-foreground">
                         From {formatPrice(Math.min(...style.recent_products.map(p => p.price_cents)))}
                       </span>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-6 text-xs py-0 px-2 hover:bg-primary hover:text-primary-foreground"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          navigate('/swipe', { 
-                            state: { 
-                              category: style.category, 
-                              subcategory: style.subcategory 
-                            } 
-                          });
-                        }}
-                      >
-                        Shop
-                        <ArrowRight className="ml-1 h-3 w-3" />
-                      </Button>
                     </div>
                   )}
                 </div>
