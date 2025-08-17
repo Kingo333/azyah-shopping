@@ -654,7 +654,7 @@ export default function Landing() {
           <div className="space-y-6">
             {[
               ["How does AI-powered fashion curation work?", "Our advanced AI learns from your swipes, likes, and preferences to curate personalized fashion collections just for you. The more you use Azyah, the better our recommendations become at understanding your unique style."],
-              ["What is AR try-on and how do I use it?", "Our AR try-on feature lets you virtually try on clothes using your phone's camera. Simply select any item, tap 'Try On', and see how it looks on you in real-time before making a purchase decision."],
+              ["Do you sell the products directly?", "No, Azyah is a fashion discovery platform. We show you products that best fit your taste and style preferences, then redirect you to the original retailer or brand website where you can purchase them directly. We help you discover, they handle the transaction."],
               ["How does the swipe discovery feature work?", "Just like dating apps but for fashion! Swipe right on styles you love, left on ones you don't. Our AI uses these interactions to understand your taste and show you more items you're likely to love."],
               ["What are the benefits of Azyah Premium?", "Premium members get 20 AI try-ons daily, unlimited AI generation in our Replica studio, access to exclusive UGC collaborations, early access to new collections, and priority customer support."],
               ["Can I save items to my closet and wishlist?", "Yes! You can save items to your personal closet, create wishlists, and organize your favorite finds. Share your collections with friends or keep them private - it's up to you."],
