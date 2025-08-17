@@ -231,7 +231,7 @@ export default function Landing() {
             {/* Hero Content */}
             <div className="space-y-10 lg:space-y-12 z-10">
               <div className="space-y-8">
-                <div className="inline-flex items-center space-x-3 bg-white/90 backdrop-blur-sm border border-primary/20 rounded-full px-6 py-3 shadow-lg">
+                <div className="inline-flex items-center space-x-3 bg-background/90 backdrop-blur-sm border border-primary/20 rounded-full px-6 py-3 shadow-lg">
                   <Sparkles className="w-5 h-5 text-primary"/>
                   <span className="text-sm font-semibold text-primary uppercase tracking-wider">Luxury Fashion</span>
                 </div>
@@ -260,7 +260,7 @@ export default function Landing() {
                 <Button
                   variant="outline"
                   size="lg"
-                  className="px-8 py-4 bg-white/50 backdrop-blur-sm border-2 border-primary/30 hover:bg-white/80 hover:border-primary/50"
+                  className="px-8 py-4 bg-background/50 backdrop-blur-sm border-2 border-primary/30 hover:bg-background/80 hover:border-primary/50"
                 >
                   <Play className="mr-2 w-5 h-5"/> View Lookbook
                 </Button>
@@ -301,7 +301,7 @@ export default function Landing() {
                 </div>
                 
                 {/* New Collection Card */}
-                <div className="absolute -top-4 -right-8 w-64 bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl border border-primary/20 p-6">
+                <div className="absolute -top-4 -right-8 w-64 bg-background/95 backdrop-blur-sm rounded-2xl shadow-xl border border-primary/20 p-6">
                   <h3 className="font-cormorant text-xl font-bold mb-2">New Collection</h3>
                   <p className="text-sm text-muted-foreground mb-4">Designer pieces, curated for great taste.</p>
                   <Button size="sm" className="w-full bg-primary hover:bg-primary/90">
@@ -310,7 +310,7 @@ export default function Landing() {
                 </div>
                 
                 {/* Community Card */}
-                <div className="absolute -bottom-6 -left-8 w-56 bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl border border-primary/20 p-4">
+                <div className="absolute -bottom-6 -left-8 w-56 bg-background/95 backdrop-blur-sm rounded-2xl shadow-xl border border-primary/20 p-4">
                   <div className="flex items-center space-x-2 mb-3">
                     <div className="text-sm font-medium">Join Fashion Community</div>
                   </div>
@@ -330,15 +330,15 @@ export default function Landing() {
       </section>
 
       {/* TRENDING STYLES SECTION */}
-      <section className="py-24 lg:py-32 bg-gradient-to-b from-background via-gray-100 to-gray-200 relative">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/8 via-transparent to-primary/12 opacity-80"/>
+      <section className="py-24 lg:py-32 bg-gradient-to-b from-background to-muted/30 relative">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/10 opacity-60"/>
         <div className="container max-w-7xl mx-auto px-6 lg:px-12 relative">
           <div className="text-center mb-16">
-            <h2 className="font-cormorant text-4xl lg:text-6xl font-bold mb-4 text-gray-800">
+            <h2 className="font-cormorant text-4xl lg:text-6xl font-bold mb-4 text-foreground">
               Curated Collections
               <span className="block text-primary italic">Premium Selection</span>
             </h2>
-            <p className="text-lg text-gray-700 max-w-2xl mx-auto">
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
               Discover fashion pieces you'll actually love.
             </p>
           </div>
@@ -453,7 +453,7 @@ export default function Landing() {
             <h3 className="font-cormorant text-2xl font-bold">Featured Collections</h3>
             <div className="flex items-center space-x-4">
               <span className="text-sm text-muted-foreground">View:</span>
-              <div className="flex items-center space-x-2 bg-white/80 backdrop-blur-sm rounded-lg p-1 border border-primary/20">
+              <div className="flex items-center space-x-2 bg-background/80 backdrop-blur-sm rounded-lg p-1 border border-primary/20">
                 <Button
                   variant="ghost"
                   size="sm"
@@ -485,7 +485,7 @@ export default function Landing() {
                   <div className="absolute inset-0 bg-gradient-to-t from-primary/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"/>
                   
                   {/* Heart Icon */}
-                  <div className="absolute top-4 right-4 w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 cursor-pointer hover:bg-primary/10">
+                  <div className="absolute top-4 right-4 w-8 h-8 bg-background/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 cursor-pointer hover:bg-primary/10">
                     <Heart className="w-4 h-4 text-primary"/>
                   </div>
                   
@@ -560,23 +560,23 @@ export default function Landing() {
       </section>
 
       {/* QUALITY SECTION */}
-      <section className="py-24 lg:py-32 bg-gradient-to-b from-gray-200 via-gray-300 to-gray-400 relative">
-        <div className="absolute inset-0 bg-gradient-to-tr from-primary/12 via-transparent to-primary/18 opacity-60"/>
+      <section className="py-24 lg:py-32 bg-gradient-to-b from-muted/30 to-muted/60 relative">
+        <div className="absolute inset-0 bg-gradient-to-tr from-primary/8 via-transparent to-primary/12 opacity-60"/>
         <div className="container max-w-7xl mx-auto px-6 lg:px-12 relative">
           <div className="text-center mb-20">
-            <h2 className="font-cormorant text-4xl lg:text-6xl font-bold mb-6 text-gray-800">
+            <h2 className="font-cormorant text-4xl lg:text-6xl font-bold mb-6 text-foreground">
               Quality You'll
               <span className="block text-primary italic">Love</span>
             </h2>
-            <p className="text-xl text-gray-700 max-w-3xl mx-auto leading-relaxed">
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
               Every piece is carefully selected for quality and style that matches your taste.
             </p>
           </div>
 
           <div className="flex justify-center mb-16">
             <div className="relative">
-              <div className="w-80 h-80 bg-gradient-to-br from-primary/10 to-primary/20 rounded-full flex items-center justify-center shadow-2xl">
-                <div className="w-64 h-64 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-xl border border-primary/20">
+              <div className="w-80 h-80 bg-gradient-to-br from-primary/10 to-primary/20 rounded-full flex items-center justify-center shadow-xl">
+                <div className="w-64 h-64 bg-background/95 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg border border-primary/20">
                   <div className="w-48 h-48 bg-gradient-to-br from-primary/20 to-primary/10 rounded-full flex items-center justify-center">
                     <div className="text-center space-y-2">
                       <Crown className="w-16 h-16 text-primary mx-auto"/>
@@ -588,13 +588,13 @@ export default function Landing() {
               </div>
               
               {/* Floating quality indicators */}
-              <div className="absolute -top-4 -right-4 bg-white/95 backdrop-blur-sm rounded-xl p-3 shadow-xl border border-primary/20">
-                <div className="text-xs font-medium text-center">Quality Testing</div>
+              <div className="absolute -top-4 -right-4 bg-background/95 backdrop-blur-sm rounded-xl p-3 shadow-lg border border-primary/20">
+                <div className="text-xs font-medium text-center text-muted-foreground">Quality Testing</div>
                 <div className="text-lg font-bold text-primary text-center">100%</div>
               </div>
               
-              <div className="absolute -bottom-4 -left-4 bg-white/95 backdrop-blur-sm rounded-xl p-3 shadow-xl border border-primary/20">
-                <div className="text-xs font-medium text-center">Customer Satisfaction</div>
+              <div className="absolute -bottom-4 -left-4 bg-background/95 backdrop-blur-sm rounded-xl p-3 shadow-lg border border-primary/20">
+                <div className="text-xs font-medium text-center text-muted-foreground">Customer Satisfaction</div>
                 <div className="text-lg font-bold text-primary text-center">4.9★</div>
               </div>
             </div>
@@ -676,15 +676,15 @@ export default function Landing() {
       </section>
 
       {/* FAQ SECTION */}
-      <section id="faq" className="py-24 lg:py-32 bg-gradient-to-b from-gray-400 via-gray-500 to-gray-600 relative">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-primary/8 opacity-75"/>
+      <section id="faq" className="py-24 lg:py-32 bg-gradient-to-b from-muted/60 to-muted relative">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/8 via-transparent to-primary/5 opacity-60"/>
         <div className="container max-w-4xl mx-auto px-6 lg:px-12 relative">
           <div className="text-center mb-16">
-            <h2 className="font-cormorant text-4xl lg:text-6xl font-bold mb-6 text-white">
+            <h2 className="font-cormorant text-4xl lg:text-6xl font-bold mb-6 text-foreground">
               Frequently Asked
               <span className="block text-primary italic">Questions</span>
             </h2>
-            <p className="text-xl text-gray-200">
+            <p className="text-xl text-muted-foreground">
               Everything you need to know about fashion discovery with Azyah.
             </p>
           </div>
