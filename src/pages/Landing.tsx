@@ -80,7 +80,7 @@ export default function Landing() {
             <div>
               <h1 className="font-cormorant text-2xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">Azyah</h1>
               <p className="text-xs text-primary/70 uppercase tracking-wider">
-                Luxury Curation
+                Fashion Discovery
               </p>
             </div>
           </div>
