@@ -207,12 +207,12 @@ export default function Landing() {
       </div>
 
       {/* HERO */}
-      <section id="discover" className="relative overflow-hidden min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-foreground">
+      <section id="discover" className="relative overflow-hidden min-h-screen bg-gradient-to-br from-background via-primary/5 to-gray-100">
         {/* Background Pattern */}
         <div className="absolute inset-0">
-          <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_25%_25%,rgba(239,68,68,0.25),transparent_50%)]"/>
-          <div className="absolute bottom-0 right-0 w-full h-full bg-[radial-gradient(circle_at_75%_75%,rgba(239,68,68,0.2),transparent_50%)]"/>
-          <div className="absolute inset-0 bg-gradient-to-t from-foreground/30 via-transparent to-gray-900/50"/>
+          <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_25%_25%,rgba(239,68,68,0.15),transparent_60%)]"/>
+          <div className="absolute bottom-0 right-0 w-full h-full bg-[radial-gradient(circle_at_75%_75%,rgba(239,68,68,0.1),transparent_70%)]"/>
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-gray-50/30"/>
         </div>
         
         {/* Large Background Text */}
@@ -328,9 +328,8 @@ export default function Landing() {
       </section>
 
       {/* TRENDING STYLES SECTION */}
-      <section className="py-24 lg:py-32 bg-gradient-to-b from-gray-800 via-background to-gray-900">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/10"/>
-        <div className="container max-w-7xl mx-auto px-6 lg:px-12 relative">
+      <section className="py-24 lg:py-32 bg-gradient-to-b from-background to-gray-50">
+        <div className="container max-w-7xl mx-auto px-6 lg:px-12">
           <div className="text-center mb-16">
             <h2 className="font-cormorant text-4xl lg:text-6xl font-bold mb-4">
               Trending Styles
@@ -528,9 +527,8 @@ export default function Landing() {
       </section>
 
       {/* QUALITY SECTION */}
-      <section className="py-24 lg:py-32 bg-gradient-to-b from-gray-900 via-primary/10 to-gray-800">
-        <div className="absolute inset-0 bg-gradient-to-tr from-primary/5 via-transparent to-primary/15"/>
-        <div className="container max-w-7xl mx-auto px-6 lg:px-12 relative">
+      <section className="py-24 lg:py-32 bg-gradient-to-b from-gray-50 via-background to-primary/5">
+        <div className="container max-w-7xl mx-auto px-6 lg:px-12">
           <div className="text-center mb-20">
             <h2 className="font-cormorant text-4xl lg:text-6xl font-bold mb-6">
               Uncompromising Quality,
@@ -644,11 +642,10 @@ export default function Landing() {
       </section>
 
       {/* FAQ SECTION */}
-      <section id="faq" className="py-24 lg:py-32 bg-gradient-to-b from-gray-800 via-background to-gray-900">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-primary/5"/>
-        <div className="container max-w-4xl mx-auto px-6 lg:px-12 relative">
+      <section id="faq" className="py-24 lg:py-32 bg-gradient-to-b from-primary/5 via-background to-primary/10">
+        <div className="container max-w-4xl mx-auto px-6 lg:px-12">
           <div className="text-center mb-16">
-            <h2 className="font-cormorant text-4xl lg:text-6xl font-bold mb-6 text-white">
+            <h2 className="font-cormorant text-4xl lg:text-6xl font-bold mb-6">
               Frequently Asked
               <span className="block text-primary italic">Questions</span>
             </h2>
