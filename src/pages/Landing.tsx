@@ -195,7 +195,7 @@ export default function Landing() {
         <div className="container max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Crown className="w-5 h-5" />
-            <span className="font-medium text-sm">Premium: Exclusive AI fittings • Designer replicas • Private collaborations</span>
+            <span className="font-medium text-sm">Premium: 20 AI fittings daily • Designer replicas • Private collaborations</span>
           </div>
           <Button 
             variant="secondary" 
@@ -396,7 +396,7 @@ export default function Landing() {
                   className="px-8 py-4 bg-primary hover:bg-primary/90"
                   onClick={() => navigate("/auth")}
                 >
-                  Try Swiping Now
+                  Start Discovering
                   <Sparkles className="ml-2 w-4 h-4"/>
                 </Button>
               </div>
@@ -552,7 +552,7 @@ export default function Landing() {
               className="px-8 py-4 bg-primary hover:bg-primary/90"
               onClick={() => navigate("/auth")}
             >
-              Start Discovering Fashion
+              Start Discovering
               <ChevronRight className="ml-2 w-4 h-4"/>
             </Button>
           </div>
@@ -565,11 +565,11 @@ export default function Landing() {
         <div className="container max-w-7xl mx-auto px-6 lg:px-12 relative">
           <div className="text-center mb-20">
             <h2 className="font-cormorant text-4xl lg:text-6xl font-bold mb-6 text-gray-800">
-              Uncompromising Quality,
-              <span className="block text-primary italic">Unmatched Design</span>
+              Quality You'll
+              <span className="block text-primary italic">Love</span>
             </h2>
             <p className="text-xl text-gray-700 max-w-3xl mx-auto leading-relaxed">
-              Every piece in our collection is carefully selected for its exceptional quality and design excellence.
+              Every piece is carefully selected for quality and style that matches your taste.
             </p>
           </div>
 
@@ -685,18 +685,18 @@ export default function Landing() {
               <span className="block text-primary italic">Questions</span>
             </h2>
             <p className="text-xl text-gray-200">
-              Everything you need to know about Azyah and our premium fashion discovery platform.
+              Everything you need to know about fashion discovery with Azyah.
             </p>
           </div>
 
           <div className="space-y-6">
             {[
-              ["How does AI-powered fashion curation work?", "Our advanced AI learns from your swipes, likes, and preferences to curate personalized fashion collections just for you. The more you use Azyah, the better our recommendations become at understanding your unique style."],
-              ["Do you sell the products directly?", "No, Azyah is a fashion discovery platform. We show you products that best fit your taste and style preferences, then redirect you to the original retailer or brand website where you can purchase them directly. We help you discover, they handle the transaction."],
-              ["How does the swipe discovery feature work?", "Just like dating apps but for fashion! Swipe right on styles you love, left on ones you don't. Our AI uses these interactions to understand your taste and show you more items you're likely to love."],
-              ["What are the benefits of Azyah Premium?", "Premium members get 20 AI try-ons daily, unlimited AI generation in our Replica studio, access to exclusive UGC collaborations, early access to new collections, and priority customer support."],
+              ["How does AI-powered fashion discovery work?", "Our AI learns from your swipes and preferences to show you fashion pieces you'll love. The more you use Azyah, the better our recommendations become."],
+              ["Do you sell the products directly?", "No, Azyah is a fashion discovery platform. We show you products that match your style, then redirect you to the retailer where you can purchase them."],
+              ["How does the swipe discovery work?", "Swipe right on styles you love, left on ones you don't. Our AI learns from these interactions to show you more items you'll love."],
+              ["What are the benefits of Premium?", "Premium members get 20 AI fittings daily, unlimited replica generation, access to exclusive collaborations, and priority support."],
               ["Can I save items to my closet and wishlist?", "Yes! You can save items to your personal closet, create wishlists, and organize your favorite finds. Share your collections with friends or keep them private - it's up to you."],
-              ["How do I connect with the fashion community?", "Join our global community of fashion enthusiasts! Share your style discoveries, follow other users, participate in style challenges, and get inspired by trending looks from around the world."]
+              ["How do I connect with the community?", "Join our global fashion community! Share your discoveries, follow other users, and get inspired by trending looks."]
             ].map(([question, answer], index) => (
               <div key={index} className="bg-white/80 backdrop-blur-sm rounded-2xl border border-primary/10 overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300">
                 <div className="p-6">
