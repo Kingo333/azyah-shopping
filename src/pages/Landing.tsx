@@ -508,9 +508,7 @@ export default function Landing() {
               <div className="aspect-[4/5] bg-gradient-to-br from-primary/20 to-primary/10 rounded-2xl overflow-hidden shadow-2xl border border-white/20">
                 <div className="w-full h-full bg-gradient-to-br from-primary/30 to-primary/20 flex items-center justify-center">
                   <div className="text-center space-y-4">
-                    <div className="w-32 h-32 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center mx-auto">
-                      <Sparkles className="w-16 h-16 text-white" />
-                    </div>
+                    
                     <p className="text-white/80 font-medium">Modern Fashion</p>
                   </div>
                 </div>
