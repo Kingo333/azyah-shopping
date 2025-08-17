@@ -584,8 +584,10 @@ export default function Landing() {
       </section>
 
       {/* DESIGN FOR MODERN SECTION */}
-      <section className="relative py-24 lg:py-32 bg-gradient-to-br from-foreground via-gray-900 to-foreground text-background overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/15 via-primary/5 to-transparent"/>
+      <section className="relative py-24 lg:py-32 bg-gradient-to-br from-foreground via-gray-950 to-gray-900 text-background overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-primary/10 to-primary/5"/>
+        <div className="absolute inset-0 bg-gradient-to-tr from-gray-900/80 via-transparent to-gray-800/60"/>
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_70%,rgba(239,68,68,0.15),transparent_60%)]"/>
         
         {/* Large Background Text */}
         <div className="absolute inset-0 flex items-center justify-start pl-12 pointer-events-none">
