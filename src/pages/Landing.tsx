@@ -195,7 +195,7 @@ export default function Landing() {
         <div className="container max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Crown className="w-5 h-5" />
-            <span className="font-medium text-sm">Premium: 20 AI fittings daily • Designer replicas • Private collaborations</span>
+            <span className="font-medium text-sm">Premium: 20 daily AI try-ons • Unlimited style creation • Exclusive brand access</span>
           </div>
           <Button 
             variant="secondary" 
@@ -694,7 +694,7 @@ export default function Landing() {
               ["How does AI-powered fashion discovery work?", "Our AI learns from your swipes and preferences to show you fashion pieces you'll love. The more you use Azyah, the better our recommendations become."],
               ["Do you sell the products directly?", "No, Azyah is a fashion discovery platform. We show you products that match your style, then redirect you to the retailer where you can purchase them."],
               ["How does the swipe discovery work?", "Swipe right on styles you love, left on ones you don't. Our AI learns from these interactions to show you more items you'll love."],
-              ["What are the benefits of Premium?", "Premium members get 20 AI fittings daily, unlimited replica generation, access to exclusive collaborations, and priority support."],
+              ["What are the benefits of Premium?", "Premium members get 20 daily AI try-ons, unlimited style creation, exclusive brand access, and priority support."],
               ["Can I save items to my closet and wishlist?", "Yes! You can save items to your personal closet, create wishlists, and organize your favorite finds. Share your collections with friends or keep them private - it's up to you."],
               ["How do I connect with the community?", "Join our global fashion community! Share your discoveries, follow other users, and get inspired by trending looks."]
             ].map(([question, answer], index) => (
