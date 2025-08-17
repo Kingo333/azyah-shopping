@@ -492,10 +492,12 @@ export default function Landing() {
 
           <div className="space-y-6">
             {[
-              ["Do You Accept Returns And Exchanges?", "Yes, we accept returns and exchanges within 30 days of purchase. Items must be in original condition with tags attached. Our customer service team will guide you through the simple return process."],
-              ["How Do You Ensure The Quality Of Your Work?", "We work exclusively with premium brands and retailers who meet our strict quality standards. Every piece is curated by our fashion experts and backed by our quality guarantee."],
-              ["How Can I Track My Order?", "Once your order is placed, you'll receive a tracking number via email. You can also track your order in real-time through your Azyah account dashboard."],
-              ["What Sizes Do You Offer?", "Our partner brands offer a comprehensive range of sizes from XS to 3XL. Each product page includes detailed size charts and our AI can recommend the best fit based on your preferences."]
+              ["How does AI-powered fashion curation work?", "Our advanced AI learns from your swipes, likes, and preferences to curate personalized fashion collections just for you. The more you use Azyah, the better our recommendations become at understanding your unique style."],
+              ["What is AR try-on and how do I use it?", "Our AR try-on feature lets you virtually try on clothes using your phone's camera. Simply select any item, tap 'Try On', and see how it looks on you in real-time before making a purchase decision."],
+              ["How does the swipe discovery feature work?", "Just like dating apps but for fashion! Swipe right on styles you love, left on ones you don't. Our AI uses these interactions to understand your taste and show you more items you're likely to love."],
+              ["What are the benefits of Azyah Premium?", "Premium members get 20 AI try-ons daily, unlimited AI generation in our Replica studio, access to exclusive UGC collaborations, early access to new collections, and priority customer support."],
+              ["Can I save items to my closet and wishlist?", "Yes! You can save items to your personal closet, create wishlists, and organize your favorite finds. Share your collections with friends or keep them private - it's up to you."],
+              ["How do I connect with the fashion community?", "Join our global community of fashion enthusiasts! Share your style discoveries, follow other users, participate in style challenges, and get inspired by trending looks from around the world."]
             ].map(([question, answer], index) => (
               <div key={index} className="bg-white/80 backdrop-blur-sm rounded-2xl border border-primary/10 overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300">
                 <div className="p-6">
