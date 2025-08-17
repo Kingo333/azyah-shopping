@@ -207,12 +207,12 @@ export default function Landing() {
       </div>
 
       {/* HERO */}
-      <section id="discover" className="relative overflow-hidden min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-700">
+      <section id="discover" className="relative overflow-hidden min-h-screen bg-gradient-to-br from-gray-800 via-gray-700 to-background">
         {/* Background Pattern */}
         <div className="absolute inset-0">
-          <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_25%_25%,rgba(239,68,68,0.3),transparent_50%)]"/>
-          <div className="absolute bottom-0 right-0 w-full h-full bg-[radial-gradient(circle_at_75%_75%,rgba(239,68,68,0.25),transparent_55%)]"/>
-          <div className="absolute inset-0 bg-gradient-to-t from-gray-900/40 via-transparent to-gray-800/30"/>
+          <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_25%_25%,rgba(239,68,68,0.25),transparent_55%)]"/>
+          <div className="absolute bottom-0 right-0 w-full h-full bg-[radial-gradient(circle_at_75%_75%,rgba(239,68,68,0.2),transparent_60%)]"/>
+          <div className="absolute inset-0 bg-gradient-to-t from-background/50 via-transparent to-gray-700/20"/>
         </div>
         
         {/* Large Background Text */}
@@ -328,8 +328,8 @@ export default function Landing() {
       </section>
 
       {/* TRENDING STYLES SECTION */}
-      <section className="py-24 lg:py-32 bg-gradient-to-b from-gray-700 via-gray-600 to-background relative">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-primary/15 opacity-60"/>
+      <section className="py-24 lg:py-32 bg-gradient-to-b from-background via-gray-100 to-gray-200 relative">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/8 via-transparent to-primary/12 opacity-80"/>
         <div className="container max-w-7xl mx-auto px-6 lg:px-12 relative">
           <div className="text-center mb-16">
             <h2 className="font-cormorant text-4xl lg:text-6xl font-bold mb-4">
@@ -528,8 +528,8 @@ export default function Landing() {
       </section>
 
       {/* QUALITY SECTION */}
-      <section className="py-24 lg:py-32 bg-gradient-to-b from-background via-gray-800 to-gray-700 relative">
-        <div className="absolute inset-0 bg-gradient-to-tr from-primary/15 via-transparent to-primary/20 opacity-50"/>
+      <section className="py-24 lg:py-32 bg-gradient-to-b from-gray-200 via-gray-300 to-gray-400 relative">
+        <div className="absolute inset-0 bg-gradient-to-tr from-primary/12 via-transparent to-primary/18 opacity-60"/>
         <div className="container max-w-7xl mx-auto px-6 lg:px-12 relative">
           <div className="text-center mb-20">
             <h2 className="font-cormorant text-4xl lg:text-6xl font-bold mb-6">
@@ -644,8 +644,8 @@ export default function Landing() {
       </section>
 
       {/* FAQ SECTION */}
-      <section id="faq" className="py-24 lg:py-32 bg-gradient-to-b from-gray-700 via-gray-800 to-gray-900 relative">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/12 via-transparent to-primary/8 opacity-70"/>
+      <section id="faq" className="py-24 lg:py-32 bg-gradient-to-b from-gray-400 via-gray-500 to-gray-600 relative">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-primary/8 opacity-75"/>
         <div className="container max-w-4xl mx-auto px-6 lg:px-12 relative">
           <div className="text-center mb-16">
             <h2 className="font-cormorant text-4xl lg:text-6xl font-bold mb-6 text-white">
