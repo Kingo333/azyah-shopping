@@ -450,7 +450,7 @@ export default function Landing() {
               
               <div className="absolute -bottom-4 -left-4 bg-background/95 backdrop-blur-sm rounded-xl p-3 shadow-lg border border-primary/20">
                 <div className="text-xs font-medium text-center text-muted-foreground">Customer Satisfaction</div>
-                <div className="text-lg font-bold text-primary text-center">4.9★</div>
+                <div className="text-lg font-bold text-primary text-center">4.9</div>
               </div>
             </div>
           </div>
@@ -598,7 +598,7 @@ export default function Landing() {
             </div>
             <div className="w-px h-8 bg-white/20" />
             <div className="text-center">
-              <div className="text-2xl font-bold text-primary">4.9★</div>
+              <div className="text-2xl font-bold text-primary">4.9</div>
               <div className="text-sm text-background/70">Rating</div>
             </div>
           </div>
