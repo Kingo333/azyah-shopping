@@ -245,13 +245,13 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
                 </h4>
 
                 {/* Product Images with Actions */}
-                <div className="flex gap-2 mb-3 flex-1">
+                <div className="flex gap-3 mb-3 flex-1">
                   {style.recent_products.slice(0, 2).map((product) => (
                     <div key={product.id} className="relative group/product flex-1">
                       <img
                         src={product.image_url || '/placeholder.svg'}
                         alt={product.title}
-                        className="w-full h-16 object-cover rounded-md"
+                        className="w-full aspect-square object-cover rounded-lg"
                       />
                       <div className="absolute inset-0 bg-black/60 opacity-0 group-hover/product:opacity-100 transition-opacity rounded-md flex items-center justify-center">
                         <div className="flex gap-1">
