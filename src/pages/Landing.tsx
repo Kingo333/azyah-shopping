@@ -65,8 +65,8 @@ export default function Landing() {
   return (
     <div className="min-h-screen bg-background">
         <SEOHead
-          title="Azyah — Exclusive Luxury Fashion Atelier"
-          description="Discover haute couture and designer collections through AI-powered curation. Premium fashion discovery for the discerning style connoisseur."
+          title="Azyah — Luxury Fashion Curation"
+          description="AI-curated luxury fashion discovery. Exclusive designer collections for the discerning style connoisseur."
           canonical="https://azyah.app/"
         />
       {/* NAV */}
@@ -80,7 +80,7 @@ export default function Landing() {
             <div>
               <h1 className="font-cormorant text-2xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">Azyah</h1>
               <p className="text-xs text-primary/70 uppercase tracking-wider">
-                Luxury Atelier
+                Luxury Curation
               </p>
             </div>
           </div>
@@ -195,7 +195,7 @@ export default function Landing() {
         <div className="container max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Crown className="w-5 h-5" />
-            <span className="font-medium text-sm">Atelier Membership: Exclusive AI fittings • Bespoke digital replica • Private stylist collaborations</span>
+            <span className="font-medium text-sm">Premium: Exclusive AI fittings • Designer replicas • Private collaborations</span>
           </div>
           <Button 
             variant="secondary" 
@@ -233,7 +233,7 @@ export default function Landing() {
               <div className="space-y-8">
                 <div className="inline-flex items-center space-x-3 bg-white/90 backdrop-blur-sm border border-primary/20 rounded-full px-6 py-3 shadow-lg">
                   <Sparkles className="w-5 h-5 text-primary"/>
-                  <span className="text-sm font-semibold text-primary uppercase tracking-wider">Haute Couture</span>
+                  <span className="text-sm font-semibold text-primary uppercase tracking-wider">Luxury Fashion</span>
                 </div>
                 
                 <div className="space-y-4">
@@ -243,7 +243,7 @@ export default function Landing() {
                     <span className="block text-white">Awaits</span>
                   </h1>
                   <p className="text-xl lg:text-2xl text-gray-200 max-w-lg leading-relaxed font-medium">
-                    Discover exclusive designer collections through our sophisticated AI-powered atelier. Where luxury meets personalization.
+                    AI-curated luxury fashion discovery for the modern connoisseur.
                   </p>
                 </div>
               </div>
@@ -254,7 +254,7 @@ export default function Landing() {
                   className="group px-8 py-4 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg hover:shadow-xl transition-all duration-300"
                   onClick={() => navigate("/auth")}
                 >
-                  Enter Atelier
+                  Explore Collection
                   <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform"/>
                 </Button>
                 <Button
@@ -302,17 +302,17 @@ export default function Landing() {
                 
                 {/* New Collection Card */}
                 <div className="absolute -top-4 -right-8 w-64 bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl border border-primary/20 p-6">
-                  <h3 className="font-cormorant text-xl font-bold mb-2">Couture Debut</h3>
-                  <p className="text-sm text-muted-foreground mb-4">Exclusive first access to designer collections, crafted for the discerning connoisseur.</p>
+                  <h3 className="font-cormorant text-xl font-bold mb-2">New Collection</h3>
+                  <p className="text-sm text-muted-foreground mb-4">Exclusive designer pieces, curated for discerning taste.</p>
                   <Button size="sm" className="w-full bg-primary hover:bg-primary/90">
-                    Explore Atelier
+                    View Collection
                   </Button>
                 </div>
                 
                 {/* Community Card */}
                 <div className="absolute -bottom-6 -left-8 w-56 bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl border border-primary/20 p-4">
                   <div className="flex items-center space-x-2 mb-3">
-                    <div className="text-sm font-medium">Join the Elite Circle</div>
+                    <div className="text-sm font-medium">Join Premium Circle</div>
                   </div>
                   <div className="flex -space-x-2 mb-3">
                     {[...Array(4)].map((_, i) => (
@@ -335,11 +335,11 @@ export default function Landing() {
         <div className="container max-w-7xl mx-auto px-6 lg:px-12 relative">
           <div className="text-center mb-16">
             <h2 className="font-cormorant text-4xl lg:text-6xl font-bold mb-4 text-gray-800">
-              Designer Collections
-              <span className="block text-primary italic">Exclusively Curated</span>
+              Curated Collections
+              <span className="block text-primary italic">Premium Selection</span>
             </h2>
             <p className="text-lg text-gray-700 max-w-2xl mx-auto">
-              Discover our meticulously curated selection of luxury pieces, handpicked by our style connoisseurs and coveted by fashion insiders.
+              Luxury pieces handpicked by fashion experts and coveted by style insiders.
             </p>
           </div>
 
@@ -350,14 +350,14 @@ export default function Landing() {
                 <div className="space-y-4">
                   <div className="inline-flex items-center space-x-2 bg-primary/10 rounded-full px-4 py-2">
                     <Sparkles className="w-4 h-4 text-primary"/>
-                    <span className="text-sm font-semibold text-primary uppercase tracking-wider">Atelier Experience</span>
+                    <span className="text-sm font-semibold text-primary uppercase tracking-wider">How It Works</span>
                   </div>
                   <h3 className="font-cormorant text-3xl lg:text-4xl font-bold">
-                    Curated for
-                    <span className="block text-primary italic">Sophistication</span>
+                    Discover Your
+                    <span className="block text-primary italic">Perfect Style</span>
                   </h3>
                   <p className="text-lg text-muted-foreground leading-relaxed">
-                    Experience luxury fashion curation through our AI-powered atelier. Each piece selected to match your refined aesthetic.
+                    AI-powered curation learns your taste and delivers luxury pieces you'll love.
                   </p>
                 </div>
 
@@ -367,8 +367,8 @@ export default function Landing() {
                       <ArrowRight className="w-6 h-6 text-white"/>
                     </div>
                     <div>
-                      <h4 className="font-semibold">Curate to Approve</h4>
-                      <p className="text-sm text-muted-foreground">Adore the piece? Approve it for your private collection.</p>
+                      <h4 className="font-semibold">Like to Save</h4>
+                      <p className="text-sm text-muted-foreground">Love it? Save to your collection.</p>
                     </div>
                   </div>
                   <div className="flex items-center space-x-4">
@@ -376,8 +376,8 @@ export default function Landing() {
                       <X className="w-6 h-6 text-white"/>
                     </div>
                     <div>
-                      <h4 className="font-semibold">Refine Selection</h4>
-                      <p className="text-sm text-muted-foreground">Not quite right? Refine to see more sophisticated options.</p>
+                      <h4 className="font-semibold">Pass to Refine</h4>
+                      <p className="text-sm text-muted-foreground">Not quite right? Pass to see better matches.</p>
                     </div>
                   </div>
                   <div className="flex items-center space-x-4">
@@ -385,8 +385,8 @@ export default function Landing() {
                       <ShoppingBag className="w-6 h-6 text-white"/>
                     </div>
                     <div>
-                      <h4 className="font-semibold">Reserve for Later</h4>
-                      <p className="text-sm text-muted-foreground">Considering purchase? Reserve to your private wishlist.</p>
+                      <h4 className="font-semibold">Save for Later</h4>
+                      <p className="text-sm text-muted-foreground">Want to buy later? Save to wishlist.</p>
                     </div>
                   </div>
                 </div>
