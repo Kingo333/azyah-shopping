@@ -115,13 +115,13 @@ export default function Landing() {
       </header>
 
       {/* PREMIUM BANNER */}
-      <div className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground py-3 px-6">
+      <div className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground py-2 lg:py-3 px-4 lg:px-6">
         <div className="container max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Crown className="w-5 h-5" />
-            <span className="font-medium text-sm">Premium: 20 virtual fittings daily • unlimited AI replicas • UGC collaboration access</span>
+          <div className="flex items-center gap-2 lg:gap-3">
+            <Crown className="w-4 h-4 lg:w-5 lg:h-5" />
+            <span className="font-medium text-xs lg:text-sm">Premium: 20 virtual fittings daily • unlimited AI replicas • UGC collaboration access</span>
           </div>
-          <Button variant="secondary" size="sm" className="text-xs px-4 py-1 h-7" onClick={() => navigate("/auth")}>
+          <Button variant="secondary" size="sm" className="text-xs px-3 lg:px-4 py-1 h-6 lg:h-7" onClick={() => navigate("/auth")}>
             Learn More
           </Button>
         </div>
@@ -149,33 +149,34 @@ export default function Landing() {
           transform: `translateY(${isVisible ? 0 : 32}px)`
         }}>
             
-            {/* Hero Content */}
-            <div className="space-y-10 lg:space-y-12 z-10">
-              <div className="space-y-8">
-                <div className="inline-flex items-center space-x-3 bg-background/90 backdrop-blur-sm border border-primary/20 rounded-full px-6 py-3 shadow-lg">
+          {/* Hero Content */}
+            <div className="space-y-6 lg:space-y-12 z-10">
+              <div className="space-y-4 lg:space-y-8">
+                <div className="inline-flex items-center space-x-2 lg:space-x-3 bg-background/90 backdrop-blur-sm border border-primary/20 rounded-full px-3 py-2 lg:px-6 lg:py-3 shadow-lg">
                   
-                  <span className="text-sm font-semibold text-primary uppercase tracking-wider">Luxury Fashion</span>
+                  <span className="text-xs lg:text-sm font-semibold text-primary uppercase tracking-wider">Luxury Fashion</span>
                 </div>
                 
-                <div className="space-y-4">
-                  <h1 className="font-cormorant text-6xl lg:text-8xl xl:text-9xl font-bold leading-[0.85] tracking-tight">
+                <div className="space-y-2 lg:space-y-4">
+                  <h1 className="font-cormorant text-4xl sm:text-5xl lg:text-8xl xl:text-9xl font-bold leading-[0.85] tracking-tight">
                     <span className="block text-white">Find Your</span>
                     <span className="block bg-gradient-to-r from-primary via-primary to-primary/80 bg-clip-text text-transparent italic">Perfect</span>
                     <span className="block text-white">Style</span>
                   </h1>
-                  <p className="text-xl lg:text-2xl text-gray-200 max-w-lg leading-relaxed font-medium">
+                  <p className="text-sm sm:text-lg lg:text-2xl text-gray-200 max-w-lg leading-relaxed font-medium">
                     Smart AI fashion discovery that learns your style.
                   </p>
                 </div>
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Button size="lg" className="group px-8 py-4 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg hover:shadow-xl transition-all duration-300" onClick={() => navigate("/auth")}>
-                  Explore Collection
-                  <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              <div className="flex flex-col sm:flex-row gap-3 lg:gap-4">
+                <Button size="sm" className="group px-4 py-3 lg:px-8 lg:py-4 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg hover:shadow-xl transition-all duration-300" onClick={() => navigate("/auth")}>
+                  <span className="text-sm lg:text-base">Explore Collection</span>
+                  <ArrowRight className="ml-2 w-4 h-4 lg:w-5 lg:h-5 group-hover:translate-x-1 transition-transform" />
                 </Button>
-                <Button variant="outline" size="lg" className="px-8 py-4 bg-background/50 backdrop-blur-sm border-2 border-primary/30 hover:bg-background/80 hover:border-primary/50">
-                  <Play className="mr-2 w-5 h-5" /> View Lookbook
+                <Button variant="outline" size="sm" className="px-4 py-3 lg:px-8 lg:py-4 bg-background/50 backdrop-blur-sm border-2 border-primary/30 hover:bg-background/80 hover:border-primary/50">
+                  <Play className="mr-2 w-4 h-4 lg:w-5 lg:h-5" /> 
+                  <span className="text-sm lg:text-base">View Lookbook</span>
                 </Button>
               </div>
 
@@ -191,22 +192,22 @@ export default function Landing() {
                 </div>
                 
                 {/* New Collection Card */}
-                <div className="absolute -top-4 -right-8 w-64 bg-background/95 backdrop-blur-sm rounded-2xl shadow-xl border border-primary/20 p-6">
-                  <h3 className="font-cormorant text-xl font-bold mb-2">New Collection</h3>
-                  <p className="text-sm text-muted-foreground mb-4">Designer pieces, curated for great taste.</p>
-                  <Button size="sm" className="w-full bg-primary hover:bg-primary/90">
+                <div className="absolute -top-2 -right-4 lg:-top-4 lg:-right-8 w-48 lg:w-64 bg-background/95 backdrop-blur-sm rounded-xl lg:rounded-2xl shadow-xl border border-primary/20 p-3 lg:p-6">
+                  <h3 className="font-cormorant text-lg lg:text-xl font-bold mb-1 lg:mb-2">New Collection</h3>
+                  <p className="text-xs lg:text-sm text-muted-foreground mb-2 lg:mb-4">Designer pieces, curated for great taste.</p>
+                  <Button size="sm" className="w-full bg-primary hover:bg-primary/90 text-xs lg:text-sm">
                     View Collection
                   </Button>
                 </div>
                 
                 {/* Community Card */}
-                <div className="absolute -bottom-6 -left-8 w-56 bg-background/95 backdrop-blur-sm rounded-2xl shadow-xl border border-primary/20 p-4">
-                  <div className="flex items-center space-x-2 mb-3">
-                    <div className="text-sm font-medium">Join Fashion Community</div>
+                <div className="absolute -bottom-4 -left-4 lg:-bottom-6 lg:-left-8 w-44 lg:w-56 bg-background/95 backdrop-blur-sm rounded-xl lg:rounded-2xl shadow-xl border border-primary/20 p-3 lg:p-4">
+                  <div className="flex items-center space-x-2 mb-2 lg:mb-3">
+                    <div className="text-xs lg:text-sm font-medium">Join Fashion Community</div>
                   </div>
-                  <div className="flex -space-x-2 mb-3">
-                    {[...Array(4)].map((_, i) => <div key={i} className="w-8 h-8 bg-gradient-to-r from-primary to-primary/80 rounded-full border-2 border-white" />)}
-                    <div className="w-8 h-8 bg-muted rounded-full border-2 border-white flex items-center justify-center">
+                  <div className="flex -space-x-2 mb-2 lg:mb-3">
+                    {[...Array(4)].map((_, i) => <div key={i} className="w-6 h-6 lg:w-8 lg:h-8 bg-gradient-to-r from-primary to-primary/80 rounded-full border-2 border-white" />)}
+                    <div className="w-6 h-6 lg:w-8 lg:h-8 bg-muted rounded-full border-2 border-white flex items-center justify-center">
                       <span className="text-xs font-medium">+</span>
                     </div>
                   </div>
@@ -220,68 +221,68 @@ export default function Landing() {
       {/* TRENDING STYLES SECTION */}
       <section className="py-24 lg:py-32 bg-gradient-to-b from-background to-muted/30 relative">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/10 opacity-60" />
-        <div className="container max-w-7xl mx-auto px-6 lg:px-12 relative">
-          <div className="text-center mb-16">
-            <h2 className="font-cormorant text-4xl lg:text-6xl font-bold mb-4 text-foreground">
+        <div className="container max-w-7xl mx-auto px-4 lg:px-12 relative">
+          <div className="text-center mb-8 lg:mb-16">
+            <h2 className="font-cormorant text-3xl lg:text-6xl font-bold mb-2 lg:mb-4 text-foreground">
               Curated Collections
               <span className="block text-primary italic">Premium Selection</span>
             </h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+            <p className="text-sm lg:text-lg text-muted-foreground max-w-2xl mx-auto">
               Discover fashion pieces you'll actually love.
             </p>
           </div>
 
           {/* Interactive Preview Section */}
-          <div className="bg-gradient-to-br from-primary/5 to-primary/10 rounded-3xl p-8 lg:p-12 mb-16">
-            <div className="grid lg:grid-cols-2 gap-12 items-center">
-              <div className="space-y-8">
-                <div className="space-y-4">
-                  <div className="inline-flex items-center space-x-2 bg-primary/10 rounded-full px-4 py-2">
-                    <Play className="w-4 h-4 text-primary" />
-                    <span className="text-sm font-semibold text-primary uppercase tracking-wider">How It Works</span>
+          <div className="bg-gradient-to-br from-primary/5 to-primary/10 rounded-2xl lg:rounded-3xl p-4 lg:p-12 mb-8 lg:mb-16">
+            <div className="grid lg:grid-cols-2 gap-6 lg:gap-12 items-center">
+              <div className="space-y-4 lg:space-y-8">
+                <div className="space-y-2 lg:space-y-4">
+                  <div className="inline-flex items-center space-x-2 bg-primary/10 rounded-full px-3 lg:px-4 py-1 lg:py-2">
+                    <Play className="w-3 h-3 lg:w-4 lg:h-4 text-primary" />
+                    <span className="text-xs lg:text-sm font-semibold text-primary uppercase tracking-wider">How It Works</span>
                   </div>
-                  <h3 className="font-cormorant text-3xl lg:text-4xl font-bold">
+                  <h3 className="font-cormorant text-2xl lg:text-4xl font-bold">
                     Discover Your
                     <span className="block text-primary italic">Perfect Style</span>
                   </h3>
-                  <p className="text-lg text-muted-foreground leading-relaxed">
+                  <p className="text-sm lg:text-lg text-muted-foreground leading-relaxed">
                     AI learns your style and shows you pieces you'll love.
                   </p>
                 </div>
 
-                <div className="space-y-4">
-                  <div className="flex items-center space-x-4">
-                    <div className="w-12 h-12 bg-gradient-to-r from-primary to-primary/80 rounded-full flex items-center justify-center">
-                      <ArrowRight className="w-6 h-6 text-white" />
+                <div className="space-y-3 lg:space-y-4">
+                  <div className="flex items-center space-x-3 lg:space-x-4">
+                    <div className="w-8 h-8 lg:w-12 lg:h-12 bg-gradient-to-r from-primary to-primary/80 rounded-full flex items-center justify-center">
+                      <ArrowRight className="w-4 h-4 lg:w-6 lg:h-6 text-white" />
                     </div>
                     <div>
-                      <h4 className="font-semibold">Like to Save</h4>
-                      <p className="text-sm text-muted-foreground">Love it? Save to your collection.</p>
+                      <h4 className="text-sm lg:text-base font-semibold">Like to Save</h4>
+                      <p className="text-xs lg:text-sm text-muted-foreground">Love it? Save to your collection.</p>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-4">
-                    <div className="w-12 h-12 bg-gradient-to-r from-gray-500 to-gray-600 rounded-full flex items-center justify-center">
-                      <X className="w-6 h-6 text-white" />
+                  <div className="flex items-center space-x-3 lg:space-x-4">
+                    <div className="w-8 h-8 lg:w-12 lg:h-12 bg-gradient-to-r from-gray-500 to-gray-600 rounded-full flex items-center justify-center">
+                      <X className="w-4 h-4 lg:w-6 lg:h-6 text-white" />
                     </div>
                     <div>
-                      <h4 className="font-semibold">Pass to Refine</h4>
-                      <p className="text-sm text-muted-foreground">Not quite right? Pass to see better matches.</p>
+                      <h4 className="text-sm lg:text-base font-semibold">Pass to Refine</h4>
+                      <p className="text-xs lg:text-sm text-muted-foreground">Not quite right? Pass to see better matches.</p>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-4">
-                    <div className="w-12 h-12 bg-gradient-to-r from-accent to-accent/80 rounded-full flex items-center justify-center">
-                      <ShoppingBag className="w-6 h-6 text-white" />
+                  <div className="flex items-center space-x-3 lg:space-x-4">
+                    <div className="w-8 h-8 lg:w-12 lg:h-12 bg-gradient-to-r from-accent to-accent/80 rounded-full flex items-center justify-center">
+                      <ShoppingBag className="w-4 h-4 lg:w-6 lg:h-6 text-white" />
                     </div>
                     <div>
-                      <h4 className="font-semibold">Save for Later</h4>
-                      <p className="text-sm text-muted-foreground">Want to buy later? Save to wishlist.</p>
+                      <h4 className="text-sm lg:text-base font-semibold">Save for Later</h4>
+                      <p className="text-xs lg:text-sm text-muted-foreground">Want to buy later? Save to wishlist.</p>
                     </div>
                   </div>
                 </div>
 
-                <Button size="lg" className="px-8 py-4 bg-primary hover:bg-primary/90" onClick={() => navigate("/auth")}>
-                  Start Discovering
-                  <ArrowRight className="ml-2 w-4 h-4" />
+                <Button size="sm" className="px-4 py-3 lg:px-8 lg:py-4 bg-primary hover:bg-primary/90" onClick={() => navigate("/auth")}>
+                  <span className="text-sm lg:text-base">Start Discovering</span>
+                  <ArrowRight className="ml-2 w-3 h-3 lg:w-4 lg:h-4" />
                 </Button>
               </div>
 
