@@ -16,6 +16,7 @@ import AiStudioModal from '@/components/AiStudioModal';
 import PremiumBanner from '@/components/PremiumBanner';
 import { Heart, ShoppingBag, Search, Sparkles, Package, BarChart3, Users, Settings, Store, TrendingUp, Plus, Eye, DollarSign, Globe, Bell, LogOut, User, Archive, Trophy, MapPin, Blocks } from 'lucide-react';
 import Leaderboard from '@/components/Leaderboard';
+import TrendingStylesCarousel from '@/components/TrendingStylesCarousel';
 
 interface UserProfile {
   id: string;
@@ -299,22 +300,19 @@ const RoleDashboard: React.FC = () => {
 
       {/* Global Search and Affiliate Hub Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Global Search with Premium Glass Panel */}
+        {/* Trending Styles Carousel with Premium Glass Panel */}
         <GlassPanel variant="premium" className="p-8">
           <div className="space-y-5">
             <h3 className="text-xl font-cormorant font-semibold flex items-center gap-3">
               <div className="p-2 rounded-full bg-gradient-to-br from-primary/10 to-accent-cartier/10">
-                <Search className="h-5 w-5 text-primary" />
+                <TrendingUp className="h-5 w-5 text-primary" />
               </div>
-              Discover Products, Brands & Styles
+              Trending Styles
             </h3>
             <p className="text-muted-foreground leading-relaxed">
-              Search across products, brands, and styles to discover your next fashion find.
+              Discover what's trending now and shop the latest styles everyone's talking about.
             </p>
-            <Button onClick={() => setSearchOpen(true)} variant="premium" size="lg" className="w-full">
-              <Search className="h-4 w-4 mr-2" />
-              Open Global Search
-            </Button>
+            <TrendingStylesCarousel limit={8} />
           </div>
         </GlassPanel>
 

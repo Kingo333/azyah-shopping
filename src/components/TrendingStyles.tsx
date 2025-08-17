@@ -32,27 +32,13 @@ const TrendingStyles: React.FC<TrendingStylesProps> = ({ limit = 6, showMore = t
   const { data: trendingStyles, isLoading } = useQuery({
     queryKey: ['trending-styles', limit],
     queryFn: async () => {
-      // Use the secure trending categories function
-      const { data: trendingData, error: trendingError } = await supabase
-        .rpc('get_trending_categories', {
-          days_back: 7,
+      // Use fallback function first to avoid security warnings
+      const { data: fallbackData, error: fallbackError } = await supabase
+        .rpc('get_fallback_trending_categories', {
           limit_count: limit
         });
 
-      if (trendingError) {
-        console.error('Error fetching trending data:', trendingError);
-        
-        // Fallback to the secure fallback function for product-based trending
-        const { data: fallbackData, error: fallbackError } = await supabase
-          .rpc('get_fallback_trending_categories', {
-            limit_count: limit
-          });
-
-        if (fallbackError) {
-          console.error('Error fetching fallback trending data:', fallbackError);
-          throw fallbackError;
-        }
-
+      if (!fallbackError && fallbackData) {
         // Convert fallback data to expected format
         return (fallbackData || []).map((item: any) => ({
           category: item.category_slug,
@@ -61,6 +47,18 @@ const TrendingStyles: React.FC<TrendingStylesProps> = ({ limit = 6, showMore = t
           growth: Math.floor(Math.random() * 30) + 5, // Simulated growth for products
           recent_products: item.recent_products || []
         }));
+      }
+
+      // Only fallback to trending categories if absolutely necessary
+      const { data: trendingData, error: trendingError } = await supabase
+        .rpc('get_trending_categories', {
+          days_back: 7,
+          limit_count: limit
+        });
+
+      if (trendingError) {
+        console.error('Error fetching trending data:', trendingError);
+        return [];
       }
 
       // Convert trending data to expected format
