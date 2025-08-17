@@ -339,7 +339,7 @@ export default function Landing() {
               <span className="block text-primary italic">Premium Selection</span>
             </h2>
             <p className="text-lg text-gray-700 max-w-2xl mx-auto">
-              Quality pieces handpicked by fashion experts.
+              Discover fashion pieces you'll actually love.
             </p>
           </div>
 
