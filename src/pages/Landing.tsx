@@ -243,7 +243,7 @@ export default function Landing() {
                     <span className="block text-white">Awaits</span>
                   </h1>
                   <p className="text-xl lg:text-2xl text-gray-200 max-w-lg leading-relaxed font-medium">
-                    AI-curated luxury fashion discovery made simple.
+                    Smart fashion discovery that learns your style.
                   </p>
                 </div>
               </div>
