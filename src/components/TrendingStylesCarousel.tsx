@@ -253,7 +253,7 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
                         alt={product.title}
                         className="w-full aspect-square object-cover rounded-lg"
                       />
-                      <div className="absolute inset-0 bg-black/60 opacity-0 group-hover/product:opacity-100 transition-opacity rounded-md flex items-center justify-center">
+                      <div className="absolute inset-0 bg-black/60 opacity-100 md:opacity-0 md:group-hover/product:opacity-100 transition-opacity rounded-md flex items-center justify-center">
                         <div className="flex gap-1">
                           <Button
                             size="sm"
