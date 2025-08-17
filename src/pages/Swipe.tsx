@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import CategoryFilter from "@/components/CategoryFilter";
 import { ArrowLeft, Heart, Search, Menu, Sparkles, ChevronDown, List, LayoutGrid } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -38,6 +39,7 @@ const Swipe = () => {
   const [selectedCurrency, setSelectedCurrency] = useState<string>(searchParams.get('currency') || 'USD');
   const [showFilters, setShowFilters] = useState(false);
   const [viewMode, setViewMode] = useState<'swipe' | 'list'>('swipe');
+  const [showTooltip, setShowTooltip] = useState(false);
 
   // Check user's swipe count to determine when to show list view option
   const { data: swipeCount } = useQuery({
@@ -57,6 +59,18 @@ const Swipe = () => {
   });
 
   const showListToggle = (swipeCount || 0) >= 5; // Show list view after 5 swipes
+  
+  // Show tooltip when the toggle first becomes available
+  useEffect(() => {
+    if (showListToggle && !showTooltip) {
+      setShowTooltip(true);
+      const timer = setTimeout(() => {
+        setShowTooltip(false);
+      }, 4000); // Show for 4 seconds
+      
+      return () => clearTimeout(timer);
+    }
+  }, [showListToggle, showTooltip]);
 
   // Use the personalized products hook for list view
   const { products, isLoading: productsLoading } = usePersonalizedProducts({
@@ -135,15 +149,26 @@ const Swipe = () => {
             <div className="flex items-center gap-1 sm:gap-2 flex-1 justify-end max-w-full">
               {/* View Mode Toggle - Only show after sufficient swipes */}
               {showListToggle && (
-                <div className="flex items-center gap-2 mr-2">
-                  <LayoutGrid className="h-4 w-4 text-muted-foreground" />
-                  <Switch
-                    checked={viewMode === 'list'}
-                    onCheckedChange={(checked) => setViewMode(checked ? 'list' : 'swipe')}
-                    className="data-[state=checked]:bg-primary"
-                  />
-                  <List className="h-4 w-4 text-muted-foreground" />
-                </div>
+                <TooltipProvider>
+                  <Tooltip open={showTooltip} onOpenChange={setShowTooltip}>
+                    <TooltipTrigger asChild>
+                      <div className="flex items-center gap-2 mr-2">
+                        <LayoutGrid className="h-4 w-4 text-muted-foreground" />
+                        <Switch
+                          checked={viewMode === 'list'}
+                          onCheckedChange={(checked) => setViewMode(checked ? 'list' : 'swipe')}
+                          className="data-[state=checked]:bg-primary"
+                        />
+                        <List className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent className="bg-background border-primary/20 shadow-lg max-w-[250px]">
+                      <p className="text-sm">
+                        Switch between swipe and grid views anytime! The AI learns your taste and improves recommendations.
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               )}
 
               {/* Search Bar */}
