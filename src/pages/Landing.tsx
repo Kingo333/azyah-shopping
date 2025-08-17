@@ -243,7 +243,7 @@ export default function Landing() {
                     <span className="block text-white">Awaits</span>
                   </h1>
                   <p className="text-xl lg:text-2xl text-gray-200 max-w-lg leading-relaxed font-medium">
-                    AI-curated luxury fashion discovery for the modern connoisseur.
+                    AI-curated luxury fashion discovery made simple.
                   </p>
                 </div>
               </div>
@@ -274,8 +274,8 @@ export default function Landing() {
                     ))}
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-gray-200">Elite Circle</p>
-                    <p className="text-xs text-gray-300 font-medium">Exclusive Members</p>
+                    <p className="text-sm font-semibold text-gray-200">50,000+ Members</p>
+                    <p className="text-xs text-gray-300 font-medium">Fashion Community</p>
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -303,7 +303,7 @@ export default function Landing() {
                 {/* New Collection Card */}
                 <div className="absolute -top-4 -right-8 w-64 bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl border border-primary/20 p-6">
                   <h3 className="font-cormorant text-xl font-bold mb-2">New Collection</h3>
-                  <p className="text-sm text-muted-foreground mb-4">Exclusive designer pieces, curated for discerning taste.</p>
+                  <p className="text-sm text-muted-foreground mb-4">Designer pieces, curated for great taste.</p>
                   <Button size="sm" className="w-full bg-primary hover:bg-primary/90">
                     View Collection
                   </Button>
@@ -312,7 +312,7 @@ export default function Landing() {
                 {/* Community Card */}
                 <div className="absolute -bottom-6 -left-8 w-56 bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl border border-primary/20 p-4">
                   <div className="flex items-center space-x-2 mb-3">
-                    <div className="text-sm font-medium">Join Premium Circle</div>
+                    <div className="text-sm font-medium">Join Fashion Community</div>
                   </div>
                   <div className="flex -space-x-2 mb-3">
                     {[...Array(4)].map((_, i) => (
@@ -339,7 +339,7 @@ export default function Landing() {
               <span className="block text-primary italic">Premium Selection</span>
             </h2>
             <p className="text-lg text-gray-700 max-w-2xl mx-auto">
-              Luxury pieces handpicked by fashion experts and coveted by style insiders.
+              Quality pieces handpicked by fashion experts.
             </p>
           </div>
 
@@ -357,7 +357,7 @@ export default function Landing() {
                     <span className="block text-primary italic">Perfect Style</span>
                   </h3>
                   <p className="text-lg text-muted-foreground leading-relaxed">
-                    AI-powered curation learns your taste and delivers luxury pieces you'll love.
+                    AI learns your style and shows you pieces you'll love.
                   </p>
                 </div>
 
