@@ -280,13 +280,14 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
                           <Button
                             size="sm"
                             variant="ghost"
-                            className="h-6 w-6 p-0 text-white hover:text-red-400"
+                            className="h-auto w-auto px-2 py-1 text-red-400 hover:text-red-500 hover:bg-red-400/20 flex items-center gap-1"
                             onClick={(e) => {
                               e.stopPropagation();
                               handleShopNow(product.id);
                             }}
                           >
                             <ExternalLink className="h-3 w-3" />
+                            <span className="text-xs font-medium">Shop</span>
                           </Button>
                         </div>
                       </div>
