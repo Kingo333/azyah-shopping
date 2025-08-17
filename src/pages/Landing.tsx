@@ -15,6 +15,9 @@ import {
   Globe,
   Crown,
   ChevronRight,
+  LayoutGrid,
+  List,
+  ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SEOHead } from "@/components/SEOHead";
@@ -336,16 +339,174 @@ export default function Landing() {
             </p>
           </div>
 
+          {/* Interactive Preview Section */}
+          <div className="bg-gradient-to-br from-primary/5 to-primary/10 rounded-3xl p-8 lg:p-12 mb-16">
+            <div className="grid lg:grid-cols-2 gap-12 items-center">
+              <div className="space-y-8">
+                <div className="space-y-4">
+                  <div className="inline-flex items-center space-x-2 bg-primary/10 rounded-full px-4 py-2">
+                    <Sparkles className="w-4 h-4 text-primary"/>
+                    <span className="text-sm font-semibold text-primary uppercase tracking-wider">How It Works</span>
+                  </div>
+                  <h3 className="font-cormorant text-3xl lg:text-4xl font-bold">
+                    Swipe to Discover
+                    <span className="block text-primary italic">Your Style</span>
+                  </h3>
+                  <p className="text-lg text-muted-foreground leading-relaxed">
+                    Experience fashion discovery like never before. Swipe through curated collections and let our AI learn your preferences.
+                  </p>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex items-center space-x-4">
+                    <div className="w-12 h-12 bg-gradient-to-r from-primary to-primary/80 rounded-full flex items-center justify-center">
+                      <ArrowRight className="w-6 h-6 text-white"/>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold">Swipe Right to Like</h4>
+                      <p className="text-sm text-muted-foreground">Love it? Swipe right and add to your likes!</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-4">
+                    <div className="w-12 h-12 bg-gradient-to-r from-gray-500 to-gray-600 rounded-full flex items-center justify-center">
+                      <X className="w-6 h-6 text-white"/>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold">Swipe Left to Pass</h4>
+                      <p className="text-sm text-muted-foreground">Not your style? Swipe left to see more options.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-4">
+                    <div className="w-12 h-12 bg-gradient-to-r from-accent to-accent/80 rounded-full flex items-center justify-center">
+                      <ShoppingBag className="w-6 h-6 text-white"/>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold">Swipe Up for Wishlist</h4>
+                      <p className="text-sm text-muted-foreground">Want to buy later? Swipe up to save to wishlist.</p>
+                    </div>
+                  </div>
+                </div>
+
+                <Button 
+                  size="lg" 
+                  className="px-8 py-4 bg-primary hover:bg-primary/90"
+                  onClick={() => navigate("/auth")}
+                >
+                  Try Swiping Now
+                  <Sparkles className="ml-2 w-4 h-4"/>
+                </Button>
+              </div>
+
+              {/* Mock Swipe Interface */}
+              <div className="relative">
+                <div className="bg-white rounded-2xl shadow-2xl border border-primary/20 p-6 max-w-sm mx-auto">
+                  <div className="aspect-[3/4] bg-gradient-to-br from-primary/20 to-primary/10 rounded-xl mb-4 relative overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"/>
+                    <div className="absolute bottom-4 left-4 right-4">
+                      <div className="bg-white/90 backdrop-blur-sm rounded-lg p-3">
+                        <h4 className="font-semibold text-sm">Trending Designer Dress</h4>
+                        <p className="text-xs text-muted-foreground">Premium Brand</p>
+                        <p className="text-lg font-bold text-primary">$299</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Action Buttons */}
+                  <div className="flex justify-center space-x-4">
+                    <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
+                      <X className="w-6 h-6 text-gray-600"/>
+                    </div>
+                    <div className="w-12 h-12 bg-accent/10 rounded-full flex items-center justify-center">
+                      <ShoppingBag className="w-6 h-6 text-accent"/>
+                    </div>
+                    <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+                      <Heart className="w-6 h-6 text-primary"/>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Swipe Indicators */}
+                <div className="absolute -top-4 -left-4 bg-white/95 backdrop-blur-sm rounded-xl p-3 shadow-lg border border-primary/20">
+                  <div className="text-xs font-medium text-center">Swipe Direction</div>
+                  <div className="flex space-x-2 mt-2">
+                    <div className="w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center">
+                      <span className="text-xs">←</span>
+                    </div>
+                    <div className="w-6 h-6 bg-primary/20 rounded-full flex items-center justify-center">
+                      <span className="text-xs">→</span>
+                    </div>
+                    <div className="w-6 h-6 bg-accent/20 rounded-full flex items-center justify-center">
+                      <span className="text-xs">↑</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Toggle Between Grid and List View */}
+          <div className="flex items-center justify-between mb-8">
+            <h3 className="font-cormorant text-2xl font-bold">Featured Collections</h3>
+            <div className="flex items-center space-x-4">
+              <span className="text-sm text-muted-foreground">View:</span>
+              <div className="flex items-center space-x-2 bg-white/80 backdrop-blur-sm rounded-lg p-1 border border-primary/20">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 px-3 data-[active=true]:bg-primary data-[active=true]:text-white"
+                  data-active="true"
+                >
+                  <LayoutGrid className="w-4 h-4 mr-1"/>
+                  Grid
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 px-3"
+                >
+                  <List className="w-4 h-4 mr-1"/>
+                  List
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {/* Product Grid */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
             {[...Array(8)].map((_, i) => (
               <div key={i} className="group relative aspect-[3/4] bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2">
                 <div className="absolute inset-0 bg-gradient-to-t from-primary/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"/>
-                <div className="absolute top-4 right-4 w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                
+                {/* Heart Icon */}
+                <div className="absolute top-4 right-4 w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 cursor-pointer hover:bg-primary/10">
                   <Heart className="w-4 h-4 text-primary"/>
                 </div>
+                
+                {/* AR Ready Badge */}
+                {i % 3 === 0 && (
+                  <div className="absolute top-4 left-4 bg-primary/90 backdrop-blur-sm rounded-lg px-3 py-1">
+                    <div className="flex items-center space-x-1">
+                      <Sparkles className="w-3 h-3 text-white"/>
+                      <span className="text-xs font-medium text-white">AR Ready</span>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Product Info */}
                 <div className="absolute bottom-4 left-4 right-4 bg-white/95 backdrop-blur-sm rounded-xl p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                  <div className="text-sm font-medium">Trending Item {i + 1}</div>
-                  <div className="text-xs text-primary">$129 - $199</div>
+                  <div className="text-sm font-medium line-clamp-1">Trending Item {i + 1}</div>
+                  <div className="text-xs text-muted-foreground">Premium Brand</div>
+                  <div className="flex items-center justify-between mt-2">
+                    <div className="text-sm font-bold text-primary">${(Math.random() * 200 + 50).toFixed(0)}</div>
+                    <div className="flex space-x-1">
+                      <Button size="sm" variant="ghost" className="h-6 w-6 p-0 rounded-full bg-primary/10">
+                        <ShoppingBag className="w-3 h-3"/>
+                      </Button>
+                      <Button size="sm" variant="ghost" className="h-6 w-6 p-0 rounded-full bg-primary/10">
+                        <ExternalLink className="w-3 h-3"/>
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               </div>
             ))}
@@ -357,7 +518,7 @@ export default function Landing() {
               className="px-8 py-4 bg-primary hover:bg-primary/90"
               onClick={() => navigate("/auth")}
             >
-              View All Collections
+              Start Discovering Fashion
               <ChevronRight className="ml-2 w-4 h-4"/>
             </Button>
           </div>
