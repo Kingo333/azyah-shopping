@@ -72,7 +72,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
 
   // Use the personalized products hook
   const { products, isLoading } = usePersonalizedProducts({
-    filter,
+    filter: filter || 'all',
     subcategory,
     priceRange,
     searchQuery,

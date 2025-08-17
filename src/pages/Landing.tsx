@@ -336,7 +336,7 @@ export default function Landing() {
           <div className="text-center mb-16">
             <h2 className="font-cormorant text-4xl lg:text-6xl font-bold mb-4 text-gray-800">
               Trending Styles
-              <span className="block text-primary italic">Every Woman Needs</span>
+              <span className="block text-primary italic">Everyone Loves</span>
             </h2>
             <p className="text-lg text-gray-700 max-w-2xl mx-auto">
               Discover our curated collection of must-have pieces, handpicked by fashion experts and loved by our community.
@@ -523,7 +523,7 @@ export default function Landing() {
             <div className="mb-12">
               <div className="max-w-sm mx-auto h-[600px] relative bg-gradient-to-br from-primary/5 to-primary/10 rounded-2xl p-4">
                 <SwipeDeck
-                  filter="women"
+                  filter="all"
                   subcategory=""
                   priceRange={{ min: 0, max: 1000 }}
                   searchQuery=""
