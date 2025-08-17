@@ -204,29 +204,30 @@ export default function Landing() {
       </div>
 
       {/* HERO */}
-      <section id="discover" className="relative overflow-hidden min-h-screen bg-gradient-to-br from-background via-primary-glow to-primary/5">
+      <section id="discover" className="relative overflow-hidden min-h-screen bg-gradient-to-br from-primary/10 via-primary/5 to-primary/15">
         {/* Background Pattern */}
         <div className="absolute inset-0">
           <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_25%_25%,rgba(239,68,68,0.15),transparent_50%)]"/>
           <div className="absolute bottom-0 right-0 w-full h-full bg-[radial-gradient(circle_at_75%_75%,rgba(239,68,68,0.1),transparent_50%)]"/>
         </div>
         
-        {/* Floating elements */}
-        <div className="absolute top-32 left-16 w-40 h-40 bg-primary/8 rounded-full blur-3xl animate-pulse"/>
-        <div className="absolute bottom-32 right-16 w-32 h-32 bg-primary/5 rounded-full blur-2xl animate-pulse"/>
-        <div className="absolute top-1/2 left-1/4 w-6 h-6 bg-primary/20 rounded-full animate-bounce"/>
-        <div className="absolute top-1/3 right-1/3 w-4 h-4 bg-primary/30 rounded-full animate-pulse delay-1000"/>
+        {/* Large Background Text */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div className="font-cormorant text-[20vw] lg:text-[15vw] font-bold text-primary/5 leading-none tracking-wider">
+            AZYAH
+          </div>
+        </div>
 
         <div className="container max-w-7xl mx-auto px-6 lg:px-12 pt-24 pb-20 lg:pt-32 lg:pb-32 relative">
           <div className="grid lg:grid-cols-2 gap-16 items-center transition-all duration-1000"
                style={{ opacity: isVisible ? 1 : 0, transform: `translateY(${isVisible ? 0 : 32}px)` }}>
             
             {/* Hero Content */}
-            <div className="space-y-10 lg:space-y-12">
+            <div className="space-y-10 lg:space-y-12 z-10">
               <div className="space-y-8">
-                <div className="inline-flex items-center space-x-3 bg-white/80 backdrop-blur-sm border border-primary/20 rounded-full px-6 py-3 shadow-lg">
+                <div className="inline-flex items-center space-x-3 bg-white/90 backdrop-blur-sm border border-primary/20 rounded-full px-6 py-3 shadow-lg">
                   <Sparkles className="w-5 h-5 text-primary"/>
-                  <span className="text-sm font-semibold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent uppercase tracking-wider">Fashion Discovery</span>
+                  <span className="text-sm font-semibold text-primary uppercase tracking-wider">Fashion Discovery</span>
                 </div>
                 
                 <div className="space-y-4">
@@ -278,8 +279,8 @@ export default function Landing() {
               </div>
             </div>
 
-            {/* Hero Visual */}
-            <div className="relative lg:justify-self-end">
+            {/* Hero Visual with floating cards */}
+            <div className="relative lg:justify-self-end z-10">
               <div className="relative">
                 <div className="aspect-[4/5] bg-gradient-to-br from-white/50 to-primary/10 rounded-2xl overflow-hidden shadow-2xl border border-white/30 backdrop-blur-sm">
                   <img 
@@ -293,188 +294,230 @@ export default function Landing() {
                   <div className="absolute inset-0 bg-gradient-to-t from-primary/10 via-transparent to-transparent"/>
                 </div>
                 
-                {/* Floating cards */}
-                <div className="absolute -top-6 -right-6 w-24 h-32 bg-white/90 backdrop-blur-sm rounded-xl shadow-xl border border-primary/20 p-3">
-                  <div className="w-full h-20 bg-gradient-to-br from-primary/20 to-primary/10 rounded-lg mb-2"/>
-                  <div className="space-y-1">
-                    <div className="h-2 bg-primary/30 rounded w-3/4"/>
-                    <div className="h-2 bg-primary/20 rounded w-1/2"/>
-                  </div>
+                {/* New Collection Card */}
+                <div className="absolute -top-4 -right-8 w-64 bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl border border-primary/20 p-6">
+                  <h3 className="font-cormorant text-xl font-bold mb-2">New Collection</h3>
+                  <p className="text-sm text-muted-foreground mb-4">Discover the latest trends in women's fashion, crafted for every style and occasion.</p>
+                  <Button size="sm" className="w-full bg-primary hover:bg-primary/90">
+                    View All
+                  </Button>
                 </div>
                 
-                <div className="absolute -bottom-6 -left-6 w-32 h-24 bg-white/90 backdrop-blur-sm rounded-xl shadow-xl border border-primary/20 p-3">
-                  <div className="flex items-center space-x-2 mb-2">
-                    <div className="w-6 h-6 bg-gradient-to-r from-primary to-primary/80 rounded-full"/>
-                    <div className="space-y-1 flex-1">
-                      <div className="h-2 bg-primary/30 rounded"/>
-                      <div className="h-1 bg-primary/20 rounded w-2/3"/>
+                {/* Community Card */}
+                <div className="absolute -bottom-6 -left-8 w-56 bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl border border-primary/20 p-4">
+                  <div className="flex items-center space-x-2 mb-3">
+                    <div className="text-sm font-medium">Join the Community of Fashion</div>
+                  </div>
+                  <div className="flex -space-x-2 mb-3">
+                    {[...Array(4)].map((_, i) => (
+                      <div key={i} className="w-8 h-8 bg-gradient-to-r from-primary to-primary/80 rounded-full border-2 border-white"/>
+                    ))}
+                    <div className="w-8 h-8 bg-muted rounded-full border-2 border-white flex items-center justify-center">
+                      <span className="text-xs font-medium">+</span>
                     </div>
                   </div>
-                  <div className="h-8 bg-gradient-to-r from-primary/20 to-primary/10 rounded"/>
                 </div>
               </div>
-              
-              {/* Background effects */}
-              <div className="absolute -top-8 -right-8 w-32 h-32 bg-primary/15 rounded-full blur-2xl animate-pulse"/>
-              <div className="absolute -bottom-8 -left-8 w-40 h-40 bg-primary/10 rounded-full blur-3xl animate-pulse delay-1000"/>
             </div>
           </div>
         </div>
       </section>
 
-      {/* FEATURES */}
-      <section id="features" className="relative py-24 lg:py-32 bg-white">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(239,68,68,0.08),transparent_50%)] opacity-60"/>
-        <div className="container max-w-7xl mx-auto px-6 lg:px-12 relative">
-          <div className="text-center mb-20">
-            <div className="inline-flex items-center space-x-2 bg-primary/10 rounded-full px-4 py-2 mb-6">
-              <Sparkles className="w-4 h-4 text-primary"/>
-              <span className="text-sm font-semibold text-primary uppercase tracking-wider">Features</span>
-            </div>
-            <h2 className="font-cormorant text-5xl lg:text-7xl font-bold mb-6 leading-tight">
-              The Future of
-              <span className="block bg-gradient-to-r from-primary via-primary to-primary/80 bg-clip-text text-transparent italic">Fashion Discovery</span>
+      {/* TRENDING STYLES SECTION */}
+      <section className="py-24 lg:py-32 bg-gradient-to-b from-background to-primary/5">
+        <div className="container max-w-7xl mx-auto px-6 lg:px-12">
+          <div className="text-center mb-16">
+            <h2 className="font-cormorant text-4xl lg:text-6xl font-bold mb-4">
+              Trending Styles
+              <span className="block text-primary italic">Every Woman Needs</span>
             </h2>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-              AI-powered personalization • Quality brand partnerships • Curated collections
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Discover our curated collection of must-have pieces, handpicked by fashion experts and loved by our community.
             </p>
-            <div className="w-32 h-1 bg-gradient-to-r from-primary to-primary/70 mx-auto mt-8 rounded-full"/>
           </div>
 
-          <div className="grid lg:grid-cols-3 gap-8">
-            {[
-              ["AI Curation", "/marketing/ai-curation-icon.png", "Our advanced AI learns your unique style and curates personalized collections.", ["Personalized recommendations","Style learning algorithm","Trend forecasting"]],
-              ["Exclusive Access", "/marketing/exclusive-access-icon.png", "Access limited collections and early releases from premium brands.", ["Pre-launch access","Limited collections","VIP perks"]],
-              ["Global Community", "/marketing/global-community-icon.png", "Connect with enthusiasts worldwide and share discoveries.", ["Style inspiration","Global trends","Community sharing"]],
-            ].map(([title, icon, desc, bullets]) => (
-              <article key={title as string} className="group bg-white/80 backdrop-blur-sm rounded-2xl p-8 shadow-lg hover:shadow-2xl border border-primary/10 hover:border-primary/20 transition-all duration-500 hover:-translate-y-2">
-                <div className="w-16 h-16 relative rounded-xl shadow-lg group-hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center mb-6">
-                  <img src={icon as string} alt={title as string} className="w-10 h-10 object-cover" loading="lazy" decoding="async"/>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+            {[...Array(8)].map((_, i) => (
+              <div key={i} className="group relative aspect-[3/4] bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2">
+                <div className="absolute inset-0 bg-gradient-to-t from-primary/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"/>
+                <div className="absolute top-4 right-4 w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <Heart className="w-4 h-4 text-primary"/>
                 </div>
-                <h3 className="font-cormorant text-2xl font-bold mb-4 text-foreground">{title}</h3>
-                <p className="text-muted-foreground mb-6 leading-relaxed">{desc}</p>
-                <ul className="space-y-3">
-                  {(bullets as string[]).map(b => (
-                    <li key={b} className="flex items-center space-x-3 text-sm text-muted-foreground">
-                      <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
-                        <CheckCircle className="w-3 h-3 text-primary"/>
-                      </div>
-                      <span>{b}</span>
-                    </li>
-                  ))}
-                </ul>
-              </article>
+                <div className="absolute bottom-4 left-4 right-4 bg-white/95 backdrop-blur-sm rounded-xl p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <div className="text-sm font-medium">Trending Item {i + 1}</div>
+                  <div className="text-xs text-primary">$129 - $199</div>
+                </div>
+              </div>
             ))}
           </div>
 
-          {/* Additional modern section */}
-          <div className="mt-24 bg-gradient-to-r from-primary/5 to-primary/10 rounded-3xl p-12 lg:p-16">
-            <div className="grid lg:grid-cols-2 gap-12 items-center">
-              <div className="space-y-6">
-                <h3 className="font-cormorant text-4xl lg:text-5xl font-bold leading-tight">
-                  Trending Styles
-                  <span className="block text-primary italic">Every Woman Needs</span>
-                </h3>
-                <p className="text-lg text-muted-foreground leading-relaxed">
-                  Discover the latest trends and must-have pieces curated by our fashion experts and AI technology.
-                </p>
-                <Button className="bg-primary hover:bg-primary/90 text-white px-6 py-3">
-                  View All Collections
-                  <ChevronRight className="ml-2 w-4 h-4"/>
-                </Button>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                {[1,2,3,4].map(i => (
-                  <div key={i} className="aspect-[3/4] bg-white/60 backdrop-blur-sm rounded-xl shadow-lg border border-primary/10 p-2">
-                    <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/10 rounded-lg"/>
+          <div className="text-center">
+            <Button 
+              size="lg" 
+              className="px-8 py-4 bg-primary hover:bg-primary/90"
+              onClick={() => navigate("/auth")}
+            >
+              View All Collections
+              <ChevronRight className="ml-2 w-4 h-4"/>
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* QUALITY SECTION */}
+      <section className="py-24 lg:py-32 bg-gradient-to-b from-primary/5 to-background">
+        <div className="container max-w-7xl mx-auto px-6 lg:px-12">
+          <div className="text-center mb-20">
+            <h2 className="font-cormorant text-4xl lg:text-6xl font-bold mb-6">
+              Uncompromising Quality,
+              <span className="block text-primary italic">Unmatched Design</span>
+            </h2>
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
+              Every piece in our collection is carefully selected for its exceptional quality and design excellence.
+            </p>
+          </div>
+
+          <div className="flex justify-center mb-16">
+            <div className="relative">
+              <div className="w-80 h-80 bg-gradient-to-br from-primary/10 to-primary/20 rounded-full flex items-center justify-center shadow-2xl">
+                <div className="w-64 h-64 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-xl border border-primary/20">
+                  <div className="w-48 h-48 bg-gradient-to-br from-primary/20 to-primary/10 rounded-full flex items-center justify-center">
+                    <div className="text-center space-y-2">
+                      <Crown className="w-16 h-16 text-primary mx-auto"/>
+                      <div className="font-cormorant text-xl font-bold">Premium</div>
+                      <div className="text-sm text-muted-foreground">Quality Assured</div>
+                    </div>
                   </div>
-                ))}
+                </div>
+              </div>
+              
+              {/* Floating quality indicators */}
+              <div className="absolute -top-4 -right-4 bg-white/95 backdrop-blur-sm rounded-xl p-3 shadow-xl border border-primary/20">
+                <div className="text-xs font-medium text-center">Quality Testing</div>
+                <div className="text-lg font-bold text-primary text-center">100%</div>
+              </div>
+              
+              <div className="absolute -bottom-4 -left-4 bg-white/95 backdrop-blur-sm rounded-xl p-3 shadow-xl border border-primary/20">
+                <div className="text-xs font-medium text-center">Customer Satisfaction</div>
+                <div className="text-lg font-bold text-primary text-center">4.9★</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            {[
+              ["Premium Materials", "Only the finest fabrics and materials make it into our collections."],
+              ["Expert Curation", "Our fashion experts handpick every piece for quality and style."],
+              ["Sustainable Practice", "We partner with brands committed to ethical and sustainable fashion."]
+            ].map(([title, desc]) => (
+              <div key={title} className="text-center space-y-4">
+                <div className="w-16 h-16 bg-gradient-to-r from-primary/20 to-primary/10 rounded-xl flex items-center justify-center mx-auto">
+                  <CheckCircle className="w-8 h-8 text-primary"/>
+                </div>
+                <h3 className="font-cormorant text-xl font-bold">{title}</h3>
+                <p className="text-muted-foreground">{desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* DESIGN FOR MODERN SECTION */}
+      <section className="relative py-24 lg:py-32 bg-gradient-to-br from-foreground via-gray-900 to-foreground text-background overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/15 via-primary/5 to-transparent"/>
+        
+        {/* Large Background Text */}
+        <div className="absolute inset-0 flex items-center justify-start pl-12 pointer-events-none">
+          <div className="font-cormorant text-[20vw] lg:text-[15vw] font-bold text-white/5 leading-none tracking-wider">
+            AZYAH
+          </div>
+        </div>
+
+        <div className="container max-w-7xl mx-auto px-6 lg:px-12 relative">
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
+            <div className="space-y-8">
+              <div className="space-y-6">
+                <div className="inline-flex items-center space-x-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2">
+                  <Sparkles className="w-4 h-4 text-primary"/>
+                  <span className="text-sm font-semibold text-primary uppercase tracking-wider">Innovation</span>
+                </div>
+                
+                <h2 className="font-cormorant text-5xl lg:text-7xl font-bold leading-tight">
+                  Design for
+                  <span className="block text-primary italic">modern</span>
+                </h2>
+                
+                <p className="text-xl text-background/80 leading-relaxed">
+                  Luxury fashion that embraces your unique style from within, designed for radiant beauty and lasting results. Our AI-powered platform curates collections that match your personal aesthetic and lifestyle.
+                </p>
+              </div>
+              
+              <Button 
+                size="lg" 
+                className="px-8 py-4 bg-primary hover:bg-primary/90 text-white shadow-2xl"
+                onClick={() => navigate("/auth")}
+              >
+                Learn More <ArrowRight className="ml-2 w-5 h-5"/>
+              </Button>
+            </div>
+
+            <div className="relative">
+              <div className="aspect-[4/5] bg-gradient-to-br from-primary/20 to-primary/10 rounded-2xl overflow-hidden shadow-2xl border border-white/20">
+                <div className="w-full h-full bg-gradient-to-br from-primary/30 to-primary/20 flex items-center justify-center">
+                  <div className="text-center space-y-4">
+                    <div className="w-32 h-32 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center mx-auto">
+                      <Sparkles className="w-16 h-16 text-white"/>
+                    </div>
+                    <p className="text-white/80 font-medium">Modern Fashion</p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* PARTNER CTA */}
-      <section id="brands" className="py-24 lg:py-32 bg-gradient-to-br from-background to-primary/5">
-        <div className="container max-w-7xl mx-auto px-6 lg:px-12">
-          <div className="grid lg:grid-cols-2 gap-16 items-center">
-            <div className="space-y-10">
-              <div className="space-y-6">
-                <div className="inline-flex items-center space-x-2 bg-primary/10 rounded-full px-4 py-2">
-                  <Crown className="w-4 h-4 text-primary"/>
-                  <span className="text-sm font-semibold text-primary uppercase tracking-wider">Partnership</span>
-                </div>
-                <h2 className="font-cormorant text-5xl lg:text-6xl font-bold leading-tight">
-                  Partner with
-                  <span className="block text-primary italic">Azyah</span>
-                </h2>
-                <p className="text-xl text-muted-foreground leading-relaxed">
-                  Showcase collections to a curated audience and grow your brand with our premium platform.
-                </p>
-              </div>
-              
-              <div className="grid sm:grid-cols-2 gap-6">
-                {[
-                  ["For Brands", "/auth?role=brand"],
-                  ["For Retailers", "/auth?role=retailer"],
-                ].map(([label, href]) => (
-                  <div key={label} className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-primary/10 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-                    <div className="space-y-4">
-                      <div className="w-12 h-12 bg-gradient-to-r from-primary/20 to-primary/10 rounded-xl flex items-center justify-center">
-                        {label === "For Brands" ? <ShoppingBag className="w-6 h-6 text-primary"/> : <Globe className="w-6 h-6 text-primary"/>}
-                      </div>
-                      <h3 className="font-cormorant text-2xl font-bold">{label}</h3>
-                      <p className="text-muted-foreground">
-                        {label === "For Brands" ? "Show your line to fashion lovers and build lasting connections." : "Expand reach with AI analytics and premium customer insights."}
-                      </p>
-                      <Button 
-                        variant="outline" 
-                        className="w-full border-primary/30 hover:bg-primary/5"
-                        onClick={() => navigate(href as string)}
-                      >
-                        Join as {label.split(" ")[1]} <ChevronRight className="ml-2 w-4 h-4"/>
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+      {/* FAQ SECTION */}
+      <section id="faq" className="py-24 lg:py-32 bg-gradient-to-b from-background to-primary/5">
+        <div className="container max-w-4xl mx-auto px-6 lg:px-12">
+          <div className="text-center mb-16">
+            <h2 className="font-cormorant text-4xl lg:text-6xl font-bold mb-6">
+              Frequently Asked
+              <span className="block text-primary italic">Questions</span>
+            </h2>
+            <p className="text-xl text-muted-foreground">
+              Everything you need to know about Azyah and our premium fashion discovery platform.
+            </p>
+          </div>
 
-            <div className="relative">
-              <div className="bg-gradient-to-br from-primary/5 to-primary/10 rounded-3xl p-12 lg:p-16">
-                <div className="text-center space-y-8">
-                  <div className="space-y-6">
-                    <h3 className="font-cormorant text-3xl font-bold">
-                      Uncompromising Quality,
-                      <span className="block text-primary italic">Unmatched Design</span>
-                    </h3>
-                    <p className="text-muted-foreground">
-                      Join thousands of premium brands and retailers who trust Azyah to showcase their finest collections.
-                    </p>
+          <div className="space-y-6">
+            {[
+              ["Do You Accept Returns And Exchanges?", "Yes, we accept returns and exchanges within 30 days of purchase. Items must be in original condition with tags attached. Our customer service team will guide you through the simple return process."],
+              ["How Do You Ensure The Quality Of Your Work?", "We work exclusively with premium brands and retailers who meet our strict quality standards. Every piece is curated by our fashion experts and backed by our quality guarantee."],
+              ["How Can I Track My Order?", "Once your order is placed, you'll receive a tracking number via email. You can also track your order in real-time through your Azyah account dashboard."],
+              ["What Sizes Do You Offer?", "Our partner brands offer a comprehensive range of sizes from XS to 3XL. Each product page includes detailed size charts and our AI can recommend the best fit based on your preferences."]
+            ].map(([question, answer], index) => (
+              <div key={index} className="bg-white/80 backdrop-blur-sm rounded-2xl border border-primary/10 overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300">
+                <div className="p-6">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-cormorant text-xl font-bold pr-8">{question}</h3>
+                    <ChevronRight className="w-5 h-5 text-primary flex-shrink-0"/>
                   </div>
-                  
-                  <div className="w-32 h-32 mx-auto bg-white/60 backdrop-blur-sm rounded-full flex items-center justify-center shadow-2xl border border-primary/20">
-                    <div className="w-20 h-20 bg-gradient-to-r from-primary to-primary/80 rounded-full flex items-center justify-center">
-                      <Crown className="w-10 h-10 text-white"/>
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-3 gap-4 text-center">
-                    {[
-                      ["500+", "Premium Brands"],
-                      ["50K+", "Active Users"],
-                      ["4.9", "Rating"]
-                    ].map(([num, label]) => (
-                      <div key={label}>
-                        <div className="text-2xl font-bold text-primary">{num}</div>
-                        <div className="text-xs text-muted-foreground">{label}</div>
-                      </div>
-                    ))}
-                  </div>
+                  <p className="text-muted-foreground mt-4 leading-relaxed">{answer}</p>
                 </div>
               </div>
-            </div>
+            ))}
+          </div>
+
+          <div className="text-center mt-12">
+            <p className="text-muted-foreground mb-6">Still have questions?</p>
+            <Button 
+              variant="outline" 
+              size="lg" 
+              className="px-8 py-4 border-primary/30 hover:bg-primary/5"
+            >
+              Contact Support
+            </Button>
           </div>
         </div>
       </section>
