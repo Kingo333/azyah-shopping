@@ -66,7 +66,7 @@ const Swipe = () => {
       setShowTooltip(true);
       const timer = setTimeout(() => {
         setShowTooltip(false);
-      }, 4000); // Show for 4 seconds
+      }, 2500); // Show for 2.5 seconds
       
       return () => clearTimeout(timer);
     }
