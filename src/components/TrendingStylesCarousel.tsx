@@ -253,31 +253,30 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
                         alt={product.title}
                         className="w-full aspect-square object-cover rounded-lg"
                       />
-                      <div className="absolute inset-0 opacity-0 md:group-hover/product:opacity-100 transition-opacity rounded-md flex items-center justify-center bg-black/60">
-                        <div className="flex gap-1">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-6 w-6 p-0 text-white hover:text-red-400"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              addToLikesMutation.mutate(product.id);
-                            }}
-                          >
-                            <Heart className="h-3 w-3" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-6 w-6 p-0 text-white hover:text-blue-400"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              addToWishlistMutation.mutate(product.id);
-                            }}
-                          >
-                            <ShoppingBag className="h-3 w-3" />
-                          </Button>
-                        </div>
+                      {/* Top corner action buttons - always visible */}
+                      <div className="absolute top-1 left-1 right-1 flex justify-between">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 w-7 p-0 bg-white/80 text-gray-700 hover:text-red-500 hover:bg-white/90 rounded-full"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            addToLikesMutation.mutate(product.id);
+                          }}
+                        >
+                          <Heart className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 w-7 p-0 bg-white/80 text-gray-700 hover:text-blue-500 hover:bg-white/90 rounded-full"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            addToWishlistMutation.mutate(product.id);
+                          }}
+                        >
+                          <ShoppingBag className="h-3 w-3" />
+                        </Button>
                       </div>
                       {/* Mobile-friendly bottom overlay with Shop button */}
                       <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2 rounded-b-lg">
