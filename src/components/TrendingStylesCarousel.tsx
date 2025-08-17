@@ -253,8 +253,8 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
                         alt={product.title}
                         className="w-full aspect-square object-cover rounded-lg"
                       />
-                      <div className="absolute inset-0 bg-black/60 opacity-100 md:opacity-0 md:group-hover/product:opacity-100 transition-opacity rounded-md flex flex-col items-center justify-center gap-2">
-                        <div className="flex gap-2">
+                      <div className="absolute inset-0 opacity-0 md:group-hover/product:opacity-100 transition-opacity rounded-md flex items-center justify-center bg-black/60">
+                        <div className="flex gap-1">
                           <Button
                             size="sm"
                             variant="ghost"
@@ -278,10 +278,13 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
                             <ShoppingBag className="h-3 w-3" />
                           </Button>
                         </div>
+                      </div>
+                      {/* Mobile-friendly bottom overlay with Shop button */}
+                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2 rounded-b-lg">
                         <Button
                           size="sm"
                           variant="outline"
-                          className="text-xs font-medium px-3 py-1 h-auto bg-red-500 text-white border-red-500 hover:bg-red-600 hover:border-red-600"
+                          className="w-full text-xs font-medium h-auto bg-red-500 text-white border-red-500 hover:bg-red-600 hover:border-red-600"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleShopNow(product.id);
