@@ -16,17 +16,19 @@ import {
   Crown,
   ChevronRight,
   LayoutGrid,
-  List,
   ExternalLink,
+  Shuffle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SEOHead } from "@/components/SEOHead";
+import SwipeDeck from '@/components/SwipeDeck';
 
 export default function Landing() {
-  const navigate = useNavigate();
+  const [isVisible, setIsVisible] = useState(false);
+  const [viewMode, setViewMode] = useState<'grid' | 'swipe'>('grid');
   const { user } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [isVisible, setIsVisible] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => setIsVisible(true), []);
 
@@ -455,8 +457,8 @@ export default function Landing() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-8 px-3 data-[active=true]:bg-primary data-[active=true]:text-white"
-                  data-active="true"
+                  className={`h-8 px-3 ${viewMode === 'grid' ? 'bg-primary text-white' : ''}`}
+                  onClick={() => setViewMode('grid')}
                 >
                   <LayoutGrid className="w-4 h-4 mr-1"/>
                   Grid
@@ -464,55 +466,85 @@ export default function Landing() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-8 px-3"
+                  className={`h-8 px-3 ${viewMode === 'swipe' ? 'bg-primary text-white' : ''}`}
+                  onClick={() => setViewMode('swipe')}
                 >
-                  <List className="w-4 h-4 mr-1"/>
-                  List
+                  <Shuffle className="w-4 h-4 mr-1"/>
+                  Swipe
                 </Button>
               </div>
             </div>
           </div>
 
-          {/* Product Grid */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-            {[...Array(8)].map((_, i) => (
-              <div key={i} className="group relative aspect-[3/4] bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2">
-                <div className="absolute inset-0 bg-gradient-to-t from-primary/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"/>
-                
-                {/* Heart Icon */}
-                <div className="absolute top-4 right-4 w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 cursor-pointer hover:bg-primary/10">
-                  <Heart className="w-4 h-4 text-primary"/>
-                </div>
-                
-                {/* AR Ready Badge */}
-                {i % 3 === 0 && (
-                  <div className="absolute top-4 left-4 bg-primary/90 backdrop-blur-sm rounded-lg px-3 py-1">
-                    <div className="flex items-center space-x-1">
-                      <Sparkles className="w-3 h-3 text-white"/>
-                      <span className="text-xs font-medium text-white">AR Ready</span>
+          {/* Content based on view mode */}
+          {viewMode === 'grid' ? (
+            /* Product Grid */
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+              {[...Array(8)].map((_, i) => (
+                <div key={i} className="group relative aspect-[3/4] bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2">
+                  <div className="absolute inset-0 bg-gradient-to-t from-primary/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"/>
+                  
+                  {/* Heart Icon */}
+                  <div className="absolute top-4 right-4 w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 cursor-pointer hover:bg-primary/10">
+                    <Heart className="w-4 h-4 text-primary"/>
+                  </div>
+                  
+                  {/* AR Ready Badge */}
+                  {i % 3 === 0 && (
+                    <div className="absolute top-4 left-4 bg-primary/90 backdrop-blur-sm rounded-lg px-3 py-1">
+                      <div className="flex items-center space-x-1">
+                        <Sparkles className="w-3 h-3 text-white"/>
+                        <span className="text-xs font-medium text-white">AR Ready</span>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Product Info */}
+                  <div className="absolute bottom-4 left-4 right-4 bg-white/95 backdrop-blur-sm rounded-xl p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <div className="text-sm font-medium line-clamp-1">Trending Item {i + 1}</div>
+                    <div className="text-xs text-muted-foreground">Premium Brand</div>
+                    <div className="flex items-center justify-between mt-2">
+                      <div className="text-sm font-bold text-primary">${(Math.random() * 200 + 50).toFixed(0)}</div>
+                      <div className="flex space-x-1">
+                        <Button size="sm" variant="ghost" className="h-6 w-6 p-0 rounded-full bg-primary/10">
+                          <ShoppingBag className="w-3 h-3"/>
+                        </Button>
+                        <Button size="sm" variant="ghost" className="h-6 w-6 p-0 rounded-full bg-primary/10">
+                          <ExternalLink className="w-3 h-3"/>
+                        </Button>
+                      </div>
                     </div>
                   </div>
-                )}
-                
-                {/* Product Info */}
-                <div className="absolute bottom-4 left-4 right-4 bg-white/95 backdrop-blur-sm rounded-xl p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                  <div className="text-sm font-medium line-clamp-1">Trending Item {i + 1}</div>
-                  <div className="text-xs text-muted-foreground">Premium Brand</div>
-                  <div className="flex items-center justify-between mt-2">
-                    <div className="text-sm font-bold text-primary">${(Math.random() * 200 + 50).toFixed(0)}</div>
-                    <div className="flex space-x-1">
-                      <Button size="sm" variant="ghost" className="h-6 w-6 p-0 rounded-full bg-primary/10">
-                        <ShoppingBag className="w-3 h-3"/>
-                      </Button>
-                      <Button size="sm" variant="ghost" className="h-6 w-6 p-0 rounded-full bg-primary/10">
-                        <ExternalLink className="w-3 h-3"/>
-                      </Button>
-                    </div>
-                  </div>
                 </div>
+              ))}
+            </div>
+          ) : (
+            /* Swipe Interface */
+            <div className="mb-12">
+              <div className="max-w-sm mx-auto h-[600px] relative bg-gradient-to-br from-primary/5 to-primary/10 rounded-2xl p-4">
+                <SwipeDeck
+                  filter="women"
+                  subcategory=""
+                  priceRange={{ min: 0, max: 1000 }}
+                  searchQuery=""
+                  currency="USD"
+                />
               </div>
-            ))}
-          </div>
+              <div className="text-center mt-6">
+                <p className="text-sm text-gray-600 mb-4">
+                  Experience our swipe interface just like in the main app!
+                </p>
+                <Button
+                  variant="outline"
+                  onClick={() => navigate("/swipe")}
+                  className="px-6 py-2"
+                >
+                  Try Full Swipe Experience
+                  <ArrowRight className="ml-2 w-4 h-4"/>
+                </Button>
+              </div>
+            </div>
+          )}
 
           <div className="text-center">
             <Button 
