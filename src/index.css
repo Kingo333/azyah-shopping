@@ -12,16 +12,16 @@
     --card-foreground: 222.2 84% 4.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-    --primary-glow: 220 14% 96%;
+    --primary: 0 65% 51%;
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 0 100% 97%;
     --secondary: 210 40% 96%;
     --secondary-foreground: 222.2 84% 4.9%;
     --muted: 210 40% 96%;
     --muted-foreground: 215.4 16.3% 46.9%;
     --accent: 210 40% 96%;
     --accent-foreground: 222.2 84% 4.9%;
-    --accent-cartier: 0 100% 32%;
+    --accent-cartier: 0 70% 45%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
     --border: 214.3 31.8% 91.4%;
@@ -56,7 +56,8 @@
     
     /* Premium gradients */
     --gradient-glass: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
-    --gradient-premium: linear-gradient(135deg, hsl(var(--primary) / 0.05), hsl(var(--accent-cartier) / 0.03));
+    --gradient-premium: linear-gradient(135deg, hsl(var(--primary) / 0.08), hsl(var(--accent-cartier) / 0.05));
+    --gradient-hero: linear-gradient(135deg, hsl(0 65% 51% / 0.03), hsl(0 70% 45% / 0.08));
     --gradient-dashboard: linear-gradient(135deg, hsl(var(--background)), hsl(var(--primary-glow) / 0.3));
     
     /* Sidebar colors */
