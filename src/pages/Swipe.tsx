@@ -70,7 +70,7 @@ const Swipe = () => {
       
       return () => clearTimeout(timer);
     }
-  }, [showListToggle, showTooltip]);
+  }, [showListToggle]);
 
   // Use the personalized products hook for list view
   const { products, isLoading: productsLoading } = usePersonalizedProducts({
