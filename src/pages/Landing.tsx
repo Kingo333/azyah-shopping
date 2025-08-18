@@ -164,7 +164,7 @@ export default function Landing() {
       </div>
 
       {/* HERO */}
-      <section id="discover" className="relative overflow-hidden min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-background">
+      <section id="discover" className="relative overflow-hidden min-h-[70vh] sm:min-h-[80vh] lg:min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-background">
         {/* Minimalist Background Pattern */}
         <div className="absolute inset-0">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(239,68,68,0.15),transparent_70%)]" />
