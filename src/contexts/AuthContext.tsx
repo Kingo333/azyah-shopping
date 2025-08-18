@@ -26,102 +26,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Set up auth state listener with enhanced preview environment handling
+    // Simplified auth state listener for Visual Edits compatibility
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('AuthContext: Auth state changed:', { 
-          event, 
-          user: session?.user?.email,
-          hasSession: !!session,
-          timestamp: new Date().toISOString(),
-          isPreview: isPreviewEnvironment()
-        });
+      (event, session) => {
+        console.log('AuthContext: Auth state changed:', { event, hasSession: !!session });
         
-        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-          setSession(session);
-          setUser(session?.user ?? null);
-          
-          // Store backup for all roles in preview environment
-          if (session?.user && isPreviewEnvironment()) {
-            storeSessionBackup(session.user, session);
-          }
-        } else if (event === 'SIGNED_OUT') {
-          // Enhanced logic for all roles
-          const isLikelyRefresh = isLikelyPreviewRefresh();
-          
-          if (isLikelyRefresh) {
-            console.log('AuthContext: Preview refresh detected for role-based route, attempting recovery');
-            
-            // Try to recover from backup
-            const backup = getSessionBackup();
-            if (backup) {
-              setSession(backup.session);
-              setUser(backup.user);
-              console.log('AuthContext: Session restored from backup');
-              return;
-            }
-            
-            // Quick session recovery for Visual Edits
-            setTimeout(async () => {
-              const { data: { session: recoveredSession } } = await supabase.auth.getSession();
-              if (recoveredSession) {
-                setSession(recoveredSession);
-                setUser(recoveredSession.user);
-              } else {
-                setSession(null);
-                setUser(null);
-                import('@/lib/roleCache').then(({ clearRoleCache }) => {
-                  clearRoleCache();
-                });
-              }
-            }, 200);
-          } else {
-            // Real logout - clear everything immediately
-            console.log('AuthContext: Real logout detected, clearing all session data');
-            setSession(null);
-            setUser(null);
-            import('@/lib/roleCache').then(({ clearRoleCache }) => {
-              clearRoleCache();
-            });
-            import('@/utils/sessionUtils').then(({ clearSessionBackup }) => {
-              clearSessionBackup();
-            });
-          }
-        }
-        
+        setSession(session);
+        setUser(session?.user ?? null);
         setLoading(false);
       }
     );
 
-  // Ultra-simplified session check for Visual Edits compatibility
-  const initializeSession = async () => {
-    try {
-      const sessionPromise = supabase.auth.getSession();
-      const timeoutPromise = new Promise(resolve => 
-        setTimeout(() => resolve({ data: { session: null }, error: null }), 1000)
-      );
-      
-      const { data: { session }, error } = await Promise.race([sessionPromise, timeoutPromise]) as any;
-      
-      if (!error && session) {
+    // Simple session check with fast timeout
+    const initializeSession = async () => {
+      try {
+        const { data: { session } } = await Promise.race([
+          supabase.auth.getSession(),
+          new Promise(resolve => setTimeout(() => resolve({ data: { session: null } }), 200))
+        ]) as any;
+        
         setSession(session);
-        setUser(session.user);
-        if (isPreviewEnvironment()) {
-          storeSessionBackup(session.user, session);
-        }
-      } else if (isPreviewEnvironment()) {
-        const backup = getSessionBackup();
-        if (backup) {
-          setUser(backup.user);
-          setSession(backup.session);
-        }
+        setUser(session?.user ?? null);
+      } catch (error) {
+        console.error('Session initialization failed:', error);
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error('Session initialization failed:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
 
     initializeSession();
 
