@@ -218,10 +218,7 @@ export default function Landing() {
             {/* Hero Visual - More Minimal Cards on Mobile */}
             <div className="relative lg:justify-self-end z-10 mt-8 lg:mt-0">
               <div className="relative max-w-sm sm:max-w-md lg:max-w-none mx-auto lg:mx-0">
-                <div className="aspect-[3/4] sm:aspect-[4/5] bg-gradient-to-br from-white/40 to-primary/10 rounded-xl sm:rounded-2xl overflow-hidden shadow-2xl border border-white/20 backdrop-blur-sm">
-                  <img src="/marketing/hero-visual-square.png" alt="Azyah luxury fashion discovery hero featuring both men's and women's fashion" className="w-full h-full object-cover" loading="eager" fetchPriority="high" decoding="async" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-primary/10 via-transparent to-transparent" />
-                </div>
+                
                 
                 {/* Simplified New Collection Card for Mobile */}
                 
