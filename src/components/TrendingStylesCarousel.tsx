@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -33,6 +33,7 @@ interface TrendingStylesCarouselProps {
 const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit = 8 }) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const [api, setApi] = React.useState<any>();
 
   const { data: trendingProducts, isLoading } = useQuery({
     queryKey: ['trending-products-carousel', limit],
@@ -195,6 +196,41 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
     },
     staleTime: 1000 * 60 * 15, // 15 minutes
   });
+
+  // Auto-slide functionality
+  const scrollNext = useCallback(() => {
+    if (api) api.scrollNext();
+  }, [api]);
+
+  useEffect(() => {
+    if (!api) return;
+
+    const autoSlide = setInterval(() => {
+      scrollNext();
+    }, 4000); // Slide every 4 seconds
+
+    // Pause auto-slide on hover
+    const container = api.containerNode();
+    if (container) {
+      const handleMouseEnter = () => clearInterval(autoSlide);
+      const handleMouseLeave = () => {
+        clearInterval(autoSlide);
+        const newAutoSlide = setInterval(scrollNext, 4000);
+        return () => clearInterval(newAutoSlide);
+      };
+
+      container.addEventListener('mouseenter', handleMouseEnter);
+      container.addEventListener('mouseleave', handleMouseLeave);
+
+      return () => {
+        clearInterval(autoSlide);
+        container.removeEventListener('mouseenter', handleMouseEnter);
+        container.removeEventListener('mouseleave', handleMouseLeave);
+      };
+    }
+
+    return () => clearInterval(autoSlide);
+  }, [api, scrollNext]);
 
   const getProductImage = (product: any) => {
     console.log('Product media data:', { image_url: product.image_url, media_urls: product.media_urls });
@@ -456,7 +492,11 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
   }
 
   return (
-    <Carousel className="w-full" opts={{ align: "start", loop: false }}>
+    <Carousel 
+      className="w-full" 
+      opts={{ align: "start", loop: true }} 
+      setApi={setApi}
+    >
       <CarouselContent className="-ml-4 md:-ml-8">
         {trendingProducts.map((product, index) => (
           <CarouselItem key={product.id} className="pl-4 md:pl-8 basis-full md:basis-1/2">
