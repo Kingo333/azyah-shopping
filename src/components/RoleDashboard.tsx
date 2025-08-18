@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
@@ -17,16 +18,13 @@ import { Heart, ShoppingBag, Search, Sparkles, Package, BarChart3, Users, Settin
 import Leaderboard from '@/components/Leaderboard';
 import TrendingStylesCarousel from '@/components/TrendingStylesCarousel';
 import { UGCCollabButton } from '@/components/ugc/UGCCollabButton';
-import type { UserRole } from '@/lib/rbac';
 
 interface UserProfile {
   id: string;
   name: string;
-  role: UserRole;
+  role: 'shopper' | 'brand' | 'retailer' | 'admin';
   avatar_url?: string;
   email: string;
-  first_name?: string;
-  last_name?: string;
 }
 
 interface DashboardStats {
@@ -36,135 +34,143 @@ interface DashboardStats {
   totalRevenue?: number;
   totalWishlistItems?: number;
   totalCartItems?: number;
-  totalClosets?: number;
-  totalLikes?: number;
-  totalFollowers?: number;
-  totalFollowing?: number;
-  totalPosts?: number;
-  totalBrands?: number;
 }
 
-export function RoleDashboard() {
-  const { user } = useAuth();
+const RoleDashboard: React.FC = () => {
+  const { user, signOut } = useAuth();
+  console.log('RoleDashboard: user state:', user);
   const navigate = useNavigate();
   const { toast } = useToast();
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-  const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(null);
-  const [loading, setLoading] = useState(false); // Always start with false for immediate render
-  const [showSearchModal, setShowSearchModal] = useState(false);
-  const [leaderboardType, setLeaderboardType] = useState<'global' | 'country'>('global');
-  const [showAiStudioModal, setShowAiStudioModal] = useState(false);
-  const timeoutsRef = useRef<Set<NodeJS.Timeout>>(new Set());
+  const [stats, setStats] = useState<DashboardStats>({});
+  const [loading, setLoading] = useState(true);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [activeLeaderboard, setActiveLeaderboard] = useState<'global' | 'country'>('global');
+  const [aiStudioModalOpen, setAiStudioModalOpen] = useState(false);
 
   useEffect(() => {
-    if (user) {
-      // Non-blocking background data fetch
-      fetchUserProfile();
-      fetchDashboardStats();
-    }
+    const initializeDashboard = async () => {
+      console.log('Initializing dashboard, user:', user);
+      
+      if (!user) {
+        console.log('No user found, setting loading to false');
+        setLoading(false);
+        return;
+      }
 
-    // Emergency loading clear listener
-    const handleForceLoadingClear = () => {
-      setLoading(false);
-      // Clear all component timeouts
-      timeoutsRef.current.forEach(timeout => clearTimeout(timeout));
-      timeoutsRef.current.clear();
+      try {
+        await fetchUserProfile();
+        await fetchDashboardStats();
+      } catch (error) {
+        console.error('Error initializing dashboard:', error);
+      } finally {
+        setLoading(false);
+      }
     };
-    
-    window.addEventListener('azyah-force-loading-clear', handleForceLoadingClear);
 
-    return () => {
-      window.removeEventListener('azyah-force-loading-clear', handleForceLoadingClear);
-      // Cleanup all timeouts on unmount
-      timeoutsRef.current.forEach(timeout => clearTimeout(timeout));
-      timeoutsRef.current.clear();
-    };
+    initializeDashboard();
   }, [user]);
 
   const fetchUserProfile = async () => {
     if (!user) return;
+    
+    console.log('Fetching user profile for:', user.id);
     
     try {
       const { data, error } = await supabase
         .from('users')
         .select('*')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
 
-      if (error && error.code === 'PGRST116') {
-        // User doesn't exist, create profile
-        const newProfile = {
+      console.log('RoleDashboard: User query result:', { data, error, userId: user.id });
+
+      if (error) {
+        console.error('Error fetching user profile:', error);
+        throw error;
+      }
+
+      if (data) {
+        console.log('Found user profile:', data, 'Role:', data.role);
+        setUserProfile(data);
+      } else {
+        // User profile doesn't exist, check if role is in user_metadata
+        const roleFromMetadata = user.user_metadata?.role || 'shopper';
+        console.log('Creating new user profile with role from metadata:', roleFromMetadata);
+        
+        const defaultProfile = {
           id: user.id,
-          email: user.email!,
           name: user.user_metadata?.name || user.email?.split('@')[0] || 'User',
-          first_name: user.user_metadata?.first_name || '',
-          last_name: user.user_metadata?.last_name || '',
-          role: (user.user_metadata?.role as UserRole) || 'shopper',
-          avatar_url: user.user_metadata?.avatar_url || null,
+          role: roleFromMetadata as 'shopper' | 'brand' | 'retailer' | 'admin',
+          email: user.email!
         };
 
-        const { data: createdProfile, error: createError } = await supabase
+        const { error: insertError } = await supabase
           .from('users')
-          .insert(newProfile)
-          .select()
-          .single();
+          .insert([defaultProfile]);
 
-        if (!createError) {
-          setUserProfile(createdProfile);
+        if (insertError) {
+          console.error('Error creating user profile:', insertError);
+          // Even if insert fails, use the profile from metadata
         }
-      } else if (!error && data) {
-        setUserProfile(data);
+        
+        setUserProfile(defaultProfile);
       }
     } catch (error) {
-      console.error('Error fetching user profile:', error);
+      console.error('Error with user profile:', error);
+      // Fallback to user_metadata role if available
+      const roleFromMetadata = user.user_metadata?.role || 'shopper';
+      const fallbackProfile = {
+        id: user.id,
+        name: user.user_metadata?.name || user.email?.split('@')[0] || 'User',
+        role: roleFromMetadata as 'shopper' | 'brand' | 'retailer' | 'admin',
+        email: user.email!
+      };
+      setUserProfile(fallbackProfile);
     }
   };
 
   const fetchDashboardStats = async () => {
     if (!user) return;
     
+    console.log('Fetching dashboard stats for:', user.id);
+    
     try {
-      let stats: DashboardStats = {
-        totalProducts: 0,
-        totalViews: 0,
-        totalSales: 0,
-        totalRevenue: 0,
-        totalBrands: 0,
-        totalClosets: 0,
-        totalLikes: 0,
-        totalFollowers: 0,
-        totalFollowing: 0,
-        totalPosts: 0
+      // Fetch basic stats for all roles
+      const [wishlistData, cartData] = await Promise.all([
+        supabase.from('wishlist_items').select('*').eq('wishlist_id', user.id),
+        supabase.from('cart_items').select('*').eq('user_id', user.id)
+      ]);
+
+      const dashboardStats: DashboardStats = {
+        totalWishlistItems: wishlistData?.data?.length || 0,
+        totalCartItems: cartData?.data?.length || 0
       };
 
-      const currentRole = userProfile?.role || (user.user_metadata?.role as UserRole) || 'shopper';
-
-      if (currentRole === 'brand') {
-        const { data: brandProducts } = await supabase
-          .from('products')
-          .select('*')
-          .eq('brand_id', user.id);
-
-        stats.totalProducts = brandProducts?.length || 0;
-      } else if (currentRole === 'retailer') {
-        // Skip retailer stats for now
-        stats.totalBrands = 0;
-      } else if (currentRole === 'shopper') {
-        const { data: closets } = await supabase
-          .from('closets')
-          .select('*')
-          .eq('user_id', user.id);
-
-        // Skip likes for now
-        const likes = null;
-
-        stats.totalClosets = closets?.length || 0;
-        stats.totalLikes = likes?.length || 0;
+      // Role-specific stats
+      if (userProfile?.role === 'brand' || userProfile?.role === 'retailer') {
+        try {
+          const { data: products } = await supabase
+            .from('products')
+            .select('*')
+            .eq(userProfile.role === 'brand' ? 'brand_id' : 'retailer_id', user.id);
+          dashboardStats.totalProducts = products?.length || 0;
+        } catch (roleError) {
+          console.warn('Failed to fetch role-specific stats:', roleError);
+          dashboardStats.totalProducts = 0;
+        }
       }
-
-      setDashboardStats(stats);
+      
+      setStats(dashboardStats);
+      console.log('Dashboard stats updated:', dashboardStats);
     } catch (error) {
       console.error('Error fetching dashboard stats:', error);
+      // Set default stats on error
+      setStats({
+        totalWishlistItems: 0,
+        totalCartItems: 0,
+        totalProducts: 0
+      });
     }
   };
 
@@ -176,13 +182,28 @@ export function RoleDashboard() {
   };
 
   const handleToyReplicaClick = async () => {
+    // Navigate to the toy replica page
     navigate('/toy-replica');
   };
 
-  // Render UI shell immediately for Visual Edits compatibility
-  if (!user) {
+  // Show loading spinner
+  if (loading) {
+    console.log('Showing loading spinner');
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p>Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show sign-in prompt if no user
+  if (!user) {
+    console.log('No user, showing sign-in prompt');
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center space-y-4">
           <h2 className="text-2xl font-bold">Welcome to Azyah</h2>
           <p className="text-muted-foreground">Please sign in to access your dashboard</p>
@@ -194,22 +215,25 @@ export function RoleDashboard() {
     );
   }
 
-  // Get effective role for immediate rendering
-  const effectiveRole = userProfile?.role || (user.user_metadata?.role as UserRole) || 'shopper';
-  const effectiveProfile = userProfile || {
-    id: user.id,
-    email: user.email!,
-    name: user.user_metadata?.name || user.email?.split('@')[0] || 'User',
-    first_name: user.user_metadata?.first_name || 'User',
-    last_name: user.user_metadata?.last_name || '',
-    role: effectiveRole,
-    avatar_url: user.user_metadata?.avatar_url || null,
-  };
+  if (!userProfile) {
+    console.log('No user profile, showing error');
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <p>Error loading profile</p>
+        </div>
+      </div>
+    );
+  }
+
+  console.log('Rendering dashboard for user:', userProfile);
 
   const renderShopperDashboard = () => (
     <div className="space-y-4">
+      {/* Premium Banner */}
       <PremiumBanner />
       
+      {/* Quick Actions with Premium Glass Panel */}
       <GlassPanel variant="premium" className="p-8">
         <div className="space-y-6">
           <h2 className="text-2xl font-cormorant font-semibold flex items-center gap-3 text-foreground/90">
@@ -240,7 +264,7 @@ export function RoleDashboard() {
               <span className="text-xs sm:text-sm">Explore</span>
             </Button>
             <Button 
-              onClick={() => setShowAiStudioModal(true)}
+              onClick={() => setAiStudioModalOpen(true)}
               variant="outline" 
               className="h-16 sm:h-20 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300 relative bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 border-purple-200 dark:border-purple-800"
             >
@@ -274,7 +298,9 @@ export function RoleDashboard() {
         </div>
       </GlassPanel>
 
+      {/* Global Search and Affiliate Hub Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Trending Styles Carousel with Premium Glass Panel */}
         <GlassPanel variant="premium" className="p-8">
           <div className="space-y-5">
             <h3 className="text-xl font-cormorant font-semibold flex items-center gap-3">
@@ -290,6 +316,7 @@ export function RoleDashboard() {
           </div>
         </GlassPanel>
 
+        {/* Affiliate Hub - Desktop with Premium Glass Panel */}
         <div className="hidden lg:block">
           <GlassPanel variant="premium" className="p-8">
             <AffiliateHub showTitle={false} />
@@ -297,12 +324,14 @@ export function RoleDashboard() {
         </div>
       </div>
 
+      {/* Affiliate Hub - Mobile with Premium Glass Panel */}
       <div className="block lg:hidden">
         <GlassPanel variant="premium" className="p-8">
           <AffiliateHub />
         </GlassPanel>
       </div>
 
+      {/* Closets Preview with Premium Glass Panel */}
       <GlassPanel variant="premium" className="p-8">
         <div className="space-y-5">
           <div className="flex items-center justify-between">
@@ -328,6 +357,7 @@ export function RoleDashboard() {
         </div>
       </GlassPanel>
 
+      {/* Fashion Leaderboards with Premium Glass Panel */}
       <GlassPanel variant="premium" className="p-8">
         <div className="space-y-6">
           <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
@@ -339,18 +369,18 @@ export function RoleDashboard() {
             </h3>
             <div className="flex gap-2">
               <Button 
-                variant={leaderboardType === 'global' ? 'premium' : 'outline'} 
+                variant={activeLeaderboard === 'global' ? 'premium' : 'outline'} 
                 size="sm" 
-                onClick={() => setLeaderboardType('global')} 
+                onClick={() => setActiveLeaderboard('global')} 
                 className="flex-1 sm:flex-none"
               >
                 <Globe className="h-3 w-3 mr-2" />
                 Global
               </Button>
               <Button 
-                variant={leaderboardType === 'country' ? 'premium' : 'outline'} 
+                variant={activeLeaderboard === 'country' ? 'premium' : 'outline'} 
                 size="sm" 
-                onClick={() => setLeaderboardType('country')} 
+                onClick={() => setActiveLeaderboard('country')} 
                 className="flex-1 sm:flex-none"
               >
                 <MapPin className="h-3 w-3 mr-2" />
@@ -358,7 +388,7 @@ export function RoleDashboard() {
               </Button>
             </div>
           </div>
-          <Leaderboard type={leaderboardType} country={user?.user_metadata?.country} />
+          <Leaderboard type={activeLeaderboard} country={user?.user_metadata?.country} />
         </div>
       </GlassPanel>
     </div>
@@ -366,31 +396,58 @@ export function RoleDashboard() {
 
   const renderBrandDashboard = () => (
     <div className="space-y-4">
-      <div className="text-center space-y-4">
-        <h1 className="text-4xl font-bold text-primary">
-          Welcome back, {effectiveProfile.first_name || 'Brand'}! 🏷️
-        </h1>
-        <p className="text-xl text-muted-foreground">Manage your brand and track performance</p>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
-          <div className="bg-card p-6 rounded-lg border">
-            <h3 className="font-semibold text-foreground">Products</h3>
-            <p className="text-3xl font-bold text-primary">{dashboardStats?.totalProducts || 0}</p>
+      {/* Quick Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <GlassPanel variant="premium" className="p-6">
+          <div className="flex items-center gap-4">
+            <div className="p-3 rounded-xl bg-gradient-to-br from-blue-500/10 to-blue-600/10">
+              <Package className="h-6 w-6 text-blue-500" />
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground font-medium">Products</p>
+              <p className="text-2xl font-bold text-foreground">{stats.totalProducts || 0}</p>
+            </div>
           </div>
-          <div className="bg-card p-6 rounded-lg border">
-            <h3 className="font-semibold text-foreground">Views</h3>
-            <p className="text-3xl font-bold text-primary">{dashboardStats?.totalViews || 0}</p>
+        </GlassPanel>
+
+        <GlassPanel variant="premium" className="p-6">
+          <div className="flex items-center gap-4">
+            <div className="p-3 rounded-xl bg-gradient-to-br from-green-500/10 to-green-600/10">
+              <Eye className="h-6 w-6 text-green-500" />
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground font-medium">Views</p>
+              <p className="text-2xl font-bold text-foreground">{stats.totalViews || 0}</p>
+            </div>
           </div>
-          <div className="bg-card p-6 rounded-lg border">
-            <h3 className="font-semibold text-foreground">Sales</h3>
-            <p className="text-3xl font-bold text-primary">{dashboardStats?.totalSales || 0}</p>
+        </GlassPanel>
+
+        <GlassPanel variant="premium" className="p-6">
+          <div className="flex items-center gap-4">
+            <div className="p-3 rounded-xl bg-gradient-to-br from-purple-500/10 to-purple-600/10">
+              <ShoppingBag className="h-6 w-6 text-purple-500" />
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground font-medium">Sales</p>
+              <p className="text-2xl font-bold text-foreground">{stats.totalSales || 0}</p>
+            </div>
           </div>
-          <div className="bg-card p-6 rounded-lg border">
-            <h3 className="font-semibold text-foreground">Revenue</h3>
-            <p className="text-3xl font-bold text-primary">{formatPrice(dashboardStats?.totalRevenue || 0)}</p>
+        </GlassPanel>
+
+        <GlassPanel variant="premium" className="p-6">
+          <div className="flex items-center gap-4">
+            <div className="p-3 rounded-xl bg-gradient-to-br from-green-500/10 to-emerald-600/10">
+              <DollarSign className="h-6 w-6 text-green-500" />
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground font-medium">Revenue</p>
+              <p className="text-2xl font-bold text-foreground">{formatPrice(stats.totalRevenue || 0)}</p>
+            </div>
           </div>
-        </div>
+        </GlassPanel>
       </div>
 
+      {/* Quick Actions */}
       <GlassPanel variant="premium" className="p-8">
         <div className="space-y-6">
           <h3 className="text-xl font-cormorant font-semibold">Brand Management</h3>
@@ -415,46 +472,73 @@ export function RoleDashboard() {
 
   const renderRetailerDashboard = () => (
     <div className="space-y-4">
-      <div className="text-center space-y-4">
-        <h1 className="text-4xl font-bold text-primary">
-          Welcome back, {effectiveProfile.first_name || 'Retailer'}! 🏪
-        </h1>
-        <p className="text-xl text-muted-foreground">Manage your retail operations</p>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
-          <div className="bg-card p-6 rounded-lg border">
-            <h3 className="font-semibold text-foreground">Brands</h3>
-            <p className="text-3xl font-bold text-primary">{dashboardStats?.totalBrands || 0}</p>
+      {/* Quick Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <GlassPanel variant="premium" className="p-6">
+          <div className="flex items-center gap-4">
+            <div className="p-3 rounded-xl bg-gradient-to-br from-blue-500/10 to-blue-600/10">
+              <Store className="h-6 w-6 text-blue-500" />
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground font-medium">Brands</p>
+              <p className="text-2xl font-bold text-foreground">5</p>
+            </div>
           </div>
-          <div className="bg-card p-6 rounded-lg border">
-            <h3 className="font-semibold text-foreground">Products</h3>
-            <p className="text-3xl font-bold text-primary">{dashboardStats?.totalProducts || 0}</p>
+        </GlassPanel>
+
+        <GlassPanel variant="premium" className="p-6">
+          <div className="flex items-center gap-4">
+            <div className="p-3 rounded-xl bg-gradient-to-br from-green-500/10 to-green-600/10">
+              <Package className="h-6 w-6 text-green-500" />
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground font-medium">Products</p>
+              <p className="text-2xl font-bold text-foreground">{stats.totalProducts || 0}</p>
+            </div>
           </div>
-          <div className="bg-card p-6 rounded-lg border">
-            <h3 className="font-semibold text-foreground">Sales</h3>
-            <p className="text-3xl font-bold text-primary">{dashboardStats?.totalSales || 0}</p>
+        </GlassPanel>
+
+        <GlassPanel variant="premium" className="p-6">
+          <div className="flex items-center gap-4">
+            <div className="p-3 rounded-xl bg-gradient-to-br from-purple-500/10 to-purple-600/10">
+              <TrendingUp className="h-6 w-6 text-purple-500" />
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground font-medium">Sales</p>
+              <p className="text-2xl font-bold text-foreground">{stats.totalSales || 0}</p>
+            </div>
           </div>
-          <div className="bg-card p-6 rounded-lg border">
-            <h3 className="font-semibold text-foreground">Revenue</h3>
-            <p className="text-3xl font-bold text-primary">{formatPrice(dashboardStats?.totalRevenue || 0)}</p>
+        </GlassPanel>
+
+        <GlassPanel variant="premium" className="p-6">
+          <div className="flex items-center gap-4">
+            <div className="p-3 rounded-xl bg-gradient-to-br from-green-500/10 to-emerald-600/10">
+              <DollarSign className="h-6 w-6 text-green-500" />
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground font-medium">Revenue</p>
+              <p className="text-2xl font-bold text-foreground">{formatPrice(stats.totalRevenue || 0)}</p>
+            </div>
           </div>
-        </div>
+        </GlassPanel>
       </div>
 
+      {/* Quick Actions */}
       <GlassPanel variant="premium" className="p-8">
         <div className="space-y-6">
           <h3 className="text-xl font-cormorant font-semibold">Retailer Management</h3>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             <Button onClick={() => navigate('/retailer-portal')} variant="premium" className="h-24 flex-col gap-3">
+              <Package className="h-7 w-7" />
+              <span className="font-medium">Inventory</span>
+            </Button>
+            <Button onClick={() => navigate('/retailer-portal')} variant="outline" className="h-24 flex-col gap-3 hover:scale-105 transition-transform">
               <Store className="h-7 w-7" />
-              <span className="font-medium">Retail Portal</span>
+              <span className="font-medium">Brands</span>
             </Button>
             <Button onClick={() => navigate('/retailer-portal')} variant="outline" className="h-24 flex-col gap-3 hover:scale-105 transition-transform">
               <BarChart3 className="h-7 w-7" />
               <span className="font-medium">Analytics</span>
-            </Button>
-            <Button onClick={() => navigate('/retailer-portal')} variant="outline" className="h-24 flex-col gap-3 hover:scale-105 transition-transform">
-              <Settings className="h-7 w-7" />
-              <span className="font-medium">Settings</span>
             </Button>
           </div>
         </div>
@@ -464,42 +548,66 @@ export function RoleDashboard() {
 
   return (
     <ErrorBoundary>
-      <div className="container mx-auto p-4 space-y-8">
-        <DashboardHeader />
-        {effectiveRole === 'shopper' && renderShopperDashboard()}
-        {effectiveRole === 'brand' && renderBrandDashboard()}
-        {effectiveRole === 'retailer' && renderRetailerDashboard()}
-        {effectiveRole === 'admin' && (
-          <div className="text-center space-y-8">
-            <h1 className="text-4xl font-bold text-primary">Admin Dashboard</h1>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto">
-              <Button onClick={() => navigate('/brand-portal')} size="lg" className="w-full h-20 text-lg">
-                Access Brand Portal
-              </Button>
-              <Button onClick={() => navigate('/retailer-portal')} size="lg" variant="outline" className="w-full h-20 text-lg">
-                Access Retailer Portal
-              </Button>
-            </div>
+      <div className="min-h-screen dashboard-bg pb-20 sm:pb-0">
+        <div className="container mx-auto max-w-7xl px-4 py-6">
+          {/* Header with Dashboard Header component */}
+          <div className="mb-6">
+            <DashboardHeader />
           </div>
-        )}
-        {!['shopper', 'brand', 'retailer', 'admin'].includes(effectiveRole) && (
-          <div className="text-center">
-            <p className="text-lg text-muted-foreground">Unknown user role: {effectiveRole}</p>
-          </div>
-        )}
 
-        <GlobalSearch 
-          isOpen={showSearchModal} 
-          onClose={() => setShowSearchModal(false)} 
-        />
+          {/* Role-based Dashboard Content - Only render ONE dashboard */}
+          {userProfile?.role === 'shopper' && renderShopperDashboard()}
+          {userProfile?.role === 'brand' && renderBrandDashboard()}
+          {userProfile?.role === 'retailer' && renderRetailerDashboard()}
+          {userProfile?.role === 'admin' && (
+            <div className="space-y-4">
+              <GlassPanel variant="premium" className="p-8">
+                <div className="text-center space-y-4">
+                  <h2 className="text-2xl font-cormorant font-semibold">Admin Dashboard</h2>
+                  <p className="text-muted-foreground">
+                    As an admin, you have access to all portals. Choose which portal to access:
+                  </p>
+                  <div className="flex flex-wrap gap-4 justify-center">
+                    <Button onClick={() => navigate('/brand-portal')} variant="premium">
+                      <Package className="h-4 w-4 mr-2" />
+                      Brand Portal
+                    </Button>
+                    <Button onClick={() => navigate('/retailer-portal')} variant="outline">
+                      <Store className="h-4 w-4 mr-2" />
+                      Retailer Portal
+                    </Button>
+                  </div>
+                </div>
+              </GlassPanel>
+            </div>
+          )}
+          
+          {/* Show error if no valid role */}
+          {userProfile && !['shopper', 'brand', 'retailer', 'admin'].includes(userProfile.role) && (
+            <div className="space-y-4">
+              <GlassPanel variant="premium" className="p-8">
+                <div className="text-center space-y-4">
+                  <h2 className="text-xl font-semibold text-destructive">Invalid Role</h2>
+                  <p className="text-muted-foreground">
+                    Your account role "{userProfile.role}" is not recognized. Please contact support.
+                  </p>
+                </div>
+              </GlassPanel>
+            </div>
+          )}
+        </div>
         
+        {/* Global Search Modal */}
+        <GlobalSearch isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
+        
+        {/* AI Studio Modal */}
         <AiStudioModal 
-          open={showAiStudioModal} 
-          onClose={() => setShowAiStudioModal(false)} 
+          open={aiStudioModalOpen} 
+          onClose={() => setAiStudioModalOpen(false)} 
         />
       </div>
     </ErrorBoundary>
   );
-}
+};
 
 export default RoleDashboard;

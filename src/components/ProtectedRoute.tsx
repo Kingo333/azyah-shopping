@@ -1,87 +1,112 @@
-import React, { useEffect, useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { canAccessRoute, getRedirectRoute } from '@/lib/rbac';
-import { getUserRole } from '@/lib/roleCache';
-import type { UserRole } from '@/lib/rbac';
+import { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
+import { canAccessRoute, getRedirectRoute } from '@/lib/rbac';
+import { getUserRole, clearRoleCache } from '@/lib/roleCache';
+import type { UserRole } from '@/lib/rbac';
+
+const DEBUG_AUTH = process.env.NODE_ENV === 'development';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
   roles?: UserRole[];
 }
 
-export function ProtectedRoute({ children, roles }: ProtectedRouteProps) {
+const ProtectedRoute = ({ children, roles }: ProtectedRouteProps) => {
   const { user, loading } = useAuth();
+  const location = useLocation();
   const [userRole, setUserRole] = useState<UserRole | null>(null);
   const [roleLoading, setRoleLoading] = useState(true);
+  const [authStable, setAuthStable] = useState(false);
 
   useEffect(() => {
-    let timeoutId: NodeJS.Timeout | null = null;
-    
-    if (user) {
-      // Ultra-fast role resolution for Visual Edits compatibility
-      timeoutId = setTimeout(() => {
-        setUserRole('shopper'); // Default fallback
-        setRoleLoading(false);
-      }, 50); // Reduced from 500ms to 50ms
+    // Add a small delay to ensure auth state is stable
+    const stabilityTimer = setTimeout(() => {
+      setAuthStable(true);
+    }, 100);
 
-      getUserRole(user).then(role => {
-        if (timeoutId) clearTimeout(timeoutId);
+    return () => clearTimeout(stabilityTimer);
+  }, []);
+
+  useEffect(() => {
+    const fetchUserRole = async () => {
+      if (!user) {
+        if (DEBUG_AUTH) console.log('ProtectedRoute: No user, setting roleLoading to false');
+        setRoleLoading(false);
+        return;
+      }
+
+      if (DEBUG_AUTH) console.log('ProtectedRoute: Fetching role for user:', user.id);
+
+      try {
+        const role = await getUserRole(user);
+        if (DEBUG_AUTH) console.log('ProtectedRoute: Got user role:', role);
         setUserRole(role);
+      } catch (error) {
+        console.error('ProtectedRoute: Error getting user role:', error);
+        // Simple fallback without cache clearing
+        setUserRole('shopper');
+      } finally {
         setRoleLoading(false);
-      }).catch(() => {
-        if (timeoutId) clearTimeout(timeoutId);
-        setUserRole('shopper'); // Default fallback
-        setRoleLoading(false);
-      });
+      }
+    };
+
+    if (user) {
+      fetchUserRole();
     } else {
       setRoleLoading(false);
     }
-
-    // Emergency loading clear listener
-    const handleForceLoadingClear = () => {
-      if (timeoutId) clearTimeout(timeoutId);
-      setRoleLoading(false);
-      setUserRole(userRole || 'shopper');
-    };
-    
-    window.addEventListener('azyah-force-loading-clear', handleForceLoadingClear);
-
-    return () => {
-      if (timeoutId) clearTimeout(timeoutId);
-      window.removeEventListener('azyah-force-loading-clear', handleForceLoadingClear);
-    };
   }, [user]);
 
-  // Immediate render for Visual Edits - minimal loading check
-  if (loading && !user) {
+  // Show loading state while auth is initializing or auth state is not stable
+  if (loading || !authStable) {
+    if (DEBUG_AUTH) console.log('ProtectedRoute: Showing loading - loading:', loading, 'authStable:', authStable);
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
-  // Handle unauthenticated users
-  if (!user) {
-    return <Navigate to="/auth" replace />;
+  // Don't redirect immediately if still fetching role
+  if (user && roleLoading) {
+    if (DEBUG_AUTH) console.log('ProtectedRoute: User exists but role loading, showing spinner');
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
   }
 
-  // Role-based access control with fallback
-  const currentPath = window.location.pathname;
-  const effectiveRole = userRole || 'shopper';
-  
-  if (!canAccessRoute(effectiveRole, currentPath)) {
-    return <Navigate to={getRedirectRoute(effectiveRole)} replace />;
+  // Only redirect to auth if we're certain there's no user AND auth is stable
+  if (!user && !loading && authStable) {
+    if (DEBUG_AUTH) console.log('ProtectedRoute: No user detected, redirecting to auth');
+    return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 
-  // Check specific role requirements
-  if (roles && userRole && !roles.includes(userRole)) {
-    return <Navigate to={getRedirectRoute(userRole)} replace />;
+  // Role-based access control - only apply if we have a role
+  if (user && userRole) {
+    if (DEBUG_AUTH) console.log('ProtectedRoute: Checking access for role:', userRole, 'route:', location.pathname);
+    
+    // If specific roles are required, check if user has one of them
+    if (roles && roles.length > 0) {
+      if (!roles.includes(userRole)) {
+        const redirectTo = getRedirectRoute(userRole);
+        if (DEBUG_AUTH) console.log('ProtectedRoute: Role not in required roles, redirecting to:', redirectTo);
+        return <Navigate to={redirectTo} replace />;
+      }
+    }
+
+    // Check if user can access the current route
+    if (!canAccessRoute(userRole, location.pathname)) {
+      const redirectTo = getRedirectRoute(userRole);
+      if (DEBUG_AUTH) console.log('ProtectedRoute: Cannot access route, redirecting to:', redirectTo);
+      return <Navigate to={redirectTo} replace />;
+    }
   }
 
   return <>{children}</>;
-}
+};
 
 export default ProtectedRoute;

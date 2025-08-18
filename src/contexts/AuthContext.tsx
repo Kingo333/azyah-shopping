@@ -6,7 +6,6 @@ import { toast } from '@/hooks/use-toast';
 import { CredentialsSchema } from '@/lib/password-validation';
 import { getRedirectRoute } from '@/lib/rbac';
 import type { UserRole } from '@/lib/rbac';
-import { isPreviewEnvironment, storeSessionBackup, getSessionBackup, isLikelyPreviewRefresh } from '@/utils/sessionUtils';
 
 interface AuthContextType {
   user: User | null;
@@ -26,12 +25,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    let cleanup: (() => void) | null = null;
-    
-    // Auth state listener
+    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        console.log('AuthContext: Auth state changed:', { event, hasSession: !!session });
+        console.log('AuthContext: Auth state changed:', { event, user: session?.user?.email });
+        
+        // Clear role cache on sign out
+        if (event === 'SIGNED_OUT') {
+          import('@/lib/roleCache').then(({ clearRoleCache }) => {
+            clearRoleCache();
+          });
+        }
         
         setSession(session);
         setUser(session?.user ?? null);
@@ -39,39 +43,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     );
 
-    // Emergency loading clear listener
-    const handleForceLoadingClear = () => {
+    // Check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
       setLoading(false);
-    };
-    
-    window.addEventListener('azyah-force-loading-clear', handleForceLoadingClear);
+    });
 
-    // Fast session initialization
-    const initializeSession = async () => {
-      try {
-        // Much shorter timeout for Visual Edits compatibility
-        const { data: { session } } = await Promise.race([
-          supabase.auth.getSession(),
-          new Promise(resolve => setTimeout(() => resolve({ data: { session: null } }), 100))
-        ]) as any;
-        
-        setSession(session);
-        setUser(session?.user ?? null);
-      } catch (error) {
-        console.error('Session initialization failed:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    initializeSession();
-
-    cleanup = () => {
-      subscription.unsubscribe();
-      window.removeEventListener('azyah-force-loading-clear', handleForceLoadingClear);
-    };
-
-    return cleanup;
+    return () => subscription.unsubscribe();
   }, []);
 
   const signUp = async (email: string, password: string, userData?: any) => {

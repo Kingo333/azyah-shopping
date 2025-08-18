@@ -14,15 +14,6 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: true,
-    flowType: 'pkce',
-    // Enhanced session persistence for preview environments
-    storageKey: 'azyah-auth-token',
-    debug: process.env.NODE_ENV === 'development'
-  },
-  // Add retry logic for preview environment stability
-  global: {
-    headers: {
-      'X-Client-Info': 'azyah-lovable-app'
-    }
+    flowType: 'pkce'
   }
 });

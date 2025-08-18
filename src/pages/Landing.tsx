@@ -14,34 +14,24 @@ export default function Landing() {
   const navigate = useNavigate();
   useEffect(() => setIsVisible(true), []);
 
-  // Simplified auth redirect logic with timeout
+  // Debug auth state and redirect logic
   useEffect(() => {
     console.log('Landing page: user state:', user, 'loading:', loading);
+    debugAuthState(); // Debug current auth state
     
     if (!loading && user) {
-      console.log('User is authenticated, redirecting to dashboard');
+      console.log('User is authenticated, redirecting to appropriate dashboard');
       // Import getRedirectRoute to redirect to correct dashboard based on role
       import('@/lib/rbac').then(({ getRedirectRoute }) => {
         const userRole = user.user_metadata?.role || 'shopper';
         const redirectPath = getRedirectRoute(userRole);
-        console.log('Redirecting to:', redirectPath);
+        console.log('Redirecting to:', redirectPath, 'for role:', userRole);
         navigate(redirectPath);
       });
+    } else {
+      console.log('No user or still loading, staying on landing page');
     }
   }, [user, loading, navigate]);
-
-  // Fallback timeout to prevent infinite loading
-  useEffect(() => {
-    const fallbackTimeout = setTimeout(() => {
-      if (loading) {
-        console.warn('Landing: Fallback timeout - forcing loading to false');
-        // Force navigate to auth if still loading after 5 seconds
-        navigate('/auth');
-      }
-    }, 5000);
-
-    return () => clearTimeout(fallbackTimeout);
-  }, [loading, navigate]);
 
   // Add logout button for debugging
   const handleDebugLogout = () => {
