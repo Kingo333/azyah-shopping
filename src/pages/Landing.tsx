@@ -14,31 +14,29 @@ export default function Landing() {
   const navigate = useNavigate();
   useEffect(() => setIsVisible(true), []);
 
-  // Redirect authenticated users (without debug interference)
+  // Debug auth state and redirect logic
   useEffect(() => {
-    if (process.env.NODE_ENV === 'development') {
-      console.log('Landing page: user state:', user, 'loading:', loading);
-    }
+    console.log('Landing page: user state:', user, 'loading:', loading);
+    debugAuthState(); // Debug current auth state
     
     if (!loading && user) {
+      console.log('User is authenticated, redirecting to appropriate dashboard');
       // Import getRedirectRoute to redirect to correct dashboard based on role
       import('@/lib/rbac').then(({ getRedirectRoute }) => {
         const userRole = user.user_metadata?.role || 'shopper';
         const redirectPath = getRedirectRoute(userRole);
-        if (process.env.NODE_ENV === 'development') {
-          console.log('Redirecting to:', redirectPath, 'for role:', userRole);
-        }
+        console.log('Redirecting to:', redirectPath, 'for role:', userRole);
         navigate(redirectPath);
       });
+    } else {
+      console.log('No user or still loading, staying on landing page');
     }
   }, [user, loading, navigate]);
 
-  // Debug logout button (development only)
+  // Add logout button for debugging
   const handleDebugLogout = () => {
-    if (process.env.NODE_ENV === 'development') {
-      console.log('Debug: Force clearing session...');
-      clearInvalidSession();
-    }
+    console.log('Debug: Force clearing session...');
+    clearInvalidSession();
   };
   const scrollToSection = (href: string) => {
     const element = document.querySelector(href);
@@ -102,8 +100,8 @@ export default function Landing() {
             <Button variant="default" size="sm" onClick={() => navigate("/auth")} className="font-medium">
               Explore
             </Button>
-            {/* Debug button - development only */}
-            {process.env.NODE_ENV === 'development' && user && (
+            {/* Debug button - only show if user exists */}
+            {user && (
               <Button variant="destructive" size="sm" onClick={handleDebugLogout} className="font-medium">
                 Force Logout
               </Button>
