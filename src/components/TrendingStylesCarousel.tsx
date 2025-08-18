@@ -37,7 +37,63 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
   const { data: trendingProducts, isLoading } = useQuery({
     queryKey: ['trending-products-carousel', limit],
     queryFn: async () => {
-      // Get trending products based on recent swipes and likes
+      // First try to get products with actual likes
+      const { data: likedProducts, error: likesError } = await supabase
+        .from('likes')
+        .select(`
+          product_id,
+          products!inner(
+            id,
+            title,
+            image_url,
+            media_urls,
+            price_cents,
+            currency,
+            external_url,
+            brands!inner(name)
+          )
+        `)
+        .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()) // Last 30 days
+        .eq('products.status', 'active')
+        .not('products.brand_id', 'is', null);
+
+      if (!likesError && likedProducts && likedProducts.length > 0) {
+        // Group by product and count likes
+        const productLikes = new Map();
+        likedProducts.forEach((like: any) => {
+          const productId = like.product_id;
+          if (productLikes.has(productId)) {
+            productLikes.get(productId).count += 1;
+          } else {
+            productLikes.set(productId, {
+              count: 1,
+              product: like.products
+            });
+          }
+        });
+
+        // Sort by like count
+        const sortedByLikes = Array.from(productLikes.values())
+          .sort((a, b) => b.count - a.count)
+          .slice(0, limit)
+          .map(item => ({
+            id: item.product.id,
+            title: item.product.title,
+            image_url: getProductImage(item.product),
+            price_cents: item.product.price_cents,
+            currency: item.product.currency || 'USD',
+            brand_name: item.product.brands?.name || 'Unknown Brand',
+            external_url: item.product.external_url,
+            like_count: item.count
+          }));
+
+        if (sortedByLikes.length > 0) {
+          console.log('Found trending products by likes:', sortedByLikes);
+          return sortedByLikes;
+        }
+      }
+
+      // Fallback to swipes if no likes data
       const { data: trendingData, error: trendingError } = await supabase
         .from('swipes')
         .select(`
@@ -50,7 +106,7 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
             price_cents,
             currency,
             external_url,
-            brand:brands(name)
+            brands!inner(name)
           )
         `)
         .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()) // Last 7 days
@@ -80,6 +136,7 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
 
         if (fallbackError || !fallbackData) return [];
         
+        console.log('Using fallback products:', fallbackData.slice(0, 3));
         return fallbackData.map((product: any) => ({
           id: product.id,
           title: product.title,
@@ -115,10 +172,12 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
           image_url: getProductImage(item.product),
           price_cents: item.product.price_cents,
           currency: item.product.currency || 'USD',
-          brand_name: item.product.brand?.name || 'Unknown Brand',
+          brand_name: item.product.brands?.name || 'Unknown Brand',
           external_url: item.product.external_url,
           swipe_count: item.count
         }));
+
+      console.log('Found trending products by swipes:', sortedProducts);
 
       return sortedProducts.length > 0 ? sortedProducts : [];
     },
@@ -126,21 +185,33 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
   });
 
   const getProductImage = (product: any) => {
-    // Try image_url first, then media_urls array, then placeholder
+    console.log('Product media data:', { image_url: product.image_url, media_urls: product.media_urls });
+    
+    // Try image_url first
     if (product.image_url) {
       return product.image_url;
     }
     
+    // Then try media_urls array
     if (product.media_urls && Array.isArray(product.media_urls) && product.media_urls.length > 0) {
-      // Handle different media_urls formats
       const firstMedia = product.media_urls[0];
+      console.log('First media item:', firstMedia, 'Type:', typeof firstMedia);
+      
       if (typeof firstMedia === 'string') {
         return firstMedia;
-      } else if (firstMedia && typeof firstMedia === 'object' && firstMedia.url) {
-        return firstMedia.url;
+      } else if (firstMedia && typeof firstMedia === 'object') {
+        // Try different possible properties
+        if (firstMedia.url) return firstMedia.url;
+        if (firstMedia.src) return firstMedia.src;
+        if (firstMedia.href) return firstMedia.href;
+        // If it's an array within array, get the first string
+        if (Array.isArray(firstMedia) && firstMedia.length > 0) {
+          return firstMedia[0];
+        }
       }
     }
     
+    console.log('No valid image found, using placeholder');
     return '/placeholder.svg';
   };
 
@@ -303,7 +374,7 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
               <CardContent className="p-6 md:p-8 h-full flex flex-col">
                 {/* Header */}
                 <div className="flex items-center justify-between mb-4">
-                  <Badge variant={index < 3 ? "default" : "secondary"} className="text-sm px-3 py-1">
+                  <Badge variant={index < 3 ? "default" : "secondary"} className="text-xs px-2 py-0.5">
                     #{index + 1} Trending
                   </Badge>
                   <div className="text-xs text-muted-foreground font-medium">
