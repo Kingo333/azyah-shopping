@@ -101,16 +101,22 @@ export const getUserRole = async (user: any): Promise<UserRole> => {
     
     // Sync with database in background (don't wait)
     setTimeout(() => {
-      supabase
-        .from('users')
-        .upsert({ 
-          id: userId,
-          email: user.email,
-          role: metadataRole as UserRole,
-          updated_at: new Date().toISOString()
-        })
-        .then(() => console.log('Role synced to database'))
-        .catch(err => console.warn('Role sync failed:', err));
+      const syncRole = async () => {
+        try {
+          await supabase
+            .from('users')
+            .upsert({ 
+              id: userId,
+              email: user.email,
+              role: metadataRole as UserRole,
+              updated_at: new Date().toISOString()
+            });
+          console.log('Role synced to database');
+        } catch (err) {
+          console.warn('Role sync failed:', err);
+        }
+      };
+      syncRole();
     }, 0);
     
     return metadataRole as UserRole;
