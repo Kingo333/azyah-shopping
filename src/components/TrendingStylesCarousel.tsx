@@ -242,35 +242,55 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
     mutationFn: async (productId: string) => {
       if (!user?.id) throw new Error('User not authenticated');
       
-      const { error } = await supabase
+      // Check if already liked
+      const { data: existingLike } = await supabase
         .from('likes')
-        .insert({
-          user_id: user.id,
-          product_id: productId
-        });
+        .select('id, created_at')
+        .eq('user_id', user.id)
+        .eq('product_id', productId)
+        .single();
 
-      if (error && error.code !== '23505') throw error; // Ignore duplicate key error
+      if (existingLike) {
+        // Move to top by updating created_at
+        const { error } = await supabase
+          .from('likes')
+          .update({ created_at: new Date().toISOString() })
+          .eq('id', existingLike.id);
+        
+        if (error) throw error;
+        return { moved: true };
+      } else {
+        // Add new like
+        const { error } = await supabase
+          .from('likes')
+          .insert({
+            user_id: user.id,
+            product_id: productId
+          });
+
+        if (error) throw error;
+        return { moved: false };
+      }
     },
-    onSuccess: () => {
-      toast({
-        title: "Added to likes",
-        description: "Item has been added to your likes."
-      });
-    },
-    onError: (error: any) => {
-      if (error?.code === '23505') {
+    onSuccess: (data) => {
+      if (data.moved) {
         toast({
-          title: "Already liked",
-          description: "This item is already in your likes.",
-          variant: "default"
+          title: "Moved to top",
+          description: "Item moved to the top of your likes."
         });
       } else {
         toast({
-          title: "Error",
-          description: "Failed to add to likes.",
-          variant: "destructive"
+          title: "Added to likes",
+          description: "Item has been added to your likes."
         });
       }
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: "Failed to update likes.",
+        variant: "destructive"
+      });
     }
   });
 
@@ -301,35 +321,93 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
         wishlistId = newWishlist.id;
       }
 
-      const { error } = await supabase
+      // Check if already in wishlist
+      const { data: existingItem } = await supabase
         .from('wishlist_items')
-        .insert({
-          wishlist_id: wishlistId,
-          product_id: productId
-        });
+        .select('id, added_at')
+        .eq('wishlist_id', wishlistId)
+        .eq('product_id', productId)
+        .single();
 
-      if (error && error.code !== '23505') throw error; // Ignore duplicate key error
+      if (existingItem) {
+        // Move to top by updating added_at and sort_order
+        const { error } = await supabase
+          .from('wishlist_items')
+          .update({ 
+            added_at: new Date().toISOString(),
+            sort_order: 0 
+          })
+          .eq('id', existingItem.id);
+        
+        if (error) throw error;
+        
+        // Update sort_order for other items to maintain order
+        const { data: otherItems } = await supabase
+          .from('wishlist_items')
+          .select('id, sort_order')
+          .eq('wishlist_id', wishlistId)
+          .neq('id', existingItem.id);
+
+        if (otherItems) {
+          for (const item of otherItems) {
+            await supabase
+              .from('wishlist_items')
+              .update({ sort_order: (item.sort_order || 0) + 1 })
+              .eq('id', item.id);
+          }
+        }
+        
+        return { moved: true };
+      } else {
+        // Add new item at the top
+        const { error } = await supabase
+          .from('wishlist_items')
+          .insert({
+            wishlist_id: wishlistId,
+            product_id: productId,
+            sort_order: 0
+          });
+
+        if (error) throw error;
+        
+        // Update sort_order for existing items
+        const { data: existingItems } = await supabase
+          .from('wishlist_items')
+          .select('id, sort_order')
+          .eq('wishlist_id', wishlistId)
+          .neq('product_id', productId);
+
+        if (existingItems) {
+          for (const item of existingItems) {
+            await supabase
+              .from('wishlist_items')
+              .update({ sort_order: (item.sort_order || 0) + 1 })
+              .eq('id', item.id);
+          }
+        }
+        
+        return { moved: false };
+      }
     },
-    onSuccess: () => {
-      toast({
-        title: "Added to wishlist",
-        description: "Item has been added to your wishlist."
-      });
-    },
-    onError: (error: any) => {
-      if (error?.code === '23505') {
+    onSuccess: (data) => {
+      if (data.moved) {
         toast({
-          title: "Already in wishlist",
-          description: "This item is already in your wishlist.",
-          variant: "default"
+          title: "Moved to top",
+          description: "Item moved to the top of your wishlist."
         });
       } else {
         toast({
-          title: "Error",
-          description: "Failed to add to wishlist.",
-          variant: "destructive"
+          title: "Added to wishlist",
+          description: "Item has been added to your wishlist."
         });
       }
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: "Failed to update wishlist.",
+        variant: "destructive"
+      });
     }
   });
 
