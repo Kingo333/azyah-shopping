@@ -223,13 +223,13 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
 
   return (
     <Carousel className="w-full" opts={{ align: "start", loop: false }}>
-      <CarouselContent className="-ml-2 md:-ml-4">
+      <CarouselContent className="-ml-3 md:-ml-6">
         {trendingStyles.map((style, index) => (
-          <CarouselItem key={`${style.category}-${style.subcategory}`} className="pl-2 md:pl-4 basis-full sm:basis-1/2 lg:basis-1/3">
-            <Card className="group hover:shadow-lg transition-all duration-300 h-full min-h-[380px]">
-              <CardContent className="p-4 h-full flex flex-col">
+          <CarouselItem key={`${style.category}-${style.subcategory}`} className="pl-3 md:pl-6 basis-full sm:basis-1/2 lg:basis-1/3">
+            <Card className="group hover:shadow-lg transition-all duration-300 h-full">
+              <CardContent className="p-4 sm:p-5 lg:p-6 h-full flex flex-col">
                 {/* Header */}
-                <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center justify-between mb-4">
                   <Badge variant={index < 3 ? "default" : "secondary"} className="text-xs px-2 py-1">
                     #{index + 1}
                   </Badge>
@@ -240,12 +240,12 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
                 </div>
 
                 {/* Title */}
-                <h4 className="font-semibold text-base mb-4 group-hover:text-primary transition-colors line-clamp-2 leading-tight">
+                <h4 className="font-semibold text-base mb-5 group-hover:text-primary transition-colors line-clamp-2 leading-tight">
                   {formatCategoryName(style.category, style.subcategory)}
                 </h4>
 
                 {/* Product Images Grid */}
-                <div className="grid grid-cols-2 gap-3 mb-4 flex-1">
+                <div className="grid grid-cols-2 gap-4 mb-5 flex-1">
                   {style.recent_products.slice(0, 2).map((product) => (
                     <div key={product.id} className="relative group/product overflow-hidden rounded-lg bg-gray-50">
                       {/* Product Image */}
@@ -286,10 +286,10 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
                       </div>
                       
                       {/* Shop Now Button */}
-                      <div className="p-2">
+                      <div className="p-3">
                         <Button
                           size="sm"
-                          className="w-full h-8 text-xs font-medium bg-primary hover:bg-primary/90 text-primary-foreground"
+                          className="w-full h-9 text-xs font-medium bg-primary hover:bg-primary/90 text-primary-foreground"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleShopNow(product.id);
@@ -304,14 +304,14 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
                 </div>
 
                 {/* Stats */}
-                <div className="space-y-2 mt-auto">
+                <div className="space-y-3 mt-auto pt-2">
                   <div className="text-xs text-muted-foreground font-medium">
                     {style.count} products trending
                   </div>
                   
                   {style.recent_products.length > 0 && (
                     <div className="text-center">
-                      <span className="text-xs text-muted-foreground bg-muted/50 px-2 py-1 rounded-full">
+                      <span className="text-xs text-muted-foreground bg-muted/50 px-3 py-1.5 rounded-full">
                         From {formatPrice(Math.min(...style.recent_products.map(p => p.price_cents)))}
                       </span>
                     </div>
