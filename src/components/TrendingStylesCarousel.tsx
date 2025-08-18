@@ -227,9 +227,9 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
         {trendingStyles.map((style, index) => (
           <CarouselItem key={`${style.category}-${style.subcategory}`} className="pl-4 md:pl-8 basis-full sm:basis-1/2 lg:basis-1/2 xl:basis-1/2">
             <Card className="group hover:shadow-lg transition-all duration-300 h-full min-h-[380px]">
-              <CardContent className="p-8 h-full flex flex-col">
+              <CardContent className="p-4 h-full flex flex-col">
                 {/* Header */}
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center justify-between mb-3">
                   <Badge variant={index < 3 ? "default" : "secondary"} className="text-xs px-2 py-1">
                     #{index + 1}
                   </Badge>
@@ -240,12 +240,12 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
                 </div>
 
                 {/* Title */}
-                <h4 className="font-semibold text-base mb-4 group-hover:text-primary transition-colors line-clamp-2 leading-tight">
+                <h4 className="font-semibold text-base mb-3 group-hover:text-primary transition-colors line-clamp-2 leading-tight">
                   {formatCategoryName(style.category, style.subcategory)}
                 </h4>
 
                 {/* Product Images with Actions */}
-                <div className="grid grid-cols-2 gap-6 mb-6 flex-1">
+                <div className="grid grid-cols-2 gap-3 mb-4 flex-1">
                   {style.recent_products.slice(0, 2).map((product) => (
                     <div key={product.id} className="relative group/product">
                       <img
@@ -297,14 +297,14 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
                 </div>
 
                 {/* Stats */}
-                <div className="space-y-3 mt-auto">
-                  <div className="text-sm text-muted-foreground font-medium">
+                <div className="space-y-2 mt-auto">
+                  <div className="text-xs text-muted-foreground font-medium">
                     {style.count} products trending
                   </div>
                   
                   {style.recent_products.length > 0 && (
                     <div className="text-center">
-                      <span className="text-sm text-muted-foreground bg-muted/50 px-3 py-1 rounded-full">
+                      <span className="text-xs text-muted-foreground bg-muted/50 px-2 py-1 rounded-full">
                         From {formatPrice(Math.min(...style.recent_products.map(p => p.price_cents)))}
                       </span>
                     </div>
