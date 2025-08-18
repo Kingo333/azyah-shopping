@@ -223,9 +223,9 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
 
   return (
     <Carousel className="w-full" opts={{ align: "start", loop: false }}>
-      <CarouselContent className="-ml-3 md:-ml-6">
+      <CarouselContent className="-ml-4 md:-ml-8">
         {trendingStyles.map((style, index) => (
-          <CarouselItem key={`${style.category}-${style.subcategory}`} className="pl-3 md:pl-6 basis-full sm:basis-1/2 lg:basis-1/3 xl:basis-1/4">
+          <CarouselItem key={`${style.category}-${style.subcategory}`} className="pl-4 md:pl-8 basis-full sm:basis-1/2 lg:basis-2/5 xl:basis-1/3">
             <Card className="group hover:shadow-lg transition-all duration-300 h-full min-h-[280px]">
               <CardContent className="p-6 h-full flex flex-col">
                 {/* Header */}
