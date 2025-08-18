@@ -2,9 +2,10 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
-import { canAccessRoute, getRedirectRoute } from '@/lib/rbac';
+import { canAccessRoute, getRedirectRoute, isRoleSpecificRoute } from '@/lib/rbac';
 import { getUserRole, clearRoleCache } from '@/lib/roleCache';
 import type { UserRole } from '@/lib/rbac';
+import { isPreviewEnvironment, getSessionBackup } from '@/utils/sessionUtils';
 
 const DEBUG_AUTH = process.env.NODE_ENV === 'development';
 
@@ -69,20 +70,27 @@ const ProtectedRoute = ({ children, roles }: ProtectedRouteProps) => {
     );
   }
 
-  // Enhanced session validation for preview environment
-  const isPreviewEnvironment = window.location.hostname.includes('lovable');
+  // Enhanced session validation for all roles in preview environment
+  const isPreview = isPreviewEnvironment();
   
   // Only redirect to auth if we're absolutely certain there's no valid session
   if (!user && !loading && authStable && !roleLoading) {
-    // Extra validation for preview environment
-    if (isPreviewEnvironment) {
-      // Give more time for session recovery in preview mode
-      if (DEBUG_AUTH) console.log('ProtectedRoute: Preview environment detected, checking session validity');
+    // Extra validation for preview environment with role-specific handling
+    if (isPreview) {
+      if (DEBUG_AUTH) console.log('ProtectedRoute: Preview environment detected, checking all session indicators');
       
-      // Check if session exists in storage before redirecting
+      // Check multiple session indicators
       const storedSession = localStorage.getItem('azyah-auth-token');
-      if (storedSession) {
-        if (DEBUG_AUTH) console.log('ProtectedRoute: Found stored session, waiting for recovery');
+      const sessionBackup = getSessionBackup();
+      const isProtectedRoute = isRoleSpecificRoute(location.pathname);
+      
+      if (storedSession || sessionBackup || isProtectedRoute) {
+        if (DEBUG_AUTH) console.log('ProtectedRoute: Found session indicators, waiting for recovery', {
+          storedSession: !!storedSession,
+          sessionBackup: !!sessionBackup,
+          isProtectedRoute,
+          pathname: location.pathname
+        });
         return (
           <div className="min-h-screen flex items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -91,7 +99,7 @@ const ProtectedRoute = ({ children, roles }: ProtectedRouteProps) => {
       }
     }
     
-    if (DEBUG_AUTH) console.log('ProtectedRoute: No user detected, redirecting to auth');
+    if (DEBUG_AUTH) console.log('ProtectedRoute: No user detected after all checks, redirecting to auth');
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 

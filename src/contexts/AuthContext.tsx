@@ -6,6 +6,7 @@ import { toast } from '@/hooks/use-toast';
 import { CredentialsSchema } from '@/lib/password-validation';
 import { getRedirectRoute } from '@/lib/rbac';
 import type { UserRole } from '@/lib/rbac';
+import { isPreviewEnvironment, storeSessionBackup, getSessionBackup, isLikelyPreviewRefresh } from '@/utils/sessionUtils';
 
 interface AuthContextType {
   user: User | null;
@@ -25,69 +26,110 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Session recovery for preview environments
-    const recoverSession = async () => {
-      try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        if (session && !error) {
-          console.log('AuthContext: Session recovered successfully');
-          setSession(session);
-          setUser(session.user);
-          setLoading(false);
-          return true;
-        }
-      } catch (error) {
-        console.warn('AuthContext: Session recovery failed:', error);
-      }
-      return false;
-    };
-
-    // Set up auth state listener
+    // Set up auth state listener with enhanced preview environment handling
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('AuthContext: Auth state changed:', { 
           event, 
           user: session?.user?.email,
           hasSession: !!session,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
+          isPreview: isPreviewEnvironment()
         });
         
-        // Handle session lost during preview refresh
-        if (event === 'SIGNED_OUT' && !session) {
-          // Check if this is an unexpected sign out (preview refresh)
-          const recovered = await recoverSession();
-          if (!recovered) {
-            // Clear role cache only on actual sign out
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+          setSession(session);
+          setUser(session?.user ?? null);
+          
+          // Store backup for all roles in preview environment
+          if (session?.user && isPreviewEnvironment()) {
+            storeSessionBackup(session.user, session);
+          }
+        } else if (event === 'SIGNED_OUT') {
+          // Enhanced logic for all roles
+          const isLikelyRefresh = isLikelyPreviewRefresh();
+          
+          if (isLikelyRefresh) {
+            console.log('AuthContext: Preview refresh detected for role-based route, attempting recovery');
+            
+            // Try to recover from backup
+            const backup = getSessionBackup();
+            if (backup) {
+              setSession(backup.session);
+              setUser(backup.user);
+              console.log('AuthContext: Session restored from backup');
+              return;
+            }
+            
+            // Wait briefly for session recovery
+            setTimeout(async () => {
+              const { data: { session: recoveredSession } } = await supabase.auth.getSession();
+              if (recoveredSession) {
+                setSession(recoveredSession);
+                setUser(recoveredSession.user);
+                console.log('AuthContext: Session recovered after brief delay');
+              } else {
+                // Final fallback - clear everything
+                setSession(null);
+                setUser(null);
+                import('@/lib/roleCache').then(({ clearRoleCache }) => {
+                  clearRoleCache();
+                });
+              }
+            }, 1000);
+          } else {
+            // Real logout - clear everything immediately
+            console.log('AuthContext: Real logout detected, clearing all session data');
+            setSession(null);
+            setUser(null);
             import('@/lib/roleCache').then(({ clearRoleCache }) => {
               clearRoleCache();
+            });
+            import('@/utils/sessionUtils').then(({ clearSessionBackup }) => {
+              clearSessionBackup();
             });
           }
         }
         
-        setSession(session);
-        setUser(session?.user ?? null);
         setLoading(false);
       }
     );
 
-    // Initial session check with retry for preview environment
+    // Enhanced initial session check for all roles
     const initializeSession = async () => {
       let attempts = 0;
-      const maxAttempts = 3;
+      const maxAttempts = isPreviewEnvironment() ? 5 : 3;
       
       while (attempts < maxAttempts) {
         try {
           const { data: { session }, error } = await supabase.auth.getSession();
           
-          if (!error) {
-            console.log('AuthContext: Initial session check:', { 
+          if (!error && session) {
+            console.log('AuthContext: Initial session found:', { 
               hasSession: !!session, 
-              attempt: attempts + 1 
+              attempt: attempts + 1,
+              userRole: session.user?.user_metadata?.role 
             });
             setSession(session);
             setUser(session?.user ?? null);
+            
+            // Store backup for preview environment
+            if (isPreviewEnvironment()) {
+              storeSessionBackup(session.user, session);
+            }
+            
             setLoading(false);
             return;
+          } else if (!session && isPreviewEnvironment()) {
+            // Try backup recovery in preview environment
+            const backup = getSessionBackup();
+            if (backup) {
+              console.log('AuthContext: Using backup session on initialization');
+              setSession(backup.session);
+              setUser(backup.user);
+              setLoading(false);
+              return;
+            }
           }
         } catch (error) {
           console.warn(`AuthContext: Session check attempt ${attempts + 1} failed:`, error);
@@ -95,11 +137,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         attempts++;
         if (attempts < maxAttempts) {
-          await new Promise(resolve => setTimeout(resolve, 100 * attempts));
+          await new Promise(resolve => setTimeout(resolve, 200 * attempts));
         }
       }
       
-      // Final fallback
+      console.log('AuthContext: No session found after all attempts');
       setLoading(false);
     };
 

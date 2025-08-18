@@ -57,6 +57,19 @@ export const getRedirectRoute = (userRole: UserRole): string => {
   }
 };
 
+export const isRoleSpecificRoute = (pathname: string): boolean => {
+  return [
+    '/brand-portal',
+    '/retailer-portal', 
+    '/admin',
+    '/dashboard',
+    '/profile-settings',
+    '/wishlist',
+    '/likes',
+    '/closets'
+  ].some(route => pathname.startsWith(route));
+};
+
 export const isValidRole = (role: string): role is UserRole => {
   return ['shopper', 'brand', 'retailer', 'admin'].includes(role);
 };
