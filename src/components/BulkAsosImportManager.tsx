@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -114,7 +115,7 @@ const BulkAsosImportManager: React.FC = () => {
       
       toast({
         title: "Bulk Import Completed",
-        description: `Imported ${data.imported} products successfully`,
+        description: `Imported ${data.imported || 0} products successfully`,
       });
 
     } catch (error) {
@@ -262,19 +263,19 @@ const BulkAsosImportManager: React.FC = () => {
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="text-center">
-                <div className="text-2xl font-bold text-green-600">{importResult.imported}</div>
+                <div className="text-2xl font-bold text-green-600">{importResult.imported || 0}</div>
                 <div className="text-sm text-muted-foreground">Imported</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-red-600">{importResult.rejected}</div>
+                <div className="text-2xl font-bold text-red-600">{importResult.rejected || 0}</div>
                 <div className="text-sm text-muted-foreground">Rejected</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-yellow-600">{importResult.duplicates}</div>
+                <div className="text-2xl font-bold text-yellow-600">{importResult.duplicates || 0}</div>
                 <div className="text-sm text-muted-foreground">Duplicates</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-gray-600">{importResult.errors}</div>
+                <div className="text-2xl font-bold text-gray-600">{importResult.errors || 0}</div>
                 <div className="text-sm text-muted-foreground">Errors</div>
               </div>
             </div>
@@ -283,23 +284,23 @@ const BulkAsosImportManager: React.FC = () => {
 
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
               <div>
-                <span className="font-medium">Search Requests:</span> {importResult.metrics.searchRequests}
+                <span className="font-medium">Search Requests:</span> {importResult.metrics?.searchRequests || 0}
               </div>
               <div>
-                <span className="font-medium">Detail Requests:</span> {importResult.metrics.detailRequests}
+                <span className="font-medium">Detail Requests:</span> {importResult.metrics?.detailRequests || 0}
               </div>
               <div>
-                <span className="font-medium">Products Found:</span> {importResult.metrics.productsFound}
+                <span className="font-medium">Products Found:</span> {importResult.metrics?.productsFound || 0}
               </div>
               <div>
-                <span className="font-medium">Duration:</span> {Math.round(importResult.metrics.duration / 1000)}s
+                <span className="font-medium">Duration:</span> {Math.round((importResult.metrics?.duration || 0) / 1000)}s
               </div>
               <div>
-                <span className="font-medium">Success Rate:</span> {importResult.metrics.successRate.toFixed(1)}%
+                <span className="font-medium">Success Rate:</span> {(importResult.metrics?.successRate || 0).toFixed(1)}%
               </div>
             </div>
 
-            {importResult.results.length > 0 && (
+            {importResult.results && importResult.results.length > 0 && (
               <>
                 <Separator />
                 <div>
