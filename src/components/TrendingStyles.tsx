@@ -204,65 +204,65 @@ const TrendingStyles: React.FC<TrendingStylesProps> = ({ limit = 6, showMore = t
   }
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div className="space-y-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         {trendingStyles?.map((style, index) => (
           <Card 
             key={`${style.category}-${style.subcategory}`}
-            className="group hover:shadow-lg transition-all duration-300"
+            className="group hover:shadow-lg transition-all duration-300 min-h-[320px]"
           >
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <Badge variant={index < 3 ? "default" : "secondary"} className="text-xs">
+            <CardHeader className="pb-4">
+              <div className="flex items-center justify-between mb-3">
+                <Badge variant={index < 3 ? "default" : "secondary"} className="text-xs px-2 py-1">
                   #{index + 1}
                 </Badge>
-                <div className="flex items-center gap-1 text-sm text-green-600">
-                  <TrendingUp className="h-3 w-3" />
+                <div className="flex items-center gap-1 text-sm text-green-600 font-medium">
+                  <TrendingUp className="h-4 w-4" />
                   +{style.growth}%
                 </div>
               </div>
-              <CardTitle className="text-lg group-hover:text-primary transition-colors">
+              <CardTitle className="text-xl font-semibold group-hover:text-primary transition-colors leading-tight">
                 {formatCategoryName(style.category, style.subcategory)}
               </CardTitle>
             </CardHeader>
             
-            <CardContent>
-              <div className="grid grid-cols-3 gap-2 mb-4">
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-3 gap-3">
                 {style.recent_products.slice(0, 3).map((product) => (
                   <div key={product.id} className="relative group/product">
                     <img
                       src={product.image_url || '/placeholder.svg'}
                       alt={product.title}
-                      className="w-full aspect-square object-cover rounded-md"
+                      className="w-full aspect-square object-cover rounded-lg"
                     />
-                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover/product:opacity-100 transition-opacity rounded-md flex flex-col items-center justify-center gap-1">
-                      <div className="flex gap-1">
+                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover/product:opacity-100 transition-opacity rounded-lg flex flex-col items-center justify-center gap-2">
+                      <div className="flex gap-2">
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="h-6 w-6 p-0 text-white hover:text-red-400"
+                          className="h-8 w-8 p-0 text-white hover:text-red-400 hover:bg-red-400/20"
                           onClick={() => addToLikesMutation.mutate(product.id)}
                         >
-                          <Heart className="h-3 w-3" />
+                          <Heart className="h-4 w-4" />
                         </Button>
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="h-6 w-6 p-0 text-white hover:text-blue-400"
+                          className="h-8 w-8 p-0 text-white hover:text-blue-400 hover:bg-blue-400/20"
                           onClick={() => addToWishlistMutation.mutate(product.id)}
                         >
-                          <ShoppingBag className="h-3 w-3" />
+                          <ShoppingBag className="h-4 w-4" />
                         </Button>
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="h-6 w-6 p-0 text-white hover:text-green-400"
+                          className="h-8 w-8 p-0 text-white hover:text-green-400 hover:bg-green-400/20"
                           onClick={() => handleShopNow(product.id)}
                         >
-                          <ExternalLink className="h-3 w-3" />
+                          <ExternalLink className="h-4 w-4" />
                         </Button>
                       </div>
-                      <span className="text-white text-xs font-medium">
+                      <span className="text-white text-sm font-medium bg-black/40 px-2 py-1 rounded">
                         {formatPrice(product.price_cents, product.currency)}
                       </span>
                     </div>
@@ -270,14 +270,14 @@ const TrendingStyles: React.FC<TrendingStylesProps> = ({ limit = 6, showMore = t
                 ))}
               </div>
               
-              <div className="space-y-2">
-                <div className="text-center text-sm text-muted-foreground">
+              <div className="space-y-3 pt-2">
+                <div className="text-center text-sm text-muted-foreground font-medium">
                   {style.count} products trending
                 </div>
                 
                 {style.recent_products.length > 0 && (
                   <div className="text-center">
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-sm text-muted-foreground bg-muted/50 px-3 py-1 rounded-full">
                       From {formatPrice(Math.min(...style.recent_products.map(p => p.price_cents)))}
                     </span>
                   </div>
