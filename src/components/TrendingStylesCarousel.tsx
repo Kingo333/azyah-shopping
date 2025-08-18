@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -194,14 +195,14 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
       <Carousel className="w-full">
         <CarouselContent>
           {[...Array(4)].map((_, i) => (
-            <CarouselItem key={i} className="md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
+            <CarouselItem key={i} className="md:basis-1/2">
               <Card className="animate-pulse">
-                <CardContent className="p-4">
-                  <div className="h-4 bg-muted rounded mb-2"></div>
+                <CardContent className="p-8">
                   <div className="h-6 bg-muted rounded mb-4"></div>
-                  <div className="flex gap-2">
+                  <div className="h-8 bg-muted rounded mb-6"></div>
+                  <div className="grid grid-cols-2 gap-6">
                     {[...Array(2)].map((_, j) => (
-                      <div key={j} className="w-12 h-12 bg-muted rounded"></div>
+                      <div key={j} className="aspect-square bg-muted rounded"></div>
                     ))}
                   </div>
                 </CardContent>
@@ -223,31 +224,31 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
 
   return (
     <Carousel className="w-full" opts={{ align: "start", loop: false }}>
-      <CarouselContent className="-ml-3 md:-ml-6">
+      <CarouselContent className="-ml-4 md:-ml-8">
         {trendingStyles.map((style, index) => (
-          <CarouselItem key={`${style.category}-${style.subcategory}`} className="pl-3 md:pl-6 basis-full sm:basis-1/2 lg:basis-1/3">
-            <Card className="group hover:shadow-lg transition-all duration-300 h-full">
-              <CardContent className="p-4 sm:p-5 lg:p-6 h-full flex flex-col">
+          <CarouselItem key={`${style.category}-${style.subcategory}`} className="pl-4 md:pl-8 basis-full md:basis-1/2">
+            <Card className="group hover:shadow-xl transition-all duration-300 h-full">
+              <CardContent className="p-6 md:p-8 h-full flex flex-col">
                 {/* Header */}
-                <div className="flex items-center justify-between mb-4">
-                  <Badge variant={index < 3 ? "default" : "secondary"} className="text-xs px-2 py-1">
+                <div className="flex items-center justify-between mb-6">
+                  <Badge variant={index < 3 ? "default" : "secondary"} className="text-sm px-3 py-2">
                     #{index + 1}
                   </Badge>
-                  <div className="flex items-center gap-1 text-sm text-green-600 font-medium">
-                    <TrendingUp className="h-4 w-4" />
+                  <div className="flex items-center gap-2 text-base text-green-600 font-semibold">
+                    <TrendingUp className="h-5 w-5" />
                     +{style.growth}%
                   </div>
                 </div>
 
                 {/* Title */}
-                <h4 className="font-semibold text-base mb-5 group-hover:text-primary transition-colors line-clamp-2 leading-tight">
+                <h4 className="font-bold text-xl mb-8 group-hover:text-primary transition-colors line-clamp-2 leading-tight">
                   {formatCategoryName(style.category, style.subcategory)}
                 </h4>
 
-                {/* Product Images Grid */}
-                <div className="grid grid-cols-2 gap-4 mb-5 flex-1">
+                {/* Product Images Grid - Much Larger */}
+                <div className="grid grid-cols-2 gap-6 mb-8 flex-1">
                   {style.recent_products.slice(0, 2).map((product) => (
-                    <div key={product.id} className="relative group/product overflow-hidden rounded-lg bg-gray-50">
+                    <div key={product.id} className="relative group/product overflow-hidden rounded-xl bg-gray-50">
                       {/* Product Image */}
                       <div className="relative aspect-square">
                         <img
@@ -258,44 +259,44 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
                         
                         {/* Action Buttons Overlay */}
                         <div className="absolute inset-0 bg-black/0 group-hover/product:bg-black/20 transition-all duration-200">
-                          <div className="absolute top-2 right-2 flex flex-col gap-1 opacity-0 group-hover/product:opacity-100 transition-opacity duration-200">
+                          <div className="absolute top-3 right-3 flex flex-col gap-2 opacity-0 group-hover/product:opacity-100 transition-opacity duration-200">
                             <Button
                               size="sm"
                               variant="secondary"
-                              className="h-8 w-8 p-0 bg-white/95 hover:bg-white hover:text-red-500 rounded-full shadow-sm border-0"
+                              className="h-10 w-10 p-0 bg-white/95 hover:bg-white hover:text-red-500 rounded-full shadow-lg border-0"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 addToLikesMutation.mutate(product.id);
                               }}
                             >
-                              <Heart className="h-3.5 w-3.5" />
+                              <Heart className="h-4 w-4" />
                             </Button>
                             <Button
                               size="sm"
                               variant="secondary"
-                              className="h-8 w-8 p-0 bg-white/95 hover:bg-white hover:text-blue-500 rounded-full shadow-sm border-0"
+                              className="h-10 w-10 p-0 bg-white/95 hover:bg-white hover:text-blue-500 rounded-full shadow-lg border-0"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 addToWishlistMutation.mutate(product.id);
                               }}
                             >
-                              <ShoppingBag className="h-3.5 w-3.5" />
+                              <ShoppingBag className="h-4 w-4" />
                             </Button>
                           </div>
                         </div>
                       </div>
                       
                       {/* Shop Now Button */}
-                      <div className="p-3">
+                      <div className="p-4">
                         <Button
                           size="sm"
-                          className="w-full h-9 text-xs font-medium bg-primary hover:bg-primary/90 text-primary-foreground"
+                          className="w-full h-11 text-sm font-medium bg-primary hover:bg-primary/90 text-primary-foreground"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleShopNow(product.id);
                           }}
                         >
-                          <ExternalLink className="h-3 w-3 mr-1" />
+                          <ExternalLink className="h-4 w-4 mr-2" />
                           Shop Now
                         </Button>
                       </div>
@@ -304,14 +305,14 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
                 </div>
 
                 {/* Stats */}
-                <div className="space-y-3 mt-auto pt-2">
-                  <div className="text-xs text-muted-foreground font-medium">
+                <div className="space-y-4 mt-auto pt-4">
+                  <div className="text-sm text-muted-foreground font-medium">
                     {style.count} products trending
                   </div>
                   
                   {style.recent_products.length > 0 && (
                     <div className="text-center">
-                      <span className="text-xs text-muted-foreground bg-muted/50 px-3 py-1.5 rounded-full">
+                      <span className="text-sm text-muted-foreground bg-muted/50 px-4 py-2 rounded-full">
                         From {formatPrice(Math.min(...style.recent_products.map(p => p.price_cents)))}
                       </span>
                     </div>
@@ -322,8 +323,8 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
           </CarouselItem>
         ))}
       </CarouselContent>
-      <CarouselPrevious className="-left-4" />
-      <CarouselNext className="-right-4" />
+      <CarouselPrevious className="-left-6" />
+      <CarouselNext className="-right-6" />
     </Carousel>
   );
 };
