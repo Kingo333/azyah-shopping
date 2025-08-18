@@ -222,30 +222,30 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
   }
 
   return (
-    <Carousel className="w-full">
-      <CarouselContent className="-ml-2 md:-ml-4">
+    <Carousel className="w-full" opts={{ align: "start", loop: false }}>
+      <CarouselContent className="-ml-3 md:-ml-6">
         {trendingStyles.map((style, index) => (
-          <CarouselItem key={`${style.category}-${style.subcategory}`} className="pl-2 md:pl-4 md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
-            <Card className="group hover:shadow-lg transition-all duration-300 h-full">
-              <CardContent className="p-4 h-full flex flex-col">
+          <CarouselItem key={`${style.category}-${style.subcategory}`} className="pl-3 md:pl-6 basis-full sm:basis-1/2 lg:basis-1/3 xl:basis-1/4">
+            <Card className="group hover:shadow-lg transition-all duration-300 h-full min-h-[280px]">
+              <CardContent className="p-6 h-full flex flex-col">
                 {/* Header */}
-                <div className="flex items-center justify-between mb-3">
-                  <Badge variant={index < 3 ? "default" : "secondary"} className="text-xs">
+                <div className="flex items-center justify-between mb-4">
+                  <Badge variant={index < 3 ? "default" : "secondary"} className="text-xs px-2 py-1">
                     #{index + 1}
                   </Badge>
-                  <div className="flex items-center gap-1 text-sm text-green-600">
-                    <TrendingUp className="h-3 w-3" />
+                  <div className="flex items-center gap-1 text-sm text-green-600 font-medium">
+                    <TrendingUp className="h-4 w-4" />
                     +{style.growth}%
                   </div>
                 </div>
 
                 {/* Title */}
-                <h4 className="font-semibold text-sm mb-3 group-hover:text-primary transition-colors line-clamp-2">
+                <h4 className="font-semibold text-base mb-4 group-hover:text-primary transition-colors line-clamp-2 leading-tight">
                   {formatCategoryName(style.category, style.subcategory)}
                 </h4>
 
                 {/* Product Images with Actions */}
-                <div className="flex gap-3 mb-3 flex-1">
+                <div className="flex gap-4 mb-4 flex-1">
                   {style.recent_products.slice(0, 2).map((product) => (
                     <div key={product.id} className="relative group/product flex-1">
                       <img
@@ -254,28 +254,28 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
                         className="w-full aspect-square object-cover rounded-lg"
                       />
                       {/* Top corner action buttons - always visible */}
-                      <div className="absolute top-1 left-1 right-1 flex justify-between">
+                      <div className="absolute top-2 left-2 right-2 flex justify-between">
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="h-7 w-7 p-0 bg-white/80 text-gray-700 hover:text-red-500 hover:bg-white/90 rounded-full"
+                          className="h-8 w-8 p-0 bg-white/90 text-gray-700 hover:text-red-500 hover:bg-white rounded-full shadow-sm"
                           onClick={(e) => {
                             e.stopPropagation();
                             addToLikesMutation.mutate(product.id);
                           }}
                         >
-                          <Heart className="h-3 w-3" />
+                          <Heart className="h-4 w-4" />
                         </Button>
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="h-7 w-7 p-0 bg-white/80 text-gray-700 hover:text-blue-500 hover:bg-white/90 rounded-full"
+                          className="h-8 w-8 p-0 bg-white/90 text-gray-700 hover:text-blue-500 hover:bg-white rounded-full shadow-sm"
                           onClick={(e) => {
                             e.stopPropagation();
                             addToWishlistMutation.mutate(product.id);
                           }}
                         >
-                          <ShoppingBag className="h-3 w-3" />
+                          <ShoppingBag className="h-4 w-4" />
                         </Button>
                       </div>
                       {/* Mobile-friendly bottom overlay with Shop button */}
@@ -283,7 +283,7 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
                         <Button
                           size="sm"
                           variant="outline"
-                          className="w-full text-xs font-medium h-auto bg-red-500 text-white border-red-500 hover:bg-red-600 hover:border-red-600"
+                          className="w-full text-xs font-medium h-7 bg-red-500 text-white border-red-500 hover:bg-red-600 hover:border-red-600"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleShopNow(product.id);
@@ -297,14 +297,14 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
                 </div>
 
                 {/* Stats */}
-                <div className="space-y-2 mt-auto">
-                  <div className="text-xs text-muted-foreground">
+                <div className="space-y-3 mt-auto">
+                  <div className="text-sm text-muted-foreground font-medium">
                     {style.count} products trending
                   </div>
                   
                   {style.recent_products.length > 0 && (
                     <div className="text-center">
-                      <span className="text-xs text-muted-foreground">
+                      <span className="text-sm text-muted-foreground bg-muted/50 px-3 py-1 rounded-full">
                         From {formatPrice(Math.min(...style.recent_products.map(p => p.price_cents)))}
                       </span>
                     </div>
@@ -315,8 +315,8 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
           </CarouselItem>
         ))}
       </CarouselContent>
-      <CarouselPrevious className="hidden sm:flex" />
-      <CarouselNext className="hidden sm:flex" />
+      <CarouselPrevious className="hidden sm:flex -left-4" />
+      <CarouselNext className="hidden sm:flex -right-4" />
     </Carousel>
   );
 };
