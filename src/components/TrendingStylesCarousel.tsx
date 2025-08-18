@@ -271,12 +271,12 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
                 </div>
 
                 {/* Title */}
-                <h4 className="font-bold text-lg mb-4 group-hover:text-primary transition-colors line-clamp-2 leading-tight">
+                <h4 className="font-bold text-base mb-3 group-hover:text-primary transition-colors line-clamp-2 leading-tight">
                   {formatCategoryName(style.category, style.subcategory)}
                 </h4>
 
                 {/* Product Images Grid - Two Column Layout */}
-                <div className="grid grid-cols-2 gap-4 mb-4 flex-1">
+                <div className="grid grid-cols-2 gap-3 mb-3 flex-1 min-h-0">
                   {style.recent_products.slice(0, 2).map((product) => (
                     <div key={product.id} className="relative group/product overflow-hidden rounded-xl bg-gray-50">
                       {/* Product Image */}
