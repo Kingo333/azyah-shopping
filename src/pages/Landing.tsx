@@ -192,7 +192,7 @@ export default function Landing() {
                 </div>
                 
                 <div className="space-y-2 sm:space-y-3 lg:space-y-4">
-                  <h1 className="font-cormorant text-3xl sm:text-4xl md:text-5xl lg:text-8xl xl:text-9xl font-bold leading-[0.9] sm:leading-[0.85] tracking-tight">
+                  <h1 className="font-cormorant text-4xl sm:text-5xl md:text-6xl lg:text-8xl xl:text-9xl font-bold leading-[0.9] sm:leading-[0.85] tracking-tight">
                     <span className="block text-white">Find Your</span>
                     <span className="block bg-gradient-to-r from-primary via-primary to-primary/80 bg-clip-text text-transparent italic">Perfect</span>
                     <span className="block text-white">Style</span>
