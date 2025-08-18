@@ -245,66 +245,65 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
                   {formatCategoryName(style.category, style.subcategory)}
                 </h4>
 
-                {/* Single Large Product Image */}
-                <div className="mb-4 flex-1">
-                  {style.recent_products.length > 0 && (
-                    <div className="relative group/product overflow-hidden rounded-xl bg-gray-50">
+                {/* Product Images Grid - Two Column Layout */}
+                <div className="grid grid-cols-2 gap-4 mb-4 flex-1">
+                  {style.recent_products.slice(0, 2).map((product) => (
+                    <div key={product.id} className="relative group/product overflow-hidden rounded-xl bg-gray-50">
                       {/* Product Image */}
-                      <div className="relative aspect-[4/3]">
+                      <div className="relative aspect-[3/4]">
                         <img
-                          src={style.recent_products[0].image_url || '/placeholder.svg'}
-                          alt={style.recent_products[0].title}
+                          src={product.image_url || '/placeholder.svg'}
+                          alt={product.title}
                           className="w-full h-full object-cover"
                         />
                         
                         {/* Action Buttons Overlay */}
                         <div className="absolute inset-0 bg-black/0 group-hover/product:bg-black/20 transition-all duration-200">
-                          <div className="absolute top-3 right-3 flex flex-col gap-2 opacity-0 group-hover/product:opacity-100 transition-opacity duration-200">
+                          <div className="absolute top-2 right-2 flex flex-col gap-1 opacity-0 group-hover/product:opacity-100 transition-opacity duration-200">
                             <Button
                               size="sm"
                               variant="secondary"
-                              className="h-10 w-10 p-0 bg-white/95 hover:bg-white hover:text-red-500 rounded-full shadow-lg border-0"
+                              className="h-8 w-8 p-0 bg-white/95 hover:bg-white hover:text-red-500 rounded-full shadow-lg border-0"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                addToLikesMutation.mutate(style.recent_products[0].id);
+                                addToLikesMutation.mutate(product.id);
                               }}
                             >
-                              <Heart className="h-4 w-4" />
+                              <Heart className="h-3 w-3" />
                             </Button>
                             <Button
                               size="sm"
                               variant="secondary"
-                              className="h-10 w-10 p-0 bg-white/95 hover:bg-white hover:text-blue-500 rounded-full shadow-lg border-0"
+                              className="h-8 w-8 p-0 bg-white/95 hover:bg-white hover:text-blue-500 rounded-full shadow-lg border-0"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                addToWishlistMutation.mutate(style.recent_products[0].id);
+                                addToWishlistMutation.mutate(product.id);
                               }}
                             >
-                              <ShoppingBag className="h-4 w-4" />
+                              <ShoppingBag className="h-3 w-3" />
                             </Button>
                           </div>
                         </div>
                       </div>
+                      
+                      {/* Shop Now Button */}
+                      <div className="p-2">
+                        <Button
+                          size="sm"
+                          className="w-full h-8 text-xs font-medium bg-primary hover:bg-primary/90 text-primary-foreground"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleShopNow(product.id);
+                          }}
+                        >
+                          <ExternalLink className="h-3 w-3 mr-1" />
+                          Shop
+                        </Button>
+                      </div>
                     </div>
-                  )}
+                  ))}
                 </div>
 
-                {/* Shop Now Button */}
-                <div className="mt-auto">
-                  <Button
-                    size="sm"
-                    className="w-full h-11 text-sm font-medium bg-primary hover:bg-primary/90 text-primary-foreground"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (style.recent_products.length > 0) {
-                        handleShopNow(style.recent_products[0].id);
-                      }
-                    }}
-                  >
-                    <ExternalLink className="h-4 w-4 mr-2" />
-                    Shop Now
-                  </Button>
-                </div>
 
                 {/* Stats */}
                 <div className="space-y-4 mt-auto pt-4">
