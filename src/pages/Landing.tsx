@@ -5,7 +5,7 @@ import { ArrowRight, Heart, Users, Star, Sparkles, Play, Menu, X, CheckCircle, S
 import { Button } from "@/components/ui/button";
 import { SEOHead } from "@/components/SEOHead";
 import SwipeDeck from '@/components/SwipeDeck';
-import { isVisualEditsMode } from "@/utils/visualEditsDetection";
+import { clearInvalidSession, debugAuthState } from "@/utils/sessionDebug";
 export default function Landing() {
   const [isVisible, setIsVisible] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'swipe'>('grid');
@@ -14,15 +14,10 @@ export default function Landing() {
   const navigate = useNavigate();
   useEffect(() => setIsVisible(true), []);
 
-  // Redirect authenticated users (with Visual Edits protection)
+  // Debug auth state and redirect logic
   useEffect(() => {
-    // Skip debug calls in Visual Edits mode to prevent auth disruption
-    if (isVisualEditsMode()) {
-      console.log('Landing page: Visual Edits mode detected, skipping debug calls');
-      return;
-    }
-    
     console.log('Landing page: user state:', user, 'loading:', loading);
+    debugAuthState(); // Debug current auth state
     
     if (!loading && user) {
       console.log('User is authenticated, redirecting to appropriate dashboard');
@@ -38,6 +33,11 @@ export default function Landing() {
     }
   }, [user, loading, navigate]);
 
+  // Add logout button for debugging
+  const handleDebugLogout = () => {
+    console.log('Debug: Force clearing session...');
+    clearInvalidSession();
+  };
   const scrollToSection = (href: string) => {
     const element = document.querySelector(href);
     if (element) {
@@ -100,6 +100,12 @@ export default function Landing() {
             <Button variant="default" size="sm" onClick={() => navigate("/auth")} className="font-medium">
               Explore
             </Button>
+            {/* Debug button - only show if user exists */}
+            {user && (
+              <Button variant="destructive" size="sm" onClick={handleDebugLogout} className="font-medium">
+                Force Logout
+              </Button>
+            )}
           </div>
 
           {/* Mobile burger - Cleaner Design */}

@@ -5,29 +5,19 @@ export const isVisualEditsMode = (): boolean => {
   // Check for Visual Edits indicators in the DOM or URL
   if (typeof window === 'undefined') return false;
   
-  // Check for Lovable Visual Edits specific indicators
+  // Check for Visual Edits specific elements or classes
   const hasVisualEditsElements = document.querySelector('[data-visual-edit]') || 
                                  document.querySelector('.visual-edit-mode') ||
-                                 document.body.classList.contains('visual-editing') ||
-                                 document.querySelector('[data-lovable-edit]') ||
-                                 document.querySelector('.lovable-editor');
+                                 document.body.classList.contains('visual-editing');
   
-  // Check URL parameters for Visual Edits
+  // Check URL parameters
   const urlParams = new URLSearchParams(window.location.search);
-  const hasVisualEditsParam = urlParams.has('visual-edit') || 
-                              urlParams.has('edit-mode') ||
-                              urlParams.has('lovable-edit') ||
-                              window.location.href.includes('preview--');
+  const hasVisualEditsParam = urlParams.has('visual-edit') || urlParams.has('edit-mode');
   
-  // Enhanced iframe detection for Lovable Visual Edits
-  const isInLovableIframe = window !== window.top && 
-                           (window.location.href.includes('preview--') ||
-                            window.location.href.includes('lovable.app'));
+  // Check for Visual Edits in iframe context
+  const isInVisualEditsIframe = window !== window.top && window.location.href.includes('edit');
   
-  // Check for parent communication (Lovable editor context) - avoid cross-origin access
-  const hasParentEditor = window !== window.top;
-  
-  return Boolean(hasVisualEditsElements || hasVisualEditsParam || isInLovableIframe || hasParentEditor);
+  return Boolean(hasVisualEditsElements || hasVisualEditsParam || isInVisualEditsIframe);
 };
 
 export const onVisualEditsModeChange = (callback: (isActive: boolean) => void) => {
@@ -78,12 +68,7 @@ export const onVisualEditsModeChange = (callback: (isActive: boolean) => void) =
 export const getStableAuthState = () => {
   try {
     const stored = sessionStorage.getItem('stable-auth-state');
-    if (!stored) return null;
-    
-    const parsed = JSON.parse(stored);
-    const isExpired = Date.now() - parsed.timestamp > (isVisualEditsMode() ? 30 * 60 * 1000 : 10 * 60 * 1000); // 30min for Visual Edits, 10min otherwise
-    
-    return isExpired ? null : parsed;
+    return stored ? JSON.parse(stored) : null;
   } catch {
     return null;
   }
