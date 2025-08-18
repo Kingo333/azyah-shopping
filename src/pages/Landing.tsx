@@ -9,25 +9,29 @@ import { clearInvalidSession, debugAuthState } from "@/utils/sessionDebug";
 export default function Landing() {
   const [isVisible, setIsVisible] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'swipe'>('grid');
-  const {
-    user
-  } = useAuth();
+  const { user, loading } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
   useEffect(() => setIsVisible(true), []);
 
   // Debug auth state and redirect logic
   useEffect(() => {
-    console.log('Landing page: user state:', user);
+    console.log('Landing page: user state:', user, 'loading:', loading);
     debugAuthState(); // Debug current auth state
     
-    if (user) {
-      console.log('User is authenticated, redirecting to dashboard');
-      navigate('/dashboard');
+    if (!loading && user) {
+      console.log('User is authenticated, redirecting to appropriate dashboard');
+      // Import getRedirectRoute to redirect to correct dashboard based on role
+      import('@/lib/rbac').then(({ getRedirectRoute }) => {
+        const userRole = user.user_metadata?.role || 'shopper';
+        const redirectPath = getRedirectRoute(userRole);
+        console.log('Redirecting to:', redirectPath, 'for role:', userRole);
+        navigate(redirectPath);
+      });
     } else {
-      console.log('No user, staying on landing page');
+      console.log('No user or still loading, staying on landing page');
     }
-  }, [user, navigate]);
+  }, [user, loading, navigate]);
 
   // Add logout button for debugging
   const handleDebugLogout = () => {
@@ -43,12 +47,22 @@ export default function Landing() {
     }
   };
 
-  // Show loading while user state is being determined
-  if (user === undefined) {
+  // Show loading while auth state is being determined
+  if (loading) {
     return <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
           <p>Loading...</p>
+        </div>
+      </div>;
+  }
+
+  // If user is authenticated, don't render landing page content (prevents flash)
+  if (user) {
+    return <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p>Redirecting...</p>
         </div>
       </div>;
   }
