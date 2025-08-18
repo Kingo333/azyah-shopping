@@ -269,7 +269,7 @@ export default function Landing() {
                     <Play className="w-3 h-3 sm:w-4 sm:h-4 text-primary" />
                     <span className="text-xs sm:text-sm font-semibold text-primary uppercase tracking-wider">How It Works</span>
                   </div>
-                  <h3 className="font-cormorant text-xl sm:text-2xl lg:text-4xl font-bold">
+                  <h3 className="font-cormorant text-2xl sm:text-3xl lg:text-4xl font-bold">
                     Discover Your
                     <span className="block text-primary italic">Perfect Style</span>
                   </h3>
