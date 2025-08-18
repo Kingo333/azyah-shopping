@@ -225,99 +225,104 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
     <Carousel className="w-full" opts={{ align: "start", loop: false }}>
       <CarouselContent className="-ml-4 md:-ml-8">
         {trendingStyles.map((style, index) => (
-          <CarouselItem key={`${style.category}-${style.subcategory}`} className="pl-4 md:pl-8 basis-full sm:basis-1/2 lg:basis-1/2 xl:basis-1/2">
-            <Card className="group hover:shadow-lg transition-all duration-300 h-full min-h-[380px]">
-              <CardContent className="p-4 h-full flex flex-col">
-                {/* Header */}
-                <div className="flex items-center justify-between mb-3">
-                  <Badge variant={index < 3 ? "default" : "secondary"} className="text-xs px-2 py-1">
+          <CarouselItem key={`${style.category}-${style.subcategory}`} className="pl-4 md:pl-8 basis-full sm:basis-1/2 lg:basis-1/3 xl:basis-1/4">
+            <Card className="group hover:shadow-xl hover:-translate-y-2 transition-all duration-500 h-full border-0 bg-card/90 backdrop-blur-sm">
+              {/* Header Section */}
+              <div className="p-5 pb-4">
+                <div className="flex items-center justify-between mb-4">
+                  <Badge 
+                    variant={index < 3 ? "default" : "secondary"} 
+                    className="text-xs px-3 py-1.5 font-bold bg-primary/15 text-primary border-primary/25"
+                  >
                     #{index + 1}
                   </Badge>
-                  <div className="flex items-center gap-1 text-sm text-green-600 font-medium">
-                    <TrendingUp className="h-4 w-4" />
+                  <div className="flex items-center gap-1.5 text-xs text-emerald-600 font-bold bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
+                    <TrendingUp className="h-3 w-3" />
                     +{style.growth}%
                   </div>
                 </div>
 
-                {/* Title */}
-                <h4 className="font-semibold text-base mb-4 group-hover:text-primary transition-colors line-clamp-2 leading-tight">
+                <h4 className="font-bold text-lg mb-5 group-hover:text-primary transition-colors duration-300 line-clamp-2 leading-tight">
                   {formatCategoryName(style.category, style.subcategory)}
                 </h4>
+              </div>
 
-                {/* Product Images Grid */}
-                <div className="grid grid-cols-2 gap-3 mb-4 flex-1">
+              {/* Product Grid Section */}
+              <div className="px-5 pb-4">
+                <div className="grid grid-cols-2 gap-3 mb-4">
                   {style.recent_products.slice(0, 2).map((product) => (
-                    <div key={product.id} className="relative group/product overflow-hidden rounded-lg bg-gray-50">
-                      {/* Product Image */}
-                      <div className="relative aspect-square">
-                        <img
-                          src={product.image_url || '/placeholder.svg'}
-                          alt={product.title}
-                          className="w-full h-full object-cover"
-                        />
-                        
-                        {/* Action Buttons Overlay */}
-                        <div className="absolute inset-0 bg-black/0 group-hover/product:bg-black/20 transition-all duration-200">
-                          <div className="absolute top-2 right-2 flex flex-col gap-1 opacity-0 group-hover/product:opacity-100 transition-opacity duration-200">
-                            <Button
-                              size="sm"
-                              variant="secondary"
-                              className="h-8 w-8 p-0 bg-white/95 hover:bg-white hover:text-red-500 rounded-full shadow-sm border-0"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                addToLikesMutation.mutate(product.id);
-                              }}
-                            >
-                              <Heart className="h-3.5 w-3.5" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="secondary"
-                              className="h-8 w-8 p-0 bg-white/95 hover:bg-white hover:text-blue-500 rounded-full shadow-sm border-0"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                addToWishlistMutation.mutate(product.id);
-                              }}
-                            >
-                              <ShoppingBag className="h-3.5 w-3.5" />
-                            </Button>
+                    <div key={product.id} className="relative group/product">
+                      {/* Product Container */}
+                      <div className="relative overflow-hidden rounded-xl bg-muted border border-border/50 transition-all duration-300 group-hover/product:shadow-lg">
+                        {/* Product Image */}
+                        <div className="aspect-square relative">
+                          <img
+                            src={product.image_url || '/placeholder.svg'}
+                            alt={product.title}
+                            className="w-full h-full object-cover transition-all duration-500 group-hover/product:scale-110"
+                          />
+                          
+                          {/* Action Buttons Overlay */}
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover/product:opacity-100 transition-all duration-300">
+                            <div className="absolute top-3 right-3 flex flex-col gap-2 transform translate-y-2 group-hover/product:translate-y-0 transition-transform duration-300">
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                className="h-8 w-8 p-0 bg-background/95 hover:bg-background shadow-lg backdrop-blur-sm border border-border/50 rounded-full"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  addToLikesMutation.mutate(product.id);
+                                }}
+                              >
+                                <Heart className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                className="h-8 w-8 p-0 bg-background/95 hover:bg-background shadow-lg backdrop-blur-sm border border-border/50 rounded-full"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  addToWishlistMutation.mutate(product.id);
+                                }}
+                              >
+                                <ShoppingBag className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                      
-                      {/* Shop Now Button */}
-                      <div className="p-2">
-                        <Button
-                          size="sm"
-                          className="w-full h-8 text-xs font-medium bg-primary hover:bg-primary/90 text-primary-foreground"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleShopNow(product.id);
-                          }}
-                        >
-                          <ExternalLink className="h-3 w-3 mr-1" />
-                          Shop Now
-                        </Button>
+                        
+                        {/* Shop Button */}
+                        <div className="p-3">
+                          <Button
+                            size="sm"
+                            className="w-full h-9 text-sm font-semibold shadow-md hover:shadow-lg transition-all duration-300"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleShopNow(product.id);
+                            }}
+                          >
+                            <ExternalLink className="h-4 w-4 mr-2" />
+                            Shop
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   ))}
                 </div>
+              </div>
 
-                {/* Stats */}
-                <div className="space-y-2 mt-auto">
-                  <div className="text-xs text-muted-foreground font-medium">
-                    {style.count} products trending
-                  </div>
-                  
-                  {style.recent_products.length > 0 && (
-                    <div className="text-center">
-                      <span className="text-xs text-muted-foreground bg-muted/50 px-2 py-1 rounded-full">
-                        From {formatPrice(Math.min(...style.recent_products.map(p => p.price_cents)))}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
+              {/* Stats Footer */}
+              <div className="flex items-center justify-between text-sm px-5 py-4 bg-muted/30 border-t border-border/50">
+                <span className="font-semibold text-muted-foreground">
+                  {style.count} trending
+                </span>
+                
+                {style.recent_products.length > 0 && (
+                  <span className="font-bold text-primary">
+                    From {formatPrice(Math.min(...style.recent_products.map(p => p.price_cents)))}
+                  </span>
+                )}
+              </div>
             </Card>
           </CarouselItem>
         ))}
