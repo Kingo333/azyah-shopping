@@ -17,6 +17,7 @@ import PremiumBanner from '@/components/PremiumBanner';
 import { Heart, ShoppingBag, Search, Sparkles, Package, BarChart3, Users, Settings, Store, TrendingUp, Plus, Eye, DollarSign, Globe, Bell, LogOut, User, Archive, Trophy, MapPin, Blocks } from 'lucide-react';
 import Leaderboard from '@/components/Leaderboard';
 import TrendingStylesCarousel from '@/components/TrendingStylesCarousel';
+import { UGCCollabButton } from '@/components/ugc/UGCCollabButton';
 
 interface UserProfile {
   id: string;
@@ -267,14 +268,7 @@ const RoleDashboard: React.FC = () => {
                 New
               </Badge>
             </Button>
-            <Button 
-              onClick={() => navigate('/likes')} 
-              variant="outline" 
-              className="h-16 sm:h-20 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300"
-            >
-              <Heart className="h-5 w-5 sm:h-6 sm:w-6" />
-              <span className="text-xs sm:text-sm">Likes</span>
-            </Button>
+            <UGCCollabButton />
             <Button 
               onClick={() => navigate('/wishlist')} 
               variant="outline" 
