@@ -477,7 +477,7 @@ export function RoleDashboard() {
         
         <AiStudioModal 
           open={showAiStudioModal} 
-          onOpenChange={setShowAiStudioModal} 
+          onClose={() => setShowAiStudioModal(false)} 
         />
       </div>
     </ErrorBoundary>
