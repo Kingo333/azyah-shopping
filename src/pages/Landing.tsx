@@ -179,13 +179,13 @@ export default function Landing() {
         </div>
 
         <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 pt-6 pb-8 sm:pt-10 sm:pb-12 lg:pt-16 lg:pb-20 relative">
-          <div className="grid lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8 items-center transition-all duration-1000" style={{
+          <div className="flex justify-center items-center transition-all duration-1000" style={{
           opacity: isVisible ? 1 : 0,
           transform: `translateY(${isVisible ? 0 : 32}px)`
         }}>
             
-          {/* Hero Content - More Minimal on Mobile */}
-            <div className="space-y-6 sm:space-y-8 lg:space-y-12 z-10">
+          {/* Hero Content - Centered */}
+            <div className="space-y-6 sm:space-y-8 lg:space-y-12 z-10 text-center max-w-4xl">
               <div className="space-y-3 sm:space-y-4 lg:space-y-8">
                 <div className="inline-flex items-center space-x-2 lg:space-x-3 bg-background/90 backdrop-blur-sm border border-primary/20 rounded-full px-4 py-2 lg:px-6 lg:py-3 shadow-lg">
                   <span className="text-xs lg:text-sm font-semibold text-primary uppercase tracking-wider">Luxury Fashion</span>
@@ -197,7 +197,7 @@ export default function Landing() {
                     <span className="block bg-gradient-to-r from-primary via-primary to-primary/80 bg-clip-text text-transparent italic">Perfect</span>
                     <span className="block text-white">Style</span>
                   </h1>
-                  <p className="text-sm sm:text-base lg:text-2xl text-gray-200 max-w-md lg:max-w-lg leading-relaxed font-light">
+                  <p className="text-sm sm:text-base lg:text-2xl text-gray-200 max-w-md lg:max-w-lg leading-relaxed font-light mx-auto">
                     Smart AI fashion discovery that learns your style.
                   </p>
                 </div>
@@ -212,27 +212,6 @@ export default function Landing() {
                   <Play className="mr-2 w-4 h-4 lg:w-5 lg:h-5" /> 
                   <span>View Lookbook</span>
                 </Button>
-              </div>
-            </div>
-
-            {/* Hero Visual - More Minimal Cards on Mobile */}
-            <div className="relative lg:justify-self-end z-10 mt-8 lg:mt-0">
-              <div className="relative max-w-sm sm:max-w-md lg:max-w-none mx-auto lg:mx-0">
-                
-                
-                {/* Simplified New Collection Card for Mobile */}
-                
-                
-                {/* Simplified Community Card for Mobile */}
-                <div className="absolute -bottom-3 -left-2 sm:-bottom-4 sm:-left-4 lg:-bottom-6 lg:-left-8 w-32 sm:w-40 lg:w-56 bg-background/95 backdrop-blur-sm rounded-lg sm:rounded-xl lg:rounded-2xl shadow-xl border border-primary/20 p-2 sm:p-3 lg:p-4">
-                  <div className="text-xs lg:text-sm font-medium mb-2 lg:mb-3">Join Community</div>
-                  <div className="flex -space-x-1 sm:-space-x-2">
-                    {[...Array(3)].map((_, i) => <div key={i} className="w-5 h-5 sm:w-6 sm:h-6 lg:w-8 lg:h-8 bg-gradient-to-r from-primary to-primary/80 rounded-full border border-white" />)}
-                    <div className="w-5 h-5 sm:w-6 sm:h-6 lg:w-8 lg:h-8 bg-muted rounded-full border border-white flex items-center justify-center">
-                      <span className="text-xs font-medium">+</span>
-                    </div>
-                  </div>
-                </div>
               </div>
             </div>
           </div>
