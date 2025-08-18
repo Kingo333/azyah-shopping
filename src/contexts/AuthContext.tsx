@@ -6,6 +6,7 @@ import { toast } from '@/hooks/use-toast';
 import { CredentialsSchema } from '@/lib/password-validation';
 import { getRedirectRoute } from '@/lib/rbac';
 import type { UserRole } from '@/lib/rbac';
+import { isVisualEditsMode, setStableAuthState, getStableAuthState, clearStableAuthState } from '@/utils/visualEditsDetection';
 
 interface AuthContextType {
   user: User | null;
@@ -25,13 +26,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Initialize auth state from stable storage if in Visual Edits mode
+    if (isVisualEditsMode()) {
+      const stableState = getStableAuthState();
+      if (stableState && Date.now() - stableState.timestamp < 10 * 60 * 1000) { // 10 min validity
+        setSession(stableState.session);
+        setUser(stableState.user);
+        setLoading(false);
+        return;
+      }
+    }
+
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         console.log('AuthContext: Auth state changed:', { event, user: session?.user?.email });
         
-        // Clear role cache on sign out
-        if (event === 'SIGNED_OUT') {
+        // Store stable auth state for Visual Edits compatibility
+        if (session?.user) {
+          setStableAuthState(session.user, session);
+        } else {
+          clearStableAuthState();
+        }
+        
+        // Clear role cache on sign out only if not in Visual Edits mode
+        if (event === 'SIGNED_OUT' && !isVisualEditsMode()) {
           import('@/lib/roleCache').then(({ clearRoleCache }) => {
             clearRoleCache();
           });
@@ -45,6 +64,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        setStableAuthState(session.user, session);
+      }
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);

@@ -1,6 +1,7 @@
 // Role cache utility to optimize ProtectedRoute performance
 import { supabase } from '@/integrations/supabase/client';
 import type { UserRole } from '@/lib/rbac';
+import { isVisualEditsMode } from '@/utils/visualEditsDetection';
 
 interface CachedRole {
   role: UserRole;
@@ -78,20 +79,44 @@ export const getUserRole = async (user: any): Promise<UserRole> => {
   
   const userId = user.id;
   
+  // In Visual Edits mode, prioritize metadata for stability
+  if (isVisualEditsMode()) {
+    const metadataRole = user.user_metadata?.role;
+    if (metadataRole && ['shopper', 'brand', 'retailer', 'admin'].includes(metadataRole)) {
+      setCachedRole(userId, metadataRole as UserRole);
+      return metadataRole as UserRole;
+    }
+  }
+  
   // 1. Check cache first
   const cachedRole = getCachedRole(userId);
   if (cachedRole) {
     return cachedRole;
   }
   
-  // 2. Use user_metadata.role as primary source (set during signup)
+  // 2. STRICT: Use user_metadata.role as SINGLE source of truth (set during signup)
   const metadataRole = user.user_metadata?.role;
   if (metadataRole && ['shopper', 'brand', 'retailer', 'admin'].includes(metadataRole)) {
     setCachedRole(userId, metadataRole as UserRole);
+    
+    // Sync with database in background (don't wait)
+    setTimeout(() => {
+      supabase
+        .from('users')
+        .upsert({ 
+          id: userId,
+          email: user.email,
+          role: metadataRole as UserRole,
+          updated_at: new Date().toISOString()
+        })
+        .then(() => console.log('Role synced to database'))
+        .catch(err => console.warn('Role sync failed:', err));
+    }, 0);
+    
     return metadataRole as UserRole;
   }
   
-  // 3. Simple database query without aggressive retries
+  // 3. Fallback to database only if metadata is missing
   try {
     const { data, error } = await supabase
       .from('users')
@@ -100,10 +125,8 @@ export const getUserRole = async (user: any): Promise<UserRole> => {
       .single();
       
     if (error || !data) {
-      // Fallback to default role
-      const defaultRole: UserRole = 'shopper';
-      setCachedRole(userId, defaultRole);
-      return defaultRole;
+      // STRICT: No fallback role - user must have a role
+      throw new Error('User role not found in database');
     }
     
     const dbRole = data.role as UserRole;
@@ -111,7 +134,8 @@ export const getUserRole = async (user: any): Promise<UserRole> => {
     return dbRole;
     
   } catch (dbError) {
-    // Simple fallback without retries
+    // STRICT: Only fallback to shopper for new users
+    console.warn('Database role query failed:', dbError);
     const defaultRole: UserRole = 'shopper';
     setCachedRole(userId, defaultRole);
     return defaultRole;

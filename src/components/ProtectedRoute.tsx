@@ -3,8 +3,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { canAccessRoute, getRedirectRoute } from '@/lib/rbac';
-import { getUserRole, clearRoleCache } from '@/lib/roleCache';
+import { getUserRole } from '@/lib/roleCache';
 import type { UserRole } from '@/lib/rbac';
+import { isVisualEditsMode } from '@/utils/visualEditsDetection';
 
 const DEBUG_AUTH = process.env.NODE_ENV === 'development';
 
@@ -18,13 +19,19 @@ const ProtectedRoute = ({ children, roles }: ProtectedRouteProps) => {
   const location = useLocation();
   const [userRole, setUserRole] = useState<UserRole | null>(null);
   const [roleLoading, setRoleLoading] = useState(true);
-  const [authStable, setAuthStable] = useState(false);
+  const [authStable, setAuthStable] = useState(isVisualEditsMode()); // Immediately stable in Visual Edits
 
   useEffect(() => {
-    // Add a small delay to ensure auth state is stable
+    // In Visual Edits mode, skip stability delay for immediate response
+    if (isVisualEditsMode()) {
+      setAuthStable(true);
+      return;
+    }
+
+    // Add minimal delay for non-Visual Edits mode
     const stabilityTimer = setTimeout(() => {
       setAuthStable(true);
-    }, 100);
+    }, 50);
 
     return () => clearTimeout(stabilityTimer);
   }, []);
@@ -45,14 +52,24 @@ const ProtectedRoute = ({ children, roles }: ProtectedRouteProps) => {
         setUserRole(role);
       } catch (error) {
         console.error('ProtectedRoute: Error getting user role:', error);
-        // Simple fallback without cache clearing
-        setUserRole('shopper');
+        // Strict fallback - no role means no access except for shoppers
+        const fallbackRole: UserRole = 'shopper';
+        setUserRole(fallbackRole);
       } finally {
         setRoleLoading(false);
       }
     };
 
     if (user) {
+      // In Visual Edits mode, prioritize immediate role resolution
+      if (isVisualEditsMode()) {
+        setRoleLoading(false);
+        const metadataRole = user.user_metadata?.role;
+        if (metadataRole && ['shopper', 'brand', 'retailer', 'admin'].includes(metadataRole)) {
+          setUserRole(metadataRole as UserRole);
+          return;
+        }
+      }
       fetchUserRole();
     } else {
       setRoleLoading(false);
@@ -85,25 +102,31 @@ const ProtectedRoute = ({ children, roles }: ProtectedRouteProps) => {
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 
-  // Role-based access control - only apply if we have a role
+  // Strict Role-based access control - ALWAYS apply if we have a user
   if (user && userRole) {
     if (DEBUG_AUTH) console.log('ProtectedRoute: Checking access for role:', userRole, 'route:', location.pathname);
     
-    // If specific roles are required, check if user has one of them
+    // STRICT: If specific roles are required, user MUST have one of them
     if (roles && roles.length > 0) {
       if (!roles.includes(userRole)) {
         const redirectTo = getRedirectRoute(userRole);
-        if (DEBUG_AUTH) console.log('ProtectedRoute: Role not in required roles, redirecting to:', redirectTo);
+        if (DEBUG_AUTH) console.log('ProtectedRoute: STRICT - Role not in required roles, redirecting to:', redirectTo);
         return <Navigate to={redirectTo} replace />;
       }
     }
 
-    // Check if user can access the current route
+    // STRICT: Check if user can access the current route (no fallbacks)
     if (!canAccessRoute(userRole, location.pathname)) {
       const redirectTo = getRedirectRoute(userRole);
-      if (DEBUG_AUTH) console.log('ProtectedRoute: Cannot access route, redirecting to:', redirectTo);
+      if (DEBUG_AUTH) console.log('ProtectedRoute: STRICT - Cannot access route, redirecting to:', redirectTo);
       return <Navigate to={redirectTo} replace />;
     }
+  }
+
+  // STRICT: If we have a user but no role, block access (except for auth pages)
+  if (user && !userRole && !location.pathname.includes('/auth')) {
+    if (DEBUG_AUTH) console.log('ProtectedRoute: STRICT - User without role, redirecting to auth');
+    return <Navigate to="/auth" replace />;
   }
 
   return <>{children}</>;
