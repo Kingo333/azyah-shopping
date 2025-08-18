@@ -251,7 +251,7 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
                       <img
                         src={product.image_url || '/placeholder.svg'}
                         alt={product.title}
-                        className="w-full aspect-square object-cover rounded-t-xl"
+                        className="w-full aspect-square object-cover rounded-xl"
                       />
                       {/* Top corner action buttons - always visible */}
                       <div className="absolute top-3 left-3 right-3 flex justify-between">
