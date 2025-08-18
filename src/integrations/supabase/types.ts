@@ -1072,6 +1072,7 @@ export type Database = {
           external_url: string | null
           id: string
           image_url: string | null
+          is_external: boolean | null
           media_urls: Json | null
           merchant_name: string | null
           min_stock_alert: number | null
@@ -1081,6 +1082,9 @@ export type Database = {
           seo_description: string | null
           seo_title: string | null
           sku: string
+          source: string | null
+          source_imported_at: string | null
+          source_vendor: string | null
           status: Database["public"]["Enums"]["product_status"] | null
           stock_qty: number | null
           subcategory_slug:
@@ -1104,6 +1108,7 @@ export type Database = {
           external_url?: string | null
           id?: string
           image_url?: string | null
+          is_external?: boolean | null
           media_urls?: Json | null
           merchant_name?: string | null
           min_stock_alert?: number | null
@@ -1113,6 +1118,9 @@ export type Database = {
           seo_description?: string | null
           seo_title?: string | null
           sku: string
+          source?: string | null
+          source_imported_at?: string | null
+          source_vendor?: string | null
           status?: Database["public"]["Enums"]["product_status"] | null
           stock_qty?: number | null
           subcategory_slug?:
@@ -1136,6 +1144,7 @@ export type Database = {
           external_url?: string | null
           id?: string
           image_url?: string | null
+          is_external?: boolean | null
           media_urls?: Json | null
           merchant_name?: string | null
           min_stock_alert?: number | null
@@ -1145,6 +1154,9 @@ export type Database = {
           seo_description?: string | null
           seo_title?: string | null
           sku?: string
+          source?: string | null
+          source_imported_at?: string | null
+          source_vendor?: string | null
           status?: Database["public"]["Enums"]["product_status"] | null
           stock_qty?: number | null
           subcategory_slug?:
