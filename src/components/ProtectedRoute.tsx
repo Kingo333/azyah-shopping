@@ -59,9 +59,9 @@ const ProtectedRoute = ({ children, roles }: ProtectedRouteProps) => {
     }
   }, [user]);
 
-  // Show loading state while auth is initializing or auth state is not stable
-  if (loading || !authStable) {
-    if (DEBUG_AUTH) console.log('ProtectedRoute: Showing loading - loading:', loading, 'authStable:', authStable);
+  // Extended loading state for preview environment stability
+  if (loading || !authStable || (user && roleLoading)) {
+    if (DEBUG_AUTH) console.log('ProtectedRoute: Showing loading - loading:', loading, 'authStable:', authStable, 'roleLoading:', roleLoading);
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -69,18 +69,28 @@ const ProtectedRoute = ({ children, roles }: ProtectedRouteProps) => {
     );
   }
 
-  // Don't redirect immediately if still fetching role
-  if (user && roleLoading) {
-    if (DEBUG_AUTH) console.log('ProtectedRoute: User exists but role loading, showing spinner');
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  // Only redirect to auth if we're certain there's no user AND auth is stable
-  if (!user && !loading && authStable) {
+  // Enhanced session validation for preview environment
+  const isPreviewEnvironment = window.location.hostname.includes('lovable');
+  
+  // Only redirect to auth if we're absolutely certain there's no valid session
+  if (!user && !loading && authStable && !roleLoading) {
+    // Extra validation for preview environment
+    if (isPreviewEnvironment) {
+      // Give more time for session recovery in preview mode
+      if (DEBUG_AUTH) console.log('ProtectedRoute: Preview environment detected, checking session validity');
+      
+      // Check if session exists in storage before redirecting
+      const storedSession = localStorage.getItem('azyah-auth-token');
+      if (storedSession) {
+        if (DEBUG_AUTH) console.log('ProtectedRoute: Found stored session, waiting for recovery');
+        return (
+          <div className="min-h-screen flex items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        );
+      }
+    }
+    
     if (DEBUG_AUTH) console.log('ProtectedRoute: No user detected, redirecting to auth');
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }

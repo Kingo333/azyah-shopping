@@ -25,16 +25,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Session recovery for preview environments
+    const recoverSession = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (session && !error) {
+          console.log('AuthContext: Session recovered successfully');
+          setSession(session);
+          setUser(session.user);
+          setLoading(false);
+          return true;
+        }
+      } catch (error) {
+        console.warn('AuthContext: Session recovery failed:', error);
+      }
+      return false;
+    };
+
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        console.log('AuthContext: Auth state changed:', { event, user: session?.user?.email });
+      async (event, session) => {
+        console.log('AuthContext: Auth state changed:', { 
+          event, 
+          user: session?.user?.email,
+          hasSession: !!session,
+          timestamp: new Date().toISOString()
+        });
         
-        // Clear role cache on sign out
-        if (event === 'SIGNED_OUT') {
-          import('@/lib/roleCache').then(({ clearRoleCache }) => {
-            clearRoleCache();
-          });
+        // Handle session lost during preview refresh
+        if (event === 'SIGNED_OUT' && !session) {
+          // Check if this is an unexpected sign out (preview refresh)
+          const recovered = await recoverSession();
+          if (!recovered) {
+            // Clear role cache only on actual sign out
+            import('@/lib/roleCache').then(({ clearRoleCache }) => {
+              clearRoleCache();
+            });
+          }
         }
         
         setSession(session);
@@ -43,12 +70,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     );
 
-    // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+    // Initial session check with retry for preview environment
+    const initializeSession = async () => {
+      let attempts = 0;
+      const maxAttempts = 3;
+      
+      while (attempts < maxAttempts) {
+        try {
+          const { data: { session }, error } = await supabase.auth.getSession();
+          
+          if (!error) {
+            console.log('AuthContext: Initial session check:', { 
+              hasSession: !!session, 
+              attempt: attempts + 1 
+            });
+            setSession(session);
+            setUser(session?.user ?? null);
+            setLoading(false);
+            return;
+          }
+        } catch (error) {
+          console.warn(`AuthContext: Session check attempt ${attempts + 1} failed:`, error);
+        }
+        
+        attempts++;
+        if (attempts < maxAttempts) {
+          await new Promise(resolve => setTimeout(resolve, 100 * attempts));
+        }
+      }
+      
+      // Final fallback
       setLoading(false);
-    });
+    };
+
+    initializeSession();
 
     return () => subscription.unsubscribe();
   }, []);
