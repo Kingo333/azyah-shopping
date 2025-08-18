@@ -365,7 +365,7 @@ export default function Landing() {
                   {/* AR Ready Badge */}
                   {i % 3 === 0 && <div className="absolute top-4 left-4 bg-primary/90 backdrop-blur-sm rounded-lg px-3 py-1">
                       <div className="flex items-center space-x-1">
-                        <Crown className="w-3 h-3 text-white" />
+                        
                         <span className="text-xs font-medium text-white">AR Ready</span>
                       </div>
                     </div>}
