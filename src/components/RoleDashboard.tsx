@@ -92,12 +92,14 @@ const RoleDashboard: React.FC = () => {
         console.log('Found user profile:', data);
         setUserProfile(data);
       } else {
-        // User profile doesn't exist, create one
-        console.log('Creating new user profile for:', user.email);
+        // User profile doesn't exist, check if role is in user_metadata
+        const roleFromMetadata = user.user_metadata?.role || 'shopper';
+        console.log('Creating new user profile with role from metadata:', roleFromMetadata);
+        
         const defaultProfile = {
           id: user.id,
-          name: user.email?.split('@')[0] || 'User',
-          role: 'shopper' as const,
+          name: user.user_metadata?.name || user.email?.split('@')[0] || 'User',
+          role: roleFromMetadata as 'shopper' | 'brand' | 'retailer' | 'admin',
           email: user.email!
         };
 
@@ -107,17 +109,19 @@ const RoleDashboard: React.FC = () => {
 
         if (insertError) {
           console.error('Error creating user profile:', insertError);
+          // Even if insert fails, use the profile from metadata
         }
         
         setUserProfile(defaultProfile);
       }
     } catch (error) {
       console.error('Error with user profile:', error);
-      // Fallback profile
+      // Fallback to user_metadata role if available
+      const roleFromMetadata = user.user_metadata?.role || 'shopper';
       const fallbackProfile = {
         id: user.id,
-        name: user.email?.split('@')[0] || 'User',
-        role: 'shopper' as const,
+        name: user.user_metadata?.name || user.email?.split('@')[0] || 'User',
+        role: roleFromMetadata as 'shopper' | 'brand' | 'retailer' | 'admin',
         email: user.email!
       };
       setUserProfile(fallbackProfile);
@@ -549,10 +553,46 @@ const RoleDashboard: React.FC = () => {
             <DashboardHeader />
           </div>
 
-          {/* Role-based Dashboard Content */}
+          {/* Role-based Dashboard Content - Only render ONE dashboard */}
           {userProfile?.role === 'shopper' && renderShopperDashboard()}
           {userProfile?.role === 'brand' && renderBrandDashboard()}
           {userProfile?.role === 'retailer' && renderRetailerDashboard()}
+          {userProfile?.role === 'admin' && (
+            <div className="space-y-4">
+              <GlassPanel variant="premium" className="p-8">
+                <div className="text-center space-y-4">
+                  <h2 className="text-2xl font-cormorant font-semibold">Admin Dashboard</h2>
+                  <p className="text-muted-foreground">
+                    As an admin, you have access to all portals. Choose which portal to access:
+                  </p>
+                  <div className="flex flex-wrap gap-4 justify-center">
+                    <Button onClick={() => navigate('/brand-portal')} variant="premium">
+                      <Package className="h-4 w-4 mr-2" />
+                      Brand Portal
+                    </Button>
+                    <Button onClick={() => navigate('/retailer-portal')} variant="outline">
+                      <Store className="h-4 w-4 mr-2" />
+                      Retailer Portal
+                    </Button>
+                  </div>
+                </div>
+              </GlassPanel>
+            </div>
+          )}
+          
+          {/* Show error if no valid role */}
+          {userProfile && !['shopper', 'brand', 'retailer', 'admin'].includes(userProfile.role) && (
+            <div className="space-y-4">
+              <GlassPanel variant="premium" className="p-8">
+                <div className="text-center space-y-4">
+                  <h2 className="text-xl font-semibold text-destructive">Invalid Role</h2>
+                  <p className="text-muted-foreground">
+                    Your account role "{userProfile.role}" is not recognized. Please contact support.
+                  </p>
+                </div>
+              </GlassPanel>
+            </div>
+          )}
         </div>
         
         {/* Global Search Modal */}
