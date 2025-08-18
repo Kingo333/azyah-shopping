@@ -109,6 +109,11 @@ serve(async (req) => {
     
     console.log(`🔍 Fetched ${fetchedProducts.length} products in ${searchTimeMs}ms`);
     
+    // Extract UI-compatible metrics from client
+    const searchRequests = Number(metrics?.searchRequests ?? 0);
+    const detailRequests = Number(metrics?.detailRequests ?? fetchedProducts.length ?? 0);
+    const productsFound = Number(metrics?.productsFound ?? fetchedProducts.length ?? 0);
+    
     const result: ImportResult = {
       imported: 0,
       rejected: 0,
@@ -257,8 +262,8 @@ serve(async (req) => {
             attributes: transformedProduct.attributes,
             brand_id: brandId,
             retailer_id: retailer.id,
-            source: 'asos',
-            source_vendor: 'axesso',
+             source: 'ASOS_AXESSO_BULK',
+             source_vendor: 'ASOS',
             is_external: true,
             status: 'active'
           });
@@ -276,13 +281,14 @@ serve(async (req) => {
           continue;
         }
         
-        result.imported++;
-        result.results.push({
-          sku: transformedProduct.sku,
-          title: transformedProduct.title,
-          status: 'imported',
-          qualityScore
-        });
+         result.imported++;
+         result.results.push({
+           sku: transformedProduct.sku,
+           title: transformedProduct.title,
+           status: 'imported',
+           qualityScore,
+           url: transformedProduct.external_url
+         });
         
       } catch (error) {
         console.error(`❌ Error processing product:`, error);
@@ -300,9 +306,34 @@ serve(async (req) => {
     result.metrics.transformTimeMs = transformTimeMs;
     result.metrics.processingTimeMs = Date.now() - startTime;
     
+    // Calculate UI-compatible metrics
+    const duration = result.metrics.processingTimeMs;
+    const totalProcessed = result.imported + result.rejected + result.duplicates + result.errors;
+    const successRate = totalProcessed > 0 ? (result.imported / totalProcessed) * 100 : 0;
+    
+    // Build UI-compatible response
+    const responsePayload = {
+      imported: result.imported,
+      rejected: result.rejected,
+      duplicates: result.duplicates,
+      errors: result.errors,
+      metrics: {
+        searchRequests,
+        detailRequests,
+        productsFound,
+        duration,
+        successRate
+      },
+      results: result.results.map(r => ({
+        ...r,
+        url: r.url || r.sku || 'unknown',
+        score: r.qualityScore
+      }))
+    };
+    
     console.log(`✅ Import completed: ${result.imported} imported, ${result.rejected} rejected, ${result.duplicates} duplicates, ${result.errors} errors`);
     
-    return new Response(JSON.stringify(result), {
+    return new Response(JSON.stringify(responsePayload), {
       status: 200,
       headers: { 
         ...corsHeaders, 

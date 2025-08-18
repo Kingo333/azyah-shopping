@@ -137,6 +137,10 @@ const BulkAsosImportManager: React.FC = () => {
     setImportResult(null);
   };
 
+  // Safe number extraction with fallback
+  const num = (v: unknown, d = 0) =>
+    typeof v === 'number' && isFinite(v) ? v : d;
+
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'imported': return <CheckCircle className="h-4 w-4 text-green-600" />;
@@ -283,19 +287,19 @@ const BulkAsosImportManager: React.FC = () => {
 
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
               <div>
-                <span className="font-medium">Search Requests:</span> {importResult.metrics.searchRequests}
+                <span className="font-medium">Search Requests:</span> {num(importResult.metrics?.searchRequests)}
               </div>
               <div>
-                <span className="font-medium">Detail Requests:</span> {importResult.metrics.detailRequests}
+                <span className="font-medium">Detail Requests:</span> {num(importResult.metrics?.detailRequests)}
               </div>
               <div>
-                <span className="font-medium">Products Found:</span> {importResult.metrics.productsFound}
+                <span className="font-medium">Products Found:</span> {num(importResult.metrics?.productsFound)}
               </div>
               <div>
-                <span className="font-medium">Duration:</span> {Math.round(importResult.metrics.duration / 1000)}s
+                <span className="font-medium">Duration:</span> {Math.round(num(importResult.metrics?.duration) / 1000)}s
               </div>
               <div>
-                <span className="font-medium">Success Rate:</span> {importResult.metrics.successRate.toFixed(1)}%
+                <span className="font-medium">Success Rate:</span> {num(importResult.metrics?.successRate).toFixed(1)}%
               </div>
             </div>
 
@@ -309,12 +313,14 @@ const BulkAsosImportManager: React.FC = () => {
                       <div key={index} className="flex items-center justify-between p-2 border rounded">
                         <div className="flex items-center gap-2 flex-1 min-w-0">
                           {getStatusIcon(result.status)}
-                          <span className="text-sm truncate">{result.url}</span>
+                          <span className="text-sm truncate">
+                            {result.url || (result as any).sku || (result as any).title || 'Unknown'}
+                          </span>
                         </div>
                         <div className="flex items-center gap-2">
-                          {result.score && (
+                          {(result.score != null || (result as any).qualityScore != null) && (
                             <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                              Score: {result.score}
+                              Score: {num(result.score ?? (result as any).qualityScore).toFixed(2)}
                             </span>
                           )}
                           {getStatusBadge(result.status)}
