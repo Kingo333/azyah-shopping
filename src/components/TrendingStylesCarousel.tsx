@@ -296,7 +296,6 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
                             handleShopNow(product.id);
                           }}
                         >
-                          <ExternalLink className="h-3 w-3 mr-1" />
                           Shop
                         </Button>
                       </div>
