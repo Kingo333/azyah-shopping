@@ -43,7 +43,8 @@ const ProtectedRoute = ({ children, roles }: ProtectedRouteProps) => {
     }
   }, [user]);
 
-  if (loading || roleLoading) {
+  // Show loading state while auth is initializing
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -51,20 +52,26 @@ const ProtectedRoute = ({ children, roles }: ProtectedRouteProps) => {
     );
   }
 
-  if (!user) {
+  // Don't redirect immediately if still fetching role
+  if (user && roleLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // Only redirect to auth if we're certain there's no user
+  if (!user && !loading) {
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 
-  // Role-based access control
-  if (userRole) {
-    console.log('ProtectedRoute: Current route:', location.pathname, 'User role:', userRole);
-    
+  // Role-based access control - only apply if we have a role
+  if (user && userRole) {
     // If specific roles are required, check if user has one of them
     if (roles && roles.length > 0) {
-      console.log('ProtectedRoute: Required roles:', roles, 'User has role:', userRole);
       if (!roles.includes(userRole)) {
         const redirectTo = getRedirectRoute(userRole);
-        console.log('ProtectedRoute: User role not allowed, redirecting to:', redirectTo);
         return <Navigate to={redirectTo} replace />;
       }
     }
@@ -72,7 +79,6 @@ const ProtectedRoute = ({ children, roles }: ProtectedRouteProps) => {
     // Check if user can access the current route
     if (!canAccessRoute(userRole, location.pathname)) {
       const redirectTo = getRedirectRoute(userRole);
-      console.log('ProtectedRoute: Route not accessible, redirecting to:', redirectTo);
       return <Navigate to={redirectTo} replace />;
     }
   }
