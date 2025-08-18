@@ -402,6 +402,148 @@ export type Database = {
         }
         Relationships: []
       }
+      collab_applications: {
+        Row: {
+          collab_id: string
+          created_at: string | null
+          id: string
+          note: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          shopper_id: string
+          social_links: Json | null
+          status: Database["public"]["Enums"]["application_status"] | null
+        }
+        Insert: {
+          collab_id: string
+          created_at?: string | null
+          id?: string
+          note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          shopper_id: string
+          social_links?: Json | null
+          status?: Database["public"]["Enums"]["application_status"] | null
+        }
+        Update: {
+          collab_id?: string
+          created_at?: string | null
+          id?: string
+          note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          shopper_id?: string
+          social_links?: Json | null
+          status?: Database["public"]["Enums"]["application_status"] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "collab_applications_collab_id_fkey"
+            columns: ["collab_id"]
+            isOneToOne: false
+            referencedRelation: "collaborations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      collab_status_history: {
+        Row: {
+          changed_at: string | null
+          changed_by: string
+          collab_id: string
+          id: string
+          new_status: Database["public"]["Enums"]["collab_status"]
+          old_status: Database["public"]["Enums"]["collab_status"] | null
+        }
+        Insert: {
+          changed_at?: string | null
+          changed_by: string
+          collab_id: string
+          id?: string
+          new_status: Database["public"]["Enums"]["collab_status"]
+          old_status?: Database["public"]["Enums"]["collab_status"] | null
+        }
+        Update: {
+          changed_at?: string | null
+          changed_by?: string
+          collab_id?: string
+          id?: string
+          new_status?: Database["public"]["Enums"]["collab_status"]
+          old_status?: Database["public"]["Enums"]["collab_status"] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "collab_status_history_collab_id_fkey"
+            columns: ["collab_id"]
+            isOneToOne: false
+            referencedRelation: "collaborations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      collaborations: {
+        Row: {
+          amount: number | null
+          application_deadline: string | null
+          brief: string | null
+          comp_type: Database["public"]["Enums"]["collab_comp_type"]
+          created_at: string | null
+          created_by: string
+          currency: string | null
+          deliverables: Json | null
+          id: string
+          max_creators: number | null
+          owner_org_id: string
+          platforms: string[] | null
+          status: Database["public"]["Enums"]["collab_status"] | null
+          talking_points: string[] | null
+          title: string
+          tone: string | null
+          updated_at: string | null
+          visibility: string | null
+        }
+        Insert: {
+          amount?: number | null
+          application_deadline?: string | null
+          brief?: string | null
+          comp_type: Database["public"]["Enums"]["collab_comp_type"]
+          created_at?: string | null
+          created_by: string
+          currency?: string | null
+          deliverables?: Json | null
+          id?: string
+          max_creators?: number | null
+          owner_org_id: string
+          platforms?: string[] | null
+          status?: Database["public"]["Enums"]["collab_status"] | null
+          talking_points?: string[] | null
+          title: string
+          tone?: string | null
+          updated_at?: string | null
+          visibility?: string | null
+        }
+        Update: {
+          amount?: number | null
+          application_deadline?: string | null
+          brief?: string | null
+          comp_type?: Database["public"]["Enums"]["collab_comp_type"]
+          created_at?: string | null
+          created_by?: string
+          currency?: string | null
+          deliverables?: Json | null
+          id?: string
+          max_creators?: number | null
+          owner_org_id?: string
+          platforms?: string[] | null
+          status?: Database["public"]["Enums"]["collab_status"] | null
+          talking_points?: string[] | null
+          title?: string
+          tone?: string | null
+          updated_at?: string | null
+          visibility?: string | null
+        }
+        Relationships: []
+      }
       crawl_sessions: {
         Row: {
           backoff_until: string | null
@@ -1365,6 +1507,7 @@ export type Database = {
           name: string | null
           preferences: Json | null
           role: Database["public"]["Enums"]["user_role"]
+          social_links: Json | null
           socials: Json | null
           updated_at: string
           website: string | null
@@ -1379,6 +1522,7 @@ export type Database = {
           name?: string | null
           preferences?: Json | null
           role?: Database["public"]["Enums"]["user_role"]
+          social_links?: Json | null
           socials?: Json | null
           updated_at?: string
           website?: string | null
@@ -1393,6 +1537,7 @@ export type Database = {
           name?: string | null
           preferences?: Json | null
           role?: Database["public"]["Enums"]["user_role"]
+          social_links?: Json | null
           socials?: Json | null
           updated_at?: string
           website?: string | null
@@ -1535,6 +1680,7 @@ export type Database = {
           name: string | null
           preferences: Json | null
           role: Database["public"]["Enums"]["user_role"]
+          social_links: Json | null
           socials: Json | null
           updated_at: string
           website: string | null
@@ -1612,6 +1758,7 @@ export type Database = {
       }
     }
     Enums: {
+      application_status: "PENDING" | "ACCEPTED" | "REJECTED" | "WITHDRAWN"
       category_type:
         | "clothing"
         | "footwear"
@@ -1623,6 +1770,8 @@ export type Database = {
         | "fragrance"
         | "home"
         | "giftcards"
+      collab_comp_type: "PRODUCT_EXCHANGE" | "PRODUCT_AND_PAID"
+      collab_status: "DRAFT" | "ACTIVE" | "PAUSED" | "CLOSED"
       order_status:
         | "pending"
         | "confirmed"
@@ -1839,6 +1988,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      application_status: ["PENDING", "ACCEPTED", "REJECTED", "WITHDRAWN"],
       category_type: [
         "clothing",
         "footwear",
@@ -1851,6 +2001,8 @@ export const Constants = {
         "home",
         "giftcards",
       ],
+      collab_comp_type: ["PRODUCT_EXCHANGE", "PRODUCT_AND_PAID"],
+      collab_status: ["DRAFT", "ACTIVE", "PAUSED", "CLOSED"],
       order_status: [
         "pending",
         "confirmed",
