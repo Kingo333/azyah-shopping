@@ -102,11 +102,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = async () => {
     const { error } = await supabase.auth.signOut();
     if (error) {
-      toast({
-        title: "Logout Failed",
-        description: error.message,
-        variant: "destructive"
-      });
+      // Handle session not found errors gracefully
+      if (error.message.includes('session_not_found') || error.message.includes('Session not found')) {
+        // Session was already invalid, just redirect
+        window.location.href = '/';
+      } else {
+        toast({
+          title: "Logout Failed",
+          description: error.message,
+          variant: "destructive"
+        });
+      }
     } else {
       // Redirect to landing page after sign out
       window.location.href = '/';
