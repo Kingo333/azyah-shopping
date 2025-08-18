@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
@@ -50,17 +50,35 @@ export function RoleDashboard() {
   const { toast } = useToast();
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(null);
-  const [loading, setLoading] = useState(false); // Start with false for immediate render
+  const [loading, setLoading] = useState(false); // Always start with false for immediate render
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [leaderboardType, setLeaderboardType] = useState<'global' | 'country'>('global');
   const [showAiStudioModal, setShowAiStudioModal] = useState(false);
+  const timeoutsRef = useRef<Set<NodeJS.Timeout>>(new Set());
 
   useEffect(() => {
     if (user) {
-      // Fetch data in background without blocking UI
+      // Non-blocking background data fetch
       fetchUserProfile();
       fetchDashboardStats();
     }
+
+    // Emergency loading clear listener
+    const handleForceLoadingClear = () => {
+      setLoading(false);
+      // Clear all component timeouts
+      timeoutsRef.current.forEach(timeout => clearTimeout(timeout));
+      timeoutsRef.current.clear();
+    };
+    
+    window.addEventListener('azyah-force-loading-clear', handleForceLoadingClear);
+
+    return () => {
+      window.removeEventListener('azyah-force-loading-clear', handleForceLoadingClear);
+      // Cleanup all timeouts on unmount
+      timeoutsRef.current.forEach(timeout => clearTimeout(timeout));
+      timeoutsRef.current.clear();
+    };
   }, [user]);
 
   const fetchUserProfile = async () => {

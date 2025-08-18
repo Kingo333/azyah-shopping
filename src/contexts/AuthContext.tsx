@@ -26,7 +26,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Simplified auth state listener for Visual Edits compatibility
+    let cleanup: (() => void) | null = null;
+    
+    // Auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         console.log('AuthContext: Auth state changed:', { event, hasSession: !!session });
@@ -37,12 +39,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     );
 
-    // Simple session check with fast timeout
+    // Emergency loading clear listener
+    const handleForceLoadingClear = () => {
+      setLoading(false);
+    };
+    
+    window.addEventListener('azyah-force-loading-clear', handleForceLoadingClear);
+
+    // Fast session initialization
     const initializeSession = async () => {
       try {
+        // Much shorter timeout for Visual Edits compatibility
         const { data: { session } } = await Promise.race([
           supabase.auth.getSession(),
-          new Promise(resolve => setTimeout(() => resolve({ data: { session: null } }), 200))
+          new Promise(resolve => setTimeout(() => resolve({ data: { session: null } }), 100))
         ]) as any;
         
         setSession(session);
@@ -56,7 +66,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     initializeSession();
 
-    return () => subscription.unsubscribe();
+    cleanup = () => {
+      subscription.unsubscribe();
+      window.removeEventListener('azyah-force-loading-clear', handleForceLoadingClear);
+    };
+
+    return cleanup;
   }, []);
 
   const signUp = async (email: string, password: string, userData?: any) => {

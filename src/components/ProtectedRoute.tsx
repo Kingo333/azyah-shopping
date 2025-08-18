@@ -17,27 +17,41 @@ export function ProtectedRoute({ children, roles }: ProtectedRouteProps) {
   const [roleLoading, setRoleLoading] = useState(true);
 
   useEffect(() => {
+    let timeoutId: NodeJS.Timeout | null = null;
+    
     if (user) {
-      // Fast role fetch with quick timeout for Visual Edits
-      const timeoutId = setTimeout(() => {
+      // Ultra-fast role resolution for Visual Edits compatibility
+      timeoutId = setTimeout(() => {
         setUserRole('shopper'); // Default fallback
         setRoleLoading(false);
-      }, 500);
+      }, 50); // Reduced from 500ms to 50ms
 
       getUserRole(user).then(role => {
+        if (timeoutId) clearTimeout(timeoutId);
         setUserRole(role);
         setRoleLoading(false);
-        clearTimeout(timeoutId);
       }).catch(() => {
+        if (timeoutId) clearTimeout(timeoutId);
         setUserRole('shopper'); // Default fallback
         setRoleLoading(false);
-        clearTimeout(timeoutId);
       });
-
-      return () => clearTimeout(timeoutId);
     } else {
       setRoleLoading(false);
     }
+
+    // Emergency loading clear listener
+    const handleForceLoadingClear = () => {
+      if (timeoutId) clearTimeout(timeoutId);
+      setRoleLoading(false);
+      setUserRole(userRole || 'shopper');
+    };
+    
+    window.addEventListener('azyah-force-loading-clear', handleForceLoadingClear);
+
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+      window.removeEventListener('azyah-force-loading-clear', handleForceLoadingClear);
+    };
   }, [user]);
 
   // Immediate render for Visual Edits - minimal loading check
