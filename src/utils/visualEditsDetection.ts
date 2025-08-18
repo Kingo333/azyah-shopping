@@ -22,13 +22,21 @@ export const isVisualEditsMode = (): boolean => {
   // Enhanced iframe detection for Lovable Visual Edits
   const isInLovableIframe = window !== window.top && 
                            (window.location.href.includes('preview--') ||
-                            window.location.href.includes('lovable.app') ||
-                            window.parent !== window);
+                            window.location.href.includes('lovable.app'));
   
-  // Check for parent communication (Lovable editor context)
-  const hasParentEditor = window !== window.top && 
-                         window.parent && 
-                         window.location.origin !== window.parent.location.origin;
+  // Check for parent communication (Lovable editor context) - safely handle cross-origin
+  let hasParentEditor = false;
+  try {
+    // Only attempt parent access if we're in an iframe
+    if (window !== window.top && window.parent) {
+      // Try to access parent location - this will throw if cross-origin
+      const parentOrigin = window.parent.location.origin;
+      hasParentEditor = window.location.origin !== parentOrigin;
+    }
+  } catch (error) {
+    // Cross-origin access blocked - this actually indicates we're in Visual Edits iframe
+    hasParentEditor = window !== window.top;
+  }
   
   return Boolean(hasVisualEditsElements || hasVisualEditsParam || isInLovableIframe || hasParentEditor);
 };
