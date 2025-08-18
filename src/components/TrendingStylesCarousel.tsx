@@ -279,7 +279,7 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
                         </Button>
                       </div>
                       {/* Mobile-friendly bottom overlay with Shop button */}
-                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 to-transparent p-2 rounded-b-xl">
+                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-1.5 rounded-b-xl">
                         <Button
                           size="sm"
                           variant="outline"
