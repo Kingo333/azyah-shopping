@@ -316,18 +316,17 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
                         </div>
                       </div>
                       
-                      {/* Shop Button */}
-                      <div className="p-3">
+                      {/* Shop Now Button */}
+                      <div className="p-2">
                         <Button
                           size="sm"
-                          variant="premium"
-                          className="w-full h-9 text-sm font-semibold shadow-md hover:shadow-lg transition-all duration-200"
+                          className="w-full h-8 text-xs font-medium bg-primary hover:bg-primary/90 text-primary-foreground"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleShopNow(product.id);
                           }}
                         >
-                          Shop Now
+                          Shop
                         </Button>
                       </div>
                     </div>
