@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -71,12 +72,12 @@ export default function Landing() {
       {/* NAV - More Minimal for Mobile */}
       <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-md border-b border-primary/10">
         <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 h-16 sm:h-20 flex items-center justify-between">
-          {/* Logo - Smaller on Mobile */}
+          {/* Logo - Show Azyah text on all screen sizes */}
           <div className="flex items-center space-x-2 sm:space-x-4">
             <div className="relative w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 rounded-lg overflow-hidden shadow-lg">
               <img src="/marketing/azyah-logo.png" alt="Azyah" className="w-full h-full object-cover" />
             </div>
-            <div className="hidden sm:block">
+            <div>
               <h1 className="font-cormorant text-lg sm:text-xl lg:text-2xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">Azyah</h1>
               <p className="text-xs text-primary/70 uppercase tracking-wider hidden lg:block">
                 Fashion Discovery
@@ -679,3 +680,4 @@ export default function Landing() {
       </footer>
     </div>;
 }
+```
