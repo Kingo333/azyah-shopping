@@ -110,13 +110,28 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
           product_id: productId
         });
 
-      if (error) throw error;
+      if (error && error.code !== '23505') throw error; // Ignore duplicate key error
     },
     onSuccess: () => {
       toast({
         title: "Added to likes",
         description: "Item has been added to your likes."
       });
+    },
+    onError: (error: any) => {
+      if (error?.code === '23505') {
+        toast({
+          title: "Already liked",
+          description: "This item is already in your likes.",
+          variant: "default"
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to add to likes.",
+          variant: "destructive"
+        });
+      }
     }
   });
 
@@ -154,13 +169,28 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
           product_id: productId
         });
 
-      if (error) throw error;
+      if (error && error.code !== '23505') throw error; // Ignore duplicate key error
     },
     onSuccess: () => {
       toast({
         title: "Added to wishlist",
         description: "Item has been added to your wishlist."
       });
+    },
+    onError: (error: any) => {
+      if (error?.code === '23505') {
+        toast({
+          title: "Already in wishlist",
+          description: "This item is already in your wishlist.",
+          variant: "default"
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to add to wishlist.",
+          variant: "destructive"
+        });
+      }
     }
   });
 
