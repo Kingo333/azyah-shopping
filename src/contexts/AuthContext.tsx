@@ -26,26 +26,73 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Initialize auth state from stable storage if in Visual Edits mode
-    if (isVisualEditsMode()) {
-      const stableState = getStableAuthState();
-      if (stableState && Date.now() - stableState.timestamp < 10 * 60 * 1000) { // 10 min validity
-        setSession(stableState.session);
-        setUser(stableState.user);
-        setLoading(false);
-        return;
+    console.log('AuthProvider: Setting up auth listener');
+    
+    // Get initial session with Visual Edits stability
+    const initializeAuth = async () => {
+      // In Visual Edits mode, try stable auth state first
+      if (isVisualEditsMode()) {
+        const stableAuth = getStableAuthState();
+        if (stableAuth && stableAuth.user) {
+          console.log('AuthProvider: Using stable auth state for Visual Edits');
+          setSession(stableAuth.session);
+          setUser(stableAuth.user);
+          setLoading(false);
+          return;
+        }
       }
-    }
+      
+      // Fallback to fresh session check
+      const { data: { session } } = await supabase.auth.getSession();
+      console.log('AuthProvider: Initial session:', session?.user?.email);
+      setSession(session);
+      setUser(session?.user ?? null);
+      setLoading(false);
+      
+      // Store stable auth state if we have a session
+      if (session?.user) {
+        setStableAuthState(session.user, session);
+      }
+    };
+    
+    initializeAuth();
 
-    // Set up auth state listener
+    // Listen for auth changes with Visual Edits protection
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        console.log('AuthContext: Auth state changed:', { event, user: session?.user?.email });
+      async (event, session) => {
+        console.log('AuthProvider: Auth state change:', event, session?.user?.email);
+        
+        // In Visual Edits mode, be more conservative about auth changes
+        if (isVisualEditsMode()) {
+          // If we lose session in Visual Edits, try to recover from stable state
+          if (!session && event !== 'SIGNED_OUT') {
+            const stableAuth = getStableAuthState();
+            if (stableAuth && stableAuth.user) {
+              console.log('AuthProvider: Recovering auth state in Visual Edits mode');
+              setSession(stableAuth.session);
+              setUser(stableAuth.user);
+              return;
+            }
+          }
+          
+          // Only update if we have a clear session change
+          if (session || event === 'SIGNED_OUT') {
+            setSession(session);
+            setUser(session?.user ?? null);
+          }
+        } else {
+          // Normal mode - apply all auth changes
+          setSession(session);
+          setUser(session?.user ?? null);
+        }
+        
+        setLoading(false);
         
         // Store stable auth state for Visual Edits compatibility
         if (session?.user) {
           setStableAuthState(session.user, session);
-        } else {
+        } else if (!isVisualEditsMode()) {
+          // Only clear stable auth if not in Visual Edits mode
           clearStableAuthState();
         }
         
@@ -55,22 +102,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             clearRoleCache();
           });
         }
-        
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
       }
     );
-
-    // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        setStableAuthState(session.user, session);
-      }
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
 
     return () => subscription.unsubscribe();
   }, []);
