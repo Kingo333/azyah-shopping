@@ -396,56 +396,6 @@ const RoleDashboard: React.FC = () => {
 
   const renderBrandDashboard = () => (
     <div className="space-y-4">
-      {/* Quick Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <GlassPanel variant="premium" className="p-6">
-          <div className="flex items-center gap-4">
-            <div className="p-3 rounded-xl bg-gradient-to-br from-blue-500/10 to-blue-600/10">
-              <Package className="h-6 w-6 text-blue-500" />
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground font-medium">Products</p>
-              <p className="text-2xl font-bold text-foreground">{stats.totalProducts || 0}</p>
-            </div>
-          </div>
-        </GlassPanel>
-
-        <GlassPanel variant="premium" className="p-6">
-          <div className="flex items-center gap-4">
-            <div className="p-3 rounded-xl bg-gradient-to-br from-green-500/10 to-green-600/10">
-              <Eye className="h-6 w-6 text-green-500" />
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground font-medium">Views</p>
-              <p className="text-2xl font-bold text-foreground">{stats.totalViews || 0}</p>
-            </div>
-          </div>
-        </GlassPanel>
-
-        <GlassPanel variant="premium" className="p-6">
-          <div className="flex items-center gap-4">
-            <div className="p-3 rounded-xl bg-gradient-to-br from-purple-500/10 to-purple-600/10">
-              <ShoppingBag className="h-6 w-6 text-purple-500" />
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground font-medium">Sales</p>
-              <p className="text-2xl font-bold text-foreground">{stats.totalSales || 0}</p>
-            </div>
-          </div>
-        </GlassPanel>
-
-        <GlassPanel variant="premium" className="p-6">
-          <div className="flex items-center gap-4">
-            <div className="p-3 rounded-xl bg-gradient-to-br from-green-500/10 to-emerald-600/10">
-              <DollarSign className="h-6 w-6 text-green-500" />
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground font-medium">Revenue</p>
-              <p className="text-2xl font-bold text-foreground">{formatPrice(stats.totalRevenue || 0)}</p>
-            </div>
-          </div>
-        </GlassPanel>
-      </div>
 
       {/* Quick Actions */}
       <GlassPanel variant="premium" className="p-8">
