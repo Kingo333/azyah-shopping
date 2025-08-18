@@ -1,6 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.53.0';
-import { AxessoClient } from '../../../src/lib/axesso-client.ts';
-import { transformAxessoToAzyah, calculateQualityScore } from '../../../src/lib/axesso-transformer.ts';
+import { EnhancedAxessoClient } from '../shared/enhanced-axesso-client.ts';
+import { transformAxessoToAzyah, calculateQualityScore } from '../shared/axesso-transformer.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -83,9 +83,14 @@ Deno.serve(async (req) => {
     const retailerId = retailer.id;
 
     // Initialize Axesso client
-    const axessoClient = new AxessoClient({
+    const axessoClient = new EnhancedAxessoClient({
       primaryKey,
       secondaryKey,
+      maxRpm: 50,
+      maxConcurrency: 5,
+      timeout: 8000,
+      searchCacheExpiry: 24 * 60 * 60 * 1000,
+      detailsCacheExpiry: 12 * 60 * 60 * 1000,
     });
 
     // Process URLs in batches of 10
