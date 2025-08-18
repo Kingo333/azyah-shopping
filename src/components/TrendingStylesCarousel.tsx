@@ -245,20 +245,20 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
                 </h4>
 
                 {/* Product Images with Actions */}
-                <div className="flex gap-4 mb-4 flex-1">
+                <div className="grid grid-cols-2 gap-6 mb-6 flex-1">
                   {style.recent_products.slice(0, 2).map((product) => (
-                    <div key={product.id} className="relative group/product flex-1">
+                    <div key={product.id} className="relative group/product">
                       <img
                         src={product.image_url || '/placeholder.svg'}
                         alt={product.title}
-                        className="w-full aspect-square object-cover rounded-lg"
+                        className="w-full aspect-square object-cover rounded-xl"
                       />
                       {/* Top corner action buttons - always visible */}
-                      <div className="absolute top-2 left-2 right-2 flex justify-between">
+                      <div className="absolute top-3 left-3 right-3 flex justify-between">
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="h-8 w-8 p-0 bg-white/90 text-gray-700 hover:text-red-500 hover:bg-white rounded-full shadow-sm"
+                          className="h-9 w-9 p-0 bg-white/95 text-gray-700 hover:text-red-500 hover:bg-white rounded-full shadow-md"
                           onClick={(e) => {
                             e.stopPropagation();
                             addToLikesMutation.mutate(product.id);
@@ -269,7 +269,7 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="h-8 w-8 p-0 bg-white/90 text-gray-700 hover:text-blue-500 hover:bg-white rounded-full shadow-sm"
+                          className="h-9 w-9 p-0 bg-white/95 text-gray-700 hover:text-blue-500 hover:bg-white rounded-full shadow-md"
                           onClick={(e) => {
                             e.stopPropagation();
                             addToWishlistMutation.mutate(product.id);
@@ -279,17 +279,17 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
                         </Button>
                       </div>
                       {/* Mobile-friendly bottom overlay with Shop button */}
-                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2 rounded-b-lg">
+                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 to-transparent p-3 rounded-b-xl">
                         <Button
                           size="sm"
                           variant="outline"
-                          className="w-full text-xs font-medium h-7 bg-red-500 text-white border-red-500 hover:bg-red-600 hover:border-red-600"
+                          className="w-full text-sm font-medium h-8 bg-red-500 text-white border-red-500 hover:bg-red-600 hover:border-red-600"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleShopNow(product.id);
                           }}
                         >
-                          Shop
+                          Shop Now
                         </Button>
                       </div>
                     </div>
