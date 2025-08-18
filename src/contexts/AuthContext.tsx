@@ -25,21 +25,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    console.log('AuthContext: Setting up auth state listener');
-    
-    // Set up auth state listener FIRST
+    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        console.log('AuthContext: Auth state changed:', { event, user: session?.user?.email, role: session?.user?.user_metadata?.role });
+        console.log('AuthContext: Auth state changed:', { event, user: session?.user?.email });
+        
+        // Clear role cache on sign out
+        if (event === 'SIGNED_OUT') {
+          import('@/lib/roleCache').then(({ clearRoleCache }) => {
+            clearRoleCache();
+          });
+        }
+        
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
       }
     );
 
-    // THEN check for existing session
+    // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log('AuthContext: Initial session check:', { user: session?.user?.email, role: session?.user?.user_metadata?.role });
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);

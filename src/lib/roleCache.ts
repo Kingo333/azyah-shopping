@@ -48,73 +48,39 @@ export const getUserRole = async (user: any): Promise<UserRole> => {
   // 1. Check cache first
   const cachedRole = getCachedRole(userId);
   if (cachedRole) {
-    console.log('RoleCache: Using cached role:', cachedRole, 'for user:', user.email);
     return cachedRole;
   }
   
   // 2. Use user_metadata.role as primary source (set during signup)
   const metadataRole = user.user_metadata?.role;
   if (metadataRole && ['shopper', 'brand', 'retailer', 'admin'].includes(metadataRole)) {
-    console.log('RoleCache: Using metadata role:', metadataRole, 'for user:', user.email);
     setCachedRole(userId, metadataRole as UserRole);
     return metadataRole as UserRole;
   }
   
-  // 3. Fallback to database query with retry logic
-  let retries = 2;
-  while (retries > 0) {
-    try {
-      console.log('RoleCache: Fetching role from database for user:', user.email, 'retries left:', retries);
+  // 3. Simple database query without aggressive retries
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', userId)
+      .single();
       
-      const { data, error } = await supabase
-        .from('users')
-        .select('role')
-        .eq('id', userId)
-        .single();
-        
-      if (error) {
-        console.error('RoleCache: Database error:', error);
-        retries--;
-        if (retries === 0) {
-          // Final fallback to default role
-          console.log('RoleCache: Using default fallback role for user:', user.email);
-          const defaultRole: UserRole = 'shopper';
-          setCachedRole(userId, defaultRole);
-          return defaultRole;
-        }
-        // Wait before retry
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        continue;
-      }
-      
-      const dbRole = data.role as UserRole;
-      console.log('RoleCache: Database role fetched:', dbRole, 'for user:', user.email);
-      setCachedRole(userId, dbRole);
-      return dbRole;
-      
-    } catch (dbError) {
-      console.error('RoleCache: Database query failed:', dbError);
-      retries--;
-      if (retries === 0) {
-        // Final fallback
-        const defaultRole: UserRole = 'shopper';
-        setCachedRole(userId, defaultRole);
-        return defaultRole;
-      }
-      await new Promise(resolve => setTimeout(resolve, 1000));
+    if (error || !data) {
+      // Fallback to default role
+      const defaultRole: UserRole = 'shopper';
+      setCachedRole(userId, defaultRole);
+      return defaultRole;
     }
+    
+    const dbRole = data.role as UserRole;
+    setCachedRole(userId, dbRole);
+    return dbRole;
+    
+  } catch (dbError) {
+    // Simple fallback without retries
+    const defaultRole: UserRole = 'shopper';
+    setCachedRole(userId, defaultRole);
+    return defaultRole;
   }
-  
-  // This should never be reached, but TypeScript requires it
-  const defaultRole: UserRole = 'shopper';
-  setCachedRole(userId, defaultRole);
-  return defaultRole;
 };
-
-// Clear cache when user signs out
-supabase.auth.onAuthStateChange((event) => {
-  if (event === 'SIGNED_OUT') {
-    roleCache.clear();
-    console.log('RoleCache: Cleared cache on sign out');
-  }
-});

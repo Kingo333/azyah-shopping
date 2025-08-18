@@ -20,22 +20,16 @@ const ProtectedRoute = ({ children, roles }: ProtectedRouteProps) => {
   useEffect(() => {
     const fetchUserRole = async () => {
       if (!user) {
-        console.log('ProtectedRoute: No user found');
         setRoleLoading(false);
         return;
       }
 
-      console.log('ProtectedRoute: Getting role for user:', user.id, user.email);
-
       try {
-        // Use the optimized role cache system
         const role = await getUserRole(user);
-        console.log('ProtectedRoute: Got user role:', role);
         setUserRole(role);
       } catch (error) {
         console.error('ProtectedRoute: Error getting user role:', error);
-        // Clear any corrupt cache and fallback to default
-        clearRoleCache(user.id);
+        // Simple fallback without cache clearing
         setUserRole('shopper');
       } finally {
         setRoleLoading(false);
