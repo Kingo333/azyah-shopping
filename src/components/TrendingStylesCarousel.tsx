@@ -37,39 +37,112 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
   const { data: trendingProducts, isLoading } = useQuery({
     queryKey: ['trending-products-carousel', limit],
     queryFn: async () => {
-      const { data: products, error } = await supabase
-        .from('products')
+      // Get trending products based on recent swipes and likes
+      const { data: trendingData, error: trendingError } = await supabase
+        .from('swipes')
         .select(`
-          id,
-          title,
-          image_url,
-          price_cents,
-          currency,
-          external_url,
-          brand:brands(name)
+          product_id,
+          products!inner(
+            id,
+            title,
+            image_url,
+            media_urls,
+            price_cents,
+            currency,
+            external_url,
+            brand:brands(name)
+          )
         `)
-        .eq('status', 'active')
-        .not('brand_id', 'is', null)
-        .order('created_at', { ascending: false })
-        .limit(limit * 2);
+        .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()) // Last 7 days
+        .eq('action', 'right') // Only right swipes (likes)
+        .eq('products.status', 'active')
+        .not('products.brand_id', 'is', null);
 
-      if (error) {
-        console.error('Error fetching trending products:', error);
-        return [];
+      if (trendingError) {
+        console.error('Error fetching trending products:', trendingError);
+        // Fallback to recent products
+        const { data: fallbackData, error: fallbackError } = await supabase
+          .from('products')
+          .select(`
+            id,
+            title,
+            image_url,
+            media_urls,
+            price_cents,
+            currency,
+            external_url,
+            brand:brands(name)
+          `)
+          .eq('status', 'active')
+          .not('brand_id', 'is', null)
+          .order('created_at', { ascending: false })
+          .limit(limit);
+
+        if (fallbackError || !fallbackData) return [];
+        
+        return fallbackData.map((product: any) => ({
+          id: product.id,
+          title: product.title,
+          image_url: getProductImage(product),
+          price_cents: product.price_cents,
+          currency: product.currency || 'USD',
+          brand_name: product.brand?.name || 'Unknown Brand',
+          external_url: product.external_url
+        }));
       }
 
-      return (products || []).map((product: any) => ({
-        id: product.id,
-        title: product.title,
-        image_url: product.image_url,
-        price_cents: product.price_cents,
-        currency: product.currency || 'USD',
-        brand_name: product.brand?.name || 'Unknown Brand',
-        external_url: product.external_url
-      })).slice(0, limit);
+      // Group by product and count swipes
+      const productSwipes = new Map();
+      trendingData?.forEach((swipe: any) => {
+        const productId = swipe.product_id;
+        if (productSwipes.has(productId)) {
+          productSwipes.get(productId).count += 1;
+        } else {
+          productSwipes.set(productId, {
+            count: 1,
+            product: swipe.products
+          });
+        }
+      });
+
+      // Sort by swipe count and return top products
+      const sortedProducts = Array.from(productSwipes.values())
+        .sort((a, b) => b.count - a.count)
+        .slice(0, limit)
+        .map(item => ({
+          id: item.product.id,
+          title: item.product.title,
+          image_url: getProductImage(item.product),
+          price_cents: item.product.price_cents,
+          currency: item.product.currency || 'USD',
+          brand_name: item.product.brand?.name || 'Unknown Brand',
+          external_url: item.product.external_url,
+          swipe_count: item.count
+        }));
+
+      return sortedProducts.length > 0 ? sortedProducts : [];
     },
     staleTime: 1000 * 60 * 15, // 15 minutes
   });
+
+  const getProductImage = (product: any) => {
+    // Try image_url first, then media_urls array, then placeholder
+    if (product.image_url) {
+      return product.image_url;
+    }
+    
+    if (product.media_urls && Array.isArray(product.media_urls) && product.media_urls.length > 0) {
+      // Handle different media_urls formats
+      const firstMedia = product.media_urls[0];
+      if (typeof firstMedia === 'string') {
+        return firstMedia;
+      } else if (firstMedia && typeof firstMedia === 'object' && firstMedia.url) {
+        return firstMedia.url;
+      }
+    }
+    
+    return '/placeholder.svg';
+  };
 
   const formatProductTitle = (title: string) => {
     return title.length > 50 ? `${title.slice(0, 50)}...` : title;
@@ -231,7 +304,7 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
                 {/* Header */}
                 <div className="flex items-center justify-between mb-4">
                   <Badge variant={index < 3 ? "default" : "secondary"} className="text-sm px-3 py-1">
-                    #{index + 1}
+                    #{index + 1} Trending
                   </Badge>
                   <div className="text-xs text-muted-foreground font-medium">
                     {product.brand_name}
@@ -241,9 +314,12 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
                 {/* Product Image */}
                 <div className="relative aspect-[4/3] mb-4 rounded-xl overflow-hidden bg-gray-50">
                   <img
-                    src={product.image_url || '/placeholder.svg'}
+                    src={product.image_url}
                     alt={product.title}
                     className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.src = '/placeholder.svg';
+                    }}
                   />
                   
                   {/* Action Buttons Overlay */}
