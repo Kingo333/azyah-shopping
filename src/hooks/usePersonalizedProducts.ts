@@ -56,6 +56,10 @@ export const usePersonalizedProducts = ({
           seo_title,
           seo_description,
           retailer_id,
+          is_external,
+          source,
+          source_vendor,
+          source_imported_at,
           brand:brands!inner(
             id, 
             name, 
@@ -74,10 +78,22 @@ export const usePersonalizedProducts = ({
           attributes
         `).eq('status', 'active');
 
-      // Include external ASOS products only if feature flag is enabled
-      if (!isEnabled('axessoImport')) {
-        // Exclude external products when feature is disabled
-        query = query.neq('retailer_id', '68aa5b62-419f-432d-a50b-496ea3e6ccf0');
+      // Handle external products based on feature flags
+      const axessoImportEnabled = isEnabled('axessoImport');
+      const axessoImportBulkEnabled = isEnabled('axessoImportBulk');
+      
+      if (!axessoImportEnabled && !axessoImportBulkEnabled) {
+        // Exclude all external products when both flags are disabled
+        query = query.eq('is_external', false);
+      } else {
+        // Include external products from enabled sources
+        const allowedSources = [];
+        if (axessoImportEnabled) allowedSources.push('ASOS_AXESSO');
+        if (axessoImportBulkEnabled) allowedSources.push('ASOS_AXESSO_BULK');
+        
+        if (allowedSources.length > 0) {
+          query = query.or(`is_external.eq.false,source.in.(${allowedSources.join(',')})`);
+        }
       }
 
       // Apply subcategory filter first (more specific)
