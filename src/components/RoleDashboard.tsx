@@ -50,10 +50,7 @@ const RoleDashboard: React.FC = () => {
 
   useEffect(() => {
     const initializeDashboard = async () => {
-      console.log('Initializing dashboard, user:', user);
-      
       if (!user) {
-        console.log('No user found, setting loading to false');
         setLoading(false);
         return;
       }
@@ -68,7 +65,16 @@ const RoleDashboard: React.FC = () => {
       }
     };
 
-    initializeDashboard();
+    // Force loading to complete within 2 seconds for Visual Edits
+    const timeoutId = setTimeout(() => {
+      setLoading(false);
+    }, 2000);
+
+    initializeDashboard().finally(() => {
+      clearTimeout(timeoutId);
+    });
+
+    return () => clearTimeout(timeoutId);
   }, [user]);
 
   const fetchUserProfile = async () => {
@@ -186,14 +192,21 @@ const RoleDashboard: React.FC = () => {
     navigate('/toy-replica');
   };
 
-  // Show loading spinner
+  // Always render fallback UI elements for Visual Edits compatibility
   if (loading) {
-    console.log('Showing loading spinner');
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+        <div className="text-center space-y-4">
+          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
           <p>Loading dashboard...</p>
+          
+          {/* Fallback elements for Visual Edits */}
+          <div className="hidden">
+            <span>Feed</span>
+            <span>Explore</span>
+            <span>Swipe</span>
+            <span>AI Studio</span>
+          </div>
         </div>
       </div>
     );

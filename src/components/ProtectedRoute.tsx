@@ -19,50 +19,40 @@ const ProtectedRoute = ({ children, roles }: ProtectedRouteProps) => {
   const location = useLocation();
   const [userRole, setUserRole] = useState<UserRole | null>(null);
   const [roleLoading, setRoleLoading] = useState(true);
-  const [authStable, setAuthStable] = useState(false);
 
   useEffect(() => {
-    // Add a small delay to ensure auth state is stable
-    const stabilityTimer = setTimeout(() => {
-      setAuthStable(true);
-    }, 100);
-
-    return () => clearTimeout(stabilityTimer);
-  }, []);
-
-  useEffect(() => {
-    const fetchUserRole = async () => {
-      if (!user) {
-        if (DEBUG_AUTH) console.log('ProtectedRoute: No user, setting roleLoading to false');
-        setRoleLoading(false);
-        return;
-      }
-
-      if (DEBUG_AUTH) console.log('ProtectedRoute: Fetching role for user:', user.id);
-
-      try {
-        const role = await getUserRole(user);
-        if (DEBUG_AUTH) console.log('ProtectedRoute: Got user role:', role);
-        setUserRole(role);
-      } catch (error) {
-        console.error('ProtectedRoute: Error getting user role:', error);
-        // Simple fallback without cache clearing
-        setUserRole('shopper');
-      } finally {
-        setRoleLoading(false);
-      }
-    };
-
-    if (user) {
-      fetchUserRole();
-    } else {
+    if (!user) {
       setRoleLoading(false);
+      return;
     }
+
+    setRoleLoading(true);
+    
+    // Add timeout for role fetching to prevent infinite loading
+    const timeoutId = setTimeout(() => {
+      setUserRole('shopper');
+      setRoleLoading(false);
+    }, 2000);
+    
+    getUserRole(user)
+      .then((role) => {
+        clearTimeout(timeoutId);
+        setUserRole(role);
+      })
+      .catch((error) => {
+        clearTimeout(timeoutId);
+        console.error('ProtectedRoute: Error getting user role:', error);
+        setUserRole('shopper');
+      })
+      .finally(() => {
+        setRoleLoading(false);
+      });
+
+    return () => clearTimeout(timeoutId);
   }, [user]);
 
-  // Extended loading state for preview environment stability
-  if (loading || !authStable || (user && roleLoading)) {
-    if (DEBUG_AUTH) console.log('ProtectedRoute: Showing loading - loading:', loading, 'authStable:', authStable, 'roleLoading:', roleLoading);
+  // Simplified loading check for Visual Edits
+  if (loading || (user && roleLoading)) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -74,7 +64,7 @@ const ProtectedRoute = ({ children, roles }: ProtectedRouteProps) => {
   const isPreview = isPreviewEnvironment();
   
   // Only redirect to auth if we're absolutely certain there's no valid session
-  if (!user && !loading && authStable && !roleLoading) {
+  if (!user && !loading && !roleLoading) {
     // Extra validation for preview environment with role-specific handling
     if (isPreview) {
       if (DEBUG_AUTH) console.log('ProtectedRoute: Preview environment detected, checking all session indicators');

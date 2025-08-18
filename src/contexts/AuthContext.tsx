@@ -61,22 +61,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               return;
             }
             
-            // Wait briefly for session recovery
+            // Quick session recovery for Visual Edits
             setTimeout(async () => {
               const { data: { session: recoveredSession } } = await supabase.auth.getSession();
               if (recoveredSession) {
                 setSession(recoveredSession);
                 setUser(recoveredSession.user);
-                console.log('AuthContext: Session recovered after brief delay');
               } else {
-                // Final fallback - clear everything
                 setSession(null);
                 setUser(null);
                 import('@/lib/roleCache').then(({ clearRoleCache }) => {
                   clearRoleCache();
                 });
               }
-            }, 1000);
+            }, 200);
           } else {
             // Real logout - clear everything immediately
             console.log('AuthContext: Real logout detected, clearing all session data');
@@ -95,64 +93,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     );
 
-  // Simplified initial session check with timeout
+  // Ultra-simplified session check for Visual Edits compatibility
   const initializeSession = async () => {
-    const timeout = 3000; // 3 second max timeout
-    
-    const timeoutPromise = new Promise<void>((_, reject) => {
-      setTimeout(() => reject(new Error('Auth timeout')), timeout);
-    });
-    
     try {
-      await Promise.race([
-        (async () => {
-          let attempts = 0;
-          const maxAttempts = 2; // Reduced from 5 to 2
-          
-          while (attempts < maxAttempts) {
-            try {
-              const { data: { session }, error } = await supabase.auth.getSession();
-              
-              if (!error && session) {
-                console.log('AuthContext: Session found on attempt', attempts + 1);
-                setSession(session);
-                setUser(session?.user ?? null);
-                
-                // Store backup for preview environment
-                if (isPreviewEnvironment()) {
-                  storeSessionBackup(session.user, session);
-                }
-                
-                setLoading(false);
-                return;
-              } else if (!session && isPreviewEnvironment() && attempts === 0) {
-                // Try backup recovery only once on first attempt
-                const backup = getSessionBackup();
-                if (backup) {
-                  console.log('AuthContext: Using backup session');
-                  setSession(backup.session);
-                  setUser(backup.user);
-                  setLoading(false);
-                  return;
-                }
-              }
-            } catch (error) {
-              console.warn(`AuthContext: Session check attempt ${attempts + 1} failed:`, error);
-            }
-            
-            attempts++;
-            if (attempts < maxAttempts) {
-              await new Promise(resolve => setTimeout(resolve, 100)); // Reduced delay
-            }
-          }
-          
-          console.log('AuthContext: No session found after all attempts');
-          setLoading(false);
-        })(),
-        timeoutPromise
-      ]);
+      const sessionPromise = supabase.auth.getSession();
+      const timeoutPromise = new Promise(resolve => 
+        setTimeout(() => resolve({ data: { session: null }, error: null }), 1000)
+      );
+      
+      const { data: { session }, error } = await Promise.race([sessionPromise, timeoutPromise]) as any;
+      
+      if (!error && session) {
+        setSession(session);
+        setUser(session.user);
+        if (isPreviewEnvironment()) {
+          storeSessionBackup(session.user, session);
+        }
+      } else if (isPreviewEnvironment()) {
+        const backup = getSessionBackup();
+        if (backup) {
+          setUser(backup.user);
+          setSession(backup.session);
+        }
+      }
     } catch (error) {
-      console.warn('AuthContext: Initialization timeout or error:', error);
+      console.error('Session initialization failed:', error);
+    } finally {
       setLoading(false);
     }
   };
