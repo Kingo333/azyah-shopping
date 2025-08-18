@@ -1,7 +1,8 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.53.0";
-import { transformAxessoToAzyah, calculateQualityScore } from "../shared/axesso-transformer.ts";
-import { EnhancedAxessoClient } from "../shared/enhanced-axesso-client.ts";
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.53.0';
+import { AXESSO, normalizeMarket } from '../shared/axesso-config.ts';
+import { EnhancedAxessoClient } from '../shared/enhanced-axesso-client.ts';
+import { transformAxessoToAzyah, calculateQualityScore } from '../shared/axesso-transformer.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -19,12 +20,18 @@ interface ImportResult {
   rejected: number;
   duplicates: number;
   errors: number;
-  metrics: any;
+  metrics: {
+    totalProcessed: number;
+    processingTimeMs: number;
+    searchTimeMs: number;
+    transformTimeMs: number;
+  };
   results: Array<{
-    url: string;
+    sku: string;
+    title: string;
     status: 'imported' | 'rejected' | 'duplicate' | 'error';
-    score?: number;
     reason?: string;
+    qualityScore?: number;
   }>;
 }
 
@@ -35,247 +42,293 @@ serve(async (req) => {
   }
 
   if (req.method !== 'POST') {
-    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
-      status: 405,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    return new Response('Method not allowed', { 
+      status: 405, 
+      headers: corsHeaders 
     });
   }
 
   try {
-    console.log('Starting bulk ASOS import...');
-
+    console.log('🚀 Starting bulk ASOS import process');
+    
     // Initialize Supabase client
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Check feature flag (using features.ts approach)
-    // axessoImportBulk flag should be enabled in features.ts
-    console.log('Bulk import feature check: axessoImportBulk should be enabled in features.ts');
-
-    // Parse request
-    const body: BulkImportRequest = await req.json();
-    if (!body.markets?.length || !body.keywords?.length) {
-      return new Response(JSON.stringify({ error: 'Markets and keywords are required' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    // Get API keys with fallback support
-    const primaryKey = Deno.env.get('AXESSO_PRIMARY_KEY') || Deno.env.get('AXESSO_KEY_PRIMARY') || '';
-    const secondaryKey = Deno.env.get('AXESSO_SECONDARY_KEY') || Deno.env.get('AXESSO_KEY_SECONDARY') || '';
+    // Initialize Axesso client
+    const axessoClient = new EnhancedAxessoClient(AXESSO);
     
-    if (!primaryKey && !secondaryKey) {
-      throw new Error('Missing AXESSO_PRIMARY_KEY or AXESSO_SECONDARY_KEY');
-    }
-
-    // Initialize enhanced Axesso client
-    const axessoClient = new EnhancedAxessoClient({
-      primaryKey,
-      secondaryKey,
-      maxRpm: parseInt(Deno.env.get('AXESSO_MAX_RPM') ?? '50'),
-      maxConcurrency: parseInt(Deno.env.get('AXESSO_MAX_CONCURRENCY') ?? '5'),
-      timeout: parseInt(Deno.env.get('AXESSO_TIMEOUT_MS') ?? '8000'),
-      searchCacheExpiry: 24 * 60 * 60 * 1000, // 24 hours
-      detailsCacheExpiry: 12 * 60 * 60 * 1000, // 12 hours
-    });
-
-    // Get or create retailer for retailer@test.com
-    let { data: retailers } = await supabase
+    // Parse request body
+    const { markets, keywords, pagesPerKeyword = 1 }: BulkImportRequest = await req.json();
+    
+    console.log(`📝 Import config: ${markets.length} markets, ${keywords.length} keywords, ${pagesPerKeyword} pages per keyword`);
+    
+    const startTime = Date.now();
+    let searchTimeMs = 0;
+    let transformTimeMs = 0;
+    
+    // Get or create retailer record
+    let { data: retailer, error: retailerError } = await supabase
       .from('retailers')
       .select('id')
-      .eq('owner_user_id', (
-        await supabase
-          .from('users')
-          .select('id')
-          .eq('email', 'retailer@test.com')
-          .single()
-      ).data?.id)
+      .eq('slug', 'asos')
       .single();
-
-    if (!retailers) {
-      // Create retailer if it doesn't exist
-      const { data: user } = await supabase
-        .from('users')
-        .select('id')
-        .eq('email', 'retailer@test.com')
-        .single();
-
-      if (!user) {
-        throw new Error('retailer@test.com user not found');
-      }
-
-      const { data: newRetailer } = await supabase
+      
+    if (retailerError || !retailer) {
+      console.log('📦 Creating ASOS retailer record');
+      const { data: newRetailer, error: createError } = await supabase
         .from('retailers')
         .insert({
-          name: 'ASOS Aggregated Retailer',
-          slug: 'asos-aggregated-retailer',
-          owner_user_id: user.id,
-          bio: 'Aggregated ASOS products via Axesso API'
+          name: 'ASOS',
+          slug: 'asos',
+          website: 'https://www.asos.com',
+          bio: 'Global fashion retailer',
+          owner_user_id: null
         })
         .select('id')
         .single();
-
-      retailers = newRetailer;
+        
+      if (createError || !newRetailer) {
+        throw new Error(`Failed to create retailer: ${createError?.message}`);
+      }
+      retailer = newRetailer;
     }
-
-    const retailerId = retailers!.id;
-
-    // Bulk search and hydrate
-    console.log('Starting bulk search and hydrate...');
-    const { products, metrics } = await axessoClient.bulkSearchAndHydrate(
-      body.markets,
-      body.keywords,
-      body.pagesPerKeyword ?? 5
+    
+    console.log(`🏪 Using retailer ID: ${retailer.id}`);
+    
+    // Perform bulk search and hydration
+    const searchStart = Date.now();
+    const { products: fetchedProducts, metrics } = await axessoClient.bulkSearchAndHydrate(
+      markets,
+      keywords,
+      pagesPerKeyword
     );
-
-    console.log(`Found ${products.length} products, processing...`);
-
+    searchTimeMs = Date.now() - searchStart;
+    
+    console.log(`🔍 Fetched ${fetchedProducts.length} products in ${searchTimeMs}ms`);
+    
     const result: ImportResult = {
       imported: 0,
       rejected: 0,
       duplicates: 0,
       errors: 0,
-      metrics,
+      metrics: {
+        totalProcessed: fetchedProducts.length,
+        processingTimeMs: 0,
+        searchTimeMs,
+        transformTimeMs: 0
+      },
       results: []
     };
-
+    
     // Process each product
-    for (const axessoProduct of products) {
+    const transformStart = Date.now();
+    
+    for (const product of fetchedProducts) {
       try {
-        const transformed = transformAxessoToAzyah(axessoProduct, retailerId);
-        if (!transformed) {
+        console.log(`🔄 Processing: ${product.title?.substring(0, 50)}...`);
+        
+        // Transform product data
+        const transformedProduct = transformAxessoToAzyah(product, retailer.id);
+        
+        if (!transformedProduct) {
           result.rejected++;
           result.results.push({
-            url: axessoProduct.url,
+            sku: product.asin || 'unknown',
+            title: product.title || 'Unknown Product',
             status: 'rejected',
-            reason: 'Transformation failed'
+            reason: 'Failed transformation validation'
           });
           continue;
         }
-
+        
         // Calculate quality score
-        const qualityScore = calculateQualityScore(transformed);
-        if (qualityScore < 60) {
+        const qualityScore = calculateQualityScore(transformedProduct);
+        
+        // Reject low quality products
+        if (qualityScore < 0.6) {
           result.rejected++;
           result.results.push({
-            url: axessoProduct.url,
+            sku: transformedProduct.sku,
+            title: transformedProduct.title,
             status: 'rejected',
-            score: qualityScore,
-            reason: 'Quality score too low'
+            reason: `Low quality score: ${qualityScore.toFixed(2)}`,
+            qualityScore
           });
           continue;
         }
-
+        
         // Check for duplicates
-        const { data: existing } = await supabase
+        const { data: existingProduct } = await supabase
           .from('products')
           .select('id')
-          .eq('sku', transformed.sku)
-          .eq('retailer_id', retailerId)
+          .eq('sku', transformedProduct.sku)
           .single();
-
-        if (existing) {
+          
+        if (existingProduct) {
           result.duplicates++;
           result.results.push({
-            url: axessoProduct.url,
+            sku: transformedProduct.sku,
+            title: transformedProduct.title,
             status: 'duplicate',
-            score: qualityScore
+            reason: 'Product already exists',
+            qualityScore
           });
           continue;
         }
-
-        // Ensure brand exists
-        let brandId = null;
-        if (transformed.brand_name) {
-          const { data: existingBrand } = await supabase
+        
+        // Get or create brand
+        let brandId: string | null = null;
+        if (transformedProduct.brand) {
+          let { data: brand } = await supabase
             .from('brands')
             .select('id')
-            .eq('name', transformed.brand_name)
+            .eq('slug', transformedProduct.brand.toLowerCase().replace(/[^a-z0-9]+/g, '-'))
             .single();
-
-          if (existingBrand) {
-            brandId = existingBrand.id;
-          } else {
-            const { data: newBrand } = await supabase
+            
+          if (!brand) {
+            const { data: newBrand, error: brandError } = await supabase
               .from('brands')
               .insert({
-                name: transformed.brand_name,
-                slug: transformed.brand_name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-                owner_user_id: (await supabase
-                  .from('users')
-                  .select('id')
-                  .eq('email', 'retailer@test.com')
-                  .single()).data?.id
+                name: transformedProduct.brand,
+                slug: transformedProduct.brand.toLowerCase().replace(/[^a-z0-9]+/g, '-')
               })
               .select('id')
               .single();
-            brandId = newBrand?.id;
+              
+            if (!brandError && newBrand) {
+              brand = newBrand;
+            }
           }
+          
+          brandId = brand?.id || null;
         }
-
-        // Insert into staging first
-        const stagingProduct = {
-          ...transformed,
-          brand_id: brandId,
-          is_external: true,
-          source: 'ASOS_AXESSO_BULK',
-          source_vendor: 'ASOS',
-          source_imported_at: new Date().toISOString(),
-          status: 'pending'
-        };
-
+        
+        // Insert into staging table
         const { error: stagingError } = await supabase
           .from('import_products_staging')
-          .insert(stagingProduct);
-
+          .insert({
+            title: transformedProduct.title,
+            description: transformedProduct.description,
+            price_cents: transformedProduct.price_cents,
+            currency: transformedProduct.currency,
+            external_url: transformedProduct.external_url,
+            images: transformedProduct.media_urls,
+            suggested_category: transformedProduct.category_slug,
+            suggested_subcategory: transformedProduct.subcategory_slug,
+            suggested_attributes: transformedProduct.attributes,
+            extracted_data: {
+              brand: transformedProduct.brand,
+              qualityScore,
+              originalData: product
+            },
+            job_id: '00000000-0000-0000-0000-000000000000' // Placeholder for bulk imports
+          });
+          
         if (stagingError) {
-          throw stagingError;
+          console.error(`❌ Staging error for ${transformedProduct.sku}:`, stagingError);
+          result.errors++;
+          result.results.push({
+            sku: transformedProduct.sku,
+            title: transformedProduct.title,
+            status: 'error',
+            reason: `Staging error: ${stagingError.message}`,
+            qualityScore
+          });
+          continue;
         }
-
-        // Insert into products table
+        
+        // Insert final product
         const { error: productError } = await supabase
           .from('products')
           .insert({
-            ...stagingProduct,
+            sku: transformedProduct.sku,
+            title: transformedProduct.title,
+            description: transformedProduct.description,
+            price_cents: transformedProduct.price_cents,
+            currency: transformedProduct.currency,
+            image_url: transformedProduct.image_url,
+            media_urls: transformedProduct.media_urls,
+            external_url: transformedProduct.external_url,
+            category_slug: transformedProduct.category_slug,
+            subcategory_slug: transformedProduct.subcategory_slug,
+            attributes: transformedProduct.attributes,
+            brand_id: brandId,
+            retailer_id: retailer.id,
+            source: 'asos',
+            source_vendor: 'axesso',
+            is_external: true,
             status: 'active'
           });
-
+          
         if (productError) {
-          throw productError;
+          console.error(`❌ Product error for ${transformedProduct.sku}:`, productError);
+          result.errors++;
+          result.results.push({
+            sku: transformedProduct.sku,
+            title: transformedProduct.title,
+            status: 'error',
+            reason: `Product insert error: ${productError.message}`,
+            qualityScore
+          });
+          continue;
         }
-
+        
         result.imported++;
         result.results.push({
-          url: axessoProduct.url,
+          sku: transformedProduct.sku,
+          title: transformedProduct.title,
           status: 'imported',
-          score: qualityScore
+          qualityScore
         });
-
+        
       } catch (error) {
+        console.error(`❌ Error processing product:`, error);
         result.errors++;
         result.results.push({
-          url: axessoProduct.url,
+          sku: product.asin || 'unknown',
+          title: product.title || 'Unknown Product',
           status: 'error',
           reason: error.message
         });
-        console.error(`Error processing product ${axessoProduct.url}:`, error);
       }
     }
-
-    console.log(`Bulk import completed: ${result.imported} imported, ${result.rejected} rejected, ${result.duplicates} duplicates, ${result.errors} errors`);
-
+    
+    transformTimeMs = Date.now() - transformStart;
+    result.metrics.transformTimeMs = transformTimeMs;
+    result.metrics.processingTimeMs = Date.now() - startTime;
+    
+    console.log(`✅ Import completed: ${result.imported} imported, ${result.rejected} rejected, ${result.duplicates} duplicates, ${result.errors} errors`);
+    
     return new Response(JSON.stringify(result), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 200,
+      headers: { 
+        ...corsHeaders, 
+        'Content-Type': 'application/json'
+      }
     });
-
+    
   } catch (error) {
-    console.error('Bulk import error:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    console.error('💥 Bulk import error:', error);
+    
+    return new Response(
+      JSON.stringify({ 
+        error: error.message,
+        imported: 0,
+        rejected: 0,
+        duplicates: 0,
+        errors: 1,
+        results: []
+      }), 
+      {
+        status: 500,
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json'
+        }
+      }
+    );
   }
 });
