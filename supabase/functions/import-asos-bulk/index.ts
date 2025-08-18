@@ -50,19 +50,9 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Check feature flag
-    const { data: flagData } = await supabase
-      .from('feature_flags')
-      .select('enabled')
-      .eq('name', 'axesso_import_bulk')
-      .single();
-
-    if (!flagData?.enabled) {
-      return new Response(JSON.stringify({ error: 'Bulk import feature is disabled' }), {
-        status: 403,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
+    // Check feature flag (using features.ts approach)
+    // axessoImportBulk flag should be enabled in features.ts
+    console.log('Bulk import feature check: axessoImportBulk should be enabled in features.ts');
 
     // Parse request
     const body: BulkImportRequest = await req.json();

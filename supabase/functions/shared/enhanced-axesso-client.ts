@@ -1,19 +1,17 @@
 interface AxessoSearchResponse {
   responseStatus: string;
   resultCount: number;
-  products: Array<{
+  searchProductDetails: Array<{
     productId: string;
-    url: string;
-    title: string;
+    dpUrl: string;
+    productTitle: string;
     price: number;
-    imageUrl?: string;
+    retailPrice?: number;
+    imgUrl?: string;
     manufacturer?: string;
   }>;
-  pagination?: {
-    currentPage: number;
-    totalPages: number;
-    hasNext: boolean;
-  };
+  nextPage?: number;
+  lastPage?: number;
 }
 
 interface AxessoProductDetails {
@@ -54,8 +52,8 @@ interface CircuitBreaker {
 }
 
 export class EnhancedAxessoClient {
-  private readonly searchUrl = 'http://api.axesso.de/aso/product-search';
-  private readonly detailsUrl = 'http://api.axesso.de/aso/lookup-product-details';
+  private readonly searchUrl = 'https://api.axesso.de/aso/search-by-keyword';
+  private readonly detailsUrl = 'https://api.axesso.de/aso/lookup-product-details';
   private readonly config: BulkImportConfig;
   private searchCache = new Map<string, { data: AxessoSearchResponse; timestamp: number }>();
   private detailsCache = new Map<string, { data: AxessoProductDetails; timestamp: number }>();
@@ -124,13 +122,11 @@ export class EnhancedAxessoClient {
     }
 
     const headers = {
-      'X-RapidAPI-Key': this.config.primaryKey,
-      'X-RapidAPI-Host': 'api.axesso.de',
+      'axesso-api-key': this.config.primaryKey,
     };
 
     const secondaryHeaders = {
-      'X-RapidAPI-Key': this.config.secondaryKey,
-      'X-RapidAPI-Host': 'api.axesso.de',
+      'axesso-api-key': this.config.secondaryKey,
     };
 
     let lastError: Error;
@@ -183,7 +179,7 @@ export class EnhancedAxessoClient {
           domainCode: market,
           keyword,
           page: page.toString(),
-          limit: limit.toString()
+          sortBy: 'freshness'
         });
 
         const url = `${this.searchUrl}?${params.toString()}`;
@@ -260,10 +256,10 @@ export class EnhancedAxessoClient {
             metrics.searchRequests++;
             const searchResult = await this.searchProducts(market, keyword, page);
             
-            if (searchResult?.products) {
-              for (const product of searchResult.products) {
-                if (product.url && !uniqueUrls.has(product.url)) {
-                  uniqueUrls.add(product.url);
+            if (searchResult?.searchProductDetails) {
+              for (const product of searchResult.searchProductDetails) {
+                if (product.dpUrl && !uniqueUrls.has(product.dpUrl)) {
+                  uniqueUrls.add(product.dpUrl);
                 }
               }
             }

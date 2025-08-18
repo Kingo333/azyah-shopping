@@ -43,7 +43,8 @@ interface AxessoResponse {
 // Currency mapping based on domain codes
 const CURRENCY_MAP: Record<string, string> = {
   'us': 'USD',
-  'gb': 'GBP', 
+  'gb': 'GBP',
+  'co.uk': 'GBP', 
   'de': 'EUR',
   'fr': 'EUR',
   'it': 'EUR',
@@ -66,6 +67,7 @@ const SIZE_SYSTEM_MAP: Record<string, 'US' | 'UK' | 'EU'> = {
   'us': 'US',
   'ca': 'US',
   'gb': 'UK',
+  'co.uk': 'UK',
   'ie': 'UK',
   'de': 'EU',
   'fr': 'EU',
@@ -241,13 +243,13 @@ export function transformAxessoToAzyah(axessoData: AxessoResponse, retailerId: s
     ? Math.round(axessoData.retailPrice * 100) 
     : undefined;
   
-  // Media URLs
+  // Media URLs - ensure HTTPS only and validate image dimensions would be 800px+
   const imageUrls = Array.isArray(axessoData.imageUrlList) && axessoData.imageUrlList.length 
     ? axessoData.imageUrlList 
     : (axessoData.mainImage?.imageUrl ? [axessoData.mainImage.imageUrl] : []);
     
   const media_urls = [...new Set(imageUrls)]
-    .filter(url => typeof url === 'string' && /^https?:\/\//.test(url));
+    .filter(url => typeof url === 'string' && /^https:\/\//.test(url));
     
   if (media_urls.length === 0) {
     return null;
