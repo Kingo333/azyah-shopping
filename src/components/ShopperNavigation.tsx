@@ -8,7 +8,6 @@ import {
   Search,
   Camera,
   ArrowLeft,
-  ScanLine,
   type LucideIcon,
 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -39,12 +38,6 @@ const ShopperNavigation: React.FC = () => {
       label: 'Explore',
       icon: Search,
       path: '/explore',
-    },
-    {
-      id: 'image-search',
-      label: 'Scan',
-      icon: ScanLine,
-      path: '/image-search',
     },
     {
       id: 'fashion-feed',
