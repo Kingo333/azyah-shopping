@@ -178,7 +178,7 @@ export default function Landing() {
           </div>
         </div>
 
-        <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 pt-8 pb-12 sm:pt-12 sm:pb-16 lg:pt-20 lg:pb-24 relative">
+        <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 pt-6 pb-8 sm:pt-10 sm:pb-12 lg:pt-16 lg:pb-20 relative">
           <div className="grid lg:grid-cols-2 gap-8 sm:gap-12 lg:gap-16 items-center transition-all duration-1000" style={{
           opacity: isVisible ? 1 : 0,
           transform: `translateY(${isVisible ? 0 : 32}px)`
