@@ -22,6 +22,7 @@ import { AnalyticsDashboard } from '@/components/AnalyticsDashboard';
 import RetailerBrandsList from '@/components/RetailerBrandsList';
 import { BulkImportActions } from '@/components/BulkImportActions';
 import { CollabDashboard } from '@/components/ugc/CollabDashboard';
+import { AsosImportManager } from '@/components/AsosImportManager';
 import { useRetailerBrands } from '@/hooks/useRetailerBrands';
 import { Product } from '@/types';
 import { convertJsonToProductAttributes } from '@/lib/type-utils';
@@ -349,6 +350,8 @@ const RetailerPortal = () => {
 
           <TabsContent value="settings">
             <div className="space-y-6">
+              <AsosImportManager />
+              
               <Card>
                 <CardHeader>
                   <CardTitle>Store Settings</CardTitle>

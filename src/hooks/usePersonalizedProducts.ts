@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Product } from '@/types';
 import { convertJsonToProductAttributes } from '@/lib/type-utils';
 import { useToast } from '@/hooks/use-toast';
+import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
 
 interface UsePersonalizedProductsProps {
   filter: string;
@@ -25,6 +26,7 @@ export const usePersonalizedProducts = ({
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const { isEnabled } = useFeatureFlags();
 
   const fetchProducts = useCallback(async () => {
     setIsLoading(true);
@@ -71,6 +73,12 @@ export const usePersonalizedProducts = ({
           ),
           attributes
         `).eq('status', 'active');
+
+      // Include external ASOS products only if feature flag is enabled
+      if (!isEnabled('axessoImport')) {
+        // Exclude external products when feature is disabled
+        query = query.neq('retailer_id', '68aa5b62-419f-432d-a50b-496ea3e6ccf0');
+      }
 
       // Apply subcategory filter first (more specific)
       if (subcategory && subcategory !== '') {
@@ -169,7 +177,7 @@ export const usePersonalizedProducts = ({
     } finally {
       setIsLoading(false);
     }
-  }, [filter, subcategory, priceRange, searchQuery, currency, toast]);
+  }, [filter, subcategory, priceRange, searchQuery, currency, toast, isEnabled]);
 
   useEffect(() => {
     fetchProducts();
