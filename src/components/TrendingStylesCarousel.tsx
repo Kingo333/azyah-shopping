@@ -279,11 +279,11 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
                         </Button>
                       </div>
                       {/* Mobile-friendly bottom overlay with Shop button */}
-                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-1 rounded-b-xl">
+                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 to-transparent p-2 rounded-b-xl">
                         <Button
                           size="sm"
                           variant="outline"
-                          className="w-full text-sm font-medium h-10 bg-red-500 text-white border-red-500 hover:bg-red-600 hover:border-red-600"
+                          className="w-full text-sm font-medium h-9 bg-red-500 text-white border-red-500 hover:bg-red-600 hover:border-red-600"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleShopNow(product.id);
