@@ -63,10 +63,18 @@ serve(async (req) => {
       });
     }
 
+    // Get API keys with fallback support
+    const primaryKey = Deno.env.get('AXESSO_PRIMARY_KEY') || Deno.env.get('AXESSO_KEY_PRIMARY') || '';
+    const secondaryKey = Deno.env.get('AXESSO_SECONDARY_KEY') || Deno.env.get('AXESSO_KEY_SECONDARY') || '';
+    
+    if (!primaryKey && !secondaryKey) {
+      throw new Error('Missing AXESSO_PRIMARY_KEY or AXESSO_SECONDARY_KEY');
+    }
+
     // Initialize enhanced Axesso client
     const axessoClient = new EnhancedAxessoClient({
-      primaryKey: Deno.env.get('AXESSO_PRIMARY_KEY') ?? '',
-      secondaryKey: Deno.env.get('AXESSO_SECONDARY_KEY') ?? '',
+      primaryKey,
+      secondaryKey,
       maxRpm: parseInt(Deno.env.get('AXESSO_MAX_RPM') ?? '50'),
       maxConcurrency: parseInt(Deno.env.get('AXESSO_MAX_CONCURRENCY') ?? '5'),
       timeout: parseInt(Deno.env.get('AXESSO_TIMEOUT_MS') ?? '8000'),

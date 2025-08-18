@@ -1,3 +1,5 @@
+import { AXESSO, normalizeMarket } from './axesso-config.ts';
+
 interface AxessoSearchResponse {
   responseStatus: string;
   resultCount: number;
@@ -52,8 +54,6 @@ interface CircuitBreaker {
 }
 
 export class EnhancedAxessoClient {
-  private readonly searchUrl = 'https://api.axesso.de/aso/search-by-keyword';
-  private readonly detailsUrl = 'https://api.axesso.de/aso/lookup-product-details';
   private readonly config: BulkImportConfig;
   private searchCache = new Map<string, { data: AxessoSearchResponse; timestamp: number }>();
   private detailsCache = new Map<string, { data: AxessoProductDetails; timestamp: number }>();
@@ -134,10 +134,19 @@ export class EnhancedAxessoClient {
     // Try primary key
     try {
       const response = await fetch(url, { headers, signal });
+      const responseText = await response.text();
+      
       if (!response.ok) {
+        console.error(`AXESSO_ERR Primary - Status: ${response.status}, URL: ${url}, Body: ${responseText.slice(0, 200)}`);
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
-      return response.json();
+      
+      try {
+        return JSON.parse(responseText);
+      } catch (parseError) {
+        console.error('JSON parse error (primary):', parseError, 'Response:', responseText.slice(0, 200));
+        throw new Error('Invalid JSON response');
+      }
     } catch (error) {
       lastError = error as Error;
       console.warn('Primary key failed, trying secondary:', error);
@@ -146,10 +155,19 @@ export class EnhancedAxessoClient {
     // Try secondary key
     try {
       const response = await fetch(url, { headers: secondaryHeaders, signal });
+      const responseText = await response.text();
+      
       if (!response.ok) {
+        console.error(`AXESSO_ERR Secondary - Status: ${response.status}, URL: ${url}, Body: ${responseText.slice(0, 200)}`);
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
-      return response.json();
+      
+      try {
+        return JSON.parse(responseText);
+      } catch (parseError) {
+        console.error('JSON parse error (secondary):', parseError, 'Response:', responseText.slice(0, 200));
+        throw new Error('Invalid JSON response');
+      }
     } catch (error) {
       console.error('Both keys failed:', error);
       throw lastError;
@@ -162,7 +180,9 @@ export class EnhancedAxessoClient {
     page = 1,
     limit = 50
   ): Promise<AxessoSearchResponse | null> {
-    const cacheKey = `${market}:${keyword}:${page}:${limit}`;
+    // Normalize market to valid domainCode
+    const validMarket = normalizeMarket(market);
+    const cacheKey = `${validMarket}:${keyword}:${page}:${limit}`;
     
     // Check cache
     const cached = this.searchCache.get(cacheKey);
@@ -176,21 +196,25 @@ export class EnhancedAxessoClient {
 
       try {
         const params = new URLSearchParams({
-          domainCode: market,
+          domainCode: validMarket,
           keyword,
           page: page.toString(),
           sortBy: 'freshness'
         });
 
-        const url = `${this.searchUrl}?${params.toString()}`;
+        const url = `${AXESSO.base}/search-by-keyword?${params.toString()}`;
+        console.log(`AXESSO Search: ${url}`);
         const data = await this.fetchWithRetry(url, controller.signal);
+        
+        const resultCount = data?.searchProductDetails?.length || 0;
+        console.log(`Search result for ${validMarket}:${keyword}:${page} - Found ${resultCount} products`);
         
         // Cache successful response
         this.searchCache.set(cacheKey, { data, timestamp: Date.now() });
         return data;
       } catch (error) {
+        console.error(`Search failed for ${validMarket}:${keyword}:${page}:`, error);
         if (error instanceof Error && error.message.includes('404')) {
-          console.log('Search not found (404):', keyword);
           return null;
         }
         throw error;
@@ -214,15 +238,18 @@ export class EnhancedAxessoClient {
       const timeoutId = setTimeout(() => controller.abort(), this.config.timeout);
 
       try {
-        const url = `${this.detailsUrl}?url=${encodeURIComponent(productUrl)}`;
+        const url = `${AXESSO.base}/lookup-product-details?url=${encodeURIComponent(productUrl)}`;
+        console.log(`AXESSO Details: ${productUrl}`);
         const data = await this.fetchWithRetry(url, controller.signal);
+        
+        console.log(`Details result for ${productUrl} - Title: ${data?.productTitle || 'N/A'}`);
         
         // Cache successful response
         this.detailsCache.set(cacheKey, { data, timestamp: Date.now() });
         return data;
       } catch (error) {
+        console.error(`Details failed for ${productUrl}:`, error);
         if (error instanceof Error && error.message.includes('404')) {
-          console.log('Product not found (404):', productUrl);
           return null;
         }
         throw error;
@@ -237,32 +264,49 @@ export class EnhancedAxessoClient {
     keywords: string[],
     pagesPerKeyword = 5
   ): Promise<{ products: AxessoProductDetails[]; metrics: any }> {
+    const startTime = Date.now();
     const metrics = {
       searchRequests: 0,
       detailRequests: 0,
       productsFound: 0,
       errors: 0,
-      startTime: Date.now()
+      searchedPages: 0,
+      startTime
     };
 
     const allProducts: AxessoProductDetails[] = [];
     const uniqueUrls = new Set<string>();
 
+    console.log(`Starting bulk import: ${markets.length} markets, ${keywords.length} keywords, ${pagesPerKeyword} pages each`);
+    
+    // Normalize markets to valid domain codes
+    const validMarkets = markets.map(normalizeMarket);
+    console.log(`Normalized markets: ${validMarkets.join(', ')}`);
+
     // Search phase
-    for (const market of markets) {
+    for (const market of validMarkets) {
       for (const keyword of keywords) {
         for (let page = 1; page <= pagesPerKeyword; page++) {
           try {
             metrics.searchRequests++;
+            metrics.searchedPages++;
+            
+            console.log(`Searching: ${market}:${keyword}:${page}`);
             const searchResult = await this.searchProducts(market, keyword, page);
             
             if (searchResult?.searchProductDetails) {
-              for (const product of searchResult.searchProductDetails) {
-                if (product.dpUrl && !uniqueUrls.has(product.dpUrl)) {
-                  uniqueUrls.add(product.dpUrl);
-                }
-              }
+              const newUrls = searchResult.searchProductDetails
+                .filter(product => product.dpUrl && !uniqueUrls.has(product.dpUrl))
+                .map(product => product.dpUrl);
+              
+              newUrls.forEach(url => uniqueUrls.add(url));
+              console.log(`Added ${newUrls.length} new URLs from ${market}:${keyword}:${page}`);
+            } else {
+              console.log(`No products found for ${market}:${keyword}:${page}`);
             }
+            
+            // Basic rate limiting delay
+            await new Promise(resolve => setTimeout(resolve, 200));
           } catch (error) {
             metrics.errors++;
             console.error(`Search failed for ${market}:${keyword}:${page}:`, error);
@@ -274,6 +318,7 @@ export class EnhancedAxessoClient {
     // Details phase
     const urls = Array.from(uniqueUrls);
     metrics.productsFound = urls.length;
+    console.log(`Found ${urls.length} unique product URLs, fetching details...`);
 
     for (const url of urls) {
       try {
@@ -282,18 +327,26 @@ export class EnhancedAxessoClient {
         if (details) {
           allProducts.push(details);
         }
+        
+        // Basic rate limiting delay
+        await new Promise(resolve => setTimeout(resolve, 100));
       } catch (error) {
         metrics.errors++;
         console.error(`Details failed for ${url}:`, error);
       }
     }
 
+    const duration = Date.now() - startTime;
+    const successRate = metrics.detailRequests > 0 ? ((metrics.detailRequests - metrics.errors) / metrics.detailRequests) * 100 : 0;
+    
+    console.log(`Bulk import completed: ${allProducts.length} products hydrated in ${duration}ms, ${successRate}% success rate`);
+
     return {
       products: allProducts,
       metrics: {
         ...metrics,
-        duration: Date.now() - metrics.startTime,
-        successRate: metrics.detailRequests > 0 ? ((metrics.detailRequests - metrics.errors) / metrics.detailRequests) * 100 : 0
+        duration,
+        successRate
       }
     };
   }
