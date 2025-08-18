@@ -1,9 +1,9 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEffect, useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { Loader2 } from 'lucide-react';
 import { canAccessRoute, getRedirectRoute } from '@/lib/rbac';
+import { getUserRole, clearRoleCache } from '@/lib/roleCache';
 import type { UserRole } from '@/lib/rbac';
 
 interface ProtectedRouteProps {
@@ -25,25 +25,18 @@ const ProtectedRoute = ({ children, roles }: ProtectedRouteProps) => {
         return;
       }
 
-      console.log('ProtectedRoute: Fetching role for user:', user.id, user.email);
+      console.log('ProtectedRoute: Getting role for user:', user.id, user.email);
 
       try {
-        const { data, error } = await supabase
-          .from('users')
-          .select('role')
-          .eq('id', user.id)
-          .single();
-
-        if (error) {
-          console.error('ProtectedRoute: Error fetching user role:', error);
-          setUserRole('shopper'); // Default fallback
-        } else {
-          console.log('ProtectedRoute: Fetched user role:', data.role);
-          setUserRole(data.role as UserRole);
-        }
+        // Use the optimized role cache system
+        const role = await getUserRole(user);
+        console.log('ProtectedRoute: Got user role:', role);
+        setUserRole(role);
       } catch (error) {
-        console.error('ProtectedRoute: Error fetching user role:', error);
-        setUserRole('shopper'); // Default fallback
+        console.error('ProtectedRoute: Error getting user role:', error);
+        // Clear any corrupt cache and fallback to default
+        clearRoleCache(user.id);
+        setUserRole('shopper');
       } finally {
         setRoleLoading(false);
       }

@@ -1,6 +1,8 @@
 
 import { useState, useEffect } from 'react';
 import { Navigate, useSearchParams, useNavigate } from 'react-router-dom';
+import { getRedirectRoute } from '@/lib/rbac';
+import type { UserRole } from '@/lib/rbac';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -36,7 +38,9 @@ const Auth = () => {
 
   // Redirect if already authenticated
   if (user && !loading) {
-    return <Navigate to="/dashboard" replace />;
+    const userRole = (user.user_metadata?.role || 'shopper') as UserRole;
+    const redirectPath = getRedirectRoute(userRole);
+    return <Navigate to={redirectPath} replace />;
   }
 
   const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -49,7 +53,8 @@ const Auth = () => {
 
     const { error } = await signIn(email, password);
     if (!error) {
-      navigate('/dashboard');
+      // Let the auth state change handler redirect to appropriate dashboard
+      // The user role will be available in the session after sign in
     }
     setIsLoading(false);
   };
@@ -70,7 +75,8 @@ const Auth = () => {
 
     const { error } = await signUp(email, password, { name, role: selectedRole });
     if (!error) {
-      navigate('/dashboard');
+      // Let the auth state change handler redirect to appropriate dashboard
+      // The user role is set in metadata during signup
     }
     setIsLoading(false);
   };

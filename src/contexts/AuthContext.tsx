@@ -4,6 +4,8 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { CredentialsSchema } from '@/lib/password-validation';
+import { getRedirectRoute } from '@/lib/rbac';
+import type { UserRole } from '@/lib/rbac';
 
 interface AuthContextType {
   user: User | null;
@@ -59,7 +61,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return { error };
     }
 
-    const redirectUrl = `${window.location.origin}/dashboard`;
+    // Create role-based redirect URL
+    const userRole = (userData?.role || 'shopper') as UserRole;
+    const redirectPath = getRedirectRoute(userRole);
+    const redirectUrl = `${window.location.origin}${redirectPath}`;
     
     const { error } = await supabase.auth.signUp({
       email,
