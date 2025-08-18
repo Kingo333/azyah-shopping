@@ -18,6 +18,7 @@ import { BrandProductDetailModal } from '@/components/BrandProductDetailModal';
 import { LogoUpload } from '@/components/LogoUpload';
 import { ImportWizardModal } from '@/components/ImportWizardModal';
 import { BulkImportActions } from '@/components/BulkImportActions';
+import { CollabDashboard } from '@/components/ugc/CollabDashboard';
 import { Plus, Edit, Trash2, Upload, BarChart3, TrendingUp, Eye, Heart, ShoppingBag, DollarSign, Download, Filter, Globe } from 'lucide-react';
 import { InfoTooltip } from '@/components/ui/info-tooltip';
 import type { Product } from '@/types';
@@ -349,8 +350,9 @@ const BrandPortal: React.FC = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-3 rounded-xl bg-white/50 backdrop-blur-sm">
+          <TabsList className="grid w-full grid-cols-4 rounded-xl bg-white/50 backdrop-blur-sm">
             <TabsTrigger value="products" className="rounded-lg text-xs sm:text-sm">Products</TabsTrigger>
+            <TabsTrigger value="collabs" className="rounded-lg text-xs sm:text-sm">Collabs</TabsTrigger>
             <TabsTrigger value="analytics" className="rounded-lg text-xs sm:text-sm">Analytics</TabsTrigger>
             <TabsTrigger value="settings" className="rounded-lg text-xs sm:text-sm">Settings</TabsTrigger>
           </TabsList>
@@ -436,6 +438,10 @@ const BrandPortal: React.FC = () => {
                 </div>
               )}
             </div>
+          </TabsContent>
+
+          <TabsContent value="collabs" className="mt-4 sm:mt-6">
+            <CollabDashboard ownerOrgId={brand.id} orgType="brand" />
           </TabsContent>
 
           <TabsContent value="analytics" className="mt-4 sm:mt-6">

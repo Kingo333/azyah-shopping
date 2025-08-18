@@ -21,6 +21,7 @@ import { EditProductModal } from '@/components/EditProductModal';
 import { AnalyticsDashboard } from '@/components/AnalyticsDashboard';
 import RetailerBrandsList from '@/components/RetailerBrandsList';
 import { BulkImportActions } from '@/components/BulkImportActions';
+import { CollabDashboard } from '@/components/ugc/CollabDashboard';
 import { useRetailerBrands } from '@/hooks/useRetailerBrands';
 import { Product } from '@/types';
 import { convertJsonToProductAttributes } from '@/lib/type-utils';
@@ -245,6 +246,7 @@ const RetailerPortal = () => {
         <Tabs defaultValue="products" className="space-y-6">
           <TabsList>
             <TabsTrigger value="products">Products</TabsTrigger>
+            <TabsTrigger value="collabs">Collabs</TabsTrigger>
             <TabsTrigger value="brands">Brands</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
             <TabsTrigger value="settings">Settings</TabsTrigger>
@@ -331,6 +333,10 @@ const RetailerPortal = () => {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="collabs">
+            <CollabDashboard ownerOrgId={retailer?.id || ''} orgType="retailer" />
           </TabsContent>
 
           <TabsContent value="brands">
