@@ -16,18 +16,14 @@ import {
 import { TrendingUp, Heart, ShoppingBag, ExternalLink } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
-interface TrendingStyle {
-  category: string;
-  subcategory: string;
-  count: number;
-  growth: number;
-  recent_products: Array<{
-    id: string;
-    title: string;
-    image_url: string;
-    price_cents: number;
-    currency: string;
-  }>;
+interface TrendingProduct {
+  id: string;
+  title: string;
+  image_url: string;
+  price_cents: number;
+  currency: string;
+  brand_name: string;
+  external_url: string;
 }
 
 interface TrendingStylesCarouselProps {
@@ -38,58 +34,45 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  const { data: trendingStyles, isLoading } = useQuery({
-    queryKey: ['trending-styles-carousel', limit],
+  const { data: trendingProducts, isLoading } = useQuery({
+    queryKey: ['trending-products-carousel', limit],
     queryFn: async () => {
-      // Use fallback function first to avoid security warnings
-      const { data: fallbackData, error: fallbackError } = await supabase
-        .rpc('get_fallback_trending_categories', {
-          limit_count: limit
-        });
+      const { data: products, error } = await supabase
+        .from('products')
+        .select(`
+          id,
+          title,
+          image_url,
+          price_cents,
+          currency,
+          external_url,
+          brand:brands(name)
+        `)
+        .eq('status', 'active')
+        .not('brand_id', 'is', null)
+        .order('created_at', { ascending: false })
+        .limit(limit * 2);
 
-      if (!fallbackError && fallbackData) {
-        // Convert fallback data to expected format
-        return (fallbackData || []).map((item: any) => ({
-          category: item.category_slug,
-          subcategory: item.subcategory_slug,
-          count: item.product_count,
-          growth: Math.floor(Math.random() * 30) + 5, // Simulated growth for products
-          recent_products: item.recent_products || []
-        }));
-      }
-
-      // Only fallback to trending categories if absolutely necessary
-      const { data: trendingData, error: trendingError } = await supabase
-        .rpc('get_trending_categories', {
-          days_back: 7,
-          limit_count: limit
-        });
-
-      if (trendingError) {
-        console.error('Error fetching trending data:', trendingError);
+      if (error) {
+        console.error('Error fetching trending products:', error);
         return [];
       }
 
-      // Convert trending data to expected format
-      return (trendingData || []).map((item: any) => ({
-        category: item.category_slug,
-        subcategory: item.subcategory_slug,
-        count: item.swipe_count,
-        growth: item.growth_percentage,
-        recent_products: item.recent_products || []
-      }));
+      return (products || []).map((product: any) => ({
+        id: product.id,
+        title: product.title,
+        image_url: product.image_url,
+        price_cents: product.price_cents,
+        currency: product.currency || 'USD',
+        brand_name: product.brand?.name || 'Unknown Brand',
+        external_url: product.external_url
+      })).slice(0, limit);
     },
     staleTime: 1000 * 60 * 15, // 15 minutes
   });
 
-  const formatCategoryName = (category: string, subcategory?: string) => {
-    const formatted = subcategory && subcategory !== category 
-      ? `${subcategory.replace(/-/g, ' ')} ${category.replace(/-/g, ' ')}`
-      : category.replace(/-/g, ' ');
-    
-    return formatted.split(' ')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
+  const formatProductTitle = (title: string) => {
+    return title.length > 50 ? `${title.slice(0, 50)}...` : title;
   };
 
   const formatPrice = (cents: number, currency: string = 'USD') => {
@@ -194,27 +177,13 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
     }
   });
 
-  const handleShopNow = async (productId: string) => {
-    try {
-      const { data: product } = await supabase
-        .from('products')
-        .select('external_url')
-        .eq('id', productId)
-        .single();
-
-      if (product?.external_url) {
-        window.open(product.external_url, '_blank', 'noopener,noreferrer');
-      } else {
-        toast({
-          title: "Shop link not available",
-          description: "This product doesn't have a shop link available.",
-          variant: "destructive"
-        });
-      }
-    } catch (error) {
+  const handleShopNow = (externalUrl: string) => {
+    if (externalUrl) {
+      window.open(externalUrl, '_blank', 'noopener,noreferrer');
+    } else {
       toast({
-        title: "Error",
-        description: "Failed to open shop link.",
+        title: "Shop link not available",
+        description: "This product doesn't have a shop link available.",
         variant: "destructive"
       });
     }
@@ -244,10 +213,10 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
     );
   }
 
-  if (!trendingStyles || trendingStyles.length === 0) {
+  if (!trendingProducts || trendingProducts.length === 0) {
     return (
       <div className="text-center py-8">
-        <p className="text-muted-foreground">No trending styles available at the moment.</p>
+        <p className="text-muted-foreground">No trending products available at the moment.</p>
       </div>
     );
   }
@@ -255,98 +224,79 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
   return (
     <Carousel className="w-full" opts={{ align: "start", loop: false }}>
       <CarouselContent className="-ml-4 md:-ml-8">
-        {trendingStyles.map((style, index) => (
-          <CarouselItem key={`${style.category}-${style.subcategory}`} className="pl-4 md:pl-8 basis-full md:basis-1/2">
+        {trendingProducts.map((product, index) => (
+          <CarouselItem key={product.id} className="pl-4 md:pl-8 basis-full md:basis-1/2">
             <Card className="group hover:shadow-xl transition-all duration-300 h-full">
               <CardContent className="p-6 md:p-8 h-full flex flex-col">
                 {/* Header */}
-                <div className="flex items-center justify-between mb-6">
-                  <Badge variant={index < 3 ? "default" : "secondary"} className="text-sm px-3 py-2">
+                <div className="flex items-center justify-between mb-4">
+                  <Badge variant={index < 3 ? "default" : "secondary"} className="text-sm px-3 py-1">
                     #{index + 1}
                   </Badge>
-                  <div className="flex items-center gap-2 text-base text-green-600 font-semibold">
-                    <TrendingUp className="h-5 w-5" />
-                    +{style.growth}%
+                  <div className="text-xs text-muted-foreground font-medium">
+                    {product.brand_name}
                   </div>
                 </div>
 
-                {/* Title */}
-                <h4 className="font-bold text-base mb-3 group-hover:text-primary transition-colors line-clamp-2 leading-tight">
-                  {formatCategoryName(style.category, style.subcategory)}
-                </h4>
-
-                {/* Product Images Grid - Two Column Layout */}
-                <div className="grid grid-cols-2 gap-3 mb-3 flex-1 min-h-0">
-                  {style.recent_products.slice(0, 2).map((product) => (
-                    <div key={product.id} className="relative group/product overflow-hidden rounded-xl bg-gray-50">
-                      {/* Product Image */}
-                      <div className="relative aspect-[3/4]">
-                        <img
-                          src={product.image_url || '/placeholder.svg'}
-                          alt={product.title}
-                          className="w-full h-full object-cover"
-                        />
-                        
-                        {/* Action Buttons Overlay */}
-                        <div className="absolute inset-0 bg-black/0 group-hover/product:bg-black/20 transition-all duration-200">
-                          <div className="absolute top-2 right-2 flex flex-col gap-1 opacity-0 group-hover/product:opacity-100 transition-opacity duration-200">
-                            <Button
-                              size="sm"
-                              variant="secondary"
-                              className="h-8 w-8 p-0 bg-white/95 hover:bg-white hover:text-red-500 rounded-full shadow-lg border-0"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                addToLikesMutation.mutate(product.id);
-                              }}
-                            >
-                              <Heart className="h-3 w-3" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="secondary"
-                              className="h-8 w-8 p-0 bg-white/95 hover:bg-white hover:text-blue-500 rounded-full shadow-lg border-0"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                addToWishlistMutation.mutate(product.id);
-                              }}
-                            >
-                              <ShoppingBag className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      {/* Shop Now Button */}
-                      <div className="p-2">
-                        <Button
-                          size="sm"
-                          className="w-full h-8 text-xs font-medium bg-primary hover:bg-primary/90 text-primary-foreground"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleShopNow(product.id);
-                          }}
-                        >
-                          Shop
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-
-                {/* Stats */}
-                <div className="space-y-4 mt-auto pt-4">
-                  <div className="text-sm text-muted-foreground font-medium">
-                    {style.count} products trending
-                  </div>
+                {/* Product Image */}
+                <div className="relative aspect-[4/3] mb-4 rounded-xl overflow-hidden bg-gray-50">
+                  <img
+                    src={product.image_url || '/placeholder.svg'}
+                    alt={product.title}
+                    className="w-full h-full object-cover"
+                  />
                   
-                  {style.recent_products.length > 0 && (
-                    <div className="text-center">
-                      <span className="text-sm text-muted-foreground bg-muted/50 px-4 py-2 rounded-full">
-                        From {formatPrice(Math.min(...style.recent_products.map(p => p.price_cents)))}
-                      </span>
+                  {/* Action Buttons Overlay */}
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-200">
+                    <div className="absolute top-3 right-3 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        className="h-9 w-9 p-0 bg-white/95 hover:bg-white hover:text-red-500 rounded-full shadow-lg border-0"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          addToLikesMutation.mutate(product.id);
+                        }}
+                      >
+                        <Heart className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        className="h-9 w-9 p-0 bg-white/95 hover:bg-white hover:text-blue-500 rounded-full shadow-lg border-0"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          addToWishlistMutation.mutate(product.id);
+                        }}
+                      >
+                        <ShoppingBag className="h-4 w-4" />
+                      </Button>
                     </div>
-                  )}
+                  </div>
+                </div>
+
+                {/* Product Info */}
+                <div className="flex-1 flex flex-col">
+                  <h4 className="font-semibold text-sm mb-2 group-hover:text-primary transition-colors line-clamp-2 leading-tight">
+                    {formatProductTitle(product.title)}
+                  </h4>
+                  
+                  <div className="flex items-center justify-between mt-auto">
+                    <span className="font-bold text-base text-primary">
+                      {formatPrice(product.price_cents, product.currency)}
+                    </span>
+                    
+                    <Button
+                      size="sm"
+                      className="h-8 px-4 text-xs font-medium"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleShopNow(product.external_url);
+                      }}
+                    >
+                      Shop
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
