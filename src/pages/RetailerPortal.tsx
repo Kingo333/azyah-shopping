@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
+import { BackButton } from '@/components/ui/back-button';
 import { 
   Package,
   Store,
@@ -185,11 +186,14 @@ const RetailerPortal = () => {
       <div className="container max-w-7xl mx-auto p-6">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold">Retailer Portal</h1>
-            <p className="text-muted-foreground mt-1">
-              {retailer?.name || 'Your Store'}
-            </p>
+          <div className="flex items-center gap-4">
+            <BackButton fallbackPath="/dashboard" />
+            <div>
+              <h1 className="text-3xl font-bold">Retailer Portal</h1>
+              <p className="text-muted-foreground mt-1">
+                {retailer?.name || 'Your Store'}
+              </p>
+            </div>
           </div>
           <Button onClick={() => setIsAddModalOpen(true)} className="gap-2">
             <Plus className="h-4 w-4" />
