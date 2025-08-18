@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -10,7 +9,10 @@ import { clearInvalidSession, debugAuthState } from "@/utils/sessionDebug";
 export default function Landing() {
   const [isVisible, setIsVisible] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'swipe'>('grid');
-  const { user, loading } = useAuth();
+  const {
+    user,
+    loading
+  } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
   useEffect(() => setIsVisible(true), []);
@@ -19,11 +21,13 @@ export default function Landing() {
   useEffect(() => {
     console.log('Landing page: user state:', user, 'loading:', loading);
     debugAuthState(); // Debug current auth state
-    
+
     if (!loading && user) {
       console.log('User is authenticated, redirecting to appropriate dashboard');
       // Import getRedirectRoute to redirect to correct dashboard based on role
-      import('@/lib/rbac').then(({ getRedirectRoute }) => {
+      import('@/lib/rbac').then(({
+        getRedirectRoute
+      }) => {
         const userRole = user.user_metadata?.role || 'shopper';
         const redirectPath = getRedirectRoute(userRole);
         console.log('Redirecting to:', redirectPath, 'for role:', userRole);
@@ -102,11 +106,9 @@ export default function Landing() {
               Explore
             </Button>
             {/* Debug button - only show if user exists */}
-            {user && (
-              <Button variant="destructive" size="sm" onClick={handleDebugLogout} className="font-medium">
+            {user && <Button variant="destructive" size="sm" onClick={handleDebugLogout} className="font-medium">
                 Force Logout
-              </Button>
-            )}
+              </Button>}
           </div>
 
           {/* Mobile burger - Cleaner Design */}
@@ -222,13 +224,7 @@ export default function Landing() {
                 </div>
                 
                 {/* Simplified New Collection Card for Mobile */}
-                <div className="absolute -top-2 -right-2 sm:-top-3 sm:-right-4 lg:-top-4 lg:-right-8 w-36 sm:w-44 lg:w-64 bg-background/95 backdrop-blur-sm rounded-lg sm:rounded-xl lg:rounded-2xl shadow-xl border border-primary/20 p-2 sm:p-3 lg:p-6">
-                  <h3 className="font-cormorant text-sm sm:text-base lg:text-xl font-bold mb-1 lg:mb-2">New Collection</h3>
-                  <p className="text-xs lg:text-sm text-muted-foreground mb-2 lg:mb-4 hidden sm:block">Designer pieces, curated for great taste.</p>
-                  <Button size="sm" className="w-full bg-primary hover:bg-primary/90 text-xs lg:text-sm h-7 sm:h-8 lg:h-auto">
-                    View
-                  </Button>
-                </div>
+                
                 
                 {/* Simplified Community Card for Mobile */}
                 <div className="absolute -bottom-3 -left-2 sm:-bottom-4 sm:-left-4 lg:-bottom-6 lg:-left-8 w-32 sm:w-40 lg:w-56 bg-background/95 backdrop-blur-sm rounded-lg sm:rounded-xl lg:rounded-2xl shadow-xl border border-primary/20 p-2 sm:p-3 lg:p-4">
@@ -269,7 +265,7 @@ export default function Landing() {
                     <Play className="w-3 h-3 sm:w-4 sm:h-4 text-primary" />
                     <span className="text-xs sm:text-sm font-semibold text-primary uppercase tracking-wider">How It Works</span>
                   </div>
-                  <h3 className="font-cormorant text-2xl sm:text-3xl lg:text-4xl font-bold">
+                  <h3 className="font-cormorant text-xl sm:text-2xl lg:text-4xl font-bold">
                     Discover Your
                     <span className="block text-primary italic">Perfect Style</span>
                   </h3>
