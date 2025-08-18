@@ -37,15 +37,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
-    // Set up auth state listener
+    // Set up auth state listener with Visual Edits protection
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        console.log('AuthContext: Auth state changed:', { event, user: session?.user?.email });
+        console.log('AuthContext: Auth state changed:', { event, user: session?.user?.email, visualEdits: isVisualEditsMode() });
+        
+        // Protect against unwanted signouts during Visual Edits
+        if (event === 'SIGNED_OUT' && isVisualEditsMode()) {
+          const stableState = getStableAuthState();
+          if (stableState && Date.now() - stableState.timestamp < (stableState.validity || 30 * 60 * 1000)) {
+            console.log('AuthContext: Preserving auth state during Visual Edits');
+            // Restore stable state instead of signing out
+            setSession(stableState.session);
+            setUser(stableState.user);
+            setLoading(false);
+            return;
+          }
+        }
         
         // Store stable auth state for Visual Edits compatibility
         if (session?.user) {
           setStableAuthState(session.user, session);
-        } else {
+        } else if (!isVisualEditsMode()) {
+          // Only clear stable state if not in Visual Edits
           clearStableAuthState();
         }
         

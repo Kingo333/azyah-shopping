@@ -2,22 +2,42 @@
 // Detects when Visual Edits mode is active to provide stable auth experience
 
 export const isVisualEditsMode = (): boolean => {
-  // Check for Visual Edits indicators in the DOM or URL
   if (typeof window === 'undefined') return false;
   
-  // Check for Visual Edits specific elements or classes
-  const hasVisualEditsElements = document.querySelector('[data-visual-edit]') || 
-                                 document.querySelector('.visual-edit-mode') ||
-                                 document.body.classList.contains('visual-editing');
+  // Enhanced Visual Edits detection for Lovable
   
-  // Check URL parameters
+  // 1. Check for Lovable-specific Visual Edits indicators
+  const hasLovableElements = document.querySelector('[data-lovable-edit]') || 
+                            document.querySelector('.lovable-visual-edit') ||
+                            document.querySelector('[data-visual-edit]') || 
+                            document.querySelector('.visual-edit-mode') ||
+                            document.body.classList.contains('visual-editing');
+  
+  // 2. Check URL parameters
   const urlParams = new URLSearchParams(window.location.search);
-  const hasVisualEditsParam = urlParams.has('visual-edit') || urlParams.has('edit-mode');
+  const hasVisualEditsParam = urlParams.has('visual-edit') || 
+                             urlParams.has('edit-mode') || 
+                             urlParams.has('lovable-edit');
   
-  // Check for Visual Edits in iframe context
-  const isInVisualEditsIframe = window !== window.top && window.location.href.includes('edit');
+  // 3. Enhanced iframe detection for Lovable editor
+  let isInLovableEditor = false;
+  try {
+    // Check if we're in an iframe with Lovable-specific patterns
+    isInLovableEditor = window !== window.top && (
+      window.location.href.includes('edit') ||
+      window.location.href.includes('lovable') ||
+      document.referrer.includes('lovable')
+    );
+  } catch (e) {
+    // Cross-origin access error itself indicates iframe context
+    isInLovableEditor = window !== window.top;
+  }
   
-  return Boolean(hasVisualEditsElements || hasVisualEditsParam || isInVisualEditsIframe);
+  // 4. Check for Lovable postMessage communication
+  const hasLovableMessages = window.addEventListener && 
+    (window as any).__lovable_visual_edit_active === true;
+  
+  return Boolean(hasLovableElements || hasVisualEditsParam || isInLovableEditor || hasLovableMessages);
 };
 
 export const onVisualEditsModeChange = (callback: (isActive: boolean) => void) => {
@@ -76,7 +96,15 @@ export const getStableAuthState = () => {
 
 export const setStableAuthState = (user: any, session: any) => {
   try {
-    sessionStorage.setItem('stable-auth-state', JSON.stringify({ user, session, timestamp: Date.now() }));
+    // Extend validity for Visual Edits mode
+    const validity = isVisualEditsMode() ? 30 * 60 * 1000 : 10 * 60 * 1000; // 30min vs 10min
+    sessionStorage.setItem('stable-auth-state', JSON.stringify({ 
+      user, 
+      session, 
+      timestamp: Date.now(),
+      isVisualEdits: isVisualEditsMode(),
+      validity 
+    }));
   } catch {
     // Ignore storage errors
   }
