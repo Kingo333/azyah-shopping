@@ -241,19 +241,19 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
                 </div>
 
                 {/* Title */}
-                <h4 className="font-bold text-xl mb-8 group-hover:text-primary transition-colors line-clamp-2 leading-tight">
+                <h4 className="font-bold text-lg mb-4 group-hover:text-primary transition-colors line-clamp-2 leading-tight">
                   {formatCategoryName(style.category, style.subcategory)}
                 </h4>
 
-                {/* Product Images Grid - Much Larger */}
-                <div className="grid grid-cols-2 gap-6 mb-8 flex-1">
-                  {style.recent_products.slice(0, 2).map((product) => (
-                    <div key={product.id} className="relative group/product overflow-hidden rounded-xl bg-gray-50">
+                {/* Single Large Product Image */}
+                <div className="mb-4 flex-1">
+                  {style.recent_products.length > 0 && (
+                    <div className="relative group/product overflow-hidden rounded-xl bg-gray-50">
                       {/* Product Image */}
-                      <div className="relative aspect-square">
+                      <div className="relative aspect-[4/3]">
                         <img
-                          src={product.image_url || '/placeholder.svg'}
-                          alt={product.title}
+                          src={style.recent_products[0].image_url || '/placeholder.svg'}
+                          alt={style.recent_products[0].title}
                           className="w-full h-full object-cover"
                         />
                         
@@ -266,7 +266,7 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
                               className="h-10 w-10 p-0 bg-white/95 hover:bg-white hover:text-red-500 rounded-full shadow-lg border-0"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                addToLikesMutation.mutate(product.id);
+                                addToLikesMutation.mutate(style.recent_products[0].id);
                               }}
                             >
                               <Heart className="h-4 w-4" />
@@ -277,7 +277,7 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
                               className="h-10 w-10 p-0 bg-white/95 hover:bg-white hover:text-blue-500 rounded-full shadow-lg border-0"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                addToWishlistMutation.mutate(product.id);
+                                addToWishlistMutation.mutate(style.recent_products[0].id);
                               }}
                             >
                               <ShoppingBag className="h-4 w-4" />
@@ -285,23 +285,25 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
                           </div>
                         </div>
                       </div>
-                      
-                      {/* Shop Now Button */}
-                      <div className="p-4">
-                        <Button
-                          size="sm"
-                          className="w-full h-11 text-sm font-medium bg-primary hover:bg-primary/90 text-primary-foreground"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleShopNow(product.id);
-                          }}
-                        >
-                          <ExternalLink className="h-4 w-4 mr-2" />
-                          Shop Now
-                        </Button>
-                      </div>
                     </div>
-                  ))}
+                  )}
+                </div>
+
+                {/* Shop Now Button */}
+                <div className="mt-auto">
+                  <Button
+                    size="sm"
+                    className="w-full h-11 text-sm font-medium bg-primary hover:bg-primary/90 text-primary-foreground"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (style.recent_products.length > 0) {
+                        handleShopNow(style.recent_products[0].id);
+                      }
+                    }}
+                  >
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    Shop Now
+                  </Button>
                 </div>
 
                 {/* Stats */}
