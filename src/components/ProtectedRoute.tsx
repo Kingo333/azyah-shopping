@@ -20,9 +20,12 @@ const ProtectedRoute = ({ children, roles }: ProtectedRouteProps) => {
   useEffect(() => {
     const fetchUserRole = async () => {
       if (!user) {
+        console.log('ProtectedRoute: No user found');
         setRoleLoading(false);
         return;
       }
+
+      console.log('ProtectedRoute: Fetching role for user:', user.id, user.email);
 
       try {
         const { data, error } = await supabase
@@ -32,13 +35,14 @@ const ProtectedRoute = ({ children, roles }: ProtectedRouteProps) => {
           .single();
 
         if (error) {
-          console.error('Error fetching user role:', error);
+          console.error('ProtectedRoute: Error fetching user role:', error);
           setUserRole('shopper'); // Default fallback
         } else {
+          console.log('ProtectedRoute: Fetched user role:', data.role);
           setUserRole(data.role as UserRole);
         }
       } catch (error) {
-        console.error('Error fetching user role:', error);
+        console.error('ProtectedRoute: Error fetching user role:', error);
         setUserRole('shopper'); // Default fallback
       } finally {
         setRoleLoading(false);
@@ -66,16 +70,23 @@ const ProtectedRoute = ({ children, roles }: ProtectedRouteProps) => {
 
   // Role-based access control
   if (userRole) {
+    console.log('ProtectedRoute: Current route:', location.pathname, 'User role:', userRole);
+    
     // If specific roles are required, check if user has one of them
     if (roles && roles.length > 0) {
+      console.log('ProtectedRoute: Required roles:', roles, 'User has role:', userRole);
       if (!roles.includes(userRole)) {
-        return <Navigate to={getRedirectRoute(userRole)} replace />;
+        const redirectTo = getRedirectRoute(userRole);
+        console.log('ProtectedRoute: User role not allowed, redirecting to:', redirectTo);
+        return <Navigate to={redirectTo} replace />;
       }
     }
 
     // Check if user can access the current route
     if (!canAccessRoute(userRole, location.pathname)) {
-      return <Navigate to={getRedirectRoute(userRole)} replace />;
+      const redirectTo = getRedirectRoute(userRole);
+      console.log('ProtectedRoute: Route not accessible, redirecting to:', redirectTo);
+      return <Navigate to={redirectTo} replace />;
     }
   }
 

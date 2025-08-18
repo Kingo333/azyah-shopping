@@ -83,13 +83,15 @@ const RoleDashboard: React.FC = () => {
         .eq('id', user.id)
         .maybeSingle();
 
+      console.log('RoleDashboard: User query result:', { data, error, userId: user.id });
+
       if (error) {
         console.error('Error fetching user profile:', error);
         throw error;
       }
 
       if (data) {
-        console.log('Found user profile:', data);
+        console.log('Found user profile:', data, 'Role:', data.role);
         setUserProfile(data);
       } else {
         // User profile doesn't exist, check if role is in user_metadata

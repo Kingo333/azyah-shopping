@@ -5,6 +5,7 @@ import { ArrowRight, Heart, Users, Star, Sparkles, Play, Menu, X, CheckCircle, S
 import { Button } from "@/components/ui/button";
 import { SEOHead } from "@/components/SEOHead";
 import SwipeDeck from '@/components/SwipeDeck';
+import { clearInvalidSession, debugAuthState } from "@/utils/sessionDebug";
 export default function Landing() {
   const [isVisible, setIsVisible] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'swipe'>('grid');
@@ -15,9 +16,11 @@ export default function Landing() {
   const navigate = useNavigate();
   useEffect(() => setIsVisible(true), []);
 
-  // Redirect authenticated users to dashboard
+  // Debug auth state and redirect logic
   useEffect(() => {
     console.log('Landing page: user state:', user);
+    debugAuthState(); // Debug current auth state
+    
     if (user) {
       console.log('User is authenticated, redirecting to dashboard');
       navigate('/dashboard');
@@ -25,6 +28,12 @@ export default function Landing() {
       console.log('No user, staying on landing page');
     }
   }, [user, navigate]);
+
+  // Add logout button for debugging
+  const handleDebugLogout = () => {
+    console.log('Debug: Force clearing session...');
+    clearInvalidSession();
+  };
   const scrollToSection = (href: string) => {
     const element = document.querySelector(href);
     if (element) {
@@ -77,6 +86,12 @@ export default function Landing() {
             <Button variant="default" size="sm" onClick={() => navigate("/auth")} className="font-medium">
               Explore
             </Button>
+            {/* Debug button - only show if user exists */}
+            {user && (
+              <Button variant="destructive" size="sm" onClick={handleDebugLogout} className="font-medium">
+                Force Logout
+              </Button>
+            )}
           </div>
 
           {/* Mobile burger - Cleaner Design */}
