@@ -33,7 +33,7 @@ interface BulkImportResult {
   }>;
 }
 
-const DEFAULT_MARKETS = ['us', 'gb', 'ae', 'sa'];
+const DEFAULT_MARKETS = ['us', 'co.uk', 'de'];
 const DEFAULT_KEYWORDS = [
   'women dresses',
   'abayas',
@@ -183,11 +183,11 @@ const BulkAsosImportManager: React.FC = () => {
                 id="markets"
                 value={markets}
                 onChange={(e) => setMarkets(e.target.value)}
-                placeholder="us, gb, ae, sa"
+                placeholder="us, co.uk, de"
                 disabled={isImporting}
               />
               <p className="text-sm text-muted-foreground">
-                Available: us, gb, de, fr, ae, sa, au, ca
+                Available: us, co.uk, de, fr, it, es
               </p>
             </div>
             

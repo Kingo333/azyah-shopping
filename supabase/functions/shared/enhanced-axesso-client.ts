@@ -209,6 +209,15 @@ export class EnhancedAxessoClient {
         const resultCount = data?.searchProductDetails?.length || 0;
         console.log(`Search result for ${validMarket}:${keyword}:${page} - Found ${resultCount} products`);
         
+        if (resultCount === 0) {
+          console.warn('[AXESSO] Empty search result', {
+            market: validMarket,
+            keyword,
+            page,
+            response: JSON.stringify(data).slice(0, 300)
+          });
+        }
+        
         // Cache successful response
         this.searchCache.set(cacheKey, { data, timestamp: Date.now() });
         return data;
@@ -265,6 +274,25 @@ export class EnhancedAxessoClient {
     pagesPerKeyword = 5
   ): Promise<{ products: AxessoProductDetails[]; metrics: any }> {
     const startTime = Date.now();
+    
+    // Filter out unsupported markets
+    const validMarkets = markets
+      .map(m => normalizeMarket(m))
+      .filter((m): m is NonNullable<typeof m> => m !== null);
+    
+    if (validMarkets.length === 0) {
+      console.warn('[AXESSO] No valid markets provided:', markets);
+      return { 
+        products: [], 
+        metrics: { 
+          searchRequests: 0, 
+          detailRequests: 0, 
+          productsFound: 0, 
+          duration: Date.now() - startTime 
+        } 
+      };
+    }
+    
     const metrics = {
       searchRequests: 0,
       detailRequests: 0,
@@ -277,12 +305,9 @@ export class EnhancedAxessoClient {
     const allProducts: AxessoProductDetails[] = [];
     const uniqueUrls = new Set<string>();
 
-    console.log(`Starting bulk import: ${markets.length} markets, ${keywords.length} keywords, ${pagesPerKeyword} pages each`);
-    
-    // Normalize markets to valid domain codes
-    const validMarkets = markets.map(normalizeMarket);
-    console.log(`Normalized markets: ${validMarkets.join(', ')}`);
+    console.log(`Starting bulk import: ${validMarkets.length} markets, ${keywords.length} keywords, ${pagesPerKeyword} pages each`);
 
+    
     // Search phase
     for (const market of validMarkets) {
       for (const keyword of keywords) {

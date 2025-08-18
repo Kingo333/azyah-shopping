@@ -13,12 +13,14 @@ if (!AXESSO.primary && !AXESSO.secondary) {
 }
 
 // Domain code mapping: convert any variations to valid API values
-export function normalizeMarket(market: string): 'us' | 'de' | 'co.uk' {
-  const m = market.toLowerCase();
+const SUPPORTED_MARKETS = new Set(['us', 'de', 'co.uk', 'fr', 'it', 'es']);
+
+export function normalizeMarket(market: string): 'us' | 'de' | 'co.uk' | 'fr' | 'it' | 'es' | null {
+  const m = market.toLowerCase().trim();
   if (m === 'gb' || m === 'uk') return 'co.uk';
-  if (m === 'us') return 'us';
-  if (m === 'de') return 'de';
-  if (m === 'co.uk') return 'co.uk';
-  // Default fallback
-  return 'us';
+  if (SUPPORTED_MARKETS.has(m)) return m as any;
+  
+  // Log unsupported markets for debugging
+  console.warn('[ASOS] Skipping unsupported market:', market);
+  return null; // Skip unsupported markets
 }
