@@ -240,55 +240,62 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
                 </div>
 
                 {/* Title */}
-                <h4 className="font-semibold text-base mb-3 group-hover:text-primary transition-colors line-clamp-2 leading-tight">
+                <h4 className="font-semibold text-base mb-4 group-hover:text-primary transition-colors line-clamp-2 leading-tight">
                   {formatCategoryName(style.category, style.subcategory)}
                 </h4>
 
-                {/* Product Images with Actions */}
+                {/* Product Images Grid */}
                 <div className="grid grid-cols-2 gap-3 mb-4 flex-1">
                   {style.recent_products.slice(0, 2).map((product) => (
-                    <div key={product.id} className="relative group/product">
-                      <img
-                        src={product.image_url || '/placeholder.svg'}
-                        alt={product.title}
-                        className="w-full aspect-square object-cover rounded-xl"
-                      />
-                      {/* Top corner action buttons - always visible */}
-                      <div className="absolute top-3 left-3 right-3 flex justify-between">
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-9 w-9 p-0 bg-white/95 text-gray-700 hover:text-red-500 hover:bg-white rounded-full shadow-md"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            addToLikesMutation.mutate(product.id);
-                          }}
-                        >
-                          <Heart className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-9 w-9 p-0 bg-white/95 text-gray-700 hover:text-blue-500 hover:bg-white rounded-full shadow-md"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            addToWishlistMutation.mutate(product.id);
-                          }}
-                        >
-                          <ShoppingBag className="h-4 w-4" />
-                        </Button>
+                    <div key={product.id} className="relative group/product overflow-hidden rounded-lg bg-gray-50">
+                      {/* Product Image */}
+                      <div className="relative aspect-square">
+                        <img
+                          src={product.image_url || '/placeholder.svg'}
+                          alt={product.title}
+                          className="w-full h-full object-cover"
+                        />
+                        
+                        {/* Action Buttons Overlay */}
+                        <div className="absolute inset-0 bg-black/0 group-hover/product:bg-black/20 transition-all duration-200">
+                          <div className="absolute top-2 right-2 flex flex-col gap-1 opacity-0 group-hover/product:opacity-100 transition-opacity duration-200">
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              className="h-8 w-8 p-0 bg-white/95 hover:bg-white hover:text-red-500 rounded-full shadow-sm border-0"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                addToLikesMutation.mutate(product.id);
+                              }}
+                            >
+                              <Heart className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              className="h-8 w-8 p-0 bg-white/95 hover:bg-white hover:text-blue-500 rounded-full shadow-sm border-0"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                addToWishlistMutation.mutate(product.id);
+                              }}
+                            >
+                              <ShoppingBag className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        </div>
                       </div>
-                      {/* Mobile-friendly bottom overlay with Shop button */}
-                      <div className="absolute bottom-0 left-0 right-0">
+                      
+                      {/* Shop Now Button */}
+                      <div className="p-2">
                         <Button
                           size="sm"
-                          variant="outline"
-                          className="w-full text-sm font-medium h-8 bg-red-500 text-white border-red-500 hover:bg-red-600 hover:border-red-600 rounded-b-xl rounded-t-none"
+                          className="w-full h-8 text-xs font-medium bg-primary hover:bg-primary/90 text-primary-foreground"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleShopNow(product.id);
                           }}
                         >
+                          <ExternalLink className="h-3 w-3 mr-1" />
                           Shop Now
                         </Button>
                       </div>
