@@ -68,29 +68,22 @@ serve(async (req) => {
       );
     }
 
-    // Build input array for OpenAI Responses API
-    const input = [
-      { role: "user", content: [{ type: "input_text", text: message }] }
-    ];
+    // Build input for OpenAI Responses API - simple string format
+    const inputMessages = [message];
 
     // Add conversation history
     if (conversation_history.length > 0) {
       const recentHistory = conversation_history.slice(-6); // Keep last 6 messages for context
-      recentHistory.forEach(h => {
-        input.push({
-          role: h.role === "assistant" ? "assistant" : "user",
-          content: [{ type: "input_text", text: h.content }]
-        });
-      });
+      const historyText = recentHistory.map(h => `${h.role === 'assistant' ? 'Assistant' : 'User'}: ${h.content}`).join('\n');
+      inputMessages.unshift(`Previous conversation:\n${historyText}\n`);
     }
 
     // Add skin profile context if available
     if (skin_profile) {
-      input.push({
-        role: "developer",
-        content: [{ type: "input_text", text: `User skin profile (if any): ${JSON.stringify(skin_profile)}` }]
-      });
+      inputMessages.unshift(`User skin profile: ${JSON.stringify(skin_profile)}\n`);
     }
+
+    const input = inputMessages.join('\n');
 
     console.log('Making OpenAI Responses API call for text consultation...');
 
