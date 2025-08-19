@@ -86,7 +86,8 @@ const jsonSchema = {
           "maximum": 1
         }
       },
-      "required": ["tone_depth", "undertone", "skin_type", "visible_concerns", "confidence"]
+      "required": ["tone_depth", "undertone", "skin_type", "visible_concerns", "confidence"],
+      "additionalProperties": false
     },
     "questions": {
       "type": "array",
@@ -108,7 +109,8 @@ const jsonSchema = {
               "price_tier": { "type": "string", "enum": ["drugstore", "mid", "premium"] },
               "alt_options": { "type": "array", "items": { "type": "string" } }
             },
-            "required": ["name", "why_it_matches"]
+            "required": ["name", "why_it_matches"],
+            "additionalProperties": false
           }
         },
         "foundation_concealer": {
@@ -123,7 +125,8 @@ const jsonSchema = {
               "price_tier": { "type": "string", "enum": ["drugstore", "mid", "premium"] },
               "alt_options": { "type": "array", "items": { "type": "string" } }
             },
-            "required": ["name", "why_it_matches"]
+            "required": ["name", "why_it_matches"],
+            "additionalProperties": false
           }
         },
         "brows_eyeliner_bronzer": {
@@ -138,7 +141,8 @@ const jsonSchema = {
               "price_tier": { "type": "string", "enum": ["drugstore", "mid", "premium"] },
               "alt_options": { "type": "array", "items": { "type": "string" } }
             },
-            "required": ["name", "why_it_matches"]
+            "required": ["name", "why_it_matches"],
+            "additionalProperties": false
           }
         },
         "shadow_palette": {
@@ -153,18 +157,21 @@ const jsonSchema = {
               "price_tier": { "type": "string", "enum": ["drugstore", "mid", "premium"] },
               "alt_options": { "type": "array", "items": { "type": "string" } }
             },
-            "required": ["name", "why_it_matches"]
+            "required": ["name", "why_it_matches"],
+            "additionalProperties": false
           }
         }
       },
-      "required": ["primer", "foundation_concealer", "brows_eyeliner_bronzer", "shadow_palette"]
+      "required": ["primer", "foundation_concealer", "brows_eyeliner_bronzer", "shadow_palette"],
+      "additionalProperties": false
     },
     "technique_notes": {
       "type": "array",
       "items": { "type": "string" }
     }
   },
-  "required": ["skin_profile", "recommendations", "technique_notes"]
+  "required": ["skin_profile", "recommendations", "technique_notes"],
+  "additionalProperties": false
 };
 
 serve(async (req) => {
