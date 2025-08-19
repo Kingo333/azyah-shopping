@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Product } from '@/types';
 import { Card } from './ui/card';
 import { Badge } from './ui/badge';
-import { useOptimizedImage } from '@/hooks/useOptimizedImage';
+import { useImageOptimization } from '@/hooks/useImageOptimization';
 import { getOptimalImageDimensions } from '@/utils/imageOptimizer';
 import { Loader2 } from 'lucide-react';
 
@@ -23,7 +23,7 @@ export const SwipeCard = ({ product }: SwipeCardProps) => {
   const optimalDimensions = getOptimalImageDimensions('swipe');
   
   // Use image optimization hook
-  const { src: optimizedUrl, isOptimizing, cached } = useOptimizedImage({
+  const { optimizedUrl, isLoading: isOptimizing, cached } = useImageOptimization({
     originalUrl: primaryImageUrl,
     targetWidth: optimalDimensions.width,
     targetHeight: optimalDimensions.height,

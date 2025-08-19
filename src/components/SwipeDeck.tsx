@@ -12,7 +12,7 @@ import { Product } from '@/types';
 import { useNavigate } from 'react-router-dom';
 import { TopCategory, SubCategory } from '@/lib/categories';
 import { useSmartSwipeProducts } from '@/hooks/useSmartSwipeProducts';
-import { OptimizedImage } from '@/components/OptimizedImage';
+import { useImageOptimization } from '@/hooks/useImageOptimization';
 import { supabase } from '@/integrations/supabase/client';
 
 interface SwipeDeckProps {
@@ -82,6 +82,18 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
 
   const currentProduct = useMemo(() => products[index] || null, [products, index]);
   const { addToWishlist, isLoading: wishlistLoading } = useWishlist(currentProduct?.id);
+
+  // Get primary image URL for current product
+  const primaryImageUrl = currentProduct?.media_urls?.[0] || '/placeholder.svg';
+  
+  // Use image optimization hook
+  const { optimizedUrl, isLoading: isOptimizing, cached } = useImageOptimization({
+    originalUrl: primaryImageUrl,
+    targetWidth: 720,
+    targetHeight: 1080,
+    quality: 90,
+    enabled: !!currentProduct
+  });
 
   // Calculate image height based on aspect ratio with better mobile optimization
   const getImageHeight = useCallback((aspectRatio: number) => {
@@ -316,12 +328,20 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                     height: `${getImageHeight(imageAspectRatio)}px`
                   }}
                 >
-                  <OptimizedImage
-                    src={currentProduct.media_urls?.[0] || '/placeholder.svg'}
+                  {/* Loading indicator for image optimization */}
+                  {isOptimizing && (
+                    <div className="absolute inset-0 bg-muted flex items-center justify-center z-10">
+                      <div className="flex flex-col items-center gap-2">
+                        <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                        <span className="text-xs text-muted-foreground">Optimizing...</span>
+                        {cached && <span className="text-xs text-primary">HD ✓</span>}
+                      </div>
+                    </div>
+                  )}
+                  
+                  <img
+                    src={optimizedUrl}
                     alt={currentProduct.title}
-                    targetWidth={720}
-                    targetHeight={1080}
-                    quality={90}
                     className="object-cover w-full h-full"
                     style={{
                       imageRendering: 'auto',
@@ -331,8 +351,19 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                     sizes="(max-width: 768px) 100vw, 50vw"
                     loading="eager"
                     onLoad={handleImageLoad}
-                    showOptimizationIndicator={true}
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = '/placeholder.svg';
+                    }}
                   />
+                  
+                  {/* Quality indicator */}
+                  {optimizedUrl !== primaryImageUrl && !isOptimizing && (
+                    <div className="absolute top-2 right-2">
+                      <div className="bg-green-500/80 text-white text-xs px-2 py-1 rounded-full shadow-lg">
+                        HD ✓
+                      </div>
+                    </div>
+                  )}
                 </div>
                 <div className="flex flex-col flex-grow">
                   <div className="flex items-start justify-between gap-2 mb-1">

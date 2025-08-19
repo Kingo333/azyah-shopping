@@ -13,105 +13,6 @@ interface ImageOptimizationRequest {
   quality?: number;
 }
 
-// Image optimization function using Canvas API
-async function optimizeImageData(
-  imageBuffer: ArrayBuffer, 
-  options: { targetWidth: number; targetHeight: number; quality: number }
-): Promise<Uint8Array> {
-  const { targetWidth, targetHeight, quality } = options;
-  
-  // Create a blob from the image buffer
-  const blob = new Blob([imageBuffer]);
-  const imageUrl = URL.createObjectURL(blob);
-  
-  try {
-    // Load image in a way that works in Deno
-    const img = new Image();
-    await new Promise((resolve, reject) => {
-      img.onload = resolve;
-      img.onerror = reject;
-      img.src = imageUrl;
-    });
-    
-    // Calculate optimal dimensions maintaining aspect ratio
-    const aspectRatio = img.width / img.height;
-    let finalWidth = targetWidth;
-    let finalHeight = targetHeight;
-    
-    if (aspectRatio > 1) {
-      // Landscape: fit by width
-      finalHeight = Math.round(targetWidth / aspectRatio);
-    } else {
-      // Portrait: fit by height  
-      finalWidth = Math.round(targetHeight * aspectRatio);
-    }
-    
-    // Create canvas for image processing
-    const canvas = new OffscreenCanvas(finalWidth, finalHeight);
-    const ctx = canvas.getContext('2d');
-    
-    if (!ctx) {
-      throw new Error('Could not get canvas context');
-    }
-    
-    // Enable high-quality image rendering
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = 'high';
-    
-    // Draw and resize image
-    ctx.drawImage(img, 0, 0, finalWidth, finalHeight);
-    
-    // Apply image enhancements
-    const imageData = ctx.getImageData(0, 0, finalWidth, finalHeight);
-    enhanceImageData(imageData);
-    ctx.putImageData(imageData, 0, 0);
-    
-    // Convert to blob with specified quality
-    const optimizedBlob = await canvas.convertToBlob({
-      type: 'image/jpeg',
-      quality: quality / 100
-    });
-    
-    // Convert blob to Uint8Array
-    const optimizedBuffer = await optimizedBlob.arrayBuffer();
-    return new Uint8Array(optimizedBuffer);
-    
-  } finally {
-    URL.revokeObjectURL(imageUrl);
-  }
-}
-
-// Enhance image data with improved contrast, saturation, and sharpness
-function enhanceImageData(imageData: ImageData) {
-  const data = imageData.data;
-  
-  for (let i = 0; i < data.length; i += 4) {
-    let r = data[i];
-    let g = data[i + 1];
-    let b = data[i + 2];
-    
-    // Apply slight contrast boost (1.1x)
-    r = Math.min(255, Math.max(0, (r - 128) * 1.1 + 128));
-    g = Math.min(255, Math.max(0, (g - 128) * 1.1 + 128));
-    b = Math.min(255, Math.max(0, (b - 128) * 1.1 + 128));
-    
-    // Apply saturation boost (1.15x)
-    const gray = r * 0.299 + g * 0.587 + b * 0.114;
-    r = Math.min(255, Math.max(0, gray + (r - gray) * 1.15));
-    g = Math.min(255, Math.max(0, gray + (g - gray) * 1.15));
-    b = Math.min(255, Math.max(0, gray + (b - gray) * 1.15));
-    
-    // Apply slight brightness boost (1.05x)
-    r = Math.min(255, r * 1.05);
-    g = Math.min(255, g * 1.05);
-    b = Math.min(255, b * 1.05);
-    
-    data[i] = r;
-    data[i + 1] = g;
-    data[i + 2] = b;
-  }
-}
-
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -163,23 +64,9 @@ serve(async (req) => {
     }
 
     const imageArrayBuffer = await imageResponse.arrayBuffer();
-    let imageBytes = new Uint8Array(imageArrayBuffer);
+    const imageBytes = new Uint8Array(imageArrayBuffer);
     
     console.log('🖼️ Original image size:', imageBytes.length, 'bytes');
-
-    // Process image for optimization (resize and enhance quality)
-    try {
-      const optimizedImageData = await optimizeImageData(imageArrayBuffer, {
-        targetWidth,
-        targetHeight,
-        quality
-      });
-      imageBytes = optimizedImageData;
-      console.log('✨ Image optimized, new size:', imageBytes.length, 'bytes');
-    } catch (error) {
-      console.warn('⚠️ Image optimization failed, using original:', error);
-      // Keep original imageBytes if optimization fails
-    }
 
     // Create optimized filename
     const imageUrl = new URL(original_url);
