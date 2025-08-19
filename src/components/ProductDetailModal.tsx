@@ -66,7 +66,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent
-        className="w-[100vw] h-[100dvh] md:max-w-4xl md:max-h-[90vh] p-0 glass-premium border-white/20 rounded-none md:rounded-3xl top-0 left-0 translate-x-0 translate-y-0 overflow-y-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2"
+        className="w-[100vw] h-[100dvh] md:max-w-4xl md:max-h-[90vh] p-0 glass-premium border-white/20 rounded-none md:rounded-3xl overflow-hidden md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2"
       >
         {!product ? (
           <div className="flex h-[70vh] items-center justify-center text-sm text-muted-foreground">
@@ -75,24 +75,22 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
         ) : (
           <>
             {/* Mobile Layout */}
-            <div className="md:hidden flex flex-col h-full min-h-0">
+            <div className="md:hidden h-full relative">
               {/* Close Button */}
-              <div className="absolute top-3 right-3 z-30">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={onClose}
-                  className="bg-black/50 hover:bg-black/70 backdrop-blur-sm rounded-full h-10 w-10 text-white"
-                >
-                  <X className="h-5 w-5" />
-                </Button>
-              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onClose}
+                className="absolute top-3 right-3 z-30 bg-black/50 hover:bg-black/70 backdrop-blur-sm rounded-full h-10 w-10 text-white"
+              >
+                <X className="h-5 w-5" />
+              </Button>
 
-              {/* Scrollable Content Area */}
-              <div className="flex-1 min-h-0 overflow-y-auto bg-background">
-                <div className="space-y-3 pb-32">
+              {/* Full Scrollable Content */}
+              <div className="h-full overflow-y-auto pb-32">
+                <div className="space-y-0">
                   {/* Image Gallery */}
-                  <div className="aspect-[4/5]">
+                  <div className="aspect-[4/5] w-full">
                     <EnhancedProductGallery
                       images={images}
                       productTitle={product.title}
@@ -101,7 +99,8 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     />
                   </div>
                   
-                  <div className="p-3 space-y-3">
+                  {/* Product Content */}
+                  <div className="bg-background p-4 space-y-4">
                     {/* Product Header */}
                     <div className="space-y-1.5">
                       <h1 className="text-lg font-bold leading-tight">{product.title}</h1>
