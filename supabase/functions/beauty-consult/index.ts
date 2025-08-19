@@ -423,36 +423,23 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Build input for OpenAI Responses API
-    const input = [
-      {
-        role: "user",
-        content: [
-          { type: "input_text", text: "Analyze my selfie and recommend makeup products. Return ONLY JSON that matches the schema." },
-          { type: "input_image", image_url: image_base64, detail: "high" }
-        ]
-      }
-    ];
-
+    // Build context prompt
+    let contextPrompt = "Analyze my selfie and recommend makeup products. Return ONLY JSON that matches the schema.";
+    
     // Add preferences if provided
     if (prefs && Object.keys(prefs).length > 0) {
-      input.push({
-        role: "user",
-        content: [{ type: "input_text", text: `Preferences: ${JSON.stringify(prefs)}` }]
-      });
+      contextPrompt += `\n\nPreferences: ${JSON.stringify(prefs)}`;
     }
 
     // Add previous profile for consistency if available
     if (last_skin_profile) {
-      input.push({
-        role: "user",
-        content: [{ type: "input_text", text: `Previous skin profile: ${JSON.stringify(last_skin_profile)}` }]
-      });
+      contextPrompt += `\n\nPrevious skin profile: ${JSON.stringify(last_skin_profile)}`;
     }
 
-    console.log('Making OpenAI Responses API call...');
+    console.log('Making OpenAI Chat Completions API call...');
 
-    const response = await fetch('https://api.openai.com/v1/responses', {
+    // Call OpenAI Chat Completions API with vision and structured output
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${openAIApiKey}`,
@@ -460,13 +447,32 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: 'gpt-4o',
-        instructions: BEAUTY_DEVELOPER_INSTRUCTIONS,
-        input: input,
+        messages: [
+          {
+            role: "system",
+            content: BEAUTY_DEVELOPER_INSTRUCTIONS
+          },
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text: contextPrompt
+              },
+              {
+                type: "image_url",
+                image_url: {
+                  url: image_base64
+                }
+              }
+            ]
+          }
+        ],
         response_format: {
           type: "json_schema",
           json_schema: BeautyConsultationJsonSchema
         },
-        max_output_tokens: 2000
+        max_tokens: 1500,
       }),
     });
 
@@ -480,17 +486,23 @@ serve(async (req) => {
     console.log('OpenAI response received, status:', response.status);
     console.log('Response structure:', Object.keys(data));
 
-    // Parse structured JSON from Responses API
-    const output = data.output?.[0]?.content?.find?.((c: any) => c.type === "output_json")?.json ?? 
-                   data.output?.[0]?.content?.[0]?.json;
+    // Parse structured JSON from Chat Completions API
+    const output = data.choices?.[0]?.message?.content;
 
     console.log('Parsed output available:', !!output);
 
     if (!output) {
-      throw new Error('No JSON returned by model (check schema)');
+      throw new Error('No JSON returned by model (check response)');
     }
 
-    let consultationResult = output;
+    let consultationResult;
+    try {
+      consultationResult = JSON.parse(output);
+    } catch (parseError) {
+      console.error('Failed to parse JSON response:', parseError);
+      console.error('Raw output:', output);
+      throw new Error('Invalid JSON response from model');
+    }
     
     // Validate the result against our interface
     if (!consultationResult.skin_profile || !consultationResult.recommendations || !consultationResult.technique_notes) {
