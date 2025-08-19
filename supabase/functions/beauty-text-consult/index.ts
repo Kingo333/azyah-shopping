@@ -216,7 +216,12 @@ serve(async (req) => {
 
     const input = inputMessages.join('\n');
 
+    // Check if we should fetch live products
+    const productQueries = extractProductSearchQueries(message);
+
     console.log('Making OpenAI Chat Completions API call for text consultation...');
+    console.log('Product queries extracted:', productQueries);
+    console.log('Has SERPAPI key:', !!Deno.env.get('SERPAPI_API_KEY'));
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -230,7 +235,8 @@ serve(async (req) => {
           { role: 'system', content: SYSTEM_PROMPT },
           { role: 'user', content: input }
         ],
-        max_tokens: 1000
+        max_tokens: 1000,
+        temperature: 0.7
       }),
     });
 
@@ -252,7 +258,6 @@ serve(async (req) => {
 
     // Check if we should fetch live products
     let realProducts: RecItem[] = [];
-    const productQueries = extractProductSearchQueries(message);
     
     if (productQueries.length > 0) {
       console.log('Fetching live products for queries:', productQueries);

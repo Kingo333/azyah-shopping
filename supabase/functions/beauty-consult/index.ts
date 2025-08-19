@@ -106,6 +106,10 @@ function toDataURLParts(input: string) {
 async function openAIAnalyze(imageDataOrURL: string, prefs?: any) {
   const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY")!;
   const MODEL = Deno.env.get("AZ_VISION_MODEL") ?? "gpt-4o";
+  
+  console.log('Making OpenAI Responses API call with model:', MODEL);
+  console.log('Using text.format for structured output');
+  console.log('Image data length:', imageDataOrURL.length);
   const body = {
     model: MODEL,
     instructions: SYSTEM_PROMPT,
@@ -130,14 +134,24 @@ async function openAIAnalyze(imageDataOrURL: string, prefs?: any) {
   });
 
   const data = await res.json();
+  console.log('OpenAI response status:', res.status);
+  console.log('OpenAI response data structure:', Object.keys(data));
+  
   if (!res.ok) {
+    console.error('OpenAI Responses API error:', JSON.stringify(data));
     throw new Error(`OpenAI Responses error ${res.status}: ${JSON.stringify(data)}`);
   }
   // Structured Outputs => find output_json item:
+  console.log('Looking for structured output in response...');
   const json =
     data.output?.[0]?.content?.find?.((c: any) => c.type === "output_json")?.json ??
-    data.output?.[0]?.content?.[0]?.json;
-  if (!json) throw new Error("Model did not return JSON (check schema).");
+    data.output?.[0]?.content?.[0]?.json ??
+    data.output?.[0]?.json;
+  console.log('Found JSON result:', !!json);
+  if (!json) {
+    console.error('No JSON found in response structure:', JSON.stringify(data, null, 2));
+    throw new Error("Model did not return JSON (check schema).");
+  }
   return json as BeautyConsultation;
 }
 
