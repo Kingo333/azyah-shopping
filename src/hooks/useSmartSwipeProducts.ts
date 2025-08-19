@@ -281,12 +281,8 @@ export const useSmartSwipeProducts = ({
       if (subcategory && subcategory !== '') {
         query = query.eq('subcategory_slug', subcategory as any);
       } else if (filter && filter !== 'all') {
-        const dbCategory = filter === 'bags' ? 'accessories' : filter;
-        query = query.eq('category_slug', dbCategory as any);
-
-        if (filter === 'bags') {
-          query = query.in('subcategory_slug', ['handbags', 'clutches', 'totes', 'backpacks', 'wallets']);
-        }
+        // Direct category filtering - no conversion needed
+        query = query.eq('category_slug', filter as any);
       }
 
       // Gender filtering temporarily disabled until database migration is complete
