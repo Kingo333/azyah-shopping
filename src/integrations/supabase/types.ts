@@ -1664,8 +1664,11 @@ export type Database = {
           created_at: string
           email: string
           id: string
+          last_sign_in_at: string | null
           name: string | null
           preferences: Json | null
+          provider: string | null
+          provider_id: string | null
           role: Database["public"]["Enums"]["user_role"]
           social_links: Json | null
           socials: Json | null
@@ -1679,8 +1682,11 @@ export type Database = {
           created_at?: string
           email: string
           id?: string
+          last_sign_in_at?: string | null
           name?: string | null
           preferences?: Json | null
+          provider?: string | null
+          provider_id?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           social_links?: Json | null
           socials?: Json | null
@@ -1694,8 +1700,11 @@ export type Database = {
           created_at?: string
           email?: string
           id?: string
+          last_sign_in_at?: string | null
           name?: string | null
           preferences?: Json | null
+          provider?: string | null
+          provider_id?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           social_links?: Json | null
           socials?: Json | null
@@ -1837,8 +1846,11 @@ export type Database = {
           created_at: string
           email: string
           id: string
+          last_sign_in_at: string | null
           name: string | null
           preferences: Json | null
+          provider: string | null
+          provider_id: string | null
           role: Database["public"]["Enums"]["user_role"]
           social_links: Json | null
           socials: Json | null
