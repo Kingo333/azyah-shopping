@@ -478,13 +478,16 @@ serve(async (req) => {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('OpenAI Responses API error:', errorText);
-      throw new Error(`OpenAI Responses API error: ${response.status}`);
+      console.error('OpenAI Chat Completions API error:', errorText);
+      console.error('Response status:', response.status);
+      console.error('Response headers:', Object.fromEntries(response.headers.entries()));
+      throw new Error(`OpenAI Chat Completions API error: ${response.status}`);
     }
 
     const data = await response.json();
     console.log('OpenAI response received, status:', response.status);
     console.log('Response structure:', Object.keys(data));
+    console.log('Response choices:', data.choices?.length || 0);
 
     // Parse structured JSON from Chat Completions API
     const output = data.choices?.[0]?.message?.content;
