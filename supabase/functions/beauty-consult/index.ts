@@ -458,7 +458,9 @@ serve(async (req) => {
               },
               {
                 type: "input_image",
-                image_url: image_base64
+                image_url: {
+                  url: image_base64
+                }
               }
             ]
           }
