@@ -1,4 +1,5 @@
 "use client";
+
 import { useState, useEffect } from "react";
 import { SEOHead } from "@/components/SEOHead";
 import ShopperNavigation from "@/components/ShopperNavigation";
@@ -15,34 +16,31 @@ import { toast } from "sonner";
 import { Upload, Camera, MessageCircle, Sparkles, Copy, Save, Eye, EyeOff, Trash2, WandSparkles, Play, Download, Mic } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-
-type RecItem = { 
-  name: string; 
-  finish?: string; 
-  why_it_matches: string; 
-  shade_family?: string; 
-  price_tier?: "drugstore"|"mid"|"premium"; 
-  alt_options?: string[] 
-}
-
+type RecItem = {
+  name: string;
+  finish?: string;
+  why_it_matches: string;
+  shade_family?: string;
+  price_tier?: "drugstore" | "mid" | "premium";
+  alt_options?: string[];
+};
 type BeautyConsultation = {
-  skin_profile: { 
-    tone_depth: "fair"|"light"|"medium"|"tan"|"deep"; 
-    undertone: "cool"|"warm"|"neutral"|"olive"; 
-    skin_type: "dry"|"oily"|"combination"|"normal"|"sensitive"; 
-    visible_concerns: string[]; 
-    confidence: number 
+  skin_profile: {
+    tone_depth: "fair" | "light" | "medium" | "tan" | "deep";
+    undertone: "cool" | "warm" | "neutral" | "olive";
+    skin_type: "dry" | "oily" | "combination" | "normal" | "sensitive";
+    visible_concerns: string[];
+    confidence: number;
   };
   questions?: string[];
-  recommendations: { 
-    primer: RecItem[]; 
-    foundation_concealer: RecItem[]; 
-    brows_eyeliner_bronzer: RecItem[]; 
-    shadow_palette: RecItem[] 
+  recommendations: {
+    primer: RecItem[];
+    foundation_concealer: RecItem[];
+    brows_eyeliner_bronzer: RecItem[];
+    shadow_palette: RecItem[];
   };
   technique_notes: string[];
 };
-
 type ChatMessage = {
   id: string;
   type: 'user' | 'assistant';
@@ -51,17 +49,16 @@ type ChatMessage = {
   consultation?: BeautyConsultation;
   timestamp: Date;
 };
-
 export default function BeautyConsultantPage() {
-  const { user } = useAuth();
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: '1',
-      type: 'assistant',
-      content: "Hi! I'm your AI Beauty Consultant. I can help you find the perfect makeup based on your skin tone and preferences. You can upload a selfie for a complete analysis, or just tell me about your skin color and what you're looking for!",
-      timestamp: new Date()
-    }
-  ]);
+  const {
+    user
+  } = useAuth();
+  const [messages, setMessages] = useState<ChatMessage[]>([{
+    id: '1',
+    type: 'assistant',
+    content: "Hi! I'm your AI Beauty Consultant. I can help you find the perfect makeup based on your skin tone and preferences. You can upload a selfie for a complete analysis, or just tell me about your skin color and what you're looking for!",
+    timestamp: new Date()
+  }]);
   const [inputText, setInputText] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -70,8 +67,10 @@ export default function BeautyConsultantPage() {
   const [shoppingMode, setShoppingMode] = useState(false);
   const [selectedVoice, setSelectedVoice] = useState('alloy');
   const [isListening, setIsListening] = useState(false);
-  const [prefs, setPrefs] = useState<{ finish?: string; coverage?: "light"|"medium"|"full" }>({});
-
+  const [prefs, setPrefs] = useState<{
+    finish?: string;
+    coverage?: "light" | "medium" | "full";
+  }>({});
   const fileToBase64 = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -80,45 +79,38 @@ export default function BeautyConsultantPage() {
       reader.readAsDataURL(file);
     });
   };
-
   const handleImageUpload = async (file: File, mode: 'analysis' | 'shopping' = 'analysis') => {
     try {
       const base64 = await fileToBase64(file);
       setSelectedImage(base64);
-      
+
       // Add user message with image
       const userMessage: ChatMessage = {
         id: Date.now().toString(),
         type: 'user',
-        content: mode === 'shopping' 
-          ? 'Uploaded product photo for shopping recommendations' 
-          : 'Uploaded selfie for analysis',
+        content: mode === 'shopping' ? 'Uploaded product photo for shopping recommendations' : 'Uploaded selfie for analysis',
         image: base64,
         timestamp: new Date()
       };
-      
       setMessages(prev => [...prev, userMessage]);
       await analyzeImage(base64, mode);
     } catch (error) {
       toast.error("Error uploading image");
     }
   };
-
   const analyzeImage = async (imageBase64: string, mode: 'analysis' | 'shopping' = 'analysis') => {
     setIsLoading(true);
     try {
       const response = await supabase.functions.invoke('beauty-consult', {
-        body: { 
-          image_base64: imageBase64, 
+        body: {
+          image_base64: imageBase64,
           prefs,
-          user_id: user?.id 
+          user_id: user?.id
         }
       });
-
       if (response.error) throw response.error;
-
       const consultation = response.data as BeautyConsultation;
-      
+
       // Add assistant response with consultation
       const assistantMessage: ChatMessage = {
         id: Date.now().toString(),
@@ -127,19 +119,19 @@ export default function BeautyConsultantPage() {
         consultation,
         timestamp: new Date()
       };
-      
       setMessages(prev => [...prev, assistantMessage]);
       setShowImage(false); // Auto-hide image after analysis
-      
+
       // Log event
       if (user?.id) {
         await supabase.from('beauty_consult_events').insert({
           user_id: user.id,
           event: 'image_analysis',
-          payload: { confidence: consultation.skin_profile.confidence }
+          payload: {
+            confidence: consultation.skin_profile.confidence
+          }
         });
       }
-      
     } catch (error) {
       console.error("Analysis error:", error);
       toast.error("Error analyzing image. Please try again.");
@@ -147,9 +139,10 @@ export default function BeautyConsultantPage() {
       setIsLoading(false);
     }
   };
-
   const generateConsultationSummary = (consultation: BeautyConsultation): string => {
-    const { skin_profile } = consultation;
+    const {
+      skin_profile
+    } = consultation;
     return `Based on your selfie, I've analyzed your skin profile:
 
 **Skin Analysis:**
@@ -160,21 +153,17 @@ export default function BeautyConsultantPage() {
 
 I've prepared personalized product recommendations for you! ${consultation.questions?.length ? "I have a few quick questions to refine your recommendations." : ""}`;
   };
-
   const handleTextSubmit = async () => {
     if (!inputText.trim()) return;
-
     const userMessage: ChatMessage = {
       id: Date.now().toString(),
       type: 'user',
       content: inputText,
       timestamp: new Date()
     };
-
     setMessages(prev => [...prev, userMessage]);
     setInputText("");
     setIsLoading(true);
-
     try {
       // For text-only interactions, we'll create a more conversational response
       const assistantMessage: ChatMessage = {
@@ -183,7 +172,6 @@ I've prepared personalized product recommendations for you! ${consultation.quest
         content: "I understand you're looking for beauty advice! For the most accurate recommendations, I'd suggest uploading a clear, well-lit selfie so I can analyze your skin tone and features. Alternatively, you can describe your skin tone (fair, light, medium, tan, or deep) and any specific concerns you have, and I'll provide general guidance!",
         timestamp: new Date()
       };
-      
       setMessages(prev => [...prev, assistantMessage]);
     } catch (error) {
       toast.error("Error processing your message");
@@ -191,22 +179,21 @@ I've prepared personalized product recommendations for you! ${consultation.quest
       setIsLoading(false);
     }
   };
-
-  const handlePreferenceClick = async (key: "finish"|"coverage", val: string, messageId: string) => {
-    const newPrefs = { ...prefs, [key]: val };
+  const handlePreferenceClick = async (key: "finish" | "coverage", val: string, messageId: string) => {
+    const newPrefs = {
+      ...prefs,
+      [key]: val
+    };
     setPrefs(newPrefs);
-    
     if (selectedImage) {
       await analyzeImage(selectedImage);
     }
   };
-
   const copyRoutine = (consultation: BeautyConsultation) => {
     const routine = generateRoutineText(consultation);
     navigator.clipboard.writeText(routine);
     toast.success("Routine copied to clipboard!");
   };
-
   const handleVoiceMessage = async (text: string) => {
     if (!text.trim()) return;
 
@@ -217,64 +204,59 @@ I've prepared personalized product recommendations for you! ${consultation.quest
       content: text,
       timestamp: new Date()
     };
-
     setMessages(prev => [...prev, userMessage]);
-    
+
     // Generate AI response (set the input text first)
     setInputText(text);
     await handleTextSubmit();
-    
+
     // Auto-generate voice response if expert mode is enabled
     if (expertMode) {
       // Get the latest assistant message and convert to speech
       setTimeout(async () => {
         const latestMessages = [...messages, userMessage];
-        const lastAssistantMessage = latestMessages
-          .filter(m => m.type === 'assistant')
-          .pop();
-        
+        const lastAssistantMessage = latestMessages.filter(m => m.type === 'assistant').pop();
         if (lastAssistantMessage) {
           await generateVoiceResponse(lastAssistantMessage.content);
         }
       }, 1000);
     }
   };
-
   const generateVoiceResponse = async (text: string) => {
     try {
-      const { data, error } = await supabase.functions.invoke('beauty-voice', {
+      const {
+        data,
+        error
+      } = await supabase.functions.invoke('beauty-voice', {
         body: {
           text,
           voice_id: selectedVoice,
           want_mp3: true
         }
       });
-
       if (error) throw error;
 
       // Play the audio response
-      const audioBlob = new Blob(
-        [Uint8Array.from(atob(data.audio_base64), c => c.charCodeAt(0))],
-        { type: data.mime }
-      );
+      const audioBlob = new Blob([Uint8Array.from(atob(data.audio_base64), c => c.charCodeAt(0))], {
+        type: data.mime
+      });
       const audioUrl = URL.createObjectURL(audioBlob);
       const audio = new Audio(audioUrl);
-      
       audio.onended = () => URL.revokeObjectURL(audioUrl);
       audio.play();
-      
       toast.success('AI responded with voice');
     } catch (error) {
       console.error('Voice response error:', error);
     }
   };
-
   const generateRoutineText = (consultation: BeautyConsultation): string => {
-    const { skin_profile, recommendations, technique_notes } = consultation;
-    
+    const {
+      skin_profile,
+      recommendations,
+      technique_notes
+    } = consultation;
     let routine = `MY BEAUTY ROUTINE\n\n`;
     routine += `Skin Profile: ${skin_profile.tone_depth} ${skin_profile.undertone} ${skin_profile.skin_type}\n\n`;
-    
     Object.entries(recommendations).forEach(([category, items]) => {
       routine += `${category.replace(/_/g, ' ').toUpperCase()}:\n`;
       items.slice(0, 3).forEach((item, i) => {
@@ -284,21 +266,14 @@ I've prepared personalized product recommendations for you! ${consultation.quest
         routine += `   Why: ${item.why_it_matches}\n\n`;
       });
     });
-    
     routine += `TECHNIQUE NOTES:\n`;
     technique_notes.forEach((note, i) => {
       routine += `• ${note}\n`;
     });
-    
     return routine;
   };
-
-  return (
-    <>
-      <SEOHead 
-        title="AI Beauty Consultant - Personalized Makeup Recommendations"
-        description="Get personalized makeup recommendations based on your skin tone, type, and preferences with our AI-powered beauty consultant."
-      />
+  return <>
+      <SEOHead title="AI Beauty Consultant - Personalized Makeup Recommendations" description="Get personalized makeup recommendations based on your skin tone, type, and preferences with our AI-powered beauty consultant." />
       
       <div className="min-h-screen bg-background">
         <ShopperNavigation />
@@ -308,37 +283,23 @@ I've prepared personalized product recommendations for you! ${consultation.quest
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-primary/10">
-                  <Sparkles className="h-5 w-5 text-primary" />
-                </div>
+                
                 <h1 className="text-2xl font-semibold">Beauty Consultant</h1>
                 {expertMode && <Badge variant="secondary" className="ml-2">Expert</Badge>}
                 {shoppingMode && <Badge variant="default" className="ml-2">Shopping</Badge>}
               </div>
               
-              {selectedImage && (
-                <div className="flex items-center gap-2">
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    onClick={() => setShowImage(!showImage)}
-                    className="text-muted-foreground"
-                  >
+              {selectedImage && <div className="flex items-center gap-2">
+                  <Button variant="ghost" size="sm" onClick={() => setShowImage(!showImage)} className="text-muted-foreground">
                     {showImage ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    onClick={() => {
-                      setSelectedImage(null);
-                      setShowImage(true);
-                    }}
-                    className="text-muted-foreground"
-                  >
+                  <Button variant="ghost" size="sm" onClick={() => {
+                setSelectedImage(null);
+                setShowImage(true);
+              }} className="text-muted-foreground">
                     <Trash2 className="h-4 w-4" />
                   </Button>
-                </div>
-              )}
+                </div>}
             </div>
 
             <div className="grid lg:grid-cols-4 gap-6">
@@ -349,36 +310,20 @@ I've prepared personalized product recommendations for you! ${consultation.quest
                   <CardContent className="flex-1 flex flex-col p-4">
                     {/* Messages */}
                     <div className="flex-1 overflow-y-auto space-y-4 mb-4 scroll-smooth">
-                    {messages.map((message, index) => (
-                      <div
-                        key={message.id}
-                        className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in`}
-                        style={{ animationDelay: `${index * 0.1}s` }}
-                      >
-                        <div
-                          className={`max-w-[80%] rounded-xl px-3 py-2 ${
-                            message.type === 'user'
-                              ? 'bg-primary text-primary-foreground ml-4'
-                              : 'bg-muted/80 mr-4'
-                          }`}
-                        >
-                          {message.image && showImage && (
-                            <div className="mb-2 rounded-md overflow-hidden">
-                              <img 
-                                src={message.image} 
-                                alt="Uploaded image" 
-                                className="w-full h-24 object-cover"
-                              />
-                            </div>
-                          )}
+                    {messages.map((message, index) => <div key={message.id} className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in`} style={{
+                      animationDelay: `${index * 0.1}s`
+                    }}>
+                        <div className={`max-w-[80%] rounded-xl px-3 py-2 ${message.type === 'user' ? 'bg-primary text-primary-foreground ml-4' : 'bg-muted/80 mr-4'}`}>
+                          {message.image && showImage && <div className="mb-2 rounded-md overflow-hidden">
+                              <img src={message.image} alt="Uploaded image" className="w-full h-24 object-cover" />
+                            </div>}
                           
                           <div className="whitespace-pre-wrap text-sm leading-relaxed">
                             {message.content}
                           </div>
                           
                           {/* Consultation Results */}
-                          {message.consultation && (
-                            <div className="mt-4 space-y-4">
+                          {message.consultation && <div className="mt-4 space-y-4">
                               {/* Skin Profile */}
                               <div className="grid grid-cols-2 gap-2 text-xs">
                                 <div className="p-2 bg-secondary/20 rounded-md">
@@ -396,129 +341,74 @@ I've prepared personalized product recommendations for you! ${consultation.quest
                               </div>
                               
                               {/* Quick Questions */}
-                              {message.consultation.questions && message.consultation.questions.length > 0 && (
-                                <div className="space-y-2">
+                              {message.consultation.questions && message.consultation.questions.length > 0 && <div className="space-y-2">
                                   <p className="text-sm font-medium">Quick preferences:</p>
                                   <div className="flex flex-wrap gap-2">
-                                    {message.consultation.questions.includes("finish") && 
-                                      ["Matte", "Natural", "Glow"].map(option => (
-                                        <Button
-                                          key={option}
-                                          variant="outline"
-                                          size="sm"
-                                          onClick={() => handlePreferenceClick("finish", option.toLowerCase(), message.id)}
-                                        >
+                                    {message.consultation.questions.includes("finish") && ["Matte", "Natural", "Glow"].map(option => <Button key={option} variant="outline" size="sm" onClick={() => handlePreferenceClick("finish", option.toLowerCase(), message.id)}>
                                           {option}
-                                        </Button>
-                                      ))
-                                    }
-                                    {message.consultation.questions.includes("coverage") && 
-                                      ["Light", "Medium", "Full"].map(option => (
-                                        <Button
-                                          key={option}
-                                          variant="outline"
-                                          size="sm"
-                                          onClick={() => handlePreferenceClick("coverage", option.toLowerCase(), message.id)}
-                                        >
+                                        </Button>)}
+                                    {message.consultation.questions.includes("coverage") && ["Light", "Medium", "Full"].map(option => <Button key={option} variant="outline" size="sm" onClick={() => handlePreferenceClick("coverage", option.toLowerCase(), message.id)}>
                                           {option}
-                                        </Button>
-                                      ))
-                                    }
+                                        </Button>)}
                                   </div>
-                                </div>
-                              )}
+                                </div>}
                               
                               {/* Product Recommendations - Minimized */}
-                              {Object.entries(message.consultation.recommendations).map(([category, items]) => (
-                                <div key={category} className="mt-4">
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => {
-                                      const element = document.getElementById(`recommendations-${category}-${message.id}`);
-                                      if (element) {
-                                        element.style.display = element.style.display === 'none' ? 'block' : 'none';
-                                      }
-                                    }}
-                                    className="flex items-center gap-2 mb-3"
-                                  >
+                              {Object.entries(message.consultation.recommendations).map(([category, items]) => <div key={category} className="mt-4">
+                                  <Button variant="outline" size="sm" onClick={() => {
+                              const element = document.getElementById(`recommendations-${category}-${message.id}`);
+                              if (element) {
+                                element.style.display = element.style.display === 'none' ? 'block' : 'none';
+                              }
+                            }} className="flex items-center gap-2 mb-3">
                                     <Sparkles className="h-3 w-3" />
                                     {category.replace(/_/g, ' / ')} ({items.length} items)
                                   </Button>
-                                  <div id={`recommendations-${category}-${message.id}`} style={{ display: 'none' }} className="space-y-2">
-                                    {items.slice(0, 3).map((item, i) => (
-                                      <div key={i} className="p-2 rounded-md bg-secondary/10 border">
+                                  <div id={`recommendations-${category}-${message.id}`} style={{
+                              display: 'none'
+                            }} className="space-y-2">
+                                    {items.slice(0, 3).map((item, i) => <div key={i} className="p-2 rounded-md bg-secondary/10 border">
                                         <div className="flex items-start justify-between mb-1">
                                           <h4 className="font-medium text-sm">{item.name}</h4>
-                                          {item.price_tier && (
-                                            <Badge 
-                                              variant="outline"
-                                              className="text-xs capitalize"
-                                            >
+                                          {item.price_tier && <Badge variant="outline" className="text-xs capitalize">
                                               {item.price_tier}
-                                            </Badge>
-                                          )}
+                                            </Badge>}
                                         </div>
                                         <p className="text-xs text-muted-foreground">{item.why_it_matches}</p>
-                                      </div>
-                                    ))}
+                                      </div>)}
                                   </div>
-                                </div>
-                              ))}
+                                </div>)}
                               
                               {/* Actions */}
                               <div className="flex gap-2 pt-2">
-                                <Button 
-                                  variant="outline" 
-                                  size="sm"
-                                  onClick={() => copyRoutine(message.consultation)}
-                                  className="h-8 px-3 text-xs"
-                                >
+                                <Button variant="outline" size="sm" onClick={() => copyRoutine(message.consultation)} className="h-8 px-3 text-xs">
                                   <Copy className="h-3 w-3 mr-1" />
                                   Copy
                                 </Button>
-                                <Button 
-                                  variant="outline" 
-                                  size="sm"
-                                  className="h-8 px-3 text-xs"
-                                >
+                                <Button variant="outline" size="sm" className="h-8 px-3 text-xs">
                                   <Save className="h-3 w-3 mr-1" />
                                   Save
                                 </Button>
                               </div>
-                            </div>
-                          )}
+                            </div>}
                         </div>
-                      </div>
-                    ))}
+                      </div>)}
                     
-                    {isLoading && (
-                      <div className="flex justify-start">
+                    {isLoading && <div className="flex justify-start">
                         <div className="bg-muted/80 rounded-xl px-3 py-2 mr-4">
                           <div className="flex items-center gap-2">
                             <div className="animate-spin rounded-full h-3 w-3 border border-primary border-t-transparent"></div>
                             <span className="text-sm text-muted-foreground">Analyzing...</span>
                           </div>
                         </div>
-                      </div>
-                    )}
+                      </div>}
                   </div>
                   
                   {/* Input Area */}
                   <div className="border-t pt-3">
                     <div className="flex gap-2 mb-3">
-                      <Input
-                        placeholder={shoppingMode ? "Ask about products..." : "Ask about makeup or describe your skin..."}
-                        value={inputText}
-                        onChange={(e) => setInputText(e.target.value)}
-                        onKeyPress={(e) => e.key === 'Enter' && handleTextSubmit()}
-                        className="flex-1"
-                      />
-                      <Button 
-                        onClick={handleTextSubmit} 
-                        disabled={!inputText.trim() || isLoading}
-                        size="sm"
-                      >
+                      <Input placeholder={shoppingMode ? "Ask about products..." : "Ask about makeup or describe your skin..."} value={inputText} onChange={e => setInputText(e.target.value)} onKeyPress={e => e.key === 'Enter' && handleTextSubmit()} className="flex-1" />
+                      <Button onClick={handleTextSubmit} disabled={!inputText.trim() || isLoading} size="sm">
                         <MessageCircle className="h-4 w-4" />
                       </Button>
                     </div>
@@ -533,18 +423,9 @@ I've prepared personalized product recommendations for you! ${consultation.quest
                         </Button>
                       </Label>
                       
-                      <VoiceRecorder
-                        onTranscription={handleVoiceMessage}
-                        disabled={isLoading}
-                      />
+                      <VoiceRecorder onTranscription={handleVoiceMessage} disabled={isLoading} />
                       
-                      <Input
-                        id="image-upload"
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={(e) => e.target.files?.[0] && handleImageUpload(e.target.files[0], shoppingMode ? 'shopping' : 'analysis')}
-                      />
+                      <Input id="image-upload" type="file" accept="image/*" className="hidden" onChange={e => e.target.files?.[0] && handleImageUpload(e.target.files[0], shoppingMode ? 'shopping' : 'analysis')} />
                     </div>
                   </div>
                 </CardContent>
@@ -558,27 +439,16 @@ I've prepared personalized product recommendations for you! ${consultation.quest
                   <CardContent className="p-4 space-y-3">
                      {/* Mode Toggles */}
                      <div className="flex gap-2">
-                       <Button
-                         variant={shoppingMode ? "default" : "outline"}
-                         size="sm"
-                         onClick={() => setShoppingMode(!shoppingMode)}
-                         className="flex-1 text-xs"
-                       >
+                       <Button variant={shoppingMode ? "default" : "outline"} size="sm" onClick={() => setShoppingMode(!shoppingMode)} className="flex-1 text-xs">
                          Shopping
                        </Button>
-                       <Button
-                         variant={expertMode ? "default" : "outline"}
-                         size="sm"
-                         onClick={() => setExpertMode(!expertMode)}
-                         className="flex-1 text-xs"
-                       >
+                       <Button variant={expertMode ? "default" : "outline"} size="sm" onClick={() => setExpertMode(!expertMode)} className="flex-1 text-xs">
                          Expert
                        </Button>
                      </div>
                      
                      {/* Shopping Mode Info */}
-                     {shoppingMode && (
-                       <div className="p-3 bg-primary/5 rounded-lg border border-primary/20">
+                     {shoppingMode && <div className="p-3 bg-primary/5 rounded-lg border border-primary/20">
                          <div className="flex items-start gap-2">
                            <div className="p-1 rounded bg-primary/10">
                              <Sparkles className="h-3 w-3 text-primary" />
@@ -591,21 +461,15 @@ I've prepared personalized product recommendations for you! ${consultation.quest
                              </p>
                            </div>
                          </div>
-                       </div>
-                     )}
+                       </div>}
                     
                     {/* Voice Panel */}
-                    <EnhancedVoicePanel 
-                      text={messages.find(m => m.consultation)?.content || "Upload a selfie to get personalized voice recommendations!"} 
-                      onVoiceChange={setSelectedVoice}
-                    />
+                    <EnhancedVoicePanel text={messages.find(m => m.consultation)?.content || "Upload a selfie to get personalized voice recommendations!"} onVoiceChange={setSelectedVoice} />
                     
                     {/* Document Upload (Expert Mode) */}
-                    {expertMode && (
-                      <div className="border-t pt-3">
+                    {expertMode && <div className="border-t pt-3">
                         <DocumentUpload />
-                      </div>
-                    )}
+                      </div>}
                   </CardContent>
                 </Card>
               </div>
@@ -613,6 +477,5 @@ I've prepared personalized product recommendations for you! ${consultation.quest
           </div>
         </main>
       </div>
-    </>
-  );
+    </>;
 }
