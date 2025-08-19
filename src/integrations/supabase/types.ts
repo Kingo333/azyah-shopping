@@ -723,36 +723,6 @@ export type Database = {
           },
         ]
       }
-      image_cache: {
-        Row: {
-          created_at: string
-          dimensions: Json | null
-          file_size: number | null
-          id: string
-          optimized_url: string
-          original_url: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          dimensions?: Json | null
-          file_size?: number | null
-          id?: string
-          optimized_url: string
-          original_url: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          dimensions?: Json | null
-          file_size?: number | null
-          id?: string
-          optimized_url?: string
-          original_url?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
       import_job_status: {
         Row: {
           completed_at: string | null
