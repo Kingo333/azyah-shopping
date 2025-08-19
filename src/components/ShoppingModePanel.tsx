@@ -95,8 +95,9 @@ export const ShoppingModePanel: React.FC<ShoppingModePanelProps> = ({
         )}
         
         {!isActive && (
-          <div className="text-xs text-muted-foreground">
-            Enable to get product recommendations while shopping
+          <div className="text-xs text-muted-foreground space-y-1">
+            <p className="font-medium">Enable to get instant product recommendations while shopping!</p>
+            <p>Take photos of makeup products in-store and get personalized suggestions, shade matching, price comparisons, and alternative recommendations based on your skin tone and preferences.</p>
           </div>
         )}
       </CardContent>
