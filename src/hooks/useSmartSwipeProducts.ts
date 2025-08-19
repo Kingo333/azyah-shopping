@@ -37,25 +37,115 @@ export const useSmartSwipeProducts = ({
   const { isEnabled } = useFeatureFlags();
 
   const analyzeUserPreferences = useCallback(async (userId: string): Promise<UserPreferences> => {
-    // Fetch user's liked products to understand preferences
-    const { data: likedProducts, error } = await supabase
-      .from('likes')
-      .select(`
-        product_id,
-        products(
+    try {
+      console.log('🔍 Analyzing user preferences for user:', userId);
+      
+      // First get the likes
+      const { data: likes, error: likesError } = await supabase
+        .from('likes')
+        .select('product_id')
+        .eq('user_id', userId)
+        .limit(100);
+
+      if (likesError) {
+        console.error('❌ Error fetching likes:', likesError);
+        return {
+          categories: {},
+          brands: {},
+          priceRanges: {},
+          tags: {},
+          totalLikes: 0
+        };
+      }
+
+      console.log('📝 Found likes:', likes?.length || 0);
+
+      if (!likes || likes.length === 0) {
+        return {
+          categories: {},
+          brands: {},
+          priceRanges: {},
+          tags: {},
+          totalLikes: 0
+        };
+      }
+
+      // Get product details for liked products
+      const productIds = likes.map(like => like.product_id);
+      const { data: likedProducts, error: productsError } = await supabase
+        .from('products')
+        .select(`
+          id,
           category_slug,
           subcategory_slug,
           price_cents,
           currency,
           tags,
           brand:brands(name)
-        )
-      `)
-      .eq('user_id', userId)
-      .limit(100); // Analyze last 100 likes
+        `)
+        .in('id', productIds);
 
-    if (error) {
-      console.error('Error fetching user preferences:', error);
+      if (productsError) {
+        console.error('❌ Error fetching liked products:', productsError);
+        return {
+          categories: {},
+          brands: {},
+          priceRanges: {},
+          tags: {},
+          totalLikes: 0
+        };
+      }
+
+      console.log('📦 Found liked products:', likedProducts?.length || 0);
+    
+
+      const preferences: UserPreferences = {
+        categories: {},
+        brands: {},
+        priceRanges: {},
+        tags: {},
+        totalLikes: likedProducts?.length || 0
+      };
+
+      likedProducts?.forEach((product: any) => {
+        if (!product) return;
+
+        // Analyze categories
+        const category = product.category_slug;
+        if (category) {
+          preferences.categories[category] = (preferences.categories[category] || 0) + 1;
+        }
+
+        // Analyze brands
+        const brandName = product.brand?.name;
+        if (brandName) {
+          preferences.brands[brandName] = (preferences.brands[brandName] || 0) + 1;
+        }
+
+        // Analyze price ranges
+        const price = product.price_cents / 100;
+        const priceRange = price < 50 ? 'low' : price < 200 ? 'medium' : 'high';
+        preferences.priceRanges[priceRange] = (preferences.priceRanges[priceRange] || 0) + 1;
+
+        // Analyze tags
+        if (product.tags && Array.isArray(product.tags)) {
+          product.tags.forEach((tag: string) => {
+            if (tag) {
+              preferences.tags[tag] = (preferences.tags[tag] || 0) + 1;
+            }
+          });
+        }
+      });
+
+      console.log('✅ User preferences analyzed:', {
+        categories: Object.keys(preferences.categories).length,
+        brands: Object.keys(preferences.brands).length,
+        totalLikes: preferences.totalLikes
+      });
+
+      return preferences;
+    } catch (error) {
+      console.error('❌ Error in analyzeUserPreferences:', error);
       return {
         categories: {},
         brands: {},
@@ -64,47 +154,6 @@ export const useSmartSwipeProducts = ({
         totalLikes: 0
       };
     }
-
-    const preferences: UserPreferences = {
-      categories: {},
-      brands: {},
-      priceRanges: {},
-      tags: {},
-      totalLikes: likedProducts?.length || 0
-    };
-
-    likedProducts?.forEach((like: any) => {
-      const product = like.products;
-      if (!product) return;
-
-      // Analyze categories
-      const category = product.category_slug;
-      if (category) {
-        preferences.categories[category] = (preferences.categories[category] || 0) + 1;
-      }
-
-      // Analyze brands
-      const brandName = product.brand?.name;
-      if (brandName) {
-        preferences.brands[brandName] = (preferences.brands[brandName] || 0) + 1;
-      }
-
-      // Analyze price ranges
-      const price = product.price_cents / 100;
-      const priceRange = price < 50 ? 'low' : price < 200 ? 'medium' : 'high';
-      preferences.priceRanges[priceRange] = (preferences.priceRanges[priceRange] || 0) + 1;
-
-      // Analyze tags
-      if (product.tags && Array.isArray(product.tags)) {
-        product.tags.forEach((tag: string) => {
-          if (tag) {
-            preferences.tags[tag] = (preferences.tags[tag] || 0) + 1;
-          }
-        });
-      }
-    });
-
-    return preferences;
   }, []);
 
   const calculatePersonalizationScore = useCallback((product: Product, preferences: UserPreferences): number => {
@@ -209,14 +258,19 @@ export const useSmartSwipeProducts = ({
         console.log('❌ External products disabled by feature flags');
       } else {
         const allowedSources = [];
-        if (axessoImportEnabled) allowedSources.push('ASOS_AXESSO', 'axesso-async');
+        if (axessoImportEnabled) allowedSources.push('axesso-async');
         if (axessoImportBulkEnabled) allowedSources.push('ASOS_AXESSO_BULK');
         
         console.log('✅ Allowed sources:', allowedSources);
         
         if (allowedSources.length > 0) {
-          // Include both internal products AND external products from allowed sources
-          query = query.or(`is_external.eq.false,and(is_external.eq.true,source.in.(${allowedSources.join(',')}))`);
+          // Create a more explicit OR condition for internal OR external products
+          const conditions = ['is_external.eq.false'];
+          allowedSources.forEach(source => {
+            conditions.push(`and(is_external.eq.true,source.eq.${source})`);
+          });
+          query = query.or(conditions.join(','));
+          console.log('🔍 Query conditions:', conditions.join(','));
         }
       }
 
@@ -254,8 +308,21 @@ export const useSmartSwipeProducts = ({
       if (error) throw error;
 
       console.log('📦 Raw products fetched:', data?.length);
-      console.log('📦 Sample products:', data?.slice(0, 3).map(p => ({ 
-        title: p.title, 
+      
+      // Count internal vs external products
+      const internalCount = data?.filter(p => !p.is_external).length || 0;
+      const externalCount = data?.filter(p => p.is_external).length || 0;
+      const asosCount = data?.filter(p => p.source === 'axesso-async').length || 0;
+      
+      console.log('📊 Product breakdown:', {
+        total: data?.length || 0,
+        internal: internalCount,
+        external: externalCount,
+        asos: asosCount
+      });
+      
+      console.log('📦 Sample products:', data?.slice(0, 5).map(p => ({ 
+        title: p.title?.substring(0, 30) + '...', 
         is_external: p.is_external, 
         source: p.source,
         brand: p.brand?.name 
@@ -305,14 +372,20 @@ export const useSmartSwipeProducts = ({
         attributes: convertJsonToProductAttributes(item.attributes)
       }));
 
+      console.log('🔄 Processing products for user personalization...');
+      
       // Get current user from Supabase auth
       const { data: { user } } = await supabase.auth.getUser();
       
       if (user && transformedProducts.length > 0) {
+        console.log('👤 Processing for authenticated user:', user.id);
+        
         // Analyze user preferences
         const preferences = await analyzeUserPreferences(user.id);
 
         if (preferences.totalLikes > 0) {
+          console.log('🎯 User has preferences, applying 60/40 personalization');
+          
           // Calculate scores for all products
           const productsWithScores = transformedProducts.map(product => ({
             product,
@@ -323,16 +396,22 @@ export const useSmartSwipeProducts = ({
           productsWithScores.sort((a, b) => b.score - a.score);
 
           // Implement 60/40 strategy
-          const totalProducts = Math.min(100, productsWithScores.length); // Limit to 100 products
+          const totalProducts = Math.min(100, productsWithScores.length);
           const personalizedCount = Math.floor(totalProducts * 0.6);
           const randomCount = totalProducts - personalizedCount;
+
+          console.log('📊 Personalization split:', {
+            total: totalProducts,
+            personalized: personalizedCount,
+            random: randomCount
+          });
 
           // Get top 60% personalized products
           const personalizedProducts = productsWithScores
             .slice(0, personalizedCount)
             .map(item => item.product);
 
-          // Get random 30% from remaining products
+          // Get random 40% from remaining products
           const remainingProducts = productsWithScores
             .slice(personalizedCount)
             .map(item => item.product);
@@ -340,14 +419,28 @@ export const useSmartSwipeProducts = ({
 
           // Combine and shuffle the final list
           const finalProducts = shuffleArray([...personalizedProducts, ...randomProducts]);
+          
+          console.log('✅ Final products prepared:', {
+            total: finalProducts.length,
+            internal: finalProducts.filter(p => !p.brand?.name?.includes('ASOS')).length,
+            asos: finalProducts.filter(p => p.brand?.name?.includes('ASOS')).length
+          });
+          
           setProducts(finalProducts);
         } else {
-          // New user - show random products
-          setProducts(shuffleArray(transformedProducts).slice(0, 50));
+          console.log('🆕 New user - showing random products');
+          const randomProducts = shuffleArray(transformedProducts).slice(0, 50);
+          console.log('✅ Random products for new user:', {
+            total: randomProducts.length,
+            internal: randomProducts.filter(p => !p.brand?.name?.includes('ASOS')).length,
+            asos: randomProducts.filter(p => p.brand?.name?.includes('ASOS')).length
+          });
+          setProducts(randomProducts);
         }
       } else {
-        // No user or no products - show random selection
-        setProducts(shuffleArray(transformedProducts).slice(0, 50));
+        console.log('🔒 No user or no products - showing random selection');
+        const randomProducts = shuffleArray(transformedProducts).slice(0, 50);
+        setProducts(randomProducts);
       }
 
     } catch (error: any) {
