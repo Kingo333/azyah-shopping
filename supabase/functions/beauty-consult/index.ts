@@ -478,10 +478,21 @@ serve(async (req) => {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('OpenAI Responses API error:', errorText);
+      console.error('OpenAI API error:', errorText);
       console.error('Response status:', response.status);
       console.error('Response headers:', Object.fromEntries(response.headers.entries()));
-      throw new Error(`OpenAI Responses API error: ${response.status}`);
+      
+      return new Response(
+        JSON.stringify({ 
+          error: `OpenAI API error (${response.status})`, 
+          details: errorText,
+          message: "Please ensure your photo is clear and well-lit, then try again."
+        }),
+        { 
+          status: response.status, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
     }
 
     const data = await response.json();
@@ -495,7 +506,17 @@ serve(async (req) => {
     console.log('Parsed output available:', !!output);
 
     if (!output) {
-      throw new Error('No JSON returned by model (check response)');
+      console.error('No output received from OpenAI');
+      return new Response(
+        JSON.stringify({ 
+          error: 'No analysis received from AI',
+          message: "Please ensure your photo is clear and well-lit, then try again."
+        }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
     }
 
     let consultationResult;
@@ -504,7 +525,17 @@ serve(async (req) => {
     } catch (parseError) {
       console.error('Failed to parse JSON response:', parseError);
       console.error('Raw output:', output);
-      throw new Error('Invalid JSON response from model');
+      return new Response(
+        JSON.stringify({ 
+          error: 'Failed to parse AI response',
+          details: String(parseError),
+          message: "Analysis failed. Please ensure your photo is clear and well-lit, then try again."
+        }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
     }
     
     // Validate the result against our interface
@@ -598,8 +629,9 @@ serve(async (req) => {
     const details = error instanceof Error ? error.message : String(error);
     return new Response(
       JSON.stringify({ 
-        error: 'Failed to analyze photo',
-        details
+        error: 'Unexpected error occurred',
+        details,
+        message: 'Please ensure your photo is clear and well-lit, then try again.'
       }),
       { 
         status: 500, 
