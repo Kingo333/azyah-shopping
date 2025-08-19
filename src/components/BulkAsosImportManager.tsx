@@ -57,6 +57,8 @@ const BulkAsosImportManager: React.FC = () => {
   const [progress, setProgress] = useState(0);
   const [importResult, setImportResult] = useState<BulkImportResult | null>(null);
   const [useChunkedProcessing, setUseChunkedProcessing] = useState(false);
+  const [currentJobId, setCurrentJobId] = useState<string | null>(null);
+  const [isPolling, setIsPolling] = useState(false);
   const { toast } = useToast();
 
   if (!features.axessoImportBulk) {
@@ -109,6 +111,54 @@ const BulkAsosImportManager: React.FC = () => {
     }
   };
 
+  const pollJobStatus = async (jobId: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('import-asos-async', {
+        method: 'GET',
+        body: { jobId }
+      });
+
+      if (error) throw error;
+
+      setProgress(data.progress || 0);
+
+      if (data.status === 'completed') {
+        setImportResult(data.result);
+        setIsPolling(false);
+        setIsImporting(false);
+        setCurrentJobId(null);
+        
+        toast({
+          title: "Import Completed",
+          description: `Successfully imported ${data.result?.imported || 0} products`,
+        });
+      } else if (data.status === 'failed') {
+        setIsPolling(false);
+        setIsImporting(false);
+        setCurrentJobId(null);
+        
+        toast({
+          title: "Import Failed",
+          description: data.error || "Import job failed",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error polling job status:', error);
+    }
+  };
+
+  // Poll for job status when we have an active job
+  React.useEffect(() => {
+    if (!currentJobId || !isPolling) return;
+
+    const interval = setInterval(() => {
+      pollJobStatus(currentJobId);
+    }, 3000); // Poll every 3 seconds
+
+    return () => clearInterval(interval);
+  }, [currentJobId, isPolling]);
+
   const handleBulkImport = async () => {
     if (!markets.trim() || !keywords.trim()) {
       toast({
@@ -122,6 +172,7 @@ const BulkAsosImportManager: React.FC = () => {
     setIsImporting(true);
     setProgress(0);
     setImportResult(null);
+    setCurrentJobId(null);
 
     try {
       const marketsList = markets.split(',').map(m => m.trim()).filter(Boolean);
@@ -130,40 +181,50 @@ const BulkAsosImportManager: React.FC = () => {
       // Calculate total work for progress tracking
       const totalWork = marketsList.length * keywordsList.length * pagesPerKeyword;
       
-      // Smart processing mode selection
-      const useUltraLight = totalWork <= 6; // Ultra-light for very small batches
-      const shouldUseChunked = useChunkedProcessing || (totalWork > 6 && totalWork <= 25);
+      // For large batches, use async processing
+      if (totalWork > 15) {
+        console.log(`Large batch detected (${totalWork} searches). Using async processing.`);
+        
+        const { data, error } = await supabase.functions.invoke('import-asos-async', {
+          body: {
+            markets: marketsList,
+            keywords: keywordsList,
+            pagesPerKeyword,
+            useChunked: useChunkedProcessing || totalWork > 25
+          }
+        });
+
+        if (error) throw error;
+
+        setCurrentJobId(data.jobId);
+        setIsPolling(true);
+        setProgress(5);
+
+        toast({
+          title: "Import Started",
+          description: "Your import is being processed in the background. You can monitor progress here.",
+        });
+
+        return;
+      }
+
+      // For small batches, use direct processing (existing logic)
+      const useUltraLight = totalWork <= 6;
+      const shouldUseChunked = useChunkedProcessing || (totalWork > 6 && totalWork <= 15);
       
-      // Strict limits to prevent timeouts
       if (useUltraLight && totalWork > 6) {
         toast({
           title: "Using Ultra-Light Mode",
           description: `Small batch detected (${totalWork} searches). Using ultra-fast processing.`,
         });
-      } else if (!shouldUseChunked && totalWork > 25) {
-        toast({
-          title: "Batch Too Large",
-          description: `Reduce your search scope or enable chunked processing. Current: ${totalWork} searches (max for bulk: 25)`,
-          variant: "destructive",
-        });
-        setIsImporting(false);
-        return;
-      } else if (shouldUseChunked && totalWork > 100) {
-        toast({
-          title: "Batch Too Large",
-          description: `Even with chunked processing, this is too large. Current: ${totalWork} searches (max: 100)`,
-          variant: "destructive",
-        });
-        setIsImporting(false);
-        return;
       }
 
-      // Show real progress estimation
+      // Show real progress estimation for small batches
       const progressInterval = setInterval(() => {
-        setProgress(prev => Math.min(prev + (useUltraLight ? 5 : shouldUseChunked ? 1 : 2), 85));
-      }, useUltraLight ? 1000 : shouldUseChunked ? 3000 : 2000);
+        setProgress(prev => Math.min(prev + (useUltraLight ? 5 : shouldUseChunked ? 2 : 3), 90));
+      }, useUltraLight ? 1000 : shouldUseChunked ? 2000 : 1500);
 
-      // Choose appropriate function based on batch size
+      // Choose appropriate function for direct processing
       let functionName: string;
       let requestBody: any;
       
@@ -172,27 +233,20 @@ const BulkAsosImportManager: React.FC = () => {
         requestBody = {
           markets: marketsList,
           keywords: keywordsList,
-          pagesPerKeyword: Math.min(pagesPerKeyword, 2), // Limit pages for ultra-light
-          maxProducts: 10 // Strict product limit
+          pagesPerKeyword: Math.min(pagesPerKeyword, 2),
+          maxProducts: 10
         };
-      } else if (shouldUseChunked) {
+      } else {
         functionName = 'import-asos-chunked';
         requestBody = {
           markets: marketsList,
           keywords: keywordsList,
-          pagesPerKeyword,
-          chunkSize: 3 // Smaller chunks
-        };
-      } else {
-        functionName = 'import-asos-bulk';
-        requestBody = {
-          markets: marketsList,
-          keywords: keywordsList,
-          pagesPerKeyword: Math.min(pagesPerKeyword, 3) // Limit pages for bulk
+          pagesPerKeyword: Math.min(pagesPerKeyword, 2),
+          chunkSize: 3
         };
       }
 
-      console.log(`Using ${functionName} for ${totalWork} total searches (${useUltraLight ? 'ultra-light' : shouldUseChunked ? 'chunked' : 'bulk'} mode)`);
+      console.log(`Using ${functionName} for ${totalWork} total searches (${useUltraLight ? 'ultra-light' : 'chunked'} mode)`);
 
       const { data, error } = await supabase.functions.invoke(functionName, {
         body: requestBody
@@ -201,43 +255,37 @@ const BulkAsosImportManager: React.FC = () => {
       clearInterval(progressInterval);
       setProgress(100);
 
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
 
       setImportResult(data);
       
       const completionMessage = useUltraLight
         ? `Ultra-light import: ${data.imported} products in ${Math.round(data.metrics?.duration / 1000 || 0)}s`
-        : data.totalChunks 
-        ? `Imported ${data.imported} products (${data.completedChunks}/${data.totalChunks} chunks completed)`
         : `Imported ${data.imported} products successfully`;
       
       toast({
-        title: "Bulk Import Completed",
+        title: "Import Completed",
         description: completionMessage,
       });
 
     } catch (error) {
-      console.error('Bulk import error:', error);
+      console.error('Import error:', error);
       
       let errorMessage = error.message || "An unexpected error occurred";
       
-      // Handle specific timeout errors
       if (errorMessage.includes('504') || errorMessage.includes('timeout') || errorMessage.includes('Gateway') || errorMessage.includes('Failed to fetch')) {
-        const currentMarkets = markets.split(',').map(m => m.trim()).filter(Boolean);
-        const currentKeywords = keywords.split('\n').map(k => k.trim()).filter(Boolean);
-        const currentBatchSize = currentMarkets.length * currentKeywords.length * pagesPerKeyword;
-        errorMessage = `Import failed (likely timeout). Try: 1) Reduce batch size, 2) Enable chunked processing, 3) Use fewer pages per keyword. Current batch: ${currentBatchSize} searches`;
+        errorMessage = `Network timeout occurred. For large imports, the system will automatically retry in the background.`;
       }
       
       toast({
-        title: "Import Failed",
+        title: "Import Error",
         description: errorMessage,
         variant: "destructive",
       });
     } finally {
-      setIsImporting(false);
+      if (!currentJobId) {
+        setIsImporting(false);
+      }
     }
   };
 
@@ -248,6 +296,8 @@ const BulkAsosImportManager: React.FC = () => {
     setProgress(0);
     setImportResult(null);
     setUseChunkedProcessing(false);
+    setCurrentJobId(null);
+    setIsPolling(false);
   };
 
   // Safe number extraction with fallback
@@ -339,7 +389,8 @@ const BulkAsosImportManager: React.FC = () => {
               const keywordsList = keywords.split('\n').map(k => k.trim()).filter(Boolean);
               const totalWork = marketsList.length * keywordsList.length * pagesPerKeyword;
               const useUltraLight = totalWork <= 6;
-              const shouldUseChunked = useChunkedProcessing || (totalWork > 6 && totalWork <= 25);
+              const shouldUseChunked = useChunkedProcessing || (totalWork > 6 && totalWork <= 15);
+              const useAsync = totalWork > 15;
               
               return (
                 <div className="flex items-center gap-2">
@@ -349,15 +400,15 @@ const BulkAsosImportManager: React.FC = () => {
                       ⚡ Ultra-light
                     </Badge>
                   )}
-                  {shouldUseChunked && !useUltraLight && (
+                  {shouldUseChunked && !useUltraLight && !useAsync && (
                     <Badge variant="secondary" className="text-xs">
                       <Zap className="h-3 w-3 mr-1" />
                       Chunked mode
                     </Badge>
                   )}
-                  {totalWork > 25 && !shouldUseChunked && !useUltraLight && (
-                    <Badge variant="destructive" className="text-xs">
-                      ⚠️ Large batch
+                  {useAsync && (
+                    <Badge variant="outline" className="text-xs">
+                      🔄 Background processing
                     </Badge>
                   )}
                 </div>
@@ -418,6 +469,8 @@ const BulkAsosImportManager: React.FC = () => {
               <p className="text-sm text-muted-foreground">
                 {isTesting 
                   ? 'Verifying Axesso API connectivity...' 
+                  : currentJobId
+                  ? `Processing import job (${currentJobId.slice(0, 8)}...) in the background. You can safely navigate away.`
                   : (() => {
                       const marketsList = markets.split(',').map(m => m.trim()).filter(Boolean);
                       const keywordsList = keywords.split('\n').map(k => k.trim()).filter(Boolean);
@@ -426,10 +479,8 @@ const BulkAsosImportManager: React.FC = () => {
                       
                       if (useUltraLight) {
                         return 'Ultra-light processing: Fast import with strict limits...';
-                      } else if (importResult?.totalChunks) {
-                        return `Processing in chunks (${importResult.completedChunks || 0}/${importResult.totalChunks} completed)...`;
                       } else {
-                        return 'Searching markets and processing products... This may take a few minutes.';
+                        return 'Processing import... Please wait.';
                       }
                     })()
                 }

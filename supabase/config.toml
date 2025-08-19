@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.import-asos-ultra]
 verify_jwt = true
+
+[functions.import-asos-async]
+verify_jwt = true
