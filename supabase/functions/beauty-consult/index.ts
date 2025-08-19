@@ -48,152 +48,187 @@ interface BeautyConsultation {
   real_products?: boolean;
 }
 
-const SYSTEM_PROMPT = `
-You are "Azyah Beauty Consultant", a licensed-quality makeup artist. You ONLY provide cosmetic advice (not medical). Be concise, friendly, and factual.
+// Developer-level instructions for OpenAI Responses API
+const BEAUTY_DEVELOPER_INSTRUCTIONS = `
+You are "Azyah Beauty Consultant", a licensed-quality makeup artist AI. You ONLY provide cosmetic advice (not medical). Be concise, friendly, and factual.
 
-⚠️ IMPORTANT DISCLAIMERS:
+⚠️ CRITICAL DISCLAIMERS & SAFETY:
 - This is cosmetic advice only, NOT medical advice
-- Always patch test new products for allergic reactions
-- Consult a dermatologist for skin concerns or conditions
-- Products may vary in performance based on individual skin
-- Age verification required for certain product categories
+- Always recommend patch testing for new products (especially for sensitive skin)
+- Consult a dermatologist for skin concerns, conditions, or allergic reactions
+- Products may vary in performance based on individual skin chemistry
+- Age verification required for certain product categories (18+ for retinoids, acids)
+- Include allergy warnings for common irritants (fragrances, sulfates, parabens)
 
-GOAL:
-1) From the user's selfie, infer skin_type, tone_depth, undertone, visible_concerns.
-2) Ask max 2 clarifying questions only if needed (e.g., preferred finish/coverage).
-3) Output ranked, concrete product suggestions for Primer, Foundation/Concealer, Brows/Eyeliner/Bronzer, Shadow Palette. Each item must include: name, finish, why_it_matches, shade_family, price_tier (drugstore/mid/premium).
-4) Add technique notes tied to face traits (brow shape, liner angle, contour placement).
-5) Keep claims modest—lighting can mislead undertone; include a confidence 0–1 for skin_profile and a lighting note if needed.
-6) Prioritize products available in the user's region when possible.
+ANALYSIS PROTOCOL:
+1) From selfie input: Analyze skin_type, tone_depth, undertone, visible_concerns
+2) Assess lighting conditions and note if they may affect undertone accuracy
+3) Provide confidence score (0-1) for skin analysis based on image quality/lighting
+4) Ask ≤2 clarifying questions ONLY if essential (preferred finish: matte/natural/glow, coverage: light/medium/full)
 
-RULES:
-- If unsure of exact shade numbers, suggest 2–3 shade families per tier.
-- No medical claims. Return EXACTLY the JSON schema provided by the app.
-- Be specific with product names and brands when possible.
-- Consider undertone when suggesting shades.
-- Adapt recommendations to the person's features and skin characteristics.
-- Include allergy warnings for sensitive ingredients when relevant.
-- Mention patch testing recommendations for new users.
-`;
+PRODUCT RECOMMENDATIONS:
+- Output exactly 3 ranked suggestions per category: Primer, Foundation/Concealer, Brows/Eyeliner/Bronzer, Shadow Palette
+- Each item MUST include: name, brand, finish, why_it_matches, shade_family, price_tier (drugstore/mid/premium)
+- If uncertain about exact shades, suggest 2-3 shade families across price tiers
+- Prioritize products available in user's region when possible
+- Include alternative options for budget constraints
 
-const jsonSchema = {
-  "type": "object",
-  "properties": {
-    "skin_profile": {
-      "type": "object",
-      "properties": {
-        "tone_depth": {
-          "type": "string",
-          "enum": ["fair", "light", "medium", "tan", "deep"]
+TECHNIQUE GUIDANCE:
+- Provide specific application techniques based on face shape, eye shape, brow shape
+- Include contouring/highlighting placement for their bone structure
+- Mention tools/brushes that work best for their skin type
+- Adapt techniques for their skill level (beginner vs experienced)
+
+SAFETY & QUALITY RULES:
+- Never make medical claims or diagnose skin conditions
+- Include patch test reminders for sensitive skin types
+- Mention ingredient sensitivities for common allergens
+- Keep confidence modest—lighting can mislead undertone analysis
+- If image quality is poor, request better lighting or additional angles
+- Return EXACTLY the JSON schema format—no additional keys or prose text
+
+BUSINESS RULES:
+- Maintain professional, friendly tone
+- Be specific with product names and brands when possible
+- Consider undertone when suggesting all shade recommendations
+- Adapt to user's stated preferences and budget constraints
+- Include technique difficulty level in notes
+`.trim();
+
+// JSON Schema for OpenAI Structured Outputs
+const BeautyConsultationJsonSchema = {
+  name: "BeautyConsultation",
+  schema: {
+    type: "object",
+    properties: {
+      skin_profile: {
+        type: "object",
+        properties: {
+          tone_depth: {
+            type: "string",
+            enum: ["fair", "light", "medium", "tan", "deep"]
+          },
+          undertone: {
+            type: "string",
+            enum: ["cool", "warm", "neutral", "olive"]
+          },
+          skin_type: {
+            type: "string",
+            enum: ["dry", "oily", "combination", "normal", "sensitive"]
+          },
+          visible_concerns: {
+            type: "array",
+            items: { type: "string" }
+          },
+          confidence: {
+            type: "number",
+            minimum: 0,
+            maximum: 1
+          },
+          lighting_note: {
+            type: "string"
+          }
         },
-        "undertone": {
-          "type": "string",
-          "enum": ["cool", "warm", "neutral", "olive"]
-        },
-        "skin_type": {
-          "type": "string",
-          "enum": ["dry", "oily", "combination", "normal", "sensitive"]
-        },
-        "visible_concerns": {
-          "type": "array",
-          "items": { "type": "string" }
-        },
-        "confidence": {
-          "type": "number",
-          "minimum": 0,
-          "maximum": 1
-        }
+        required: ["tone_depth", "undertone", "skin_type", "visible_concerns", "confidence"],
+        additionalProperties: false
       },
-      "required": ["tone_depth", "undertone", "skin_type", "visible_concerns", "confidence"],
-      "additionalProperties": false
-    },
-    "questions": {
-      "type": "array",
-      "items": { "type": "string" },
-      "maxItems": 2
-    },
-    "recommendations": {
-      "type": "object",
-      "properties": {
-        "primer": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "name": { "type": "string" },
-              "brand": { "type": "string" },
-              "finish": { "type": "string" },
-              "why_it_matches": { "type": "string" },
-              "shade_family": { "type": "string" },
-              "price_tier": { "type": "string", "enum": ["drugstore", "mid", "premium"] },
-              "alt_options": { "type": "array", "items": { "type": "string" } }
-            },
-            "required": ["name", "why_it_matches"],
-            "additionalProperties": false
-          }
-        },
-        "foundation_concealer": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "name": { "type": "string" },
-              "brand": { "type": "string" },
-              "finish": { "type": "string" },
-              "why_it_matches": { "type": "string" },
-              "shade_family": { "type": "string" },
-              "price_tier": { "type": "string", "enum": ["drugstore", "mid", "premium"] },
-              "alt_options": { "type": "array", "items": { "type": "string" } }
-            },
-            "required": ["name", "why_it_matches"],
-            "additionalProperties": false
-          }
-        },
-        "brows_eyeliner_bronzer": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "name": { "type": "string" },
-              "brand": { "type": "string" },
-              "finish": { "type": "string" },
-              "why_it_matches": { "type": "string" },
-              "shade_family": { "type": "string" },
-              "price_tier": { "type": "string", "enum": ["drugstore", "mid", "premium"] },
-              "alt_options": { "type": "array", "items": { "type": "string" } }
-            },
-            "required": ["name", "why_it_matches"],
-            "additionalProperties": false
-          }
-        },
-        "shadow_palette": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "name": { "type": "string" },
-              "brand": { "type": "string" },
-              "finish": { "type": "string" },
-              "why_it_matches": { "type": "string" },
-              "shade_family": { "type": "string" },
-              "price_tier": { "type": "string", "enum": ["drugstore", "mid", "premium"] },
-              "alt_options": { "type": "array", "items": { "type": "string" } }
-            },
-            "required": ["name", "why_it_matches"],
-            "additionalProperties": false
-          }
-        }
+      questions: {
+        type: "array",
+        items: { type: "string" },
+        maxItems: 2
       },
-      "required": ["primer", "foundation_concealer", "brows_eyeliner_bronzer", "shadow_palette"],
-      "additionalProperties": false
+      recommendations: {
+        type: "object",
+        properties: {
+          primer: {
+            type: "array",
+            maxItems: 3,
+            items: {
+              type: "object",
+              properties: {
+                name: { type: "string" },
+                brand: { type: "string" },
+                finish: { type: "string" },
+                why_it_matches: { type: "string" },
+                shade_family: { type: "string" },
+                price_tier: { type: "string", enum: ["drugstore", "mid", "premium"] },
+                alt_options: { type: "array", items: { type: "string" } }
+              },
+              required: ["name", "brand", "why_it_matches"],
+              additionalProperties: false
+            }
+          },
+          foundation_concealer: {
+            type: "array",
+            maxItems: 3,
+            items: {
+              type: "object",
+              properties: {
+                name: { type: "string" },
+                brand: { type: "string" },
+                finish: { type: "string" },
+                why_it_matches: { type: "string" },
+                shade_family: { type: "string" },
+                price_tier: { type: "string", enum: ["drugstore", "mid", "premium"] },
+                alt_options: { type: "array", items: { type: "string" } }
+              },
+              required: ["name", "brand", "why_it_matches"],
+              additionalProperties: false
+            }
+          },
+          brows_eyeliner_bronzer: {
+            type: "array",
+            maxItems: 3,
+            items: {
+              type: "object",
+              properties: {
+                name: { type: "string" },
+                brand: { type: "string" },
+                finish: { type: "string" },
+                why_it_matches: { type: "string" },
+                shade_family: { type: "string" },
+                price_tier: { type: "string", enum: ["drugstore", "mid", "premium"] },
+                alt_options: { type: "array", items: { type: "string" } }
+              },
+              required: ["name", "brand", "why_it_matches"],
+              additionalProperties: false
+            }
+          },
+          shadow_palette: {
+            type: "array",
+            maxItems: 3,
+            items: {
+              type: "object",
+              properties: {
+                name: { type: "string" },
+                brand: { type: "string" },
+                finish: { type: "string" },
+                why_it_matches: { type: "string" },
+                shade_family: { type: "string" },
+                price_tier: { type: "string", enum: ["drugstore", "mid", "premium"] },
+                alt_options: { type: "array", items: { type: "string" } }
+              },
+              required: ["name", "brand", "why_it_matches"],
+              additionalProperties: false
+            }
+          }
+        },
+        required: ["primer", "foundation_concealer", "brows_eyeliner_bronzer", "shadow_palette"],
+        additionalProperties: false
+      },
+      technique_notes: {
+        type: "array",
+        items: { type: "string" }
+      },
+      safety_warnings: {
+        type: "array",
+        items: { type: "string" }
+      }
     },
-    "technique_notes": {
-      "type": "array",
-      "items": { "type": "string" }
-    }
+    required: ["skin_profile", "recommendations", "technique_notes"],
+    additionalProperties: false
   },
-  "required": ["skin_profile", "recommendations", "technique_notes"],
-  "additionalProperties": false
+  strict: true
 };
 
 // Enhanced product search with fallback
@@ -372,25 +407,19 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Build the conversation
-    const messages = [
-      {
-        role: "system",
-        content: SYSTEM_PROMPT
-      },
+    // Build input array for OpenAI Responses API
+    const input = [
       {
         role: "user",
         content: [
           {
-            type: "text",
-            text: "Analyze my selfie and recommend products. Return your response as a JSON object matching the provided schema."
+            type: "input_text",
+            text: "Analyze my selfie and recommend makeup products. If needed, ask at most 2 clarifying questions."
           },
           {
-            type: "image_url",
-            image_url: {
-              url: image_base64,
-              detail: "high"
-            }
+            type: "input_image",
+            image_data: image_base64,
+            detail: "auto" // Use auto for balanced quality/cost
           }
         ]
       }
@@ -398,23 +427,33 @@ serve(async (req) => {
 
     // Add preferences if provided
     if (prefs && Object.keys(prefs).length > 0) {
-      messages.push({
+      input.push({
         role: "user",
-        content: `My preferences: ${JSON.stringify(prefs)}`
+        content: [
+          {
+            type: "input_text",
+            text: `My preferences: ${JSON.stringify(prefs)}`
+          }
+        ]
       });
     }
 
     // Add previous profile for consistency if available
     if (last_skin_profile) {
-      messages.push({
+      input.push({
         role: "user",
-        content: `Previous skin profile for reference: ${JSON.stringify(last_skin_profile)}`
+        content: [
+          {
+            type: "input_text",
+            text: `Previous skin profile for reference: ${JSON.stringify(last_skin_profile)}`
+          }
+        ]
       });
     }
 
-    console.log('Making OpenAI API call...');
+    console.log('Making OpenAI Responses API call...');
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch('https://api.openai.com/v1/responses', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${openAIApiKey}`,
@@ -422,33 +461,35 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: 'gpt-5-2025-08-07',
-        messages: messages,
-        max_completion_tokens: 2000,
+        instructions: BEAUTY_DEVELOPER_INSTRUCTIONS,
+        input: input,
         response_format: {
           type: "json_schema",
-          json_schema: {
-            name: "BeautyConsultation",
-            schema: jsonSchema,
-            strict: true
-          }
+          json_schema: BeautyConsultationJsonSchema
         }
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('OpenAI API error:', errorText);
+      console.error('OpenAI Responses API error:', errorText);
       throw new Error(`OpenAI API error: ${response.status}`);
     }
 
     const data = await response.json();
     console.log('OpenAI response received');
 
-    if (!data.choices || !data.choices[0] || !data.choices[0].message || !data.choices[0].message.content) {
-      throw new Error('Invalid response from OpenAI');
+    if (!data.output || !data.output[0] || !data.output[0].content) {
+      throw new Error('Invalid response from OpenAI Responses API');
     }
 
-    let consultationResult = JSON.parse(data.choices[0].message.content);
+    // Extract JSON from the structured output
+    const jsonContent = data.output[0].content.find((c: any) => c.type === "output_json");
+    if (!jsonContent || !jsonContent.json) {
+      throw new Error('No JSON content found in response');
+    }
+
+    let consultationResult = jsonContent.json;
     
     // Validate the result against our interface
     if (!consultationResult.skin_profile || !consultationResult.recommendations || !consultationResult.technique_notes) {

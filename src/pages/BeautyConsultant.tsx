@@ -40,6 +40,7 @@ type BeautyConsultation = {
     skin_type: "dry" | "oily" | "combination" | "normal" | "sensitive";
     visible_concerns: string[];
     confidence: number;
+    lighting_note?: string;
   };
   questions?: string[];
   recommendations: {
@@ -49,6 +50,7 @@ type BeautyConsultation = {
     shadow_palette: RecItem[];
   };
   technique_notes: string[];
+  safety_warnings?: string[];
   real_products?: boolean;
 };
 type ChatMessage = {
@@ -73,6 +75,9 @@ export default function BeautyConsultantPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [showImage, setShowImage] = useState(true);
+  const [imageCollapsed, setImageCollapsed] = useState(false);
+  const [currentConsultation, setCurrentConsultation] = useState<BeautyConsultation | null>(null);
+  const [preferences, setPreferences] = useState<{ finish?: string; coverage?: string }>({});
   const [expertMode, setExpertMode] = useState(false);
   const [shoppingMode, setShoppingMode] = useState(false);
   const [selectedVoice, setSelectedVoice] = useState('alloy');
@@ -129,17 +134,21 @@ export default function BeautyConsultantPage() {
         throw new Error('No analysis data received');
       }
       const consultation = response.data as BeautyConsultation;
+      setCurrentConsultation(consultation);
+      
+      // Auto-collapse selfie after analysis for privacy
+      setImageCollapsed(true);
 
       // Add assistant response with consultation
       const assistantMessage: ChatMessage = {
         id: Date.now().toString(),
         type: 'assistant',
         content: generateConsultationSummary(consultation),
-        consultation,
+        consultation: consultation,
         timestamp: new Date()
       };
+      
       setMessages(prev => [...prev, assistantMessage]);
-      setShowImage(false); // Auto-hide image after analysis
 
       // Log event
       if (user?.id) {
@@ -254,11 +263,13 @@ I've prepared personalized product recommendations for you! ${consultation.quest
   };
   const handlePreferenceClick = async (key: "finish" | "coverage", val: string, messageId: string) => {
     const newPrefs = {
-      ...prefs,
+      ...preferences,
       [key]: val
     };
-    setPrefs(newPrefs);
-    if (selectedImage) {
+    setPreferences(newPrefs);
+    
+    // Re-analyze with new preferences
+    if (selectedImage && currentConsultation) {
       await analyzeImage(selectedImage);
     }
   };
@@ -363,14 +374,17 @@ I've prepared personalized product recommendations for you! ${consultation.quest
               </div>
               
               {selectedImage && <div className="flex items-center gap-2">
-                  <Button variant="ghost" size="sm" onClick={() => setShowImage(!showImage)} className="text-muted-foreground">
-                    {showImage ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  <Button variant="ghost" size="sm" onClick={() => setImageCollapsed(!imageCollapsed)} className="text-muted-foreground">
+                    {imageCollapsed ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                    {imageCollapsed ? "Show photo" : "Hide photo"}
                   </Button>
                   <Button variant="ghost" size="sm" onClick={() => {
                 setSelectedImage(null);
-                setShowImage(true);
+                setCurrentConsultation(null);
+                setImageCollapsed(false);
               }} className="text-muted-foreground">
                     <Trash2 className="h-4 w-4" />
+                    Delete
                   </Button>
                 </div>}
             </div>
@@ -387,7 +401,7 @@ I've prepared personalized product recommendations for you! ${consultation.quest
                       animationDelay: `${index * 0.1}s`
                     }}>
                         <div className={`max-w-[80%] rounded-xl px-3 py-2 ${message.type === 'user' ? 'bg-primary text-primary-foreground ml-4' : 'bg-muted/80 mr-4'}`}>
-                          {message.image && showImage && <div className="mb-2 rounded-md overflow-hidden">
+                          {message.image && !imageCollapsed && <div className="mb-2 rounded-md overflow-hidden">
                               <img src={message.image} alt="Uploaded image" className="w-full h-24 object-cover" />
                             </div>}
                           
@@ -413,16 +427,31 @@ I've prepared personalized product recommendations for you! ${consultation.quest
                                 </div>
                               </div>
                               
-                              {/* Quick Questions */}
+                              {/* Clarifier Chips - Max 2 types */}
                               {message.consultation.questions && message.consultation.questions.length > 0 && <div className="space-y-2">
-                                  <p className="text-sm font-medium">Quick preferences:</p>
+                                  <p className="text-sm font-medium text-muted-foreground">Refine your recommendations:</p>
                                   <div className="flex flex-wrap gap-2">
-                                    {message.consultation.questions.includes("finish") && ["Matte", "Natural", "Glow"].map(option => <Button key={option} variant="outline" size="sm" onClick={() => handlePreferenceClick("finish", option.toLowerCase(), message.id)}>
-                                          {option}
-                                        </Button>)}
-                                    {message.consultation.questions.includes("coverage") && ["Light", "Medium", "Full"].map(option => <Button key={option} variant="outline" size="sm" onClick={() => handlePreferenceClick("coverage", option.toLowerCase(), message.id)}>
-                                          {option}
-                                        </Button>)}
+                                    {/* Finish Options */}
+                                    {["Matte", "Natural", "Glow"].map(option => <Button 
+                                      key={option} 
+                                      variant={preferences.finish === option.toLowerCase() ? "default" : "outline"} 
+                                      size="sm" 
+                                      onClick={() => handlePreferenceClick("finish", option.toLowerCase(), message.id)}
+                                      className="text-xs"
+                                    >
+                                      {option}
+                                    </Button>)}
+                                    
+                                    {/* Coverage Options */}
+                                    {["Light", "Medium", "Full"].map(option => <Button 
+                                      key={option} 
+                                      variant={preferences.coverage === option.toLowerCase() ? "default" : "outline"} 
+                                      size="sm" 
+                                      onClick={() => handlePreferenceClick("coverage", option.toLowerCase(), message.id)}
+                                      className="text-xs"
+                                    >
+                                      {option} Coverage
+                                    </Button>)}
                                   </div>
                                 </div>}
                               
