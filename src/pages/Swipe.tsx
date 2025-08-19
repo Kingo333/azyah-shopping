@@ -26,13 +26,7 @@ const Swipe = () => {
   
   // Initialize state from URL params
   const [selectedGenders, setSelectedGenders] = useState<Gender[]>(() => {
-    const categoryParam = searchParams.get('category');
     const genderParam = searchParams.get('gender');
-    
-    // Handle legacy category=men/women by converting to gender filter
-    if (categoryParam && ['men', 'women', 'unisex', 'kids'].includes(categoryParam)) {
-      return [categoryParam as Gender];
-    }
     if (genderParam && ['men', 'women', 'unisex', 'kids'].includes(genderParam)) {
       return [genderParam as Gender];
     }
@@ -41,7 +35,7 @@ const Swipe = () => {
   
   const [selectedCategories, setSelectedCategories] = useState<string[]>(() => {
     const categoryParam = searchParams.get('category');
-    // Only set as category if it's not a gender
+    // Set any category that's not a gender as a category filter
     if (categoryParam && !['men', 'women', 'unisex', 'kids'].includes(categoryParam)) {
       return [categoryParam];
     }
