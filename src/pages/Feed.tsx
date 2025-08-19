@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
-
+import { BackButton } from '@/components/ui/back-button';
 import { useToast } from '@/hooks/use-toast';
 import { 
   Heart, 
@@ -170,7 +170,7 @@ const Feed: React.FC = () => {
         <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm pb-4 mb-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              
+              <BackButton />
               <h1 className="text-2xl font-bold">Fashion Feed</h1>
             </div>
             <div className="flex items-center gap-2">

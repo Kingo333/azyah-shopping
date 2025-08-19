@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-
+import { BackButton } from '@/components/ui/back-button';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -306,6 +306,13 @@ const BrandPortal: React.FC = () => {
       <div className="container mx-auto max-w-7xl p-2 sm:p-4">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 sm:mb-6 gap-4">
           <div className="flex items-center gap-2 sm:gap-4">
+            <BackButton 
+              fallbackPath="/dashboard"
+              onBack={() => {
+                console.log('Brand portal back button clicked, navigating to dashboard');
+                window.location.href = '/dashboard';
+              }}
+            />
             <div className="flex items-center gap-2 sm:gap-4">
               <div className="w-12 h-12 sm:w-16 sm:h-16 bg-muted rounded-xl overflow-hidden">
                 {brand.logo_url ? 

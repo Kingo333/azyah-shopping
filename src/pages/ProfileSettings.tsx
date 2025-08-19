@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
-
+import { BackButton } from '@/components/ui/back-button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
@@ -195,7 +195,7 @@ const ProfileSettings: React.FC = () => {
       <div className="container mx-auto max-w-2xl p-4">
         {/* Header */}
         <div className="flex items-center gap-3 mb-6">
-          
+          <BackButton />
           <h1 className="text-2xl font-bold">Profile Settings</h1>
         </div>
 

@@ -1,6 +1,6 @@
 import React, { Suspense } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-
+import { BackButton } from '@/components/ui/back-button';
 
 // Lazy load the InfiniteScrollForum component
 const InfiniteScrollForum = React.lazy(() => import('@/components/InfiniteScrollForum'));
@@ -39,7 +39,7 @@ const Forum: React.FC = () => {
     <div className="min-h-screen bg-background">
       <div className="container mx-auto max-w-4xl p-4">
         <div className="flex items-center gap-3 mb-6">
-          
+          <BackButton />
           <h1 className="text-2xl font-bold">Fashion Forum</h1>
         </div>
         <Suspense fallback={<LoadingFallback />}>
