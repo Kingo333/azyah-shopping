@@ -119,7 +119,15 @@ export default function BeautyConsultantPage() {
           user_id: user?.id
         }
       });
-      if (response.error) throw response.error;
+      
+      if (response.error) {
+        console.error('Beauty consult error:', response.error);
+        throw new Error(response.error.message || 'Failed to analyze image');
+      }
+
+      if (!response.data) {
+        throw new Error('No analysis data received');
+      }
       const consultation = response.data as BeautyConsultation;
 
       // Add assistant response with consultation
@@ -145,7 +153,17 @@ export default function BeautyConsultantPage() {
       }
     } catch (error) {
       console.error("Analysis error:", error);
-      toast.error("Error analyzing image. Please try again.");
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      
+      const errorChatMessage: ChatMessage = {
+        id: Date.now().toString(),
+        type: 'assistant',
+        content: `I apologize, but I couldn't analyze your image: ${errorMessage}. Please ensure your photo is clear and well-lit, then try again.`,
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, errorChatMessage]);
+      
+      toast.error(`Analysis failed: ${errorMessage}`);
     } finally {
       setIsLoading(false);
     }
@@ -193,7 +211,14 @@ I've prepared personalized product recommendations for you! ${consultation.quest
         }
       });
 
-      if (response.error) throw response.error;
+      if (response.error) {
+        console.error('Supabase function error:', response.error);
+        throw new Error(response.error.message || 'Failed to get consultation response');
+      }
+
+      if (!response.data?.response) {
+        throw new Error('No response received from consultation service');
+      }
 
       const assistantMessage: ChatMessage = {
         id: Date.now().toString(),
@@ -214,14 +239,15 @@ I've prepared personalized product recommendations for you! ${consultation.quest
       }
     } catch (error) {
       console.error("Text consultation error:", error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       const fallbackMessage: ChatMessage = {
         id: Date.now().toString(),
         type: 'assistant',
-        content: "I understand you're looking for beauty advice! For the most accurate recommendations, I'd suggest uploading a clear, well-lit selfie so I can analyze your skin tone and features. Alternatively, you can describe your skin tone (fair, light, medium, tan, or deep) and any specific concerns you have, and I'll provide general guidance!\n\n⚠️ **Important**: This is cosmetic advice only. Always patch test new products and consult a dermatologist for skin concerns.",
+        content: `I apologize, but I encountered an error: ${errorMessage}. Please try again in a moment.\n\nFor the most accurate recommendations, I'd suggest uploading a clear, well-lit selfie so I can analyze your skin tone and features. Alternatively, you can describe your skin tone (fair, light, medium, tan, or deep) and any specific concerns you have.\n\n⚠️ **Important**: This is cosmetic advice only. Always patch test new products and consult a dermatologist for skin concerns.`,
         timestamp: new Date()
       };
       setMessages(prev => [...prev, fallbackMessage]);
-      toast.error("Error processing your message");
+      toast.error(`Chat error: ${errorMessage}`);
     } finally {
       setIsLoading(false);
     }

@@ -100,8 +100,7 @@ serve(async (req) => {
       body: JSON.stringify({
         model: 'gpt-5-2025-08-07',
         messages: messages,
-        max_completion_tokens: 1000,
-        temperature: 0.7
+        max_completion_tokens: 1000
       }),
     });
 
