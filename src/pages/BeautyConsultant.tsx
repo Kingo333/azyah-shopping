@@ -19,6 +19,7 @@ import { Upload, Camera, MessageCircle, Sparkles, Copy, Save, Eye, EyeOff, Trash
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { downscaleImage, validateImageFile } from "@/utils/imageUtils";
+import { DebugHealthCheck } from "@/components/DebugHealthCheck";
 type RecItem = {
   name: string;
   brand?: string;
@@ -595,6 +596,9 @@ I've prepared personalized product recommendations for you! ${consultation.quest
                      {!hasAcceptedDisclaimer && (
                        <SafetyDisclaimer onAccept={() => setHasAcceptedDisclaimer(true)} />
                      )}
+                     
+                     {/* Debug Health Check - temporary */}
+                     <DebugHealthCheck />
                      
                      {/* Document Upload (Expert Mode) */}
                      {expertMode && <div className="border-t pt-3">

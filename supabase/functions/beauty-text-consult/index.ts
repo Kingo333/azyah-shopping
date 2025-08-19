@@ -95,7 +95,7 @@ serve(async (req) => {
 
     const input = inputMessages.join('\n');
 
-    console.log('Making OpenAI Responses API call for text consultation...');
+    console.log('Making OpenAI Chat Completions API call for text consultation...');
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
