@@ -8,25 +8,13 @@ const corsHeaders = {
 };
 
 // Initialize Supabase client
-const supabaseUrl = Deno.env.get('SUPABASE_URL');
-const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
+const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+const openAIApiKey = Deno.env.get('OPENAI_API_KEY')!;
 
-if (!supabaseUrl || !supabaseServiceKey) {
-  console.error('Missing Supabase environment variables');
-}
-
-if (!openAIApiKey) {
-  console.error('Missing OpenAI API key');
-}
-
-const supabase = createClient(supabaseUrl!, supabaseServiceKey!);
+const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 async function analyzeProductWithAI(imageUrl: string, title: string, description: string) {
-  if (!openAIApiKey) {
-    console.error('OpenAI API key not available, falling back to text analysis');
-    return analyzeTextOnly(title, description);
-  }
   try {
     console.log('Analyzing product with AI...', { title, imageUrl });
     
@@ -187,11 +175,6 @@ export default async function handler(req: Request) {
     const { limit = 50, batchSize = 10 } = await req.json();
     
     console.log(`Starting AI categorization for ${limit} products...`);
-    console.log('Environment check:', {
-      hasSupabaseUrl: !!supabaseUrl,
-      hasServiceKey: !!supabaseServiceKey,
-      hasOpenAIKey: !!openAIApiKey
-    });
 
     // Get products that need categorization (currently miscategorized as clothing/tops)
     const { data: products, error: fetchError } = await supabase
