@@ -47,13 +47,13 @@ export const BrandPortalHeader: React.FC<BrandPortalHeaderProps> = ({
   };
 
   return (
-    <div className={cn("flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 sm:mb-6 gap-4", className)}>
+    <div className={cn("flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 sm:mb-6 gap-4 p-4 rounded-lg bg-card border border-border", className)}>
       <div className="flex items-center gap-2 sm:gap-4">
         <div className="flex items-center gap-2 sm:gap-4">
-          <div className="w-12 h-12 sm:w-16 sm:h-16 bg-muted rounded-xl overflow-hidden">
+          <div className="w-12 h-12 sm:w-16 sm:h-16 bg-muted/50 dark:bg-muted rounded-xl overflow-hidden border border-border">
             {brand?.logo_url ? 
-              <img src={brand.logo_url} alt={brand.name} className="w-full h-full object-cover" /> : 
-              <div className="w-full h-full flex items-center justify-center text-muted-foreground font-playfair">
+              <img src={brand.logo_url} alt={brand.name} className="w-full h-full object-cover" /> :
+              <div className="w-full h-full flex items-center justify-center text-muted-foreground font-playfair bg-muted/30 dark:bg-muted/50">
                 {brand?.name.charAt(0).toUpperCase() || 'B'}
               </div>
             }
@@ -63,21 +63,21 @@ export const BrandPortalHeader: React.FC<BrandPortalHeaderProps> = ({
               <h1 className="text-lg sm:text-2xl font-bold font-playfair">{brand?.name || 'Brand Portal'}</h1>
               <Badge variant="secondary" className="text-xs rounded-full w-fit">Verified</Badge>
             </div>
-            <p className="text-muted-foreground text-sm">{brand?.bio || 'Brand description'}</p>
+            <p className="text-muted-foreground text-sm dark:text-muted-foreground/80">{brand?.bio || 'Brand description'}</p>
           </div>
         </div>
       </div>
 
       <div className="flex items-center gap-2 w-full sm:w-auto">
         {/* Theme Toggle */}
-        <Button variant="ghost" size="sm" onClick={handleThemeToggle} className="hover:bg-primary/10 hover:scale-105 transition-all">
+        <Button variant="ghost" size="sm" onClick={handleThemeToggle} className="hover:bg-accent/50 dark:hover:bg-accent/20 hover:scale-105 transition-all">
           {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
         </Button>
 
         {onImportFromWebsite && (
           <Button 
             variant="outline"
-            className="rounded-xl flex-1 sm:flex-none"
+            className="rounded-xl flex-1 sm:flex-none border-border hover:bg-accent/50 dark:hover:bg-accent/20"
             onClick={onImportFromWebsite}
           >
             <Globe className="h-4 w-4 mr-2" />
@@ -87,7 +87,7 @@ export const BrandPortalHeader: React.FC<BrandPortalHeaderProps> = ({
 
         {onAddProduct && (
           <Button 
-            className="rounded-xl bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 flex-1 sm:flex-none"
+            className="rounded-xl bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 dark:from-pink-600 dark:to-purple-600 dark:hover:from-pink-700 dark:hover:to-purple-700 flex-1 sm:flex-none text-white"
             onClick={onAddProduct}
           >
             <Plus className="h-4 w-4 mr-2" />
@@ -98,9 +98,9 @@ export const BrandPortalHeader: React.FC<BrandPortalHeaderProps> = ({
         {/* User Menu */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" className="flex items-center gap-3 hover:bg-primary/10 hover:scale-105 transition-all">
-              <Avatar className="h-8 w-8 border-2 border-white/20">
-                <AvatarFallback className="text-sm bg-gradient-to-br from-primary/10 to-accent/10">
+            <Button variant="ghost" size="sm" className="flex items-center gap-3 hover:bg-accent/50 dark:hover:bg-accent/20 hover:scale-105 transition-all">
+              <Avatar className="h-8 w-8 border-2 border-border dark:border-border/50">
+                <AvatarFallback className="text-sm bg-gradient-to-br from-primary/20 to-accent/20 dark:from-primary/30 dark:to-accent/30">
                   {getUserName().charAt(0).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
@@ -109,7 +109,7 @@ export const BrandPortalHeader: React.FC<BrandPortalHeaderProps> = ({
               </span>
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56 glass-panel border-white/20">
+          <DropdownMenuContent align="end" className="z-50 w-56 bg-background border border-border shadow-lg">
             <DropdownMenuItem onClick={handleSignOut}>
               <LogOut className="mr-2 h-4 w-4" />
               Sign Out
