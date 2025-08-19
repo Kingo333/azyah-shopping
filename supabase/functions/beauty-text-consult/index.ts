@@ -87,17 +87,19 @@ serve(async (req) => {
 
     console.log('Making OpenAI Responses API call for text consultation...');
 
-    const response = await fetch('https://api.openai.com/v1/responses', {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${openAIApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: Deno.env.get('AZ_TEXT_MODEL') ?? 'gpt-5',
-        instructions: SYSTEM_PROMPT,
-        input: input,
-        max_output_tokens: 1000
+        model: Deno.env.get('AZ_TEXT_MODEL') ?? 'gpt-5-2025-08-07',
+        messages: [
+          { role: 'system', content: SYSTEM_PROMPT },
+          { role: 'user', content: input }
+        ],
+        max_completion_tokens: 1000
       }),
     });
 
@@ -110,12 +112,8 @@ serve(async (req) => {
     const data = await response.json();
     console.log('OpenAI response received');
 
-    // Parse text output from Responses API
-    const outputText = data.output_text || (
-      data.output?.flatMap((m: any) =>
-        (m.content || []).filter((c: any) => c.type === "output_text").map((c: any) => c.text)
-      ).join("\n")
-    );
+    // Parse text output from Chat Completions API
+    const outputText = data.choices?.[0]?.message?.content;
 
     if (!outputText) {
       throw new Error('No text returned');

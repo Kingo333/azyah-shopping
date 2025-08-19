@@ -404,36 +404,40 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Build input array for OpenAI Responses API
-    const input = [
+    // Build messages for OpenAI Chat Completions API
+    const messages = [
+      {
+        role: "system",
+        content: BEAUTY_DEVELOPER_INSTRUCTIONS
+      },
       {
         role: "user",
         content: [
-          { type: "input_text", text: "Analyze my selfie and recommend makeup products. Return ONLY JSON that matches the schema." },
-          { type: "input_image", image_url: image_base64, detail: "auto" }
+          { type: "text", text: "Analyze my selfie and recommend makeup products. Return ONLY JSON that matches the schema." },
+          { type: "image_url", image_url: { url: image_base64, detail: "high" } }
         ]
       }
     ];
 
     // Add preferences if provided
     if (prefs && Object.keys(prefs).length > 0) {
-      input.push({
-        role: "user",
-        content: [{ type: "input_text", text: `Preferences: ${JSON.stringify(prefs)}` }]
+      messages.push({
+        role: "user", 
+        content: `Preferences: ${JSON.stringify(prefs)}`
       });
     }
 
     // Add previous profile for consistency if available
     if (last_skin_profile) {
-      input.push({
+      messages.push({
         role: "user",
-        content: [{ type: "input_text", text: `Previous skin profile: ${JSON.stringify(last_skin_profile)}` }]
+        content: `Previous skin profile: ${JSON.stringify(last_skin_profile)}`
       });
     }
 
-    console.log('Making OpenAI Responses API call...');
+    console.log('Making OpenAI Chat Completions API call...');
 
-    const response = await fetch('https://api.openai.com/v1/responses', {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${openAIApiKey}`,
@@ -441,28 +445,26 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: Deno.env.get('AZ_VISION_MODEL') ?? 'gpt-4o',
-        instructions: BEAUTY_DEVELOPER_INSTRUCTIONS,
-        input: input,
+        messages: messages,
         response_format: {
           type: "json_schema",
           json_schema: BeautyConsultationJsonSchema
         },
-        max_output_tokens: 2000
+        max_tokens: 2000
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('OpenAI Responses API error:', errorText);
-      throw new Error(`OpenAI Responses API error: ${response.status}`);
+      console.error('OpenAI Chat Completions API error:', errorText);
+      throw new Error(`OpenAI Chat Completions API error: ${response.status}`);
     }
 
     const data = await response.json();
     console.log('OpenAI response received');
 
-    // Parse structured JSON from Responses API
-    const output = data.output?.[0]?.content?.find?.((c: any) => c.type === "output_json")?.json ?? 
-                   data.output?.[0]?.content?.[0]?.json;
+    // Parse structured JSON from Chat Completions API
+    const output = JSON.parse(data.choices?.[0]?.message?.content || '{}');
 
     if (!output) {
       throw new Error('No JSON returned by model (check schema)');
