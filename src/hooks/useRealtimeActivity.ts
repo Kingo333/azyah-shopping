@@ -52,20 +52,13 @@ export const useRealtimeActivity = (brandId?: string, retailerId?: string, limit
         return [];
       }
 
-      // Get current user to exclude their own activity
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      // Get recent events for retailer/brand products, excluding own activity
-      let eventsQuery = supabase
+      // Get recent events for retailer/brand products
+      const eventsQuery = supabase
         .from('events')
         .select('id, event_type, created_at, product_id, user_id')
         .in('product_id', productIds)
         .order('created_at', { ascending: false })
-        .limit(limit * 3); // Get more to filter out own activity
-
-      if (user?.id) {
-        eventsQuery = eventsQuery.neq('user_id', user.id);
-      }
+        .limit(limit * 3);
 
       const { data: events, error: eventsError } = await eventsQuery;
       
@@ -74,19 +67,15 @@ export const useRealtimeActivity = (brandId?: string, retailerId?: string, limit
         return [];
       }
 
-      // Get recent likes for retailer/brand products, excluding own activity
-      let likesQuery = supabase
+      // Get recent likes for retailer/brand products
+      const { data: likes } = await supabase
         .from('likes')
         .select('id, created_at, product_id, user_id')
         .in('product_id', productIds)
         .order('created_at', { ascending: false })
         .limit(limit * 2);
 
-      if (user?.id) {
-        likesQuery = likesQuery.neq('user_id', user.id);
-      }
-
-      const { data: likes } = await likesQuery;
+      console.log('Likes found:', likes?.length || 0, likes);
 
       // Get recent wishlist adds for retailer/brand products
       const { data: wishlistAdds } = await supabase
