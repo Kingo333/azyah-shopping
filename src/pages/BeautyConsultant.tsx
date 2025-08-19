@@ -114,13 +114,13 @@ export default function BeautyConsultantPage() {
       toast.error("Error uploading image");
     }
   };
-  const analyzeImage = async (imageBase64: string, mode: 'analysis' | 'shopping' = 'analysis') => {
+  const analyzeImage = async (imageBase64: string, mode: 'analysis' | 'shopping' = 'analysis', prefsOverride?: any) => {
     setIsLoading(true);
     try {
       const response = await supabase.functions.invoke('beauty-consult', {
         body: {
           image_base64: imageBase64,
-          prefs,
+          prefs: prefsOverride ?? prefs,
           user_id: user?.id
         }
       });
@@ -279,9 +279,9 @@ I've prepared personalized product recommendations for you! ${consultation.quest
     };
     setPreferences(newPrefs);
     
-    // Re-analyze with new preferences
+    // Re-analyze with new preferences - pass them directly to avoid stale state
     if (selectedImage && currentConsultation) {
-      await analyzeImage(selectedImage);
+      await analyzeImage(selectedImage, 'analysis', newPrefs);
     }
   };
   const copyRoutine = (consultation: BeautyConsultation) => {

@@ -68,57 +68,68 @@ serve(async (req) => {
       );
     }
 
-    // Build conversation context
-    const messages = [
-      { role: "system", content: SYSTEM_PROMPT }
+    // Build input array for OpenAI Responses API
+    const input = [
+      { role: "user", content: [{ type: "input_text", text: message }] }
     ];
 
     // Add conversation history
     if (conversation_history.length > 0) {
-      messages.push(...conversation_history.slice(-6)); // Keep last 6 messages for context
-    }
-
-    // Add current message
-    messages.push({ role: "user", content: message });
-
-    // Add skin profile context if available
-    if (skin_profile) {
-      messages.push({
-        role: "system",
-        content: `User's known skin profile: ${JSON.stringify(skin_profile)}`
+      const recentHistory = conversation_history.slice(-6); // Keep last 6 messages for context
+      recentHistory.forEach(h => {
+        input.push({
+          role: h.role === "assistant" ? "assistant" : "user",
+          content: [{ type: "input_text", text: h.content }]
+        });
       });
     }
 
-    console.log('Making OpenAI API call for text consultation...');
+    // Add skin profile context if available
+    if (skin_profile) {
+      input.push({
+        role: "developer",
+        content: [{ type: "input_text", text: `User skin profile (if any): ${JSON.stringify(skin_profile)}` }]
+      });
+    }
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    console.log('Making OpenAI Responses API call for text consultation...');
+
+    const response = await fetch('https://api.openai.com/v1/responses', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${openAIApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-5-2025-08-07',
-        messages: messages,
-        max_completion_tokens: 1000
+        model: Deno.env.get('AZ_TEXT_MODEL') ?? 'gpt-5',
+        instructions: SYSTEM_PROMPT,
+        input: input,
+        max_output_tokens: 1000
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('OpenAI API error:', errorText);
-      throw new Error(`OpenAI API error: ${response.status}`);
+      console.error('OpenAI Responses API error:', errorText);
+      throw new Error(`OpenAI Responses API error: ${response.status}`);
     }
 
     const data = await response.json();
     console.log('OpenAI response received');
 
-    if (!data.choices?.[0]?.message?.content) {
-      throw new Error('Invalid response from OpenAI');
+    // Parse text output from Responses API
+    const outputText = data.output_text || (
+      data.output?.flatMap((m: any) =>
+        (m.content || []).filter((c: any) => c.type === "output_text").map((c: any) => c.text)
+      ).join("\n")
+    );
+
+    if (!outputText) {
+      throw new Error('No text returned');
     }
 
     const consultationResponse: TextConsultationResponse = {
-      response: data.choices[0].message.content,
+      response: outputText,
       suggested_analysis: !skin_profile && message.toLowerCase().includes('skin'),
     };
 
