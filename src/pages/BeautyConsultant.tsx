@@ -7,10 +7,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { VoicePanel } from "@/components/VoicePanel";
+import { EnhancedVoicePanel } from "@/components/EnhancedVoicePanel";
+import { VoiceRecorder } from "@/components/VoiceRecorder";
+import { ShoppingModePanel } from "@/components/ShoppingModePanel";
 import { DocumentUpload } from "@/components/DocumentUpload";
 import { toast } from "sonner";
-import { Upload, Camera, MessageCircle, Sparkles, Copy, Save, Eye, EyeOff, Trash2, WandSparkles, Play, Download } from "lucide-react";
+import { Upload, Camera, MessageCircle, Sparkles, Copy, Save, Eye, EyeOff, Trash2, WandSparkles, Play, Download, Mic } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -65,6 +67,9 @@ export default function BeautyConsultantPage() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [showImage, setShowImage] = useState(true);
   const [expertMode, setExpertMode] = useState(false);
+  const [shoppingMode, setShoppingMode] = useState(false);
+  const [selectedVoice, setSelectedVoice] = useState('alloy');
+  const [isListening, setIsListening] = useState(false);
   const [prefs, setPrefs] = useState<{ finish?: string; coverage?: "light"|"medium"|"full" }>({});
 
   const fileToBase64 = (file: File): Promise<string> => {
@@ -76,7 +81,7 @@ export default function BeautyConsultantPage() {
     });
   };
 
-  const handleImageUpload = async (file: File) => {
+  const handleImageUpload = async (file: File, mode: 'analysis' | 'shopping' = 'analysis') => {
     try {
       const base64 = await fileToBase64(file);
       setSelectedImage(base64);
@@ -85,19 +90,21 @@ export default function BeautyConsultantPage() {
       const userMessage: ChatMessage = {
         id: Date.now().toString(),
         type: 'user',
-        content: 'Uploaded selfie for analysis',
+        content: mode === 'shopping' 
+          ? 'Uploaded product photo for shopping recommendations' 
+          : 'Uploaded selfie for analysis',
         image: base64,
         timestamp: new Date()
       };
       
       setMessages(prev => [...prev, userMessage]);
-      await analyzeImage(base64);
+      await analyzeImage(base64, mode);
     } catch (error) {
       toast.error("Error uploading image");
     }
   };
 
-  const analyzeImage = async (imageBase64: string) => {
+  const analyzeImage = async (imageBase64: string, mode: 'analysis' | 'shopping' = 'analysis') => {
     setIsLoading(true);
     try {
       const response = await supabase.functions.invoke('beauty-consult', {
@@ -198,6 +205,68 @@ I've prepared personalized product recommendations for you! ${consultation.quest
     const routine = generateRoutineText(consultation);
     navigator.clipboard.writeText(routine);
     toast.success("Routine copied to clipboard!");
+  };
+
+  const handleVoiceMessage = async (text: string) => {
+    if (!text.trim()) return;
+
+    // Add user voice message
+    const userMessage: ChatMessage = {
+      id: Date.now().toString(),
+      type: 'user',
+      content: text,
+      timestamp: new Date()
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+    
+    // Generate AI response (set the input text first)
+    setInputText(text);
+    await handleTextSubmit();
+    
+    // Auto-generate voice response if expert mode is enabled
+    if (expertMode) {
+      // Get the latest assistant message and convert to speech
+      setTimeout(async () => {
+        const latestMessages = [...messages, userMessage];
+        const lastAssistantMessage = latestMessages
+          .filter(m => m.type === 'assistant')
+          .pop();
+        
+        if (lastAssistantMessage) {
+          await generateVoiceResponse(lastAssistantMessage.content);
+        }
+      }, 1000);
+    }
+  };
+
+  const generateVoiceResponse = async (text: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('beauty-voice', {
+        body: {
+          text,
+          voice_id: selectedVoice,
+          want_mp3: true
+        }
+      });
+
+      if (error) throw error;
+
+      // Play the audio response
+      const audioBlob = new Blob(
+        [Uint8Array.from(atob(data.audio_base64), c => c.charCodeAt(0))],
+        { type: data.mime }
+      );
+      const audioUrl = URL.createObjectURL(audioBlob);
+      const audio = new Audio(audioUrl);
+      
+      audio.onended = () => URL.revokeObjectURL(audioUrl);
+      audio.play();
+      
+      toast.success('AI responded with voice');
+    } catch (error) {
+      console.error('Voice response error:', error);
+    }
   };
 
   const generateRoutineText = (consultation: BeautyConsultation): string => {
@@ -432,7 +501,7 @@ I've prepared personalized product recommendations for you! ${consultation.quest
                       <div className="flex-1 space-y-2">
                         <div className="flex gap-2">
                           <Input
-                            placeholder="Ask about makeup, describe your skin, or upload a selfie..."
+                            placeholder={shoppingMode ? "Ask about products or upload product photos..." : "Ask about makeup, describe your skin, or upload a selfie..."}
                             value={inputText}
                             onChange={(e) => setInputText(e.target.value)}
                             onKeyPress={(e) => e.key === 'Enter' && handleTextSubmit()}
@@ -448,16 +517,20 @@ I've prepared personalized product recommendations for you! ${consultation.quest
                             <Button variant="outline" size="sm" asChild>
                               <span className="flex items-center gap-2">
                                 <Camera className="h-4 w-4" />
-                                Upload Photo
+                                {shoppingMode ? "Scan Product" : "Upload Selfie"}
                               </span>
                             </Button>
                           </Label>
+                          <VoiceRecorder
+                            onTranscription={handleVoiceMessage}
+                            disabled={isLoading}
+                          />
                           <Input
                             id="image-upload"
                             type="file"
                             accept="image/*"
                             className="hidden"
-                            onChange={(e) => e.target.files?.[0] && handleImageUpload(e.target.files[0])}
+                            onChange={(e) => e.target.files?.[0] && handleImageUpload(e.target.files[0], shoppingMode ? 'shopping' : 'analysis')}
                           />
                         </div>
                       </div>
@@ -470,7 +543,10 @@ I've prepared personalized product recommendations for you! ${consultation.quest
             {/* Sidebar */}
             <div className="space-y-4">
               {/* Voice Panel */}
-              <VoicePanel />
+              <EnhancedVoicePanel 
+                text={messages.find(m => m.consultation)?.content || "Upload a selfie to get personalized voice recommendations!"} 
+                onVoiceChange={setSelectedVoice}
+              />
               
               {/* Document Upload (Expert Mode) */}
               {expertMode && (
