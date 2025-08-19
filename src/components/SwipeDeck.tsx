@@ -17,12 +17,13 @@ import { supabase } from '@/integrations/supabase/client';
 
 interface SwipeDeckProps {
   filter: string;
-  subcategory: string;
+  subcategory?: string;
+  gender?: string;
   priceRange: {
     min: number;
     max: number;
   };
-  searchQuery: string;
+  searchQuery?: string;
   currency?: string;
 }
 
@@ -53,6 +54,7 @@ const VERTICAL_THRESHOLD = 100;
 const SwipeDeck: React.FC<SwipeDeckProps> = ({
   filter,
   subcategory,
+  gender,
   priceRange,
   searchQuery,
   currency = 'USD'
@@ -75,6 +77,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
   const { products, isLoading } = useSmartSwipeProducts({
     filter: filter || 'all',
     subcategory,
+    gender,
     priceRange,
     searchQuery,
     currency

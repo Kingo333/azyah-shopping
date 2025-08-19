@@ -8,7 +8,8 @@ import { optimizeImageUrls } from '@/utils/imageOptimizer';
 
 interface UseSmartSwipeProductsProps {
   filter: string;
-  subcategory: string;
+  subcategory?: string;
+  gender?: string;
   priceRange: {
     min: number;
     max: number;
@@ -28,6 +29,7 @@ interface UserPreferences {
 export const useSmartSwipeProducts = ({
   filter,
   subcategory,
+  gender,
   priceRange,
   searchQuery,
   currency = 'USD'
@@ -287,6 +289,11 @@ export const useSmartSwipeProducts = ({
         }
       }
 
+      // Apply gender filter
+      if (gender && gender !== '') {
+        query = query.eq('gender', gender as any);
+      }
+
       if (currency && currency !== 'USD') {
         query = query.eq('currency', currency);
       }
@@ -469,7 +476,7 @@ export const useSmartSwipeProducts = ({
     } finally {
       setIsLoading(false);
     }
-  }, [filter, subcategory, priceRange, searchQuery, currency, toast, isEnabled, analyzeUserPreferences, calculatePersonalizationScore, shuffleArray]);
+  }, [filter, subcategory, gender, priceRange, searchQuery, currency, toast, isEnabled, analyzeUserPreferences, calculatePersonalizationScore, shuffleArray]);
 
   useEffect(() => {
     fetchProducts();

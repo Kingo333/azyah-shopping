@@ -8,18 +8,20 @@ import { optimizeImageUrls } from '@/utils/imageOptimizer';
 
 interface UsePersonalizedProductsProps {
   filter: string;
-  subcategory: string;
+  subcategory?: string;
+  gender?: string;
   priceRange: {
     min: number;
     max: number;
   };
-  searchQuery: string;
+  searchQuery?: string;
   currency?: string;
 }
 
 export const usePersonalizedProducts = ({
   filter,
   subcategory,
+  gender,
   priceRange,
   searchQuery,
   currency = 'USD'
@@ -111,6 +113,11 @@ export const usePersonalizedProducts = ({
         if (filter === 'bags') {
           query = query.in('subcategory_slug', ['handbags', 'clutches', 'totes', 'backpacks', 'wallets']);
         }
+      }
+
+      // Filter by gender if specified
+      if (gender && gender !== '') {
+        query = query.eq('gender', gender as any);
       }
 
       // Apply currency filter
@@ -209,7 +216,7 @@ export const usePersonalizedProducts = ({
     } finally {
       setIsLoading(false);
     }
-  }, [filter, subcategory, priceRange, searchQuery, currency, toast, isEnabled]);
+  }, [filter, subcategory, gender, priceRange, searchQuery, currency, toast, isEnabled]);
 
   useEffect(() => {
     fetchProducts();
