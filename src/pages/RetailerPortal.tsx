@@ -23,6 +23,7 @@ import { EditProductModal } from '@/components/EditProductModal';
 import { AnalyticsDashboard } from '@/components/AnalyticsDashboard';
 import RetailerBrandsList from '@/components/RetailerBrandsList';
 import { BulkImportActions } from '@/components/BulkImportActions';
+import { RetailerSettingsForm } from '@/components/RetailerSettingsForm';
 import { CollabDashboard } from '@/components/ugc/CollabDashboard';
 import { AsosImportManager } from '@/components/AsosImportManager';
 import BulkAsosImportManager from '@/components/BulkAsosImportManager';
@@ -62,9 +63,9 @@ const RetailerPortal = () => {
         .from('retailers')
         .select('*')
         .eq('owner_user_id', user?.id)
-        .single();
+        .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') {
+      if (error) {
         throw error;
       }
 
@@ -401,54 +402,12 @@ const RetailerPortal = () => {
                 </>
               )}
               
-              <Card>
-                <CardHeader>
-                  <CardTitle>Store Settings</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div>
-                      <h3 className="text-lg font-medium mb-2">Store Information</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <label className="text-sm font-medium">Store Name</label>
-                          <p className="text-muted-foreground">{retailer?.name || 'Not set'}</p>
-                        </div>
-                        <div>
-                          <label className="text-sm font-medium">Store Slug</label>
-                          <p className="text-muted-foreground">{retailer?.slug || 'Not set'}</p>
-                        </div>
-                        <div>
-                          <label className="text-sm font-medium">Website</label>
-                          <p className="text-muted-foreground">{retailer?.website || 'Not set'}</p>
-                        </div>
-                        <div>
-                          <label className="text-sm font-medium">Contact Email</label>
-                          <p className="text-muted-foreground">{retailer?.contact_email || 'Not set'}</p>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <h3 className="text-lg font-medium mb-2">Store Bio</h3>
-                      <p className="text-muted-foreground">{retailer?.bio || 'No description available'}</p>
-                    </div>
-                    
-                    <div>
-                      <h3 className="text-lg font-medium mb-2">Shipping Regions</h3>
-                      <div className="flex flex-wrap gap-2">
-                        {retailer?.shipping_regions?.length > 0 ? (
-                          retailer.shipping_regions.map((region: string) => (
-                            <Badge key={region} variant="outline">{region}</Badge>
-                          ))
-                        ) : (
-                          <p className="text-muted-foreground">No shipping regions configured</p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+              {retailer && (
+                <RetailerSettingsForm 
+                  retailer={retailer}
+                  onRetailerUpdate={setRetailer}
+                />
+              )}
               
               <BulkImportActions 
                 retailerId={retailer?.id}
