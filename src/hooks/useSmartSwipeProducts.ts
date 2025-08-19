@@ -215,7 +215,8 @@ export const useSmartSwipeProducts = ({
         console.log('✅ Allowed sources:', allowedSources);
         
         if (allowedSources.length > 0) {
-          query = query.or(`is_external.eq.false,source.in.(${allowedSources.join(',')})`);
+          // Include both internal products AND external products from allowed sources
+          query = query.or(`is_external.eq.false,and(is_external.eq.true,source.in.(${allowedSources.join(',')}))`);
         }
       }
 
@@ -321,12 +322,12 @@ export const useSmartSwipeProducts = ({
           // Sort by personalization score
           productsWithScores.sort((a, b) => b.score - a.score);
 
-          // Implement 70/30 strategy
+          // Implement 60/40 strategy
           const totalProducts = Math.min(100, productsWithScores.length); // Limit to 100 products
-          const personalizedCount = Math.floor(totalProducts * 0.7);
+          const personalizedCount = Math.floor(totalProducts * 0.6);
           const randomCount = totalProducts - personalizedCount;
 
-          // Get top 70% personalized products
+          // Get top 60% personalized products
           const personalizedProducts = productsWithScores
             .slice(0, personalizedCount)
             .map(item => item.product);
