@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { TrendingUp, Heart, ShoppingBag, ExternalLink } from 'lucide-react';
+import { OptimizedImage } from '@/components/OptimizedImage';
 import { toast } from '@/hooks/use-toast';
 
 interface TrendingStyle {
@@ -230,10 +231,14 @@ const TrendingStyles: React.FC<TrendingStylesProps> = ({ limit = 6, showMore = t
               <div className="grid grid-cols-3 gap-3">
                 {style.recent_products.slice(0, 3).map((product) => (
                   <div key={product.id} className="relative group/product">
-                    <img
+                    <OptimizedImage
                       src={product.image_url || '/placeholder.svg'}
                       alt={product.title}
+                      targetWidth={200}
+                      targetHeight={200}
+                      quality={80}
                       className="w-full aspect-square object-cover rounded-lg"
+                      showOptimizationIndicator={false}
                     />
                     <div className="absolute inset-0 bg-black/60 opacity-0 group-hover/product:opacity-100 transition-opacity rounded-lg flex flex-col items-center justify-center gap-2">
                       <div className="flex gap-2">

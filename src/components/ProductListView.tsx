@@ -9,6 +9,7 @@ import { useWishlist } from '@/hooks/useWishlist';
 import { Product } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import ProductDetailModal from '@/components/ProductDetailModal';
+import { OptimizedImage } from '@/components/OptimizedImage';
 
 interface ProductListViewProps {
   products: Product[];
@@ -156,23 +157,15 @@ const ProductListView: React.FC<ProductListViewProps> = ({ products, isLoading }
               <CardContent className="p-0">
                 <div className="space-y-2 md:space-y-3">
                   <div className="aspect-square relative overflow-hidden rounded-t-lg">
-                    <img
+                    <OptimizedImage
                       src={product.media_urls?.[0] || '/placeholder.svg'}
                       alt={product.title}
+                      targetWidth={400}
+                      targetHeight={400}
+                      quality={85}
                       className="w-full h-full object-cover"
-                      style={{
-                        imageRendering: 'auto',
-                        WebkitBackfaceVisibility: 'hidden',
-                        backfaceVisibility: 'hidden',
-                        // CSS-based quality improvements
-                        filter: 'contrast(1.02) saturate(1.05) brightness(1.01)',
-                        WebkitFilter: 'contrast(1.02) saturate(1.05) brightness(1.01)',
-                      }}
-                      sizes="(max-width: 768px) 50vw, 25vw"
                       loading="lazy"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = '/placeholder.svg';
-                      }}
+                      showOptimizationIndicator={true}
                     />
                     {product.ar_mesh_url && (
                       <Badge variant="outline" className="absolute top-2 right-2 gap-1 text-xs bg-background/80 backdrop-blur-sm">

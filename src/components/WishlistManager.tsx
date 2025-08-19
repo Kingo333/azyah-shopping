@@ -405,10 +405,14 @@ export const WishlistManager: React.FC = () => {
                   <CardContent className="p-0">
                     <div className={viewMode === 'grid' ? 'space-y-2 md:space-y-3' : 'flex gap-4'}>
                       <div className={viewMode === 'grid' ? 'aspect-square' : 'w-24 h-24 flex-shrink-0'}>
-                        <img
+                        <OptimizedImage
                           src={item.product.media_urls[0] || '/placeholder.svg'}
                           alt={item.product.title}
+                          targetWidth={viewMode === 'grid' ? 400 : 200}
+                          targetHeight={viewMode === 'grid' ? 400 : 200}
+                          quality={85}
                           className="w-full h-full object-cover rounded-t-lg"
+                          showOptimizationIndicator={false}
                         />
                       </div>
                       
