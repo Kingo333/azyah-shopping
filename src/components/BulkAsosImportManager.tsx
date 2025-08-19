@@ -113,10 +113,7 @@ const BulkAsosImportManager: React.FC = () => {
 
   const pollJobStatus = async (jobId: string) => {
     try {
-      const { data, error } = await supabase.functions.invoke('import-asos-async', {
-        method: 'GET',
-        body: { jobId }
-      });
+      const { data, error } = await supabase.functions.invoke(`import-asos-async?jobId=${jobId}`);
 
       if (error) throw error;
 
