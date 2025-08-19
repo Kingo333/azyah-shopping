@@ -88,16 +88,30 @@ export const ShoppingModePanel: React.FC<ShoppingModePanelProps> = ({
               {isCapturing ? 'Processing...' : 'Scan Product'}
             </Button>
 
-            <div className="bg-muted/50 p-3 rounded-lg text-xs">
-              <p className="font-medium mb-1">Take photos → Get recommendations → Compare prices</p>
+            <div className="bg-muted/50 p-3 rounded-lg text-xs space-y-2">
+              <p className="font-medium mb-1">✨ Smart Shopping Features:</p>
+              <ul className="space-y-1 text-muted-foreground">
+                <li>• Product recognition & shade matching</li>
+                <li>• Price comparison across tiers</li>
+                <li>• Alternative recommendations</li>
+                <li>• Real-time availability checks</li>
+              </ul>
             </div>
           </div>
         )}
         
         {!isActive && (
-          <div className="text-xs text-muted-foreground space-y-1">
-            <p className="font-medium">Enable to get instant product recommendations while shopping!</p>
-            <p>Take photos of makeup products in-store and get personalized suggestions, shade matching, price comparisons, and alternative recommendations based on your skin tone and preferences.</p>
+          <div className="text-xs text-muted-foreground space-y-2">
+            <p className="font-medium">🛍️ Smart Shopping Assistant</p>
+            <p>Take photos of makeup products in-store and get:</p>
+            <ul className="space-y-1 ml-2">
+              <li>• Personalized shade matching</li>
+              <li>• Price comparisons (drugstore/mid/premium)</li>
+              <li>• Alternative product suggestions</li>
+              <li>• Ingredient compatibility checks</li>
+              <li>• User reviews and ratings</li>
+            </ul>
+            <p className="text-xs text-orange-600 mt-2">⚠️ Always patch test new products</p>
           </div>
         )}
       </CardContent>

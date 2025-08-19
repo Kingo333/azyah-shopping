@@ -12,6 +12,8 @@ import { EnhancedVoicePanel } from "@/components/EnhancedVoicePanel";
 import { VoiceRecorder } from "@/components/VoiceRecorder";
 import { ShoppingModePanel } from "@/components/ShoppingModePanel";
 import { DocumentUpload } from "@/components/DocumentUpload";
+import { ProductRecommendationCard } from "@/components/ProductRecommendationCard";
+import { SafetyDisclaimer } from "@/components/SafetyDisclaimer";
 import { toast } from "sonner";
 import { Upload, Camera, MessageCircle, Sparkles, Copy, Save, Eye, EyeOff, Trash2, WandSparkles, Play, Download, Mic } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -56,7 +58,7 @@ export default function BeautyConsultantPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([{
     id: '1',
     type: 'assistant',
-    content: "Hi! I'm your AI Beauty Consultant. I can help you find the perfect makeup based on your skin tone and preferences. You can upload a selfie for a complete analysis, or just tell me about your skin color and what you're looking for!",
+    content: "Hi! I'm your AI Beauty Consultant. I can help you find the perfect makeup based on your skin tone and preferences. You can upload a selfie for a complete analysis, or just tell me about your skin color and what you're looking for!\n\n⚠️ **Important Disclaimer**: This is cosmetic advice only, not medical advice. Always patch test new products for allergic reactions and consult a dermatologist for skin concerns or conditions.",
     timestamp: new Date()
   }]);
   const [inputText, setInputText] = useState("");
@@ -67,6 +69,7 @@ export default function BeautyConsultantPage() {
   const [shoppingMode, setShoppingMode] = useState(false);
   const [selectedVoice, setSelectedVoice] = useState('alloy');
   const [isListening, setIsListening] = useState(false);
+  const [hasAcceptedDisclaimer, setHasAcceptedDisclaimer] = useState(false);
   const [prefs, setPrefs] = useState<{
     finish?: string;
     coverage?: "light" | "medium" | "full";
@@ -162,18 +165,54 @@ I've prepared personalized product recommendations for you! ${consultation.quest
       timestamp: new Date()
     };
     setMessages(prev => [...prev, userMessage]);
+    const currentInput = inputText;
     setInputText("");
     setIsLoading(true);
+    
     try {
-      // For text-only interactions, we'll create a more conversational response
+      // Enhanced text consultation with AI
+      const conversation_history = messages.slice(-4).map(msg => ({
+        role: msg.type === 'user' ? 'user' : 'assistant',
+        content: msg.content
+      }));
+
+      const response = await supabase.functions.invoke('beauty-text-consult', {
+        body: {
+          message: currentInput,
+          conversation_history,
+          user_id: user?.id,
+          skin_profile: messages.find(m => m.consultation)?.consultation?.skin_profile
+        }
+      });
+
+      if (response.error) throw response.error;
+
       const assistantMessage: ChatMessage = {
         id: Date.now().toString(),
         type: 'assistant',
-        content: "I understand you're looking for beauty advice! For the most accurate recommendations, I'd suggest uploading a clear, well-lit selfie so I can analyze your skin tone and features. Alternatively, you can describe your skin tone (fair, light, medium, tan, or deep) and any specific concerns you have, and I'll provide general guidance!",
+        content: response.data.response + (response.data.suggested_analysis ? 
+          "\n\n💡 **Tip**: Upload a selfie for personalized product recommendations based on your exact skin tone and features!" : ""),
         timestamp: new Date()
       };
       setMessages(prev => [...prev, assistantMessage]);
+
+      // Log event
+      if (user?.id) {
+        await supabase.from('beauty_consult_events').insert({
+          user_id: user.id,
+          event: 'text_interaction',
+          payload: { message: currentInput }
+        });
+      }
     } catch (error) {
+      console.error("Text consultation error:", error);
+      const fallbackMessage: ChatMessage = {
+        id: Date.now().toString(),
+        type: 'assistant',
+        content: "I understand you're looking for beauty advice! For the most accurate recommendations, I'd suggest uploading a clear, well-lit selfie so I can analyze your skin tone and features. Alternatively, you can describe your skin tone (fair, light, medium, tan, or deep) and any specific concerns you have, and I'll provide general guidance!\n\n⚠️ **Important**: This is cosmetic advice only. Always patch test new products and consult a dermatologist for skin concerns.",
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, fallbackMessage]);
       toast.error("Error processing your message");
     } finally {
       setIsLoading(false);
@@ -466,10 +505,15 @@ I've prepared personalized product recommendations for you! ${consultation.quest
                     {/* Voice Panel */}
                     <EnhancedVoicePanel text={messages.find(m => m.consultation)?.content || "Upload a selfie to get personalized voice recommendations!"} onVoiceChange={setSelectedVoice} />
                     
-                    {/* Document Upload (Expert Mode) */}
-                    {expertMode && <div className="border-t pt-3">
-                        <DocumentUpload />
-                      </div>}
+                     {/* Safety Disclaimer */}
+                     {!hasAcceptedDisclaimer && (
+                       <SafetyDisclaimer onAccept={() => setHasAcceptedDisclaimer(true)} />
+                     )}
+                     
+                     {/* Document Upload (Expert Mode) */}
+                     {expertMode && <div className="border-t pt-3">
+                         <DocumentUpload />
+                       </div>}
                   </CardContent>
                 </Card>
               </div>
