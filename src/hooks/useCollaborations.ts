@@ -9,13 +9,10 @@ export const useCollaborations = (userRole?: string, orgId?: string) => {
   return useQuery({
     queryKey: ['collaborations', userRole, orgId],
     queryFn: async (): Promise<Collaboration[]> => {
+      // First get collaborations without joins to avoid schema relationship errors
       let query = supabase
         .from('collaborations')
-        .select(`
-          *,
-          brands (name, logo_url),
-          retailers (name, logo_url)
-        `);
+        .select('*');
 
       // For shoppers, show only active public collaborations
       if (userRole === 'shopper') {
@@ -31,41 +28,32 @@ export const useCollaborations = (userRole?: string, orgId?: string) => {
 
       query = query.order('created_at', { ascending: false });
 
-      const { data, error } = await query;
+      const { data: collaborations, error } = await query;
       if (error) throw error;
 
       // Get application counts for each collaboration
-      const collabIds = data?.map(c => c.id) || [];
+      const collabIds = collaborations?.map(c => c.id) || [];
+      let applicationCounts: Record<string, number> = {};
+      
       if (collabIds.length > 0) {
         const { data: applications } = await supabase
           .from('collab_applications')
           .select('collab_id')
           .in('collab_id', collabIds);
 
-        const applicationCounts = applications?.reduce((acc, app) => {
+        applicationCounts = applications?.reduce((acc, app) => {
           acc[app.collab_id] = (acc[app.collab_id] || 0) + 1;
           return acc;
         }, {} as Record<string, number>) || {};
-
-        return (data?.map(collab => ({
-          ...collab,
-          applications_count: applicationCounts[collab.id] || 0,
-          deliverables: collab.deliverables as Record<string, any>,
-          platforms: collab.platforms as string[],
-          talking_points: collab.talking_points as string[],
-          brands: collab.brands && !('error' in collab.brands) ? collab.brands : undefined,
-          retailers: collab.retailers && !('error' in collab.retailers) ? collab.retailers : undefined
-        })) || []) as unknown as Collaboration[];
       }
 
-      return (data?.map(collab => ({
+      // For now, return collaborations without brand/retailer info to avoid relationship errors
+      return (collaborations?.map(collab => ({
         ...collab,
-        applications_count: 0,
+        applications_count: applicationCounts[collab.id] || 0,
         deliverables: collab.deliverables as Record<string, any>,
         platforms: collab.platforms as string[],
-        talking_points: collab.talking_points as string[],
-        brands: collab.brands && !('error' in collab.brands) ? collab.brands : undefined,
-        retailers: collab.retailers && !('error' in collab.retailers) ? collab.retailers : undefined
+        talking_points: collab.talking_points as string[]
       })) || []) as unknown as Collaboration[];
     },
     enabled: !!userRole
@@ -78,11 +66,7 @@ export const useCollaboration = (id: string) => {
     queryFn: async (): Promise<Collaboration | null> => {
       const { data, error } = await supabase
         .from('collaborations')
-        .select(`
-          *,
-          brands (name, logo_url),
-          retailers (name, logo_url)
-        `)
+        .select('*')
         .eq('id', id)
         .maybeSingle();
 
@@ -91,9 +75,7 @@ export const useCollaboration = (id: string) => {
         ...data,
         deliverables: data.deliverables as Record<string, any>,
         platforms: data.platforms as string[],
-        talking_points: data.talking_points as string[],
-        brands: data.brands && !('error' in data.brands) ? data.brands : undefined,
-        retailers: data.retailers && !('error' in data.retailers) ? data.retailers : undefined
+        talking_points: data.talking_points as string[]
       } as unknown as Collaboration) : null;
     },
     enabled: !!id
@@ -136,11 +118,7 @@ export const useUserApplications = () => {
         .from('collab_applications')
         .select(`
           *,
-          collaborations (
-            title,
-            brands (name, logo_url),
-            retailers (name, logo_url)
-          )
+          collaborations (title)
         `)
         .eq('shopper_id', user.id)
         .order('created_at', { ascending: false });

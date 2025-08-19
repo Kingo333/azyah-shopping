@@ -181,18 +181,16 @@ export const useAnalyticsOverview = (params: {
         console.log('Product IDs found for filtering:', productIds.length);
       }
 
-      // Get events within date range, filter by brand/retailer directly
+      // Get events within date range, filter by product_ids since events table doesn't have brand_id/retailer_id
       let eventsQuery = supabase
         .from('events')
         .select('event_type, product_id, created_at')
         .gte('created_at', startDate)
         .lte('created_at', endDate);
 
-      // Filter directly by brand_id or retailer_id if specified
-      if (brandId) {
-        eventsQuery = eventsQuery.eq('brand_id', brandId);
-      } else if (retailerId) {
-        eventsQuery = eventsQuery.eq('retailer_id', retailerId);
+      // Filter by product_ids since we need to join through products
+      if (productIds.length > 0) {
+        eventsQuery = eventsQuery.in('product_id', productIds);
       }
 
       const { data: events, error: eventsError } = await eventsQuery;
@@ -289,19 +287,15 @@ export const useConversionFunnel = (params: {
         productIds = products?.map(p => p.id) || [];
       }
 
-      // Get event counts with proper filtering
+      // Get event counts with proper filtering using product_ids
       let eventsQuery = supabase
         .from('events')
         .select('event_type')
         .gte('created_at', startDate)
         .lte('created_at', endDate);
 
-      // Filter by brand_id or retailer_id directly
-      if (brandId) {
-        eventsQuery = eventsQuery.eq('brand_id', brandId);
-      } else if (retailerId) {
-        eventsQuery = eventsQuery.eq('retailer_id', retailerId);
-      } else if (productIds.length > 0) {
+      // Filter by product_ids since events table doesn't have brand_id/retailer_id columns
+      if (productIds.length > 0) {
         eventsQuery = eventsQuery.in('product_id', productIds);
       }
 
@@ -392,7 +386,7 @@ export const useTimeSeriesAnalytics = (
                       metric === 'clicks' ? 'product_click' : 
                       metric === 'conversions' ? 'purchase' : 'product_view';
 
-      // Get events data with proper filtering
+      // Get events data with proper filtering using product_ids
       let eventsQuery = supabase
         .from('events')
         .select('created_at, event_type')
@@ -401,12 +395,8 @@ export const useTimeSeriesAnalytics = (
         .lte('created_at', dateFilter.endDate)
         .order('created_at');
 
-      // Filter by brand_id or retailer_id directly
-      if (entityId && entityType === 'brand') {
-        eventsQuery = eventsQuery.eq('brand_id', entityId);
-      } else if (entityId && entityType === 'retailer') {
-        eventsQuery = eventsQuery.eq('retailer_id', entityId);
-      } else if (productIds.length > 0) {
+      // Filter by product_ids since events table doesn't have brand_id/retailer_id columns
+      if (productIds.length > 0) {
         eventsQuery = eventsQuery.in('product_id', productIds);
       }
 
@@ -460,20 +450,11 @@ export const useProductAnalytics = () => {
     console.log('Tracking product view:', productId, context);
     
     try {
-      // Get product to find brand_id and retailer_id
-      const { data: product } = await supabase
-        .from('products')
-        .select('brand_id, retailer_id')
-        .eq('id', productId)
-        .single();
-
       const { error } = await supabase
         .from('events')
         .insert({
           event_type: 'product_view',
           product_id: productId,
-          brand_id: product?.brand_id,
-          retailer_id: product?.retailer_id,
           event_data: { context },
           session_id: crypto.randomUUID(),
           created_at: new Date().toISOString()
@@ -491,20 +472,11 @@ export const useProductAnalytics = () => {
     console.log('Tracking product click:', productId, context);
     
     try {
-      // Get product to find brand_id and retailer_id
-      const { data: product } = await supabase
-        .from('products')
-        .select('brand_id, retailer_id')
-        .eq('id', productId)
-        .single();
-
       const { error } = await supabase
         .from('events')
         .insert({
           event_type: 'product_click',
           product_id: productId,
-          brand_id: product?.brand_id,
-          retailer_id: product?.retailer_id,
           event_data: { context },
           session_id: crypto.randomUUID(),
           created_at: new Date().toISOString()
@@ -522,20 +494,11 @@ export const useProductAnalytics = () => {
     console.log('Tracking wishlist add:', productId);
     
     try {
-      // Get product to find brand_id and retailer_id
-      const { data: product } = await supabase
-        .from('products')
-        .select('brand_id, retailer_id')
-        .eq('id', productId)
-        .single();
-
       const { error } = await supabase
         .from('events')
         .insert({
           event_type: 'wishlist_add',
           product_id: productId,
-          brand_id: product?.brand_id,
-          retailer_id: product?.retailer_id,
           event_data: {},
           session_id: crypto.randomUUID(),
           created_at: new Date().toISOString()
@@ -553,20 +516,11 @@ export const useProductAnalytics = () => {
     console.log('Tracking add to cart:', productId, size, color);
     
     try {
-      // Get product to find brand_id and retailer_id
-      const { data: product } = await supabase
-        .from('products')
-        .select('brand_id, retailer_id')
-        .eq('id', productId)
-        .single();
-
       const { error } = await supabase
         .from('events')
         .insert({
           event_type: 'add_to_cart',
           product_id: productId,
-          brand_id: product?.brand_id,
-          retailer_id: product?.retailer_id,
           event_data: { size, color },
           session_id: crypto.randomUUID(),
           created_at: new Date().toISOString()
