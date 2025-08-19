@@ -381,7 +381,17 @@ const RetailerPortal = () => {
           </TabsContent>
 
           <TabsContent value="collabs">
-            <CollabDashboard ownerOrgId={retailer?.id || ''} orgType="retailer" />
+            <div className="space-y-4">
+              <div className="bg-muted/50 rounded-lg p-4">
+                <h3 className="font-medium mb-2">What are Collaborations?</h3>
+                <p className="text-sm text-muted-foreground">
+                  Create collaboration campaigns to work with content creators and influencers. Set your requirements, 
+                  compensation, and deliverables. Creators can apply to your campaigns, and you can manage applications 
+                  and track campaign performance all in one place.
+                </p>
+              </div>
+              <CollabDashboard ownerOrgId={retailer?.id || ''} orgType="retailer" />
+            </div>
           </TabsContent>
 
           <TabsContent value="brands">

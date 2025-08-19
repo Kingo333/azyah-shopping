@@ -442,7 +442,17 @@ const BrandPortal: React.FC = () => {
           </TabsContent>
 
           <TabsContent value="collabs" className="mt-4 sm:mt-6">
-            <CollabDashboard ownerOrgId={brand.id} orgType="brand" />
+            <div className="space-y-4">
+              <div className="bg-muted/50 rounded-lg p-4">
+                <h3 className="font-medium mb-2">What are Collaborations?</h3>
+                <p className="text-sm text-muted-foreground">
+                  Partner with content creators and influencers to showcase your brand. Create collaboration campaigns 
+                  with specific requirements, set compensation terms, and define deliverables. Review applications from 
+                  creators and manage your brand partnerships efficiently.
+                </p>
+              </div>
+              <CollabDashboard ownerOrgId={brand.id} orgType="brand" />
+            </div>
           </TabsContent>
 
           <TabsContent value="analytics" className="mt-4 sm:mt-6">
