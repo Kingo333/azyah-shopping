@@ -423,16 +423,26 @@ I've prepared personalized product recommendations for you! ${consultation.quest
                                 </div>
                               )}
                               
-                              {/* Product Recommendations */}
+                              {/* Product Recommendations - Minimized */}
                               {Object.entries(message.consultation.recommendations).map(([category, items]) => (
                                 <div key={category} className="mt-4">
-                                  <h3 className="font-semibold text-sm capitalize mb-3 flex items-center gap-2">
-                                    <Sparkles className="h-4 w-4 text-primary" />
-                                    {category.replace(/_/g, ' / ')}
-                                  </h3>
-                                  <div className="grid gap-3">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                      const element = document.getElementById(`recommendations-${category}-${message.id}`);
+                                      if (element) {
+                                        element.style.display = element.style.display === 'none' ? 'block' : 'none';
+                                      }
+                                    }}
+                                    className="flex items-center gap-2 mb-3"
+                                  >
+                                    <Sparkles className="h-3 w-3" />
+                                    {category.replace(/_/g, ' / ')} ({items.length} items)
+                                  </Button>
+                                  <div id={`recommendations-${category}-${message.id}`} style={{ display: 'none' }} className="grid gap-3">
                                     {items.slice(0, 3).map((item, i) => (
-                                      <div key={i} className="p-4 rounded-xl border bg-gradient-to-br from-card to-card/80 hover:shadow-lg transition-all duration-300 hover:scale-[1.02] group">
+                                      <div key={i} className="p-3 rounded-lg border bg-gradient-to-br from-card to-card/80 hover:shadow-md transition-all duration-300 group">
                                         <div className="flex items-start justify-between mb-2">
                                           <h4 className="font-medium text-sm group-hover:text-primary transition-colors">{item.name}</h4>
                                           {item.price_tier && (
@@ -444,14 +454,7 @@ I've prepared personalized product recommendations for you! ${consultation.quest
                                             </Badge>
                                           )}
                                         </div>
-                                        <div className="space-y-2">
-                                          {(item.finish || item.shade_family) && (
-                                            <p className="text-xs text-muted-foreground">
-                                              {item.finish} {item.shade_family && `• ${item.shade_family}`}
-                                            </p>
-                                          )}
-                                          <p className="text-sm leading-relaxed">{item.why_it_matches}</p>
-                                        </div>
+                                        <p className="text-sm leading-relaxed">{item.why_it_matches}</p>
                                       </div>
                                     ))}
                                   </div>
@@ -618,56 +621,50 @@ I've prepared personalized product recommendations for you! ${consultation.quest
               </Card>
               
               <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Mode Settings</CardTitle>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base">Mode Settings</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4 text-sm">
+                <CardContent className="space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <span className="font-medium">Expert Mode</span>
+                      <span className="font-medium text-sm">Expert Mode</span>
                       {expertMode && <Badge variant="secondary" className="text-xs">Active</Badge>}
                     </div>
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => setExpertMode(!expertMode)}
+                      className="text-xs px-3"
                     >
                       {expertMode ? 'Disable' : 'Enable'}
                     </Button>
                   </div>
                   
-                  <div className="space-y-3 text-xs">
-                    <div className="p-3 bg-muted rounded-lg">
-                      <h4 className="font-medium text-foreground mb-2">🌟 Normal Mode (Current)</h4>
-                      <ul className="space-y-1 text-muted-foreground">
-                        <li>• AI beauty consultation</li>
-                        <li>• Photo analysis & product recommendations</li>
-                        <li>• Basic voice features</li>
-                      </ul>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      const content = document.getElementById('mode-details');
+                      if (content) {
+                        const isHidden = content.style.display === 'none';
+                        content.style.display = isHidden ? 'block' : 'none';
+                      }
+                    }}
+                    className="w-full text-xs text-muted-foreground"
+                  >
+                    View Mode Details
+                  </Button>
+
+                  <div id="mode-details" style={{ display: 'none' }} className="space-y-2 text-xs">
+                    <div className="p-2 bg-muted/50 rounded">
+                      <h4 className="font-medium mb-1">Normal Mode</h4>
+                      <p className="text-muted-foreground">Basic AI consultation, photo analysis, voice features</p>
                     </div>
                     
-                    {expertMode ? (
-                      <div className="p-3 bg-primary/10 rounded-lg border border-primary/20">
-                        <h4 className="font-medium text-primary mb-2">🚀 Expert Mode (Active)</h4>
-                        <ul className="space-y-1 text-muted-foreground">
-                          <li>• Everything in Normal Mode</li>
-                          <li>• Upload custom beauty documents</li>
-                          <li>• Advanced voice synthesis with multiple voices</li>
-                          <li>• Enhanced product knowledge base</li>
-                        </ul>
-                      </div>
-                    ) : (
-                      <div className="p-3 bg-muted/50 rounded-lg">
-                        <h4 className="font-medium text-muted-foreground mb-2">🚀 Expert Mode (Available)</h4>
-                        <ul className="space-y-1 text-muted-foreground">
-                          <li>• Everything in Normal Mode plus:</li>
-                          <li>• Upload beauty documents & shade charts</li>
-                          <li>• Professional voice synthesis</li>
-                          <li>• Custom knowledge base integration</li>
-                        </ul>
-                        <p className="text-xs mt-2 text-primary">Click "Enable" above to unlock these features</p>
-                      </div>
-                    )}
+                    <div className="p-2 bg-primary/10 rounded">
+                      <h4 className="font-medium mb-1">Expert Mode</h4>
+                      <p className="text-muted-foreground">Advanced voice synthesis, document uploads, professional features</p>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
