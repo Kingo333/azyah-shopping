@@ -148,6 +148,9 @@ function inferColorFromText(text: string): string | undefined {
 function inferCategoryFromText(text: string): { category_slug: string; subcategory_slug?: string } {
   const lowerText = text.toLowerCase();
   
+  // First check for gender-specific indicators
+  const gender = inferGenderFromText(text);
+  
   // Modestwear
   if (lowerText.match(/\b(abaya|hijab|niqab|jilbab|kaftan|modest)\b/)) {
     if (lowerText.includes('abaya')) return { category_slug: 'modestwear', subcategory_slug: 'abayas' };
@@ -157,6 +160,14 @@ function inferCategoryFromText(text: string): { category_slug: string; subcatego
   
   // Footwear
   if (lowerText.match(/\b(shoe|boot|sneaker|trainer|sandal|heel|flat|loafer|slipper)\b/)) {
+    // Check gender first
+    if (gender === 'men') {
+      return { category_slug: 'men', subcategory_slug: 'mens footwear' };
+    } else if (gender === 'women') {
+      return { category_slug: 'women', subcategory_slug: 'womens footwear' };
+    }
+    
+    // Fall back to specific footwear types
     if (lowerText.match(/\b(heel|pump)\b/)) return { category_slug: 'footwear', subcategory_slug: 'heels' };
     if (lowerText.match(/\b(flat|ballet)\b/)) return { category_slug: 'footwear', subcategory_slug: 'flats' };
     if (lowerText.match(/\b(sandal)\b/)) return { category_slug: 'footwear', subcategory_slug: 'sandals' };
@@ -176,11 +187,19 @@ function inferCategoryFromText(text: string): { category_slug: string; subcatego
   
   // Accessories
   if (lowerText.match(/\b(bag|handbag|purse|clutch|tote|backpack|wallet|belt|scarf|hat|sunglasses|watch)\b/)) {
-    if (lowerText.match(/\b(handbag|purse)\b/)) return { category_slug: 'accessories', subcategory_slug: 'handbags' };
-    if (lowerText.includes('clutch')) return { category_slug: 'accessories', subcategory_slug: 'clutches' };
-    if (lowerText.includes('tote')) return { category_slug: 'accessories', subcategory_slug: 'totes' };
-    if (lowerText.includes('backpack')) return { category_slug: 'accessories', subcategory_slug: 'backpacks' };
-    if (lowerText.includes('wallet')) return { category_slug: 'accessories', subcategory_slug: 'wallets' };
+    // Check gender first for accessories
+    if (gender === 'men') {
+      return { category_slug: 'men', subcategory_slug: 'mens accessories' };
+    } else if (gender === 'women') {
+      return { category_slug: 'women', subcategory_slug: 'womens accessories' };
+    }
+    
+    // Fall back to specific accessory types
+    if (lowerText.match(/\b(handbag|purse)\b/)) return { category_slug: 'bags', subcategory_slug: 'handbags' };
+    if (lowerText.includes('clutch')) return { category_slug: 'bags', subcategory_slug: 'clutches' };
+    if (lowerText.includes('tote')) return { category_slug: 'bags', subcategory_slug: 'totes' };
+    if (lowerText.includes('backpack')) return { category_slug: 'bags', subcategory_slug: 'backpacks' };
+    if (lowerText.includes('wallet')) return { category_slug: 'bags', subcategory_slug: 'wallets' };
     if (lowerText.includes('belt')) return { category_slug: 'accessories', subcategory_slug: 'belts' };
     if (lowerText.includes('scarf')) return { category_slug: 'accessories', subcategory_slug: 'scarves' };
     if (lowerText.includes('hat')) return { category_slug: 'accessories', subcategory_slug: 'hats' };
@@ -191,11 +210,18 @@ function inferCategoryFromText(text: string): { category_slug: string; subcatego
   
   // Beauty
   if (lowerText.match(/\b(perfume|fragrance|cologne|makeup|cosmetic|skincare|beauty|lipstick|foundation)\b/)) {
-    if (lowerText.match(/\b(perfume|fragrance|cologne)\b/)) return { category_slug: 'beauty', subcategory_slug: 'perfume' };
+    if (lowerText.match(/\b(perfume|fragrance|cologne)\b/)) return { category_slug: 'fragrance', subcategory_slug: 'oriental' };
     return { category_slug: 'beauty' };
   }
   
-  // Clothing (default)
+  // Clothing - prioritize gender-based categorization
+  if (gender === 'men') {
+    return { category_slug: 'men', subcategory_slug: 'mens clothing' };
+  } else if (gender === 'women') {
+    return { category_slug: 'women', subcategory_slug: 'womens clothing' };
+  }
+  
+  // Fall back to specific clothing types for general clothing category
   if (lowerText.match(/\b(dress)\b/)) return { category_slug: 'clothing', subcategory_slug: 'dresses' };
   if (lowerText.match(/\b(top|blouse)\b/)) return { category_slug: 'clothing', subcategory_slug: 'tops' };
   if (lowerText.match(/\b(shirt)\b/)) return { category_slug: 'clothing', subcategory_slug: 'shirts' };
@@ -207,7 +233,8 @@ function inferCategoryFromText(text: string): { category_slug: string; subcatego
   if (lowerText.match(/\b(skirt)\b/)) return { category_slug: 'clothing', subcategory_slug: 'skirts' };
   if (lowerText.match(/\b(short)\b/)) return { category_slug: 'clothing', subcategory_slug: 'shorts' };
   
-  return { category_slug: 'clothing' };
+  // Default to women's clothing if no specific indicators found (since most fashion items default to women's)
+  return { category_slug: 'women', subcategory_slug: 'womens clothing' };
 }
 
 // ASOS CDN hosts for image upgrading

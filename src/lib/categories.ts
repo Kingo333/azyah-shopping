@@ -1,6 +1,8 @@
 
 // Unified Category Taxonomy for Azyah Platform
 export const CATEGORY_TREE = {
+  women: ['womens clothing', 'womens footwear', 'womens accessories'],
+  men: ['mens clothing', 'mens footwear', 'mens accessories'],
   clothing: [
     'dresses', 'abayas', 'tops', 'blouses', 'shirts', 't-shirts', 'sweaters',
     'jackets', 'coats', 'blazers', 'cardigans', 'trousers', 'jeans', 'skirts',
