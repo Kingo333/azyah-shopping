@@ -3,8 +3,8 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import CategoryFilter from "@/components/CategoryFilter";
 import type { Gender } from '@/lib/categories';
-import { ArrowLeft, Heart, Search, Menu, Sparkles, ChevronDown, List, LayoutGrid, RefreshCw } from "lucide-react";
-import { updateProductCategories } from "@/utils/categoryUpdater";
+import { ArrowLeft, Heart, Search, Menu, Sparkles, ChevronDown, List, LayoutGrid, Brain } from "lucide-react";
+import { runAICategorization } from "@/utils/aiCategorizer";
 import { toast } from "sonner";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -95,17 +95,20 @@ const Swipe = () => {
     }
   }, [showListToggle]);
 
-  const handleUpdateCategories = async () => {
+  const handleAICategorization = async () => {
     try {
-      toast.loading("Updating product categories...", { id: "category-update" });
-      const result = await updateProductCategories();
-      toast.success(`Updated ${result.totalUpdated} products successfully!`, { id: "category-update" });
+      toast.loading("Running AI image analysis to improve categories...", { id: "ai-categorization" });
+      const result = await runAICategorization(50); // Process 50 products at a time
+      toast.success(`AI categorized ${result.totalUpdated} products successfully! Categories are now much more accurate.`, { 
+        id: "ai-categorization",
+        duration: 5000
+      });
       
       // Refresh the current page to show updated categories
-      window.location.reload();
+      setTimeout(() => window.location.reload(), 1000);
     } catch (error) {
-      console.error('Error updating categories:', error);
-      toast.error("Failed to update categories. Please try again.", { id: "category-update" });
+      console.error('Error running AI categorization:', error);
+      toast.error("Failed to run AI categorization. Please try again.", { id: "ai-categorization" });
     }
   };
 
@@ -231,6 +234,11 @@ const Swipe = () => {
               <Button variant="ghost" size="sm" onClick={() => navigate("/likes")} className="hover:bg-accent/50 p-2 flex-shrink-0">
                 <Heart className="h-4 w-4" />
                 <span className="hidden lg:inline lg:ml-2">Likes</span>
+              </Button>
+
+              <Button variant="ghost" size="sm" onClick={handleAICategorization} className="hover:bg-accent/50 p-2 flex-shrink-0">
+                <Brain className="h-4 w-4" />
+                <span className="hidden lg:inline lg:ml-2">AI Fix</span>
               </Button>
               
               {/* Filters Menu */}
