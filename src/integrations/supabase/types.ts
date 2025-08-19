@@ -157,6 +157,79 @@ export type Database = {
         }
         Relationships: []
       }
+      beauty_consult_events: {
+        Row: {
+          event: string
+          id: string
+          payload: Json | null
+          ts: string
+          user_id: string
+        }
+        Insert: {
+          event: string
+          id?: string
+          payload?: Json | null
+          ts?: string
+          user_id: string
+        }
+        Update: {
+          event?: string
+          id?: string
+          payload?: Json | null
+          ts?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "beauty_consult_events_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      beauty_consults: {
+        Row: {
+          confidence: number
+          created_at: string
+          id: string
+          lighting_note: string | null
+          recommendations: Json
+          skin_profile: Json
+          sources: Json | null
+          user_id: string
+        }
+        Insert: {
+          confidence: number
+          created_at?: string
+          id?: string
+          lighting_note?: string | null
+          recommendations: Json
+          skin_profile: Json
+          sources?: Json | null
+          user_id: string
+        }
+        Update: {
+          confidence?: number
+          created_at?: string
+          id?: string
+          lighting_note?: string | null
+          recommendations?: Json
+          skin_profile?: Json
+          sources?: Json | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "beauty_consults_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       brands: {
         Row: {
           bio: string | null
