@@ -457,31 +457,71 @@ const BulkAsosImportManager: React.FC = () => {
           </div>
 
           {(isImporting || isTesting) && (
-            <div className="space-y-2">
+            <div className="space-y-4 p-4 bg-muted rounded-lg">
               <div className="flex items-center justify-between text-sm">
-                <span>{isTesting ? 'Testing API' : 'Import Progress'}</span>
-                <span>{isTesting ? 'Running...' : `${Math.round(progress)}%`}</span>
+                <span className="font-medium">{isTesting ? 'Testing API' : 'Import Progress'}</span>
+                <span className="text-muted-foreground">{isTesting ? 'Running...' : `${Math.round(progress)}%`}</span>
               </div>
-              {!isTesting && <Progress value={progress} className="h-2" />}
-              <p className="text-sm text-muted-foreground">
-                {isTesting 
-                  ? 'Verifying Axesso API connectivity...' 
-                  : currentJobId
-                  ? `Processing import job (${currentJobId.slice(0, 8)}...) in the background. You can safely navigate away.`
-                  : (() => {
+              
+              {!isTesting && <Progress value={progress} className="h-3" />}
+              
+              <div className="space-y-2">
+                <p className="text-sm font-medium">
+                  {isTesting 
+                    ? 'Verifying Axesso API connectivity...' 
+                    : currentJobId
+                    ? 'Processing Import Job'
+                    : (() => {
+                        const marketsList = markets.split(',').map(m => m.trim()).filter(Boolean);
+                        const keywordsList = keywords.split('\n').map(k => k.trim()).filter(Boolean);
+                        const totalWork = marketsList.length * keywordsList.length * pagesPerKeyword;
+                        const useUltraLight = totalWork <= 6;
+                        
+                        if (useUltraLight) {
+                          return 'Ultra-light Processing Active';
+                        } else {
+                          return 'Standard Processing Active';
+                        }
+                      })()
+                  }
+                </p>
+                
+                {currentJobId && (
+                  <div className="space-y-2 text-xs text-muted-foreground">
+                    <div className="flex justify-between">
+                      <span>Job ID:</span>
+                      <span className="font-mono">{currentJobId.slice(0, 8)}...</span>
+                    </div>
+                    <div className="bg-background p-2 rounded border">
+                      <p>✓ Your import is running in the background</p>
+                      <p>✓ You can safely navigate away from this page</p>
+                      <p>✓ Results will be saved automatically</p>
+                    </div>
+                  </div>
+                )}
+                
+                {!currentJobId && isImporting && (
+                  <div className="text-xs text-muted-foreground">
+                    {(() => {
                       const marketsList = markets.split(',').map(m => m.trim()).filter(Boolean);
                       const keywordsList = keywords.split('\n').map(k => k.trim()).filter(Boolean);
                       const totalWork = marketsList.length * keywordsList.length * pagesPerKeyword;
                       const useUltraLight = totalWork <= 6;
                       
-                      if (useUltraLight) {
-                        return 'Ultra-light processing: Fast import with strict limits...';
-                      } else {
-                        return 'Processing import... Please wait.';
-                      }
+                      return (
+                        <div className="space-y-1">
+                          <p>📊 Processing {totalWork} search operations</p>
+                          <p>🔍 Markets: {marketsList.join(', ')}</p>
+                          <p>🏷️ Keywords: {keywordsList.length} items</p>
+                          <p>📄 Pages per keyword: {pagesPerKeyword}</p>
+                          {useUltraLight && <p>⚡ Using ultra-fast processing mode</p>}
+                        </div>
+                      );
                     })()
-                }
-              </p>
+                  }
+                </div>
+                )}
+              </div>
             </div>
           )}
         </CardContent>
@@ -493,6 +533,14 @@ const BulkAsosImportManager: React.FC = () => {
             <CardTitle className="flex items-center gap-2">
               <TrendingUp className="h-5 w-5" />
               Import Results
+              <div className="ml-auto flex gap-2">
+                <Badge variant="outline" className="text-xs">
+                  {importResult.imported + importResult.rejected + importResult.duplicates + importResult.errors} total processed
+                </Badge>
+                <Badge variant={importResult.imported > 0 ? "default" : "secondary"} className="text-xs">
+                  {importResult.imported} imported
+                </Badge>
+              </div>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
