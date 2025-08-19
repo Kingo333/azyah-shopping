@@ -104,7 +104,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: Deno.env.get('AZ_TEXT_MODEL') ?? 'gpt-4o',
+        model: 'gpt-4o',
         messages: [
           { role: 'system', content: SYSTEM_PROMPT },
           { role: 'user', content: input }

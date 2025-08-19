@@ -450,7 +450,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: Deno.env.get('AZ_VISION_MODEL') ?? 'gpt-4o',
+        model: 'gpt-4o',
         instructions: BEAUTY_DEVELOPER_INSTRUCTIONS,
         input: input,
         response_format: {
