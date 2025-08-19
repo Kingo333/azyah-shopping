@@ -151,7 +151,7 @@ const BeautyConsultationJsonSchema = {
                 price_tier: { type: "string", enum: ["drugstore", "mid", "premium"] },
                 alt_options: { type: "array", items: { type: "string" } }
               },
-              required: ["name", "brand", "why_it_matches"],
+              required: ["name", "brand", "finish", "why_it_matches", "shade_family", "price_tier", "alt_options"],
               additionalProperties: false
             }
           },
@@ -169,7 +169,7 @@ const BeautyConsultationJsonSchema = {
                 price_tier: { type: "string", enum: ["drugstore", "mid", "premium"] },
                 alt_options: { type: "array", items: { type: "string" } }
               },
-              required: ["name", "brand", "why_it_matches"],
+              required: ["name", "brand", "finish", "why_it_matches", "shade_family", "price_tier", "alt_options"],
               additionalProperties: false
             }
           },
@@ -187,7 +187,7 @@ const BeautyConsultationJsonSchema = {
                 price_tier: { type: "string", enum: ["drugstore", "mid", "premium"] },
                 alt_options: { type: "array", items: { type: "string" } }
               },
-              required: ["name", "brand", "why_it_matches"],
+              required: ["name", "brand", "finish", "why_it_matches", "shade_family", "price_tier", "alt_options"],
               additionalProperties: false
             }
           },
@@ -205,7 +205,7 @@ const BeautyConsultationJsonSchema = {
                 price_tier: { type: "string", enum: ["drugstore", "mid", "premium"] },
                 alt_options: { type: "array", items: { type: "string" } }
               },
-              required: ["name", "brand", "why_it_matches"],
+              required: ["name", "brand", "finish", "why_it_matches", "shade_family", "price_tier", "alt_options"],
               additionalProperties: false
             }
           }
