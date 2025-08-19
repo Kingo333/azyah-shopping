@@ -45,7 +45,7 @@ export const EnhancedProductGallery: React.FC<EnhancedProductGalleryProps> = ({
           key={selectedImage}
           {...getResponsiveImageProps(
             images[selectedImage] || '/placeholder.svg',
-            "(max-width: 768px) 100vw, 50vw"
+            "(max-width: 768px) 90vw, 50vw"
           )}
           alt={`${productTitle} view ${selectedImage + 1}`}
           className={`w-full h-full object-cover cursor-zoom-in transition-transform duration-300 ${
