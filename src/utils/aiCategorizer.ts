@@ -10,7 +10,11 @@ export async function runAICategorization(limit: number = 50) {
 
     if (error) {
       console.error('Error calling ai-categorize-products function:', error);
-      throw error;
+      throw new Error(`AI categorization failed: ${error.message || error.toString()}`);
+    }
+
+    if (!data) {
+      throw new Error('No data returned from AI categorization function');
     }
 
     console.log('AI categorization completed:', data);
