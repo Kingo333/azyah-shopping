@@ -303,47 +303,52 @@ I've prepared personalized product recommendations for you! ${consultation.quest
       <div className="min-h-screen bg-background">
         <ShopperNavigation />
         
-        <main className="container mx-auto px-4 py-8">
-          <div className="grid lg:grid-cols-3 gap-6">
-            {/* Chat Interface */}
-            <div className="lg:col-span-2 space-y-4">
-              <Card>
-                <CardHeader className="pb-4">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="flex items-center gap-2">
-                      <Sparkles className="h-5 w-5 text-primary" />
-                      Beauty Consultant
-                    </CardTitle>
-                    <div className="flex items-center gap-2">
-                      {expertMode && <Badge variant="secondary">Expert Mode</Badge>}
-                      {selectedImage && (
-                        <div className="flex gap-1">
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={() => setShowImage(!showImage)}
-                          >
-                            {showImage ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={() => {
-                              setSelectedImage(null);
-                              setShowImage(true);
-                            }}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </CardHeader>
+        <main className="container mx-auto px-4 py-6">
+          <div className="max-w-6xl mx-auto">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <Sparkles className="h-5 w-5 text-primary" />
+                </div>
+                <h1 className="text-2xl font-semibold">Beauty Consultant</h1>
+                {expertMode && <Badge variant="secondary" className="ml-2">Expert</Badge>}
+                {shoppingMode && <Badge variant="default" className="ml-2">Shopping</Badge>}
+              </div>
+              
+              {selectedImage && (
+                <div className="flex items-center gap-2">
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => setShowImage(!showImage)}
+                    className="text-muted-foreground"
+                  >
+                    {showImage ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => {
+                      setSelectedImage(null);
+                      setShowImage(true);
+                    }}
+                    className="text-muted-foreground"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            <div className="grid lg:grid-cols-4 gap-6">
+              {/* Main Chat */}
+              <div className="lg:col-span-3">
+                <Card className="h-[calc(100vh-200px)] flex flex-col">
                 
-                <CardContent className="flex-1 flex flex-col p-6">
-                  {/* Messages */}
-                  <div className="flex-1 overflow-y-auto space-y-6 mb-6 scroll-smooth">
+                  <CardContent className="flex-1 flex flex-col p-4">
+                    {/* Messages */}
+                    <div className="flex-1 overflow-y-auto space-y-4 mb-4 scroll-smooth">
                     {messages.map((message, index) => (
                       <div
                         key={message.id}
@@ -351,43 +356,43 @@ I've prepared personalized product recommendations for you! ${consultation.quest
                         style={{ animationDelay: `${index * 0.1}s` }}
                       >
                         <div
-                          className={`max-w-[85%] rounded-2xl px-4 py-3 transition-all duration-300 hover:shadow-md ${
+                          className={`max-w-[80%] rounded-xl px-3 py-2 ${
                             message.type === 'user'
-                              ? 'bg-gradient-to-br from-primary to-primary/90 text-primary-foreground ml-4 shadow-lg'
-                              : 'bg-gradient-to-br from-muted to-muted/80 mr-4 border border-border/50'
+                              ? 'bg-primary text-primary-foreground ml-4'
+                              : 'bg-muted/80 mr-4'
                           }`}
                         >
                           {message.image && showImage && (
-                            <div className="mb-2 rounded-lg overflow-hidden">
+                            <div className="mb-2 rounded-md overflow-hidden">
                               <img 
                                 src={message.image} 
-                                alt="Uploaded selfie" 
-                                className="w-full h-32 object-cover"
+                                alt="Uploaded image" 
+                                className="w-full h-24 object-cover"
                               />
                             </div>
                           )}
                           
-                          <div className="whitespace-pre-wrap text-sm">
+                          <div className="whitespace-pre-wrap text-sm leading-relaxed">
                             {message.content}
                           </div>
                           
                           {/* Consultation Results */}
                           {message.consultation && (
                             <div className="mt-4 space-y-4">
-                              {/* Skin Profile Badges */}
-                              <div className="flex flex-wrap gap-2">
-                                <Badge variant="outline">
-                                  Depth: {message.consultation.skin_profile.tone_depth}
-                                </Badge>
-                                <Badge variant="outline">
-                                  Undertone: {message.consultation.skin_profile.undertone}
-                                </Badge>
-                                <Badge variant="outline">
-                                  Type: {message.consultation.skin_profile.skin_type}
-                                </Badge>
-                                <Badge variant="outline">
-                                  Confidence: {Math.round(message.consultation.skin_profile.confidence * 100)}%
-                                </Badge>
+                              {/* Skin Profile */}
+                              <div className="grid grid-cols-2 gap-2 text-xs">
+                                <div className="p-2 bg-secondary/20 rounded-md">
+                                  <span className="text-muted-foreground">Depth:</span> {message.consultation.skin_profile.tone_depth}
+                                </div>
+                                <div className="p-2 bg-secondary/20 rounded-md">
+                                  <span className="text-muted-foreground">Tone:</span> {message.consultation.skin_profile.undertone}
+                                </div>
+                                <div className="p-2 bg-secondary/20 rounded-md">
+                                  <span className="text-muted-foreground">Type:</span> {message.consultation.skin_profile.skin_type}
+                                </div>
+                                <div className="p-2 bg-secondary/20 rounded-md">
+                                  <span className="text-muted-foreground">Match:</span> {Math.round(message.consultation.skin_profile.confidence * 100)}%
+                                </div>
                               </div>
                               
                               {/* Quick Questions */}
@@ -440,57 +445,45 @@ I've prepared personalized product recommendations for you! ${consultation.quest
                                     <Sparkles className="h-3 w-3" />
                                     {category.replace(/_/g, ' / ')} ({items.length} items)
                                   </Button>
-                                  <div id={`recommendations-${category}-${message.id}`} style={{ display: 'none' }} className="grid gap-3">
+                                  <div id={`recommendations-${category}-${message.id}`} style={{ display: 'none' }} className="space-y-2">
                                     {items.slice(0, 3).map((item, i) => (
-                                      <div key={i} className="p-3 rounded-lg border bg-gradient-to-br from-card to-card/80 hover:shadow-md transition-all duration-300 group">
-                                        <div className="flex items-start justify-between mb-2">
-                                          <h4 className="font-medium text-sm group-hover:text-primary transition-colors">{item.name}</h4>
+                                      <div key={i} className="p-2 rounded-md bg-secondary/10 border">
+                                        <div className="flex items-start justify-between mb-1">
+                                          <h4 className="font-medium text-sm">{item.name}</h4>
                                           {item.price_tier && (
                                             <Badge 
-                                              variant={item.price_tier === 'premium' ? 'default' : item.price_tier === 'mid' ? 'secondary' : 'outline'}
-                                              className="text-xs capitalize shrink-0 ml-2"
+                                              variant="outline"
+                                              className="text-xs capitalize"
                                             >
                                               {item.price_tier}
                                             </Badge>
                                           )}
                                         </div>
-                                        <p className="text-sm leading-relaxed">{item.why_it_matches}</p>
+                                        <p className="text-xs text-muted-foreground">{item.why_it_matches}</p>
                                       </div>
                                     ))}
                                   </div>
                                 </div>
                               ))}
                               
-                              {/* Technique Notes */}
-                              {message.consultation.technique_notes && message.consultation.technique_notes.length > 0 && (
-                                <div className="space-y-2">
-                                  <h3 className="font-semibold text-sm">Technique Notes</h3>
-                                  <ul className="list-disc ml-5 text-sm space-y-1">
-                                    {message.consultation.technique_notes.map((note, i) => (
-                                      <li key={i}>{note}</li>
-                                    ))}
-                                  </ul>
-                                </div>
-                              )}
-                              
-                              {/* Action Buttons */}
-                              <div className="flex gap-2">
+                              {/* Actions */}
+                              <div className="flex gap-2 pt-2">
                                 <Button 
                                   variant="outline" 
                                   size="sm"
                                   onClick={() => copyRoutine(message.consultation)}
-                                  className="flex items-center gap-2"
+                                  className="h-8 px-3 text-xs"
                                 >
-                                  <Copy className="h-4 w-4" />
-                                  Copy Routine
+                                  <Copy className="h-3 w-3 mr-1" />
+                                  Copy
                                 </Button>
                                 <Button 
                                   variant="outline" 
                                   size="sm"
-                                  className="flex items-center gap-2"
+                                  className="h-8 px-3 text-xs"
                                 >
-                                  <Save className="h-4 w-4" />
-                                  Save to Closet
+                                  <Save className="h-3 w-3 mr-1" />
+                                  Save
                                 </Button>
                               </div>
                             </div>
@@ -500,14 +493,11 @@ I've prepared personalized product recommendations for you! ${consultation.quest
                     ))}
                     
                     {isLoading && (
-                      <div className="flex justify-start animate-fade-in">
-                        <div className="bg-gradient-to-br from-muted to-muted/80 rounded-2xl px-4 py-3 mr-4 border border-border/50">
-                          <div className="flex items-center gap-3">
-                            <div className="relative">
-                              <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary border-t-transparent"></div>
-                              <div className="absolute inset-0 animate-ping rounded-full h-4 w-4 border border-primary opacity-20"></div>
-                            </div>
-                            <span className="text-sm text-muted-foreground">Analyzing your beauty needs...</span>
+                      <div className="flex justify-start">
+                        <div className="bg-muted/80 rounded-xl px-3 py-2 mr-4">
+                          <div className="flex items-center gap-2">
+                            <div className="animate-spin rounded-full h-3 w-3 border border-primary border-t-transparent"></div>
+                            <span className="text-sm text-muted-foreground">Analyzing...</span>
                           </div>
                         </div>
                       </div>
@@ -515,159 +505,92 @@ I've prepared personalized product recommendations for you! ${consultation.quest
                   </div>
                   
                   {/* Input Area */}
-                  <div className="border-t border-border/50 pt-4 bg-gradient-to-r from-muted/20 to-muted/10 rounded-b-lg -mx-6 -mb-6 px-6 pb-6">
-                    <div className="space-y-4">
-                      <div className="flex gap-3">
-                        <div className="flex-1">
-                          <Input
-                            placeholder={shoppingMode ? "Ask about products or upload product photos..." : "Ask about makeup, describe your skin, or upload a selfie..."}
-                            value={inputText}
-                            onChange={(e) => setInputText(e.target.value)}
-                            onKeyPress={(e) => e.key === 'Enter' && handleTextSubmit()}
-                            className="bg-background/80 backdrop-blur border-border/50 focus:border-primary/50 transition-all duration-300"
-                          />
-                        </div>
-                        <Button 
-                          onClick={handleTextSubmit} 
-                          disabled={!inputText.trim() || isLoading}
-                          className="bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
-                        >
-                          <MessageCircle className="h-4 w-4" />
-                        </Button>
-                      </div>
-                      
-                      <div className="flex gap-3 items-center">
-                        <Label htmlFor="image-upload" className="cursor-pointer">
-                          <Button variant="outline" size="sm" asChild className="hover:bg-secondary/10 transition-colors">
-                            <span className="flex items-center gap-2">
-                              <Camera className="h-4 w-4" />
-                              {shoppingMode ? "Scan Product" : "Upload Selfie"}
-                            </span>
-                          </Button>
-                        </Label>
-                        
-                        <VoiceRecorder
-                          onTranscription={handleVoiceMessage}
-                          disabled={isLoading}
-                        />
-                        
-                        <Input
-                          id="image-upload"
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          onChange={(e) => e.target.files?.[0] && handleImageUpload(e.target.files[0], shoppingMode ? 'shopping' : 'analysis')}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-            
-            {/* Sidebar */}
-            <div className="space-y-6">
-              {/* Voice Assistant Panel */}
-              <EnhancedVoicePanel 
-                text={messages.find(m => m.consultation)?.content || "Upload a selfie to get personalized voice recommendations!"} 
-                onVoiceChange={setSelectedVoice}
-              />
-              
-              {/* Shopping Mode Panel */}
-              <ShoppingModePanel
-                onPhotoCapture={handleImageUpload}
-                isActive={shoppingMode}
-                onToggle={() => setShoppingMode(!shoppingMode)}
-              />
-              
-              {/* Document Upload (Expert Mode) */}
-              {expertMode && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">Knowledge Base</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <DocumentUpload />
-                  </CardContent>
-                </Card>
-              )}
-              
-              {/* Tips */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Tips for Better Results</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3 text-sm text-muted-foreground">
-                  <div>
-                    <h4 className="font-medium text-foreground">For Photo Analysis:</h4>
-                    <ul className="list-disc ml-4 space-y-1">
-                      <li>Use natural lighting</li>
-                      <li>Face the camera directly</li>
-                      <li>Remove sunglasses</li>
-                      <li>Clean, bare face works best</li>
-                    </ul>
-                  </div>
-                  
-                  <div>
-                    <h4 className="font-medium text-foreground">For Text Descriptions:</h4>
-                    <ul className="list-disc ml-4 space-y-1">
-                      <li>Describe your skin tone depth</li>
-                      <li>Mention undertones if known</li>
-                      <li>Share any skin concerns</li>
-                      <li>Tell me your preferences</li>
-                    </ul>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base">Mode Settings</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-sm">Expert Mode</span>
-                      {expertMode && <Badge variant="secondary" className="text-xs">Active</Badge>}
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setExpertMode(!expertMode)}
-                      className="text-xs px-3"
-                    >
-                      {expertMode ? 'Disable' : 'Enable'}
-                    </Button>
-                  </div>
-                  
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      const content = document.getElementById('mode-details');
-                      if (content) {
-                        const isHidden = content.style.display === 'none';
-                        content.style.display = isHidden ? 'block' : 'none';
-                      }
-                    }}
-                    className="w-full text-xs text-muted-foreground"
-                  >
-                    View Mode Details
-                  </Button>
-
-                  <div id="mode-details" style={{ display: 'none' }} className="space-y-2 text-xs">
-                    <div className="p-2 bg-muted/50 rounded">
-                      <h4 className="font-medium mb-1">Normal Mode</h4>
-                      <p className="text-muted-foreground">Basic AI consultation, photo analysis, voice features</p>
+                  <div className="border-t pt-3">
+                    <div className="flex gap-2 mb-3">
+                      <Input
+                        placeholder={shoppingMode ? "Ask about products..." : "Ask about makeup or describe your skin..."}
+                        value={inputText}
+                        onChange={(e) => setInputText(e.target.value)}
+                        onKeyPress={(e) => e.key === 'Enter' && handleTextSubmit()}
+                        className="flex-1"
+                      />
+                      <Button 
+                        onClick={handleTextSubmit} 
+                        disabled={!inputText.trim() || isLoading}
+                        size="sm"
+                      >
+                        <MessageCircle className="h-4 w-4" />
+                      </Button>
                     </div>
                     
-                    <div className="p-2 bg-primary/10 rounded">
-                      <h4 className="font-medium mb-1">Expert Mode</h4>
-                      <p className="text-muted-foreground">Advanced voice synthesis, document uploads, professional features</p>
+                    <div className="flex gap-2">
+                      <Label htmlFor="image-upload" className="cursor-pointer">
+                        <Button variant="outline" size="sm" asChild>
+                          <span className="flex items-center gap-1 text-xs">
+                            <Camera className="h-3 w-3" />
+                            {shoppingMode ? "Scan" : "Photo"}
+                          </span>
+                        </Button>
+                      </Label>
+                      
+                      <VoiceRecorder
+                        onTranscription={handleVoiceMessage}
+                        disabled={isLoading}
+                      />
+                      
+                      <Input
+                        id="image-upload"
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => e.target.files?.[0] && handleImageUpload(e.target.files[0], shoppingMode ? 'shopping' : 'analysis')}
+                      />
                     </div>
                   </div>
                 </CardContent>
-              </Card>
+                </Card>
+              </div>
+              
+              {/* Compact Sidebar */}
+              <div className="space-y-4">
+                {/* Controls */}
+                <Card>
+                  <CardContent className="p-4 space-y-3">
+                     {/* Mode Toggles */}
+                     <div className="flex gap-2">
+                       <Button
+                         variant={shoppingMode ? "default" : "outline"}
+                         size="sm"
+                         onClick={() => setShoppingMode(!shoppingMode)}
+                         className="flex-1 text-xs"
+                       >
+                         Shopping
+                       </Button>
+                       <Button
+                         variant={expertMode ? "default" : "outline"}
+                         size="sm"
+                         onClick={() => setExpertMode(!expertMode)}
+                         className="flex-1 text-xs"
+                       >
+                         Expert
+                       </Button>
+                     </div>
+                    
+                    {/* Voice Panel */}
+                    <EnhancedVoicePanel 
+                      text={messages.find(m => m.consultation)?.content || "Upload a selfie to get personalized voice recommendations!"} 
+                      onVoiceChange={setSelectedVoice}
+                    />
+                    
+                    {/* Document Upload (Expert Mode) */}
+                    {expertMode && (
+                      <div className="border-t pt-3">
+                        <DocumentUpload />
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
             </div>
           </div>
         </main>
