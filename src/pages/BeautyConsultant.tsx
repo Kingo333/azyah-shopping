@@ -164,15 +164,26 @@ export default function BeautyConsultantPage() {
       console.error("Analysis error:", error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       
+      // Provide more specific error messages
+      let userFriendlyMessage = "Please ensure your photo is clear and well-lit, then try again.";
+      
+      if (errorMessage.includes('OpenAI API error')) {
+        userFriendlyMessage = "There was an issue with the AI analysis. Please try again in a moment.";
+      } else if (errorMessage.includes('No analysis data received')) {
+        userFriendlyMessage = "The analysis didn't return any results. Please try with a different photo.";
+      } else if (errorMessage.includes('Failed to analyze')) {
+        userFriendlyMessage = "The image analysis failed. Please check your internet connection and try again.";
+      }
+      
       const errorChatMessage: ChatMessage = {
         id: Date.now().toString(),
         type: 'assistant',
-        content: `I apologize, but I couldn't analyze your image: ${errorMessage}. Please ensure your photo is clear and well-lit, then try again.`,
+        content: `I apologize, but I couldn't analyze your image: ${userFriendlyMessage}`,
         timestamp: new Date()
       };
       setMessages(prev => [...prev, errorChatMessage]);
       
-      toast.error(`Analysis failed: ${errorMessage}`);
+      toast.error(`Analysis failed: ${userFriendlyMessage}`);
     } finally {
       setIsLoading(false);
     }

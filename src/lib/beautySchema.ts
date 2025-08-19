@@ -70,9 +70,6 @@ export const BeautyConsultationJsonSchema = {
             minimum: 0,
             maximum: 1
           },
-          lighting_note: {
-            type: "string"
-          }
         },
         required: ["tone_depth", "undertone", "skin_type", "visible_concerns", "confidence"],
         additionalProperties: false
