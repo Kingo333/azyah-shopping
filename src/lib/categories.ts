@@ -1,8 +1,6 @@
 
 // Unified Category Taxonomy for Azyah Platform
 export const CATEGORY_TREE = {
-  women: ['womens clothing', 'womens footwear', 'womens accessories'],
-  men: ['mens clothing', 'mens footwear', 'mens accessories'],
   clothing: [
     'dresses', 'abayas', 'tops', 'blouses', 'shirts', 't-shirts', 'sweaters',
     'jackets', 'coats', 'blazers', 'cardigans', 'trousers', 'jeans', 'skirts',
@@ -13,7 +11,7 @@ export const CATEGORY_TREE = {
     'belts', 'scarves', 'hats', 'sunglasses', 'watches'
   ],
   jewelry: ['necklaces', 'earrings', 'bracelets', 'rings', 'anklets', 'brooches'],
-  beauty: ['all beauty', 'skincare', 'haircare', 'makeup', 'fragrances', 'home fragrances', 'tools & accessories'],
+  beauty: ['skincare', 'haircare', 'makeup', 'fragrances', 'home fragrances', 'tools & accessories'],
   bags: ['handbags', 'clutches', 'totes', 'backpacks', 'wallets'],
   modestwear: ['abayas', 'hijabs', 'niqabs', 'jilbabs', 'kaftans'],
   kids: ['baby clothing', 'girls clothing', 'boys clothing', 'kids footwear', 'kids accessories'],
@@ -22,8 +20,12 @@ export const CATEGORY_TREE = {
   giftcards: ['digital gift card', 'physical voucher']
 } as const;
 
+// Gender options for filtering
+export const GENDER_OPTIONS = ['men', 'women', 'unisex', 'kids'] as const;
+
 export type TopCategory = keyof typeof CATEGORY_TREE;
 export type SubCategory = (typeof CATEGORY_TREE)[TopCategory][number];
+export type Gender = (typeof GENDER_OPTIONS)[number];
 
 // Helper functions
 export const getAllCategories = (): TopCategory[] => Object.keys(CATEGORY_TREE) as TopCategory[];
@@ -44,4 +46,8 @@ export const getSubcategoryDisplayName = (subcategory: SubCategory): string => {
   return subcategory.split(' ').map(word => 
     word.charAt(0).toUpperCase() + word.slice(1)
   ).join(' ');
+};
+
+export const getGenderDisplayName = (gender: Gender): string => {
+  return gender.charAt(0).toUpperCase() + gender.slice(1);
 };

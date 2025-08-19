@@ -8,25 +8,37 @@ import {
 } from '@/components/ui/popover';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Filter, X } from 'lucide-react';
-import { CATEGORY_TREE, getAllCategories, getSubcategoriesForCategory, getCategoryDisplayName, getSubcategoryDisplayName } from '@/lib/categories';
-import type { TopCategory, SubCategory } from '@/lib/categories';
+import { CATEGORY_TREE, getAllCategories, getSubcategoriesForCategory, getCategoryDisplayName, getSubcategoryDisplayName, getGenderDisplayName, GENDER_OPTIONS } from '@/lib/categories';
+import type { TopCategory, SubCategory, Gender } from '@/lib/categories';
 
 interface CategoryFilterProps {
+  selectedGenders: Gender[];
   selectedCategories: TopCategory[];
   selectedSubcategories: SubCategory[];
+  onGenderChange: (genders: Gender[]) => void;
   onCategoryChange: (categories: TopCategory[]) => void;
   onSubcategoryChange: (subcategories: SubCategory[]) => void;
   className?: string;
 }
 
 const CategoryFilter: React.FC<CategoryFilterProps> = ({
+  selectedGenders,
   selectedCategories,
   selectedSubcategories,
+  onGenderChange,
   onCategoryChange,
   onSubcategoryChange,
   className
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  
+  const handleGenderToggle = (gender: Gender) => {
+    if (selectedGenders.includes(gender)) {
+      onGenderChange(selectedGenders.filter(g => g !== gender));
+    } else {
+      onGenderChange([...selectedGenders, gender]);
+    }
+  };
   
   const handleCategoryToggle = (category: TopCategory) => {
     const newCategories = selectedCategories.includes(category)
@@ -54,11 +66,12 @@ const CategoryFilter: React.FC<CategoryFilterProps> = ({
   };
   
   const clearFilters = () => {
+    onGenderChange([]);
     onCategoryChange([]);
     onSubcategoryChange([]);
   };
   
-  const activeFiltersCount = selectedCategories.length + selectedSubcategories.length;
+  const activeFiltersCount = selectedGenders.length + selectedCategories.length + selectedSubcategories.length;
   
   return (
     <div className={className}>
@@ -77,7 +90,7 @@ const CategoryFilter: React.FC<CategoryFilterProps> = ({
         <PopoverContent className="w-80 p-0" align="start">
           <div className="p-4 border-b">
             <div className="flex items-center justify-between">
-              <h4 className="font-medium">Filter by Category</h4>
+              <h4 className="font-medium">Filters</h4>
               {activeFiltersCount > 0 && (
                 <Button variant="ghost" size="sm" onClick={clearFilters}>
                   Clear all
@@ -87,6 +100,27 @@ const CategoryFilter: React.FC<CategoryFilterProps> = ({
           </div>
           
           <div className="max-h-96 overflow-y-auto">
+            {/* Gender filters */}
+            <div className="p-4 border-b">
+              <h5 className="text-sm font-medium mb-2">Gender</h5>
+              <div className="grid grid-cols-2 gap-2">
+                {GENDER_OPTIONS.map((gender) => (
+                  <div key={gender} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`gender-${gender}`}
+                      checked={selectedGenders.includes(gender)}
+                      onCheckedChange={() => handleGenderToggle(gender)}
+                    />
+                    <label
+                      htmlFor={`gender-${gender}`}
+                      className="text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    >
+                      {getGenderDisplayName(gender)}
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </div>
             {getAllCategories().map((category) => (
               <div key={category} className="p-4 border-b last:border-b-0">
                 <div className="flex items-center space-x-2 mb-2">
@@ -131,6 +165,19 @@ const CategoryFilter: React.FC<CategoryFilterProps> = ({
       {/* Active filters display */}
       {activeFiltersCount > 0 && (
         <div className="flex flex-wrap gap-2 mt-2">
+          {selectedGenders.map((gender) => (
+            <Badge key={gender} variant="default" className="text-xs">
+              {getGenderDisplayName(gender)}
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-auto p-0 ml-1"
+                onClick={() => handleGenderToggle(gender)}
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            </Badge>
+          ))}
           {selectedCategories.map((category) => (
             <Badge key={category} variant="secondary" className="text-xs">
               {getCategoryDisplayName(category)}

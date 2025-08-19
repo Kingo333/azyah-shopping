@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import CategoryFilter from "@/components/CategoryFilter";
+import type { Gender } from '@/lib/categories';
 import { ArrowLeft, Heart, Search, Menu, Sparkles, ChevronDown, List, LayoutGrid } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -22,9 +23,29 @@ const Swipe = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   
   // Initialize state from URL params
-  const [selectedCategories, setSelectedCategories] = useState<string[]>(
-    searchParams.get('category') ? [searchParams.get('category')!] : []
-  );
+  const [selectedGenders, setSelectedGenders] = useState<Gender[]>(() => {
+    const categoryParam = searchParams.get('category');
+    const genderParam = searchParams.get('gender');
+    
+    // Handle legacy category=men/women by converting to gender filter
+    if (categoryParam && ['men', 'women', 'unisex', 'kids'].includes(categoryParam)) {
+      return [categoryParam as Gender];
+    }
+    if (genderParam && ['men', 'women', 'unisex', 'kids'].includes(genderParam)) {
+      return [genderParam as Gender];
+    }
+    return [];
+  });
+  
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(() => {
+    const categoryParam = searchParams.get('category');
+    // Only set as category if it's not a gender
+    if (categoryParam && !['men', 'women', 'unisex', 'kids'].includes(categoryParam)) {
+      return [categoryParam];
+    }
+    return [];
+  });
+  
   const [selectedSubcategories, setSelectedSubcategories] = useState<string[]>(
     searchParams.get('subcategory') ? [searchParams.get('subcategory')!] : []
   );
@@ -76,6 +97,7 @@ const Swipe = () => {
   const { products, isLoading: productsLoading } = usePersonalizedProducts({
     filter: selectedCategories[0] || 'all',
     subcategory: selectedSubcategories[0] || '',
+    gender: selectedGenders[0] || '',
     priceRange,
     searchQuery,
     currency: selectedCurrency
@@ -85,6 +107,7 @@ const Swipe = () => {
   useEffect(() => {
     const params = new URLSearchParams();
     
+    if (selectedGenders[0]) params.set('gender', selectedGenders[0]);
     if (selectedCategories[0]) params.set('category', selectedCategories[0]);
     if (selectedSubcategories[0]) params.set('subcategory', selectedSubcategories[0]);
     if (priceRange.min > 0) params.set('minPrice', priceRange.min.toString());
@@ -93,7 +116,7 @@ const Swipe = () => {
     if (selectedCurrency !== 'USD') params.set('currency', selectedCurrency);
     
     setSearchParams(params, { replace: true });
-  }, [selectedCategories, selectedSubcategories, priceRange, searchQuery, selectedCurrency, setSearchParams]);
+  }, [selectedGenders, selectedCategories, selectedSubcategories, priceRange, searchQuery, selectedCurrency, setSearchParams]);
 
   if (loading) {
     return (
@@ -115,11 +138,17 @@ const Swipe = () => {
   }
 
   const getCurrentCategoryDisplay = () => {
-    if (selectedCategories.length === 0) return 'All Categories';
-    const categoryNames = selectedCategories.map(cat => 
-      cat.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
-    );
-    return categoryNames.length > 1 ? `${categoryNames[0]} +${categoryNames.length - 1}` : categoryNames[0];
+    if (selectedGenders.length === 0 && selectedCategories.length === 0) return 'All Categories';
+    
+    const displays = [];
+    if (selectedGenders.length > 0) {
+      displays.push(selectedGenders[0].charAt(0).toUpperCase() + selectedGenders[0].slice(1));
+    }
+    if (selectedCategories.length > 0) {
+      displays.push(selectedCategories[0].split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' '));
+    }
+    
+    return displays.join(' · ') || 'All Categories';
   };
 
   return (
@@ -210,8 +239,10 @@ const Swipe = () => {
                     <div className="space-y-3">
                       <Label className="text-sm font-medium">Category</Label>
                       <CategoryFilter
+                        selectedGenders={selectedGenders}
                         selectedCategories={selectedCategories as any}
                         selectedSubcategories={selectedSubcategories as any}
+                        onGenderChange={setSelectedGenders}
                         onCategoryChange={(categories) => setSelectedCategories(categories as string[])}
                         onSubcategoryChange={(subcategories) => setSelectedSubcategories(subcategories as string[])}
                       />
@@ -306,6 +337,7 @@ const Swipe = () => {
               <SwipeDeck 
                 filter={selectedCategories[0] || 'all'} 
                 subcategory={selectedSubcategories[0] || ''}
+                gender={selectedGenders[0] || ''}
                 priceRange={priceRange} 
                 searchQuery={searchQuery}
                 currency={selectedCurrency}
