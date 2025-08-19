@@ -88,7 +88,7 @@ export const usePersonalizedProducts = ({
       } else {
         // Include external products from enabled sources
         const allowedSources = [];
-        if (axessoImportEnabled) allowedSources.push('ASOS_AXESSO');
+        if (axessoImportEnabled) allowedSources.push('ASOS_AXESSO', 'axesso-async');
         if (axessoImportBulkEnabled) allowedSources.push('ASOS_AXESSO_BULK');
         
         if (allowedSources.length > 0) {
