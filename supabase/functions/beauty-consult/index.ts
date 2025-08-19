@@ -438,59 +438,51 @@ serve(async (req) => {
 
     console.log('Making OpenAI Chat Completions API call...');
 
-    // Call OpenAI Chat Completions API with vision and structured output
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    // Call OpenAI Responses API with vision and structured output
+    const response = await fetch('https://api.openai.com/v1/responses', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${openAIApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o',
-        messages: [
-          {
-            role: "system",
-            content: BEAUTY_DEVELOPER_INSTRUCTIONS
-          },
+        model: 'gpt-4.1-mini',
+        instructions: BEAUTY_DEVELOPER_INSTRUCTIONS,
+        input: [
           {
             role: "user",
             content: [
               {
-                type: "text",
+                type: "input_text",
                 text: contextPrompt
               },
               {
-                type: "image_url",
-                image_url: {
-                  url: image_base64
-                }
+                type: "input_image",
+                image_url: image_base64
               }
             ]
           }
         ],
-        response_format: {
-          type: "json_schema",
-          json_schema: BeautyConsultationJsonSchema
-        },
-        max_tokens: 1500,
+        response_format: BeautyConsultationJsonSchema,
+        max_completion_tokens: 1500,
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('OpenAI Chat Completions API error:', errorText);
+      console.error('OpenAI Responses API error:', errorText);
       console.error('Response status:', response.status);
       console.error('Response headers:', Object.fromEntries(response.headers.entries()));
-      throw new Error(`OpenAI Chat Completions API error: ${response.status}`);
+      throw new Error(`OpenAI Responses API error: ${response.status}`);
     }
 
     const data = await response.json();
     console.log('OpenAI response received, status:', response.status);
     console.log('Response structure:', Object.keys(data));
-    console.log('Response choices:', data.choices?.length || 0);
+    console.log('Response output length:', data.output?.length || 0);
 
-    // Parse structured JSON from Chat Completions API
-    const output = data.choices?.[0]?.message?.content;
+    // Parse structured output from Responses API
+    const output = data.output_text;
 
     console.log('Parsed output available:', !!output);
 
