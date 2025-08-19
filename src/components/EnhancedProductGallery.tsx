@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ZoomIn, RotateCw } from 'lucide-react';
 import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
+import { getResponsiveImageProps } from '@/utils/asosImageUtils';
 
 interface EnhancedProductGalleryProps {
   images: string[];
@@ -42,7 +43,10 @@ export const EnhancedProductGallery: React.FC<EnhancedProductGalleryProps> = ({
       <div className="relative aspect-square md:aspect-[4/5] overflow-hidden rounded-lg bg-accent group">
         <motion.img
           key={selectedImage}
-          src={images[selectedImage] || '/placeholder.svg'}
+          {...getResponsiveImageProps(
+            images[selectedImage] || '/placeholder.svg',
+            "(max-width: 768px) 100vw, 50vw"
+          )}
           alt={`${productTitle} view ${selectedImage + 1}`}
           className={`w-full h-full object-cover cursor-zoom-in transition-transform duration-300 ${
             isZoomed ? 'scale-150' : 'scale-100'
@@ -96,7 +100,7 @@ export const EnhancedProductGallery: React.FC<EnhancedProductGalleryProps> = ({
               whileTap={{ scale: 0.95 }}
             >
               <img
-                src={image}
+                {...getResponsiveImageProps(image, "64px")}
                 alt={`${productTitle} thumbnail ${index + 1}`}
                 className="w-full h-full object-cover"
               />
