@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { Upload, Camera, MessageCircle, Sparkles, Copy, Save, Eye, EyeOff, Trash2, WandSparkles, Play, Download, Mic } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { downscaleImage, validateImageFile } from "@/utils/imageUtils";
 type RecItem = {
   name: string;
   brand?: string;
@@ -97,7 +98,15 @@ export default function BeautyConsultantPage() {
   };
   const handleImageUpload = async (file: File, mode: 'analysis' | 'shopping' = 'analysis') => {
     try {
-      const base64 = await fileToBase64(file);
+      // Validate file first
+      const validation = validateImageFile(file);
+      if (!validation.valid) {
+        toast.error(validation.error);
+        return;
+      }
+
+      // Downscale image for optimal processing
+      const base64 = await downscaleImage(file);
       setSelectedImage(base64);
 
       // Add user message with image
@@ -111,7 +120,8 @@ export default function BeautyConsultantPage() {
       setMessages(prev => [...prev, userMessage]);
       await analyzeImage(base64, mode);
     } catch (error) {
-      toast.error("Error uploading image");
+      console.error('Image upload error:', error);
+      toast.error("Error processing image. Please try again.");
     }
   };
   const analyzeImage = async (imageBase64: string, mode: 'analysis' | 'shopping' = 'analysis', prefsOverride?: any) => {
@@ -127,7 +137,10 @@ export default function BeautyConsultantPage() {
       
       if (response.error) {
         console.error('Beauty consult error:', response.error);
-        throw new Error(response.error.message || 'Failed to analyze image');
+        // Enhanced error handling with server details
+        const errorData = (response as any).data;
+        const details = errorData?.details || response.error.message || 'Unknown error';
+        throw new Error(`Analysis failed: ${details}`);
       }
 
       if (!response.data) {

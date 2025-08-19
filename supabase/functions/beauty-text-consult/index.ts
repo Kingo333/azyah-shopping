@@ -47,6 +47,16 @@ CONVERSATION GUIDELINES:
 `;
 
 serve(async (req) => {
+  // Health check endpoint
+  if (req.method === 'GET') {
+    return new Response(JSON.stringify({
+      ok: true,
+      hasOPENAI: !!Deno.env.get('OPENAI_API_KEY'),
+      modelVision: Deno.env.get('AZ_VISION_MODEL') ?? 'unset',
+      modelText: Deno.env.get('AZ_TEXT_MODEL') ?? 'unset'
+    }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }});
+  }
+
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -94,19 +104,19 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: Deno.env.get('AZ_TEXT_MODEL') ?? 'gpt-5-2025-08-07',
+        model: Deno.env.get('AZ_TEXT_MODEL') ?? 'gpt-4o',
         messages: [
           { role: 'system', content: SYSTEM_PROMPT },
           { role: 'user', content: input }
         ],
-        max_completion_tokens: 1000
+        max_tokens: 1000
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('OpenAI Responses API error:', errorText);
-      throw new Error(`OpenAI Responses API error: ${response.status}`);
+      console.error('OpenAI Chat Completions API error:', errorText);
+      throw new Error(`OpenAI Chat Completions API error: ${response.status}`);
     }
 
     const data = await response.json();
@@ -155,10 +165,11 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error in beauty-text-consult function:', error);
+    const details = error instanceof Error ? error.message : String(error);
     return new Response(
       JSON.stringify({ 
         error: 'Failed to process your message. Please try again.',
-        details: error.message 
+        details
       }),
       { 
         status: 500, 

@@ -376,6 +376,16 @@ function getFallbackProducts(category: string, skin_profile: any): RecItem[] {
 }
 
 serve(async (req) => {
+  // Health check endpoint
+  if (req.method === 'GET') {
+    return new Response(JSON.stringify({
+      ok: true,
+      hasOPENAI: !!Deno.env.get('OPENAI_API_KEY'),
+      modelVision: Deno.env.get('AZ_VISION_MODEL') ?? 'unset',
+      modelText: Deno.env.get('AZ_TEXT_MODEL') ?? 'unset'
+    }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }});
+  }
+
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -404,40 +414,36 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Build messages for OpenAI Chat Completions API
-    const messages = [
-      {
-        role: "system",
-        content: BEAUTY_DEVELOPER_INSTRUCTIONS
-      },
+    // Build input for OpenAI Responses API
+    const input = [
       {
         role: "user",
         content: [
-          { type: "text", text: "Analyze my selfie and recommend makeup products. Return ONLY JSON that matches the schema." },
-          { type: "image_url", image_url: { url: image_base64, detail: "high" } }
+          { type: "input_text", text: "Analyze my selfie and recommend makeup products. Return ONLY JSON that matches the schema." },
+          { type: "input_image", image_url: image_base64, detail: "high" }
         ]
       }
     ];
 
     // Add preferences if provided
     if (prefs && Object.keys(prefs).length > 0) {
-      messages.push({
-        role: "user", 
-        content: `Preferences: ${JSON.stringify(prefs)}`
+      input.push({
+        role: "user",
+        content: [{ type: "input_text", text: `Preferences: ${JSON.stringify(prefs)}` }]
       });
     }
 
     // Add previous profile for consistency if available
     if (last_skin_profile) {
-      messages.push({
+      input.push({
         role: "user",
-        content: `Previous skin profile: ${JSON.stringify(last_skin_profile)}`
+        content: [{ type: "input_text", text: `Previous skin profile: ${JSON.stringify(last_skin_profile)}` }]
       });
     }
 
-    console.log('Making OpenAI Chat Completions API call...');
+    console.log('Making OpenAI Responses API call...');
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch('https://api.openai.com/v1/responses', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${openAIApiKey}`,
@@ -445,26 +451,28 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: Deno.env.get('AZ_VISION_MODEL') ?? 'gpt-4o',
-        messages: messages,
+        instructions: BEAUTY_DEVELOPER_INSTRUCTIONS,
+        input: input,
         response_format: {
           type: "json_schema",
           json_schema: BeautyConsultationJsonSchema
         },
-        max_tokens: 2000
+        max_output_tokens: 2000
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('OpenAI Chat Completions API error:', errorText);
-      throw new Error(`OpenAI Chat Completions API error: ${response.status}`);
+      console.error('OpenAI Responses API error:', errorText);
+      throw new Error(`OpenAI Responses API error: ${response.status}`);
     }
 
     const data = await response.json();
     console.log('OpenAI response received');
 
-    // Parse structured JSON from Chat Completions API
-    const output = JSON.parse(data.choices?.[0]?.message?.content || '{}');
+    // Parse structured JSON from Responses API
+    const output = data.output?.[0]?.content?.find?.((c: any) => c.type === "output_json")?.json ?? 
+                   data.output?.[0]?.content?.[0]?.json;
 
     if (!output) {
       throw new Error('No JSON returned by model (check schema)');
@@ -560,10 +568,11 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error in beauty-consult function:', error);
+    const details = error instanceof Error ? error.message : String(error);
     return new Response(
       JSON.stringify({ 
-        error: 'Failed to analyze photo. Please try again with a clear, well-lit selfie.',
-        details: error.message 
+        error: 'Failed to analyze photo',
+        details
       }),
       { 
         status: 500, 
