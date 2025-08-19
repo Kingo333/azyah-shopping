@@ -23,6 +23,7 @@ import { EditProductModal } from '@/components/EditProductModal';
 import { AnalyticsDashboard } from '@/components/AnalyticsDashboard';
 import RetailerBrandsList from '@/components/RetailerBrandsList';
 import { BulkImportActions } from '@/components/BulkImportActions';
+import { RetailerPortalHeader } from '@/components/RetailerPortalHeader';
 import { RetailerSettingsForm } from '@/components/RetailerSettingsForm';
 import { CollabDashboard } from '@/components/ugc/CollabDashboard';
 import { AsosImportManager } from '@/components/AsosImportManager';
@@ -214,30 +215,10 @@ const RetailerPortal = () => {
     <div className="min-h-screen bg-background">
       <div className="container max-w-7xl mx-auto p-6">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <div>
-              <h1 className="text-3xl font-bold">Retailer Portal</h1>
-              <p className="text-muted-foreground mt-1">
-                {retailer?.name || 'Your Store'}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <Button onClick={() => setIsAddModalOpen(true)} className="gap-2">
-              <Plus className="h-4 w-4" />
-              Add Product
-            </Button>
-            <Button 
-              variant="outline" 
-              onClick={handleSignOut}
-              className="gap-2"
-            >
-              <LogOut className="h-4 w-4" />
-              Sign Out
-            </Button>
-          </div>
-        </div>
+        <RetailerPortalHeader 
+          retailer={retailer}
+          onAddProduct={() => setIsAddModalOpen(true)}
+        />
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">

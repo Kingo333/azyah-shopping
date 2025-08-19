@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { BackButton } from '@/components/ui/back-button';
+import { BrandPortalHeader } from '@/components/BrandPortalHeader';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -304,51 +304,11 @@ const BrandPortal: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-purple-50">
       <div className="container mx-auto max-w-7xl p-2 sm:p-4">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 sm:mb-6 gap-4">
-          <div className="flex items-center gap-2 sm:gap-4">
-            <BackButton 
-              fallbackPath="/dashboard"
-              onBack={() => {
-                console.log('Brand portal back button clicked, navigating to dashboard');
-                window.location.href = '/dashboard';
-              }}
-            />
-            <div className="flex items-center gap-2 sm:gap-4">
-              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-muted rounded-xl overflow-hidden">
-                {brand.logo_url ? 
-                  <img src={brand.logo_url} alt={brand.name} className="w-full h-full object-cover" /> : 
-                  <div className="w-full h-full flex items-center justify-center text-muted-foreground font-playfair">
-                    {brand.name.charAt(0).toUpperCase()}
-                  </div>
-                }
-              </div>
-              <div>
-                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
-                  <h1 className="text-lg sm:text-2xl font-bold font-playfair">{brand.name}</h1>
-                  <Badge variant="secondary" className="text-xs rounded-full w-fit">Verified</Badge>
-                </div>
-                <p className="text-muted-foreground text-sm">{brand.bio || 'Brand description'}</p>
-              </div>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <Button 
-              variant="outline"
-              className="rounded-xl flex-1 sm:flex-none"
-              onClick={() => setIsImportModalOpen(true)}
-            >
-              <Globe className="h-4 w-4 mr-2" />
-              Import from Website
-            </Button>
-            <Button 
-              className="rounded-xl bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 flex-1 sm:flex-none"
-              onClick={() => setIsAddProductModalOpen(true)}
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Add Product
-            </Button>
-          </div>
-        </div>
+        <BrandPortalHeader 
+          brand={brand}
+          onAddProduct={() => setIsAddProductModalOpen(true)}
+          onImportFromWebsite={() => setIsImportModalOpen(true)}
+        />
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid w-full grid-cols-4 rounded-xl bg-white/50 backdrop-blur-sm">
