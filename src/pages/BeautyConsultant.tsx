@@ -309,7 +309,7 @@ I've prepared personalized product recommendations for you! ${consultation.quest
                 
                   <CardContent className="flex-1 flex flex-col p-4">
                     {/* Messages */}
-                    <div className="flex-1 overflow-y-auto space-y-4 mb-4 scroll-smooth">
+                    <div className="flex-1 overflow-y-auto space-y-4 mb-4 scroll-smooth max-h-[calc(100vh-350px)]">
                     {messages.map((message, index) => <div key={message.id} className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in`} style={{
                       animationDelay: `${index * 0.1}s`
                     }}>
