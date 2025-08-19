@@ -3,7 +3,9 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import CategoryFilter from "@/components/CategoryFilter";
 import type { Gender } from '@/lib/categories';
-import { ArrowLeft, Heart, Search, Menu, Sparkles, ChevronDown, List, LayoutGrid } from "lucide-react";
+import { ArrowLeft, Heart, Search, Menu, Sparkles, ChevronDown, List, LayoutGrid, RefreshCw } from "lucide-react";
+import { updateProductCategories } from "@/utils/categoryUpdater";
+import { toast } from "sonner";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Input } from "@/components/ui/input";
@@ -92,6 +94,20 @@ const Swipe = () => {
       return () => clearTimeout(timer);
     }
   }, [showListToggle]);
+
+  const handleUpdateCategories = async () => {
+    try {
+      toast.loading("Updating product categories...", { id: "category-update" });
+      const result = await updateProductCategories();
+      toast.success(`Updated ${result.totalUpdated} products successfully!`, { id: "category-update" });
+      
+      // Refresh the current page to show updated categories
+      window.location.reload();
+    } catch (error) {
+      console.error('Error updating categories:', error);
+      toast.error("Failed to update categories. Please try again.", { id: "category-update" });
+    }
+  };
 
   // Use the personalized products hook for list view
   const { products, isLoading: productsLoading } = usePersonalizedProducts({
@@ -215,6 +231,11 @@ const Swipe = () => {
               <Button variant="ghost" size="sm" onClick={() => navigate("/likes")} className="hover:bg-accent/50 p-2 flex-shrink-0">
                 <Heart className="h-4 w-4" />
                 <span className="hidden lg:inline lg:ml-2">Likes</span>
+              </Button>
+
+              <Button variant="ghost" size="sm" onClick={handleUpdateCategories} className="hover:bg-accent/50 p-2 flex-shrink-0">
+                <RefreshCw className="h-4 w-4" />
+                <span className="hidden lg:inline lg:ml-2">Fix Categories</span>
               </Button>
               
               {/* Filters Menu */}
