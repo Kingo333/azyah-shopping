@@ -115,10 +115,8 @@ export const usePersonalizedProducts = ({
         }
       }
 
-      // Filter by gender if specified
-      if (gender && gender !== '') {
-        query = query.eq('gender', gender as any);
-      }
+      // Gender filtering temporarily disabled until database migration is complete
+      // TODO: Re-enable after gender column is properly migrated
 
       // Apply currency filter
       if (currency && currency !== 'USD') {
