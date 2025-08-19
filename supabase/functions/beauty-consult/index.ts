@@ -119,7 +119,7 @@ async function openAIAnalyze(imageDataOrURL: string, prefs?: any) {
         ]
       }
     ],
-    response_format: { type: "json_schema", json_schema: { name: "BeautyConsultation", schema, strict: true } },
+    text: { format: "json_schema", json_schema: { name: "BeautyConsultation", schema, strict: true } },
     max_output_tokens: 2000
   };
 
