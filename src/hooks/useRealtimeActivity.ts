@@ -16,17 +16,55 @@ export const useRealtimeActivity = (brandId?: string, retailerId?: string, limit
     queryFn: async (): Promise<ActivityEvent[]> => {
       console.log('Fetching realtime activity for:', { brandId, retailerId });
       
-      // Get recent events
+      // First get products for this retailer/brand to filter activities
+      let productIds: string[] = [];
+      
+      if (retailerId) {
+        const { data: retailerProducts, error: productsError } = await supabase
+          .from('products')
+          .select('id')
+          .eq('retailer_id', retailerId)
+          .eq('status', 'active');
+        
+        if (productsError) {
+          console.error('Error fetching retailer products:', productsError);
+          return [];
+        }
+        
+        productIds = retailerProducts?.map(p => p.id) || [];
+      } else if (brandId) {
+        const { data: brandProducts, error: productsError } = await supabase
+          .from('products')
+          .select('id')
+          .eq('brand_id', brandId)
+          .eq('status', 'active');
+        
+        if (productsError) {
+          console.error('Error fetching brand products:', productsError);
+          return [];
+        }
+        
+        productIds = brandProducts?.map(p => p.id) || [];
+      }
+
+      if (productIds.length === 0) {
+        console.log('No products found for this retailer/brand');
+        return [];
+      }
+
+      // Get current user to exclude their own activity
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      // Get recent events for retailer/brand products, excluding own activity
       let eventsQuery = supabase
         .from('events')
-        .select('id, event_type, created_at, product_id')
+        .select('id, event_type, created_at, product_id, user_id')
+        .in('product_id', productIds)
         .order('created_at', { ascending: false })
-        .limit(limit * 2); // Get more to filter
+        .limit(limit * 3); // Get more to filter out own activity
 
-      if (brandId) {
-        eventsQuery = eventsQuery.eq('brand_id', brandId);
-      } else if (retailerId) {
-        eventsQuery = eventsQuery.eq('retailer_id', retailerId);
+      if (user?.id) {
+        eventsQuery = eventsQuery.neq('user_id', user.id);
       }
 
       const { data: events, error: eventsError } = await eventsQuery;
@@ -36,31 +74,33 @@ export const useRealtimeActivity = (brandId?: string, retailerId?: string, limit
         return [];
       }
 
-      // Get recent likes and their products
-      const { data: likes } = await supabase
+      // Get recent likes for retailer/brand products, excluding own activity
+      let likesQuery = supabase
         .from('likes')
-        .select('id, created_at, product_id')
+        .select('id, created_at, product_id, user_id')
+        .in('product_id', productIds)
         .order('created_at', { ascending: false })
-        .limit(limit);
+        .limit(limit * 2);
 
-      // Get recent wishlist adds  
+      if (user?.id) {
+        likesQuery = likesQuery.neq('user_id', user.id);
+      }
+
+      const { data: likes } = await likesQuery;
+
+      // Get recent wishlist adds for retailer/brand products
       const { data: wishlistAdds } = await supabase
         .from('wishlist_items')
         .select('id, added_at, product_id')
+        .in('product_id', productIds)
         .order('added_at', { ascending: false })
-        .limit(limit);
+        .limit(limit * 2);
 
-      // Get product titles for all product IDs
-      const allProductIds = [
-        ...(events?.map(e => e.product_id).filter(Boolean) || []),
-        ...(likes?.map(l => l.product_id).filter(Boolean) || []),
-        ...(wishlistAdds?.map(w => w.product_id).filter(Boolean) || [])
-      ];
-
+      // Get product titles for the filtered products
       const { data: products } = await supabase
         .from('products')
         .select('id, title')
-        .in('id', [...new Set(allProductIds)]);
+        .in('id', productIds);
 
       const productTitles: Record<string, string> = {};
       products?.forEach(p => {
