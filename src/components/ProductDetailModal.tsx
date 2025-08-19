@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -77,97 +76,96 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
           <>
             {/* Mobile Layout */}
             <div className="md:hidden flex flex-col h-full min-h-0">
-              {/* Fixed Header with Close Button */}
-              <div className="relative flex-shrink-0">
-                <div className="absolute top-3 right-3 z-30">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={onClose}
-                    className="bg-black/50 hover:bg-black/70 backdrop-blur-sm rounded-full h-10 w-10 text-white"
-                  >
-                    <X className="h-5 w-5" />
-                  </Button>
-                </div>
-                
-                {/* Image Gallery */}
-                <div className="aspect-[4/5]">
-                  <EnhancedProductGallery
-                    images={images}
-                    productTitle={product.title}
-                    productId={product.id}
-                    hasARMesh={false}
-                  />
-                </div>
-                <div className="border-t border-border" />
+              {/* Close Button */}
+              <div className="absolute top-3 right-3 z-30">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={onClose}
+                  className="bg-black/50 hover:bg-black/70 backdrop-blur-sm rounded-full h-10 w-10 text-white"
+                >
+                  <X className="h-5 w-5" />
+                </Button>
               </div>
 
               {/* Scrollable Content Area */}
               <div className="flex-1 min-h-0 overflow-y-auto bg-background">
-                <div className="p-3 space-y-3 pb-40">
-                  {/* Product Header */}
-                  <div className="space-y-1.5">
-                    <h1 className="text-lg font-bold leading-tight">{product.title}</h1>
-                    <p className="text-muted-foreground text-xs">{product.brand?.name}</p>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xl font-bold text-primary">
-                        {new Intl.NumberFormat('en-US', { style: 'currency', currency: priceCurrency })
-                          .format(priceCents / 100)}
-                      </span>
-                      {compareAtCents && (
-                        <span className="text-base text-muted-foreground line-through">
-                          {new Intl.NumberFormat('en-US', { style: 'currency', currency: priceCurrency })
-                            .format(compareAtCents / 100)}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Size and Color Selection with Size Chart */}
-                  <div className="space-y-3">
-                    <AdvancedSizeColorSelector
-                      sizes={availableSizes}
-                      colors={availableColors}
-                      selectedSize={selectedSize}
-                      selectedColor={selectedColor}
-                      onSizeSelect={setSelectedSize}
-                      onColorSelect={setSelectedColor}
-                      sizeChart={{
-                        "XS": "Chest: 32-34, Waist: 24-26",
-                        "S": "Chest: 34-36, Waist: 26-28", 
-                        "M": "Chest: 36-38, Waist: 28-30",
-                        "L": "Chest: 38-40, Waist: 30-32",
-                        "XL": "Chest: 40-42, Waist: 32-34"
-                      }}
-                      sizeChartImage="/placeholder.svg"
+                <div className="space-y-3 pb-32">
+                  {/* Image Gallery */}
+                  <div className="aspect-[4/5]">
+                    <EnhancedProductGallery
+                      images={images}
+                      productTitle={product.title}
+                      productId={product.id}
+                      hasARMesh={false}
                     />
                   </div>
+                  
+                  <div className="p-3 space-y-3">
+                    {/* Product Header */}
+                    <div className="space-y-1.5">
+                      <h1 className="text-lg font-bold leading-tight">{product.title}</h1>
+                      <p className="text-muted-foreground text-xs">{product.brand?.name}</p>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xl font-bold text-primary">
+                          {new Intl.NumberFormat('en-US', { style: 'currency', currency: priceCurrency })
+                            .format(priceCents / 100)}
+                        </span>
+                        {compareAtCents && (
+                          <span className="text-base text-muted-foreground line-through">
+                            {new Intl.NumberFormat('en-US', { style: 'currency', currency: priceCurrency })
+                              .format(compareAtCents / 100)}
+                          </span>
+                        )}
+                      </div>
+                    </div>
 
-                  <Accordion type="single" collapsible defaultValue="details">
-                    {product.description && (
-                      <AccordionItem value="description">
-                        <AccordionTrigger className="text-sm font-semibold">Description</AccordionTrigger>
+                    {/* Size and Color Selection with Size Chart */}
+                    <div className="space-y-3">
+                      <AdvancedSizeColorSelector
+                        sizes={availableSizes}
+                        colors={availableColors}
+                        selectedSize={selectedSize}
+                        selectedColor={selectedColor}
+                        onSizeSelect={setSelectedSize}
+                        onColorSelect={setSelectedColor}
+                        sizeChart={{
+                          "XS": "Chest: 32-34, Waist: 24-26",
+                          "S": "Chest: 34-36, Waist: 26-28", 
+                          "M": "Chest: 36-38, Waist: 28-30",
+                          "L": "Chest: 38-40, Waist: 30-32",
+                          "XL": "Chest: 40-42, Waist: 32-34"
+                        }}
+                        sizeChartImage="/placeholder.svg"
+                      />
+                    </div>
+
+                    <Accordion type="single" collapsible defaultValue="details">
+                      {product.description && (
+                        <AccordionItem value="description">
+                          <AccordionTrigger className="text-sm font-semibold">Description</AccordionTrigger>
+                          <AccordionContent>
+                            <p className="text-muted-foreground text-xs leading-relaxed">{product.description}</p>
+                          </AccordionContent>
+                        </AccordionItem>
+                      )}
+                      <AccordionItem value="details">
+                        <AccordionTrigger className="text-sm font-semibold">Product Details</AccordionTrigger>
                         <AccordionContent>
-                          <p className="text-muted-foreground text-xs leading-relaxed">{product.description}</p>
+                          <div className="bg-muted/50 rounded-lg p-2 space-y-1.5">
+                            <div className="flex justify-between text-xs">
+                              <span className="text-muted-foreground">SKU:</span>
+                              <span className="font-medium">{product.sku}</span>
+                            </div>
+                            <div className="flex justify-between text-xs">
+                              <span className="text-muted-foreground">Category:</span>
+                              <span className="font-medium capitalize">{product.category_slug?.replace('_', ' ')}</span>
+                            </div>
+                          </div>
                         </AccordionContent>
                       </AccordionItem>
-                    )}
-                    <AccordionItem value="details">
-                      <AccordionTrigger className="text-sm font-semibold">Product Details</AccordionTrigger>
-                      <AccordionContent>
-                        <div className="bg-muted/50 rounded-lg p-2 space-y-1.5">
-                          <div className="flex justify-between text-xs">
-                            <span className="text-muted-foreground">SKU:</span>
-                            <span className="font-medium">{product.sku}</span>
-                          </div>
-                          <div className="flex justify-between text-xs">
-                            <span className="text-muted-foreground">Category:</span>
-                            <span className="font-medium capitalize">{product.category_slug?.replace('_', ' ')}</span>
-                          </div>
-                        </div>
-                      </AccordionContent>
-                    </AccordionItem>
-                  </Accordion>
+                    </Accordion>
+                  </div>
                 </div>
               </div>
 
@@ -228,7 +226,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               </Button>
 
               {/* Scrollable Content Container */}
-              <div className="flex-1 overflow-y-auto pb-20">
+              <div className="flex-1 overflow-y-auto pb-32">
                 <div className="p-6 space-y-6">
                   {/* Smaller Image Gallery */}
                   <div className="w-full max-w-sm mx-auto">
