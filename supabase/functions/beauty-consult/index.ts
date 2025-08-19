@@ -407,19 +407,25 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Build input array for OpenAI Responses API
-    const input = [
+    // Build the conversation for OpenAI chat completions
+    const messages = [
+      {
+        role: "system",
+        content: BEAUTY_DEVELOPER_INSTRUCTIONS
+      },
       {
         role: "user",
         content: [
           {
-            type: "input_text",
+            type: "text",
             text: "Analyze my selfie and recommend makeup products. If needed, ask at most 2 clarifying questions."
           },
           {
-            type: "input_image",
-            image_data: image_base64,
-            detail: "auto" // Use auto for balanced quality/cost
+            type: "image_url",
+            image_url: {
+              url: image_base64,
+              detail: "auto"
+            }
           }
         ]
       }
@@ -427,33 +433,23 @@ serve(async (req) => {
 
     // Add preferences if provided
     if (prefs && Object.keys(prefs).length > 0) {
-      input.push({
+      messages.push({
         role: "user",
-        content: [
-          {
-            type: "input_text",
-            text: `My preferences: ${JSON.stringify(prefs)}`
-          }
-        ]
+        content: `My preferences: ${JSON.stringify(prefs)}`
       });
     }
 
     // Add previous profile for consistency if available
     if (last_skin_profile) {
-      input.push({
+      messages.push({
         role: "user",
-        content: [
-          {
-            type: "input_text",
-            text: `Previous skin profile for reference: ${JSON.stringify(last_skin_profile)}`
-          }
-        ]
+        content: `Previous skin profile for reference: ${JSON.stringify(last_skin_profile)}`
       });
     }
 
-    console.log('Making OpenAI Responses API call...');
+    console.log('Making OpenAI API call...');
 
-    const response = await fetch('https://api.openai.com/v1/responses', {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${openAIApiKey}`,
@@ -461,8 +457,8 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: 'gpt-5-2025-08-07',
-        instructions: BEAUTY_DEVELOPER_INSTRUCTIONS,
-        input: input,
+        messages: messages,
+        max_completion_tokens: 2000,
         response_format: {
           type: "json_schema",
           json_schema: BeautyConsultationJsonSchema
@@ -472,24 +468,18 @@ serve(async (req) => {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('OpenAI Responses API error:', errorText);
+      console.error('OpenAI API error:', errorText);
       throw new Error(`OpenAI API error: ${response.status}`);
     }
 
     const data = await response.json();
     console.log('OpenAI response received');
 
-    if (!data.output || !data.output[0] || !data.output[0].content) {
-      throw new Error('Invalid response from OpenAI Responses API');
+    if (!data.choices || !data.choices[0] || !data.choices[0].message || !data.choices[0].message.content) {
+      throw new Error('Invalid response from OpenAI');
     }
 
-    // Extract JSON from the structured output
-    const jsonContent = data.output[0].content.find((c: any) => c.type === "output_json");
-    if (!jsonContent || !jsonContent.json) {
-      throw new Error('No JSON content found in response');
-    }
-
-    let consultationResult = jsonContent.json;
+    let consultationResult = JSON.parse(data.choices[0].message.content);
     
     // Validate the result against our interface
     if (!consultationResult.skin_profile || !consultationResult.recommendations || !consultationResult.technique_notes) {
