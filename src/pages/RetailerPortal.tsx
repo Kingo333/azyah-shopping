@@ -120,7 +120,11 @@ const RetailerPortal = () => {
         price_cents: item.price_cents,
         compare_at_price_cents: item.compare_at_price_cents,
         currency: item.currency || 'USD',
-        media_urls: Array.isArray(item.media_urls) ? item.media_urls as string[] : [],
+        media_urls: Array.isArray(item.media_urls) 
+          ? item.media_urls as string[] 
+          : typeof item.media_urls === 'string' 
+            ? JSON.parse(item.media_urls) 
+            : [],
         external_url: item.external_url,
         brand_id: item.brand_id || '',
         retailer_id: item.retailer_id,
