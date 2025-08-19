@@ -251,15 +251,16 @@ const RoleDashboard: React.FC = () => {
             </Button>
             {isEnabled('ai_beauty_consultant') ? (
               <Button 
-                onClick={() => navigate('/beauty-consultant')} 
+                onClick={() => {}} 
                 variant="outline" 
-                className="h-16 sm:h-20 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300 relative bg-gradient-to-br from-pink-50 to-purple-50 dark:from-pink-950/20 dark:to-purple-950/20 border-pink-200 dark:border-pink-800"
+                className="h-16 sm:h-20 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300 relative bg-gradient-to-br from-pink-50 to-purple-50 dark:from-pink-950/20 dark:to-purple-950/20 border-pink-200 dark:border-pink-800 cursor-not-allowed opacity-75"
                 data-qa="qa-beauty"
+                disabled
               >
                 <WandSparkles className="h-5 w-5 sm:h-6 sm:w-6 text-pink-600" />
-                <span className="text-xs sm:text-sm text-pink-600">Beauty</span>
+                <span className="text-xs sm:text-sm text-pink-600">Beauty Guide</span>
                 <Badge variant="secondary" className="absolute -top-1 -right-1 text-xs px-1 py-0 h-4">
-                  AI
+                  Coming Soon
                 </Badge>
               </Button>
             ) : (
