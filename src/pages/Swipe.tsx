@@ -18,12 +18,14 @@ import ProductListView from '@/components/ProductListView';
 import { usePersonalizedProducts } from '@/hooks/usePersonalizedProducts';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-
 const Swipe = () => {
   const navigate = useNavigate();
-  const { user, loading } = useAuth();
+  const {
+    user,
+    loading
+  } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
-  
+
   // Initialize state from URL params
   const [selectedGenders, setSelectedGenders] = useState<Gender[]>(() => {
     const genderParam = searchParams.get('gender');
@@ -32,7 +34,6 @@ const Swipe = () => {
     }
     return [];
   });
-  
   const [selectedCategories, setSelectedCategories] = useState<string[]>(() => {
     const categoryParam = searchParams.get('category');
     // Set any category that's not a gender as a category filter
@@ -41,10 +42,7 @@ const Swipe = () => {
     }
     return [];
   });
-  
-  const [selectedSubcategories, setSelectedSubcategories] = useState<string[]>(
-    searchParams.get('subcategory') ? [searchParams.get('subcategory')!] : []
-  );
+  const [selectedSubcategories, setSelectedSubcategories] = useState<string[]>(searchParams.get('subcategory') ? [searchParams.get('subcategory')!] : []);
   const [priceRange, setPriceRange] = useState<{
     min: number;
     max: number;
@@ -59,24 +57,26 @@ const Swipe = () => {
   const [showTooltip, setShowTooltip] = useState(false);
 
   // Check user's swipe count to determine when to show list view option
-  const { data: swipeCount } = useQuery({
+  const {
+    data: swipeCount
+  } = useQuery({
     queryKey: ['user-swipe-count', user?.id],
     queryFn: async () => {
       if (!user?.id) return 0;
-      
-      const { count, error } = await supabase
-        .from('swipes')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id);
-      
+      const {
+        count,
+        error
+      } = await supabase.from('swipes').select('*', {
+        count: 'exact',
+        head: true
+      }).eq('user_id', user.id);
       if (error) throw error;
       return count || 0;
     },
     enabled: !!user?.id
   });
-
   const showListToggle = (swipeCount || 0) >= 5; // Show list view after 5 swipes
-  
+
   // Show tooltip when the toggle first becomes available
   useEffect(() => {
     if (showListToggle && !showTooltip) {
@@ -84,27 +84,35 @@ const Swipe = () => {
       const timer = setTimeout(() => {
         setShowTooltip(false);
       }, 2500); // Show for 2.5 seconds
-      
+
       return () => clearTimeout(timer);
     }
   }, [showListToggle]);
-
   const handleUpdateCategories = async () => {
     try {
-      toast.loading("Updating product categories...", { id: "category-update" });
+      toast.loading("Updating product categories...", {
+        id: "category-update"
+      });
       const result = await updateProductCategories();
-      toast.success(`Updated ${result.totalUpdated} products successfully!`, { id: "category-update" });
-      
+      toast.success(`Updated ${result.totalUpdated} products successfully!`, {
+        id: "category-update"
+      });
+
       // Refresh the current page to show updated categories
       window.location.reload();
     } catch (error) {
       console.error('Error updating categories:', error);
-      toast.error("Failed to update categories. Please try again.", { id: "category-update" });
+      toast.error("Failed to update categories. Please try again.", {
+        id: "category-update"
+      });
     }
   };
 
   // Use the personalized products hook for list view
-  const { products, isLoading: productsLoading } = usePersonalizedProducts({
+  const {
+    products,
+    isLoading: productsLoading
+  } = usePersonalizedProducts({
     filter: selectedCategories[0] || 'all',
     subcategory: selectedSubcategories[0] || '',
     gender: selectedGenders[0] || '',
@@ -116,7 +124,6 @@ const Swipe = () => {
   // Update URL when filters change
   useEffect(() => {
     const params = new URLSearchParams();
-    
     if (selectedGenders[0]) params.set('gender', selectedGenders[0]);
     if (selectedCategories[0]) params.set('category', selectedCategories[0]);
     if (selectedSubcategories[0]) params.set('subcategory', selectedSubcategories[0]);
@@ -124,13 +131,12 @@ const Swipe = () => {
     if (priceRange.max < 1000) params.set('maxPrice', priceRange.max.toString());
     if (searchQuery) params.set('search', searchQuery);
     if (selectedCurrency !== 'USD') params.set('currency', selectedCurrency);
-    
-    setSearchParams(params, { replace: true });
+    setSearchParams(params, {
+      replace: true
+    });
   }, [selectedGenders, selectedCategories, selectedSubcategories, priceRange, searchQuery, selectedCurrency, setSearchParams]);
-
   if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+    return <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="flex flex-col items-center space-y-4">
           <div className="relative">
             <div className="w-12 h-12 rounded-full bg-gradient-accent animate-pulse"></div>
@@ -138,18 +144,14 @@ const Swipe = () => {
           </div>
           <p className="text-muted-foreground">Loading your personalized feed...</p>
         </div>
-      </div>
-    );
+      </div>;
   }
-
   if (!user) {
     navigate("/auth");
     return null;
   }
-
   const getCurrentCategoryDisplay = () => {
     if (selectedGenders.length === 0 && selectedCategories.length === 0) return 'All Categories';
-    
     const displays = [];
     if (selectedGenders.length > 0) {
       displays.push(selectedGenders[0].charAt(0).toUpperCase() + selectedGenders[0].slice(1));
@@ -157,12 +159,9 @@ const Swipe = () => {
     if (selectedCategories.length > 0) {
       displays.push(selectedCategories[0].split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' '));
     }
-    
     return displays.join(' · ') || 'All Categories';
   };
-
-  return (
-    <div className="min-h-screen dashboard-bg flex flex-col">
+  return <div className="min-h-screen dashboard-bg flex flex-col">
       {/* Header */}
       <header className="sticky top-0 z-50 w-full border-b border-white/20 glass-premium shrink-0">
         <div className="container max-w-screen-2xl mx-auto px-2 sm:px-4 py-3 sm:py-4">
@@ -187,17 +186,12 @@ const Swipe = () => {
             
             <div className="flex items-center gap-1 sm:gap-2 flex-1 justify-end max-w-full">
               {/* View Mode Toggle - Only show after sufficient swipes */}
-              {showListToggle && (
-                <TooltipProvider>
+              {showListToggle && <TooltipProvider>
                   <Tooltip open={showTooltip} onOpenChange={setShowTooltip}>
                     <TooltipTrigger asChild>
                       <div className="flex items-center gap-2 mr-2">
                         <LayoutGrid className="h-4 w-4 text-muted-foreground" />
-                        <Switch
-                          checked={viewMode === 'list'}
-                          onCheckedChange={(checked) => setViewMode(checked ? 'list' : 'swipe')}
-                          className="data-[state=checked]:bg-primary"
-                        />
+                        <Switch checked={viewMode === 'list'} onCheckedChange={checked => setViewMode(checked ? 'list' : 'swipe')} className="data-[state=checked]:bg-primary" />
                         <List className="h-4 w-4 text-muted-foreground" />
                       </div>
                     </TooltipTrigger>
@@ -207,19 +201,12 @@ const Swipe = () => {
                       </p>
                     </TooltipContent>
                   </Tooltip>
-                </TooltipProvider>
-              )}
+                </TooltipProvider>}
 
               {/* Search Bar */}
               <div className="relative flex-1 max-w-[160px] sm:max-w-[200px]">
                 <Search className="absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
-                <Input
-                  type="text"
-                  placeholder="Search..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-7 sm:pl-10 h-8 sm:h-9 text-sm bg-background/50 backdrop-blur-sm border-border/50 focus-visible:ring-ring/50 focus-visible:border-ring"
-                />
+                <Input type="text" placeholder="Search..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="pl-7 sm:pl-10 h-8 sm:h-9 text-sm bg-background/50 backdrop-blur-sm border-border/50 focus-visible:ring-ring/50 focus-visible:border-ring" />
               </div>
 
               <Button variant="ghost" size="sm" onClick={() => navigate("/likes")} className="hover:bg-accent/50 p-2 flex-shrink-0">
@@ -248,14 +235,7 @@ const Swipe = () => {
                     {/* Category Filter */}
                     <div className="space-y-3">
                       <Label className="text-sm font-medium">Category</Label>
-                      <CategoryFilter
-                        selectedGenders={selectedGenders}
-                        selectedCategories={selectedCategories as any}
-                        selectedSubcategories={selectedSubcategories as any}
-                        onGenderChange={setSelectedGenders}
-                        onCategoryChange={(categories) => setSelectedCategories(categories as string[])}
-                        onSubcategoryChange={(subcategories) => setSelectedSubcategories(subcategories as string[])}
-                      />
+                      <CategoryFilter selectedGenders={selectedGenders} selectedCategories={selectedCategories as any} selectedSubcategories={selectedSubcategories as any} onGenderChange={setSelectedGenders} onCategoryChange={categories => setSelectedCategories(categories as string[])} onSubcategoryChange={subcategories => setSelectedSubcategories(subcategories as string[])} />
                     </div>
 
                     {/* Currency Filter */}
@@ -287,33 +267,17 @@ const Swipe = () => {
                       <div className="grid grid-cols-2 gap-2 sm:gap-3">
                         <div className="space-y-2">
                           <Label htmlFor="minPrice" className="text-xs font-medium">Min</Label>
-                          <Input 
-                            id="minPrice" 
-                            type="number" 
-                            min="0"
-                            placeholder="0" 
-                            value={priceRange.min || ''} 
-                            onChange={e => setPriceRange(prev => ({
-                              ...prev,
-                              min: e.target.value === '' ? 0 : Number(e.target.value)
-                            }))} 
-                            className="h-8 sm:h-9 text-sm" 
-                          />
+                          <Input id="minPrice" type="number" min="0" placeholder="0" value={priceRange.min || ''} onChange={e => setPriceRange(prev => ({
+                          ...prev,
+                          min: e.target.value === '' ? 0 : Number(e.target.value)
+                        }))} className="h-8 sm:h-9 text-sm" />
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="maxPrice" className="text-xs font-medium">Max</Label>
-                          <Input 
-                            id="maxPrice" 
-                            type="number" 
-                            min="0"
-                            placeholder="1000" 
-                            value={priceRange.max || ''} 
-                            onChange={e => setPriceRange(prev => ({
-                              ...prev,
-                              max: e.target.value === '' ? 1000 : Number(e.target.value)
-                            }))} 
-                            className="h-8 sm:h-9 text-sm" 
-                          />
+                          <Input id="maxPrice" type="number" min="0" placeholder="1000" value={priceRange.max || ''} onChange={e => setPriceRange(prev => ({
+                          ...prev,
+                          max: e.target.value === '' ? 1000 : Number(e.target.value)
+                        }))} className="h-8 sm:h-9 text-sm" />
                         </div>
                       </div>
                     </div>
@@ -341,36 +305,16 @@ const Swipe = () => {
         </div>
 
         {/* Content Container */}
-        {viewMode === 'swipe' ? (
-          <div className="flex-1 flex items-start justify-center min-h-[500px] sm:min-h-[600px]">
+        {viewMode === 'swipe' ? <div className="flex-1 flex items-start justify-center min-h-[500px] sm:min-h-[600px]">
             <div className="relative w-full max-w-[350px] sm:max-w-md h-[calc(100vh-200px)] sm:h-[600px] max-h-[700px]">
-              <SwipeDeck 
-                filter={selectedCategories[0] || 'all'} 
-                subcategory={selectedSubcategories[0] || ''}
-                gender={selectedGenders[0] || ''}
-                priceRange={priceRange} 
-                searchQuery={searchQuery}
-                currency={selectedCurrency}
-              />
+              <SwipeDeck filter={selectedCategories[0] || 'all'} subcategory={selectedSubcategories[0] || ''} gender={selectedGenders[0] || ''} priceRange={priceRange} searchQuery={searchQuery} currency={selectedCurrency} />
               {/* Debug info */}
-              <div className="absolute bottom-2 left-2 bg-black/80 text-white text-xs p-2 rounded">
-                Filter: {selectedCategories[0] || 'all'} | 
-                SubCat: {selectedSubcategories[0] || 'none'} | 
-                Gender: {selectedGenders[0] || 'none'}
-              </div>
+              
             </div>
-          </div>
-        ) : (
-          <div className="flex-1">
-            <ProductListView 
-              products={products}
-              isLoading={productsLoading}
-            />
-          </div>
-        )}
+          </div> : <div className="flex-1">
+            <ProductListView products={products} isLoading={productsLoading} />
+          </div>}
       </main>
-    </div>
-  );
+    </div>;
 };
-
 export default Swipe;
