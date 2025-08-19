@@ -336,7 +336,21 @@ export const useSmartSwipeProducts = ({
         price_cents: item.price_cents,
         compare_at_price_cents: item.compare_at_price_cents,
         currency: item.currency || 'USD',
-        media_urls: Array.isArray(item.media_urls) ? item.media_urls as string[] : [],
+        media_urls: (() => {
+          if (Array.isArray(item.media_urls)) {
+            return item.media_urls as string[];
+          }
+          if (typeof item.media_urls === 'string') {
+            try {
+              const parsed = JSON.parse(item.media_urls);
+              return Array.isArray(parsed) ? parsed : [];
+            } catch (e) {
+              console.warn('Failed to parse media_urls for product', item.id, ':', item.media_urls);
+              return [];
+            }
+          }
+          return [];
+        })(),
         external_url: item.external_url,
         ar_mesh_url: item.ar_mesh_url,
         brand_id: item.brand_id || '',

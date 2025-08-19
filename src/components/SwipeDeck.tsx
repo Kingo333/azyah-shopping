@@ -79,26 +79,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
     currency
   });
 
-  const currentProduct = useMemo(() => {
-    const product = products[index];
-    if (!product) return null;
-    
-    // Parse media_urls if it's a string (from external products)
-    let mediaUrls = product.media_urls;
-    if (typeof mediaUrls === 'string') {
-      try {
-        mediaUrls = JSON.parse(mediaUrls);
-      } catch (e) {
-        console.warn('Failed to parse media_urls:', mediaUrls);
-        mediaUrls = [];
-      }
-    }
-    
-    return {
-      ...product,
-      media_urls: Array.isArray(mediaUrls) ? mediaUrls : []
-    };
-  }, [products, index]);
+  const currentProduct = useMemo(() => products[index] || null, [products, index]);
   const { addToWishlist, isLoading: wishlistLoading } = useWishlist(currentProduct?.id);
 
   // Calculate image height based on aspect ratio with better mobile optimization
