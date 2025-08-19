@@ -438,26 +438,29 @@ serve(async (req) => {
 
     console.log('Making OpenAI Chat Completions API call...');
 
-    // Call OpenAI Responses API with vision and structured output
-    const response = await fetch('https://api.openai.com/v1/responses', {
+    // Call OpenAI Chat Completions API with vision and structured output
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${openAIApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4.1-mini',
-        instructions: BEAUTY_DEVELOPER_INSTRUCTIONS,
-        input: [
+        model: 'gpt-4o',
+        messages: [
+          {
+            role: "system",
+            content: BEAUTY_DEVELOPER_INSTRUCTIONS
+          },
           {
             role: "user",
             content: [
               {
-                type: "input_text",
+                type: "text",
                 text: contextPrompt
               },
               {
-                type: "input_image",
+                type: "image_url",
                 image_url: {
                   url: image_base64
                 }
@@ -465,8 +468,11 @@ serve(async (req) => {
             ]
           }
         ],
-        response_format: BeautyConsultationJsonSchema,
-        max_completion_tokens: 1500,
+        response_format: {
+          type: "json_schema",
+          json_schema: BeautyConsultationJsonSchema
+        },
+        max_tokens: 1500,
       }),
     });
 
@@ -483,8 +489,8 @@ serve(async (req) => {
     console.log('Response structure:', Object.keys(data));
     console.log('Response output length:', data.output?.length || 0);
 
-    // Parse structured output from Responses API
-    const output = data.output_text;
+    // Parse structured output from Chat Completions API
+    const output = data.choices?.[0]?.message?.content;
 
     console.log('Parsed output available:', !!output);
 
