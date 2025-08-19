@@ -15,11 +15,18 @@ if (!openAIApiKey) {
 
 interface RecItem {
   name: string;
+  brand?: string;
   finish?: string;
   why_it_matches: string;
   shade_family?: string;
   price_tier?: 'drugstore' | 'mid' | 'premium';
   alt_options?: string[];
+  price?: number;
+  currency?: string;
+  image_url?: string;
+  url?: string;
+  availability?: string;
+  rating?: number;
 }
 
 interface BeautyConsultation {
@@ -38,6 +45,7 @@ interface BeautyConsultation {
     shadow_palette: RecItem[];
   };
   technique_notes: string[];
+  real_products?: boolean;
 }
 
 const SYSTEM_PROMPT = `
@@ -113,6 +121,7 @@ const jsonSchema = {
             "type": "object",
             "properties": {
               "name": { "type": "string" },
+              "brand": { "type": "string" },
               "finish": { "type": "string" },
               "why_it_matches": { "type": "string" },
               "shade_family": { "type": "string" },
@@ -129,6 +138,7 @@ const jsonSchema = {
             "type": "object",
             "properties": {
               "name": { "type": "string" },
+              "brand": { "type": "string" },
               "finish": { "type": "string" },
               "why_it_matches": { "type": "string" },
               "shade_family": { "type": "string" },
@@ -145,6 +155,7 @@ const jsonSchema = {
             "type": "object",
             "properties": {
               "name": { "type": "string" },
+              "brand": { "type": "string" },
               "finish": { "type": "string" },
               "why_it_matches": { "type": "string" },
               "shade_family": { "type": "string" },
@@ -161,6 +172,7 @@ const jsonSchema = {
             "type": "object",
             "properties": {
               "name": { "type": "string" },
+              "brand": { "type": "string" },
               "finish": { "type": "string" },
               "why_it_matches": { "type": "string" },
               "shade_family": { "type": "string" },
@@ -184,6 +196,153 @@ const jsonSchema = {
   "additionalProperties": false
 };
 
+// Enhanced product search with fallback
+async function searchRealProducts(category: string, skin_profile: any, supabase: any): Promise<RecItem[]> {
+  try {
+    console.log(`Searching real products for category: ${category}`);
+    
+    // Create search query based on skin profile and category
+    const searchQuery = `${category} ${skin_profile.tone_depth} ${skin_profile.undertone} ${skin_profile.skin_type}`;
+    
+    const { data, error } = await supabase.functions.invoke('beauty-product-search', {
+      body: {
+        query: searchQuery,
+        category: category,
+        skin_profile: skin_profile,
+        region: 'AE',
+        limit: 9
+      }
+    });
+
+    if (error) {
+      console.error(`Product search error for ${category}:`, error);
+      return [];
+    }
+
+    console.log(`Found products for ${category}:`, data);
+
+    // Convert search results to RecItem format
+    const products: RecItem[] = [];
+    
+    if (data.drugstore) {
+      products.push({
+        name: data.drugstore.name,
+        brand: data.drugstore.brand,
+        finish: data.drugstore.finish,
+        why_it_matches: `Perfect drugstore option for ${skin_profile.tone_depth} ${skin_profile.undertone} skin`,
+        shade_family: data.drugstore.shade_name || data.drugstore.shade_family,
+        price_tier: 'drugstore',
+        price: data.drugstore.price,
+        currency: data.drugstore.currency,
+        image_url: data.drugstore.image_url,
+        url: data.drugstore.url,
+        availability: data.drugstore.availability,
+        alt_options: ["Similar drugstore alternatives available"]
+      });
+    }
+
+    if (data.mid) {
+      products.push({
+        name: data.mid.name,
+        brand: data.mid.brand,
+        finish: data.mid.finish,
+        why_it_matches: `Great mid-range choice for ${skin_profile.tone_depth} ${skin_profile.undertone} undertones`,
+        shade_family: data.mid.shade_name || data.mid.shade_family,
+        price_tier: 'mid',
+        price: data.mid.price,
+        currency: data.mid.currency,
+        image_url: data.mid.image_url,
+        url: data.mid.url,
+        availability: data.mid.availability,
+        alt_options: ["Other mid-range options available"]
+      });
+    }
+
+    if (data.premium) {
+      products.push({
+        name: data.premium.name,
+        brand: data.premium.brand,
+        finish: data.premium.finish,
+        why_it_matches: `Luxury option perfectly suited for ${skin_profile.tone_depth} skin with ${skin_profile.undertone} undertones`,
+        shade_family: data.premium.shade_name || data.premium.shade_family,
+        price_tier: 'premium',
+        price: data.premium.price,
+        currency: data.premium.currency,
+        image_url: data.premium.image_url,
+        url: data.premium.url,
+        availability: data.premium.availability,
+        alt_options: ["Premium alternatives available"]
+      });
+    }
+
+    return products;
+  } catch (error) {
+    console.error(`Error searching products for ${category}:`, error);
+    return [];
+  }
+}
+
+// Fallback product recommendations
+function getFallbackProducts(category: string, skin_profile: any): RecItem[] {
+  const categoryMaps: Record<string, RecItem[]> = {
+    primer: [
+      {
+        name: "Hydrating Face Primer",
+        brand: "Local Beauty",
+        finish: "natural",
+        why_it_matches: `Perfect for ${skin_profile.skin_type} skin, creates smooth base`,
+        shade_family: "universal",
+        price_tier: "drugstore",
+        alt_options: ["Mattifying primer for oily skin", "Pore-filling primer"]
+      },
+      {
+        name: "Illuminating Primer",
+        brand: "Mid Range Beauty",
+        finish: "glow",
+        why_it_matches: `Enhances ${skin_profile.tone_depth} skin with subtle radiance`,
+        shade_family: "universal",
+        price_tier: "mid",
+        alt_options: ["Color-correcting primer", "Long-wear primer"]
+      }
+    ],
+    foundation_concealer: [
+      {
+        name: "Perfect Match Foundation",
+        brand: "Inclusive Beauty",
+        finish: "natural",
+        why_it_matches: `Formulated for ${skin_profile.tone_depth} skin with ${skin_profile.undertone} undertones`,
+        shade_family: `${skin_profile.tone_depth} ${skin_profile.undertone}`,
+        price_tier: "drugstore",
+        alt_options: ["Full coverage option", "Lightweight tinted moisturizer"]
+      }
+    ],
+    brows_eyeliner_bronzer: [
+      {
+        name: "Universal Brow Kit",
+        brand: "Brow Expert",
+        finish: "natural",
+        why_it_matches: `Complements ${skin_profile.tone_depth} hair and skin tones`,
+        shade_family: `${skin_profile.tone_depth}`,
+        price_tier: "mid",
+        alt_options: ["Waterproof eyeliner", "Cream bronzer"]
+      }
+    ],
+    shadow_palette: [
+      {
+        name: "Everyday Neutrals Palette",
+        brand: "Color Pro",
+        finish: "mixed",
+        why_it_matches: `Neutral tones perfect for ${skin_profile.undertone} undertones`,
+        shade_family: "neutral browns",
+        price_tier: "mid",
+        alt_options: ["Bold color palette", "Single eyeshadows"]
+      }
+    ]
+  };
+
+  return categoryMaps[category] || [];
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -206,6 +365,12 @@ serve(async (req) => {
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    // Initialize Supabase client for product search
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
 
     // Build the conversation
     const messages = [
@@ -283,65 +448,58 @@ serve(async (req) => {
       throw new Error('Invalid response from OpenAI');
     }
 
-    const consultationResult = JSON.parse(data.choices[0].message.content);
+    let consultationResult = JSON.parse(data.choices[0].message.content);
     
     // Validate the result against our interface
     if (!consultationResult.skin_profile || !consultationResult.recommendations || !consultationResult.technique_notes) {
       console.error('Invalid consultation result structure:', consultationResult);
-      
-      // Retry once with a simpler prompt
-      const retryResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${openAIApiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'gpt-5-2025-08-07',
-          messages: [
-            {
-              role: "system",
-              content: SYSTEM_PROMPT + "\n\nIMPORTANT: Return a valid JSON object with all required fields."
-            },
-            ...messages.slice(1)
-          ],
-          max_completion_tokens: 2000,
-          response_format: {
-            type: "json_schema",
-            json_schema: {
-              name: "BeautyConsultation",
-              schema: jsonSchema,
-              strict: true
-            }
+      throw new Error('Invalid consultation structure');
+    }
+
+    // Enhance recommendations with real products
+    console.log('Enhancing recommendations with real products...');
+    
+    try {
+      const categories = ['primer', 'foundation', 'concealer', 'bronzer'];
+      const enhancedRecommendations = { ...consultationResult.recommendations };
+      let hasRealProducts = false;
+
+      // Search for real products for each category
+      for (const category of categories) {
+        let categoryKey = category;
+        if (category === 'foundation' || category === 'concealer') {
+          categoryKey = 'foundation_concealer';
+        } else if (category === 'bronzer') {
+          categoryKey = 'brows_eyeliner_bronzer';
+        }
+
+        const realProducts = await searchRealProducts(category, consultationResult.skin_profile, supabase);
+        
+        if (realProducts.length > 0) {
+          enhancedRecommendations[categoryKey] = realProducts;
+          hasRealProducts = true;
+          console.log(`Enhanced ${categoryKey} with ${realProducts.length} real products`);
+        } else {
+          // Use fallback products
+          const fallbackProducts = getFallbackProducts(categoryKey, consultationResult.skin_profile);
+          if (fallbackProducts.length > 0) {
+            enhancedRecommendations[categoryKey] = fallbackProducts;
           }
-        }),
-      });
-
-      if (!retryResponse.ok) {
-        throw new Error('Retry failed');
+          console.log(`Using fallback products for ${categoryKey}`);
+        }
       }
 
-      const retryData = await retryResponse.json();
-      const retryResult = JSON.parse(retryData.choices[0].message.content);
+      consultationResult.recommendations = enhancedRecommendations;
+      consultationResult.real_products = hasRealProducts;
       
-      if (!retryResult.skin_profile || !retryResult.recommendations || !retryResult.technique_notes) {
-        return new Response(
-          JSON.stringify({ error: 'Schema validation failed' }),
-          { status: 422, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      
-      consultationResult = retryResult;
+    } catch (enhancementError) {
+      console.error('Error enhancing with real products:', enhancementError);
+      // Continue with AI-generated recommendations
     }
 
     // Store consultation in database if user_id provided
     if (user_id) {
       try {
-        const supabase = createClient(
-          Deno.env.get('SUPABASE_URL') ?? '',
-          Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-        );
-
         await supabase
           .from('beauty_consults')
           .insert({
@@ -350,7 +508,7 @@ serve(async (req) => {
             recommendations: consultationResult.recommendations,
             confidence: consultationResult.skin_profile.confidence,
             lighting_note: consultationResult.lighting_note || null,
-            sources: []
+            sources: consultationResult.real_products ? ['qdrant', 'ai'] : ['ai']
           });
 
         // Log the event
@@ -361,7 +519,8 @@ serve(async (req) => {
             event: 'consultation_completed',
             payload: {
               skin_profile: consultationResult.skin_profile,
-              preferences: prefs || {}
+              preferences: prefs || {},
+              real_products: consultationResult.real_products || false
             }
           });
 

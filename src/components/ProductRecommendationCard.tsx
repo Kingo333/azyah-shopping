@@ -18,7 +18,7 @@ interface ProductRecommendationCardProps {
     currency?: string;
     image_url?: string;
     url?: string;
-    availability?: 'in_stock' | 'out_of_stock';
+    availability?: 'in_stock' | 'out_of_stock' | string;
     rating?: number;
     review_count?: number;
   };

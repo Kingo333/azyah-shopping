@@ -20,11 +20,18 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 type RecItem = {
   name: string;
+  brand?: string;
   finish?: string;
   why_it_matches: string;
   shade_family?: string;
   price_tier?: "drugstore" | "mid" | "premium";
   alt_options?: string[];
+  price?: number;
+  currency?: string;
+  image_url?: string;
+  url?: string;
+  availability?: "in_stock" | "out_of_stock" | string;
+  rating?: number;
 };
 type BeautyConsultation = {
   skin_profile: {
@@ -42,6 +49,7 @@ type BeautyConsultation = {
     shadow_palette: RecItem[];
   };
   technique_notes: string[];
+  real_products?: boolean;
 };
 type ChatMessage = {
   id: string;
@@ -392,7 +400,7 @@ I've prepared personalized product recommendations for you! ${consultation.quest
                                   </div>
                                 </div>}
                               
-                              {/* Product Recommendations - Minimized */}
+                              {/* Product Recommendations - Enhanced */}
                               {Object.entries(message.consultation.recommendations).map(([category, items]) => <div key={category} className="mt-4">
                                   <Button variant="outline" size="sm" onClick={() => {
                               const element = document.getElementById(`recommendations-${category}-${message.id}`);
@@ -402,19 +410,18 @@ I've prepared personalized product recommendations for you! ${consultation.quest
                             }} className="flex items-center gap-2 mb-3">
                                     <Sparkles className="h-3 w-3" />
                                     {category.replace(/_/g, ' / ')} ({items.length} items)
+                                    {message.consultation.real_products && <Badge variant="secondary" className="text-xs ml-1">Real Products</Badge>}
                                   </Button>
                                   <div id={`recommendations-${category}-${message.id}`} style={{
                               display: 'none'
-                            }} className="space-y-2">
-                                    {items.slice(0, 3).map((item, i) => <div key={i} className="p-2 rounded-md bg-secondary/10 border">
-                                        <div className="flex items-start justify-between mb-1">
-                                          <h4 className="font-medium text-sm">{item.name}</h4>
-                                          {item.price_tier && <Badge variant="outline" className="text-xs capitalize">
-                                              {item.price_tier}
-                                            </Badge>}
-                                        </div>
-                                        <p className="text-xs text-muted-foreground">{item.why_it_matches}</p>
-                                      </div>)}
+                            }} className="space-y-3">
+                                    {items.slice(0, 3).map((item, i) => (
+                                      <ProductRecommendationCard
+                                        key={i}
+                                        product={item}
+                                        skin_profile={message.consultation.skin_profile}
+                                      />
+                                    ))}
                                   </div>
                                 </div>)}
                               

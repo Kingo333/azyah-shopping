@@ -30,6 +30,12 @@ verify_jwt = false
 [functions.beauty-speech-to-text]
 verify_jwt = false
 
+[functions.beauty-text-consult]
+verify_jwt = false
+
+[functions.beauty-product-search]
+verify_jwt = false
+
 [functions.beauty-ingest-docs]
 verify_jwt = false
 
