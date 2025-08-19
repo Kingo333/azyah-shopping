@@ -41,28 +41,34 @@ const optimizeAsosSpecificUrl = (url: string, targetWidth: number): string => {
   if (!url) return url;
   
   try {
-    // ASOS uses $n_XXXw$ format for image sizing
-    // Common sizes: $n_240w$, $n_480w$, $n_640w$, $n_720w$, $n_960w$, $n_1200w$
+    console.log('🖼️ Original ASOS URL:', url);
     
     // Check if URL already has ASOS sizing parameter
     if (url.includes('$n_') && url.includes('w$')) {
       // Replace existing size with target size
-      return url.replace(/\$n_\d+w\$/, `$n_${targetWidth}w$`);
+      const optimizedUrl = url.replace(/\$n_\d+w\$/, `$n_${targetWidth}w$`);
+      console.log('🔄 ASOS URL optimized (existing param):', optimizedUrl);
+      return optimizedUrl;
     }
     
-    // If no existing size parameter, try to add it before file extension or at end
-    const urlObj = new URL(url);
-    const pathname = urlObj.pathname;
-    
-    // Add ASOS size parameter to pathname
-    if (pathname.includes('?')) {
-      return url.replace('?', `?$n_${targetWidth}w$&`);
-    } else {
-      // Add size parameter at the end
-      return `${url}?$n_${targetWidth}w$`;
+    // If it's an ASOS media URL, try to add size parameter
+    if (url.includes('images.asos-media.com') || url.includes('asos.com')) {
+      // Try different approaches for ASOS URLs
+      if (url.includes('?')) {
+        const optimizedUrl = `${url}&$n_${targetWidth}w$`;
+        console.log('🔄 ASOS URL optimized (with query):', optimizedUrl);
+        return optimizedUrl;
+      } else {
+        const optimizedUrl = `${url}?$n_${targetWidth}w$`;
+        console.log('🔄 ASOS URL optimized (new query):', optimizedUrl);
+        return optimizedUrl;
+      }
     }
+    
+    console.log('⚠️ Not an ASOS URL, returning original:', url);
+    return url;
   } catch (error) {
-    console.warn('Failed to apply ASOS-specific optimization:', error);
+    console.warn('❌ Failed to apply ASOS-specific optimization:', error);
     return url;
   }
 };
@@ -109,21 +115,33 @@ export const optimizeAsosImageUrl = (url: string, dimensions: ImageDimensions): 
     return url;
   }
 
-  // Check if it's an ASOS image URL
+  console.log('🖼️ Processing image URL:', url);
+
+  // TEMPORARILY DISABLE OPTIMIZATION TO ENSURE IMAGES SHOW
+  // Just return the original URL for now
+  console.log('✅ Returning original URL to ensure images display');
+  return url;
+
+  /* 
+  // Original optimization code - disabled for debugging
   const isAsosUrl = url.includes('asos.com') || url.includes('images.asos-media.com');
   
   if (isAsosUrl) {
-    // Use ASOS-specific optimization
+    console.log('✅ Detected ASOS URL, applying optimization');
     const asosOptimized = optimizeAsosSpecificUrl(url, dimensions.width);
     
-    // If ASOS-specific optimization worked (URL changed), return it
-    if (asosOptimized !== url) {
+    if (asosOptimized && asosOptimized !== url && !asosOptimized.includes('undefined')) {
+      console.log('✅ ASOS optimization successful:', asosOptimized);
       return asosOptimized;
+    } else {
+      console.log('⚠️ ASOS optimization failed, using original URL');
+      return url;
     }
   }
   
-  // Fallback to generic CDN optimization
+  console.log('ℹ️ Non-ASOS URL, using generic optimization');
   return optimizeGenericCdnUrl(url, dimensions);
+  */
 };
 
 /**
