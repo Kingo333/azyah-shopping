@@ -575,6 +575,24 @@ I've prepared personalized product recommendations for you! ${consultation.quest
                          Expert
                        </Button>
                      </div>
+                     
+                     {/* Shopping Mode Info */}
+                     {shoppingMode && (
+                       <div className="p-3 bg-primary/5 rounded-lg border border-primary/20">
+                         <div className="flex items-start gap-2">
+                           <div className="p-1 rounded bg-primary/10">
+                             <Sparkles className="h-3 w-3 text-primary" />
+                           </div>
+                           <div className="flex-1">
+                             <h4 className="font-medium text-sm text-primary mb-1">Shopping Mode Active</h4>
+                             <p className="text-xs text-muted-foreground leading-relaxed">
+                               Take photos of makeup products in-store to get instant recommendations, shade matching, 
+                               price comparisons, and personalized alternatives based on your skin tone.
+                             </p>
+                           </div>
+                         </div>
+                       </div>
+                     )}
                     
                     {/* Voice Panel */}
                     <EnhancedVoicePanel 
