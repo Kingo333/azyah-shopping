@@ -156,20 +156,14 @@ const ProductListView: React.FC<ProductListViewProps> = ({ products, isLoading }
               <CardContent className="p-0">
                 <div className="space-y-2 md:space-y-3">
                   <div className="aspect-square relative overflow-hidden rounded-t-lg">
-                    <img
-                      src={product.media_urls?.[0] || '/placeholder.svg'}
+                     <img
+                      {...(() => {
+                        const imageUrl = product.media_urls?.[0] || '/placeholder.svg';
+                        const { getResponsiveImageProps } = require('@/utils/asosImageUtils');
+                        return getResponsiveImageProps(imageUrl, "(max-width: 768px) 50vw, 25vw");
+                      })()}
                       alt={product.title}
                       className="w-full h-full object-cover"
-                      style={{
-                        imageRendering: 'auto',
-                        WebkitBackfaceVisibility: 'hidden',
-                        backfaceVisibility: 'hidden',
-                        // CSS-based quality improvements
-                        filter: 'contrast(1.02) saturate(1.05) brightness(1.01)',
-                        WebkitFilter: 'contrast(1.02) saturate(1.05) brightness(1.01)',
-                      }}
-                      sizes="(max-width: 768px) 50vw, 25vw"
-                      loading="lazy"
                       onError={(e) => {
                         (e.target as HTMLImageElement).src = '/placeholder.svg';
                       }}

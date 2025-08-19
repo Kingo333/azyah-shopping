@@ -315,20 +315,14 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                     height: `${getImageHeight(imageAspectRatio)}px`
                   }}
                 >
-                  <img
-                    src={currentProduct.media_urls?.[0] || '/placeholder.svg'}
+                   <img
+                    {...(() => {
+                      const imageUrl = currentProduct.media_urls?.[0] || '/placeholder.svg';
+                      const { getResponsiveImageProps } = require('@/utils/asosImageUtils');
+                      return getResponsiveImageProps(imageUrl, "(max-width: 768px) 100vw, 50vw");
+                    })()}
                     alt={currentProduct.title}
                     className="object-cover w-full h-full"
-                    style={{
-                      imageRendering: 'auto',
-                      WebkitBackfaceVisibility: 'hidden',
-                      backfaceVisibility: 'hidden',
-                      // CSS-based quality improvements
-                      filter: 'contrast(1.02) saturate(1.05) brightness(1.01)',
-                      WebkitFilter: 'contrast(1.02) saturate(1.05) brightness(1.01)',
-                    }}
-                    sizes="(max-width: 768px) 100vw, 50vw"
-                    loading="eager"
                     onLoad={handleImageLoad}
                     onError={(e) => {
                       (e.target as HTMLImageElement).src = '/placeholder.svg';

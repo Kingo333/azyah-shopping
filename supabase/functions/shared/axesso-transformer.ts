@@ -210,6 +210,42 @@ function inferCategoryFromText(text: string): { category_slug: string; subcatego
   return { category_slug: 'clothing' };
 }
 
+// ASOS CDN hosts for image upgrading
+const ASOS_HOSTS = ['images.asos-media.com', 'asos-media.com'];
+const ASOS_IMG_PARAMS = {
+  wid: '1500',              // big enough for detail view + 2x DPR cards
+  fit: 'constrain',         // keep aspect
+  fmt: 'jpg',               // force jpg (or webp if you prefer)
+  qlt: '90',                // quality
+  resmode: 'sharp2',        // crisper resizing on their CDN
+  bg: 'fff'                 // guard against transparency artifacts
+};
+
+function upgradeAsosImageUrl(u: string, minWid = 1500): string {
+  try {
+    const url = new URL(u);
+    if (!ASOS_HOSTS.some(h => url.hostname.endsWith(h))) return u;
+
+    // Some ASOS paths contain macros like $n_640w$ — strip them so query wins
+    url.pathname = url.pathname.replace(/\$[^$]*\$/g, '');
+
+    // If a wid is already present, bump it up, otherwise set our defaults
+    const currentWid = Number(url.searchParams.get('wid') || '0');
+    const targetWid = Math.max(currentWid || 0, minWid);
+    url.searchParams.set('wid', String(targetWid));
+
+    // These strongly influence crispness
+    url.searchParams.set('fit', ASOS_IMG_PARAMS.fit);
+    url.searchParams.set('fmt', ASOS_IMG_PARAMS.fmt);
+    url.searchParams.set('qlt', ASOS_IMG_PARAMS.qlt);
+    url.searchParams.set('resmode', ASOS_IMG_PARAMS.resmode);
+    url.searchParams.set('bg', ASOS_IMG_PARAMS.bg);
+    return url.toString();
+  } catch {
+    return u;
+  }
+}
+
 function extractSizeFromVariations(variations?: Array<{ size?: string; color?: string; available: boolean }>): string | undefined {
   if (!variations?.length) return undefined;
   
@@ -243,13 +279,16 @@ export function transformAxessoToAzyah(axessoData: AxessoResponse, retailerId: s
     ? Math.round(axessoData.retailPrice * 100) 
     : undefined;
   
-  // Media URLs - ensure HTTPS only and validate image dimensions would be 800px+
-  const imageUrls = Array.isArray(axessoData.imageUrlList) && axessoData.imageUrlList.length 
+  // Media URLs - upgrade ASOS URLs for high-res
+  const rawImages = Array.isArray(axessoData.imageUrlList) && axessoData.imageUrlList.length 
     ? axessoData.imageUrlList 
     : (axessoData.mainImage?.imageUrl ? [axessoData.mainImage.imageUrl] : []);
     
-  const media_urls = [...new Set(imageUrls)]
-    .filter(url => typeof url === 'string' && /^https:\/\//.test(url));
+  const media_urls = [...new Set(
+    rawImages
+      .filter(url => typeof url === 'string' && /^https:\/\//.test(url))
+      .map(url => upgradeAsosImageUrl(url, 1500)) // 👈 enforce high-res
+  )];
     
   if (media_urls.length === 0) {
     return null;
@@ -294,6 +333,19 @@ export function transformAxessoToAzyah(axessoData: AxessoResponse, retailerId: s
   };
 }
 
+// Function for image quality checking
+function passesImageQuality(urls: string[]): boolean {
+  // All ASOS images will have ?wid=... after upgrade; use that as a proxy for minimum width
+  const hasHighRes = urls.some(u => {
+    try {
+      return Number(new URL(u).searchParams.get('wid') || '0') >= 1000;
+    } catch {
+      return false;
+    }
+  });
+  return hasHighRes;
+}
+
 // Quality score calculation (0-100)
 export function calculateQualityScore(product: TransformedProduct): number {
   let score = 0;
@@ -314,6 +366,9 @@ export function calculateQualityScore(product: TransformedProduct): number {
   if (product.media_urls.length >= 2) score += 5;
   if (product.media_urls.length >= 1) score += 5;
   
+  // Image quality check - bonus points for high-res
+  if (passesImageQuality(product.media_urls)) score += 5;
+  
   // Attributes completeness (10 points)
   if (product.attributes?.gender_target) score += 3;
   if (product.attributes?.color_primary) score += 3;
@@ -322,3 +377,6 @@ export function calculateQualityScore(product: TransformedProduct): number {
   
   return Math.min(score, 100);
 }
+
+// Export upgradeAsosImageUrl for use in other components
+export { upgradeAsosImageUrl };
