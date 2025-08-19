@@ -236,7 +236,15 @@ const Swipe = () => {
                 <span className="hidden lg:inline lg:ml-2">Likes</span>
               </Button>
 
-              <Button variant="ghost" size="sm" onClick={handleAICategorization} className="hover:bg-accent/50 p-2 flex-shrink-0">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => {
+                  console.log('AI Fix button clicked!');
+                  handleAICategorization();
+                }} 
+                className="hover:bg-accent/50 p-2 flex-shrink-0 cursor-pointer"
+              >
                 <Brain className="h-4 w-4" />
                 <span className="hidden lg:inline lg:ml-2">AI Fix</span>
               </Button>
