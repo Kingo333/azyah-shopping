@@ -341,19 +341,20 @@ I've prepared personalized product recommendations for you! ${consultation.quest
                   </div>
                 </CardHeader>
                 
-                <CardContent className="space-y-4">
+                <CardContent className="flex-1 flex flex-col p-6">
                   {/* Messages */}
-                  <div className="max-h-96 overflow-y-auto space-y-4">
-                    {messages.map((message) => (
+                  <div className="flex-1 overflow-y-auto space-y-6 mb-6 scroll-smooth">
+                    {messages.map((message, index) => (
                       <div
                         key={message.id}
-                        className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
+                        className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in`}
+                        style={{ animationDelay: `${index * 0.1}s` }}
                       >
                         <div
-                          className={`max-w-[80%] rounded-lg px-4 py-2 ${
+                          className={`max-w-[85%] rounded-2xl px-4 py-3 transition-all duration-300 hover:shadow-md ${
                             message.type === 'user'
-                              ? 'bg-primary text-primary-foreground ml-4'
-                              : 'bg-muted mr-4'
+                              ? 'bg-gradient-to-br from-primary to-primary/90 text-primary-foreground ml-4 shadow-lg'
+                              : 'bg-gradient-to-br from-muted to-muted/80 mr-4 border border-border/50'
                           }`}
                         >
                           {message.image && showImage && (
@@ -424,21 +425,33 @@ I've prepared personalized product recommendations for you! ${consultation.quest
                               
                               {/* Product Recommendations */}
                               {Object.entries(message.consultation.recommendations).map(([category, items]) => (
-                                <div key={category} className="space-y-2">
-                                  <h3 className="font-semibold text-sm capitalize">
+                                <div key={category} className="mt-4">
+                                  <h3 className="font-semibold text-sm capitalize mb-3 flex items-center gap-2">
+                                    <Sparkles className="h-4 w-4 text-primary" />
                                     {category.replace(/_/g, ' / ')}
                                   </h3>
-                                  <div className="grid gap-2">
+                                  <div className="grid gap-3">
                                     {items.slice(0, 3).map((item, i) => (
-                                      <div key={i} className="p-3 rounded-lg border bg-card text-card-foreground">
-                                        <h4 className="font-medium text-sm">{item.name}</h4>
-                                        <p className="text-xs text-muted-foreground">
-                                          {item.finish} {item.shade_family && `• ${item.shade_family}`}
-                                        </p>
-                                        <p className="text-sm mt-1">{item.why_it_matches}</p>
-                                        <p className="text-xs mt-1 uppercase tracking-wide text-muted-foreground">
-                                          {item.price_tier ?? "—"}
-                                        </p>
+                                      <div key={i} className="p-4 rounded-xl border bg-gradient-to-br from-card to-card/80 hover:shadow-lg transition-all duration-300 hover:scale-[1.02] group">
+                                        <div className="flex items-start justify-between mb-2">
+                                          <h4 className="font-medium text-sm group-hover:text-primary transition-colors">{item.name}</h4>
+                                          {item.price_tier && (
+                                            <Badge 
+                                              variant={item.price_tier === 'premium' ? 'default' : item.price_tier === 'mid' ? 'secondary' : 'outline'}
+                                              className="text-xs capitalize shrink-0 ml-2"
+                                            >
+                                              {item.price_tier}
+                                            </Badge>
+                                          )}
+                                        </div>
+                                        <div className="space-y-2">
+                                          {(item.finish || item.shade_family) && (
+                                            <p className="text-xs text-muted-foreground">
+                                              {item.finish} {item.shade_family && `• ${item.shade_family}`}
+                                            </p>
+                                          )}
+                                          <p className="text-sm leading-relaxed">{item.why_it_matches}</p>
+                                        </div>
                                       </div>
                                     ))}
                                   </div>
@@ -484,11 +497,14 @@ I've prepared personalized product recommendations for you! ${consultation.quest
                     ))}
                     
                     {isLoading && (
-                      <div className="flex justify-start">
-                        <div className="bg-muted rounded-lg px-4 py-2 mr-4">
-                          <div className="flex items-center gap-2">
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
-                            <span className="text-sm">Analyzing...</span>
+                      <div className="flex justify-start animate-fade-in">
+                        <div className="bg-gradient-to-br from-muted to-muted/80 rounded-2xl px-4 py-3 mr-4 border border-border/50">
+                          <div className="flex items-center gap-3">
+                            <div className="relative">
+                              <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary border-t-transparent"></div>
+                              <div className="absolute inset-0 animate-ping rounded-full h-4 w-4 border border-primary opacity-20"></div>
+                            </div>
+                            <span className="text-sm text-muted-foreground">Analyzing your beauty needs...</span>
                           </div>
                         </div>
                       </div>
@@ -496,43 +512,49 @@ I've prepared personalized product recommendations for you! ${consultation.quest
                   </div>
                   
                   {/* Input Area */}
-                  <div className="border-t pt-4">
-                    <div className="flex gap-2">
-                      <div className="flex-1 space-y-2">
-                        <div className="flex gap-2">
+                  <div className="border-t border-border/50 pt-4 bg-gradient-to-r from-muted/20 to-muted/10 rounded-b-lg -mx-6 -mb-6 px-6 pb-6">
+                    <div className="space-y-4">
+                      <div className="flex gap-3">
+                        <div className="flex-1">
                           <Input
                             placeholder={shoppingMode ? "Ask about products or upload product photos..." : "Ask about makeup, describe your skin, or upload a selfie..."}
                             value={inputText}
                             onChange={(e) => setInputText(e.target.value)}
                             onKeyPress={(e) => e.key === 'Enter' && handleTextSubmit()}
-                            className="flex-1"
+                            className="bg-background/80 backdrop-blur border-border/50 focus:border-primary/50 transition-all duration-300"
                           />
-                          <Button onClick={handleTextSubmit} disabled={!inputText.trim() || isLoading}>
-                            <MessageCircle className="h-4 w-4" />
+                        </div>
+                        <Button 
+                          onClick={handleTextSubmit} 
+                          disabled={!inputText.trim() || isLoading}
+                          className="bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
+                        >
+                          <MessageCircle className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      
+                      <div className="flex gap-3 items-center">
+                        <Label htmlFor="image-upload" className="cursor-pointer">
+                          <Button variant="outline" size="sm" asChild className="hover:bg-secondary/10 transition-colors">
+                            <span className="flex items-center gap-2">
+                              <Camera className="h-4 w-4" />
+                              {shoppingMode ? "Scan Product" : "Upload Selfie"}
+                            </span>
                           </Button>
-                        </div>
+                        </Label>
                         
-                        <div className="flex gap-2">
-                          <Label htmlFor="image-upload" className="cursor-pointer">
-                            <Button variant="outline" size="sm" asChild>
-                              <span className="flex items-center gap-2">
-                                <Camera className="h-4 w-4" />
-                                {shoppingMode ? "Scan Product" : "Upload Selfie"}
-                              </span>
-                            </Button>
-                          </Label>
-                          <VoiceRecorder
-                            onTranscription={handleVoiceMessage}
-                            disabled={isLoading}
-                          />
-                          <Input
-                            id="image-upload"
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            onChange={(e) => e.target.files?.[0] && handleImageUpload(e.target.files[0], shoppingMode ? 'shopping' : 'analysis')}
-                          />
-                        </div>
+                        <VoiceRecorder
+                          onTranscription={handleVoiceMessage}
+                          disabled={isLoading}
+                        />
+                        
+                        <Input
+                          id="image-upload"
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => e.target.files?.[0] && handleImageUpload(e.target.files[0], shoppingMode ? 'shopping' : 'analysis')}
+                        />
                       </div>
                     </div>
                   </div>
@@ -541,11 +563,18 @@ I've prepared personalized product recommendations for you! ${consultation.quest
             </div>
             
             {/* Sidebar */}
-            <div className="space-y-4">
-              {/* Voice Panel */}
+            <div className="space-y-6">
+              {/* Voice Assistant Panel */}
               <EnhancedVoicePanel 
                 text={messages.find(m => m.consultation)?.content || "Upload a selfie to get personalized voice recommendations!"} 
                 onVoiceChange={setSelectedVoice}
+              />
+              
+              {/* Shopping Mode Panel */}
+              <ShoppingModePanel
+                onPhotoCapture={handleImageUpload}
+                isActive={shoppingMode}
+                onToggle={() => setShoppingMode(!shoppingMode)}
               />
               
               {/* Document Upload (Expert Mode) */}

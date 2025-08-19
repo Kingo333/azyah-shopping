@@ -133,27 +133,31 @@ export const EnhancedVoicePanel: React.FC<EnhancedVoicePanelProps> = ({
   };
 
   return (
-    <div className="p-4 border rounded-lg bg-background">
-      <div className="flex items-center gap-2 mb-3">
-        <Volume2 className="h-4 w-4" />
-        <h3 className="font-medium">Voice Assistant</h3>
-        <Badge variant="secondary" className="text-xs">Enhanced</Badge>
+    <div className="p-6 border rounded-xl bg-gradient-to-br from-card to-card/80 shadow-lg hover:shadow-xl transition-all duration-300">
+      <div className="flex items-center gap-3 mb-4">
+        <div className="w-8 h-8 bg-gradient-to-br from-primary to-secondary rounded-lg flex items-center justify-center">
+          <Volume2 className="h-4 w-4 text-primary-foreground" />
+        </div>
+        <div className="flex-1">
+          <h3 className="font-semibold text-lg">Voice Assistant</h3>
+          <Badge variant="secondary" className="text-xs mt-1">Enhanced</Badge>
+        </div>
       </div>
       
-      <p className="text-sm text-muted-foreground mb-4">
-        Choose your voice and preview different options
+      <p className="text-sm text-muted-foreground mb-6">
+        Choose your voice and preview different options for personalized audio experiences
       </p>
 
-      <div className="space-y-4">
+      <div className="space-y-6">
         <div>
-          <label className="text-sm font-medium mb-2 block">Voice Selection</label>
+          <label className="text-sm font-medium mb-3 block">Voice Selection</label>
           <Select value={selectedVoice} onValueChange={handleVoiceChange}>
-            <SelectTrigger>
+            <SelectTrigger className="bg-background/50 border-border/50 hover:bg-background/80 transition-colors">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="bg-background/95 backdrop-blur border-border/50">
               {VOICES.map(voice => (
-                <SelectItem key={voice.id} value={voice.id} className="py-3">
+                <SelectItem key={voice.id} value={voice.id} className="py-4">
                   <div className="flex items-center justify-between w-full">
                     <div className="flex flex-col">
                       <span className="font-medium">{voice.name}</span>
@@ -167,12 +171,18 @@ export const EnhancedVoicePanel: React.FC<EnhancedVoicePanelProps> = ({
                         previewVoice(voice.id);
                       }}
                       disabled={previewingVoice === voice.id}
-                      className="ml-2"
+                      className="ml-3 hover:bg-primary/10 transition-colors"
                     >
                       {previewingVoice === voice.id ? (
-                        <Pause className="h-3 w-3" />
+                        <div className="flex items-center gap-1">
+                          <div className="animate-pulse w-2 h-2 bg-primary rounded-full"></div>
+                          <span className="text-xs">Playing</span>
+                        </div>
                       ) : (
-                        <Eye className="h-3 w-3" />
+                        <div className="flex items-center gap-1">
+                          <Eye className="h-3 w-3" />
+                          <span className="text-xs">Preview</span>
+                        </div>
                       )}
                     </Button>
                   </div>
@@ -182,13 +192,20 @@ export const EnhancedVoicePanel: React.FC<EnhancedVoicePanelProps> = ({
           </Select>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex gap-3">
           <Button 
             onClick={() => generateVoice()} 
             disabled={!text || isLoading}
-            className="flex-1"
+            className="flex-1 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-md hover:shadow-lg transition-all duration-300 hover:scale-[1.02]"
           >
-            {isLoading ? 'Generating...' : 'Generate Voice'}
+            {isLoading ? (
+              <div className="flex items-center gap-2">
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary-foreground border-t-transparent"></div>
+                Generating...
+              </div>
+            ) : (
+              'Generate Voice'
+            )}
           </Button>
           
           {audioUrl && (
@@ -197,6 +214,7 @@ export const EnhancedVoicePanel: React.FC<EnhancedVoicePanelProps> = ({
                 variant="outline"
                 size="icon"
                 onClick={togglePlayPause}
+                className="hover:bg-primary/10 transition-colors shadow-sm hover:shadow-md"
               >
                 {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
               </Button>
@@ -205,6 +223,7 @@ export const EnhancedVoicePanel: React.FC<EnhancedVoicePanelProps> = ({
                 variant="outline"
                 size="icon"
                 onClick={downloadAudio}
+                className="hover:bg-secondary/10 transition-colors shadow-sm hover:shadow-md"
               >
                 <Download className="h-4 w-4" />
               </Button>

@@ -120,12 +120,16 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
       disabled={disabled || isProcessing}
       variant={buttonState.variant}
       size="icon"
-      className={`transition-all duration-200 ${
-        isRecording ? 'animate-pulse' : ''
-      }`}
+      className={`transition-all duration-300 shadow-md hover:shadow-lg ${
+        isRecording 
+          ? 'animate-pulse bg-destructive hover:bg-destructive/90 scale-110' 
+          : 'hover:scale-105'
+      } ${isProcessing ? 'animate-pulse' : ''}`}
       title={buttonState.label}
     >
-      <Icon className={`h-4 w-4 ${isProcessing ? 'animate-spin' : ''}`} />
+      <Icon className={`h-4 w-4 ${isProcessing ? 'animate-spin' : ''} ${
+        isRecording ? 'text-destructive-foreground' : ''
+      }`} />
     </Button>
   );
 };
