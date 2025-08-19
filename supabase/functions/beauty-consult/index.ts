@@ -394,7 +394,16 @@ serve(async (req) => {
   try {
     const { image_base64, prefs, last_skin_profile, user_id } = await req.json();
 
+    console.log('Request received:', {
+      hasImage: !!image_base64,
+      imagePrefix: image_base64?.slice(0, 50),
+      prefs,
+      hasProfile: !!last_skin_profile,
+      userId: user_id
+    });
+
     if (!image_base64) {
+      console.log('No image provided');
       return new Response(
         JSON.stringify({ error: 'Image is required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -468,11 +477,14 @@ serve(async (req) => {
     }
 
     const data = await response.json();
-    console.log('OpenAI response received');
+    console.log('OpenAI response received, status:', response.status);
+    console.log('Response structure:', Object.keys(data));
 
     // Parse structured JSON from Responses API
     const output = data.output?.[0]?.content?.find?.((c: any) => c.type === "output_json")?.json ?? 
                    data.output?.[0]?.content?.[0]?.json;
+
+    console.log('Parsed output available:', !!output);
 
     if (!output) {
       throw new Error('No JSON returned by model (check schema)');
