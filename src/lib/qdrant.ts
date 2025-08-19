@@ -1,8 +1,8 @@
 import { QdrantClient } from '@qdrant/js-client-rest';
 
 export const qdrant = new QdrantClient({
-  url: 'http://localhost:6333', // Default Qdrant URL - update with environment
-  apiKey: undefined // Update with environment
+  url: process.env.QDRANT_URL || 'http://localhost:6333',
+  apiKey: process.env.QDRANT_API_KEY
 });
 
 export const COLLECTION_DOCS = "kb_beauty_docs";
@@ -40,8 +40,8 @@ export async function embedQuery(query: string): Promise<number[]> {
 }
 
 export function tierFromPriceAED(aed: number): "drugstore" | "mid" | "premium" {
-  const dMax = 60; // AZ_PRICE_TIER_DRUGSTORE_MAX
-  const mMax = 180; // AZ_PRICE_TIER_MID_MAX
+  const dMax = Number(process.env.AZ_PRICE_TIER_DRUGSTORE_MAX) || 60;
+  const mMax = Number(process.env.AZ_PRICE_TIER_MID_MAX) || 180;
   if (aed <= dMax) return "drugstore";
   if (aed <= mMax) return "mid";
   return "premium";

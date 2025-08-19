@@ -1909,6 +1909,14 @@ export type Database = {
           swipe_count: number
         }[]
       }
+      log_user_data_access: {
+        Args: {
+          accessed_user_id: string
+          action_type: string
+          table_name: string
+        }
+        Returns: undefined
+      }
       validate_category_subcategory: {
         Args: {
           cat: Database["public"]["Enums"]["category_type"]
