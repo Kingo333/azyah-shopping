@@ -45,19 +45,19 @@ export default {
 				accent: {
 					DEFAULT: 'hsl(var(--accent-cartier))',
 					foreground: 'hsl(var(--accent-foreground))',
-					cartier: {
-						50: '#fef2f2',
-						100: '#fee2e2',
-						200: '#fecaca',
-						300: '#fca5a5',
-						400: '#f87171',
-						500: '#ef4444',
-						600: '#B11226',
-						700: '#A30000',
-						800: '#7f1d1d',
-						900: '#701a1a',
-						DEFAULT: 'hsl(var(--accent-cartier))'
-					}
+				cartier: {
+					50: 'hsl(0 86% 97%)',
+					100: 'hsl(0 93% 94%)',
+					200: 'hsl(0 96% 89%)',
+					300: 'hsl(0 94% 82%)',
+					400: 'hsl(0 91% 71%)',
+					500: 'hsl(0 84% 60%)',
+					600: 'hsl(351 82% 41%)',
+					700: 'hsl(0 100% 32%)',
+					800: 'hsl(0 63% 31%)',
+					900: 'hsl(0 62% 27%)',
+					DEFAULT: 'hsl(var(--accent-cartier))'
+				}
 				},
 				popover: {
 					DEFAULT: 'hsl(var(--popover))',
@@ -83,18 +83,17 @@ export default {
 				'lux-primary': 'hsl(var(--lux-primary))',
 				'lux-secondary': 'hsl(var(--lux-secondary))',
 				'lux-accent': 'hsl(var(--lux-accent))',
-				// Cartier-red accent system
 				'cartier': {
-					50: '#fef2f2',
-					100: '#fee2e2',
-					200: '#fecaca',
-					300: '#fca5a5',
-					400: '#f87171',
-					500: '#ef4444',
-					600: '#B11226',
-					700: '#A30000',
-					800: '#7f1d1d',
-					900: '#701a1a',
+					50: 'hsl(0 86% 97%)',
+					100: 'hsl(0 93% 94%)',
+					200: 'hsl(0 96% 89%)',
+					300: 'hsl(0 94% 82%)',
+					400: 'hsl(0 91% 71%)',
+					500: 'hsl(0 84% 60%)',
+					600: 'hsl(351 82% 41%)',
+					700: 'hsl(0 100% 32%)',
+					800: 'hsl(0 63% 31%)',
+					900: 'hsl(0 62% 27%)',
 				},
 			},
 			borderRadius: {
