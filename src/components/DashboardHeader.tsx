@@ -57,10 +57,6 @@ const DashboardHeader: React.FC = () => {
               <Settings className="mr-2 h-4 w-4" />
               Profile Settings
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => navigate(`/user/${user?.id}`)}>
-              <User className="mr-2 h-4 w-4" />
-              View Profile
-            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleSignOut}>
               <LogOut className="mr-2 h-4 w-4" />
