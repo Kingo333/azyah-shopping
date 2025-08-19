@@ -108,10 +108,11 @@ const optimizeGenericCdnUrl = (url: string, dimensions: ImageDimensions): string
 };
 
 /**
- * Simple passthrough optimizer - no URL manipulation
+ * Main image optimization function using Supabase Storage caching
  */
 export const optimizeAsosImageUrl = (url: string, dimensions: ImageDimensions): string => {
-  // Just return the original URL without any modification
+  // This function now serves as a placeholder for direct URL optimization
+  // The real optimization happens through the useImageOptimization hook
   return url || '/placeholder.svg';
 };
 
