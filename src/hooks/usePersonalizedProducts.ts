@@ -4,6 +4,7 @@ import { Product } from '@/types';
 import { convertJsonToProductAttributes } from '@/lib/type-utils';
 import { useToast } from '@/hooks/use-toast';
 import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
+import { optimizeImageUrls } from '@/utils/imageOptimizer';
 
 interface UsePersonalizedProductsProps {
   filter: string;
@@ -147,19 +148,20 @@ export const usePersonalizedProducts = ({
         compare_at_price_cents: item.compare_at_price_cents,
         currency: item.currency || 'USD',
         media_urls: (() => {
+          let mediaUrls: string[] = [];
           if (Array.isArray(item.media_urls)) {
-            return item.media_urls as string[];
-          }
-          if (typeof item.media_urls === 'string') {
+            mediaUrls = item.media_urls as string[];
+          } else if (typeof item.media_urls === 'string') {
             try {
               const parsed = JSON.parse(item.media_urls);
-              return Array.isArray(parsed) ? parsed : [];
+              mediaUrls = Array.isArray(parsed) ? parsed : [];
             } catch (e) {
               console.warn('Failed to parse media_urls for product', item.id, ':', item.media_urls);
-              return [];
+              mediaUrls = [];
             }
           }
-          return [];
+          // Optimize image URLs for grid display
+          return optimizeImageUrls(mediaUrls, 'grid');
         })(),
         external_url: item.external_url,
         ar_mesh_url: item.ar_mesh_url,
