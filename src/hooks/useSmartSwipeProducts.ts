@@ -202,12 +202,17 @@ export const useSmartSwipeProducts = ({
       const axessoImportEnabled = isEnabled('axessoImport');
       const axessoImportBulkEnabled = isEnabled('axessoImportBulk');
       
+      console.log('🔍 Feature flags:', { axessoImportEnabled, axessoImportBulkEnabled });
+      
       if (!axessoImportEnabled && !axessoImportBulkEnabled) {
         query = query.eq('is_external', false);
+        console.log('❌ External products disabled by feature flags');
       } else {
         const allowedSources = [];
         if (axessoImportEnabled) allowedSources.push('ASOS_AXESSO', 'axesso-async');
         if (axessoImportBulkEnabled) allowedSources.push('ASOS_AXESSO_BULK');
+        
+        console.log('✅ Allowed sources:', allowedSources);
         
         if (allowedSources.length > 0) {
           query = query.or(`is_external.eq.false,source.in.(${allowedSources.join(',')})`);
@@ -246,6 +251,14 @@ export const useSmartSwipeProducts = ({
       
       const { data, error } = await query;
       if (error) throw error;
+
+      console.log('📦 Raw products fetched:', data?.length);
+      console.log('📦 Sample products:', data?.slice(0, 3).map(p => ({ 
+        title: p.title, 
+        is_external: p.is_external, 
+        source: p.source,
+        brand: p.brand?.name 
+      })));
 
       // Transform the data
       const transformedProducts: Product[] = (data || []).map(item => ({

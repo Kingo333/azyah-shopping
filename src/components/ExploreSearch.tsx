@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Search, User, Package, Tag, Sparkles } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useDebounce } from '@/hooks/use-debounce';
+import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
 
 interface SearchResult {
   type: 'user' | 'product' | 'brand' | 'style';
@@ -34,6 +35,7 @@ const ExploreSearch: React.FC<ExploreSearchProps> = ({
   const [searchQuery, setSearchQuery] = useState(initialQuery);
   const [activeTab, setActiveTab] = useState<'all' | 'users' | 'products' | 'brands' | 'styles'>('all');
   const debouncedQuery = useDebounce(searchQuery, 300);
+  const { isEnabled } = useFeatureFlags();
 
   const { data: searchResults, isLoading } = useQuery({
     queryKey: ['explore-search', debouncedQuery, activeTab],
@@ -65,7 +67,7 @@ const ExploreSearch: React.FC<ExploreSearchProps> = ({
 
       // Search products
       if (activeTab === 'all' || activeTab === 'products') {
-        const { data: products } = await supabase
+        let productQuery = supabase
           .from('products')
           .select(`
             id,
@@ -75,11 +77,30 @@ const ExploreSearch: React.FC<ExploreSearchProps> = ({
             media_urls,
             category_slug,
             subcategory_slug,
+            is_external,
+            source,
             brands (name, logo_url)
           `)
           .eq('status', 'active')
-          .ilike('title', `%${debouncedQuery}%`)
-          .limit(10);
+          .ilike('title', `%${debouncedQuery}%`);
+
+        // Apply same external product filtering as swipe hook
+        const axessoImportEnabled = isEnabled('axessoImport');
+        const axessoImportBulkEnabled = isEnabled('axessoImportBulk');
+        
+        if (!axessoImportEnabled && !axessoImportBulkEnabled) {
+          productQuery = productQuery.eq('is_external', false);
+        } else {
+          const allowedSources = [];
+          if (axessoImportEnabled) allowedSources.push('ASOS_AXESSO', 'axesso-async');
+          if (axessoImportBulkEnabled) allowedSources.push('ASOS_AXESSO_BULK');
+          
+          if (allowedSources.length > 0) {
+            productQuery = productQuery.or(`is_external.eq.false,source.in.(${allowedSources.join(',')})`);
+          }
+        }
+
+        const { data: products } = await productQuery.limit(10);
 
         products?.forEach(product => {
           results.push({
