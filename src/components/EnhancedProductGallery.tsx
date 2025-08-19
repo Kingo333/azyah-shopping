@@ -28,6 +28,8 @@ export const EnhancedProductGallery: React.FC<EnhancedProductGalleryProps> = ({
   const [selectedImage, setSelectedImage] = useState(0);
   const [isZoomed, setIsZoomed] = useState(false);
   const [rotation, setRotation] = useState(0);
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageError, setImageError] = useState(false);
 
   const handle360Spin = () => {
     setRotation(prev => prev + 90);
@@ -37,10 +39,32 @@ export const EnhancedProductGallery: React.FC<EnhancedProductGalleryProps> = ({
     setIsZoomed(!isZoomed);
   };
 
+  const handleImageChange = (index: number) => {
+    setSelectedImage(index);
+    setImageLoaded(false);
+    setImageError(false);
+  };
+
+  const handleImageLoad = () => {
+    setImageLoaded(true);
+  };
+
+  const handleImageError = () => {
+    setImageError(true);
+    setImageLoaded(true);
+  };
+
   return (
     <div className="space-y-4">
       {/* Main Image Display */}
       <div className="relative aspect-square md:aspect-[4/5] overflow-hidden rounded-lg bg-accent group">
+        {/* Loading Skeleton */}
+        {!imageLoaded && (
+          <div className="absolute inset-0 bg-muted animate-pulse flex items-center justify-center">
+            <div className="text-muted-foreground text-sm">Loading...</div>
+          </div>
+        )}
+        
         <motion.img
           key={selectedImage}
           {...getResponsiveImageProps(
@@ -48,14 +72,20 @@ export const EnhancedProductGallery: React.FC<EnhancedProductGalleryProps> = ({
             "(max-width: 768px) 90vw, 50vw"
           )}
           alt={`${productTitle} view ${selectedImage + 1}`}
-          className={`w-full h-full object-cover cursor-zoom-in transition-transform duration-300 ${
+          className={`w-full h-full object-cover cursor-zoom-in transition-all duration-300 ${
             isZoomed ? 'scale-150' : 'scale-100'
-          }`}
+          } ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
           style={{ rotate: `${rotation}deg` }}
           initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: isZoomed ? 1.5 : 1 }}
+          animate={{ 
+            opacity: imageLoaded ? 1 : 0, 
+            scale: isZoomed ? 1.5 : 1 
+          }}
           transition={{ duration: 0.3 }}
           onClick={handleZoom}
+          onLoad={handleImageLoad}
+          onError={handleImageError}
+          loading="eager"
         />
         
         {/* Overlay Controls */}
@@ -90,7 +120,7 @@ export const EnhancedProductGallery: React.FC<EnhancedProductGalleryProps> = ({
           {images.map((image, index) => (
             <motion.button
               key={index}
-              onClick={() => setSelectedImage(index)}
+              onClick={() => handleImageChange(index)}
               className={`flex-shrink-0 w-16 h-16 rounded border-2 overflow-hidden transition-all duration-200 ${
                 selectedImage === index 
                   ? 'border-primary shadow-md scale-105' 
@@ -103,6 +133,7 @@ export const EnhancedProductGallery: React.FC<EnhancedProductGalleryProps> = ({
                 {...getResponsiveImageProps(image, "64px")}
                 alt={`${productTitle} thumbnail ${index + 1}`}
                 className="w-full h-full object-cover"
+                loading="lazy"
               />
             </motion.button>
           ))}
