@@ -105,13 +105,22 @@ export const usePersonalizedProducts = ({
       }
       // Apply category filter only if no subcategory
       else if (filter && filter !== 'all') {
-        // Map new "bags" category to "accessories" for database compatibility
-        const dbCategory = filter === 'bags' ? 'accessories' : filter;
-        query = query.eq('category_slug', dbCategory as any);
-
-        // If bags category is selected, filter by bag subcategories
-        if (filter === 'bags') {
-          query = query.in('subcategory_slug', ['handbags', 'clutches', 'totes', 'backpacks', 'wallets']);
+        // Handle the special case for filtering miscategorized products
+        if (filter === 'footwear') {
+          // Include both properly categorized footwear AND miscategorized shoes in "clothing"
+          query = query.or('category_slug.eq.footwear,and(category_slug.eq.clothing,or(title.ilike.%shoe%,title.ilike.%sneaker%,title.ilike.%boot%,title.ilike.%sandal%,title.ilike.%heel%,title.ilike.%flat%,title.ilike.%trainer%,title.ilike.%loafer%,title.ilike.%slipper%))');
+        } else if (filter === 'bags') {
+          // Include both properly categorized bags AND miscategorized bags in "clothing"
+          query = query.or('category_slug.eq.bags,and(category_slug.eq.clothing,or(title.ilike.%bag%,title.ilike.%handbag%,title.ilike.%purse%,title.ilike.%clutch%,title.ilike.%tote%,title.ilike.%backpack%,title.ilike.%wallet%))');
+        } else if (filter === 'accessories') {
+          // Include both properly categorized accessories AND miscategorized accessories in "clothing"
+          query = query.or('category_slug.eq.accessories,and(category_slug.eq.clothing,or(title.ilike.%belt%,title.ilike.%scarf%,title.ilike.%hat%,title.ilike.%sunglasses%,title.ilike.%watch%,title.ilike.%hair%))');
+        } else if (filter === 'jewelry') {
+          // Include both properly categorized jewelry AND miscategorized jewelry in "clothing"
+          query = query.or('category_slug.eq.jewelry,and(category_slug.eq.clothing,or(title.ilike.%jewelry%,title.ilike.%necklace%,title.ilike.%earring%,title.ilike.%bracelet%,title.ilike.%ring%))');
+        } else {
+          // For other categories, use direct filtering
+          query = query.eq('category_slug', filter as any);
         }
       }
 

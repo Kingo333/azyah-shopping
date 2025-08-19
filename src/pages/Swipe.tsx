@@ -232,11 +232,6 @@ const Swipe = () => {
                 <Heart className="h-4 w-4" />
                 <span className="hidden lg:inline lg:ml-2">Likes</span>
               </Button>
-
-              <Button variant="ghost" size="sm" onClick={handleUpdateCategories} className="hover:bg-accent/50 p-2 flex-shrink-0">
-                <RefreshCw className="h-4 w-4" />
-                <span className="hidden lg:inline lg:ml-2">Fix Categories</span>
-              </Button>
               
               {/* Filters Menu */}
               <Popover open={showFilters} onOpenChange={setShowFilters}>
