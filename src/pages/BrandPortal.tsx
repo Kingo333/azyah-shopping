@@ -302,7 +302,7 @@ const BrandPortal: React.FC = () => {
   }));
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-purple-50">
+    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-purple-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
       <div className="container mx-auto max-w-7xl p-2 sm:p-4">
         <BrandPortalHeader 
           brand={brand}
@@ -311,26 +311,26 @@ const BrandPortal: React.FC = () => {
         />
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-4 rounded-xl bg-white/50 backdrop-blur-sm">
-            <TabsTrigger value="products" className="rounded-lg text-xs sm:text-sm">Products</TabsTrigger>
-            <TabsTrigger value="collabs" className="rounded-lg text-xs sm:text-sm">Collabs</TabsTrigger>
-            <TabsTrigger value="analytics" className="rounded-lg text-xs sm:text-sm">Analytics</TabsTrigger>
-            <TabsTrigger value="settings" className="rounded-lg text-xs sm:text-sm">Settings</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-4 rounded-xl bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border border-white/20 dark:border-slate-700/50">
+            <TabsTrigger value="products" className="rounded-lg text-xs sm:text-sm data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-sm">Products</TabsTrigger>
+            <TabsTrigger value="collabs" className="rounded-lg text-xs sm:text-sm data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-sm">Collabs</TabsTrigger>
+            <TabsTrigger value="analytics" className="rounded-lg text-xs sm:text-sm data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-sm">Analytics</TabsTrigger>
+            <TabsTrigger value="settings" className="rounded-lg text-xs sm:text-sm data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-sm">Settings</TabsTrigger>
           </TabsList>
 
           <TabsContent value="products" className="mt-4 sm:mt-6">
             <div className="space-y-4 sm:space-y-6">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4">
                 <div className="flex flex-wrap items-center gap-2">
-                  <Button variant="outline" size="sm" className="text-xs"><Filter className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />Filter</Button>
-                  <Button variant="outline" size="sm" className="text-xs"><Upload className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />Import</Button>
-                  <Button variant="outline" size="sm" className="text-xs"><Download className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />Export</Button>
+                  <Button variant="outline" size="sm" className="text-xs border-border/50 hover:bg-accent/50 dark:hover:bg-accent/20"><Filter className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />Filter</Button>
+                  <Button variant="outline" size="sm" className="text-xs border-border/50 hover:bg-accent/50 dark:hover:bg-accent/20"><Upload className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />Import</Button>
+                  <Button variant="outline" size="sm" className="text-xs border-border/50 hover:bg-accent/50 dark:hover:bg-accent/20"><Download className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />Export</Button>
                 </div>
                 {selectedProducts.size > 0 && (
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-sm text-muted-foreground">{selectedProducts.size} selected</span>
-                    <Button variant="outline" size="sm" onClick={() => handleBulkAction('Archive')}>Archive</Button>
-                    <Button variant="outline" size="sm" onClick={() => handleBulkAction('Delete')}>Delete</Button>
+                    <Button variant="outline" size="sm" onClick={() => handleBulkAction('Archive')} className="border-border/50 hover:bg-accent/50 dark:hover:bg-accent/20">Archive</Button>
+                    <Button variant="outline" size="sm" onClick={() => handleBulkAction('Delete')} className="border-border/50 hover:bg-destructive/10 dark:hover:bg-destructive/20 hover:text-destructive">Delete</Button>
                   </div>
                 )}
               </div>
@@ -342,7 +342,7 @@ const BrandPortal: React.FC = () => {
               ) : (
                 <div className="grid gap-2 sm:gap-4">
                   {products.map((product) => (
-                    <Card key={product.id} className="overflow-hidden">
+                    <Card key={product.id} className="overflow-hidden border-border/50 hover:border-border transition-colors">
                       <CardContent className="p-3 sm:p-4">
                         <div className="flex items-center gap-2 sm:gap-4">
                           <input 
@@ -352,7 +352,7 @@ const BrandPortal: React.FC = () => {
                             className="w-4 h-4" 
                           />
                           <div 
-                            className="w-16 h-16 sm:w-20 sm:h-20 bg-muted rounded-lg overflow-hidden cursor-pointer hover:opacity-80 transition-opacity"
+                            className="w-16 h-16 sm:w-20 sm:h-20 bg-muted/70 dark:bg-muted/30 rounded-lg overflow-hidden cursor-pointer hover:opacity-80 transition-opacity border border-border/30"
                             onClick={() => handleViewProduct(product)}
                           >
                             {product.media_urls && product.media_urls[0] ? (
@@ -382,13 +382,13 @@ const BrandPortal: React.FC = () => {
                             </div>
                           </div>
                           <div className="flex sm:flex-row flex-col items-center gap-1 sm:gap-2">
-                            <Button variant="outline" size="sm" onClick={() => handleViewProduct(product)}>
+                            <Button variant="outline" size="sm" onClick={() => handleViewProduct(product)} className="border-border/50 hover:bg-accent/50 dark:hover:bg-accent/20">
                               <Eye className="h-3 w-3 sm:h-4 sm:w-4" />
                             </Button>
-                            <Button variant="outline" size="sm" onClick={() => handleEditProduct(product)}>
+                            <Button variant="outline" size="sm" onClick={() => handleEditProduct(product)} className="border-border/50 hover:bg-accent/50 dark:hover:bg-accent/20">
                               <Edit className="h-3 w-3 sm:h-4 sm:w-4" />
                             </Button>
-                            <Button variant="outline" size="sm" onClick={() => handleDeleteProduct(product.id)}>
+                            <Button variant="outline" size="sm" onClick={() => handleDeleteProduct(product.id)} className="border-border/50 hover:bg-destructive/10 dark:hover:bg-destructive/20 hover:text-destructive">
                               <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
                             </Button>
                           </div>
@@ -403,7 +403,7 @@ const BrandPortal: React.FC = () => {
 
           <TabsContent value="collabs" className="mt-4 sm:mt-6">
             <div className="space-y-4">
-              <div className="bg-muted/50 rounded-lg p-4">
+              <div className="bg-muted/50 dark:bg-slate-800/50 rounded-lg p-4 border border-border/50">
                 <h3 className="font-medium mb-2">What are Collaborations?</h3>
                 <p className="text-sm text-muted-foreground">
                   Partner with content creators and influencers to showcase your brand. Create collaboration campaigns 
@@ -435,7 +435,7 @@ const BrandPortal: React.FC = () => {
                     <div><label className="text-sm font-medium mb-2 block">Website</label><Input defaultValue={brand.website || ''} /></div>
                   </div>
                   <div><label className="text-sm font-medium mb-2 block">Description</label><Textarea defaultValue={brand.bio || ''} /></div>
-                  <Button className="w-full sm:w-auto">Save Changes</Button>
+                  <Button className="w-full sm:w-auto bg-primary hover:bg-primary/90 dark:bg-primary dark:hover:bg-primary/80">Save Changes</Button>
                 </CardContent>
               </Card>
               

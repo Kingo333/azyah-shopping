@@ -212,7 +212,7 @@ const RetailerPortal = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background dark:bg-slate-950">
       <div className="container max-w-7xl mx-auto p-6">
         {/* Header */}
         <RetailerPortalHeader 
@@ -269,12 +269,12 @@ const RetailerPortal = () => {
 
         {/* Tabs */}
         <Tabs defaultValue="products" className="space-y-6">
-          <TabsList>
-            <TabsTrigger value="products">Products</TabsTrigger>
-            <TabsTrigger value="collabs">Collabs</TabsTrigger>
-            <TabsTrigger value="brands">Brands</TabsTrigger>
-            <TabsTrigger value="analytics">Analytics</TabsTrigger>
-            <TabsTrigger value="settings">Settings</TabsTrigger>
+          <TabsList className="bg-muted/50 dark:bg-slate-800/50">
+            <TabsTrigger value="products" className="data-[state=active]:bg-background dark:data-[state=active]:bg-slate-700">Products</TabsTrigger>
+            <TabsTrigger value="collabs" className="data-[state=active]:bg-background dark:data-[state=active]:bg-slate-700">Collabs</TabsTrigger>
+            <TabsTrigger value="brands" className="data-[state=active]:bg-background dark:data-[state=active]:bg-slate-700">Brands</TabsTrigger>
+            <TabsTrigger value="analytics" className="data-[state=active]:bg-background dark:data-[state=active]:bg-slate-700">Analytics</TabsTrigger>
+            <TabsTrigger value="settings" className="data-[state=active]:bg-background dark:data-[state=active]:bg-slate-700">Settings</TabsTrigger>
           </TabsList>
 
           <TabsContent value="products">
@@ -288,7 +288,7 @@ const RetailerPortal = () => {
                 ) : products.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {products.map((product) => (
-                      <Card key={product.id} className="overflow-hidden">
+                      <Card key={product.id} className="overflow-hidden border-border/50 hover:border-border transition-colors">
                         <div className="aspect-square relative">
                           <img
                             src={product.media_urls?.[0] || '/placeholder.svg'}
@@ -333,7 +333,7 @@ const RetailerPortal = () => {
                             <Button 
                               variant="outline" 
                               size="sm" 
-                              className="w-full mt-2"
+                              className="w-full mt-2 border-border/50 hover:bg-accent/50 dark:hover:bg-accent/20"
                               onClick={() => setEditingProduct(product)}
                             >
                               Edit Product
@@ -350,7 +350,7 @@ const RetailerPortal = () => {
                     <p className="text-muted-foreground mb-4">
                       Start building your catalog by adding your first product.
                     </p>
-                    <Button onClick={() => setIsAddModalOpen(true)} className="gap-2">
+                    <Button onClick={() => setIsAddModalOpen(true)} className="gap-2 bg-primary hover:bg-primary/90 dark:bg-primary dark:hover:bg-primary/80">
                       <Plus className="h-4 w-4" />
                       Add Product
                     </Button>
@@ -362,7 +362,7 @@ const RetailerPortal = () => {
 
           <TabsContent value="collabs">
             <div className="space-y-4">
-              <div className="bg-muted/50 rounded-lg p-4">
+              <div className="bg-muted/50 dark:bg-slate-800/50 rounded-lg p-4 border border-border/50">
                 <h3 className="font-medium mb-2">What are Collaborations?</h3>
                 <p className="text-sm text-muted-foreground">
                   Create collaboration campaigns to work with content creators and influencers. Set your requirements, 
