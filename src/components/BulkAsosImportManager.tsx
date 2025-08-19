@@ -130,24 +130,28 @@ const BulkAsosImportManager: React.FC = () => {
       // Calculate total work for progress tracking
       const totalWork = marketsList.length * keywordsList.length * pagesPerKeyword;
       
-      // Auto-enable chunked processing for larger batches
-      const shouldUseChunked = useChunkedProcessing || totalWork > 25;
+      // Smart processing mode selection
+      const useUltraLight = totalWork <= 6; // Ultra-light for very small batches
+      const shouldUseChunked = useChunkedProcessing || (totalWork > 6 && totalWork <= 25);
       
-      // Limit to reasonable batch sizes to avoid timeouts
-      if (!shouldUseChunked && totalWork > 50) {
+      // Strict limits to prevent timeouts
+      if (useUltraLight && totalWork > 6) {
+        toast({
+          title: "Using Ultra-Light Mode",
+          description: `Small batch detected (${totalWork} searches). Using ultra-fast processing.`,
+        });
+      } else if (!shouldUseChunked && totalWork > 25) {
         toast({
           title: "Batch Too Large",
-          description: `Reduce your search scope or enable chunked processing. Current: ${totalWork} searches (max recommended for bulk: 50)`,
+          description: `Reduce your search scope or enable chunked processing. Current: ${totalWork} searches (max for bulk: 25)`,
           variant: "destructive",
         });
         setIsImporting(false);
         return;
-      }
-      
-      if (shouldUseChunked && totalWork > 200) {
+      } else if (shouldUseChunked && totalWork > 100) {
         toast({
           title: "Batch Too Large",
-          description: `Even with chunked processing, this is too large. Current: ${totalWork} searches (max recommended: 200)`,
+          description: `Even with chunked processing, this is too large. Current: ${totalWork} searches (max: 100)`,
           variant: "destructive",
         });
         setIsImporting(false);
@@ -156,23 +160,39 @@ const BulkAsosImportManager: React.FC = () => {
 
       // Show real progress estimation
       const progressInterval = setInterval(() => {
-        setProgress(prev => Math.min(prev + (shouldUseChunked ? 1 : 2), 85));
-      }, shouldUseChunked ? 3000 : 2000);
+        setProgress(prev => Math.min(prev + (useUltraLight ? 5 : shouldUseChunked ? 1 : 2), 85));
+      }, useUltraLight ? 1000 : shouldUseChunked ? 3000 : 2000);
 
-      // Choose appropriate function based on batch size and user preference
-      const functionName = shouldUseChunked ? 'import-asos-chunked' : 'import-asos-bulk';
-      const requestBody = shouldUseChunked ? {
-        markets: marketsList,
-        keywords: keywordsList,
-        pagesPerKeyword,
-        chunkSize: 5
-      } : {
-        markets: marketsList,
-        keywords: keywordsList,
-        pagesPerKeyword
-      };
+      // Choose appropriate function based on batch size
+      let functionName: string;
+      let requestBody: any;
+      
+      if (useUltraLight) {
+        functionName = 'import-asos-ultra';
+        requestBody = {
+          markets: marketsList,
+          keywords: keywordsList,
+          pagesPerKeyword: Math.min(pagesPerKeyword, 2), // Limit pages for ultra-light
+          maxProducts: 10 // Strict product limit
+        };
+      } else if (shouldUseChunked) {
+        functionName = 'import-asos-chunked';
+        requestBody = {
+          markets: marketsList,
+          keywords: keywordsList,
+          pagesPerKeyword,
+          chunkSize: 3 // Smaller chunks
+        };
+      } else {
+        functionName = 'import-asos-bulk';
+        requestBody = {
+          markets: marketsList,
+          keywords: keywordsList,
+          pagesPerKeyword: Math.min(pagesPerKeyword, 3) // Limit pages for bulk
+        };
+      }
 
-      console.log(`Using ${functionName} for ${totalWork} total searches`);
+      console.log(`Using ${functionName} for ${totalWork} total searches (${useUltraLight ? 'ultra-light' : shouldUseChunked ? 'chunked' : 'bulk'} mode)`);
 
       const { data, error } = await supabase.functions.invoke(functionName, {
         body: requestBody
@@ -187,7 +207,9 @@ const BulkAsosImportManager: React.FC = () => {
 
       setImportResult(data);
       
-      const completionMessage = data.totalChunks 
+      const completionMessage = useUltraLight
+        ? `Ultra-light import: ${data.imported} products in ${Math.round(data.metrics?.duration / 1000 || 0)}s`
+        : data.totalChunks 
         ? `Imported ${data.imported} products (${data.completedChunks}/${data.totalChunks} chunks completed)`
         : `Imported ${data.imported} products successfully`;
       
@@ -202,8 +224,11 @@ const BulkAsosImportManager: React.FC = () => {
       let errorMessage = error.message || "An unexpected error occurred";
       
       // Handle specific timeout errors
-      if (errorMessage.includes('504') || errorMessage.includes('timeout') || errorMessage.includes('Gateway')) {
-        errorMessage = "Import timed out. Try enabling chunked processing or reducing the batch size.";
+      if (errorMessage.includes('504') || errorMessage.includes('timeout') || errorMessage.includes('Gateway') || errorMessage.includes('Failed to fetch')) {
+        const currentMarkets = markets.split(',').map(m => m.trim()).filter(Boolean);
+        const currentKeywords = keywords.split('\n').map(k => k.trim()).filter(Boolean);
+        const currentBatchSize = currentMarkets.length * currentKeywords.length * pagesPerKeyword;
+        errorMessage = `Import failed (likely timeout). Try: 1) Reduce batch size, 2) Enable chunked processing, 3) Use fewer pages per keyword. Current batch: ${currentBatchSize} searches`;
       }
       
       toast({
@@ -275,7 +300,7 @@ const BulkAsosImportManager: React.FC = () => {
                 disabled={isImporting}
               />
               <p className="text-sm text-muted-foreground">
-                Supported for search: us, co.uk, de (others filtered out)
+                Working markets: us, co.uk, de
               </p>
             </div>
             
@@ -308,23 +333,29 @@ const BulkAsosImportManager: React.FC = () => {
             </Label>
           </div>
           
-          <div className="text-sm text-muted-foreground">
+            <div className="text-sm text-muted-foreground">
             {(() => {
               const marketsList = markets.split(',').map(m => m.trim()).filter(Boolean);
               const keywordsList = keywords.split('\n').map(k => k.trim()).filter(Boolean);
               const totalWork = marketsList.length * keywordsList.length * pagesPerKeyword;
-              const shouldUseChunked = useChunkedProcessing || totalWork > 25;
+              const useUltraLight = totalWork <= 6;
+              const shouldUseChunked = useChunkedProcessing || (totalWork > 6 && totalWork <= 25);
               
               return (
                 <div className="flex items-center gap-2">
                   <span>Estimated searches: {totalWork}</span>
-                  {shouldUseChunked && (
+                  {useUltraLight && (
+                    <Badge variant="default" className="text-xs">
+                      ⚡ Ultra-light
+                    </Badge>
+                  )}
+                  {shouldUseChunked && !useUltraLight && (
                     <Badge variant="secondary" className="text-xs">
                       <Zap className="h-3 w-3 mr-1" />
                       Chunked mode
                     </Badge>
                   )}
-                  {totalWork > 50 && !shouldUseChunked && (
+                  {totalWork > 25 && !shouldUseChunked && !useUltraLight && (
                     <Badge variant="destructive" className="text-xs">
                       ⚠️ Large batch
                     </Badge>
@@ -387,9 +418,20 @@ const BulkAsosImportManager: React.FC = () => {
               <p className="text-sm text-muted-foreground">
                 {isTesting 
                   ? 'Verifying Axesso API connectivity...' 
-                  : importResult?.totalChunks
-                    ? `Processing in chunks (${importResult.completedChunks || 0}/${importResult.totalChunks} completed)...`
-                    : 'Searching markets and processing products... This may take a few minutes.'
+                  : (() => {
+                      const marketsList = markets.split(',').map(m => m.trim()).filter(Boolean);
+                      const keywordsList = keywords.split('\n').map(k => k.trim()).filter(Boolean);
+                      const totalWork = marketsList.length * keywordsList.length * pagesPerKeyword;
+                      const useUltraLight = totalWork <= 6;
+                      
+                      if (useUltraLight) {
+                        return 'Ultra-light processing: Fast import with strict limits...';
+                      } else if (importResult?.totalChunks) {
+                        return `Processing in chunks (${importResult.completedChunks || 0}/${importResult.totalChunks} completed)...`;
+                      } else {
+                        return 'Searching markets and processing products... This may take a few minutes.';
+                      }
+                    })()
                 }
               </p>
             </div>

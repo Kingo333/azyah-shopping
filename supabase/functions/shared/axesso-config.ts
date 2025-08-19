@@ -15,9 +15,10 @@ if (!AXESSO.primary && !AXESSO.secondary) {
 }
 
 // Domain code mapping: convert any variations to valid API values
-const SUPPORTED_MARKETS = new Set(['us', 'de', 'co.uk', 'fr', 'it', 'es']);
+// Only markets confirmed working with search API
+const SUPPORTED_MARKETS = new Set(['us', 'de', 'co.uk']);
 
-export function normalizeMarket(market: string): 'us' | 'de' | 'co.uk' | 'fr' | 'it' | 'es' | null {
+export function normalizeMarket(market: string): 'us' | 'de' | 'co.uk' | null {
   const m = market.toLowerCase().trim();
   if (m === 'gb' || m === 'uk') return 'co.uk';
   if (SUPPORTED_MARKETS.has(m)) return m as any;

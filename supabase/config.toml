@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.ziina-webhook]
 verify_jwt = false
+
+[functions.import-asos-ultra]
+verify_jwt = true
