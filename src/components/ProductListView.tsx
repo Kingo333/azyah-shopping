@@ -159,7 +159,12 @@ const ProductListView: React.FC<ProductListViewProps> = ({ products, isLoading }
                     <img
                       src={product.media_urls?.[0] || '/placeholder.svg'}
                       alt={product.title}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover transition-all duration-300"
+                      style={{
+                        imageRendering: 'crisp-edges',
+                        filter: 'contrast(1.05) brightness(1.02)',
+                      }}
+                      loading="lazy"
                       onError={(e) => {
                         (e.target as HTMLImageElement).src = '/placeholder.svg';
                       }}
