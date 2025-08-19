@@ -1857,6 +1857,8 @@ export type Database = {
         | "fragrance"
         | "home"
         | "giftcards"
+        | "men"
+        | "women"
       collab_comp_type: "PRODUCT_EXCHANGE" | "PRODUCT_AND_PAID"
       collab_status: "DRAFT" | "ACTIVE" | "PAUSED" | "CLOSED"
       order_status:
@@ -1946,6 +1948,12 @@ export type Database = {
         | "fashion books"
         | "digital gift card"
         | "physical voucher"
+        | "mens clothing"
+        | "mens footwear"
+        | "mens accessories"
+        | "womens clothing"
+        | "womens footwear"
+        | "womens accessories"
       swipe_action: "right" | "up" | "left"
       user_role: "shopper" | "brand" | "retailer" | "admin"
     }
@@ -2087,6 +2095,8 @@ export const Constants = {
         "fragrance",
         "home",
         "giftcards",
+        "men",
+        "women",
       ],
       collab_comp_type: ["PRODUCT_EXCHANGE", "PRODUCT_AND_PAID"],
       collab_status: ["DRAFT", "ACTIVE", "PAUSED", "CLOSED"],
@@ -2179,6 +2189,12 @@ export const Constants = {
         "fashion books",
         "digital gift card",
         "physical voucher",
+        "mens clothing",
+        "mens footwear",
+        "mens accessories",
+        "womens clothing",
+        "womens footwear",
+        "womens accessories",
       ],
       swipe_action: ["right", "up", "left"],
       user_role: ["shopper", "brand", "retailer", "admin"],
