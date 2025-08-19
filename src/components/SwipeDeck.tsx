@@ -323,7 +323,11 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                       imageRendering: 'auto',
                       WebkitBackfaceVisibility: 'hidden',
                       backfaceVisibility: 'hidden',
+                      // CSS-based quality improvements
+                      filter: 'contrast(1.02) saturate(1.05) brightness(1.01)',
+                      WebkitFilter: 'contrast(1.02) saturate(1.05) brightness(1.01)',
                     }}
+                    sizes="(max-width: 768px) 100vw, 50vw"
                     loading="eager"
                     onLoad={handleImageLoad}
                     onError={(e) => {

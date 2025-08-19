@@ -164,7 +164,11 @@ const ProductListView: React.FC<ProductListViewProps> = ({ products, isLoading }
                         imageRendering: 'auto',
                         WebkitBackfaceVisibility: 'hidden',
                         backfaceVisibility: 'hidden',
+                        // CSS-based quality improvements
+                        filter: 'contrast(1.02) saturate(1.05) brightness(1.01)',
+                        WebkitFilter: 'contrast(1.02) saturate(1.05) brightness(1.01)',
                       }}
+                      sizes="(max-width: 768px) 50vw, 25vw"
                       loading="lazy"
                       onError={(e) => {
                         (e.target as HTMLImageElement).src = '/placeholder.svg';
