@@ -117,31 +117,46 @@ export const optimizeAsosImageUrl = (url: string, dimensions: ImageDimensions): 
 
   console.log('🖼️ Processing image URL:', url);
 
-  // TEMPORARILY DISABLE OPTIMIZATION TO ENSURE IMAGES SHOW
-  // Just return the original URL for now
-  console.log('✅ Returning original URL to ensure images display');
-  return url;
-
-  /* 
-  // Original optimization code - disabled for debugging
+  // Check if it's an ASOS image URL
   const isAsosUrl = url.includes('asos.com') || url.includes('images.asos-media.com');
   
   if (isAsosUrl) {
-    console.log('✅ Detected ASOS URL, applying optimization');
-    const asosOptimized = optimizeAsosSpecificUrl(url, dimensions.width);
+    console.log('✅ Detected ASOS URL, applying safe optimization');
     
-    if (asosOptimized && asosOptimized !== url && !asosOptimized.includes('undefined')) {
-      console.log('✅ ASOS optimization successful:', asosOptimized);
-      return asosOptimized;
-    } else {
-      console.log('⚠️ ASOS optimization failed, using original URL');
+    // Try ASOS-specific optimization
+    try {
+      const asosOptimized = optimizeAsosSpecificUrl(url, dimensions.width);
+      
+      // Only use optimized URL if it's valid and different from original
+      if (asosOptimized && 
+          asosOptimized !== url && 
+          !asosOptimized.includes('undefined') &&
+          asosOptimized.startsWith('http')) {
+        console.log('✅ ASOS optimization successful:', asosOptimized);
+        return asosOptimized;
+      }
+    } catch (error) {
+      console.warn('⚠️ ASOS optimization failed, using original:', error);
+    }
+    
+    // If ASOS optimization fails, return original URL
+    console.log('📷 Using original ASOS URL for safety');
+    return url;
+  }
+  
+  // For non-ASOS URLs (like Supabase storage), try generic optimization carefully
+  if (url.includes('supabase.co') || url.includes('storage.googleapis.com')) {
+    console.log('🗄️ Detected storage URL, applying generic optimization');
+    try {
+      return optimizeGenericCdnUrl(url, dimensions);
+    } catch (error) {
+      console.warn('⚠️ Generic optimization failed, using original:', error);
       return url;
     }
   }
   
-  console.log('ℹ️ Non-ASOS URL, using generic optimization');
-  return optimizeGenericCdnUrl(url, dimensions);
-  */
+  console.log('🔄 Unknown URL type, using original for safety');
+  return url;
 };
 
 /**
