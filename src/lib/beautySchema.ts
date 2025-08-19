@@ -22,21 +22,22 @@ export const SkinProfileSchema = z.object({
   undertone: z.enum(["cool", "warm", "neutral", "olive"]),
   skin_type: z.enum(["dry", "oily", "combination", "normal", "sensitive"]),
   visible_concerns: z.array(z.string()),
-  confidence: z.number().min(0).max(1)
+  confidence: z.number().min(0).max(1),
+  lighting_note: z.string().optional()
 });
 
 export const BeautyConsultationSchema = z.object({
   skin_profile: SkinProfileSchema,
   questions: z.array(z.string()).max(2).optional(),
   recommendations: z.object({
-    primer: z.array(RecItemSchema).max(6),
-    foundation_concealer: z.array(RecItemSchema).max(6),
-    brows_eyeliner_bronzer: z.array(RecItemSchema).max(6),
-    shadow_palette: z.array(RecItemSchema).max(6)
+    primer: z.array(RecItemSchema).max(3),
+    foundation_concealer: z.array(RecItemSchema).max(3),
+    brows_eyeliner_bronzer: z.array(RecItemSchema).max(3),
+    shadow_palette: z.array(RecItemSchema).max(3)
   }),
   technique_notes: z.array(z.string()),
-  real_products: z.boolean().optional(),
-  lighting_note: z.string().optional()
+  safety_warnings: z.array(z.string()).optional(),
+  real_products: z.boolean().optional()
 });
 
 // JSON Schema for OpenAI Structured Outputs
