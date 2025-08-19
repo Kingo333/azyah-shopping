@@ -177,25 +177,47 @@ async function processImportJob(jobId: string, config: AsyncImportRequest, supab
       detailsCacheExpiry: AXESSO.detailsCacheExpiry
     });
 
-    // Ensure ASOS retailer exists
-    const { data: retailer } = await supabase
+    // Get the user ID from the job record
+    const { data: jobData, error: jobFetchError } = await supabase
+      .from('import_job_status')
+      .select('user_id')
+      .eq('id', jobId)
+      .single();
+
+    if (jobFetchError || !jobData?.user_id) {
+      throw new Error('Could not get user from job record');
+    }
+
+    const userId = jobData.user_id;
+
+    const { data: userRetailer } = await supabase
       .from('retailers')
       .select('id')
-      .eq('name', 'ASOS')
+      .eq('owner_user_id', userId)
       .maybeSingle();
 
-    let retailerId = retailer?.id;
+    let retailerId = userRetailer?.id;
+    
     if (!retailerId) {
+      // Create a retailer for the user
       const { data: newRetailer, error: retailerError } = await supabase
         .from('retailers')
-        .insert({ name: 'ASOS', slug: 'asos' })
+        .insert({ 
+          name: 'My Store', 
+          slug: `store-${userId.slice(0, 8)}`,
+          owner_user_id: userId
+        })
         .select('id')
         .single();
 
       if (retailerError) {
-        throw new Error('Failed to create ASOS retailer');
+        console.error('Failed to create retailer:', retailerError);
+        throw new Error('Failed to create retailer for user');
       }
       retailerId = newRetailer.id;
+      console.log('Created retailer for user with ID:', retailerId);
+    } else {
+      console.log('Using existing user retailer ID:', retailerId);
     }
 
     // Update progress
