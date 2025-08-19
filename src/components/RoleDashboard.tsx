@@ -14,10 +14,11 @@ import DashboardHeader from '@/components/DashboardHeader';
 import AffiliateHub from '@/components/AffiliateHub';
 import AiStudioModal from '@/components/AiStudioModal';
 import PremiumBanner from '@/components/PremiumBanner';
-import { Heart, ShoppingBag, Search, Sparkles, Package, BarChart3, Users, Settings, Store, TrendingUp, Plus, Eye, DollarSign, Globe, Bell, LogOut, User, Archive, Trophy, MapPin, Blocks } from 'lucide-react';
+import { Heart, ShoppingBag, Search, Sparkles, Package, BarChart3, Users, Settings, Store, TrendingUp, Plus, Eye, DollarSign, Globe, Bell, LogOut, User, Archive, Trophy, MapPin, Blocks, WandSparkles } from 'lucide-react';
 import Leaderboard from '@/components/Leaderboard';
 import TrendingStylesCarousel from '@/components/TrendingStylesCarousel';
 import { UGCCollabButton } from '@/components/ugc/UGCCollabButton';
+import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
 
 interface UserProfile {
   id: string;
@@ -41,6 +42,7 @@ const RoleDashboard: React.FC = () => {
   console.log('RoleDashboard: user state:', user);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { isEnabled } = useFeatureFlags();
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [stats, setStats] = useState<DashboardStats>({});
   const [loading, setLoading] = useState(true);
@@ -247,14 +249,29 @@ const RoleDashboard: React.FC = () => {
               <Heart className="h-5 w-5 sm:h-6 sm:w-6" />
               <span className="text-xs sm:text-sm">Swipe</span>
             </Button>
-            <Button 
-              onClick={() => navigate('/fashion-feed')} 
-              variant="outline" 
-              className="h-16 sm:h-20 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300"
-            >
-              <Users className="h-5 w-5 sm:h-6 sm:w-6" />
-              <span className="text-xs sm:text-sm">Feed</span>
-            </Button>
+            {isEnabled('ai_beauty_consultant') ? (
+              <Button 
+                onClick={() => navigate('/beauty-consultant')} 
+                variant="outline" 
+                className="h-16 sm:h-20 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300 relative bg-gradient-to-br from-pink-50 to-purple-50 dark:from-pink-950/20 dark:to-purple-950/20 border-pink-200 dark:border-pink-800"
+                data-qa="qa-beauty"
+              >
+                <WandSparkles className="h-5 w-5 sm:h-6 sm:w-6 text-pink-600" />
+                <span className="text-xs sm:text-sm text-pink-600">Beauty</span>
+                <Badge variant="secondary" className="absolute -top-1 -right-1 text-xs px-1 py-0 h-4">
+                  AI
+                </Badge>
+              </Button>
+            ) : (
+              <Button 
+                onClick={() => navigate('/fashion-feed')} 
+                variant="outline" 
+                className="h-16 sm:h-20 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300"
+              >
+                <Users className="h-5 w-5 sm:h-6 sm:w-6" />
+                <span className="text-xs sm:text-sm">Feed</span>
+              </Button>
+            )}
             <Button 
               onClick={() => navigate('/explore')} 
               variant="outline" 

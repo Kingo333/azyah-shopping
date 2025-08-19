@@ -30,6 +30,7 @@ import TopInfluencers from './pages/TopInfluencers';
 import ImageSearch from './pages/ImageSearch';
 import Affiliate from './pages/Affiliate';
 import ToyReplica from './pages/ToyReplica';
+import BeautyConsultant from './pages/BeautyConsultant';
 
 import BrandPortal from './pages/BrandPortal';
 import RetailerPortal from './pages/RetailerPortal';
@@ -138,6 +139,11 @@ function App() {
                   <Route path="/toy-replica" element={
                     <ProtectedRoute roles={['shopper', 'admin']}>
                       <ToyReplica />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/beauty-consultant" element={
+                    <ProtectedRoute roles={['shopper', 'admin']}>
+                      <BeautyConsultant />
                     </ProtectedRoute>
                   } />
                   <Route path="/brand-portal" element={
