@@ -514,11 +514,14 @@ I've prepared personalized product recommendations for you! ${consultation.quest
               
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">Features</CardTitle>
+                  <CardTitle className="text-lg">Mode Settings</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-3 text-sm">
+                <CardContent className="space-y-4 text-sm">
                   <div className="flex items-center justify-between">
-                    <span>Expert Mode</span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">Expert Mode</span>
+                      {expertMode && <Badge variant="secondary" className="text-xs">Active</Badge>}
+                    </div>
                     <Button
                       variant="outline"
                       size="sm"
@@ -527,9 +530,40 @@ I've prepared personalized product recommendations for you! ${consultation.quest
                       {expertMode ? 'Disable' : 'Enable'}
                     </Button>
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    Expert mode includes advanced features like voice synthesis and knowledge base management.
-                  </p>
+                  
+                  <div className="space-y-3 text-xs">
+                    <div className="p-3 bg-muted rounded-lg">
+                      <h4 className="font-medium text-foreground mb-2">🌟 Normal Mode (Current)</h4>
+                      <ul className="space-y-1 text-muted-foreground">
+                        <li>• AI beauty consultation</li>
+                        <li>• Photo analysis & product recommendations</li>
+                        <li>• Basic voice features</li>
+                      </ul>
+                    </div>
+                    
+                    {expertMode ? (
+                      <div className="p-3 bg-primary/10 rounded-lg border border-primary/20">
+                        <h4 className="font-medium text-primary mb-2">🚀 Expert Mode (Active)</h4>
+                        <ul className="space-y-1 text-muted-foreground">
+                          <li>• Everything in Normal Mode</li>
+                          <li>• Upload custom beauty documents</li>
+                          <li>• Advanced voice synthesis with multiple voices</li>
+                          <li>• Enhanced product knowledge base</li>
+                        </ul>
+                      </div>
+                    ) : (
+                      <div className="p-3 bg-muted/50 rounded-lg">
+                        <h4 className="font-medium text-muted-foreground mb-2">🚀 Expert Mode (Available)</h4>
+                        <ul className="space-y-1 text-muted-foreground">
+                          <li>• Everything in Normal Mode plus:</li>
+                          <li>• Upload beauty documents & shade charts</li>
+                          <li>• Professional voice synthesis</li>
+                          <li>• Custom knowledge base integration</li>
+                        </ul>
+                        <p className="text-xs mt-2 text-primary">Click "Enable" above to unlock these features</p>
+                      </div>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             </div>
