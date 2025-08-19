@@ -27,24 +27,41 @@ const AuthCallback = () => {
           return;
         }
 
-        // 2) Resolve role (URL param > localStorage fallback)
+        // 2) Check the intent from URL params or localStorage
+        const intent = searchParams.get('intent') || localStorage.getItem('auth_intent') || 'signup';
         const urlRole = searchParams.get('role') as UserRole | null;
         const storedRole = localStorage.getItem('signup_role') as UserRole | null;
+        
+        // 3) Check if this is a new user (user was just created)
+        const userCreatedAt = new Date(session.user.created_at);
+        const now = new Date();
+        const isNewUser = (now.getTime() - userCreatedAt.getTime()) < 5000; // Created within last 5 seconds
+
+        // 4) Handle sign-in intent with new user (should not auto-create)
+        if (intent === 'signin' && isNewUser) {
+          // Delete the auto-created user account
+          await supabase.auth.signOut();
+          
+          setError('No account found. Please sign up first or use email/password to sign in.');
+          return;
+        }
+
+        // 5) For existing users, get role from metadata
+        const existingRole = session.user.user_metadata?.role as UserRole;
+        
+        // 6) For sign up or existing users, resolve the role
         const role = urlRole || storedRole;
 
-        // For existing users signing in, get role from metadata
-        const existingRole = session.user.user_metadata?.role as UserRole;
-
-        if (!role && !existingRole) {
-          // Edge case: if role is missing, redirect to auth to pick one
+        if (intent === 'signup' && !role && !existingRole) {
+          // Edge case: if role is missing for signup, redirect to auth to pick one
           navigate('/auth?missingRole=1');
           return;
         }
 
-        const finalRole = role || existingRole;
+        const finalRole = role || existingRole || 'shopper';
 
-        // 3) For new signups, write role to user metadata
-        if (role && role !== existingRole) {
+        // 7) For new signups or users without role, update user metadata
+        if (isNewUser || (role && role !== existingRole)) {
           const { error: updateError } = await supabase.auth.updateUser({ 
             data: { role: finalRole } 
           });
@@ -53,7 +70,7 @@ const AuthCallback = () => {
             console.error('Error updating user metadata:', updateError);
           }
 
-          // 4) Upsert profile row for new users
+          // 8) Upsert profile row for new users
           const { error: profileError } = await supabase
             .from('users')
             .upsert({
@@ -70,10 +87,11 @@ const AuthCallback = () => {
           }
         }
 
-        // 5) Clean up localStorage
+        // 9) Clean up localStorage
         localStorage.removeItem('signup_role');
+        localStorage.removeItem('auth_intent');
 
-        // 6) Route based on role
+        // 10) Route based on role
         const redirectPath = getRedirectRoute(finalRole);
         navigate(redirectPath, { replace: true });
 

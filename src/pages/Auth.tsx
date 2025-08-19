@@ -87,14 +87,17 @@ const Auth = () => {
   };
 
   const handleGoogleSignIn = async () => {
+    // For sign up tab, require role selection
     if (activeTab === 'signup' && !selectedRole) {
-      // Store role in localStorage for callback
       return;
     }
     
     setIsLoading(true);
     try {
-      const redirectTo = `${window.location.origin}/auth/callback${selectedRole ? `?role=${selectedRole}` : ''}`;
+      // Add intent parameter to distinguish between sign in vs sign up
+      const intent = activeTab === 'signin' ? 'signin' : 'signup';
+      const redirectTo = `${window.location.origin}/auth/callback?intent=${intent}${selectedRole ? `&role=${selectedRole}` : ''}`;
+      
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
@@ -108,10 +111,11 @@ const Auth = () => {
       
       if (error) throw error;
       
-      // Store role for callback if signing up
+      // Store intent and role for callback if signing up
       if (activeTab === 'signup' && selectedRole) {
         localStorage.setItem('signup_role', selectedRole);
       }
+      localStorage.setItem('auth_intent', intent);
     } catch (error: any) {
       console.error('Google sign-in error:', error);
       setIsLoading(false);
