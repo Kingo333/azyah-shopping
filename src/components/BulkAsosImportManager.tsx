@@ -113,10 +113,24 @@ const BulkAsosImportManager: React.FC = () => {
 
   const pollJobStatus = async (jobId: string) => {
     try {
-      const { data, error } = await supabase.functions.invoke(`import-asos-async?jobId=${jobId}`);
+      // Use GET request by making a direct fetch call to the edge function
+      const session = await supabase.auth.getSession();
+      const response = await fetch(`https://klwolsopucgswhtdlsps.supabase.co/functions/v1/import-asos-async?jobId=${jobId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${session.data.session?.access_token}`,
+          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtsd29sc29wdWNnc3dodGRsc3BzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQyNTQ4NTIsImV4cCI6MjA2OTgzMDg1Mn0.t1GFgR9xiIh7PBmoYs_xKLi1fF1iLTF6pqMlLMHowHQ',
+          'Content-Type': 'application/json',
+        },
+      });
 
-      if (error) throw error;
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
 
+      const data = await response.json();
+      
+      console.log('Poll response:', data);
       setProgress(data.progress || 0);
 
       if (data.status === 'completed') {
@@ -139,9 +153,30 @@ const BulkAsosImportManager: React.FC = () => {
           description: data.error || "Import job failed",
           variant: "destructive",
         });
+      } else if (data.status === 'timeout') {
+        setIsPolling(false);
+        setIsImporting(false);
+        setCurrentJobId(null);
+        
+        toast({
+          title: "Import Timeout",
+          description: "Import job timed out. Please try with smaller batches.",
+          variant: "destructive",
+        });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error polling job status:', error);
+      // Continue polling on error unless it's a critical error
+      if (error.message?.includes('404') || error.message?.includes('401')) {
+        setIsPolling(false);
+        setIsImporting(false);
+        setCurrentJobId(null);
+        toast({
+          title: "Polling Error",
+          description: "Lost connection to import job",
+          variant: "destructive",
+        });
+      }
     }
   };
 

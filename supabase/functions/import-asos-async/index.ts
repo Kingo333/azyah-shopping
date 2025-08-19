@@ -150,8 +150,11 @@ Deno.serve(async (req: Request) => {
 });
 
 async function processImportJob(jobId: string, config: AsyncImportRequest, supabase: any) {
+  const MAX_DURATION = 25 * 60 * 1000; // 25 minutes timeout
+  const startTime = Date.now();
+  
   try {
-    console.log(`Processing import job ${jobId}`);
+    console.log(`Starting background import job ${jobId} with config:`, config);
     
     // Update job status to running
     await supabase
@@ -225,7 +228,6 @@ async function processImportJob(jobId: string, config: AsyncImportRequest, supab
       results: []
     };
 
-    const startTime = Date.now();
     const totalOperations = validMarkets.length * config.keywords.length * (config.pagesPerKeyword || 3);
     let completedOperations = 0;
     const seenUrls = new Set<string>();
@@ -234,7 +236,30 @@ async function processImportJob(jobId: string, config: AsyncImportRequest, supab
     for (const market of validMarkets) {
       for (const keyword of config.keywords) {
         for (let page = 1; page <= (config.pagesPerKeyword || 3); page++) {
+          // Check for timeout
+          if (Date.now() - startTime > MAX_DURATION) {
+            console.log(`Job ${jobId} timed out after ${MAX_DURATION}ms`);
+            await supabase
+              .from('import_job_status')
+              .update({
+                status: 'timeout',
+                error_message: `Job timed out after ${MAX_DURATION / 60000} minutes`,
+                completed_at: new Date().toISOString(),
+                result: {
+                  ...result,
+                  duration: Date.now() - startTime,
+                  timeout: true
+                }
+              })
+              .eq('id', jobId);
+            return;
+          }
+
           try {
+            console.log(`Processing ${market}:${keyword}:${page} (${completedOperations + 1}/${totalOperations})`);
+            
+            // Add logging for AXESSO API call
+            console.log(`AXESSO Search: https://api.axesso.de/aso/search-by-keyword?domainCode=${market}&keyword=${keyword}&page=${page}&sortBy=freshness`);
             result.metrics.searchRequests++;
             
             const searchResult = await axessoClient.searchProducts(market, keyword, page);
@@ -244,6 +269,8 @@ async function processImportJob(jobId: string, config: AsyncImportRequest, supab
               completedOperations++;
               continue;
             }
+
+            console.log(`Search result for ${market}:${keyword}:${page} - Found ${searchResult.searchProductDetails.length} products`);
 
             // Process products
             const productsToProcess = searchResult.searchProductDetails
@@ -255,8 +282,9 @@ async function processImportJob(jobId: string, config: AsyncImportRequest, supab
               
               try {
                 result.metrics.detailRequests++;
+                console.log(`AXESSO Details: ${product.dpUrl}`);
                 const details = await axessoClient.fetchProductDetails(product.dpUrl);
-                
+
                 if (!details) {
                   result.errors++;
                   result.results.push({
@@ -266,6 +294,9 @@ async function processImportJob(jobId: string, config: AsyncImportRequest, supab
                   });
                   continue;
                 }
+
+                console.log(`Details result for ${product.dpUrl} - Title: ${details.productTitle}`);
+                
 
                 // Quality check
                 const hasTitle = details.productTitle?.trim().length > 0;
@@ -324,7 +355,7 @@ async function processImportJob(jobId: string, config: AsyncImportRequest, supab
                   .insert(productData);
 
                 if (insertError) {
-                  console.error(`Failed to insert product ${product.dpUrl}:`, insertError);
+                  console.log(`Failed to insert product ${product.dpUrl}:`, insertError);
                   result.errors++;
                   result.results.push({
                     url: product.dpUrl,
@@ -340,6 +371,7 @@ async function processImportJob(jobId: string, config: AsyncImportRequest, supab
                     status: 'imported',
                     score: 0.8
                   });
+                  console.log(`Successfully inserted product: ${details.productTitle}`);
                 }
 
                 // Small delay between products
@@ -358,12 +390,23 @@ async function processImportJob(jobId: string, config: AsyncImportRequest, supab
 
             completedOperations++;
             
-            // Update progress
-            const progress = Math.min(10 + Math.round((completedOperations / totalOperations) * 85), 95);
-            await supabase
-              .from('import_job_status')
-              .update({ progress })
-              .eq('id', jobId);
+            // Update progress every few operations
+            if (completedOperations % 2 === 0 || completedOperations === totalOperations) {
+              const progress = Math.min(10 + Math.round((completedOperations / totalOperations) * 85), 95);
+              
+              console.log(`Updating progress to ${progress}% (${completedOperations}/${totalOperations})`);
+              await supabase
+                .from('import_job_status')
+                .update({ 
+                  progress,
+                  result: {
+                    ...result,
+                    processed: completedOperations,
+                    total_operations: totalOperations
+                  }
+                })
+                .eq('id', jobId);
+            }
 
             // Delay between searches
             await new Promise(resolve => setTimeout(resolve, 2000));
@@ -406,7 +449,11 @@ async function processImportJob(jobId: string, config: AsyncImportRequest, supab
       .update({ 
         status: 'failed',
         error_message: error.message || 'Unknown error',
-        completed_at: new Date().toISOString()
+        completed_at: new Date().toISOString(),
+        result: {
+          ...result,
+          duration: Date.now() - startTime
+        }
       })
       .eq('id', jobId);
   }
