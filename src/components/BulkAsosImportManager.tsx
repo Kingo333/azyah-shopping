@@ -50,6 +50,7 @@ const BulkAsosImportManager: React.FC = () => {
   const [keywords, setKeywords] = useState(DEFAULT_KEYWORDS.join('\n'));
   const [pagesPerKeyword, setPagesPerKeyword] = useState(3);
   const [isImporting, setIsImporting] = useState(false);
+  const [isTesting, setIsTesting] = useState(false);
   const [progress, setProgress] = useState(0);
   const [importResult, setImportResult] = useState<BulkImportResult | null>(null);
   const { toast } = useToast();
@@ -72,6 +73,38 @@ const BulkAsosImportManager: React.FC = () => {
     );
   }
 
+  const testApiConnection = async () => {
+    setIsTesting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('test-axesso-api');
+      
+      if (error) {
+        throw error;
+      }
+
+      if (data.success) {
+        toast({
+          title: "API Test Successful",
+          description: `Found ${data.searchTest?.productsFound || 0} products in test search`,
+        });
+      } else {
+        toast({
+          title: "API Test Failed",
+          description: data.error || "Unknown error",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "API Test Failed",
+        description: error.message || "Failed to test API connection",
+        variant: "destructive",
+      });
+    } finally {
+      setIsTesting(false);
+    }
+  };
+
   const handleBulkImport = async () => {
     if (!markets.trim() || !keywords.trim()) {
       toast({
@@ -90,10 +123,24 @@ const BulkAsosImportManager: React.FC = () => {
       const marketsList = markets.split(',').map(m => m.trim()).filter(Boolean);
       const keywordsList = keywords.split('\n').map(k => k.trim()).filter(Boolean);
 
-      // Simulate progress updates
+      // Calculate total work for progress tracking
+      const totalWork = marketsList.length * keywordsList.length * pagesPerKeyword;
+      
+      // Limit to reasonable batch sizes to avoid timeouts
+      if (totalWork > 50) {
+        toast({
+          title: "Batch Too Large",
+          description: `Reduce your search scope. Current: ${totalWork} searches (max recommended: 50)`,
+          variant: "destructive",
+        });
+        setIsImporting(false);
+        return;
+      }
+
+      // Show real progress estimation
       const progressInterval = setInterval(() => {
-        setProgress(prev => Math.min(prev + Math.random() * 10, 90));
-      }, 1000);
+        setProgress(prev => Math.min(prev + 2, 85));
+      }, 2000);
 
       const { data, error } = await supabase.functions.invoke('import-asos-bulk', {
         body: {
@@ -119,9 +166,17 @@ const BulkAsosImportManager: React.FC = () => {
 
     } catch (error) {
       console.error('Bulk import error:', error);
+      
+      let errorMessage = error.message || "An unexpected error occurred";
+      
+      // Handle specific timeout errors
+      if (errorMessage.includes('504') || errorMessage.includes('timeout') || errorMessage.includes('Gateway')) {
+        errorMessage = "Import timed out. Try reducing the number of markets, keywords, or pages per keyword.";
+      }
+      
       toast({
         title: "Import Failed",
-        description: error.message || "An unexpected error occurred",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -187,7 +242,7 @@ const BulkAsosImportManager: React.FC = () => {
                 disabled={isImporting}
               />
               <p className="text-sm text-muted-foreground">
-                Supported for search: us, co.uk, de, fr, it, es
+                Supported for search: us, co.uk, de (others filtered out)
               </p>
             </div>
             
@@ -221,8 +276,18 @@ const BulkAsosImportManager: React.FC = () => {
 
           <div className="flex gap-3">
             <Button 
+              onClick={testApiConnection} 
+              disabled={isImporting || isTesting}
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <AlertCircle className="h-4 w-4" />
+              {isTesting ? 'Testing...' : 'Test API'}
+            </Button>
+            
+            <Button 
               onClick={handleBulkImport} 
-              disabled={isImporting}
+              disabled={isImporting || isTesting}
               className="flex items-center gap-2"
             >
               <Play className="h-4 w-4" />
@@ -232,7 +297,7 @@ const BulkAsosImportManager: React.FC = () => {
             <Button 
               variant="outline" 
               onClick={resetForm}
-              disabled={isImporting}
+              disabled={isImporting || isTesting}
               className="flex items-center gap-2"
             >
               <RotateCcw className="h-4 w-4" />
@@ -240,15 +305,18 @@ const BulkAsosImportManager: React.FC = () => {
             </Button>
           </div>
 
-          {isImporting && (
+          {(isImporting || isTesting) && (
             <div className="space-y-2">
               <div className="flex items-center justify-between text-sm">
-                <span>Import Progress</span>
-                <span>{Math.round(progress)}%</span>
+                <span>{isTesting ? 'Testing API' : 'Import Progress'}</span>
+                <span>{isTesting ? 'Running...' : `${Math.round(progress)}%`}</span>
               </div>
-              <Progress value={progress} className="h-2" />
+              {!isTesting && <Progress value={progress} className="h-2" />}
               <p className="text-sm text-muted-foreground">
-                Searching markets and processing products... This may take a few minutes.
+                {isTesting 
+                  ? 'Verifying Axesso API connectivity...' 
+                  : 'Searching markets and processing products... This may take a few minutes.'
+                }
               </p>
             </div>
           )}
