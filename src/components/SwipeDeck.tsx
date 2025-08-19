@@ -11,7 +11,7 @@ import ProductDetailModal from '@/components/ProductDetailModal';
 import { Product } from '@/types';
 import { useNavigate } from 'react-router-dom';
 import { TopCategory, SubCategory } from '@/lib/categories';
-import { usePersonalizedProducts } from '@/hooks/usePersonalizedProducts';
+import { useSmartSwipeProducts } from '@/hooks/useSmartSwipeProducts';
 import { supabase } from '@/integrations/supabase/client';
 
 interface SwipeDeckProps {
@@ -70,8 +70,8 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
   const scale = useTransform(x, [-200, 0, 200], [0.8, 1, 0.8]);
   const cardRef = useRef<HTMLDivElement>(null);
 
-  // Use the personalized products hook
-  const { products, isLoading } = usePersonalizedProducts({
+  // Use the smart swipe products hook with 70/30 personalization
+  const { products, isLoading } = useSmartSwipeProducts({
     filter: filter || 'all',
     subcategory,
     priceRange,
@@ -148,6 +148,13 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
     // Move to next card IMMEDIATELY for instant animation
     nextCard();
 
+    // Record swipe for analytics
+    supabase.from('swipes').insert([{
+      user_id: user.id,
+      product_id: product.id,
+      action: 'right'
+    }]);
+
     // Fire-and-forget database operation (no await, no blocking)
     supabase.from('likes').insert([{
       user_id: user.id,
@@ -175,8 +182,16 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
   }, [user, toast, nextCard]);
 
   const handleDislike = useCallback(() => {
+    if (user && currentProduct) {
+      // Record swipe for analytics
+      supabase.from('swipes').insert([{
+        user_id: user.id,
+        product_id: currentProduct.id,
+        action: 'left'
+      }]);
+    }
     nextCard();
-  }, [nextCard]);
+  }, [user, currentProduct, nextCard]);
 
   const handleAddToWishlist = useCallback(async (product: Product) => {
     if (!user) {
@@ -186,6 +201,15 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
         variant: "destructive"
       });
       return;
+    }
+
+    // Record swipe for analytics
+    if (user) {
+      supabase.from('swipes').insert([{
+        user_id: user.id,
+        product_id: product.id,
+        action: 'up'
+      }]);
     }
 
     // Move to next card immediately for smooth animation
