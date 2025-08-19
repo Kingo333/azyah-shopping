@@ -9,6 +9,7 @@ import { useWishlist } from '@/hooks/useWishlist';
 import { Product } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import ProductDetailModal from '@/components/ProductDetailModal';
+import { getResponsiveImageProps } from '@/utils/asosImageUtils';
 
 interface ProductListViewProps {
   products: Product[];
@@ -157,11 +158,10 @@ const ProductListView: React.FC<ProductListViewProps> = ({ products, isLoading }
                 <div className="space-y-2 md:space-y-3">
                   <div className="aspect-square relative overflow-hidden rounded-t-lg">
                      <img
-                      {...(() => {
-                        const imageUrl = product.media_urls?.[0] || '/placeholder.svg';
-                        const { getResponsiveImageProps } = require('@/utils/asosImageUtils');
-                        return getResponsiveImageProps(imageUrl, "(max-width: 768px) 50vw, 25vw");
-                      })()}
+                      {...getResponsiveImageProps(
+                        product.media_urls?.[0] || '/placeholder.svg',
+                        "(max-width: 768px) 50vw, 25vw"
+                      )}
                       alt={product.title}
                       className="w-full h-full object-cover"
                       onError={(e) => {

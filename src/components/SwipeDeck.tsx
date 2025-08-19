@@ -12,6 +12,7 @@ import { Product } from '@/types';
 import { useNavigate } from 'react-router-dom';
 import { TopCategory, SubCategory } from '@/lib/categories';
 import { useSmartSwipeProducts } from '@/hooks/useSmartSwipeProducts';
+import { getResponsiveImageProps } from '@/utils/asosImageUtils';
 import { supabase } from '@/integrations/supabase/client';
 
 interface SwipeDeckProps {
@@ -316,11 +317,10 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                   }}
                 >
                    <img
-                    {...(() => {
-                      const imageUrl = currentProduct.media_urls?.[0] || '/placeholder.svg';
-                      const { getResponsiveImageProps } = require('@/utils/asosImageUtils');
-                      return getResponsiveImageProps(imageUrl, "(max-width: 768px) 100vw, 50vw");
-                    })()}
+                    {...getResponsiveImageProps(
+                      currentProduct.media_urls?.[0] || '/placeholder.svg',
+                      "(max-width: 768px) 100vw, 50vw"
+                    )}
                     alt={currentProduct.title}
                     className="object-cover w-full h-full"
                     onLoad={handleImageLoad}
