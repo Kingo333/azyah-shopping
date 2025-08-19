@@ -160,6 +160,11 @@ const ProductListView: React.FC<ProductListViewProps> = ({ products, isLoading }
                       src={product.media_urls?.[0] || '/placeholder.svg'}
                       alt={product.title}
                       className="w-full h-full object-cover"
+                      style={{
+                        imageRendering: 'auto',
+                        WebkitBackfaceVisibility: 'hidden',
+                        backfaceVisibility: 'hidden',
+                      }}
                       loading="lazy"
                       onError={(e) => {
                         (e.target as HTMLImageElement).src = '/placeholder.svg';

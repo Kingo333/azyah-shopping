@@ -319,6 +319,11 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                     src={currentProduct.media_urls?.[0] || '/placeholder.svg'}
                     alt={currentProduct.title}
                     className="object-cover w-full h-full"
+                    style={{
+                      imageRendering: 'auto',
+                      WebkitBackfaceVisibility: 'hidden',
+                      backfaceVisibility: 'hidden',
+                    }}
                     loading="eager"
                     onLoad={handleImageLoad}
                     onError={(e) => {
