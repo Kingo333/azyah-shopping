@@ -108,7 +108,7 @@ const optimizeGenericCdnUrl = (url: string, dimensions: ImageDimensions): string
 };
 
 /**
- * Enhanced ASOS image URL optimizer with multi-source strategy
+ * Enhanced ASOS image URL optimizer with conservative approach
  */
 export const optimizeAsosImageUrl = (url: string, dimensions: ImageDimensions): string => {
   if (!url || url === '/placeholder.svg') {
@@ -117,8 +117,30 @@ export const optimizeAsosImageUrl = (url: string, dimensions: ImageDimensions): 
 
   console.log('🖼️ Processing image URL:', url);
 
-  // TEMPORARILY DISABLE ALL OPTIMIZATION TO RESTORE IMAGES
-  console.log('✅ Returning original URL to restore image display');
+  // Conservative optimization - only for confirmed ASOS URLs
+  const isAsosUrl = url.includes('images.asos-media.com');
+  
+  if (isAsosUrl) {
+    console.log('✅ ASOS URL detected, applying conservative optimization');
+    
+    // Try adding simple width parameter to ASOS URLs
+    try {
+      // ASOS often accepts ?$XXXw$ parameter for width
+      const targetWidth = dimensions.width;
+      let optimizedUrl = url;
+      
+      // If URL doesn't already have size parameter, add one
+      if (!url.includes('$') && !url.includes('?')) {
+        optimizedUrl = `${url}?$${targetWidth}w$`;
+        console.log('🔄 Added size parameter:', optimizedUrl);
+        return optimizedUrl;
+      }
+    } catch (error) {
+      console.warn('⚠️ Conservative optimization failed:', error);
+    }
+  }
+  
+  console.log('📷 Using original URL');
   return url;
 };
 
