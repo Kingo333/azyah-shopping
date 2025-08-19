@@ -52,11 +52,30 @@ Deno.serve(async (req: Request) => {
   try {
     console.log('🚀 Starting ultra-light ASOS import');
     
-    // Initialize Supabase
+    // Get auth header for user authentication
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      throw new Error('Authentication required');
+    }
+
+    // Initialize Supabase with user auth
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+      Deno.env.get('SUPABASE_ANON_KEY')!,
+      {
+        global: {
+          headers: {
+            Authorization: authHeader,
+          },
+        },
+      }
     );
+
+    // Get current user
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      throw new Error('Authentication failed');
+    }
 
     // Initialize Axesso client with conservative settings
     const axessoClient = new EnhancedAxessoClient({
@@ -75,27 +94,18 @@ Deno.serve(async (req: Request) => {
 
     console.log(`Ultra-light import: ${markets.length} markets, ${keywords.length} keywords, max ${maxProducts} products`);
 
-    // Ensure ASOS retailer exists
-    const { data: retailer } = await supabase
+    // Get user's retailer
+    const { data: retailer, error: retailerError } = await supabase
       .from('retailers')
       .select('id')
-      .eq('name', 'ASOS')
-      .maybeSingle();
+      .eq('owner_user_id', user.id)
+      .single();
 
-    let retailerId = retailer?.id;
-    if (!retailerId) {
-      const { data: newRetailer, error: retailerError } = await supabase
-        .from('retailers')
-        .insert({ name: 'ASOS', slug: 'asos' })
-        .select('id')
-        .single();
-
-      if (retailerError) {
-        console.error('Failed to create ASOS retailer:', retailerError);
-        throw new Error('Failed to create ASOS retailer');
-      }
-      retailerId = newRetailer.id;
+    if (retailerError || !retailer) {
+      throw new Error('No retailer found for authenticated user. Please create a retailer account first.');
     }
+
+    const retailerId = retailer.id;
 
     // Validate and normalize markets
     const validMarkets = markets

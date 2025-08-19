@@ -51,11 +51,30 @@ serve(async (req) => {
   try {
     console.log('🚀 Starting bulk ASOS import process');
     
-    // Initialize Supabase client
+    // Get auth header for user authentication
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      throw new Error('Authentication required');
+    }
+
+    // Initialize Supabase client with user auth
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      {
+        global: {
+          headers: {
+            Authorization: authHeader,
+          },
+        },
+      }
     );
+
+    // Get current user
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      throw new Error('Authentication failed');
+    }
 
     // Initialize Axesso client
     const axessoClient = new EnhancedAxessoClient(AXESSO);
@@ -69,31 +88,15 @@ serve(async (req) => {
     let searchTimeMs = 0;
     let transformTimeMs = 0;
     
-    // Get or create retailer record
-    let { data: retailer, error: retailerError } = await supabase
+    // Get user's retailer
+    const { data: retailer, error: retailerError } = await supabase
       .from('retailers')
       .select('id')
-      .eq('slug', 'asos')
+      .eq('owner_user_id', user.id)
       .single();
       
     if (retailerError || !retailer) {
-      console.log('📦 Creating ASOS retailer record');
-      const { data: newRetailer, error: createError } = await supabase
-        .from('retailers')
-        .insert({
-          name: 'ASOS',
-          slug: 'asos',
-          website: 'https://www.asos.com',
-          bio: 'Global fashion retailer',
-          owner_user_id: null
-        })
-        .select('id')
-        .single();
-        
-      if (createError || !newRetailer) {
-        throw new Error(`Failed to create retailer: ${createError?.message}`);
-      }
-      retailer = newRetailer;
+      throw new Error('No retailer found for authenticated user. Please create a retailer account first.');
     }
     
     console.log(`🏪 Using retailer ID: ${retailer.id}`);
