@@ -11,6 +11,7 @@ import { Heart, Plus, Trash2, Eye, EyeOff, Grid, List, ExternalLink } from 'luci
 import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProductAnalytics } from '@/hooks/useAnalytics';
+import { getResponsiveImageProps } from '@/utils/asosImageUtils';
 
 interface Wishlist {
   id: string;
@@ -405,11 +406,20 @@ export const WishlistManager: React.FC = () => {
                   <CardContent className="p-0">
                     <div className={viewMode === 'grid' ? 'space-y-2 md:space-y-3' : 'flex gap-4'}>
                       <div className={viewMode === 'grid' ? 'aspect-square' : 'w-24 h-24 flex-shrink-0'}>
-                        <img
-                          src={item.product.media_urls[0] || '/placeholder.svg'}
-                          alt={item.product.title}
-                          className="w-full h-full object-cover rounded-t-lg"
-                        />
+                        {(() => {
+                          const imageUrl = item.product.media_urls[0] || '/placeholder.svg';
+                          const imageProps = imageUrl.includes('asos-media.com') 
+                            ? getResponsiveImageProps(imageUrl, viewMode === 'grid' ? "(max-width: 768px) 50vw, 25vw" : "96px")
+                            : { src: imageUrl };
+                          
+                          return (
+                            <img
+                              {...imageProps}
+                              alt={item.product.title}
+                              className="w-full h-full object-cover rounded-t-lg"
+                            />
+                          );
+                        })()}
                       </div>
                       
                       <div className={`${viewMode === 'list' ? 'flex-1' : 'p-2 md:p-4'} space-y-2`}>

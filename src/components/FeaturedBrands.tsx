@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Star, Package, TrendingUp, ArrowRight, ExternalLink } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { getResponsiveImageProps } from '@/utils/asosImageUtils';
 
 interface FeaturedBrand {
   id: string;
@@ -213,15 +214,22 @@ const FeaturedBrands: React.FC<FeaturedBrandsProps> = ({ limit = 6, showMore = t
 
               {brand.recent_products.length > 0 && (
                 <div className="flex gap-2 mb-3">
-                  {brand.recent_products.map((product) => (
-                    <div key={product.id} className="relative">
-                      <img
-                        src={product.media_urls?.[0] || '/placeholder.svg'}
-                        alt={product.title}
-                        className="w-16 h-16 object-cover rounded-md"
-                      />
-                    </div>
-                  ))}
+                  {brand.recent_products.map((product) => {
+                    const imageUrl = product.media_urls?.[0] || '/placeholder.svg';
+                    const imageProps = imageUrl.includes('asos-media.com') 
+                      ? getResponsiveImageProps(imageUrl, "(max-width: 768px) 64px, 64px")
+                      : { src: imageUrl };
+                    
+                    return (
+                      <div key={product.id} className="relative">
+                        <img
+                          {...imageProps}
+                          alt={product.title}
+                          className="w-16 h-16 object-cover rounded-md"
+                        />
+                      </div>
+                    );
+                  })}
                 </div>
               )}
 
