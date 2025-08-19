@@ -114,6 +114,14 @@ export interface Product {
   updated_at: string;
   brand?: Brand;
   retailer?: Retailer;
+  // External product fields
+  is_external?: boolean;
+  merchant_name?: string;
+  source?: string;
+  source_vendor?: string;
+  source_imported_at?: string;
+  image_url?: string;
+  price_raw?: string;
 }
 
 export interface SwipeAction {

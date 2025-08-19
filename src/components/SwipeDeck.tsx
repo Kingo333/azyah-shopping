@@ -367,9 +367,9 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                             e.stopPropagation();
                             handleDislike();
                           }}
-                          className="h-12 w-12 rounded-full bg-destructive/10 hover:bg-destructive/20 pointer-events-auto"
+                          className="h-10 w-10 rounded-full bg-destructive/10 hover:bg-destructive/20 pointer-events-auto"
                         >
-                          <X className="h-6 w-6 text-destructive" />
+                          <X className="h-5 w-5 text-destructive" />
                         </Button>
                         <Button
                           variant="ghost"
@@ -379,9 +379,9 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                             handleAddToWishlist(currentProduct);
                           }}
                           disabled={wishlistLoading}
-                          className="h-12 w-12 rounded-full bg-accent/10 hover:bg-accent/20 pointer-events-auto"
+                          className="h-10 w-10 rounded-full bg-accent/10 hover:bg-accent/20 pointer-events-auto"
                         >
-                          <ShoppingBag className="h-6 w-6 text-accent-foreground" />
+                          <ShoppingBag className="h-5 w-5 text-accent-foreground" />
                         </Button>
                         <Button
                           variant="ghost"
@@ -390,13 +390,39 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                             e.stopPropagation();
                             handleLike(currentProduct);
                           }}
-                          className="h-12 w-12 rounded-full bg-primary/10 hover:bg-primary/20 pointer-events-auto"
+                          className="h-10 w-10 rounded-full bg-primary/10 hover:bg-primary/20 pointer-events-auto"
                         >
-                          <Heart className="h-6 w-6 text-primary" />
+                          <Heart className="h-5 w-5 text-primary" />
                         </Button>
                       </div>
                     </div>
                   </div>
+
+                  {/* Shop Now Button for External Products */}
+                  {currentProduct.is_external && currentProduct.external_url && (
+                    <div className="mt-3 pt-3 border-t border-border">
+                      <Button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          // Track shop now click
+                          if (user) {
+                            supabase.from('events').insert([{
+                              event_type: 'shop_now_click',
+                              user_id: user.id,
+                              product_id: currentProduct.id,
+                              event_data: { source: 'swipe_deck', external_url: currentProduct.external_url }
+                            }]);
+                          }
+                          window.open(currentProduct.external_url, '_blank', 'noopener,noreferrer');
+                        }}
+                        className="w-full gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground font-semibold shadow-lg pointer-events-auto"
+                        size="sm"
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                        Shop Now on {currentProduct.merchant_name || 'ASOS'}
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
