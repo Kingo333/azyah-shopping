@@ -2,7 +2,7 @@ import React, { useState, Suspense } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { BackButton } from '@/components/ui/back-button';
+
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
@@ -62,7 +62,7 @@ const Closets = () => {
         <div className="mx-auto max-w-7xl p-4">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <BackButton />
+              
               <div>
                 <h1 className="text-2xl font-bold text-foreground">Closets & Mood Boards</h1>
                 <p className="text-muted-foreground">Discover and create curated fashion collections</p>

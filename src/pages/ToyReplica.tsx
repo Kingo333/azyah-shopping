@@ -7,7 +7,7 @@ import { useSubscription } from '@/hooks/useSubscription';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Sparkles, Loader2, Download, Copy, RotateCcw, Info, Crown, AlertTriangle } from 'lucide-react';
-import { BackButton } from '@/components/ui/back-button';
+
 import { ToyReplicaUploader } from '@/components/ToyReplicaUploader';
 
 const ToyReplica = () => {
@@ -201,11 +201,6 @@ const ToyReplica = () => {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200 p-4">
       <div className="container mx-auto max-w-4xl">
         <div className="mb-6">
-          <BackButton 
-            fallbackPath="/dashboard"
-            className="mb-4 text-gray-700 hover:text-gray-900 hover:bg-gray-200 border-gray-300 transition-all duration-300 ease-in-out transform hover:scale-105" 
-            variant="outline" 
-          />
           <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
             Toy Replica
           </h1>

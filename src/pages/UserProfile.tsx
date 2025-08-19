@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { SEOHead } from '@/components/SEOHead';
 import ShopperNavigation from '@/components/ShopperNavigation';
-import { BackButton } from '@/components/ui/back-button';
+
 import { 
   User, 
   MapPin, 
@@ -238,7 +238,7 @@ const UserProfile: React.FC = () => {
         <ShopperNavigation />
         
         <div className="mb-6">
-          <BackButton />
+          
         </div>
 
         {/* Profile Header */}

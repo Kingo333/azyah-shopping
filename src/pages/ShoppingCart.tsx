@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
-import { BackButton } from '@/components/ui/back-button';
+
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -230,7 +230,7 @@ const ShoppingCart: React.FC = () => {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <BackButton />
+            
             <ShoppingBag className="h-8 w-8" />
             <div>
               <h1 className="text-2xl font-bold">Shopping Cart</h1>
