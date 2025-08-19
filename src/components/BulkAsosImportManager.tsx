@@ -187,7 +187,7 @@ const BulkAsosImportManager: React.FC = () => {
                 disabled={isImporting}
               />
               <p className="text-sm text-muted-foreground">
-                Available: us, co.uk, de, fr, it, es
+                Supported for search: us, co.uk, de, fr, it, es
               </p>
             </div>
             
@@ -248,7 +248,7 @@ const BulkAsosImportManager: React.FC = () => {
               </div>
               <Progress value={progress} className="h-2" />
               <p className="text-sm text-muted-foreground">
-                Searching markets and processing products...
+                Searching markets and processing products... This may take a few minutes.
               </p>
             </div>
           )}
@@ -316,6 +316,11 @@ const BulkAsosImportManager: React.FC = () => {
                           <span className="text-sm truncate">
                             {result.url || (result as any).sku || (result as any).title || 'Unknown'}
                           </span>
+                          {result.reason && (
+                            <span className="text-xs text-muted-foreground">
+                              - {result.reason}
+                            </span>
+                          )}
                         </div>
                         <div className="flex items-center gap-2">
                           {(result.score != null || (result as any).qualityScore != null) && (
@@ -330,6 +335,14 @@ const BulkAsosImportManager: React.FC = () => {
                   </div>
                 </div>
               </>
+            )}
+            
+            {num(importResult.metrics?.productsFound) === 0 && (
+              <div className="text-center p-4 bg-yellow-50 border border-yellow-200 rounded">
+                <p className="text-sm text-yellow-800">
+                  No products found. Check that markets are supported (us, co.uk, de) and keywords are broad enough.
+                </p>
+              </div>
             )}
           </CardContent>
         </Card>

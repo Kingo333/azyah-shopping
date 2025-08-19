@@ -3,9 +3,11 @@ export const AXESSO = {
   primary: Deno.env.get('AXESSO_PRIMARY_KEY') || Deno.env.get('AXESSO_KEY_PRIMARY') || '',
   secondary: Deno.env.get('AXESSO_SECONDARY_KEY') || Deno.env.get('AXESSO_KEY_SECONDARY') || '',
   base: 'https://api.axesso.de/aso',
-  timeoutMs: Number(Deno.env.get('AXESSO_TIMEOUT_MS') || 8000),
+  timeoutMs: Number(Deno.env.get('AXESSO_TIMEOUT_MS') || 30000), // Increased to 30s
   maxRpm: Number(Deno.env.get('AXESSO_MAX_RPM') || 50),
-  maxConcurrency: Number(Deno.env.get('AXESSO_MAX_CONCURRENCY') || 5),
+  maxConcurrency: Number(Deno.env.get('AXESSO_MAX_CONCURRENCY') || 3), // Reduced concurrency
+  searchCacheExpiry: 5 * 60 * 1000, // 5 minutes
+  detailsCacheExpiry: 30 * 60 * 1000, // 30 minutes
 };
 
 if (!AXESSO.primary && !AXESSO.secondary) {

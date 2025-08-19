@@ -98,10 +98,21 @@ serve(async (req) => {
     
     console.log(`🏪 Using retailer ID: ${retailer.id}`);
     
-    // Perform bulk search and hydration
+    // Filter and normalize markets to valid domain codes
+    const validMarkets = markets
+      .map(normalizeMarket)
+      .filter((m): m is NonNullable<typeof m> => m !== null);
+    
+    console.log(`Normalized markets: ${validMarkets.join(', ')}`);
+    
+    if (validMarkets.length === 0) {
+      throw new Error(`No valid markets provided. Supported markets: us, co.uk, de, fr, it, es. Received: ${markets.join(', ')}`);
+    }
+    
+    // Perform bulk search and hydration with normalized markets
     const searchStart = Date.now();
     const { products: fetchedProducts, metrics } = await axessoClient.bulkSearchAndHydrate(
-      markets,
+      validMarkets,
       keywords,
       pagesPerKeyword
     );
@@ -309,7 +320,7 @@ serve(async (req) => {
     // Calculate UI-compatible metrics
     const duration = result.metrics.processingTimeMs;
     const totalProcessed = result.imported + result.rejected + result.duplicates + result.errors;
-    const successRate = totalProcessed > 0 ? (result.imported / totalProcessed) * 100 : 0;
+    const successRate = totalProcessed > 0 ? Number(((result.imported / totalProcessed) * 100).toFixed(1)) : 0;
     
     // Build UI-compatible response
     const responsePayload = {
@@ -351,6 +362,13 @@ serve(async (req) => {
         rejected: 0,
         duplicates: 0,
         errors: 1,
+        metrics: {
+          searchRequests: 0,
+          detailRequests: 0,
+          productsFound: 0,
+          duration: 0,
+          successRate: 0
+        },
         results: []
       }), 
       {

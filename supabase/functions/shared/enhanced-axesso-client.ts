@@ -38,11 +38,11 @@ interface AxessoProductDetails {
 }
 
 interface BulkImportConfig {
-  primaryKey: string;
-  secondaryKey: string;
+  primary: string;
+  secondary: string;
   maxRpm: number;
   maxConcurrency: number;
-  timeout: number;
+  timeoutMs: number;
   searchCacheExpiry: number;
   detailsCacheExpiry: number;
 }
@@ -122,11 +122,13 @@ export class EnhancedAxessoClient {
     }
 
     const headers = {
-      'axesso-api-key': this.config.primaryKey,
+      'axesso-api-key': this.config.primary,
+      'Cache-Control': 'no-cache',
     };
 
     const secondaryHeaders = {
-      'axesso-api-key': this.config.secondaryKey,
+      'axesso-api-key': this.config.secondary,
+      'Cache-Control': 'no-cache',
     };
 
     let lastError: Error;
@@ -192,7 +194,7 @@ export class EnhancedAxessoClient {
 
     return this.executeWithRateLimit(async () => {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), this.config.timeout);
+      const timeoutId = setTimeout(() => controller.abort(), this.config.timeoutMs);
 
       try {
         const params = new URLSearchParams({
@@ -244,7 +246,7 @@ export class EnhancedAxessoClient {
 
     return this.executeWithRateLimit(async () => {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), this.config.timeout);
+      const timeoutId = setTimeout(() => controller.abort(), this.config.timeoutMs * 1.5); // Longer timeout for details
 
       try {
         const url = `${AXESSO.base}/lookup-product-details?url=${encodeURIComponent(productUrl)}`;
@@ -331,7 +333,7 @@ export class EnhancedAxessoClient {
             }
             
             // Basic rate limiting delay
-            await new Promise(resolve => setTimeout(resolve, 200));
+            await new Promise(resolve => setTimeout(resolve, 500)); // Increased delay
           } catch (error) {
             metrics.errors++;
             console.error(`Search failed for ${market}:${keyword}:${page}:`, error);
@@ -354,7 +356,7 @@ export class EnhancedAxessoClient {
         }
         
         // Basic rate limiting delay
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise(resolve => setTimeout(resolve, 300)); // Increased delay
       } catch (error) {
         metrics.errors++;
         console.error(`Details failed for ${url}:`, error);
