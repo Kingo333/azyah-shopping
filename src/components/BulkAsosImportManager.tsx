@@ -8,16 +8,19 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { features } from '@/lib/features';
-import { Package, Play, RotateCcw, TrendingUp, AlertCircle, CheckCircle, XCircle, Copy } from 'lucide-react';
+import { Package, Play, RotateCcw, TrendingUp, AlertCircle, CheckCircle, XCircle, Copy, Zap } from 'lucide-react';
 
 interface BulkImportResult {
   imported: number;
   rejected: number;
   duplicates: number;
   errors: number;
+  totalChunks?: number;
+  completedChunks?: number;
   metrics: {
     searchRequests: number;
     detailRequests: number;
@@ -53,6 +56,7 @@ const BulkAsosImportManager: React.FC = () => {
   const [isTesting, setIsTesting] = useState(false);
   const [progress, setProgress] = useState(0);
   const [importResult, setImportResult] = useState<BulkImportResult | null>(null);
+  const [useChunkedProcessing, setUseChunkedProcessing] = useState(false);
   const { toast } = useToast();
 
   if (!features.axessoImportBulk) {
@@ -126,11 +130,24 @@ const BulkAsosImportManager: React.FC = () => {
       // Calculate total work for progress tracking
       const totalWork = marketsList.length * keywordsList.length * pagesPerKeyword;
       
+      // Auto-enable chunked processing for larger batches
+      const shouldUseChunked = useChunkedProcessing || totalWork > 25;
+      
       // Limit to reasonable batch sizes to avoid timeouts
-      if (totalWork > 50) {
+      if (!shouldUseChunked && totalWork > 50) {
         toast({
           title: "Batch Too Large",
-          description: `Reduce your search scope. Current: ${totalWork} searches (max recommended: 50)`,
+          description: `Reduce your search scope or enable chunked processing. Current: ${totalWork} searches (max recommended for bulk: 50)`,
+          variant: "destructive",
+        });
+        setIsImporting(false);
+        return;
+      }
+      
+      if (shouldUseChunked && totalWork > 200) {
+        toast({
+          title: "Batch Too Large",
+          description: `Even with chunked processing, this is too large. Current: ${totalWork} searches (max recommended: 200)`,
           variant: "destructive",
         });
         setIsImporting(false);
@@ -139,15 +156,26 @@ const BulkAsosImportManager: React.FC = () => {
 
       // Show real progress estimation
       const progressInterval = setInterval(() => {
-        setProgress(prev => Math.min(prev + 2, 85));
-      }, 2000);
+        setProgress(prev => Math.min(prev + (shouldUseChunked ? 1 : 2), 85));
+      }, shouldUseChunked ? 3000 : 2000);
 
-      const { data, error } = await supabase.functions.invoke('import-asos-bulk', {
-        body: {
-          markets: marketsList,
-          keywords: keywordsList,
-          pagesPerKeyword
-        }
+      // Choose appropriate function based on batch size and user preference
+      const functionName = shouldUseChunked ? 'import-asos-chunked' : 'import-asos-bulk';
+      const requestBody = shouldUseChunked ? {
+        markets: marketsList,
+        keywords: keywordsList,
+        pagesPerKeyword,
+        chunkSize: 5
+      } : {
+        markets: marketsList,
+        keywords: keywordsList,
+        pagesPerKeyword
+      };
+
+      console.log(`Using ${functionName} for ${totalWork} total searches`);
+
+      const { data, error } = await supabase.functions.invoke(functionName, {
+        body: requestBody
       });
 
       clearInterval(progressInterval);
@@ -159,9 +187,13 @@ const BulkAsosImportManager: React.FC = () => {
 
       setImportResult(data);
       
+      const completionMessage = data.totalChunks 
+        ? `Imported ${data.imported} products (${data.completedChunks}/${data.totalChunks} chunks completed)`
+        : `Imported ${data.imported} products successfully`;
+      
       toast({
         title: "Bulk Import Completed",
-        description: `Imported ${data.imported} products successfully`,
+        description: completionMessage,
       });
 
     } catch (error) {
@@ -171,7 +203,7 @@ const BulkAsosImportManager: React.FC = () => {
       
       // Handle specific timeout errors
       if (errorMessage.includes('504') || errorMessage.includes('timeout') || errorMessage.includes('Gateway')) {
-        errorMessage = "Import timed out. Try reducing the number of markets, keywords, or pages per keyword.";
+        errorMessage = "Import timed out. Try enabling chunked processing or reducing the batch size.";
       }
       
       toast({
@@ -190,6 +222,7 @@ const BulkAsosImportManager: React.FC = () => {
     setPagesPerKeyword(3);
     setProgress(0);
     setImportResult(null);
+    setUseChunkedProcessing(false);
   };
 
   // Safe number extraction with fallback
@@ -262,6 +295,45 @@ const BulkAsosImportManager: React.FC = () => {
             </div>
           </div>
 
+          <div className="flex items-center space-x-2">
+            <Checkbox 
+              id="chunked" 
+              checked={useChunkedProcessing}
+              onCheckedChange={(checked) => setUseChunkedProcessing(checked as boolean)}
+              disabled={isImporting}
+            />
+            <Label htmlFor="chunked" className="flex items-center gap-2">
+              <Zap className="h-4 w-4" />
+              Use chunked processing (recommended for large batches)
+            </Label>
+          </div>
+          
+          <div className="text-sm text-muted-foreground">
+            {(() => {
+              const marketsList = markets.split(',').map(m => m.trim()).filter(Boolean);
+              const keywordsList = keywords.split('\n').map(k => k.trim()).filter(Boolean);
+              const totalWork = marketsList.length * keywordsList.length * pagesPerKeyword;
+              const shouldUseChunked = useChunkedProcessing || totalWork > 25;
+              
+              return (
+                <div className="flex items-center gap-2">
+                  <span>Estimated searches: {totalWork}</span>
+                  {shouldUseChunked && (
+                    <Badge variant="secondary" className="text-xs">
+                      <Zap className="h-3 w-3 mr-1" />
+                      Chunked mode
+                    </Badge>
+                  )}
+                  {totalWork > 50 && !shouldUseChunked && (
+                    <Badge variant="destructive" className="text-xs">
+                      ⚠️ Large batch
+                    </Badge>
+                  )}
+                </div>
+              );
+            })()}
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="keywords">Keywords (one per line)</Label>
             <Textarea
@@ -315,7 +387,9 @@ const BulkAsosImportManager: React.FC = () => {
               <p className="text-sm text-muted-foreground">
                 {isTesting 
                   ? 'Verifying Axesso API connectivity...' 
-                  : 'Searching markets and processing products... This may take a few minutes.'
+                  : importResult?.totalChunks
+                    ? `Processing in chunks (${importResult.completedChunks || 0}/${importResult.totalChunks} completed)...`
+                    : 'Searching markets and processing products... This may take a few minutes.'
                 }
               </p>
             </div>
@@ -369,6 +443,11 @@ const BulkAsosImportManager: React.FC = () => {
               <div>
                 <span className="font-medium">Success Rate:</span> {num(importResult.metrics?.successRate).toFixed(1)}%
               </div>
+              {importResult.totalChunks && (
+                <div>
+                  <span className="font-medium">Chunks Processed:</span> {importResult.completedChunks}/{importResult.totalChunks}
+                </div>
+              )}
             </div>
 
             {importResult.results.length > 0 && (
