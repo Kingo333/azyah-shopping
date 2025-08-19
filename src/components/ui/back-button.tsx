@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
-
 interface BackButtonProps {
   onBack?: () => void;
   fallbackPath?: string;
@@ -13,7 +12,6 @@ interface BackButtonProps {
   children?: React.ReactNode;
   showIcon?: boolean;
 }
-
 export const BackButton: React.FC<BackButtonProps> = ({
   onBack,
   fallbackPath = '/',
@@ -21,10 +19,9 @@ export const BackButton: React.FC<BackButtonProps> = ({
   size = 'sm',
   className,
   children,
-  showIcon = true,
+  showIcon = true
 }) => {
   const navigate = useNavigate();
-
   const handleBack = () => {
     if (onBack) {
       onBack();
@@ -37,16 +34,5 @@ export const BackButton: React.FC<BackButtonProps> = ({
       }
     }
   };
-
-  return (
-    <Button
-      variant={variant}
-      size={size}
-      onClick={handleBack}
-      className={cn('gap-2', className)}
-    >
-      {showIcon && <ArrowLeft className="h-4 w-4" />}
-      {children || 'Back'}
-    </Button>
-  );
+  return;
 };
