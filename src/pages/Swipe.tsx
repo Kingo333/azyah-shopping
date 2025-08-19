@@ -352,6 +352,12 @@ const Swipe = () => {
                 searchQuery={searchQuery}
                 currency={selectedCurrency}
               />
+              {/* Debug info */}
+              <div className="absolute bottom-2 left-2 bg-black/80 text-white text-xs p-2 rounded">
+                Filter: {selectedCategories[0] || 'all'} | 
+                SubCat: {selectedSubcategories[0] || 'none'} | 
+                Gender: {selectedGenders[0] || 'none'}
+              </div>
             </div>
           </div>
         ) : (
