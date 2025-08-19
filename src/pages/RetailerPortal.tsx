@@ -14,7 +14,8 @@ import {
   Plus,
   Settings,
   Users,
-  ShoppingBag
+  ShoppingBag,
+  LogOut
 } from 'lucide-react';
 import { InfoTooltip } from '@/components/ui/info-tooltip';
 import { AddProductModal } from '@/components/AddProductModal';
@@ -28,9 +29,13 @@ import BulkAsosImportManager from '@/components/BulkAsosImportManager';
 import { useRetailerBrands } from '@/hooks/useRetailerBrands';
 import { Product } from '@/types';
 import { convertJsonToProductAttributes } from '@/lib/type-utils';
+import { useNavigate } from 'react-router-dom';
+import { useToast } from '@/hooks/use-toast';
 
 const RetailerPortal = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
   const [retailer, setRetailer] = useState<any>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -185,6 +190,25 @@ const RetailerPortal = () => {
     fetchProducts();
   };
 
+  const handleSignOut = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      
+      toast({
+        description: "Successfully signed out"
+      });
+      navigate('/');
+    } catch (error: any) {
+      console.error('Error signing out:', error);
+      toast({
+        title: "Error",
+        description: "Failed to sign out. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <div className="container max-w-7xl mx-auto p-6">
@@ -199,10 +223,20 @@ const RetailerPortal = () => {
               </p>
             </div>
           </div>
-          <Button onClick={() => setIsAddModalOpen(true)} className="gap-2">
-            <Plus className="h-4 w-4" />
-            Add Product
-          </Button>
+          <div className="flex items-center gap-3">
+            <Button onClick={() => setIsAddModalOpen(true)} className="gap-2">
+              <Plus className="h-4 w-4" />
+              Add Product
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={handleSignOut}
+              className="gap-2"
+            >
+              <LogOut className="h-4 w-4" />
+              Sign Out
+            </Button>
+          </div>
         </div>
 
         {/* Stats Cards */}
