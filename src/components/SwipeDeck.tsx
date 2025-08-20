@@ -521,7 +521,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                   </div>
 
                   {/* Shop Now Button for External Products */}
-                  {currentProduct.is_external && currentProduct.external_url && (
+                  {currentProduct.external_url && (
                     <div className="pt-2 border-t border-border">
                       <Button
                         onClick={(e) => {

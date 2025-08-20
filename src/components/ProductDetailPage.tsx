@@ -7,7 +7,7 @@ import { EnhancedProductGallery } from './EnhancedProductGallery';
 import { AdvancedSizeColorSelector } from './AdvancedSizeColorSelector';
 import { AddToClosetModal } from './AddToClosetModal';
 import { useToast } from '@/hooks/use-toast';
-import { useProductAnalytics } from '@/hooks/useAnalytics';
+import { useAnalytics } from '@/hooks/useAnalytics';
 
 interface ProductDetailPageProps {
   product: Product;
@@ -19,18 +19,10 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
   onBack
 }) => {
   const { toast } = useToast();
-  const { trackProductView, trackProductClick } = useProductAnalytics();
 
   const [selectedSize, setSelectedSize] = useState('');
   const [selectedColor, setSelectedColor] = useState('');
   const [isClosetModalOpen, setIsClosetModalOpen] = useState(false);
-
-  // Track product view when component mounts
-  useEffect(() => {
-    if (product) {
-      trackProductView(product.id, 'product_detail_page');
-    }
-  }, [product, trackProductView]);
 
   const images = useMemo<string[]>(() => {
     const media = (product?.media_urls ?? []) as unknown as string[];
@@ -43,7 +35,6 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
 
   const handleShopNow = () => {
     if (product?.external_url && product?.id) {
-      trackProductClick(product.id, 'shop_now_button');
       window.open(product.external_url, '_blank', 'noopener,noreferrer');
     } else {
       toast({ description: 'Shop link not available for this product', variant: 'destructive' });
