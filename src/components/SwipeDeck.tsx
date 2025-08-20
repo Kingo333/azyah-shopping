@@ -366,7 +366,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
             custom={x.get()}
           >
             <Card className="h-full flex flex-col cursor-grab active:cursor-grabbing overflow-hidden pointer-events-none">
-              <CardContent className="p-3 sm:p-4 flex flex-col h-full overflow-y-auto pointer-events-none">
+              <CardContent className="p-3 sm:p-4 flex flex-col h-full pointer-events-none">
                 <div 
                   className="relative w-full mb-3 sm:mb-4 overflow-hidden rounded-md flex-shrink-0"
                   style={{
@@ -472,31 +472,6 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                     </div>
                   </div>
 
-                  {/* Shop Now Button for External Products */}
-                  {currentProduct.is_external && currentProduct.external_url && (
-                    <div className="mt-3 pt-3 border-t border-border">
-                      <Button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          // Track shop now click
-                          if (user) {
-                            supabase.from('events').insert([{
-                              event_type: 'shop_now_click',
-                              user_id: user.id,
-                              product_id: currentProduct.id,
-                              event_data: { source: 'swipe_deck', external_url: currentProduct.external_url }
-                            }]);
-                          }
-                          window.open(currentProduct.external_url, '_blank', 'noopener,noreferrer');
-                        }}
-                        className="w-full gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground font-semibold shadow-lg pointer-events-auto"
-                        size="sm"
-                      >
-                        <ExternalLink className="h-4 w-4" />
-                        Shop Now on {currentProduct.merchant_name || 'ASOS'}
-                      </Button>
-                    </div>
-                  )}
                 </div>
               </CardContent>
             </Card>
