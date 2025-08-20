@@ -325,20 +325,32 @@ const RetailerPortal = () => {
                 ) : products.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {products.map((product) => (
-                      <Card key={product.id} className="overflow-hidden border-border/50 hover:border-border transition-colors">
-                        <div className="aspect-square relative">
-                          <img
-                            src={product.media_urls?.[0] || '/placeholder.svg'}
-                            alt={product.title}
-                            className="w-full h-full object-cover"
-                          />
-                          <Badge 
-                            variant={product.status === 'active' ? 'default' : 'secondary'}
-                            className="absolute top-2 right-2"
-                          >
-                            {product.status}
-                          </Badge>
-                        </div>
+                       <Card key={product.id} className="overflow-hidden border-border/50 hover:border-border transition-colors">
+                         <div className="aspect-square relative">
+                           <img
+                             src={product.media_urls?.[0] || '/placeholder.svg'}
+                             alt={product.title}
+                             className="w-full h-full object-cover"
+                           />
+                           {product.status === 'archived' && (
+                             <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                               <Badge 
+                                 variant="secondary"
+                                 className="text-white bg-destructive/90 border-destructive px-4 py-2 text-sm font-semibold"
+                               >
+                                 ARCHIVED
+                               </Badge>
+                             </div>
+                           )}
+                           {product.status !== 'archived' && (
+                             <Badge 
+                               variant={product.status === 'active' ? 'default' : 'secondary'}
+                               className="absolute top-2 right-2"
+                             >
+                               {product.status}
+                             </Badge>
+                           )}
+                         </div>
                         <CardContent className="p-4">
                           <div className="space-y-2">
                             <h3 className="font-semibold line-clamp-2">{product.title}</h3>
