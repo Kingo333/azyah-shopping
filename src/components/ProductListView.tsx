@@ -8,7 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useWishlist } from '@/hooks/useWishlist';
 import { Product } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
-import ProductDetailModal from '@/components/ProductDetailModal';
+import ProductDetailPage from '@/components/ProductDetailPage';
 import { getResponsiveImageProps } from '@/utils/asosImageUtils';
 
 interface ProductListViewProps {
@@ -18,7 +18,7 @@ interface ProductListViewProps {
 
 const ProductListView: React.FC<ProductListViewProps> = ({ products, isLoading }) => {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showProductDetail, setShowProductDetail] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -63,7 +63,7 @@ const ProductListView: React.FC<ProductListViewProps> = ({ products, isLoading }
 
   const handleProductClick = (product: Product) => {
     setSelectedProduct(product);
-    setIsModalOpen(true);
+    setShowProductDetail(true);
   };
 
   const formatPrice = (cents: number, currency: string = 'USD') => {
@@ -232,15 +232,16 @@ const ProductListView: React.FC<ProductListViewProps> = ({ products, isLoading }
         })}
       </div>
 
-      {selectedProduct && (
-        <ProductDetailModal
-          product={selectedProduct}
-          isOpen={isModalOpen}
-          onClose={() => {
-            setIsModalOpen(false);
-            setSelectedProduct(null);
-          }}
-        />
+      {selectedProduct && showProductDetail && (
+        <div className="fixed inset-0 z-50 bg-background">
+          <ProductDetailPage
+            product={selectedProduct}
+            onBack={() => {
+              setShowProductDetail(false);
+              setSelectedProduct(null);
+            }}
+          />
+        </div>
       )}
     </>
   );

@@ -286,11 +286,9 @@ const Swipe = () => {
         </div>
 
         {/* Content Container */}
-        {viewMode === 'swipe' ? <div className="flex-1 flex items-start justify-center min-h-[500px] sm:min-h-[600px]">
-            <div className="relative w-full max-w-[350px] sm:max-w-md h-[calc(100vh-200px)] sm:h-[600px] max-h-[700px]">
+        {viewMode === 'swipe' ? <div className="flex-1 flex items-start justify-center min-h-[600px]">
+            <div className="relative w-full max-w-[380px] sm:max-w-md h-[calc(100vh-180px)] max-h-[700px]">
               <SwipeDeck filter={selectedCategories[0] || 'all'} subcategory={selectedSubcategories[0] || ''} gender={selectedGenders[0] || ''} priceRange={priceRange} searchQuery={searchQuery} currency={selectedCurrency} />
-              {/* Debug info */}
-              
             </div>
           </div> : <div className="flex-1">
             <ProductListView products={products} isLoading={productsLoading} />

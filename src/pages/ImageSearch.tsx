@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import ShopperNavigation from '@/components/ShopperNavigation';
 import TutorialTooltip from '@/components/TutorialTooltip';
-import ProductDetailModal from '@/components/ProductDetailModal';
+import ProductDetailPage from '@/components/ProductDetailPage';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { 
@@ -53,7 +53,7 @@ const ImageSearch: React.FC = () => {
   const [internalResults, setInternalResults] = useState<SearchResult[]>([]);
   const [externalResults, setExternalResults] = useState<ExternalSearchResult[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showProductDetail, setShowProductDetail] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -357,7 +357,7 @@ const ImageSearch: React.FC = () => {
 
   const handleInternalProductClick = (result: SearchResult) => {
     setSelectedProduct(result as unknown as Product);
-    setIsModalOpen(true);
+    setShowProductDetail(true);
   };
 
   const handleExternalProductClick = (result: ExternalSearchResult) => {
@@ -646,15 +646,18 @@ const ImageSearch: React.FC = () => {
           </div>
         )}
 
-        {/* Product Detail Modal */}
-        <ProductDetailModal
-          product={selectedProduct}
-          isOpen={isModalOpen}
-          onClose={() => {
-            setIsModalOpen(false);
-            setSelectedProduct(null);
-          }}
-        />
+        {/* Product Detail Page */}
+        {selectedProduct && showProductDetail && (
+          <div className="fixed inset-0 z-50 bg-background">
+            <ProductDetailPage
+              product={selectedProduct}
+              onBack={() => {
+                setShowProductDetail(false);
+                setSelectedProduct(null);
+              }}
+            />
+          </div>
+        )}
       </div>
     </div>
   );

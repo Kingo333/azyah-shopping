@@ -7,7 +7,7 @@ import { Heart, X, RotateCcw, Sparkles, ShoppingBag, TrendingUp, Users, Star, Ex
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useWishlist } from '@/hooks/useWishlist';
-import ProductDetailModal from '@/components/ProductDetailModal';
+import ProductDetailPage from '@/components/ProductDetailPage';
 interface SwipeProduct {
   id: string;
   title: string;
@@ -78,7 +78,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
   currency = 'USD'
 }) => {
   const [index, setIndex] = useState(0);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showProductDetail, setShowProductDetail] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<SwipeProduct | null>(null);
   const [imageAspectRatio, setImageAspectRatio] = useState<number>(1);
   const { toast } = useToast();
@@ -322,7 +322,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
 
   const handleProductClick = (product: SwipeProduct) => {
     setSelectedProduct(product);
-    setIsModalOpen(true);
+    setShowProductDetail(true);
   };
 
   if (products.length === 0) {
@@ -335,6 +335,21 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
         }}>
           Reset Filters
         </Button>
+      </div>
+    );
+  }
+
+  // Handle full-page product detail view
+  if (showProductDetail && selectedProduct) {
+    return (
+      <div className="fixed inset-0 z-50 bg-background">
+        <ProductDetailPage
+          product={selectedProduct as any}
+          onBack={() => {
+            setShowProductDetail(false);
+            setSelectedProduct(null);
+          }}
+        />
       </div>
     );
   }
@@ -365,18 +380,17 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
             exit="exit"
             custom={x.get()}
           >
-            <Card className="h-full flex flex-col cursor-grab active:cursor-grabbing overflow-hidden pointer-events-none">
-              <CardContent className="p-3 sm:p-4 flex flex-col h-full overflow-y-auto pointer-events-none">
+            <Card className="h-full flex flex-col cursor-grab active:cursor-grabbing overflow-hidden">
+              <CardContent className="p-2 sm:p-3 flex flex-col h-full">
                 <div 
-                  className="relative w-full mb-3 sm:mb-4 overflow-hidden rounded-md flex-shrink-0"
+                  className="relative w-full mb-2 sm:mb-3 overflow-hidden rounded-lg flex-shrink-0"
                   style={{
                     height: `${getImageHeight(imageAspectRatio)}px`
                   }}
                 >
-                   <img
+                  <img
                     {...getResponsiveImageProps(
                       (() => {
-                        // Parse media_urls JSON string and get first URL, fallback to image_url or placeholder
                         try {
                           const mediaUrls = typeof currentProduct.media_urls === 'string' 
                             ? JSON.parse(currentProduct.media_urls)
@@ -399,82 +413,84 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                     }}
                   />
                 </div>
-                <div className="flex flex-col flex-grow">
-                  <div className="flex items-start justify-between gap-2 mb-1">
-                    <div className="flex items-center gap-2 flex-1">
-                      <h3 className="text-base sm:text-lg font-semibold line-clamp-2">{currentProduct.title}</h3>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleProductClick(currentProduct);
-                        }}
-                        className="flex-shrink-0 h-7 sm:h-7 px-2 sm:px-2 text-xs hover:bg-accent pointer-events-auto"
-                      >
-                        <Info className="h-3 w-3 mr-1" />
-                        <span className="hidden sm:inline">Details</span>
-                      </Button>
+                
+                <div className="flex flex-col flex-grow space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-sm sm:text-base font-semibold line-clamp-2 mb-1">{currentProduct.title}</h3>
+                      <p className="text-xs sm:text-sm text-muted-foreground line-clamp-1">{currentProduct.brands?.name}</p>
                     </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleProductClick(currentProduct);
+                      }}
+                      className="flex-shrink-0 h-8 px-2 text-xs hover:bg-accent"
+                    >
+                      <Info className="h-3 w-3 mr-1" />
+                      <span className="hidden sm:inline">Details</span>
+                    </Button>
                   </div>
-                  <p className="text-sm sm:text-sm text-muted-foreground line-clamp-1 mb-2">{currentProduct.brands?.name}</p>
-                  <div className="flex items-center justify-between mb-auto">
-                    <span className="text-xl sm:text-xl font-bold">
+
+                  <div className="flex items-center justify-between">
+                    <span className="text-lg sm:text-xl font-bold">
                       {new Intl.NumberFormat('en-US', {
                         style: 'currency',
                         currency: currentProduct.currency || 'USD'
                       }).format(currentProduct.price_cents / 100)}
                     </span>
-                    <div className="flex items-center gap-2">
-                      {currentProduct.ar_mesh_url && (
-                        <Badge variant="outline" className="gap-1 text-xs">
-                          <Sparkles className="h-3 w-3" />
-                          AR Ready
-                        </Badge>
-                      )}
-                      {/* Action Circles */}
-                      <div className="flex items-center gap-1 ml-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDislike();
-                          }}
-                          className="h-10 w-10 rounded-full bg-destructive/10 hover:bg-destructive/20 pointer-events-auto"
-                        >
-                          <X className="h-5 w-5 text-destructive" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleAddToWishlist(currentProduct);
-                          }}
-                          disabled={wishlistLoading}
-                          className="h-10 w-10 rounded-full bg-accent/10 hover:bg-accent/20 pointer-events-auto"
-                        >
-                          <ShoppingBag className="h-5 w-5 text-accent-foreground" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleLike(currentProduct);
-                          }}
-                          className="h-10 w-10 rounded-full bg-primary/10 hover:bg-primary/20 pointer-events-auto"
-                        >
-                          <Heart className="h-5 w-5 text-primary" />
-                        </Button>
-                      </div>
-                    </div>
+                    
+                    {currentProduct.ar_mesh_url && (
+                      <Badge variant="outline" className="gap-1 text-xs">
+                        <Sparkles className="h-3 w-3" />
+                        AR Ready
+                      </Badge>
+                    )}
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex items-center justify-center gap-2 pt-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDislike();
+                      }}
+                      className="h-10 w-10 rounded-full bg-destructive/10 hover:bg-destructive/20"
+                    >
+                      <X className="h-4 w-4 text-destructive" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleAddToWishlist(currentProduct);
+                      }}
+                      disabled={wishlistLoading}
+                      className="h-10 w-10 rounded-full bg-accent/10 hover:bg-accent/20"
+                    >
+                      <ShoppingBag className="h-4 w-4 text-accent-foreground" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleLike(currentProduct);
+                      }}
+                      className="h-10 w-10 rounded-full bg-primary/10 hover:bg-primary/20"
+                    >
+                      <Heart className="h-4 w-4 text-primary" />
+                    </Button>
                   </div>
 
                   {/* Shop Now Button for External Products */}
                   {currentProduct.is_external && currentProduct.external_url && (
-                    <div className="mt-3 pt-3 border-t border-border">
+                    <div className="pt-2 border-t border-border">
                       <Button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -504,33 +520,58 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
         )}
       </AnimatePresence>
 
-      {/* No More Products */}
-      {index >= products.length && (
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center">
-          <h2 className="text-2xl font-bold text-muted-foreground mb-2">No More Products</h2>
-          <p className="text-muted-foreground">You've seen all the products for now.</p>
-        </div>
-      )}
 
 
-      {/* Swipe Instructions */}
-      <div className="absolute top-4 left-4 right-4 z-10">
-        <div className="bg-black/50 text-white text-xs p-2 rounded-lg text-center">
-          Swipe ← to pass • Swipe → to like • Swipe ↑ to add to wishlist
-        </div>
+      {/* Progress indicator */}
+      <div className="absolute bottom-4 left-4 right-4 bg-black/20 backdrop-blur-sm rounded-full p-2 text-white text-xs text-center">
+        {index + 1} of {products.length}
       </div>
 
-      {/* Product Detail Modal */}
-      {selectedProduct && (
-        <ProductDetailModal
-          product={selectedProduct as any}
-          isOpen={isModalOpen}
-          onClose={() => {
-            setIsModalOpen(false);
-            setSelectedProduct(null);
-          }}
-        />
+      {/* Swipe instructions - show only for first few cards */}
+      {index < 3 && (
+        <div className="absolute top-4 left-4 right-4 text-center">
+          <div className="bg-black/20 backdrop-blur-sm rounded-lg p-2 text-white text-xs">
+            ← Pass • ↑ Save • Like →
+          </div>
+        </div>
       )}
+
+      {/* No More Products State */}
+      {index >= products.length && products.length > 0 && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-6 bg-background/95 backdrop-blur-sm rounded-3xl">
+          <div className="bg-gradient-accent rounded-full p-4 mb-4">
+            <Star className="h-8 w-8 text-white" />
+          </div>
+          <h3 className="text-xl font-bold mb-2 font-playfair">You've seen everything!</h3>
+          <p className="text-muted-foreground mb-4 text-sm">
+            Great job exploring! Check your likes or try adjusting your filters for more discoveries.
+          </p>
+          <div className="flex gap-2">
+            <Button 
+              onClick={() => navigate("/likes")} 
+              variant="outline" 
+              size="sm"
+              className="gap-2"
+            >
+              <Heart className="h-4 w-4" />
+              View Likes
+            </Button>
+            <Button 
+              onClick={() => {
+                setIndex(0);
+                window.location.reload();
+              }} 
+              variant="default" 
+              size="sm"
+              className="gap-2"
+            >
+              <RotateCcw className="h-4 w-4" />
+              Start Over
+            </Button>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };
