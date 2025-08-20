@@ -159,40 +159,43 @@ const LandingSwipeDeck: React.FC<LandingSwipeDeckProps> = ({
 
     // Check for vertical swipe (wishlist)
     if (offsetY < -VERTICAL_THRESHOLD && Math.abs(offsetX) < DISTANCE_THRESHOLD) {
-      // Animate card up and trigger wishlist
-      animate(x, 0, { duration: 0.2 });
-      animate(y, -window.innerHeight, { duration: 0.3 });
+      // Animate card up and trigger wishlist immediately
+      animate(x, 0, { duration: 0.15 });
+      animate(y, -window.innerHeight, { duration: 0.2 });
+      handleAddToWishlist();
+      // Reset position immediately for next card
       setTimeout(() => {
-        handleAddToWishlist();
         y.set(0);
-      }, 300);
+      }, 200);
     } 
     // Check for right swipe (like)
     else if (offsetX > DISTANCE_THRESHOLD || velocityX > 500) {
-      // Animate card to the right and trigger like
-      animate(x, window.innerWidth + 200, { duration: 0.3 });
-      animate(y, offsetY + velocityY * 0.1, { duration: 0.3 });
+      // Animate card to the right and trigger like immediately
+      animate(x, window.innerWidth + 200, { duration: 0.2 });
+      animate(y, offsetY + velocityY * 0.1, { duration: 0.2 });
+      handleLike();
+      // Reset position immediately for next card
       setTimeout(() => {
-        handleLike();
         x.set(0);
         y.set(0);
-      }, 300);
+      }, 200);
     } 
     // Check for left swipe (dislike)
     else if (offsetX < -DISTANCE_THRESHOLD || velocityX < -500) {
-      // Animate card to the left and trigger dislike
-      animate(x, -window.innerWidth - 200, { duration: 0.3 });
-      animate(y, offsetY + velocityY * 0.1, { duration: 0.3 });
+      // Animate card to the left and trigger dislike immediately
+      animate(x, -window.innerWidth - 200, { duration: 0.2 });
+      animate(y, offsetY + velocityY * 0.1, { duration: 0.2 });
+      handleDislike();
+      // Reset position immediately for next card
       setTimeout(() => {
-        handleDislike();
         x.set(0);
         y.set(0);
-      }, 300);
+      }, 200);
     } 
     // Not enough movement, spring back to center
     else {
-      animate(x, 0, { type: "spring", stiffness: 300, damping: 30 });
-      animate(y, 0, { type: "spring", stiffness: 300, damping: 30 });
+      animate(x, 0, { type: "spring", stiffness: 400, damping: 40 });
+      animate(y, 0, { type: "spring", stiffness: 400, damping: 40 });
     }
   }, [currentProduct, handleLike, handleDislike, handleAddToWishlist, x, y]);
 
