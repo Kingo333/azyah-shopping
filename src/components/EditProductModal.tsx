@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Upload, X, Loader2 } from 'lucide-react';
+import { Upload, X, Loader2, Trash2 } from 'lucide-react';
 import { CATEGORY_TREE, getAllCategories, getSubcategoriesForCategory, getCategoryDisplayName, getSubcategoryDisplayName } from '@/lib/categories';
 import { SizeChartUpload } from '@/components/SizeChartUpload';
 import type { TopCategory, SubCategory } from '@/lib/categories';
@@ -234,6 +234,40 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
     }
   };
 
+  const handleDelete = async () => {
+    if (!product || !user) return;
+
+    const confirmed = window.confirm('Are you sure you want to delete this product? This action cannot be undone.');
+    if (!confirmed) return;
+
+    setLoading(true);
+
+    try {
+      const { error } = await supabase
+        .from('products')
+        .delete()
+        .eq('id', product.id);
+
+      if (error) throw error;
+
+      toast({ 
+        title: "Success", 
+        description: "Product deleted successfully!" 
+      });
+      onProductUpdated();
+      onClose();
+    } catch (error: any) {
+      console.error('Error deleting product:', error);
+      toast({ 
+        title: "Error", 
+        description: error.message || "Failed to delete product", 
+        variant: "destructive" 
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (!product) return null;
 
   return (
@@ -430,20 +464,33 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
             productId={product.id}
           />
 
-          <div className="flex justify-end space-x-2 pt-4 border-t">
-            <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
-              Cancel
+          <div className="flex justify-between space-x-2 pt-4 border-t">
+            <Button 
+              type="button" 
+              variant="destructive" 
+              onClick={handleDelete} 
+              disabled={loading}
+              className="gap-2"
+            >
+              <Trash2 className="h-4 w-4" />
+              Delete Product
             </Button>
-            <Button type="submit" disabled={loading || uploadingImages}>
-              {loading ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Updating...
-                </>
-              ) : (
-                'Update Product'
-              )}
-            </Button>
+            
+            <div className="flex space-x-2">
+              <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={loading || uploadingImages}>
+                {loading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Updating...
+                  </>
+                ) : (
+                  'Update Product'
+                )}
+              </Button>
+            </div>
           </div>
         </form>
       </DialogContent>

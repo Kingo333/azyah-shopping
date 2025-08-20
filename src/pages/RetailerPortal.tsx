@@ -15,7 +15,9 @@ import {
   Settings,
   Users,
   ShoppingBag,
-  LogOut
+  LogOut,
+  Trash2,
+  Edit
 } from 'lucide-react';
 import { InfoTooltip } from '@/components/ui/info-tooltip';
 import { AddProductModal } from '@/components/AddProductModal';
@@ -184,6 +186,37 @@ const RetailerPortal = () => {
     setEditingProduct(product);
   };
 
+  const handleDeleteProduct = async (product: Product) => {
+    const confirmed = window.confirm(
+      `Are you sure you want to delete "${product.title}"? This action cannot be undone.`
+    );
+    
+    if (!confirmed) return;
+
+    try {
+      const { error } = await supabase
+        .from('products')
+        .delete()
+        .eq('id', product.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Product deleted successfully!"
+      });
+      
+      fetchProducts(); // Refresh the product list
+    } catch (error: any) {
+      console.error('Error deleting product:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete product",
+        variant: "destructive"
+      });
+    }
+  };
+
   const handleCloseEditModal = () => {
     setEditingProduct(null);
   };
@@ -330,14 +363,25 @@ const RetailerPortal = () => {
                                 Stock: {product.stock_qty || 0}
                               </span>
                             </div>
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              className="w-full mt-2 border-border/50 hover:bg-accent/50 dark:hover:bg-accent/20"
-                              onClick={() => setEditingProduct(product)}
-                            >
-                              Edit Product
-                            </Button>
+                            <div className="flex gap-2 mt-2">
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="flex-1 border-border/50 hover:bg-accent/50 dark:hover:bg-accent/20"
+                                onClick={() => setEditingProduct(product)}
+                              >
+                                <Edit className="h-3 w-3 mr-1" />
+                                Edit
+                              </Button>
+                              <Button 
+                                variant="destructive" 
+                                size="sm" 
+                                className="flex-shrink-0"
+                                onClick={() => handleDeleteProduct(product)}
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </div>
                           </div>
                         </CardContent>
                       </Card>
