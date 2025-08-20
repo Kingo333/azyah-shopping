@@ -1537,27 +1537,39 @@ export type Database = {
       swipes: {
         Row: {
           action: Database["public"]["Enums"]["swipe_action"]
+          confidence_score: number | null
           created_at: string
           id: number
+          learning_weight: number | null
+          metadata: Json | null
           product_id: string | null
           session_id: string | null
           user_id: string | null
+          view_duration_ms: number | null
         }
         Insert: {
           action: Database["public"]["Enums"]["swipe_action"]
+          confidence_score?: number | null
           created_at?: string
           id?: number
+          learning_weight?: number | null
+          metadata?: Json | null
           product_id?: string | null
           session_id?: string | null
           user_id?: string | null
+          view_duration_ms?: number | null
         }
         Update: {
           action?: Database["public"]["Enums"]["swipe_action"]
+          confidence_score?: number | null
           created_at?: string
           id?: number
+          learning_weight?: number | null
+          metadata?: Json | null
           product_id?: string | null
           session_id?: string | null
           user_id?: string | null
+          view_duration_ms?: number | null
         }
         Relationships: [
           {
@@ -1658,6 +1670,60 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_taste_profiles: {
+        Row: {
+          brand_preferences: Json | null
+          category_preferences: Json | null
+          color_preferences: Json | null
+          id: string
+          last_updated_at: string | null
+          negative_swipes: number | null
+          positive_swipes: number | null
+          preference_confidence: number | null
+          price_preferences: Json | null
+          profile_created_at: string | null
+          seasonal_patterns: Json | null
+          style_preferences: Json | null
+          time_patterns: Json | null
+          total_swipes: number | null
+          user_id: string
+        }
+        Insert: {
+          brand_preferences?: Json | null
+          category_preferences?: Json | null
+          color_preferences?: Json | null
+          id?: string
+          last_updated_at?: string | null
+          negative_swipes?: number | null
+          positive_swipes?: number | null
+          preference_confidence?: number | null
+          price_preferences?: Json | null
+          profile_created_at?: string | null
+          seasonal_patterns?: Json | null
+          style_preferences?: Json | null
+          time_patterns?: Json | null
+          total_swipes?: number | null
+          user_id: string
+        }
+        Update: {
+          brand_preferences?: Json | null
+          category_preferences?: Json | null
+          color_preferences?: Json | null
+          id?: string
+          last_updated_at?: string | null
+          negative_swipes?: number | null
+          positive_swipes?: number | null
+          preference_confidence?: number | null
+          price_preferences?: Json | null
+          profile_created_at?: string | null
+          seasonal_patterns?: Json | null
+          style_preferences?: Json | null
+          time_patterns?: Json | null
+          total_swipes?: number | null
+          user_id?: string
+        }
+        Relationships: []
       }
       users: {
         Row: {
@@ -1899,6 +1965,16 @@ export type Database = {
           plan: string
           status: string
           subscription_id: string
+        }[]
+      }
+      get_personalized_product_scores: {
+        Args: { product_ids: string[]; target_user_id: string }
+        Returns: {
+          brand_score: number
+          category_score: number
+          personalization_score: number
+          price_score: number
+          product_id: string
         }[]
       }
       get_public_profile: {
