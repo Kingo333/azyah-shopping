@@ -374,13 +374,14 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                   }}
                 >
                    <img
-                    src={currentProduct.media_urls?.[0] || currentProduct.image_url || '/placeholder.svg'}
+                    {...getResponsiveImageProps(
+                      currentProduct.media_urls?.[0] || '/placeholder.svg',
+                      "(max-width: 768px) 100vw, 50vw"
+                    )}
                     alt={currentProduct.title}
                     className="object-cover w-full h-full"
-                    loading="eager"
                     onLoad={handleImageLoad}
                     onError={(e) => {
-                      console.log('Image failed to load, using placeholder:', currentProduct.media_urls?.[0] || currentProduct.image_url);
                       (e.target as HTMLImageElement).src = '/placeholder.svg';
                     }}
                   />
