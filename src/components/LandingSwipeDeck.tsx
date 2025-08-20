@@ -121,7 +121,9 @@ const LandingSwipeDeck: React.FC<LandingSwipeDeckProps> = ({
         y.set(0);
         return nextIndex;
       }
-      // If no more products, stay at current index
+      // If no more products, reset motion values but stay at current index
+      x.set(0);
+      y.set(0);
       return prevIndex;
     });
   }, [x, y, products.length]);
