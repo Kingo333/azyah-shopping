@@ -585,23 +585,6 @@ export default function Landing() {
             </Button>
           </div>
           
-          <div className="flex items-center justify-center space-x-8 pt-8">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-primary">50K+</div>
-              <div className="text-sm text-background/70">Members</div>
-            </div>
-            <div className="w-px h-8 bg-white/20" />
-            <div className="text-center">
-              <div className="text-2xl font-bold text-primary">500+</div>
-              <div className="text-sm text-background/70">Brands</div>
-            </div>
-            <div className="w-px h-8 bg-white/20" />
-            <div className="text-center">
-              <div className="text-2xl font-bold text-primary">4.9</div>
-              <div className="text-sm text-background/70">Rating</div>
-            </div>
-          </div>
-          
           <p className="text-background/60 text-sm uppercase tracking-wider font-medium">
             Exclusive • Curated • Personal
           </p>
