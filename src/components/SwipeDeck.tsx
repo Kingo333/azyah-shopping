@@ -442,50 +442,52 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                       }).format(currentProduct.price_cents / 100)}
                     </span>
                     
-                    {currentProduct.ar_mesh_url && (
-                      <Badge variant="outline" className="gap-1 text-xs">
-                        <Sparkles className="h-3 w-3" />
-                        AR Ready
-                      </Badge>
-                    )}
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div className="flex items-center justify-center gap-2 pt-2">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDislike();
-                      }}
-                      className="h-10 w-10 rounded-full bg-destructive/10 hover:bg-destructive/20"
-                    >
-                      <X className="h-4 w-4 text-destructive" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleAddToWishlist(currentProduct);
-                      }}
-                      disabled={wishlistLoading}
-                      className="h-10 w-10 rounded-full bg-accent/10 hover:bg-accent/20"
-                    >
-                      <ShoppingBag className="h-4 w-4 text-accent-foreground" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleLike(currentProduct);
-                      }}
-                      className="h-10 w-10 rounded-full bg-primary/10 hover:bg-primary/20"
-                    >
-                      <Heart className="h-4 w-4 text-primary" />
-                    </Button>
+                    <div className="flex items-center gap-1">
+                      {currentProduct.ar_mesh_url && (
+                        <Badge variant="outline" className="gap-1 text-xs mr-2">
+                          <Sparkles className="h-3 w-3" />
+                          AR Ready
+                        </Badge>
+                      )}
+                      
+                      {/* Action Buttons - smaller and positioned to the right */}
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDislike();
+                          }}
+                          className="h-8 w-8 rounded-full bg-destructive/10 hover:bg-destructive/20"
+                        >
+                          <X className="h-3 w-3 text-destructive" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleAddToWishlist(currentProduct);
+                          }}
+                          disabled={wishlistLoading}
+                          className="h-8 w-8 rounded-full bg-accent/10 hover:bg-accent/20"
+                        >
+                          <ShoppingBag className="h-3 w-3 text-accent-foreground" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleLike(currentProduct);
+                          }}
+                          className="h-8 w-8 rounded-full bg-primary/10 hover:bg-primary/20"
+                        >
+                          <Heart className="h-3 w-3 text-primary" />
+                        </Button>
+                      </div>
+                    </div>
                   </div>
 
                   {/* Shop Now Button for External Products */}
