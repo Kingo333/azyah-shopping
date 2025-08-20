@@ -184,27 +184,39 @@ const LandingSwipeDeck: React.FC<LandingSwipeDeckProps> = ({
       // Trigger action immediately for responsiveness
       handleLike();
       // Animate card to the right smoothly
-      animate(x, window.innerWidth + 200, { duration: 0.3 });
-      animate(y, offsetY + velocityY * 0.1, { duration: 0.3 });
+      animate(x, window.innerWidth + 200, { 
+        duration: 0.3,
+        ease: "easeOut"
+      });
+      animate(y, offsetY + velocityY * 0.1, { 
+        duration: 0.3,
+        ease: "easeOut"
+      });
       // Reset position after animation completes
       setTimeout(() => {
         x.set(0);
         y.set(0);
       }, 300);
-    } 
+    }
     // Check for left swipe (dislike)
     else if (offsetX < -DISTANCE_THRESHOLD || velocityX < -500) {
       // Trigger action immediately for responsiveness
       handleDislike();
-      // Animate card to the left smoothly
-      animate(x, -window.innerWidth - 200, { duration: 0.3 });
-      animate(y, offsetY + velocityY * 0.1, { duration: 0.3 });
+      // Animate card to the left smoothly - matching right swipe exactly
+      animate(x, -window.innerWidth - 200, { 
+        duration: 0.3,
+        ease: "easeOut"
+      });
+      animate(y, offsetY + velocityY * 0.1, { 
+        duration: 0.3,
+        ease: "easeOut"
+      });
       // Reset position after animation completes
       setTimeout(() => {
         x.set(0);
         y.set(0);
       }, 300);
-    } 
+    }
     // Not enough movement, spring back to center
     else {
       animate(x, 0, { type: "spring", stiffness: 400, damping: 40 });
