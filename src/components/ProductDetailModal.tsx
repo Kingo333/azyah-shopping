@@ -113,7 +113,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               </Button>
 
               {/* Image Gallery */}
-              <div className="w-full relative flex-shrink-0" style={{height: '40vh'}}>
+              <div className="w-full relative flex-shrink-0" style={{height: '35vh'}}>
                 <EnhancedProductGallery
                   images={images}
                   productTitle={product.title}
@@ -123,8 +123,8 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               </div>
 
               {/* Scrollable Product Content */}
-              <div className="bg-background flex-1 overflow-y-auto">
-                <div className="p-4 space-y-4 pb-24">
+              <div className="bg-background flex-1 overflow-y-auto" style={{maxHeight: '65vh'}}>
+                <div className="p-4 space-y-4 pb-32">
                   {/* Product Header */}
                   <div className="space-y-2">
                     <h1 className="text-xl font-bold leading-tight">{product.title}</h1>
@@ -192,7 +192,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               </div>
 
               {/* Fixed Bottom Actions */}
-              <div className="bg-background/95 backdrop-blur-lg border-t border-border p-4 space-y-3 flex-shrink-0">
+              <div className="absolute bottom-0 left-0 right-0 bg-background/95 backdrop-blur-lg border-t border-border p-4 space-y-3">
                 {/* Shop Now Button */}
                 {product.is_external && product.external_url && (
                   <Button
