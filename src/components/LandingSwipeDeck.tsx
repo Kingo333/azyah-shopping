@@ -117,7 +117,7 @@ const LandingSwipeDeck: React.FC<LandingSwipeDeckProps> = ({
             <div>
               <h3 className="text-sm font-semibold line-clamp-2">{currentProduct.title}</h3>
               <p className="text-xs text-muted-foreground">
-                {currentProduct.brand?.name || currentProduct.brands?.name || 'Brand'}
+                {currentProduct.brand?.name || 'Brand'}
               </p>
             </div>
 
