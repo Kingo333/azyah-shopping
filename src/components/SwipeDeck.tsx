@@ -25,7 +25,6 @@ interface SwipeProduct {
   external_url?: string;
   merchant_name?: string;
   ar_mesh_url?: string;
-  description?: string;
 }
 import { useNavigate } from 'react-router-dom';
 import { TopCategory, SubCategory } from '@/lib/categories';
@@ -322,15 +321,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
 
 
   const handleProductClick = (product: SwipeProduct) => {
-    // Ensure media_urls is properly formatted for ProductDetailPage
-    const productForDetail = {
-      ...product,
-      media_urls: product.media_urls || [product.image_url].filter(Boolean),
-      brand: product.brands ? { name: product.brands.name } : null,
-      description: product.description || 'No description available',
-      sku: product.id
-    };
-    setSelectedProduct(productForDetail);
+    setSelectedProduct(product);
     setShowProductDetail(true);
   };
 
