@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
 import { Heart, ShoppingBag, ExternalLink, X } from 'lucide-react';
@@ -89,6 +89,11 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
       <DialogContent
         className="w-[100vw] h-[100dvh] md:max-w-5xl md:max-h-[95vh] p-0 glass-premium border-white/20 rounded-none md:rounded-3xl overflow-hidden md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2"
       >
+        <DialogTitle className="sr-only">Product Details</DialogTitle>
+        <DialogDescription className="sr-only">
+          View detailed information about {product?.title || 'this product'} including images, pricing, and specifications.
+        </DialogDescription>
+        
         {!product ? (
           <div className="flex h-[70vh] items-center justify-center text-sm text-muted-foreground">
             Loading product details…
@@ -96,7 +101,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
         ) : (
           <>
             {/* Mobile Layout */}
-            <div className="md:hidden h-full flex flex-col max-h-[100dvh] overflow-hidden">
+            <div className="md:hidden h-full flex flex-col">
               {/* Close Button */}
               <Button
                 variant="ghost"
@@ -108,7 +113,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               </Button>
 
               {/* Image Gallery */}
-              <div className="aspect-[3/4] w-full relative flex-shrink-0 max-h-[50vh]">
+              <div className="w-full relative flex-shrink-0" style={{height: '40vh'}}>
                 <EnhancedProductGallery
                   images={images}
                   productTitle={product.title}
@@ -118,8 +123,8 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               </div>
 
               {/* Scrollable Product Content */}
-              <div className="bg-background flex-1 overflow-y-auto min-h-0 overscroll-contain">
-                <div className="p-4 space-y-4 pb-20">
+              <div className="bg-background flex-1 overflow-y-auto">
+                <div className="p-4 space-y-4 pb-24">
                   {/* Product Header */}
                   <div className="space-y-2">
                     <h1 className="text-xl font-bold leading-tight">{product.title}</h1>
@@ -234,8 +239,8 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               </Button>
 
               {/* Content Container */}
-              <div className="flex-1 overflow-y-auto min-h-0">
-                <div className="p-6 space-y-6 min-h-full">
+              <div className="flex-1 overflow-y-auto">
+                <div className="p-6 space-y-6">
                   {/* Desktop Image Gallery */}
                   <div className="w-full max-w-md mx-auto">
                     <div className="aspect-[3/4] relative">
@@ -249,7 +254,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   </div>
                   
                   {/* Scrollable Product Details Content */}
-                  <div className="max-w-lg mx-auto space-y-4">
+                  <div className="max-w-lg mx-auto space-y-4 pb-24">
                     {/* Header */}
                     <div>
                       <h2 className="text-xl font-bold font-playfair line-clamp-2 mb-1.5">{product.title}</h2>
