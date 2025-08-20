@@ -201,7 +201,13 @@ const Likes: React.FC = () => {
                 <CardContent className="p-0">
                   <div className="relative aspect-square overflow-hidden rounded-t-lg">
                     <img
-                      src={like.products.media_urls?.[0] || '/placeholder.svg'}
+                      src={
+                        Array.isArray(like.products.media_urls) 
+                          ? like.products.media_urls[0] 
+                          : typeof like.products.media_urls === 'string' 
+                            ? JSON.parse(like.products.media_urls)[0] 
+                            : '/placeholder.svg'
+                      }
                       alt={like.products.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
