@@ -169,7 +169,7 @@ const Auth = () => {
             </div>
           </div>
           <div>
-            <h1 className="text-4xl font-cormorant font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+            <h1 className="text-6xl font-cormorant font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
               Azyah
             </h1>
             <p className="text-muted-foreground mt-3 text-lg">
