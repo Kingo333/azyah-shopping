@@ -114,23 +114,23 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
     const isMobile = window.innerWidth < 640;
     
     if (isMobile) {
-      // For mobile, allow more image space for long images and ensure details fit below
-      const availableHeight = window.innerHeight * 0.8; // Use more of the screen
-      const detailsMinHeight = 120; // Minimum space needed for details
-      const maxImageHeight = availableHeight - detailsMinHeight;
-      const minHeight = 280; // Increased minimum for better visibility
-      const calculatedHeight = 320 / aspectRatio;
+      // For mobile, ensure content below image has enough space
+      const availableHeight = window.innerHeight * 0.75; // Reduced from 0.8
+      const contentMinHeight = 160; // Increased minimum space for content (title, brand, price, buttons)
+      const maxImageHeight = availableHeight - contentMinHeight;
+      const minHeight = 240; // Reduced minimum height
+      const calculatedHeight = 280 / aspectRatio; // Reduced base width
       
       return Math.max(minHeight, Math.min(maxImageHeight, calculatedHeight));
     } else {
-      // Desktop: make longer images smaller while keeping whole image visible
-      const maxHeight = window.innerHeight * 0.55; // Reduced from 0.7 to give more space for details
-      const minHeight = 200;
-      const calculatedHeight = 400 / aspectRatio;
+      // Desktop: ensure all content fits well
+      const maxHeight = window.innerHeight * 0.45; // Reduced from 0.55
+      const minHeight = 180; // Reduced minimum
+      const calculatedHeight = 320 / aspectRatio; // Reduced base width
       
-      // For very long images (tall aspect ratio), limit height more
+      // For very long images (tall aspect ratio), limit height more aggressively
       if (aspectRatio < 0.6) {
-        return Math.max(minHeight, Math.min(window.innerHeight * 0.35, calculatedHeight));
+        return Math.max(minHeight, Math.min(window.innerHeight * 0.3, calculatedHeight));
       }
       
       return Math.max(minHeight, Math.min(maxHeight, calculatedHeight));
@@ -366,7 +366,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
             custom={x.get()}
           >
             <Card className="h-full flex flex-col cursor-grab active:cursor-grabbing overflow-hidden pointer-events-none">
-              <CardContent className="p-3 sm:p-4 flex flex-col h-full pointer-events-none">
+              <CardContent className="p-3 sm:p-4 flex flex-col h-full pointer-events-none justify-between">
                 <div 
                   className="relative w-full mb-3 sm:mb-4 overflow-hidden rounded-md flex-shrink-0"
                   style={{
@@ -399,7 +399,9 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                     }}
                   />
                 </div>
-                <div className="flex flex-col flex-grow space-y-3">
+                
+                {/* Content Section - Fixed Height */}
+                <div className="flex flex-col space-y-2 flex-shrink-0">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-2 flex-1 min-w-0">
                       <h3 className="text-sm sm:text-base font-semibold line-clamp-1 truncate">{currentProduct.title}</h3>
@@ -418,25 +420,25 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                     </div>
                   </div>
                   
-                  <p className="text-sm sm:text-sm text-muted-foreground line-clamp-1">{currentProduct.brands?.name}</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground truncate">{currentProduct.brands?.name}</p>
                   
                   <div className="flex items-center justify-between">
-                    <span className="text-xl sm:text-xl font-bold">
+                    <span className="text-base sm:text-lg font-bold truncate">
                       {new Intl.NumberFormat('en-US', {
                         style: 'currency',
                         currency: currentProduct.currency || 'USD'
                       }).format(currentProduct.price_cents / 100)}
                     </span>
                     {currentProduct.ar_mesh_url && (
-                      <Badge variant="outline" className="gap-1 text-xs">
+                      <Badge variant="outline" className="gap-1 text-xs flex-shrink-0">
                         <Sparkles className="h-3 w-3" />
-                        AR Ready
+                        <span className="hidden sm:inline">AR Ready</span>
                       </Badge>
                     )}
                   </div>
 
-                  {/* Action Buttons Row */}
-                  <div className="flex items-center justify-center gap-2 pt-2">
+                  {/* Action Buttons Row - Fixed Size */}
+                  <div className="flex items-center justify-center gap-1 pt-1 flex-shrink-0">
                     <Button
                       variant="ghost"
                       size="icon"
@@ -444,9 +446,9 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                         e.stopPropagation();
                         handleDislike();
                       }}
-                      className="h-12 w-12 rounded-full bg-destructive/10 hover:bg-destructive/20 pointer-events-auto"
+                      className="h-10 w-10 rounded-full bg-destructive/10 hover:bg-destructive/20 pointer-events-auto flex-shrink-0"
                     >
-                      <X className="h-6 w-6 text-destructive" />
+                      <X className="h-5 w-5 text-destructive" />
                     </Button>
                     <Button
                       variant="ghost"
@@ -456,9 +458,9 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                         handleAddToWishlist(currentProduct);
                       }}
                       disabled={wishlistLoading}
-                      className="h-12 w-12 rounded-full bg-accent/10 hover:bg-accent/20 pointer-events-auto"
+                      className="h-10 w-10 rounded-full bg-accent/10 hover:bg-accent/20 pointer-events-auto flex-shrink-0"
                     >
-                      <ShoppingBag className="h-6 w-6 text-accent-foreground" />
+                      <ShoppingBag className="h-5 w-5 text-accent-foreground" />
                     </Button>
                     <Button
                       variant="ghost"
@@ -467,9 +469,9 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                         e.stopPropagation();
                         handleLike(currentProduct);
                       }}
-                      className="h-12 w-12 rounded-full bg-primary/10 hover:bg-primary/20 pointer-events-auto"
+                      className="h-10 w-10 rounded-full bg-primary/10 hover:bg-primary/20 pointer-events-auto flex-shrink-0"
                     >
-                      <Heart className="h-6 w-6 text-primary" />
+                      <Heart className="h-5 w-5 text-primary" />
                     </Button>
                   </div>
                 </div>
