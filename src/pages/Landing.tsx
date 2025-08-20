@@ -463,7 +463,7 @@ export default function Landing() {
                   currency="USD" 
                 />
               </div>
-              <div className="text-center mt-6">
+              <div className="text-center mt-8">
                 <p className="text-sm text-gray-600 mb-4">
                   Experience our swipe interface just like in the main app!
                 </p>
