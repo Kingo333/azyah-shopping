@@ -382,18 +382,26 @@ const LandingSwipeDeck: React.FC<LandingSwipeDeckProps> = ({
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        console.log('Shop button clicked for product:', currentProduct);
-                        console.log('External URL:', currentProduct.external_url);
                         
                         const url = currentProduct.external_url;
                         if (url) {
-                          console.log('Opening external URL:', url);
-                          window.open(url, '_blank', 'noopener,noreferrer');
+                          // Try window.open first, if it fails due to popup blocker, use location.href
+                          const newWindow = window.open(url, '_blank', 'noopener,noreferrer');
+                          
+                          // Check if popup was blocked
+                          if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+                            // Popup was blocked, open in same tab
+                            window.location.href = url;
+                          }
                         } else {
                           // Fallback: search for the product on Google
                           const searchQuery = encodeURIComponent(`${currentProduct.title} ${currentProduct.brand?.name || ''}`);
-                          console.log('No external URL, searching Google:', searchQuery);
-                          window.open(`https://www.google.com/search?q=${searchQuery}`, '_blank', 'noopener,noreferrer');
+                          const searchUrl = `https://www.google.com/search?q=${searchQuery}`;
+                          const newWindow = window.open(searchUrl, '_blank', 'noopener,noreferrer');
+                          
+                          if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+                            window.location.href = searchUrl;
+                          }
                         }
                       }}
                       className="w-full gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground font-semibold shadow-lg"
