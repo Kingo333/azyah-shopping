@@ -415,12 +415,28 @@ export default function Landing() {
                       e.stopPropagation();
                       console.log('Shop now clicked for product:', product);
                       console.log('External URL:', product.external_url);
+                      
                       if (product.external_url) {
-                        window.open(product.external_url, '_blank', 'noopener,noreferrer');
+                        try {
+                          const newWindow = window.open(product.external_url, '_blank', 'noopener,noreferrer');
+                          // Check if popup was blocked
+                          if (!newWindow || newWindow.closed || typeof newWindow.closed == 'undefined') {
+                            // Fallback: navigate in current tab
+                            window.location.href = product.external_url;
+                          } else {
+                            // Success feedback
+                            console.log('Successfully opened external link');
+                          }
+                        } catch (error) {
+                          console.error('Error opening external link:', error);
+                          // Fallback: navigate in current tab
+                          window.location.href = product.external_url;
+                        }
                       } else {
                         console.warn('No external URL found for product:', product.id);
+                        // Could show a toast notification here if needed
                       }
-                    }}>
+                    }} title="Shop Now">
                               <ExternalLink className="w-3 h-3" />
                             </Button>
                           </div>
