@@ -1,10 +1,14 @@
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Heart, X, ShoppingBag, ExternalLink } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Heart, X, ShoppingBag, ExternalLink, Sparkles, Info } from 'lucide-react';
 import { useSmartSwipeProducts } from '@/hooks/useSmartSwipeProducts';
 import { getResponsiveImageProps } from '@/utils/asosImageUtils';
+import { motion, AnimatePresence, PanInfo, useMotionValue, useTransform, animate } from 'framer-motion';
+import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface LandingSwipeDeckProps {
   filter: string;
@@ -18,6 +22,30 @@ interface LandingSwipeDeckProps {
   currency?: string;
 }
 
+const cardVariants = {
+  hidden: {
+    opacity: 0,
+    y: 50
+  },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.5
+    }
+  },
+  exit: (x: number) => ({
+    x: x,
+    opacity: 0,
+    transition: {
+      duration: 0.5
+    }
+  })
+};
+
+const DISTANCE_THRESHOLD = 100;
+const VERTICAL_THRESHOLD = 100;
+
 const LandingSwipeDeck: React.FC<LandingSwipeDeckProps> = ({
   filter,
   subcategory,
@@ -27,6 +55,16 @@ const LandingSwipeDeck: React.FC<LandingSwipeDeckProps> = ({
   currency = 'USD'
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [imageAspectRatio, setImageAspectRatio] = useState<number>(1);
+  const [showInstructions, setShowInstructions] = useState(true);
+  const { toast } = useToast();
+  const { user } = useAuth();
+  
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+  const rotate = useTransform(x, [-200, 0, 200], [-45, 0, 45]);
+  const opacity = useTransform(x, [-200, 0, 200], [0, 1, 0]);
+  const scale = useTransform(x, [-200, 0, 200], [0.8, 1, 0.8]);
   
   const { products, isLoading } = useSmartSwipeProducts({
     filter: filter || 'all',
@@ -37,35 +75,95 @@ const LandingSwipeDeck: React.FC<LandingSwipeDeckProps> = ({
     currency
   });
 
-  console.log('LandingSwipeDeck - Products:', products?.length, 'Loading:', isLoading);
+  const currentProduct = products[currentIndex] || null;
 
-  if (isLoading) {
-    return (
-      <div className="flex flex-col items-center justify-center h-full">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mb-4"></div>
-        <p className="text-muted-foreground text-sm">Loading products...</p>
-      </div>
-    );
-  }
+  // Calculate image height based on aspect ratio with better mobile optimization
+  const getImageHeight = useCallback((aspectRatio: number) => {
+    const isMobile = window.innerWidth < 640;
+    
+    if (isMobile) {
+      const availableHeight = window.innerHeight * 0.8;
+      const detailsMinHeight = 120;
+      const maxImageHeight = availableHeight - detailsMinHeight;
+      const minHeight = 280;
+      const calculatedHeight = 320 / aspectRatio;
+      
+      return Math.max(minHeight, Math.min(maxImageHeight, calculatedHeight));
+    } else {
+      const maxHeight = window.innerHeight * 0.55;
+      const minHeight = 200;
+      const calculatedHeight = 400 / aspectRatio;
+      
+      if (aspectRatio < 0.6) {
+        return Math.max(minHeight, Math.min(window.innerHeight * 0.35, calculatedHeight));
+      }
+      
+      return Math.max(minHeight, Math.min(maxHeight, calculatedHeight));
+    }
+  }, []);
 
-  if (!products || products.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center h-full">
-        <p className="text-muted-foreground text-sm mb-4">No products found</p>
-        <p className="text-xs text-muted-foreground">Try adjusting your filters</p>
-      </div>
-    );
-  }
+  const handleImageLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
+    const img = e.currentTarget;
+    const ratio = img.naturalWidth / img.naturalHeight;
+    setImageAspectRatio(ratio);
+  }, []);
 
-  const currentProduct = products[currentIndex];
+  const nextCard = useCallback(() => {
+    x.set(0);
+    y.set(0);
+    setCurrentIndex(prevIndex => Math.min(prevIndex + 1, products.length - 1));
+  }, [x, y, products.length]);
 
-  const handleNext = () => {
-    setCurrentIndex(prev => Math.min(prev + 1, products.length - 1));
-  };
+  const handleLike = useCallback(() => {
+    if (!user) {
+      toast({
+        title: "Sign in required",
+        description: "Create an account to start liking products!",
+        variant: "destructive"
+      });
+      return;
+    }
+    nextCard();
+    toast({
+      description: `${currentProduct?.title} added to your likes!`
+    });
+  }, [user, toast, nextCard, currentProduct]);
 
-  const handlePrev = () => {
-    setCurrentIndex(prev => Math.max(prev - 1, 0));
-  };
+  const handleDislike = useCallback(() => {
+    nextCard();
+  }, [nextCard]);
+
+  const handleAddToWishlist = useCallback(() => {
+    if (!user) {
+      toast({
+        title: "Sign in required", 
+        description: "Create an account to start saving products!",
+        variant: "destructive"
+      });
+      return;
+    }
+    nextCard();
+    toast({
+      description: `${currentProduct?.title} added to your wishlist!`
+    });
+  }, [user, nextCard, toast, currentProduct]);
+
+  const handleSwipeEnd = useCallback((event: any, info: PanInfo) => {
+    if (!currentProduct) return;
+
+    const { x: offsetX, y: offsetY } = info.offset;
+
+    if (offsetY < -VERTICAL_THRESHOLD && Math.abs(offsetX) < DISTANCE_THRESHOLD) {
+      handleAddToWishlist();
+    } else if (offsetX > DISTANCE_THRESHOLD) {
+      handleLike();
+    } else if (offsetX < -DISTANCE_THRESHOLD) {
+      handleDislike();
+    } else {
+      animate(x, 0, { type: "spring", stiffness: 100, damping: 20 });
+      animate(y, 0, { type: "spring", stiffness: 100, damping: 20 });
+    }
+  }, [currentProduct, handleLike, handleDislike, handleAddToWishlist, x, y]);
 
   const getImageUrl = (product: any) => {
     try {
@@ -85,6 +183,34 @@ const LandingSwipeDeck: React.FC<LandingSwipeDeckProps> = ({
     }
   };
 
+  // Auto-hide instructions after 3 seconds
+  React.useEffect(() => {
+    if (showInstructions) {
+      const timer = setTimeout(() => {
+        setShowInstructions(false);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [showInstructions]);
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mb-4"></div>
+        <p className="text-muted-foreground text-sm">Loading products...</p>
+      </div>
+    );
+  }
+
+  if (!products || products.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full">
+        <p className="text-muted-foreground text-sm mb-4">No products found</p>
+        <p className="text-xs text-muted-foreground">Try adjusting your filters</p>
+      </div>
+    );
+  }
+
   if (!currentProduct) {
     return (
       <div className="flex flex-col items-center justify-center h-full">
@@ -94,89 +220,162 @@ const LandingSwipeDeck: React.FC<LandingSwipeDeckProps> = ({
   }
 
   return (
-    <div className="w-full h-full relative">
-      <Card className="h-full flex flex-col overflow-hidden">
-        <CardContent className="p-4 flex flex-col h-full">
-          {/* Product Image */}
-          <div className="relative w-full flex-1 mb-4 overflow-hidden rounded-lg bg-gray-100">
-            <img
-              {...getResponsiveImageProps(getImageUrl(currentProduct))}
-              alt={currentProduct.title}
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                const img = e.target as HTMLImageElement;
-                if (img.src !== '/placeholder.svg') {
-                  img.src = '/placeholder.svg';
-                }
-              }}
-            />
-          </div>
-          
-          {/* Product Info */}
-          <div className="space-y-3">
-            <div>
-              <h3 className="text-sm font-semibold line-clamp-2">{currentProduct.title}</h3>
-              <p className="text-xs text-muted-foreground">
-                {currentProduct.brand?.name || 'Brand'}
-              </p>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <span className="text-lg font-bold">
-                {new Intl.NumberFormat('en-US', {
-                  style: 'currency',
-                  currency: currentProduct.currency || 'USD'
-                }).format(currentProduct.price_cents / 100)}
-              </span>
-              
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={handlePrev}
-                  disabled={currentIndex === 0}
-                  className="h-8 w-8 rounded-full bg-gray-100 hover:bg-gray-200"
+    <div className="relative w-full h-full">
+      <AnimatePresence initial={false} custom={x.get()}>
+        {currentProduct && (
+          <motion.div
+            key={currentProduct.id}
+            className="absolute top-0 left-0 w-full h-full"
+            style={{
+              x,
+              y,
+              rotate,
+              opacity,
+              scale
+            }}
+            drag
+            dragElastic={false}
+            dragMomentum={false}
+            whileDrag={{ scale: 1.02 }}
+            onDragEnd={handleSwipeEnd}
+            variants={cardVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            custom={x.get()}
+          >
+            <Card className="h-full flex flex-col cursor-grab active:cursor-grabbing overflow-hidden">
+              <CardContent className="p-4 sm:p-6 flex flex-col h-full">
+                <div 
+                  className="relative w-full mb-2 sm:mb-3 overflow-hidden rounded-lg flex-shrink-0"
+                  style={{
+                    height: `${getImageHeight(imageAspectRatio)}px`
+                  }}
+                  onClick={() => setShowInstructions(true)}
                 >
-                  <X className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={handleNext}
-                  disabled={currentIndex >= products.length - 1}
-                  className="h-8 w-8 rounded-full bg-primary/10 hover:bg-primary/20"
-                >
-                  <Heart className="h-4 w-4 text-primary" />
-                </Button>
-              </div>
-            </div>
+                  <img
+                    {...getResponsiveImageProps(getImageUrl(currentProduct))}
+                    alt={currentProduct.title}
+                    className="w-full h-full object-cover"
+                    onLoad={handleImageLoad}
+                    onError={(e) => {
+                      const img = e.target as HTMLImageElement;
+                      if (img.src !== '/placeholder.svg') {
+                        img.src = '/placeholder.svg';
+                      }
+                    }}
+                  />
+                </div>
+                
+                <div className="flex flex-col flex-grow space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-sm sm:text-base font-semibold line-clamp-2 mb-1">{currentProduct.title}</h3>
+                      <p className="text-xs sm:text-sm text-muted-foreground line-clamp-1">{currentProduct.brand?.name}</p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="flex-shrink-0 h-8 px-2 text-xs hover:bg-accent"
+                    >
+                      <Info className="h-3 w-3 mr-1" />
+                      <span className="hidden sm:inline">Details</span>
+                    </Button>
+                  </div>
 
-            {/* Shop Now Button */}
-            {currentProduct.external_url && (
-              <Button
-                onClick={() => {
-                  if (currentProduct.external_url) {
-                    window.open(currentProduct.external_url, '_blank', 'noopener,noreferrer');
-                  }
-                }}
-                className="w-full gap-2"
-                size="sm"
-              >
-                <ShoppingBag className="h-4 w-4" />
-                Shop Now
-                <ExternalLink className="h-4 w-4" />
-              </Button>
-            )}
-          </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-base sm:text-lg font-bold">
+                      {new Intl.NumberFormat('en-US', {
+                        style: 'currency',
+                        currency: currentProduct.currency || 'USD'
+                      }).format(currentProduct.price_cents / 100)}
+                    </span>
+                    
+                    <div className="flex items-center gap-1">
+                      {currentProduct.ar_mesh_url && (
+                        <Badge variant="outline" className="gap-1 text-xs mr-2">
+                          <Sparkles className="h-3 w-3" />
+                          AR Ready
+                        </Badge>
+                      )}
+                      
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDislike();
+                          }}
+                          className="h-8 w-8 rounded-full bg-destructive/10 hover:bg-destructive/20"
+                        >
+                          <X className="h-3 w-3 text-destructive" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleAddToWishlist();
+                          }}
+                          className="h-8 w-8 rounded-full bg-accent/10 hover:bg-accent/20"
+                        >
+                          <ShoppingBag className="h-3 w-3 text-accent-foreground" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleLike();
+                          }}
+                          className="h-8 w-8 rounded-full bg-primary/10 hover:bg-primary/20"
+                        >
+                          <Heart className="h-3 w-3 text-primary" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
 
-          {/* Product Counter */}
-          <div className="text-center mt-2">
-            <span className="text-xs text-muted-foreground">
-              {currentIndex + 1} of {products.length}
-            </span>
+                  {currentProduct.external_url && (
+                    <div className="pt-2 border-t border-border">
+                      <Button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          if (currentProduct.external_url) {
+                            window.open(currentProduct.external_url, '_blank', 'noopener,noreferrer');
+                          }
+                        }}
+                        className="w-full gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground font-semibold shadow-lg"
+                        size="sm"
+                      >
+                        Shop Now
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Swipe instructions */}
+      {showInstructions && (
+        <div className="absolute top-4 left-4 right-4 text-center">
+          <div className="bg-black/20 backdrop-blur-sm rounded-lg p-2 text-white text-xs">
+            ← Pass • ↑ Save • Like →
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      )}
+
+      {/* Product Counter */}
+      <div className="absolute bottom-4 left-4 right-4 text-center">
+        <span className="text-xs text-muted-foreground bg-background/80 backdrop-blur-sm px-2 py-1 rounded-full">
+          {currentIndex + 1} of {products.length}
+        </span>
+      </div>
     </div>
   );
 };
