@@ -97,8 +97,11 @@ export default function Landing() {
         <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 h-16 sm:h-20 flex items-center justify-between">
           {/* Logo - Show Azyah text on all screen sizes */}
           <div className="flex items-center space-x-2 sm:space-x-4">
-            <div className="relative w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 rounded-lg overflow-hidden shadow-lg">
-              <img src="/marketing/azyah-logo.png" alt="Azyah" className="w-full h-full object-cover" />
+            <div className="relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-primary to-accent rounded-lg blur-lg opacity-30 animate-pulse"></div>
+              <div className="relative glass-premium rounded-lg p-2 shadow-lg w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 overflow-hidden">
+                <img src="/marketing/azyah-logo.png" alt="Azyah" className="w-full h-full object-cover" />
+              </div>
             </div>
             <div>
               <h1 className="font-cormorant text-lg sm:text-xl lg:text-2xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">Azyah</h1>
