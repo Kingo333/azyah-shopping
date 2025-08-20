@@ -113,7 +113,7 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
       </header>
 
       {/* Main Content */}
-      <main className="container max-w-7xl mx-auto px-4 py-6">
+      <main className="container max-w-7xl mx-auto px-4 py-6 pb-20 md:pb-6">
         <div className="grid lg:grid-cols-2 gap-8 lg:gap-12">
           {/* Image Gallery */}
           <div className="space-y-6">
@@ -128,11 +128,11 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
           </div>
 
           {/* Product Information */}
-          <div className="space-y-6">
+          <div className="space-y-4 md:space-y-6">
             {/* Product Header - Mobile */}
-            <div className="md:hidden space-y-3">
-              <h1 className="text-2xl font-bold leading-tight">{product.title}</h1>
-              <p className="text-muted-foreground">{product.brand?.name}</p>
+            <div className="md:hidden space-y-2">
+              <h1 className="text-xl font-bold leading-tight">{product.title}</h1>
+              <p className="text-sm text-muted-foreground">{product.brand?.name}</p>
             </div>
 
             {/* Product Header - Desktop */}
@@ -144,21 +144,21 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
             </div>
 
             {/* Price */}
-            <div className="space-y-2">
-              <div className="flex items-center gap-3">
-                <span className="text-2xl lg:text-3xl font-bold text-primary">
+            <div className="space-y-1 md:space-y-2">
+              <div className="flex items-center gap-2 md:gap-3">
+                <span className="text-xl md:text-2xl lg:text-3xl font-bold text-primary">
                   {new Intl.NumberFormat('en-US', { style: 'currency', currency: priceCurrency })
                     .format(priceCents / 100)}
                 </span>
                 {compareAtCents && (
-                  <span className="text-lg text-muted-foreground line-through">
+                  <span className="text-base md:text-lg text-muted-foreground line-through">
                     {new Intl.NumberFormat('en-US', { style: 'currency', currency: priceCurrency })
                       .format(compareAtCents / 100)}
                   </span>
                 )}
               </div>
               {compareAtCents && (
-                <p className="text-sm text-green-600 font-medium">
+                <p className="text-xs md:text-sm text-green-600 font-medium">
                   Save {new Intl.NumberFormat('en-US', { style: 'currency', currency: priceCurrency })
                     .format((compareAtCents - priceCents) / 100)}
                 </p>
@@ -166,7 +166,7 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
             </div>
 
             {/* Size and Color Selection */}
-            <div className="space-y-4">
+            <div className="space-y-3 md:space-y-4">
               <AdvancedSizeColorSelector
                 sizes={availableSizes}
                 colors={availableColors}
@@ -187,21 +187,21 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
 
             {/* Action Buttons */}
             <div className="space-y-3">
-              <div className="flex gap-3">
+              <div className="flex gap-2 md:gap-3">
                 <Button 
                   variant="outline" 
-                  className="flex-1 gap-2"
+                  className="flex-1 gap-2 text-xs md:text-sm h-9 md:h-10"
                   onClick={() => {/* Add wishlist functionality */}}
                 >
-                  <Heart className="h-4 w-4" />
+                  <Heart className="h-3 w-3 md:h-4 md:w-4" />
                   Wishlist
                 </Button>
                 <Button
                   variant="outline"
-                  className="flex-1 gap-2"
+                  className="flex-1 gap-2 text-xs md:text-sm h-9 md:h-10"
                   onClick={() => setIsClosetModalOpen(true)}
                 >
-                  <ShoppingBag className="h-4 w-4" />
+                  <ShoppingBag className="h-3 w-3 md:h-4 md:w-4" />
                   Add to Closet
                 </Button>
               </div>
@@ -210,39 +210,39 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                 <Button
                   onClick={handleShopNow}
                   size="lg"
-                  className="w-full gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
+                  className="w-full gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-lg hover:shadow-xl transition-all duration-200 h-11 md:h-12 text-sm md:text-base"
                 >
-                  <ExternalLink className="h-5 w-5" />
+                  <ExternalLink className="h-4 w-4 md:h-5 md:w-5" />
                   Shop Now
                 </Button>
               ) : (
                 <Button 
                   disabled 
                   size="lg"
-                  className="w-full gap-2 opacity-50 cursor-not-allowed"
+                  className="w-full gap-2 opacity-50 cursor-not-allowed h-11 md:h-12 text-sm md:text-base"
                 >
-                  <ShoppingBag className="h-5 w-5" />
+                  <ShoppingBag className="h-4 w-4 md:h-5 md:w-5" />
                   Shop Link Not Available
                 </Button>
               )}
             </div>
 
             {/* Product Details */}
-            <div className="space-y-4">
+            <div className="space-y-3 md:space-y-4">
               <Accordion type="single" collapsible defaultValue="description">
                 {product.description && (
                   <AccordionItem value="description">
-                    <AccordionTrigger className="text-base font-semibold">Description</AccordionTrigger>
+                    <AccordionTrigger className="text-sm md:text-base font-semibold py-3">Description</AccordionTrigger>
                     <AccordionContent>
-                      <p className="text-muted-foreground leading-relaxed">{product.description}</p>
+                      <p className="text-muted-foreground leading-relaxed text-sm md:text-base">{product.description}</p>
                     </AccordionContent>
                   </AccordionItem>
                 )}
                 <AccordionItem value="details">
-                  <AccordionTrigger className="text-base font-semibold">Product Details</AccordionTrigger>
+                  <AccordionTrigger className="text-sm md:text-base font-semibold py-3">Product Details</AccordionTrigger>
                   <AccordionContent>
-                    <div className="space-y-3">
-                      <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div className="space-y-2 md:space-y-3">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-4 text-xs md:text-sm">
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">SKU:</span>
                           <span className="font-medium">{product.sku}</span>
@@ -256,9 +256,9 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                   </AccordionContent>
                 </AccordionItem>
                 <AccordionItem value="shipping">
-                  <AccordionTrigger className="text-base font-semibold">Shipping & Returns</AccordionTrigger>
+                  <AccordionTrigger className="text-sm md:text-base font-semibold py-3">Shipping & Returns</AccordionTrigger>
                   <AccordionContent>
-                    <div className="space-y-3 text-sm text-muted-foreground">
+                    <div className="space-y-2 md:space-y-3 text-xs md:text-sm text-muted-foreground">
                       <p>• Free shipping on orders over $100</p>
                       <p>• 30-day return policy</p>
                       <p>• Express delivery available</p>
