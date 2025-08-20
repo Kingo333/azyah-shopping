@@ -13,6 +13,14 @@ const AuthCallback = () => {
   useEffect(() => {
     const handleCallback = async () => {
       try {
+        // 1) Exchange code from the URL for a session
+        const { data: exchanged, error: exErr } = await supabase.auth.exchangeCodeForSession(window.location.href);
+        if (exErr) {
+          console.error('exchangeCodeForSession error:', exErr);
+          // proceed; sometimes getSession will still work shortly after
+        }
+
+        // 2) Now read the session
         const { data: { session } } = await supabase.auth.getSession();
         if (!session?.user) {
           setError('No active session returned from Google.');
