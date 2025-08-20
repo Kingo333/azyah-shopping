@@ -219,7 +219,7 @@ export default function Landing() {
                   <span>Explore Collection</span>
                   <ArrowRight className="ml-2 w-4 h-4 lg:w-5 lg:h-5 group-hover:translate-x-1 transition-transform" />
                 </Button>
-                <Button variant="outline" size="sm" className="px-6 py-3 sm:px-8 sm:py-4 lg:px-8 lg:py-4 bg-background/50 backdrop-blur-sm border border-primary/30 hover:bg-background/80 hover:border-primary/50 text-sm sm:text-base font-light" onClick={() => scrollToSection("#features")}>
+                <Button variant="outline" size="sm" className="px-6 py-3 sm:px-8 sm:py-4 lg:px-8 lg:py-4 bg-background/50 backdrop-blur-sm border border-primary/30 hover:bg-background/80 hover:border-primary/50 text-sm sm:text-base font-light" onClick={() => scrollToSection("#featured-collections")}>
                   <Play className="mr-2 w-4 h-4 lg:w-5 lg:h-5" /> 
                   <span>View Lookbook</span>
                 </Button>
@@ -345,7 +345,7 @@ export default function Landing() {
           </div>
 
           {/* Toggle Between Grid and List View */}
-          <div className="flex items-center justify-between mb-8">
+          <div id="featured-collections" className="flex items-center justify-between mb-8">
             <h3 className="font-cormorant text-2xl font-bold">Featured Collections</h3>
             <div className="flex items-center space-x-4">
               <span className="text-sm text-muted-foreground">View:</span>
