@@ -301,11 +301,12 @@ serve(async (req) => {
             external_url: transformedProduct.external_url,
             category_slug: transformedProduct.category_slug,
             subcategory_slug: transformedProduct.subcategory_slug,
+            gender: transformedProduct.attributes?.gender_target || null,
             attributes: transformedProduct.attributes,
             brand_id: brandId,
             retailer_id: retailer.id,
-             source: 'ASOS_AXESSO_BULK',
-             source_vendor: 'ASOS',
+            source: 'ASOS_AXESSO_BULK',
+            source_vendor: 'ASOS',
             is_external: true,
             status: 'active'
           });

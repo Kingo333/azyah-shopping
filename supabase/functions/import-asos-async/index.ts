@@ -353,6 +353,27 @@ async function processImportJob(jobId: string, config: AsyncImportRequest, supab
                   continue;
                 }
 
+                // Infer gender from product text
+                const fullText = `${details.productTitle} ${details.productDescription || ''}`.toLowerCase();
+                let gender = null;
+                
+                // Kids indicators
+                if (fullText.match(/\b(kids?|child|children|baby|toddler|infant|junior|youth|boys?|girls?)\b/)) {
+                  gender = 'kids';
+                }
+                // Women indicators
+                else if (fullText.match(/\b(women|woman|ladies?|lady|female|abaya|dress|skirt|heel|maternity)\b/)) {
+                  gender = 'women';
+                }
+                // Men indicators  
+                else if (fullText.match(/\b(men|man|male|masculine|gentleman|gents?)\b/)) {
+                  gender = 'men';
+                }
+                // Unisex indicators
+                else if (fullText.match(/\b(unisex|universal|everyone|all)\b/)) {
+                  gender = 'unisex';
+                }
+
                 // Create product
                 const productData = {
                   title: details.productTitle.slice(0, 255),
@@ -364,6 +385,7 @@ async function processImportJob(jobId: string, config: AsyncImportRequest, supab
                   media_urls: details.imageUrlList ? JSON.stringify(details.imageUrlList.slice(0, 5)) : '[]',
                   category_slug: 'clothing',
                   subcategory_slug: 'tops',
+                  gender: gender,
                   retailer_id: retailerId,
                   sku: `asos-${details.productId || Date.now()}`,
                   status: 'active',
