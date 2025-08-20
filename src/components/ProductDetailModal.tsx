@@ -1,6 +1,5 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
-import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
 import { Heart, ShoppingBag, ExternalLink, X } from 'lucide-react';
@@ -37,29 +36,8 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   }, [product, isOpen, trackProductView]);
 
   const images = useMemo<string[]>(() => {
-    if (!product?.media_urls) {
-      console.log('ProductDetailModal: No media_urls for product', product?.id);
-      return [];
-    }
-    
-    try {
-      // Parse media_urls if it's a JSON string, otherwise use as-is
-      const media = typeof product.media_urls === 'string' 
-        ? JSON.parse(product.media_urls)
-        : product.media_urls;
-      
-      const parsedImages = Array.isArray(media) ? media.filter(Boolean) : [];
-      console.log('ProductDetailModal: Parsed images for product', product.id, {
-        raw_media_urls: product.media_urls,
-        parsed_media: media,
-        final_images: parsedImages
-      });
-      
-      return parsedImages;
-    } catch (error) {
-      console.warn('Failed to parse media_urls for product:', product.id, error);
-      return [];
-    }
+    const media = (product?.media_urls ?? []) as unknown as string[];
+    return Array.isArray(media) ? media.filter(Boolean) : [];
   }, [product]);
 
   const priceCurrency = product?.currency || 'USD';
@@ -88,13 +66,8 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent
-        className="w-[100vw] h-[100dvh] md:max-w-5xl md:max-h-[95vh] p-0 glass-premium border-white/20 rounded-none md:rounded-3xl overflow-hidden md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2"
+        className="w-[100vw] h-[100dvh] md:max-w-4xl md:max-h-[90vh] p-0 glass-premium border-white/20 rounded-none md:rounded-3xl overflow-hidden md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2"
       >
-        <DialogTitle className="sr-only">Product Details</DialogTitle>
-        <DialogDescription className="sr-only">
-          View detailed information about {product?.title || 'this product'} including images, pricing, and specifications.
-        </DialogDescription>
-        
         {!product ? (
           <div className="flex h-[70vh] items-center justify-center text-sm text-muted-foreground">
             Loading product details…
@@ -102,133 +75,145 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
         ) : (
           <>
             {/* Mobile Layout */}
-            <div className="md:hidden h-full flex flex-col">
+            <div className="md:hidden h-full relative">
               {/* Close Button */}
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={onClose}
-                className="absolute top-2 right-2 z-30 bg-black/50 hover:bg-black/70 backdrop-blur-sm rounded-full h-8 w-8 text-white"
+                className="absolute top-3 right-3 z-30 bg-black/50 hover:bg-black/70 backdrop-blur-sm rounded-full h-10 w-10 text-white"
               >
-                <X className="h-4 w-4" />
+                <X className="h-5 w-5" />
               </Button>
 
-              {/* Image Gallery - Reduced height and spacing */}
-              <div className="w-full relative flex-shrink-0" style={{height: '30vh'}}>
-                <EnhancedProductGallery
-                  images={images}
-                  productTitle={product.title}
-                  productId={product.id}
-                  hasARMesh={false}
-                />
-              </div>
-
-              {/* Scrollable Product Content - Starts immediately after image */}
-              <div className="bg-background flex-1 overflow-y-auto" style={{maxHeight: '70vh'}}>
-                <div className="p-4 space-y-3 pb-40">
-                  {/* Product Header - Reduced spacing */}
-                  <div className="space-y-1">
-                    <h1 className="text-lg font-bold leading-tight">{product.title}</h1>
-                    <p className="text-muted-foreground text-sm">{product.brand?.name}</p>
-                    <div className="flex items-center gap-2 pt-1">
-                      <span className="text-xl font-bold text-primary">
-                        {new Intl.NumberFormat('en-US', { style: 'currency', currency: priceCurrency })
-                          .format(priceCents / 100)}
-                      </span>
-                      {compareAtCents && (
-                        <span className="text-base text-muted-foreground line-through">
-                          {new Intl.NumberFormat('en-US', { style: 'currency', currency: priceCurrency })
-                            .format(compareAtCents / 100)}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Size and Color Selection with Size Chart */}
-                  <div className="space-y-3">
-                    <AdvancedSizeColorSelector
-                      sizes={availableSizes}
-                      colors={availableColors}
-                      selectedSize={selectedSize}
-                      selectedColor={selectedColor}
-                      onSizeSelect={setSelectedSize}
-                      onColorSelect={setSelectedColor}
-                      sizeChart={{
-                        "XS": "Chest: 32-34, Waist: 24-26",
-                        "S": "Chest: 34-36, Waist: 26-28", 
-                        "M": "Chest: 36-38, Waist: 28-30",
-                        "L": "Chest: 38-40, Waist: 30-32",
-                        "XL": "Chest: 40-42, Waist: 32-34"
-                      }}
-                      sizeChartImage="/placeholder.svg"
+              {/* Full Scrollable Content */}
+              <div className="h-full overflow-y-auto pb-32">
+                <div className="space-y-0">
+                  {/* Image Gallery */}
+                  <div className="aspect-[4/5] w-full">
+                    <EnhancedProductGallery
+                      images={images}
+                      productTitle={product.title}
+                      productId={product.id}
+                      hasARMesh={false}
                     />
                   </div>
+                  
+                  {/* Product Content */}
+                  <div className="bg-background p-4 space-y-4">
+                    {/* Product Header */}
+                    <div className="space-y-1.5">
+                      <h1 className="text-lg font-bold leading-tight">{product.title}</h1>
+                      <p className="text-muted-foreground text-xs">{product.brand?.name}</p>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xl font-bold text-primary">
+                          {new Intl.NumberFormat('en-US', { style: 'currency', currency: priceCurrency })
+                            .format(priceCents / 100)}
+                        </span>
+                        {compareAtCents && (
+                          <span className="text-base text-muted-foreground line-through">
+                            {new Intl.NumberFormat('en-US', { style: 'currency', currency: priceCurrency })
+                              .format(compareAtCents / 100)}
+                          </span>
+                        )}
+                      </div>
+                    </div>
 
-                  <Accordion type="single" collapsible defaultValue="details" className="w-full">
-                    {product.description && (
-                      <AccordionItem value="description">
-                        <AccordionTrigger className="text-base font-semibold">Description</AccordionTrigger>
+                    {/* Size and Color Selection with Size Chart */}
+                    <div className="space-y-3">
+                      <AdvancedSizeColorSelector
+                        sizes={availableSizes}
+                        colors={availableColors}
+                        selectedSize={selectedSize}
+                        selectedColor={selectedColor}
+                        onSizeSelect={setSelectedSize}
+                        onColorSelect={setSelectedColor}
+                        sizeChart={{
+                          "XS": "Chest: 32-34, Waist: 24-26",
+                          "S": "Chest: 34-36, Waist: 26-28", 
+                          "M": "Chest: 36-38, Waist: 28-30",
+                          "L": "Chest: 38-40, Waist: 30-32",
+                          "XL": "Chest: 40-42, Waist: 32-34"
+                        }}
+                        sizeChartImage="/placeholder.svg"
+                      />
+                    </div>
+
+                    <Accordion type="single" collapsible defaultValue="details">
+                      {product.description && (
+                        <AccordionItem value="description">
+                          <AccordionTrigger className="text-sm font-semibold">Description</AccordionTrigger>
+                          <AccordionContent>
+                            <p className="text-muted-foreground text-xs leading-relaxed">{product.description}</p>
+                          </AccordionContent>
+                        </AccordionItem>
+                      )}
+                      <AccordionItem value="details">
+                        <AccordionTrigger className="text-sm font-semibold">Product Details</AccordionTrigger>
                         <AccordionContent>
-                          <p className="text-muted-foreground text-sm leading-relaxed">{product.description}</p>
+                          <div className="bg-muted/50 rounded-lg p-2 space-y-1.5">
+                            <div className="flex justify-between text-xs">
+                              <span className="text-muted-foreground">SKU:</span>
+                              <span className="font-medium">{product.sku}</span>
+                            </div>
+                            <div className="flex justify-between text-xs">
+                              <span className="text-muted-foreground">Category:</span>
+                              <span className="font-medium capitalize">{product.category_slug?.replace('_', ' ')}</span>
+                            </div>
+                          </div>
                         </AccordionContent>
                       </AccordionItem>
-                    )}
-                    <AccordionItem value="details">
-                      <AccordionTrigger className="text-base font-semibold">Product Details</AccordionTrigger>
-                      <AccordionContent>
-                        <div className="bg-muted/50 rounded-lg p-3 space-y-2">
-                          <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">SKU:</span>
-                            <span className="font-medium">{product.sku}</span>
-                          </div>
-                          <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">Category:</span>
-                            <span className="font-medium capitalize">{product.category_slug?.replace('_', ' ')}</span>
-                          </div>
-                        </div>
-                      </AccordionContent>
-                    </AccordionItem>
-                  </Accordion>
+                    </Accordion>
+                  </div>
                 </div>
               </div>
 
               {/* Fixed Bottom Actions */}
-              <div className="absolute bottom-0 left-0 right-0 bg-background/95 backdrop-blur-lg border-t border-border p-4 space-y-3">
-                {/* Shop Now Button */}
-                {product.is_external && product.external_url && (
-                  <Button
-                    onClick={handleShopNow}
-                    className="w-full gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground font-semibold shadow-lg"
-                    size="sm"
-                  >
-                    <ExternalLink className="h-4 w-4" />
-                    Shop Now on {product.merchant_name || 'ASOS'}
-                  </Button>
-                )}
-                <div className="flex gap-3">
+              <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-lg border-t border-border p-3 space-y-2 pb-mobile-safe">
+                <div className="flex gap-2">
                   <Button 
                     variant="outline" 
-                    size="lg" 
-                    className="flex-1 gap-2 h-12 text-sm"
+                    size="sm" 
+                    className="flex-1 gap-1.5 h-9 text-xs"
                   >
-                    <Heart className="h-4 w-4" />
+                    <Heart className="h-3 w-3" />
                     Wishlist
                   </Button>
                   <Button
                     onClick={() => setIsClosetModalOpen(true)}
                     variant="outline"
-                    size="lg"
-                    className="flex-1 gap-2 h-12 text-sm"
+                    size="sm"
+                    className="flex-1 gap-1.5 h-9 text-xs"
                   >
-                    <ShoppingBag className="h-4 w-4" />
+                    <ShoppingBag className="h-3 w-3" />
                     Add to Closet
                   </Button>
                 </div>
+
+                {product.external_url ? (
+                  <Button
+                    onClick={handleShopNow}
+                    size="lg"
+                    className="w-full gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold h-10 shadow-lg text-sm"
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                    Shop Now
+                  </Button>
+                ) : (
+                  <Button 
+                    disabled 
+                    size="lg"
+                    className="w-full gap-2 opacity-50 cursor-not-allowed h-10 text-sm"
+                  >
+                    <ShoppingBag className="h-4 w-4" />
+                    Shop Link Not Available
+                  </Button>
+                )}
               </div>
             </div>
 
             {/* Desktop Layout */}
-            <div className="hidden md:flex h-full flex-col">
+            <div className="hidden md:flex h-full relative">
               {/* Close Button */}
               <Button
                 variant="ghost"
@@ -239,23 +224,21 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 <X className="h-5 w-5" />
               </Button>
 
-              {/* Content Container */}
-              <div className="flex-1 overflow-y-auto">
+              {/* Scrollable Content Container */}
+              <div className="flex-1 overflow-y-auto pb-32">
                 <div className="p-6 space-y-6">
-                  {/* Desktop Image Gallery */}
-                  <div className="w-full max-w-md mx-auto">
-                    <div className="aspect-[3/4] relative">
-                      <EnhancedProductGallery
-                        images={images}
-                        productTitle={product.title}
-                        productId={product.id}
-                        hasARMesh={false}
-                      />
-                    </div>
+                  {/* Smaller Image Gallery */}
+                  <div className="w-full max-w-sm mx-auto">
+                    <EnhancedProductGallery
+                      images={images}
+                      productTitle={product.title}
+                      productId={product.id}
+                      hasARMesh={false}
+                    />
                   </div>
                   
-                  {/* Scrollable Product Details Content */}
-                  <div className="max-w-lg mx-auto space-y-4 pb-24">
+                  {/* Product Details Content */}
+                  <div className="max-w-lg mx-auto space-y-4">
                     {/* Header */}
                     <div>
                       <h2 className="text-xl font-bold font-playfair line-clamp-2 mb-1.5">{product.title}</h2>
@@ -321,22 +304,8 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 </div>
               </div>
 
-              {/* Fixed Action Buttons - Desktop */}
-              <div className="bg-background/95 backdrop-blur-md border-t border-border p-4 space-y-3">
-                {/* Shop Now Button */}
-                {product.is_external && product.external_url && (
-                  <div className="max-w-lg mx-auto">
-                    <Button
-                      onClick={handleShopNow}
-                      className="w-full gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground font-semibold shadow-lg"
-                      size="sm"
-                    >
-                      <ExternalLink className="h-4 w-4" />
-                      Shop Now on {product.merchant_name || 'ASOS'}
-                    </Button>
-                  </div>
-                )}
-                
+              {/* Fixed Action Buttons */}
+              <div className="absolute bottom-0 left-0 right-0 z-20 glass-premium backdrop-blur-md border-t border-white/20 p-4 space-y-3">
                 <div className="flex gap-2 max-w-lg mx-auto">
                   <Button variant="outline" size="sm" className="flex-1 gap-2 text-sm h-10">
                     <Heart className="h-4 w-4" />
@@ -351,6 +320,28 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     <ShoppingBag className="h-4 w-4" />
                     Add to Closet
                   </Button>
+                </div>
+
+                <div className="max-w-lg mx-auto">
+                  {product.external_url ? (
+                    <Button
+                      onClick={handleShopNow}
+                      size="lg"
+                      className="w-full gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-base h-12 shadow-lg hover:shadow-xl transition-all duration-200"
+                    >
+                      <ExternalLink className="h-5 w-5" />
+                      Shop Now
+                    </Button>
+                  ) : (
+                    <Button 
+                      disabled 
+                      size="lg"
+                      className="w-full gap-2 opacity-50 cursor-not-allowed text-base h-12"
+                    >
+                      <ShoppingBag className="h-5 w-5" />
+                      Shop Link Not Available
+                    </Button>
+                  )}
                 </div>
               </div>
             </div>
