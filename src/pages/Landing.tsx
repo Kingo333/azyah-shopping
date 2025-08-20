@@ -514,7 +514,7 @@ export default function Landing() {
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
-            {[["Premium Materials", "Only the finest fabrics and materials make it into our collections."], ["Expert Curation", "Our fashion experts handpick every piece for quality and style."], ["Sustainable Practice", "We're committed to ethical and sustainable fashion, partnering with like-minded brands."]].map(([title, desc]) => <div key={title} className="text-center space-y-4">
+            {[["Premium Design", "Curated pieces from the world's finest designers and luxury brands."], ["Expert Curation", "Our fashion experts handpick every piece for quality and style."], ["Sustainable Practice", "We're committed to ethical and sustainable fashion, partnering with like-minded brands."]].map(([title, desc]) => <div key={title} className="text-center space-y-4">
                  <div className="w-16 h-16 bg-gradient-to-r from-primary/20 to-primary/10 rounded-xl flex items-center justify-center mx-auto">
                    <CheckCircle className="w-8 h-8 text-primary" />
                  </div>
