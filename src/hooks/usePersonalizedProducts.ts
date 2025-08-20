@@ -126,7 +126,7 @@ export const usePersonalizedProducts = ({
 
     // Apply gender filter - check both gender column and attributes.gender_target
     if (gender && gender !== '') {
-      query = query.or(`gender.eq.${gender},attributes->gender_target.eq."${gender}"`);
+      query = query.or(`gender.eq.${gender},attributes->>gender_target.eq.${gender}`);
     }
 
       // Apply currency filter
