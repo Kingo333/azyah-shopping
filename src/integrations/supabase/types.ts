@@ -1465,6 +1465,36 @@ export type Database = {
         }
         Relationships: []
       }
+      role_audit_log: {
+        Row: {
+          changed_by: string
+          created_at: string
+          id: string
+          new_role: Database["public"]["Enums"]["user_role"]
+          old_role: Database["public"]["Enums"]["user_role"] | null
+          reason: string | null
+          user_id: string
+        }
+        Insert: {
+          changed_by: string
+          created_at?: string
+          id?: string
+          new_role: Database["public"]["Enums"]["user_role"]
+          old_role?: Database["public"]["Enums"]["user_role"] | null
+          reason?: string | null
+          user_id: string
+        }
+        Update: {
+          changed_by?: string
+          created_at?: string
+          id?: string
+          new_role?: Database["public"]["Enums"]["user_role"]
+          old_role?: Database["public"]["Enums"]["user_role"] | null
+          reason?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       security_audit_log: {
         Row: {
           accessed_user_id: string | null
@@ -1926,6 +1956,14 @@ export type Database = {
           updated_at: string
           website: string | null
         }[]
+      }
+      admin_update_user_role: {
+        Args: {
+          new_role: Database["public"]["Enums"]["user_role"]
+          reason?: string
+          target_user_id: string
+        }
+        Returns: boolean
       }
       create_admin_user: {
         Args: Record<PropertyKey, never>
