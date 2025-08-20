@@ -375,13 +375,26 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                 >
                    <img
                     {...getResponsiveImageProps(
-                      currentProduct.media_urls?.[0] || '/placeholder.svg',
+                      (() => {
+                        // Parse media_urls JSON string and get first URL, fallback to image_url or placeholder
+                        try {
+                          const mediaUrls = typeof currentProduct.media_urls === 'string' 
+                            ? JSON.parse(currentProduct.media_urls)
+                            : currentProduct.media_urls;
+                          return Array.isArray(mediaUrls) && mediaUrls.length > 0 
+                            ? mediaUrls[0] 
+                            : currentProduct.image_url || '/placeholder.svg';
+                        } catch {
+                          return currentProduct.image_url || '/placeholder.svg';
+                        }
+                      })(),
                       "(max-width: 768px) 100vw, 50vw"
                     )}
                     alt={currentProduct.title}
                     className="object-cover w-full h-full"
                     onLoad={handleImageLoad}
                     onError={(e) => {
+                      console.warn('Image failed to load for product:', currentProduct.id);
                       (e.target as HTMLImageElement).src = '/placeholder.svg';
                     }}
                   />

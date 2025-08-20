@@ -130,7 +130,17 @@ export const useEnhancedSwipeProducts = ({
       
       return productList.map(product => ({
         ...product,
-        personalization_score: scoresMap.get(product.id) || 0.5
+        personalization_score: scoresMap.get(product.id) || 0.5,
+        // Parse media_urls if it's a JSON string
+        media_urls: (() => {
+          try {
+            return typeof product.media_urls === 'string' 
+              ? JSON.parse(product.media_urls)
+              : product.media_urls;
+          } catch {
+            return [];
+          }
+        })()
       }));
     } catch (error) {
       console.warn('Error getting personalization scores:', error);
