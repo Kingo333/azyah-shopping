@@ -208,12 +208,12 @@ export default function Landing() {
                 </div>
                 
                 <div className="space-y-2 sm:space-y-3 lg:space-y-4">
-                  <h1 className="font-cormorant text-5xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-9xl font-bold leading-[0.9] sm:leading-[0.85] tracking-tight">
+                  <h1 className="font-cormorant text-6xl sm:text-7xl md:text-8xl lg:text-8xl xl:text-9xl font-bold leading-[0.9] sm:leading-[0.85] tracking-tight">
                     <span className="block text-white">Find Your</span>
                     <span className="block bg-gradient-to-r from-primary via-primary to-primary/80 bg-clip-text text-transparent italic">Perfect</span>
                     <span className="block text-white">Style</span>
                   </h1>
-                  <p className="text-base sm:text-lg lg:text-2xl text-gray-200 max-w-md lg:max-w-lg leading-relaxed font-light mx-auto">
+                  <p className="text-lg sm:text-xl lg:text-2xl text-gray-200 max-w-md lg:max-w-lg leading-relaxed font-light mx-auto">
                     Smart AI fashion discovery that learns your style.
                   </p>
                 </div>
