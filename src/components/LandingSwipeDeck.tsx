@@ -267,11 +267,11 @@ const LandingSwipeDeck: React.FC<LandingSwipeDeckProps> = ({
                   />
                 </div>
                 
-                <div className="flex flex-col flex-grow space-y-2">
+                <div className="flex flex-col flex-grow space-y-1 lg:space-y-1">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
-                      <h3 className="text-sm sm:text-base font-semibold line-clamp-2 mb-1">{currentProduct.title}</h3>
-                      <p className="text-xs sm:text-sm text-muted-foreground line-clamp-1">{currentProduct.brand?.name}</p>
+                      <h3 className="text-sm lg:text-sm font-semibold line-clamp-2 mb-1">{currentProduct.title}</h3>
+                      <p className="text-xs lg:text-xs text-muted-foreground line-clamp-1">{currentProduct.brand?.name}</p>
                     </div>
                     <Button
                       variant="ghost"
