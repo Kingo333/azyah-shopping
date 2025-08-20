@@ -422,7 +422,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                       {...getResponsiveImageProps(
                         (() => {
                           try {
-                            // Better image URL resolution logic
+                            // Enhanced image URL resolution logic with ASOS handling
                             let imageUrl = '';
                             
                             // First try image_url if it exists and is valid
@@ -449,8 +449,30 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                               }
                             }
                             
+                            // Enhanced URL validation and ASOS URL fixing
+                            if (imageUrl) {
+                              // Fix incomplete ASOS URLs
+                              if (imageUrl.includes('images.asos-media.com') && !imageUrl.includes('?')) {
+                                // ASOS URLs often missing file extension, add it
+                                imageUrl = `${imageUrl}?$n_640w$&$p=1:1$`;
+                              } else if (imageUrl.includes('asos') && imageUrl.length < 100) {
+                                // Likely incomplete URL, add parameters
+                                const separator = imageUrl.includes('?') ? '&' : '?';
+                                imageUrl = `${imageUrl}${separator}$n_640w$`;
+                              }
+                              
+                              // Validate URL structure
+                              try {
+                                new URL(imageUrl);
+                                return imageUrl;
+                              } catch {
+                                console.warn('Invalid URL structure:', imageUrl);
+                                return '/placeholder.svg';
+                              }
+                            }
+                            
                             // Fallback to placeholder if no valid image found
-                            return imageUrl || '/placeholder.svg';
+                            return '/placeholder.svg';
                           } catch (error) {
                             console.warn('Error processing image URL for product:', currentProduct.id, error);
                             return '/placeholder.svg';
@@ -462,8 +484,20 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                       className="object-cover w-full h-full transition-opacity duration-300"
                       onLoad={handleImageLoad}
                       onError={(e) => {
-                        console.warn('Image failed to load for product:', currentProduct.id, 'URL:', (e.target as HTMLImageElement).src);
-                        (e.target as HTMLImageElement).src = '/placeholder.svg';
+                        const img = e.target as HTMLImageElement;
+                        const originalSrc = img.src;
+                        console.warn('Image failed to load for product:', currentProduct.id, 'URL:', originalSrc);
+                        
+                        // Try fallback strategies before using placeholder
+                        if (originalSrc.includes('$n_640w$')) {
+                          // Remove size parameters and try original URL
+                          const fallbackUrl = originalSrc.split('?')[0];
+                          console.log('Trying fallback URL:', fallbackUrl);
+                          img.src = fallbackUrl;
+                        } else if (originalSrc !== '/placeholder.svg') {
+                          // Final fallback to placeholder
+                          img.src = '/placeholder.svg';
+                        }
                       }}
                     />
                 </div>
