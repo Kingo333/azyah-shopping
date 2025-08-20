@@ -451,7 +451,7 @@ export default function Landing() {
           })}
             </div>) : (/* Swipe Interface */
         <div className="mb-12">
-              <div className="max-w-sm mx-auto h-[600px] relative bg-gradient-to-br from-primary/5 to-primary/10 rounded-2xl p-4">
+              <div className="max-w-sm mx-auto h-[700px] relative bg-gradient-to-br from-primary/5 to-primary/10 rounded-2xl p-6">
                 <SwipeDeck filter="all" subcategory="" priceRange={{
               min: 0,
               max: 1000
