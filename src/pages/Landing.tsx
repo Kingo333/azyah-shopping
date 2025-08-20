@@ -473,7 +473,17 @@ export default function Landing() {
                             <Button size="sm" variant="ghost" className="h-6 w-6 p-0 rounded-full bg-primary/10">
                               <ShoppingBag className="w-3 h-3" />
                             </Button>
-                            <Button size="sm" variant="ghost" className="h-6 w-6 p-0 rounded-full bg-primary/10">
+                            <Button 
+                              size="sm" 
+                              variant="ghost" 
+                              className="h-6 w-6 p-0 rounded-full bg-primary/10"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (product.external_url) {
+                                  window.open(product.external_url, '_blank', 'noopener,noreferrer');
+                                }
+                              }}
+                            >
                               <ExternalLink className="w-3 h-3" />
                             </Button>
                           </div>
