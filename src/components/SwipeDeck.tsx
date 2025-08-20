@@ -522,10 +522,6 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
 
 
 
-      {/* Progress indicator */}
-      <div className="absolute bottom-4 left-4 right-4 bg-black/20 backdrop-blur-sm rounded-full p-2 text-white text-xs text-center">
-        {index + 1} of {products.length}
-      </div>
 
       {/* Swipe instructions - show only for first few cards */}
       {index < 3 && (
