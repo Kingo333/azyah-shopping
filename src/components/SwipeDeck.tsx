@@ -47,19 +47,16 @@ interface SwipeDeckProps {
 
 const cardVariants = {
   hidden: {
-    opacity: 0,
-    y: 30,
-    scale: 0.95
+    opacity: 1,
+    y: 0,
+    scale: 1
   },
   visible: {
     opacity: 1,
     y: 0,
     scale: 1,
     transition: {
-      type: "spring" as const,
-      stiffness: 260,
-      damping: 20,
-      duration: 0.3
+      duration: 0
     }
   },
   exit: (x: number) => ({
