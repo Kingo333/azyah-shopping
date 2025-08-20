@@ -19,6 +19,7 @@ import Leaderboard from '@/components/Leaderboard';
 import TrendingStylesCarousel from '@/components/TrendingStylesCarousel';
 import { UGCCollabButton } from '@/components/ugc/UGCCollabButton';
 import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
+import { FeedbackModal } from '@/components/FeedbackModal';
 
 interface UserProfile {
   id: string;
@@ -409,6 +410,11 @@ const RoleDashboard: React.FC = () => {
           <Leaderboard type={activeLeaderboard} country={user?.user_metadata?.country} />
         </div>
       </GlassPanel>
+
+      {/* Feedback Section */}
+      <div className="flex justify-end">
+        <FeedbackModal userType="shopper" />
+      </div>
     </div>
   );
 

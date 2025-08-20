@@ -22,6 +22,7 @@ import { CollabDashboard } from '@/components/ugc/CollabDashboard';
 import { Plus, Edit, Trash2, Upload, BarChart3, TrendingUp, Eye, Heart, ShoppingBag, DollarSign, Download, Filter, Globe } from 'lucide-react';
 import ProductCategoryUpdater from '@/components/ProductCategoryUpdater';
 import { InfoTooltip } from '@/components/ui/info-tooltip';
+import { FeedbackModal } from '@/components/FeedbackModal';
 import type { Product } from '@/types';
 
 interface Brand {
@@ -309,6 +310,11 @@ const BrandPortal: React.FC = () => {
           onAddProduct={() => setIsAddProductModalOpen(true)}
           onImportFromWebsite={() => setIsImportModalOpen(true)}
         />
+
+        {/* Feedback Section */}
+        <div className="mb-6 flex justify-end">
+          <FeedbackModal userType="brand" />
+        </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid w-full grid-cols-4 rounded-xl bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border border-white/20 dark:border-slate-700/50">

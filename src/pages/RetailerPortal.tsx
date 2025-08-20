@@ -35,6 +35,7 @@ import { Product } from '@/types';
 import { convertJsonToProductAttributes } from '@/lib/type-utils';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
+import { FeedbackModal } from '@/components/FeedbackModal';
 
 const RetailerPortal = () => {
   const { user } = useAuth();
@@ -256,6 +257,11 @@ const RetailerPortal = () => {
           retailer={retailer}
           onAddProduct={() => setIsAddModalOpen(true)}
         />
+
+        {/* Feedback Section */}
+        <div className="mb-8 flex justify-end">
+          <FeedbackModal userType="retailer" />
+        </div>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
