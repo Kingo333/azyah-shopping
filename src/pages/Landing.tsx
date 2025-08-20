@@ -670,7 +670,7 @@ export default function Landing() {
               </div>
             </div>
             
-            {[["Platform", ["Discover", "Collections", "Community", "Premium"]], ["Partners", ["For Brands", "For Retailers", "Analytics", "Support"]], ["Company", ["About", "Careers", "Press", "Contact"]]].map(([title, links]) => <div key={title as string}>
+            {[["Platform", ["Discover", "Collections", "Community", "Premium"]], ["Partners", ["For Brands", "For Retailers", "Analytics", "Support"]], ["Company", ["About", "Careers", "Press", "info@azyahstyle.com"]]].map(([title, links]) => <div key={title as string}>
                 <h4 className="font-cormorant text-lg font-bold text-foreground mb-6">{title}</h4>
                 <ul className="space-y-3">
                   {(links as string[]).map(l => <li key={l}>
