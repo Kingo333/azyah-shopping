@@ -11,7 +11,7 @@ interface SecureBrandData {
   website?: string;
   contact_email?: string;
   owner_user_id?: string;
-  socials?: Record<string, string>;
+  socials?: any; // Use any to match Supabase Json type
   shipping_regions?: string[];
   cover_image_url?: string;
   created_at: string;

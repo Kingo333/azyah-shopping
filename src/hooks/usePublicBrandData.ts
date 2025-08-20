@@ -8,7 +8,7 @@ interface PublicBrandData {
   logo_url?: string;
   bio?: string;
   website?: string;
-  socials?: Record<string, string>;
+  socials?: any; // Use any to match Supabase Json type
   shipping_regions?: string[];
   cover_image_url?: string;
   created_at: string;
