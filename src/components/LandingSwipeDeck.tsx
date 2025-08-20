@@ -155,16 +155,44 @@ const LandingSwipeDeck: React.FC<LandingSwipeDeckProps> = ({
     if (!currentProduct) return;
 
     const { x: offsetX, y: offsetY } = info.offset;
+    const { x: velocityX, y: velocityY } = info.velocity;
 
+    // Check for vertical swipe (wishlist)
     if (offsetY < -VERTICAL_THRESHOLD && Math.abs(offsetX) < DISTANCE_THRESHOLD) {
-      handleAddToWishlist();
-    } else if (offsetX > DISTANCE_THRESHOLD) {
-      handleLike();
-    } else if (offsetX < -DISTANCE_THRESHOLD) {
-      handleDislike();
-    } else {
-      animate(x, 0, { type: "spring", stiffness: 100, damping: 20 });
-      animate(y, 0, { type: "spring", stiffness: 100, damping: 20 });
+      // Animate card up and trigger wishlist
+      animate(x, 0, { duration: 0.2 });
+      animate(y, -window.innerHeight, { duration: 0.3 });
+      setTimeout(() => {
+        handleAddToWishlist();
+        y.set(0);
+      }, 300);
+    } 
+    // Check for right swipe (like)
+    else if (offsetX > DISTANCE_THRESHOLD || velocityX > 500) {
+      // Animate card to the right and trigger like
+      animate(x, window.innerWidth + 200, { duration: 0.3 });
+      animate(y, offsetY + velocityY * 0.1, { duration: 0.3 });
+      setTimeout(() => {
+        handleLike();
+        x.set(0);
+        y.set(0);
+      }, 300);
+    } 
+    // Check for left swipe (dislike)
+    else if (offsetX < -DISTANCE_THRESHOLD || velocityX < -500) {
+      // Animate card to the left and trigger dislike
+      animate(x, -window.innerWidth - 200, { duration: 0.3 });
+      animate(y, offsetY + velocityY * 0.1, { duration: 0.3 });
+      setTimeout(() => {
+        handleDislike();
+        x.set(0);
+        y.set(0);
+      }, 300);
+    } 
+    // Not enough movement, spring back to center
+    else {
+      animate(x, 0, { type: "spring", stiffness: 300, damping: 30 });
+      animate(y, 0, { type: "spring", stiffness: 300, damping: 30 });
     }
   }, [currentProduct, handleLike, handleDislike, handleAddToWishlist, x, y]);
 
