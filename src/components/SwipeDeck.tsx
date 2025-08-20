@@ -81,6 +81,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
   const [showProductDetail, setShowProductDetail] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<SwipeProduct | null>(null);
   const [imageAspectRatio, setImageAspectRatio] = useState<number>(1);
+  const [showInstructions, setShowInstructions] = useState(true);
   const { toast } = useToast();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -163,6 +164,16 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
       setViewStartTimes(prev => new Map(prev.set(currentProduct.id, Date.now())));
     }
   }, [index, currentProduct]);
+
+  // Auto-hide instructions after 3 seconds
+  useEffect(() => {
+    if (showInstructions) {
+      const timer = setTimeout(() => {
+        setShowInstructions(false);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [showInstructions]);
 
   const prevCard = useCallback(() => {
     x.set(0);
@@ -400,36 +411,37 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
           >
             <Card className="h-full flex flex-col cursor-grab active:cursor-grabbing overflow-hidden">
               <CardContent className="p-4 sm:p-6 flex flex-col h-full">
-                <div 
-                  className="relative w-full mb-2 sm:mb-3 overflow-hidden rounded-lg flex-shrink-0"
-                  style={{
-                    height: `${getImageHeight(imageAspectRatio)}px`
-                  }}
-                >
-                  <img
-                    {...getResponsiveImageProps(
-                      (() => {
-                        try {
-                          const mediaUrls = typeof currentProduct.media_urls === 'string' 
-                            ? JSON.parse(currentProduct.media_urls)
-                            : currentProduct.media_urls;
-                          return Array.isArray(mediaUrls) && mediaUrls.length > 0 
-                            ? mediaUrls[0] 
-                            : currentProduct.image_url || '/placeholder.svg';
-                        } catch {
-                          return currentProduct.image_url || '/placeholder.svg';
-                        }
-                      })(),
-                      "(max-width: 768px) 100vw, 50vw"
-                    )}
-                    alt={currentProduct.title}
-                    className="object-cover w-full h-full"
-                    onLoad={handleImageLoad}
-                    onError={(e) => {
-                      console.warn('Image failed to load for product:', currentProduct.id);
-                      (e.target as HTMLImageElement).src = '/placeholder.svg';
-                    }}
-                  />
+                 <div 
+                   className="relative w-full mb-2 sm:mb-3 overflow-hidden rounded-lg flex-shrink-0"
+                   style={{
+                     height: `${getImageHeight(imageAspectRatio)}px`
+                   }}
+                   onClick={() => setShowInstructions(true)}
+                 >
+                   <img
+                     {...getResponsiveImageProps(
+                       (() => {
+                         try {
+                           const mediaUrls = typeof currentProduct.media_urls === 'string' 
+                             ? JSON.parse(currentProduct.media_urls)
+                             : currentProduct.media_urls;
+                           return Array.isArray(mediaUrls) && mediaUrls.length > 0 
+                             ? mediaUrls[0] 
+                             : currentProduct.image_url || '/placeholder.svg';
+                         } catch {
+                           return currentProduct.image_url || '/placeholder.svg';
+                         }
+                       })(),
+                       "(max-width: 768px) 100vw, 50vw"
+                     )}
+                     alt={currentProduct.title}
+                     className="object-cover w-full h-full"
+                     onLoad={handleImageLoad}
+                     onError={(e) => {
+                       console.warn('Image failed to load for product:', currentProduct.id);
+                       (e.target as HTMLImageElement).src = '/placeholder.svg';
+                     }}
+                   />
                 </div>
                 
                 <div className="flex flex-col flex-grow space-y-2">
@@ -542,8 +554,8 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
 
 
 
-      {/* Swipe instructions - show only for first few cards */}
-      {index < 3 && (
+      {/* Swipe instructions - auto-hide after 3 seconds, show on image tap */}
+      {showInstructions && (
         <div className="absolute top-4 left-4 right-4 text-center">
           <div className="bg-black/20 backdrop-blur-sm rounded-lg p-2 text-white text-xs">
             ← Pass • ↑ Save • Like →
