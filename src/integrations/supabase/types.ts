@@ -1218,6 +1218,7 @@ export type Database = {
           description: string | null
           dimensions: Json | null
           external_url: string | null
+          gender: Database["public"]["Enums"]["gender_type"] | null
           id: string
           image_url: string | null
           is_external: boolean | null
@@ -1254,6 +1255,7 @@ export type Database = {
           description?: string | null
           dimensions?: Json | null
           external_url?: string | null
+          gender?: Database["public"]["Enums"]["gender_type"] | null
           id?: string
           image_url?: string | null
           is_external?: boolean | null
@@ -1290,6 +1292,7 @@ export type Database = {
           description?: string | null
           dimensions?: Json | null
           external_url?: string | null
+          gender?: Database["public"]["Enums"]["gender_type"] | null
           id?: string
           image_url?: string | null
           is_external?: boolean | null
@@ -1936,6 +1939,14 @@ export type Database = {
         }
         Returns: boolean
       }
+      validate_category_subcategory_gender: {
+        Args: {
+          cat: Database["public"]["Enums"]["category_type"]
+          gend?: Database["public"]["Enums"]["gender_type"]
+          subcat: Database["public"]["Enums"]["subcategory_type"]
+        }
+        Returns: boolean
+      }
     }
     Enums: {
       application_status: "PENDING" | "ACCEPTED" | "REJECTED" | "WITHDRAWN"
@@ -1955,6 +1966,7 @@ export type Database = {
         | "bags"
       collab_comp_type: "PRODUCT_EXCHANGE" | "PRODUCT_AND_PAID"
       collab_status: "DRAFT" | "ACTIVE" | "PAUSED" | "CLOSED"
+      gender_type: "men" | "women" | "unisex" | "kids"
       order_status:
         | "pending"
         | "confirmed"
@@ -2199,6 +2211,7 @@ export const Constants = {
       ],
       collab_comp_type: ["PRODUCT_EXCHANGE", "PRODUCT_AND_PAID"],
       collab_status: ["DRAFT", "ACTIVE", "PAUSED", "CLOSED"],
+      gender_type: ["men", "women", "unisex", "kids"],
       order_status: [
         "pending",
         "confirmed",

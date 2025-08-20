@@ -300,8 +300,10 @@ export const useSmartSwipeProducts = ({
         }
       }
 
-      // Gender filtering temporarily disabled until database migration is complete
-      // TODO: Re-enable after gender column is properly migrated
+      // Apply gender filter
+      if (gender && gender !== '') {
+        query = query.eq('gender', gender as any);
+      }
 
       if (currency && currency !== 'USD') {
         query = query.eq('currency', currency);

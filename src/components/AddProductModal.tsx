@@ -10,8 +10,8 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Upload, X, Loader2 } from 'lucide-react';
-import { CATEGORY_TREE, getAllCategories, getSubcategoriesForCategory, getCategoryDisplayName, getSubcategoryDisplayName } from '@/lib/categories';
-import type { TopCategory, SubCategory } from '@/lib/categories';
+import { CATEGORY_TREE, getAllCategories, getSubcategoriesForCategory, getCategoryDisplayName, getSubcategoryDisplayName, GENDER_OPTIONS, getGenderDisplayName } from '@/lib/categories';
+import type { TopCategory, SubCategory, Gender } from '@/lib/categories';
 
 interface AddProductModalProps {
   isOpen: boolean;
@@ -56,6 +56,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
     currency: 'USD',
     category_slug: '',
     subcategory_slug: '',
+    gender: '',
     sku: '',
     stock_qty: '0',
     external_url: ''
@@ -177,6 +178,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
         sku: formData.sku || `SKU-${Date.now()}`,
         stock_qty: parseInt(formData.stock_qty) || 0,
         external_url: formData.external_url,
+        gender: (formData.gender as any) || null,
         media_urls: images,
         brand_id: userType === 'brand' ? brandId : null,
         retailer_id: userType === 'retailer' ? retailerId : null,
@@ -199,6 +201,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
         currency: 'USD',
         category_slug: '',
         subcategory_slug: '',
+        gender: '',
         sku: '',
         stock_qty: '0',
         external_url: ''
@@ -278,7 +281,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <Label htmlFor="category">Category *</Label>
               <Select value={formData.category_slug} onValueChange={(value) => handleInputChange('category_slug', value)}>
@@ -309,6 +312,22 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
                   {availableSubcategories.map(subcategory => (
                     <SelectItem key={subcategory} value={subcategory}>
                       {getSubcategoryDisplayName(subcategory)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="gender">Gender</Label>
+              <Select value={formData.gender} onValueChange={(value) => handleInputChange('gender', value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select gender (optional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  {GENDER_OPTIONS.map(gender => (
+                    <SelectItem key={gender} value={gender}>
+                      {getGenderDisplayName(gender)}
                     </SelectItem>
                   ))}
                 </SelectContent>
