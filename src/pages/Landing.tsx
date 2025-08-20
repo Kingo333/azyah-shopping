@@ -6,8 +6,6 @@ import { Button } from "@/components/ui/button";
 import { SEOHead } from "@/components/SEOHead";
 import SwipeDeck from '@/components/SwipeDeck';
 import { clearInvalidSession, debugAuthState } from "@/utils/sessionDebug";
-import { useSmartSwipeProducts } from "@/hooks/useSmartSwipeProducts";
-import { getResponsiveImageProps } from "@/utils/asosImageUtils";
 export default function Landing() {
   const [isVisible, setIsVisible] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'swipe'>('grid');
@@ -17,15 +15,6 @@ export default function Landing() {
   } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
-
-  // Fetch real products for the grid view
-  const { products, isLoading: productsLoading } = useSmartSwipeProducts({
-    filter: 'all',
-    subcategory: '',
-    priceRange: { min: 0, max: 1000 },
-    searchQuery: '',
-    currency: 'USD'
-  });
   useEffect(() => setIsVisible(true), []);
 
   // Debug auth state and redirect logic
@@ -365,79 +354,39 @@ export default function Landing() {
           {/* Content based on view mode */}
           {viewMode === 'grid' ? (/* Product Grid */
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-              {productsLoading ? (
-                // Loading skeleton
-                [...Array(8)].map((_, i) => (
-                  <div key={i} className="aspect-[3/4] bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl animate-pulse" />
-                ))
-              ) : (
-                // Real products
-                products.slice(0, 8).map((product, i) => {
-                  const imageProps = getResponsiveImageProps(
-                    product.image_url || product.media_urls?.[0]?.[0] || '/placeholder.svg'
-                  );
-                  const price = product.price_cents ? (product.price_cents / 100).toFixed(0) : '99';
+              {[...Array(8)].map((_, i) => <div key={i} className="group relative aspect-[3/4] bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2">
+                  <div className="absolute inset-0 bg-gradient-to-t from-primary/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                   
-                  return (
-                    <div key={product.id} className="group relative aspect-[3/4] bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2">
-                      {/* Product Image */}
-                      <img
-                        {...imageProps}
-                        alt={product.title}
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement;
-                          target.src = '/placeholder.svg';
-                        }}
-                      />
-                      
-                      <div className="absolute inset-0 bg-gradient-to-t from-primary/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                      
-                      {/* Heart Icon */}
-                      <div className="absolute top-4 right-4 w-8 h-8 bg-background/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 cursor-pointer hover:bg-primary/10">
-                        <Heart className="w-4 h-4 text-primary" />
+                  {/* Heart Icon */}
+                  <div className="absolute top-4 right-4 w-8 h-8 bg-background/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 cursor-pointer hover:bg-primary/10">
+                    <Heart className="w-4 h-4 text-primary" />
+                  </div>
+                  
+                  {/* AR Ready Badge */}
+                  {i % 3 === 0 && <div className="absolute top-4 left-4 bg-primary/90 backdrop-blur-sm rounded-lg px-3 py-1">
+                      <div className="flex items-center space-x-1">
+                        
+                        <span className="text-xs font-medium text-white">AR Ready</span>
                       </div>
-                      
-                      {/* AR Ready Badge */}
-                      {product.ar_mesh_url && (
-                        <div className="absolute top-4 left-4 bg-primary/90 backdrop-blur-sm rounded-lg px-3 py-1">
-                          <span className="text-xs font-medium text-white">AR Ready</span>
-                        </div>
-                      )}
-                      
-                      {/* Product Info */}
-                      <div className="absolute bottom-4 left-4 right-4 bg-white/95 backdrop-blur-sm rounded-xl p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                        <div className="text-sm font-medium line-clamp-1" title={product.title}>
-                          {product.title}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          {product.merchant_name || 'Premium Brand'}
-                        </div>
-                        <div className="flex items-center justify-between mt-2">
-                          <div className="text-sm font-bold text-primary">
-                            {product.currency === 'USD' ? '$' : product.currency + ' '}{price}
-                          </div>
-                          <div className="flex space-x-1">
-                            <Button size="sm" variant="ghost" className="h-6 w-6 p-0 rounded-full bg-primary/10">
-                              <ShoppingBag className="w-3 h-3" />
-                            </Button>
-                            {product.external_url && (
-                              <Button 
-                                size="sm" 
-                                variant="ghost" 
-                                className="h-6 w-6 p-0 rounded-full bg-primary/10"
-                                onClick={() => window.open(product.external_url, '_blank')}
-                              >
-                                <ExternalLink className="w-3 h-3" />
-                              </Button>
-                            )}
-                          </div>
-                        </div>
+                    </div>}
+                  
+                  {/* Product Info */}
+                  <div className="absolute bottom-4 left-4 right-4 bg-white/95 backdrop-blur-sm rounded-xl p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <div className="text-sm font-medium line-clamp-1">Trending Item {i + 1}</div>
+                    <div className="text-xs text-muted-foreground">Premium Brand</div>
+                    <div className="flex items-center justify-between mt-2">
+                      <div className="text-sm font-bold text-primary">${(Math.random() * 200 + 50).toFixed(0)}</div>
+                      <div className="flex space-x-1">
+                        <Button size="sm" variant="ghost" className="h-6 w-6 p-0 rounded-full bg-primary/10">
+                          <ShoppingBag className="w-3 h-3" />
+                        </Button>
+                        <Button size="sm" variant="ghost" className="h-6 w-6 p-0 rounded-full bg-primary/10">
+                          <ExternalLink className="w-3 h-3" />
+                        </Button>
                       </div>
                     </div>
-                  );
-                })
-              )}
+                  </div>
+                </div>)}
             </div>) : (/* Swipe Interface */
         <div className="mb-12">
               <div className="max-w-sm mx-auto h-[600px] relative bg-gradient-to-br from-primary/5 to-primary/10 rounded-2xl p-4">
