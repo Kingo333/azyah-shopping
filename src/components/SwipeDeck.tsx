@@ -508,7 +508,6 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                         className="w-full gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground font-semibold shadow-lg pointer-events-auto"
                         size="sm"
                       >
-                        <ExternalLink className="h-4 w-4" />
                         Shop Now
                       </Button>
                     </div>
