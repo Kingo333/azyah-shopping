@@ -114,7 +114,11 @@ const LandingSwipeDeck: React.FC<LandingSwipeDeckProps> = ({
   const nextCard = useCallback(() => {
     x.set(0);
     y.set(0);
-    setCurrentIndex(prevIndex => Math.min(prevIndex + 1, products.length - 1));
+    setCurrentIndex(prevIndex => {
+      const nextIndex = prevIndex + 1;
+      // Only advance if there are more products
+      return nextIndex < products.length ? nextIndex : prevIndex;
+    });
   }, [x, y, products.length]);
 
   const handleLike = useCallback(() => {
