@@ -453,7 +453,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                   </div>
 
                   <div className="flex items-center justify-between">
-                    <span className="text-lg sm:text-xl font-bold">
+                    <span className="text-base sm:text-lg font-bold">
                       {new Intl.NumberFormat('en-US', {
                         style: 'currency',
                         currency: currentProduct.currency || 'USD'
