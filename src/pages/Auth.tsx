@@ -310,7 +310,7 @@ const Auth = () => {
                           ? "border-primary/60 shadow-md scale-[1.02]"
                           : "hover:scale-[1.01] hover:border-primary/40"
                       }`}
-                      onClick={() => setSelectedRole("shopper")}
+                      onClick={() => setSelectedRole(selectedRole === "shopper" ? "" : "shopper")}
                     >
                       <div className="text-center space-y-2">
                         <div className={`p-2 rounded-lg mx-auto w-fit ${
@@ -344,7 +344,7 @@ const Auth = () => {
                           ? "border-primary/60 shadow-md scale-[1.02]"
                           : "hover:scale-[1.01] hover:border-primary/40"
                       }`}
-                      onClick={() => setSelectedRole("brand")}
+                      onClick={() => setSelectedRole(selectedRole === "brand" ? "" : "brand")}
                     >
                       <div className="text-center space-y-2">
                         <div className={`p-2 rounded-lg mx-auto w-fit ${
@@ -378,7 +378,7 @@ const Auth = () => {
                           ? "border-primary/60 shadow-md scale-[1.02]"
                           : "hover:scale-[1.01] hover:border-primary/40"
                       }`}
-                      onClick={() => setSelectedRole("retailer")}
+                      onClick={() => setSelectedRole(selectedRole === "retailer" ? "" : "retailer")}
                     >
                       <div className="text-center space-y-2">
                         <div className={`p-2 rounded-lg mx-auto w-fit ${
