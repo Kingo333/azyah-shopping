@@ -205,20 +205,8 @@ const LandingSwipeDeck: React.FC<LandingSwipeDeckProps> = ({
     }
     // Check for left swipe (dislike)
     else if (offsetX < -DISTANCE_THRESHOLD || velocityX < -500) {
-      // Animate card to the left smoothly first
-      animate(x, -window.innerWidth - 200, { 
-        duration: 0.3,
-        ease: "easeOut"
-      });
-      animate(y, offsetY + velocityY * 0.1, { 
-        duration: 0.3,
-        ease: "easeOut"
-      });
-      
-      // Trigger action after a short delay to prevent blank cards
-      setTimeout(() => {
-        handleDislike();
-      }, 100);
+      // Trigger action immediately to prevent card disappearing
+      handleDislike();
     }
     // Not enough movement, spring back to center
     else {
