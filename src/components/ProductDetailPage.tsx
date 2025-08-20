@@ -8,6 +8,8 @@ import { AdvancedSizeColorSelector } from './AdvancedSizeColorSelector';
 import { AddToClosetModal } from './AddToClosetModal';
 import { useToast } from '@/hooks/use-toast';
 import { useProductAnalytics } from '@/hooks/useAnalytics';
+import { useWishlist } from '@/hooks/useWishlist';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface ProductDetailPageProps {
   product: Product;
@@ -20,6 +22,8 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
 }) => {
   const { toast } = useToast();
   const { trackProductView, trackProductClick } = useProductAnalytics();
+  const { user } = useAuth();
+  const { wishlist, isInWishlist, addToWishlist, removeFromWishlist, isLoading: wishlistLoading } = useWishlist(product?.id);
 
   const [selectedSize, setSelectedSize] = useState('');
   const [selectedColor, setSelectedColor] = useState('');
@@ -65,6 +69,32 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
       // Fallback - copy to clipboard
       navigator.clipboard.writeText(window.location.href);
       toast({ description: 'Link copied to clipboard!' });
+    }
+  };
+
+  const handleWishlist = async () => {
+    if (!user) {
+      toast({
+        title: "Sign in required",
+        description: "You must be signed in to add to wishlist.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      if (isInWishlist && wishlist) {
+        await removeFromWishlist(wishlist.id);
+        toast({ description: "Removed from wishlist" });
+      } else {
+        await addToWishlist();
+        toast({ description: "Added to wishlist" });
+      }
+    } catch (error) {
+      toast({
+        description: "Failed to update wishlist",
+        variant: "destructive"
+      });
     }
   };
 
@@ -189,12 +219,15 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
             <div className="space-y-3">
               <div className="flex gap-2 md:gap-3">
                 <Button 
-                  variant="outline" 
-                  className="flex-1 gap-2 text-xs md:text-sm h-9 md:h-10"
-                  onClick={() => {/* Add wishlist functionality */}}
+                  variant={isInWishlist ? "default" : "outline"}
+                  className={`flex-1 gap-2 text-xs md:text-sm h-9 md:h-10 ${
+                    isInWishlist ? 'bg-red-500 hover:bg-red-600 text-white' : ''
+                  }`}
+                  onClick={handleWishlist}
+                  disabled={wishlistLoading}
                 >
-                  <Heart className="h-3 w-3 md:h-4 md:w-4" />
-                  Wishlist
+                  <Heart className={`h-3 w-3 md:h-4 md:w-4 ${isInWishlist ? 'fill-current' : ''}`} />
+                  {isInWishlist ? 'Remove' : 'Wishlist'}
                 </Button>
                 <Button
                   variant="outline"
