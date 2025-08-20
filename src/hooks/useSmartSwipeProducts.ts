@@ -239,11 +239,9 @@ export const useSmartSwipeProducts = ({
             logo_url, 
             bio, 
             website, 
-            owner_user_id, 
             created_at, 
             updated_at, 
             socials, 
-            contact_email, 
             shipping_regions, 
             cover_image_url
           ),
@@ -397,9 +395,9 @@ export const useSmartSwipeProducts = ({
           bio: item.brand.bio,
           socials: item.brand.socials && typeof item.brand.socials === 'object' && item.brand.socials !== null ? item.brand.socials as Record<string, string> : {},
           website: item.brand.website,
-          contact_email: item.brand.contact_email,
+          contact_email: null, // Protected - use authenticated endpoint for contact info
           shipping_regions: item.brand.shipping_regions,
-          owner_user_id: item.brand.owner_user_id,
+          owner_user_id: null, // Protected - not exposed in public API
           created_at: item.brand.created_at,
           updated_at: item.brand.updated_at
         } : undefined,
