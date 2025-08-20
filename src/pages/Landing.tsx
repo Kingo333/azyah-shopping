@@ -371,7 +371,9 @@ export default function Landing() {
                   <div key={`skeleton-${i}`} className="aspect-[3/4] bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl animate-pulse" />
                 ))
               ) : (
-                (gridProducts?.slice(0, 8) || []).map((product, i) => {
+                (gridProducts?.slice(0, 8) || [])
+                  .filter(product => !product.title?.toLowerCase().includes('oh polly ianthe embellished halterneck gown'))
+                  .map((product, i) => {
                   const imageUrl = product.image_url || 
                     (product.media_urls && Array.isArray(product.media_urls) && product.media_urls.length > 0 
                       ? product.media_urls[0] 
