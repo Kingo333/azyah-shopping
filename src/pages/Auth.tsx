@@ -490,7 +490,22 @@ const Auth = () => {
 
         {/* Footer */}
         <div className="text-center text-sm text-muted-foreground">
-          <p>By continuing, you agree to our Terms of Service and Privacy Policy</p>
+          <p>
+            By continuing, you agree to our{" "}
+            <span 
+              className="underline font-medium hover:text-primary cursor-pointer"
+              onClick={() => navigate('/terms')}
+            >
+              Terms of Service
+            </span>{" "}
+            and{" "}
+            <span 
+              className="underline font-medium hover:text-primary cursor-pointer"
+              onClick={() => navigate('/privacy')}
+            >
+              Privacy Policy
+            </span>
+          </p>
         </div>
       </div>
     </div>

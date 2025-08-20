@@ -741,7 +741,9 @@ export default function Landing() {
           <div className="pt-8 border-t border-primary/10 flex flex-col md:flex-row items-center justify-between">
             <p className="text-sm text-muted-foreground">©2024 Azyah. All rights reserved.</p>
             <div className="flex items-center space-x-8 text-sm text-muted-foreground mt-4 md:mt-0">
-              {["Privacy Policy", "Terms of Service", "Cookie Policy"].map(l => <button key={l} className="hover:text-primary transition-colors">{l}</button>)}
+              <button onClick={() => navigate('/privacy')} className="hover:text-primary transition-colors">Privacy Policy</button>
+              <button onClick={() => navigate('/terms')} className="hover:text-primary transition-colors">Terms of Service</button>
+              <button className="hover:text-primary transition-colors">Cookie Policy</button>
             </div>
           </div>
         </div>

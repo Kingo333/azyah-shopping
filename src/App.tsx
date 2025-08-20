@@ -33,6 +33,8 @@ import ImageSearch from './pages/ImageSearch';
 import Affiliate from './pages/Affiliate';
 import ToyReplica from './pages/ToyReplica';
 import BeautyConsultant from './pages/BeautyConsultant';
+import Terms from './pages/Terms';
+import Privacy from './pages/Privacy';
 
 import BrandPortal from './pages/BrandPortal';
 import RetailerPortal from './pages/RetailerPortal';
@@ -160,6 +162,8 @@ function App() {
                       <RetailerPortal />
                     </ProtectedRoute>
                   } />
+                  <Route path="/terms" element={<Terms />} />
+                  <Route path="/privacy" element={<Privacy />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </Router>
