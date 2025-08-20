@@ -1952,6 +1952,7 @@ export type Database = {
         | "giftcards"
         | "men"
         | "women"
+        | "bags"
       collab_comp_type: "PRODUCT_EXCHANGE" | "PRODUCT_AND_PAID"
       collab_status: "DRAFT" | "ACTIVE" | "PAUSED" | "CLOSED"
       order_status:
@@ -2194,6 +2195,7 @@ export const Constants = {
         "giftcards",
         "men",
         "women",
+        "bags",
       ],
       collab_comp_type: ["PRODUCT_EXCHANGE", "PRODUCT_AND_PAID"],
       collab_status: ["DRAFT", "ACTIVE", "PAUSED", "CLOSED"],
