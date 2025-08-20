@@ -2049,6 +2049,8 @@ export type Database = {
         | "womens accessories"
         | "all beauty"
         | "fragrances"
+        | "home fragrances"
+        | "tools & accessories"
       swipe_action: "right" | "up" | "left"
       user_role: "shopper" | "brand" | "retailer" | "admin"
     }
@@ -2292,6 +2294,8 @@ export const Constants = {
         "womens accessories",
         "all beauty",
         "fragrances",
+        "home fragrances",
+        "tools & accessories",
       ],
       swipe_action: ["right", "up", "left"],
       user_role: ["shopper", "brand", "retailer", "admin"],
