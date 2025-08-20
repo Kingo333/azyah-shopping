@@ -243,9 +243,13 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
     setLoading(true);
 
     try {
+      // Use soft delete by setting status to 'archived' instead of hard delete
       const { error } = await supabase
         .from('products')
-        .delete()
+        .update({ 
+          status: 'archived',
+          updated_at: new Date().toISOString()
+        })
         .eq('id', product.id);
 
       if (error) throw error;
