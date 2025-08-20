@@ -107,7 +107,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 <X className="h-5 w-5" />
               </Button>
 
-              {/* Image Gallery with Shop Now */}
+              {/* Image Gallery */}
               <div className="aspect-[3/4] w-full relative flex-shrink-0">
                 <EnhancedProductGallery
                   images={images}
@@ -115,19 +115,6 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   productId={product.id}
                   hasARMesh={false}
                 />
-                {/* Shop Now Button Overlay */}
-                {product.is_external && product.external_url && (
-                  <div className="absolute bottom-4 left-4 right-4">
-                    <Button
-                      onClick={handleShopNow}
-                      className="w-full gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground font-semibold shadow-lg backdrop-blur-sm"
-                      size="sm"
-                    >
-                      <ExternalLink className="h-4 w-4" />
-                      Shop Now on {product.merchant_name || 'ASOS'}
-                    </Button>
-                  </div>
-                )}
               </div>
 
               {/* Scrollable Product Content */}
@@ -201,6 +188,17 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
               {/* Fixed Bottom Actions */}
               <div className="bg-background/95 backdrop-blur-lg border-t border-border p-3 space-y-2 pb-safe-area-inset-bottom">
+                {/* Shop Now Button */}
+                {product.is_external && product.external_url && (
+                  <Button
+                    onClick={handleShopNow}
+                    className="w-full gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground font-semibold shadow-lg"
+                    size="sm"
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                    Shop Now on {product.merchant_name || 'ASOS'}
+                  </Button>
+                )}
                 <div className="flex gap-2">
                   <Button 
                     variant="outline" 
@@ -238,8 +236,8 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               {/* Content Container */}
               <div className="flex-1 overflow-y-auto min-h-0">
                 <div className="p-6 space-y-6 min-h-full">
-                  {/* Desktop Image Gallery with Shop Now */}
-                  <div className="w-full max-w-md mx-auto relative">
+                  {/* Desktop Image Gallery */}
+                  <div className="w-full max-w-md mx-auto">
                     <div className="aspect-[3/4] relative">
                       <EnhancedProductGallery
                         images={images}
@@ -247,19 +245,6 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                         productId={product.id}
                         hasARMesh={false}
                       />
-                      {/* Shop Now Button Overlay */}
-                      {product.is_external && product.external_url && (
-                        <div className="absolute bottom-4 left-4 right-4">
-                          <Button
-                            onClick={handleShopNow}
-                            className="w-full gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground font-semibold shadow-lg backdrop-blur-sm"
-                            size="sm"
-                          >
-                            <ExternalLink className="h-4 w-4" />
-                            Shop Now on {product.merchant_name || 'ASOS'}
-                          </Button>
-                        </div>
-                      )}
                     </div>
                   </div>
                   
@@ -332,6 +317,20 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
               {/* Fixed Action Buttons - Desktop */}
               <div className="bg-background/95 backdrop-blur-md border-t border-border p-4 space-y-3">
+                {/* Shop Now Button */}
+                {product.is_external && product.external_url && (
+                  <div className="max-w-lg mx-auto">
+                    <Button
+                      onClick={handleShopNow}
+                      className="w-full gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground font-semibold shadow-lg"
+                      size="sm"
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                      Shop Now on {product.merchant_name || 'ASOS'}
+                    </Button>
+                  </div>
+                )}
+                
                 <div className="flex gap-2 max-w-lg mx-auto">
                   <Button variant="outline" size="sm" className="flex-1 gap-2 text-sm h-10">
                     <Heart className="h-4 w-4" />
@@ -345,18 +344,6 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   >
                     <ShoppingBag className="h-4 w-4" />
                     Add to Closet
-                  </Button>
-                </div>
-
-                <div className="max-w-lg mx-auto">
-                  <Button 
-                    variant="outline"
-                    disabled 
-                    size="lg"
-                    className="w-full gap-2 opacity-50 cursor-not-allowed text-base h-12"
-                  >
-                    <ShoppingBag className="h-5 w-5" />
-                    Shop from Image Gallery
                   </Button>
                 </div>
               </div>

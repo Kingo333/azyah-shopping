@@ -401,8 +401,8 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                 </div>
                 <div className="flex flex-col flex-grow space-y-3">
                   <div className="flex items-start justify-between gap-2">
-                    <div className="flex items-center gap-2 flex-1">
-                      <h3 className="text-base sm:text-lg font-semibold line-clamp-2">{currentProduct.title}</h3>
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <h3 className="text-sm sm:text-base font-semibold line-clamp-1 truncate">{currentProduct.title}</h3>
                       <Button
                         variant="ghost"
                         size="sm"
