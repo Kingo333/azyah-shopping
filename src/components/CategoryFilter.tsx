@@ -122,7 +122,7 @@ const CategoryFilter: React.FC<CategoryFilterProps> = ({
               </div>
               <div className="mt-3 p-2 bg-gradient-subtle rounded-md border border-border/50">
                 <p className="text-xs text-muted-foreground">
-                  💡 Gender filter is expanding! Limited selection available. Try other filters for more results.
+                  💡 Gender filter is expanding! Limited selection available. Try other filters or browse without gender filters for more results while we work on it.
                 </p>
               </div>
             </div>
