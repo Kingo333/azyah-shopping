@@ -104,8 +104,8 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
 
   const { trackSwipe, trackViewDuration } = useEnhancedSwipeTracking();
 
-  // Track view start times for implicit feedback
-  const [viewStartTimes, setViewStartTimes] = useState<Map<string, number>>(new Map());
+  // Track view start times for implicit feedback - use ref to avoid re-renders
+  const viewStartTimes = useRef<Map<string, number>>(new Map());
 
   const currentProduct = useMemo(() => products[index] || null, [products, index]);
   const { addToWishlist, isLoading: wishlistLoading } = useWishlist(currentProduct?.id);
@@ -159,18 +159,18 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
     });
   }, [x, y, products.length]);
 
-  // Reset index when products change and track view times
+  // Reset index when products change and clean up view times
   useEffect(() => {
     setIndex(0);
     x.set(0);
     y.set(0);
-    setViewStartTimes(new Map());
+    viewStartTimes.current.clear();
   }, [products, x, y]);
 
   // Track view start time for current product
   useEffect(() => {
     if (currentProduct) {
-      setViewStartTimes(prev => new Map(prev.set(currentProduct.id, Date.now())));
+      viewStartTimes.current.set(currentProduct.id, Date.now());
     }
   }, [index, currentProduct]);
 
@@ -205,18 +205,18 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
 
     try {
       // Track view duration for implicit feedback
-      const viewDuration = trackViewDuration(product.id, viewStartTimes.get(product.id) || Date.now());
+      const viewDuration = trackViewDuration(product.id, viewStartTimes.current.get(product.id) || Date.now());
       
-      // Track enhanced swipe with metadata
-      await trackSwipe({
+      // Track enhanced swipe with metadata (fire-and-forget)
+      trackSwipe({
         productId: product.id,
         action: 'right',
         product,
         viewDuration,
         confidence: 1.0
-      });
+      }).catch(console.error);
 
-      // Fire-and-forget database operation (no await, no blocking)
+      // Fire-and-forget database operation
       supabase.from('likes').insert([{
         user_id: user.id,
         product_id: product.id
@@ -243,28 +243,29 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
     } catch (error) {
       console.error('Error tracking like:', error);
     }
-  }, [user, toast, nextCard, trackSwipe, trackViewDuration, viewStartTimes]);
+  }, [user, toast, nextCard, trackSwipe, trackViewDuration]);
 
   const handleDislike = useCallback(async () => {
+    nextCard();
+    
     if (user && currentProduct) {
       try {
         // Track view duration for implicit feedback
-        const viewDuration = trackViewDuration(currentProduct.id, viewStartTimes.get(currentProduct.id) || Date.now());
+        const viewDuration = trackViewDuration(currentProduct.id, viewStartTimes.current.get(currentProduct.id) || Date.now());
         
-        // Track enhanced swipe with metadata
-        await trackSwipe({
+        // Track enhanced swipe with metadata (fire-and-forget)
+        trackSwipe({
           productId: currentProduct.id,
           action: 'left',
           product: currentProduct,
           viewDuration,
           confidence: 1.0
-        });
+        }).catch(console.error);
       } catch (error) {
         console.error('Error tracking dislike:', error);
       }
     }
-    nextCard();
-  }, [user, currentProduct, nextCard, trackSwipe, trackViewDuration, viewStartTimes]);
+  }, [user, currentProduct, nextCard, trackSwipe, trackViewDuration]);
 
   const handleAddToWishlist = useCallback(async (product: SwipeProduct) => {
     // Always advance to next card for consistent animation
@@ -281,16 +282,16 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
 
     try {
       // Track view duration for implicit feedback
-      const viewDuration = trackViewDuration(product.id, viewStartTimes.get(product.id) || Date.now());
+      const viewDuration = trackViewDuration(product.id, viewStartTimes.current.get(product.id) || Date.now());
       
-      // Track enhanced swipe with metadata
-      await trackSwipe({
+      // Track enhanced swipe with metadata (fire-and-forget)
+      trackSwipe({
         productId: product.id,
         action: 'up',
         product,
         viewDuration,
         confidence: 1.0
-      });
+      }).catch(console.error);
 
       // Handle async operation in background
       await addToWishlist();
@@ -313,7 +314,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
         });
       }
     }
-  }, [user, addToWishlist, toast, nextCard, trackSwipe, trackViewDuration, viewStartTimes]);
+  }, [user, addToWishlist, toast, nextCard, trackSwipe, trackViewDuration]);
 
   const handleSwipeEnd = useCallback((event: any, info: PanInfo) => {
     const currentProduct = products[index];
