@@ -176,7 +176,7 @@ const Auth = () => {
           <div className="flex justify-center">
             <div className="relative">
               <div className="absolute inset-0 bg-gradient-to-r from-primary to-accent rounded-full blur-lg opacity-30 animate-pulse"></div>
-              <div className="relative glass-premium rounded-xl p-6 shadow-lg w-24 h-24 overflow-hidden">
+              <div className="relative glass-premium rounded-xl p-2 shadow-lg w-24 h-24 overflow-hidden">
                 <img src="/marketing/azyah-logo.png" alt="Azyah" className="w-full h-full object-cover" />
               </div>
             </div>
