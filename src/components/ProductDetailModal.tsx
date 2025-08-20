@@ -36,8 +36,19 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   }, [product, isOpen, trackProductView]);
 
   const images = useMemo<string[]>(() => {
-    const media = (product?.media_urls ?? []) as unknown as string[];
-    return Array.isArray(media) ? media.filter(Boolean) : [];
+    if (!product?.media_urls) return [];
+    
+    try {
+      // Parse media_urls if it's a JSON string, otherwise use as-is
+      const media = typeof product.media_urls === 'string' 
+        ? JSON.parse(product.media_urls)
+        : product.media_urls;
+      
+      return Array.isArray(media) ? media.filter(Boolean) : [];
+    } catch (error) {
+      console.warn('Failed to parse media_urls for product:', product.id, error);
+      return [];
+    }
   }, [product]);
 
   const priceCurrency = product?.currency || 'USD';
