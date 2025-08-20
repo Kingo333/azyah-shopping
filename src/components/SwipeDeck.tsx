@@ -145,9 +145,18 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
   }, []);
 
   const nextCard = useCallback(() => {
-    x.set(0);
-    y.set(0);
-    setIndex(prevIndex => Math.min(prevIndex + 1, products.length - 1));
+    setIndex(prevIndex => {
+      const nextIndex = prevIndex + 1;
+      // Only advance if there are more products
+      if (nextIndex < products.length) {
+        // Reset position immediately when advancing
+        x.set(0);
+        y.set(0);
+        return nextIndex;
+      }
+      // If no more products, stay at current index
+      return prevIndex;
+    });
   }, [x, y, products.length]);
 
   // Reset index when products change and track view times
@@ -182,6 +191,9 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
   }, [x, y]);
 
   const handleLike = useCallback(async (product: SwipeProduct) => {
+    // Always advance to next card for consistent animation
+    nextCard();
+    
     if (!user) {
       toast({
         title: "Sign in required",
@@ -203,9 +215,6 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
         viewDuration,
         confidence: 1.0
       });
-
-      // Move to next card IMMEDIATELY for instant animation
-      nextCard();
 
       // Fire-and-forget database operation (no await, no blocking)
       supabase.from('likes').insert([{
@@ -233,8 +242,6 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
       });
     } catch (error) {
       console.error('Error tracking like:', error);
-      // Still move to next card even if tracking fails
-      nextCard();
     }
   }, [user, toast, nextCard, trackSwipe, trackViewDuration, viewStartTimes]);
 
@@ -260,6 +267,9 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
   }, [user, currentProduct, nextCard, trackSwipe, trackViewDuration, viewStartTimes]);
 
   const handleAddToWishlist = useCallback(async (product: SwipeProduct) => {
+    // Always advance to next card for consistent animation
+    nextCard();
+    
     if (!user) {
       toast({
         title: "Sign in required",
@@ -281,9 +291,6 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
         viewDuration,
         confidence: 1.0
       });
-
-      // Move to next card immediately for smooth animation
-      nextCard();
 
       // Handle async operation in background
       await addToWishlist();
@@ -313,20 +320,57 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
     if (!currentProduct) return;
 
     const { x: offsetX, y: offsetY } = info.offset;
+    const { x: velocityX, y: velocityY } = info.velocity;
 
-    // Check for vertical swipe up first (wishlist)
+    // Check for vertical swipe (wishlist)
     if (offsetY < -VERTICAL_THRESHOLD && Math.abs(offsetX) < DISTANCE_THRESHOLD) {
-      handleAddToWishlist(currentProduct);
-    }
-    // Then check for horizontal swipes
-    else if (offsetX > DISTANCE_THRESHOLD) {
-      handleLike(currentProduct);
-    } else if (offsetX < -DISTANCE_THRESHOLD) {
-      handleDislike();
-    } else {
-      // Reset position very gently if not swiped far enough
-      animate(x, 0, { type: "spring", stiffness: 100, damping: 20 });
-      animate(y, 0, { type: "spring", stiffness: 100, damping: 20 });
+      // Animate card up smoothly
+      animate(x, 0, { duration: 0.3, ease: "easeOut" });
+      animate(y, -window.innerHeight, { duration: 0.3, ease: "easeOut" });
+      
+      // Trigger action after a short delay to prevent blank cards
+      setTimeout(() => {
+        handleAddToWishlist(currentProduct);
+      }, 100);
+    } 
+    // Check for right swipe (like)
+    else if (offsetX > DISTANCE_THRESHOLD || velocityX > 500) {
+      // Animate card to the right smoothly
+      animate(x, window.innerWidth + 200, { 
+        duration: 0.3,
+        ease: "easeOut"
+      });
+      animate(y, offsetY + velocityY * 0.1, { 
+        duration: 0.3,
+        ease: "easeOut"
+      });
+      
+      // Trigger action after a short delay to prevent blank cards
+      setTimeout(() => {
+        handleLike(currentProduct);
+      }, 100);
+    } 
+    // Check for left swipe (dislike)
+    else if (offsetX < -DISTANCE_THRESHOLD || velocityX < -500) {
+      // Animate card to the left smoothly
+      animate(x, -window.innerWidth - 200, { 
+        duration: 0.3,
+        ease: "easeOut"
+      });
+      animate(y, offsetY + velocityY * 0.1, { 
+        duration: 0.3,
+        ease: "easeOut"
+      });
+      
+      // Trigger action after a short delay to prevent blank cards
+      setTimeout(() => {
+        handleDislike();
+      }, 100);
+    } 
+    // Not enough movement, spring back to center
+    else {
+      animate(x, 0, { type: "spring", stiffness: 400, damping: 40 });
+      animate(y, 0, { type: "spring", stiffness: 400, damping: 40 });
     }
   }, [x, y, index, products, handleLike, handleDislike, handleAddToWishlist]);
 
