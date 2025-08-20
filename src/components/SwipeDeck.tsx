@@ -8,10 +8,28 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useWishlist } from '@/hooks/useWishlist';
 import ProductDetailModal from '@/components/ProductDetailModal';
-import { Product } from '@/types';
+interface SwipeProduct {
+  id: string;
+  title: string;
+  price_cents: number;
+  currency: string;
+  category_slug: string;
+  subcategory_slug?: string;
+  image_url?: string;
+  media_urls?: any;
+  brand_id?: string;
+  brands?: { name: string };
+  tags?: string[];
+  attributes?: any;
+  is_external?: boolean;
+  external_url?: string;
+  merchant_name?: string;
+  ar_mesh_url?: string;
+}
 import { useNavigate } from 'react-router-dom';
 import { TopCategory, SubCategory } from '@/lib/categories';
-import { useSmartSwipeProducts } from '@/hooks/useSmartSwipeProducts';
+import { useEnhancedSwipeProducts } from '@/hooks/useEnhancedSwipeProducts';
+import { useEnhancedSwipeTracking } from '@/hooks/useEnhancedSwipeTracking';
 import { getResponsiveImageProps } from '@/utils/asosImageUtils';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -61,7 +79,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
 }) => {
   const [index, setIndex] = useState(0);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<SwipeProduct | null>(null);
   const [imageAspectRatio, setImageAspectRatio] = useState<number>(1);
   const { toast } = useToast();
   const { user } = useAuth();
@@ -73,15 +91,20 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
   const scale = useTransform(x, [-200, 0, 200], [0.8, 1, 0.8]);
   const cardRef = useRef<HTMLDivElement>(null);
 
-  // Use the smart swipe products hook with 70/30 personalization
-  const { products, isLoading } = useSmartSwipeProducts({
+  // Use the enhanced swipe products hook with AI-powered personalization
+  const { products, isLoading } = useEnhancedSwipeProducts({
     filter: filter || 'all',
     subcategory,
     gender,
-    priceRange,
+    priceRange: [priceRange.min, priceRange.max],
     searchQuery,
     currency
   });
+
+  const { trackSwipe, trackViewDuration } = useEnhancedSwipeTracking();
+
+  // Track view start times for implicit feedback
+  const [viewStartTimes, setViewStartTimes] = useState<Map<string, number>>(new Map());
 
   const currentProduct = useMemo(() => products[index] || null, [products, index]);
   const { addToWishlist, isLoading: wishlistLoading } = useWishlist(currentProduct?.id);
@@ -126,12 +149,20 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
     setIndex(prevIndex => Math.min(prevIndex + 1, products.length - 1));
   }, [x, y, products.length]);
 
-  // Reset index when products change
+  // Reset index when products change and track view times
   useEffect(() => {
     setIndex(0);
     x.set(0);
     y.set(0);
+    setViewStartTimes(new Map());
   }, [products, x, y]);
+
+  // Track view start time for current product
+  useEffect(() => {
+    if (currentProduct) {
+      setViewStartTimes(prev => new Map(prev.set(currentProduct.id, Date.now())));
+    }
+  }, [index, currentProduct]);
 
   const prevCard = useCallback(() => {
     x.set(0);
@@ -139,7 +170,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
     setIndex(prevIndex => Math.max(prevIndex - 1, 0));
   }, [x, y]);
 
-  const handleLike = useCallback((product: Product) => {
+  const handleLike = useCallback(async (product: SwipeProduct) => {
     if (!user) {
       toast({
         title: "Sign in required",
@@ -149,55 +180,75 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
       return;
     }
 
-    // Move to next card IMMEDIATELY for instant animation
-    nextCard();
+    try {
+      // Track view duration for implicit feedback
+      const viewDuration = trackViewDuration(product.id, viewStartTimes.get(product.id) || Date.now());
+      
+      // Track enhanced swipe with metadata
+      await trackSwipe({
+        productId: product.id,
+        action: 'right',
+        product,
+        viewDuration,
+        confidence: 1.0
+      });
 
-    // Record swipe for analytics
-    supabase.from('swipes').insert([{
-      user_id: user.id,
-      product_id: product.id,
-      action: 'right'
-    }]);
+      // Move to next card IMMEDIATELY for instant animation
+      nextCard();
 
-    // Fire-and-forget database operation (no await, no blocking)
-    supabase.from('likes').insert([{
-      user_id: user.id,
-      product_id: product.id
-    }]).then(({ error }) => {
-      if (error) {
-        if (error.code === '23505') {
-          toast({
-            description: `${product.title} is already in your likes!`
-          });
+      // Fire-and-forget database operation (no await, no blocking)
+      supabase.from('likes').insert([{
+        user_id: user.id,
+        product_id: product.id
+      }]).then(({ error }) => {
+        if (error) {
+          if (error.code === '23505') {
+            toast({
+              description: `${product.title} is already in your likes!`
+            });
+          } else {
+            console.error("Error liking product:", error.message);
+            toast({
+              title: "Error",
+              description: "Failed to like product. Please try again.",
+              variant: "destructive"
+            });
+          }
         } else {
-          console.error("Error liking product:", error.message);
           toast({
-            title: "Error",
-            description: "Failed to like product. Please try again.",
-            variant: "destructive"
+            description: `${product.title} added to your likes!`
           });
         }
-      } else {
-        toast({
-          description: `${product.title} added to your likes!`
-        });
-      }
-    });
-  }, [user, toast, nextCard]);
+      });
+    } catch (error) {
+      console.error('Error tracking like:', error);
+      // Still move to next card even if tracking fails
+      nextCard();
+    }
+  }, [user, toast, nextCard, trackSwipe, trackViewDuration, viewStartTimes]);
 
-  const handleDislike = useCallback(() => {
+  const handleDislike = useCallback(async () => {
     if (user && currentProduct) {
-      // Record swipe for analytics
-      supabase.from('swipes').insert([{
-        user_id: user.id,
-        product_id: currentProduct.id,
-        action: 'left'
-      }]);
+      try {
+        // Track view duration for implicit feedback
+        const viewDuration = trackViewDuration(currentProduct.id, viewStartTimes.get(currentProduct.id) || Date.now());
+        
+        // Track enhanced swipe with metadata
+        await trackSwipe({
+          productId: currentProduct.id,
+          action: 'left',
+          product: currentProduct,
+          viewDuration,
+          confidence: 1.0
+        });
+      } catch (error) {
+        console.error('Error tracking dislike:', error);
+      }
     }
     nextCard();
-  }, [user, currentProduct, nextCard]);
+  }, [user, currentProduct, nextCard, trackSwipe, trackViewDuration, viewStartTimes]);
 
-  const handleAddToWishlist = useCallback(async (product: Product) => {
+  const handleAddToWishlist = useCallback(async (product: SwipeProduct) => {
     if (!user) {
       toast({
         title: "Sign in required",
@@ -207,20 +258,23 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
       return;
     }
 
-    // Record swipe for analytics
-    if (user) {
-      supabase.from('swipes').insert([{
-        user_id: user.id,
-        product_id: product.id,
-        action: 'up'
-      }]);
-    }
-
-    // Move to next card immediately for smooth animation
-    nextCard();
-
-    // Handle async operation in background
     try {
+      // Track view duration for implicit feedback
+      const viewDuration = trackViewDuration(product.id, viewStartTimes.get(product.id) || Date.now());
+      
+      // Track enhanced swipe with metadata
+      await trackSwipe({
+        productId: product.id,
+        action: 'up',
+        product,
+        viewDuration,
+        confidence: 1.0
+      });
+
+      // Move to next card immediately for smooth animation
+      nextCard();
+
+      // Handle async operation in background
       await addToWishlist();
       toast({
         description: `${product.title} added to your wishlist!`
@@ -241,7 +295,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
         });
       }
     }
-  }, [user, addToWishlist, toast, nextCard]);
+  }, [user, addToWishlist, toast, nextCard, trackSwipe, trackViewDuration, viewStartTimes]);
 
   const handleSwipeEnd = useCallback((event: any, info: PanInfo) => {
     const currentProduct = products[index];
@@ -266,7 +320,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
   }, [x, y, index, products, handleLike, handleDislike, handleAddToWishlist]);
 
 
-  const handleProductClick = (product: Product) => {
+  const handleProductClick = (product: SwipeProduct) => {
     setSelectedProduct(product);
     setIsModalOpen(true);
   };
@@ -350,7 +404,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                       </Button>
                     </div>
                   </div>
-                  <p className="text-sm sm:text-sm text-muted-foreground line-clamp-1 mb-2">{currentProduct.brand?.name}</p>
+                  <p className="text-sm sm:text-sm text-muted-foreground line-clamp-1 mb-2">{currentProduct.brands?.name}</p>
                   <div className="flex items-center justify-between mb-auto">
                     <span className="text-xl sm:text-xl font-bold">
                       {new Intl.NumberFormat('en-US', {
@@ -454,14 +508,16 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
       </div>
 
       {/* Product Detail Modal */}
-      <ProductDetailModal
-        product={selectedProduct!}
-        isOpen={isModalOpen}
-        onClose={() => {
-          setIsModalOpen(false);
-          setSelectedProduct(null);
-        }}
-      />
+      {selectedProduct && (
+        <ProductDetailModal
+          product={selectedProduct as any}
+          isOpen={isModalOpen}
+          onClose={() => {
+            setIsModalOpen(false);
+            setSelectedProduct(null);
+          }}
+        />
+      )}
     </div>
   );
 };
