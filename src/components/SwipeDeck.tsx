@@ -422,25 +422,20 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                       {...getResponsiveImageProps(
                         (() => {
                           try {
-                            // Simplified image URL resolution
                             let imageUrl = '';
                             
-                            // First try image_url if it exists
-                            if (currentProduct.image_url && currentProduct.image_url.trim()) {
-                              imageUrl = currentProduct.image_url.trim();
-                            } else if (currentProduct.media_urls) {
-                              // Parse media_urls safely
+                            // Try media_urls first since most products have this
+                            if (currentProduct.media_urls) {
                               let mediaUrls = currentProduct.media_urls;
                               if (typeof mediaUrls === 'string') {
                                 try {
                                   mediaUrls = JSON.parse(mediaUrls);
                                 } catch (e) {
                                   console.warn('Failed to parse media_urls:', e);
-                                  mediaUrls = [];
+                                  return '/placeholder.svg';
                                 }
                               }
                               
-                              // Get first valid URL from array
                               if (Array.isArray(mediaUrls) && mediaUrls.length > 0) {
                                 const firstUrl = mediaUrls[0];
                                 if (typeof firstUrl === 'string' && firstUrl.trim()) {
@@ -449,18 +444,13 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                               }
                             }
                             
-                            // Return the URL if valid, otherwise use placeholder
-                            if (imageUrl) {
-                              try {
-                                new URL(imageUrl);
-                                return imageUrl;
-                              } catch {
-                                console.warn('Invalid URL structure:', imageUrl);
-                                return '/placeholder.svg';
-                              }
+                            // Fallback to image_url if media_urls is empty
+                            if (!imageUrl && currentProduct.image_url && currentProduct.image_url.trim()) {
+                              imageUrl = currentProduct.image_url.trim();
                             }
                             
-                            return '/placeholder.svg';
+                            // Return valid URL or placeholder
+                            return imageUrl || '/placeholder.svg';
                           } catch (error) {
                             console.warn('Error processing image URL for product:', currentProduct.id, error);
                             return '/placeholder.svg';
