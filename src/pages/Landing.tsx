@@ -34,6 +34,9 @@ export default function Landing() {
   const [useCache, setUseCache] = useState(false);
   
   useEffect(() => {
+    // Clear existing cache to load new products
+    localStorage.removeItem(FEATURED_CACHE_KEY);
+    
     const cached = localStorage.getItem(FEATURED_CACHE_KEY);
     if (cached) {
       try {
