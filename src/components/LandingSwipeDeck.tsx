@@ -118,6 +118,9 @@ const LandingSwipeDeck: React.FC<LandingSwipeDeckProps> = ({
   }, [x, y, products.length]);
 
   const handleLike = useCallback(() => {
+    // Always advance to next card for consistent animation
+    nextCard();
+    
     if (!user) {
       toast({
         title: "Sign in required",
@@ -126,7 +129,7 @@ const LandingSwipeDeck: React.FC<LandingSwipeDeckProps> = ({
       });
       return;
     }
-    nextCard();
+    
     toast({
       description: `${currentProduct?.title} added to your likes!`
     });
@@ -137,6 +140,9 @@ const LandingSwipeDeck: React.FC<LandingSwipeDeckProps> = ({
   }, [nextCard]);
 
   const handleAddToWishlist = useCallback(() => {
+    // Always advance to next card for consistent animation
+    nextCard();
+    
     if (!user) {
       toast({
         title: "Sign in required", 
@@ -145,7 +151,7 @@ const LandingSwipeDeck: React.FC<LandingSwipeDeckProps> = ({
       });
       return;
     }
-    nextCard();
+    
     toast({
       description: `${currentProduct?.title} added to your wishlist!`
     });
