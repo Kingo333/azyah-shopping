@@ -336,9 +336,18 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
     setShowProductDetail(true);
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center space-y-4 h-full">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <p className="text-muted-foreground">Loading products...</p>
+      </div>
+    );
+  }
+
   if (products.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center space-y-4">
+      <div className="flex flex-col items-center justify-center space-y-4 h-full">
         <Search className="h-10 w-10 text-muted-foreground opacity-50" />
         <p className="text-muted-foreground">No products found matching your criteria.</p>
         <Button variant="outline" onClick={() => {
