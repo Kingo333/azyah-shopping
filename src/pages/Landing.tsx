@@ -5,11 +5,13 @@ import { ArrowRight, Heart, Users, Star, Sparkles, Play, Menu, X, CheckCircle, S
 import { Button } from "@/components/ui/button";
 import { SEOHead } from "@/components/SEOHead";
 import SwipeDeck from '@/components/SwipeDeck';
+import LandingSwipeDeck from '@/components/LandingSwipeDeck';
 import { clearInvalidSession, debugAuthState } from "@/utils/sessionDebug";
 import { useSmartSwipeProducts } from "@/hooks/useSmartSwipeProducts";
 import { getResponsiveImageProps } from "@/utils/asosImageUtils";
 import { InvestorContactModal } from "@/components/InvestorContactModal";
 import modernFashionHero from "@/assets/modern-fashion-hero.jpg";
+
 export default function Landing() {
   const [isVisible, setIsVisible] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'swipe'>('grid');
@@ -451,19 +453,15 @@ export default function Landing() {
           })}
             </div>) : (/* Swipe Interface */
         <div className="mb-12">
-              <div className="relative w-full max-w-sm mx-auto h-[700px]">
-                <div className="h-full bg-gradient-to-br from-primary/5 to-primary/10 rounded-2xl p-6 flex items-center justify-center">
-                  <div className="w-full max-w-[320px] h-[600px]">
-                    <SwipeDeck 
-                      filter="all" 
-                      subcategory="" 
-                      gender=""
-                      priceRange={{ min: 0, max: 1000 }} 
-                      searchQuery="" 
-                      currency="USD" 
-                    />
-                  </div>
-                </div>
+              <div className="relative w-full max-w-sm mx-auto h-[600px]">
+                <LandingSwipeDeck 
+                  filter="all" 
+                  subcategory="" 
+                  gender=""
+                  priceRange={{ min: 0, max: 1000 }} 
+                  searchQuery="" 
+                  currency="USD" 
+                />
               </div>
               <div className="text-center mt-6">
                 <p className="text-sm text-gray-600 mb-4">
