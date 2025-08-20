@@ -120,6 +120,11 @@ const CategoryFilter: React.FC<CategoryFilterProps> = ({
                   </div>
                 ))}
               </div>
+              <div className="mt-3 p-2 bg-gradient-subtle rounded-md border border-border/50">
+                <p className="text-xs text-muted-foreground">
+                  💡 Gender filter is expanding! Limited selection available. Try other filters for more results.
+                </p>
+              </div>
             </div>
             {getAllCategories().map((category) => (
               <div key={category} className="p-4 border-b last:border-b-0">
