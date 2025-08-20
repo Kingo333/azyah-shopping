@@ -479,8 +479,12 @@ export default function Landing() {
                               className="h-6 w-6 p-0 rounded-full bg-primary/10"
                               onClick={(e) => {
                                 e.stopPropagation();
+                                console.log('Shop now clicked for product:', product);
+                                console.log('External URL:', product.external_url);
                                 if (product.external_url) {
                                   window.open(product.external_url, '_blank', 'noopener,noreferrer');
+                                } else {
+                                  console.warn('No external URL found for product:', product.id);
                                 }
                               }}
                             >
