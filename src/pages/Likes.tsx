@@ -20,7 +20,6 @@ interface LikedProduct {
     currency: string;
     media_urls: any;
     external_url?: string;
-    sku?: string;
     brands: {
       name: string;
     };
@@ -57,7 +56,6 @@ const Likes: React.FC = () => {
           currency,
           media_urls,
           external_url,
-          sku,
           brands (name)
         `)
         .in('id', productIds);
@@ -224,9 +222,6 @@ const Likes: React.FC = () => {
                     <h3 className="font-semibold line-clamp-2 text-sm md:text-base">
                       {like.products.title}
                     </h3>
-                    {(like.products as any).sku && (
-                      <p className="text-xs text-muted-foreground">SKU: {(like.products as any).sku}</p>
-                    )}
                     <p className="text-base md:text-lg font-bold text-primary">
                       {formatPrice(like.products.price_cents, like.products.currency)}
                     </p>
