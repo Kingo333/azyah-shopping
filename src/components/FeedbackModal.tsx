@@ -10,9 +10,10 @@ import { supabase } from '@/integrations/supabase/client';
 
 interface FeedbackModalProps {
   userType: 'shopper' | 'brand' | 'retailer';
+  children?: React.ReactNode;
 }
 
-export const FeedbackModal: React.FC<FeedbackModalProps> = ({ userType }) => {
+export const FeedbackModal: React.FC<FeedbackModalProps> = ({ userType, children }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [feedbackType, setFeedbackType] = useState<'feedback' | 'issue'>('feedback');
   const [subject, setSubject] = useState('');
@@ -69,10 +70,12 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ userType }) => {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="gap-2">
-          <MessageSquare className="h-4 w-4" />
-          Feedback & Support
-        </Button>
+        {children || (
+          <Button variant="outline" className="gap-2">
+            <MessageSquare className="h-4 w-4" />
+            Feedback & Support
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
