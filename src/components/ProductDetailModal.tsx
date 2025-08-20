@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -107,13 +108,13 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 variant="ghost"
                 size="icon"
                 onClick={onClose}
-                className="absolute top-3 right-3 z-30 bg-black/50 hover:bg-black/70 backdrop-blur-sm rounded-full h-10 w-10 text-white"
+                className="absolute top-2 right-2 z-30 bg-black/50 hover:bg-black/70 backdrop-blur-sm rounded-full h-8 w-8 text-white"
               >
-                <X className="h-5 w-5" />
+                <X className="h-4 w-4" />
               </Button>
 
-              {/* Image Gallery */}
-              <div className="w-full relative flex-shrink-0" style={{height: '35vh'}}>
+              {/* Image Gallery - Reduced height and spacing */}
+              <div className="w-full relative flex-shrink-0" style={{height: '30vh'}}>
                 <EnhancedProductGallery
                   images={images}
                   productTitle={product.title}
@@ -122,20 +123,20 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 />
               </div>
 
-              {/* Scrollable Product Content */}
-              <div className="bg-background flex-1 overflow-y-auto" style={{maxHeight: '65vh'}}>
-                <div className="p-4 space-y-4 pb-32">
-                  {/* Product Header */}
-                  <div className="space-y-2">
-                    <h1 className="text-xl font-bold leading-tight">{product.title}</h1>
+              {/* Scrollable Product Content - Starts immediately after image */}
+              <div className="bg-background flex-1 overflow-y-auto" style={{maxHeight: '70vh'}}>
+                <div className="p-4 space-y-3 pb-40">
+                  {/* Product Header - Reduced spacing */}
+                  <div className="space-y-1">
+                    <h1 className="text-lg font-bold leading-tight">{product.title}</h1>
                     <p className="text-muted-foreground text-sm">{product.brand?.name}</p>
                     <div className="flex items-center gap-2 pt-1">
-                      <span className="text-2xl font-bold text-primary">
+                      <span className="text-xl font-bold text-primary">
                         {new Intl.NumberFormat('en-US', { style: 'currency', currency: priceCurrency })
                           .format(priceCents / 100)}
                       </span>
                       {compareAtCents && (
-                        <span className="text-lg text-muted-foreground line-through">
+                        <span className="text-base text-muted-foreground line-through">
                           {new Intl.NumberFormat('en-US', { style: 'currency', currency: priceCurrency })
                             .format(compareAtCents / 100)}
                         </span>
@@ -144,7 +145,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   </div>
 
                   {/* Size and Color Selection with Size Chart */}
-                  <div className="space-y-4">
+                  <div className="space-y-3">
                     <AdvancedSizeColorSelector
                       sizes={availableSizes}
                       colors={availableColors}
