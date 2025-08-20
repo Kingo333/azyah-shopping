@@ -159,38 +159,46 @@ const LandingSwipeDeck: React.FC<LandingSwipeDeckProps> = ({
 
     // Check for vertical swipe (wishlist)
     if (offsetY < -VERTICAL_THRESHOLD && Math.abs(offsetX) < DISTANCE_THRESHOLD) {
+      // Trigger action immediately for responsiveness
       handleAddToWishlist();
-      // Quick animation and immediate reset
-      animate(x, 0, { duration: 0.1 });
-      animate(y, -window.innerHeight, { duration: 0.15 });
-      requestAnimationFrame(() => {
+      // Animate card up smoothly
+      animate(x, 0, { duration: 0.3 });
+      animate(y, -window.innerHeight, { duration: 0.3 });
+      // Reset position after animation completes
+      setTimeout(() => {
         y.set(0);
-      });
+      }, 300);
     } 
     // Check for right swipe (like)
     else if (offsetX > DISTANCE_THRESHOLD || velocityX > 500) {
+      // Trigger action immediately for responsiveness
       handleLike();
-      // Quick animation and immediate reset
-      animate(x, window.innerWidth + 200, { duration: 0.15 });
-      requestAnimationFrame(() => {
+      // Animate card to the right smoothly
+      animate(x, window.innerWidth + 200, { duration: 0.3 });
+      animate(y, offsetY + velocityY * 0.1, { duration: 0.3 });
+      // Reset position after animation completes
+      setTimeout(() => {
         x.set(0);
         y.set(0);
-      });
+      }, 300);
     } 
     // Check for left swipe (dislike)
     else if (offsetX < -DISTANCE_THRESHOLD || velocityX < -500) {
+      // Trigger action immediately for responsiveness
       handleDislike();
-      // Quick animation and immediate reset
-      animate(x, -window.innerWidth - 200, { duration: 0.15 });
-      requestAnimationFrame(() => {
+      // Animate card to the left smoothly
+      animate(x, -window.innerWidth - 200, { duration: 0.3 });
+      animate(y, offsetY + velocityY * 0.1, { duration: 0.3 });
+      // Reset position after animation completes
+      setTimeout(() => {
         x.set(0);
         y.set(0);
-      });
+      }, 300);
     } 
     // Not enough movement, spring back to center
     else {
-      animate(x, 0, { type: "spring", stiffness: 500, damping: 50 });
-      animate(y, 0, { type: "spring", stiffness: 500, damping: 50 });
+      animate(x, 0, { type: "spring", stiffness: 400, damping: 40 });
+      animate(y, 0, { type: "spring", stiffness: 400, damping: 40 });
     }
   }, [currentProduct, handleLike, handleDislike, handleAddToWishlist, x, y]);
 
