@@ -176,12 +176,15 @@ const ProductListView: React.FC<ProductListViewProps> = ({ products, isLoading }
                     )}
                   </div>
                   
-                   <div className="p-1.5 md:p-3 space-y-1.5">
+                    <div className="p-1.5 md:p-3 space-y-1.5">
                      <div className="flex items-start justify-between">
                        <div className="flex-1 min-w-0">
                          <h3 className="font-medium line-clamp-2 text-xs md:text-sm leading-tight">{product.title}</h3>
                          {product.brand && (
                            <p className="text-[10px] md:text-xs text-muted-foreground mt-0.5">{product.brand.name}</p>
+                         )}
+                         {product.sku && (
+                           <p className="text-[10px] md:text-xs text-muted-foreground/75">SKU: {product.sku}</p>
                          )}
                        </div>
                        <Button
