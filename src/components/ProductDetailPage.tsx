@@ -259,10 +259,12 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                     <AccordionContent>
                       <div className="space-y-3">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">SKU:</span>
-                            <span className="font-medium">{product.sku}</span>
-                          </div>
+                           {product.sku && (
+                             <div className="flex justify-between">
+                               <span className="text-muted-foreground">SKU:</span>
+                               <span className="font-medium">{product.sku}</span>
+                             </div>
+                           )}
                           <div className="flex justify-between">
                             <span className="text-muted-foreground">Category:</span>
                             <span className="font-medium capitalize">{product.category_slug?.replace('_', ' ')}</span>
