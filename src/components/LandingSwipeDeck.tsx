@@ -337,23 +337,26 @@ const LandingSwipeDeck: React.FC<LandingSwipeDeckProps> = ({
                     </div>
                   </div>
 
-                  {currentProduct.external_url && (
-                    <div className="pt-2 border-t border-border">
-                      <Button
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          if (currentProduct.external_url) {
-                            window.open(currentProduct.external_url, '_blank', 'noopener,noreferrer');
-                          }
-                        }}
-                        className="w-full gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground font-semibold shadow-lg"
-                        size="sm"
-                      >
-                        Shop Now
-                      </Button>
-                    </div>
-                  )}
+                  <div className="pt-2 border-t border-border">
+                    <Button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const url = currentProduct.external_url || currentProduct.product_url;
+                        if (url) {
+                          window.open(url, '_blank', 'noopener,noreferrer');
+                        } else {
+                          // Fallback: search for the product on Google
+                          const searchQuery = encodeURIComponent(`${currentProduct.title} ${currentProduct.brand?.name || ''}`);
+                          window.open(`https://www.google.com/search?q=${searchQuery}`, '_blank', 'noopener,noreferrer');
+                        }
+                      }}
+                      className="w-full gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground font-semibold shadow-lg"
+                      size="sm"
+                    >
+                      Shop Now
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
