@@ -87,7 +87,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent
-        className="w-[100vw] h-[100dvh] md:max-w-4xl md:max-h-[90vh] p-0 glass-premium border-white/20 rounded-none md:rounded-3xl overflow-hidden md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2"
+        className="w-[100vw] h-[100dvh] md:max-w-5xl md:max-h-[95vh] p-0 glass-premium border-white/20 rounded-none md:rounded-3xl overflow-hidden md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2"
       >
         {!product ? (
           <div className="flex h-[70vh] items-center justify-center text-sm text-muted-foreground">
@@ -108,7 +108,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               </Button>
 
               {/* Image Gallery with Shop Now */}
-              <div className="aspect-[4/5] w-full relative flex-shrink-0">
+              <div className="aspect-[3/4] w-full relative flex-shrink-0">
                 <EnhancedProductGallery
                   images={images}
                   productTitle={product.title}
@@ -131,7 +131,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               </div>
 
               {/* Scrollable Product Content */}
-              <div className="bg-background flex-1 overflow-y-auto">
+              <div className="bg-background flex-1 overflow-y-auto min-h-0">
                 <div className="p-4 space-y-4">
                   {/* Product Header */}
                   <div className="space-y-1.5">
@@ -236,29 +236,31 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               </Button>
 
               {/* Content Container */}
-              <div className="flex-1 overflow-y-auto">
-                <div className="p-6 space-y-6">
+              <div className="flex-1 overflow-y-auto min-h-0">
+                <div className="p-6 space-y-6 min-h-full">
                   {/* Desktop Image Gallery with Shop Now */}
-                  <div className="w-full max-w-sm mx-auto relative">
-                    <EnhancedProductGallery
-                      images={images}
-                      productTitle={product.title}
-                      productId={product.id}
-                      hasARMesh={false}
-                    />
-                    {/* Shop Now Button Overlay */}
-                    {product.is_external && product.external_url && (
-                      <div className="absolute bottom-4 left-4 right-4">
-                        <Button
-                          onClick={handleShopNow}
-                          className="w-full gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground font-semibold shadow-lg backdrop-blur-sm"
-                          size="sm"
-                        >
-                          <ExternalLink className="h-4 w-4" />
-                          Shop Now on {product.merchant_name || 'ASOS'}
-                        </Button>
-                      </div>
-                    )}
+                  <div className="w-full max-w-md mx-auto relative">
+                    <div className="aspect-[3/4] relative">
+                      <EnhancedProductGallery
+                        images={images}
+                        productTitle={product.title}
+                        productId={product.id}
+                        hasARMesh={false}
+                      />
+                      {/* Shop Now Button Overlay */}
+                      {product.is_external && product.external_url && (
+                        <div className="absolute bottom-4 left-4 right-4">
+                          <Button
+                            onClick={handleShopNow}
+                            className="w-full gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground font-semibold shadow-lg backdrop-blur-sm"
+                            size="sm"
+                          >
+                            <ExternalLink className="h-4 w-4" />
+                            Shop Now on {product.merchant_name || 'ASOS'}
+                          </Button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                   
                   {/* Scrollable Product Details Content */}
