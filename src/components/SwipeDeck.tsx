@@ -509,7 +509,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                         size="sm"
                       >
                         <ExternalLink className="h-4 w-4" />
-                        Shop Now
+                        Shop Now on {currentProduct.merchant_name || 'ASOS'}
                       </Button>
                     </div>
                   )}
