@@ -86,7 +86,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
         ) : (
           <>
             {/* Mobile Layout */}
-            <div className="md:hidden h-full relative">
+            <div className="md:hidden h-full flex flex-col">
               {/* Close Button */}
               <Button
                 variant="ghost"
@@ -97,8 +97,8 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 <X className="h-5 w-5" />
               </Button>
 
-              {/* Full Scrollable Content */}
-              <div className="h-full overflow-y-auto pb-32">
+              {/* Scrollable Content */}
+              <div className="flex-1 overflow-y-auto">
                 <div className="space-y-0">
                   {/* Image Gallery */}
                   <div className="aspect-[4/5] w-full">
@@ -180,7 +180,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               </div>
 
               {/* Fixed Bottom Actions */}
-              <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-lg border-t border-border p-3 space-y-2 pb-mobile-safe">
+              <div className="bg-background/95 backdrop-blur-lg border-t border-border p-3 space-y-2 pb-safe-area-inset-bottom">
                 <div className="flex gap-2">
                   <Button 
                     variant="outline" 
@@ -224,7 +224,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
             </div>
 
             {/* Desktop Layout */}
-            <div className="hidden md:flex h-full relative">
+            <div className="hidden md:flex h-full flex-col">
               {/* Close Button */}
               <Button
                 variant="ghost"
@@ -236,7 +236,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               </Button>
 
               {/* Scrollable Content Container */}
-              <div className="flex-1 overflow-y-auto pb-32">
+              <div className="flex-1 overflow-y-auto">
                 <div className="p-6 space-y-6">
                   {/* Smaller Image Gallery */}
                   <div className="w-full max-w-sm mx-auto">
@@ -316,7 +316,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               </div>
 
               {/* Fixed Action Buttons */}
-              <div className="absolute bottom-0 left-0 right-0 z-20 glass-premium backdrop-blur-md border-t border-white/20 p-4 space-y-3">
+              <div className="bg-background/95 backdrop-blur-md border-t border-border p-4 space-y-3">
                 <div className="flex gap-2 max-w-lg mx-auto">
                   <Button variant="outline" size="sm" className="flex-1 gap-2 text-sm h-10">
                     <Heart className="h-4 w-4" />
