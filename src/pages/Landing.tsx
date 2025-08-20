@@ -25,8 +25,8 @@ export default function Landing() {
     searchQuery: ''
   }), []);
   
-  // Cache key for featured collections
-  const FEATURED_CACHE_KEY = 'azyah_featured_collections';
+  // Cache key for featured collections - updated to force refresh
+  const FEATURED_CACHE_KEY = `azyah_featured_collections_${Date.now()}`;
   const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
   
   // Check for cached products first
