@@ -9,6 +9,7 @@ import { clearInvalidSession, debugAuthState } from "@/utils/sessionDebug";
 import { useSmartSwipeProducts } from "@/hooks/useSmartSwipeProducts";
 import { getResponsiveImageProps } from "@/utils/asosImageUtils";
 import { InvestorContactModal } from "@/components/InvestorContactModal";
+import modernFashionHero from "@/assets/modern-fashion-hero.jpg";
 export default function Landing() {
   const [isVisible, setIsVisible] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'swipe'>('grid');
@@ -568,10 +569,15 @@ export default function Landing() {
 
             <div className="relative">
               <div className="aspect-[4/5] bg-gradient-to-br from-primary/20 to-primary/10 rounded-2xl overflow-hidden shadow-2xl border border-white/20">
-                <div className="w-full h-full bg-gradient-to-br from-primary/30 to-primary/20 flex items-center justify-center">
-                  <div className="text-center space-y-4">
-                    
-                    <p className="text-white/80 font-medium">Modern Fashion</p>
+                <div className="w-full h-full bg-gradient-to-br from-primary/30 to-primary/20 flex items-center justify-center relative overflow-hidden">
+                  <img 
+                    src={modernFashionHero} 
+                    alt="Modern fashion model showcasing contemporary design"
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-primary/40 to-transparent"></div>
+                  <div className="relative z-10 text-center space-y-4">
+                    <p className="text-white font-medium text-lg drop-shadow-lg">Modern Fashion</p>
                   </div>
                 </div>
               </div>
