@@ -79,6 +79,7 @@ const LandingSwipeDeck: React.FC<LandingSwipeDeckProps> = ({
   });
 
   const currentProduct = products[currentIndex] || null;
+  console.log('🔍 Current state:', { currentIndex, productsLength: products.length, hasCurrentProduct: !!currentProduct });
 
   // Calculate image height based on aspect ratio with better mobile optimization
   const getImageHeight = useCallback((aspectRatio: number) => {
@@ -112,21 +113,27 @@ const LandingSwipeDeck: React.FC<LandingSwipeDeckProps> = ({
   }, []);
 
   const nextCard = useCallback(() => {
+    console.log('🔄 nextCard called, currentIndex:', currentIndex, 'total products:', products.length);
+    
     setCurrentIndex(prevIndex => {
       const nextIndex = prevIndex + 1;
+      console.log('📊 Moving from index', prevIndex, 'to', nextIndex, 'products available:', products.length);
+      
       // Only advance if there are more products
       if (nextIndex < products.length) {
         // Reset position immediately when advancing
         x.set(0);
         y.set(0);
+        console.log('✅ Advanced to next card at index', nextIndex);
         return nextIndex;
       }
       // If no more products, reset motion values but stay at current index
+      console.log('⚠️ No more products available, staying at index', prevIndex);
       x.set(0);
       y.set(0);
       return prevIndex;
     });
-  }, [x, y, products.length]);
+  }, [x, y, products.length, currentIndex]);
 
   const handleLike = useCallback(() => {
     // Always advance to next card for consistent animation
