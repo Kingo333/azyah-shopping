@@ -28,6 +28,7 @@ import Forum from './pages/Forum';
 import Explore from './pages/Explore';
 import TrendingStyles from './pages/TrendingStyles';
 import FeaturedBrands from './pages/FeaturedBrands';
+import BrandDetail from './pages/BrandDetail';
 import TopInfluencers from './pages/TopInfluencers';
 import ImageSearch from './pages/ImageSearch';
 import Affiliate from './pages/Affiliate';
@@ -131,6 +132,7 @@ function App() {
                   } />
                   <Route path="/trending-styles" element={<TrendingStyles />} />
                   <Route path="/featured-brands" element={<FeaturedBrands />} />
+                  <Route path="/brand/:slug" element={<BrandDetail />} />
                   <Route path="/top-influencers" element={<TopInfluencers />} />
                   <Route path="/image-search" element={
                     <ProtectedRoute roles={['shopper', 'admin']}>
