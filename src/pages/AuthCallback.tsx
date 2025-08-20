@@ -3,12 +3,14 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { getRedirectRoute } from '@/lib/rbac';
 import type { UserRole } from '@/lib/rbac';
+import { useAuth } from '@/contexts/AuthContext';
 import { Loader2 } from 'lucide-react';
 
 const AuthCallback = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [error, setError] = useState<string | null>(null);
+  const { session } = useAuth();
 
   useEffect(() => {
     const handleCallback = async () => {
@@ -17,38 +19,51 @@ const AuthCallback = () => {
         const { data: exchanged, error: exErr } = await supabase.auth.exchangeCodeForSession(window.location.href);
         if (exErr) {
           console.error('exchangeCodeForSession error:', exErr);
-          // proceed; sometimes getSession will still work shortly after
+          // Let AuthContext handle the session via onAuthStateChange
         }
 
-        // 2) Now read the session
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session?.user) {
-          setError('No active session returned from Google.');
-          return;
-        }
+        // Wait a bit for AuthContext to pick up the session
+        setTimeout(() => {
+          if (!session?.user) {
+            setError('Authentication failed. Please try again.');
+            return;
+          }
 
-        const intent = (searchParams.get('intent') || 
-                       (typeof window !== 'undefined' && localStorage.getItem('auth_intent')) || 
-                       'signin') as 'signin' | 'signup';
-        const roleParam = searchParams.get('role') as UserRole | null;
+          const intent = (searchParams.get('intent') || 
+                         localStorage.getItem('auth_intent') || 
+                         'signin') as 'signin' | 'signup';
+          
+          const roleParam = searchParams.get('role') as UserRole | null;
 
+          // Handle the user profile creation/update
+          handleUserProfile(session.user, intent, roleParam);
+        }, 1000);
+
+      } catch (error: any) {
+        console.error('OAuth callback error:', error);
+        setError(error.message ?? 'OAuth callback error');
+      }
+    };
+
+    const handleUserProfile = async (user: any, intent: 'signin' | 'signup', roleParam: UserRole | null) => {
+      try {
         // Load existing user if any
         const { data: existing } = await supabase
           .from('users')
           .select('id, role')
-          .eq('id', session.user.id)
+          .eq('id', user.id)
           .maybeSingle();
 
         if (intent === 'signup') {
           const role: UserRole = roleParam ||
-            (typeof window !== 'undefined' && localStorage.getItem('signup_role') as UserRole) ||
+            (localStorage.getItem('signup_role') as UserRole) ||
             'shopper';
 
           await supabase.auth.updateUser({ data: { role } });
           await supabase.from('users').upsert({
-            id: session.user.id,
-            email: session.user.email,
-            name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0],
+            id: user.id,
+            email: user.email,
+            name: user.user_metadata?.full_name || user.email?.split('@')[0],
             role
           }, {
             onConflict: 'id'
@@ -56,22 +71,21 @@ const AuthCallback = () => {
         } else {
           // intent === 'signin'
           if (!existing?.id || !existing.role) {
-            // No profile or no role: send them to pick one
             navigate('/select-role?from=signin', { replace: true });
             return;
           }
         }
 
         // Resolve role for routing
-        const { data: user } = await supabase
+        const { data: userRow } = await supabase
           .from('users')
           .select('role')
-          .eq('id', session.user.id)
+          .eq('id', user.id)
           .maybeSingle();
 
-        const role = (user?.role ||
+        const role = (userRow?.role ||
           roleParam ||
-          (typeof window !== 'undefined' && localStorage.getItem('signup_role')) ||
+          localStorage.getItem('signup_role') ||
           'shopper') as UserRole;
 
         // Clean up localStorage
@@ -83,13 +97,86 @@ const AuthCallback = () => {
         navigate(redirectPath, { replace: true });
 
       } catch (error: any) {
-        console.error('OAuth callback error:', error);
-        setError(error.message ?? 'OAuth callback error');
+        console.error('Profile handling error:', error);
+        setError(error.message ?? 'Profile setup error');
       }
     };
 
     handleCallback();
   }, [navigate, searchParams]);
+
+  // Also handle when session becomes available through AuthContext
+  useEffect(() => {
+    if (session?.user) {
+      const intent = (searchParams.get('intent') || 
+                     localStorage.getItem('auth_intent') || 
+                     'signin') as 'signin' | 'signup';
+      
+      const roleParam = searchParams.get('role') as UserRole | null;
+      
+      // Only proceed if we haven't already processed this
+      if (localStorage.getItem('auth_intent') || localStorage.getItem('signup_role')) {
+        handleUserProfile(session.user, intent, roleParam);
+      }
+    }
+  }, [session, searchParams, navigate]);
+
+  const handleUserProfile = async (user: any, intent: 'signin' | 'signup', roleParam: UserRole | null) => {
+    try {
+      // Load existing user if any
+      const { data: existing } = await supabase
+        .from('users')
+        .select('id, role')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (intent === 'signup') {
+        const role: UserRole = roleParam ||
+          (localStorage.getItem('signup_role') as UserRole) ||
+          'shopper';
+
+        await supabase.auth.updateUser({ data: { role } });
+        await supabase.from('users').upsert({
+          id: user.id,
+          email: user.email,
+          name: user.user_metadata?.full_name || user.email?.split('@')[0],
+          role
+        }, {
+          onConflict: 'id'
+        });
+      } else {
+        // intent === 'signin'
+        if (!existing?.id || !existing.role) {
+          navigate('/select-role?from=signin', { replace: true });
+          return;
+        }
+      }
+
+      // Resolve role for routing
+      const { data: userRow } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      const role = (userRow?.role ||
+        roleParam ||
+        localStorage.getItem('signup_role') ||
+        'shopper') as UserRole;
+
+      // Clean up localStorage
+      localStorage.removeItem('signup_role');
+      localStorage.removeItem('auth_intent');
+
+      // Route based on role
+      const redirectPath = getRedirectRoute(role);
+      navigate(redirectPath, { replace: true });
+
+    } catch (error: any) {
+      console.error('Profile handling error:', error);
+      setError(error.message ?? 'Profile setup error');
+    }
+  };
 
   if (error) {
     return (
