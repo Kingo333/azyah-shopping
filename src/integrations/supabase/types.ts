@@ -2054,8 +2054,8 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
-      embedquery: {
-        Args: { query: string }
+      embed_query: {
+        Args: { query_text: string }
         Returns: number[]
       }
       get_current_user_role: {
@@ -2138,6 +2138,10 @@ export type Database = {
           table_name: string
         }
         Returns: undefined
+      }
+      tier_from_price_aed: {
+        Args: { aed_price: number }
+        Returns: string
       }
       validate_category_subcategory: {
         Args: {
