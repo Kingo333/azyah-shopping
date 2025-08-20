@@ -1924,6 +1924,10 @@ export type Database = {
           swipe_count: number
         }[]
       }
+      infer_gender_from_text: {
+        Args: { text_input: string }
+        Returns: Database["public"]["Enums"]["gender_type"]
+      }
       log_user_data_access: {
         Args: {
           accessed_user_id: string
