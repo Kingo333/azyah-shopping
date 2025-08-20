@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Heart, Plus, Trash2, Eye, EyeOff, Grid, List, ExternalLink } from 'lucide-react';
+import { Heart, Plus, Trash2, Eye, Grid, List, ExternalLink } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProductAnalytics } from '@/hooks/useAnalytics';
@@ -48,7 +48,7 @@ export const WishlistManager: React.FC = () => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [newWishlistTitle, setNewWishlistTitle] = useState('');
   const [newWishlistDescription, setNewWishlistDescription] = useState('');
-  const [isPublic, setIsPublic] = useState(false);
+  // All wishlists are now private for security
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   // Fetch user's wishlists
@@ -114,7 +114,6 @@ export const WishlistManager: React.FC = () => {
       setIsCreateDialogOpen(false);
       setNewWishlistTitle('');
       setNewWishlistDescription('');
-      setIsPublic(false);
       toast({
         title: "Wishlist created",
         description: "Your new wishlist has been created successfully.",
@@ -159,23 +158,7 @@ export const WishlistManager: React.FC = () => {
     }
   });
 
-  const togglePrivacyMutation = useMutation({
-    mutationFn: async ({ wishlistId, isPublic }: { wishlistId: string; isPublic: boolean }) => {
-      const { error } = await supabase
-        .from('wishlists')
-        .update({ is_public: isPublic })
-        .eq('id', wishlistId);
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['wishlists'] });
-      toast({
-        title: "Privacy updated",
-        description: "Wishlist privacy settings have been updated.",
-      });
-    }
-  });
+  // Privacy toggle removed - all wishlists are now private for security
 
   const handleShopNow = (product: WishlistItem['product']) => {
     if (product.external_url) {
@@ -210,7 +193,7 @@ export const WishlistManager: React.FC = () => {
     createWishlistMutation.mutate({
       title: newWishlistTitle.trim(),
       description: newWishlistDescription.trim() || undefined,
-      is_public: isPublic
+      is_public: false // All wishlists are private for security
     });
   };
 
@@ -268,17 +251,8 @@ export const WishlistManager: React.FC = () => {
                   placeholder="Add a description..."
                 />
               </div>
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="public"
-                  checked={isPublic}
-                  onChange={(e) => setIsPublic(e.target.checked)}
-                  className="rounded"
-                />
-                <label htmlFor="public" className="text-sm">
-                  Make this wishlist public
-                </label>
+              <div className="text-sm text-muted-foreground p-3 bg-muted rounded-lg">
+                <p>All wishlists are private for your security and privacy.</p>
               </div>
               <div className="flex gap-2 pt-4">
                 <Button onClick={handleCreateWishlist} disabled={createWishlistMutation.isPending}>
@@ -314,23 +288,6 @@ export const WishlistManager: React.FC = () => {
                       size="sm"
                       onClick={(e) => {
                         e.stopPropagation();
-                        togglePrivacyMutation.mutate({
-                          wishlistId: wishlist.id,
-                          isPublic: !wishlist.is_public
-                        });
-                      }}
-                    >
-                      {wishlist.is_public ? (
-                        <Eye className="h-4 w-4" />
-                      ) : (
-                        <EyeOff className="h-4 w-4" />
-                      )}
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
                         deleteWishlistMutation.mutate(wishlist.id);
                       }}
                     >
@@ -341,9 +298,7 @@ export const WishlistManager: React.FC = () => {
               </CardHeader>
               <CardContent onClick={() => setSelectedWishlist(wishlist.id)}>
                 <div className="flex items-center justify-between">
-                  <Badge variant={wishlist.is_public ? "default" : "secondary"}>
-                    {wishlist.is_public ? "Public" : "Private"}
-                  </Badge>
+                  <Badge variant="secondary">Private</Badge>
                   <span className="text-sm text-muted-foreground">
                     {new Date(wishlist.created_at).toLocaleDateString()}
                   </span>
