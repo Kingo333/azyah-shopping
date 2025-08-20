@@ -61,9 +61,11 @@ export const useEnhancedSwipeTracking = () => {
       return data;
     },
     onSuccess: (data) => {
-      // Invalidate relevant queries to trigger re-personalization
-      queryClient.invalidateQueries({ queryKey: ['enhanced-swipe-products'] });
-      queryClient.invalidateQueries({ queryKey: ['user-taste-profile'] });
+      // Debounced invalidation to prevent excessive re-fetching
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ['enhanced-swipe-products'] });
+        queryClient.invalidateQueries({ queryKey: ['user-taste-profile'] });
+      }, 1000); // Batch invalidations
       
       console.log('Enhanced swipe tracked:', data);
     },

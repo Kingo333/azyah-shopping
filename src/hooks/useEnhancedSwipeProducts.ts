@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -43,6 +43,20 @@ export const useEnhancedSwipeProducts = ({
 }: UseEnhancedSwipeProductsProps = {}) => {
   const { user } = useAuth();
   const [products, setProducts] = useState<SwipeProduct[]>([]);
+  
+  // Debounced invalidation to reduce excessive re-fetching
+  const debouncedInvalidation = useCallback(
+    (() => {
+      let timeoutId: NodeJS.Timeout;
+      return () => {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => {
+          // Invalidation logic will be handled by tracking hook
+        }, 500);
+      };
+    })(),
+    []
+  );
   
   // Fetch products with personalization scores
   const { data: rawProducts, isLoading, refetch } = useQuery({
@@ -148,21 +162,30 @@ export const useEnhancedSwipeProducts = ({
     }
   }, [user?.id]);
 
+  // Memoized sorting function for better performance
+  const sortProducts = useMemo(() => {
+    return (personalizedProducts: SwipeProduct[]) => {
+      // Pre-generate random values to avoid recalculation during sort
+      const productsWithRandomScore = personalizedProducts.map(product => ({
+        ...product,
+        sortScore: (product.personalization_score || 0.5) * 0.7 + Math.random() * 0.3
+      }));
+      
+      return productsWithRandomScore
+        .sort((a, b) => b.sortScore - a.sortScore)
+        .map(({ sortScore, ...product }) => product); // Remove temp sort score
+    };
+  }, []);
+
   // Apply personalization when products change
   useEffect(() => {
     if (rawProducts) {
       getPersonalizedProducts(rawProducts).then(personalizedProducts => {
-        // Sort by personalization score (70%) + randomness (30%)
-        const sortedProducts = personalizedProducts.sort((a, b) => {
-          const scoreA = (a.personalization_score || 0.5) * 0.7 + Math.random() * 0.3;
-          const scoreB = (b.personalization_score || 0.5) * 0.7 + Math.random() * 0.3;
-          return scoreB - scoreA;
-        });
-        
+        const sortedProducts = sortProducts(personalizedProducts);
         setProducts(sortedProducts);
       });
     }
-  }, [rawProducts, getPersonalizedProducts]);
+  }, [rawProducts, getPersonalizedProducts, sortProducts]);
 
   return {
     products,

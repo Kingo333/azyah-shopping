@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo, useLayoutEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -48,20 +48,29 @@ interface SwipeDeckProps {
 const cardVariants = {
   hidden: {
     opacity: 0,
-    y: 50
+    y: 30,
+    scale: 0.95
   },
   visible: {
     opacity: 1,
     y: 0,
+    scale: 1,
     transition: {
-      duration: 0.5
+      type: "spring" as const,
+      stiffness: 260,
+      damping: 20,
+      duration: 0.3
     }
   },
   exit: (x: number) => ({
     x: x,
     opacity: 0,
+    scale: 0.95,
     transition: {
-      duration: 0.5
+      type: "spring" as const,
+      stiffness: 300,
+      damping: 25,
+      duration: 0.2
     }
   })
 };
@@ -104,8 +113,8 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
 
   const { trackSwipe, trackViewDuration } = useEnhancedSwipeTracking();
 
-  // Track view start times for implicit feedback
-  const [viewStartTimes, setViewStartTimes] = useState<Map<string, number>>(new Map());
+  // Track view start times for implicit feedback - using useRef to avoid re-renders
+  const viewStartTimesRef = useRef<Map<string, number>>(new Map());
 
   const currentProduct = useMemo(() => products[index] || null, [products, index]);
   const { addToWishlist, isLoading: wishlistLoading } = useWishlist(currentProduct?.id);
@@ -155,13 +164,20 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
     setIndex(0);
     x.set(0);
     y.set(0);
-    setViewStartTimes(new Map());
+    viewStartTimesRef.current.clear();
   }, [products, x, y]);
 
-  // Track view start time for current product
-  useEffect(() => {
+  // Track view start time for current product - using useLayoutEffect for sync timing
+  useLayoutEffect(() => {
     if (currentProduct) {
-      setViewStartTimes(prev => new Map(prev.set(currentProduct.id, Date.now())));
+      viewStartTimesRef.current.set(currentProduct.id, Date.now());
+      
+      // Cleanup old entries to prevent memory leaks
+      if (viewStartTimesRef.current.size > 100) {
+        const entries = Array.from(viewStartTimesRef.current.entries());
+        const keepEntries = entries.slice(-50); // Keep only last 50 entries
+        viewStartTimesRef.current = new Map(keepEntries);
+      }
     }
   }, [index, currentProduct]);
 
@@ -191,27 +207,30 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
       return;
     }
 
-    try {
-      // Track view duration for implicit feedback
-      const viewDuration = trackViewDuration(product.id, viewStartTimes.get(product.id) || Date.now());
-      
-      // Track enhanced swipe with metadata
-      await trackSwipe({
-        productId: product.id,
-        action: 'right',
-        product,
-        viewDuration,
-        confidence: 1.0
-      });
+    // Move to next card IMMEDIATELY for instant animation
+    nextCard();
 
-      // Move to next card IMMEDIATELY for instant animation
-      nextCard();
+    // Fire-and-forget background operations
+    queueMicrotask(async () => {
+      try {
+        // Track view duration for implicit feedback
+        const viewDuration = trackViewDuration(product.id, viewStartTimesRef.current.get(product.id) || Date.now());
+        
+        // Track enhanced swipe with metadata (no await)
+        trackSwipe({
+          productId: product.id,
+          action: 'right',
+          product,
+          viewDuration,
+          confidence: 1.0
+        }).catch(error => console.error('Error tracking like:', error));
 
-      // Fire-and-forget database operation (no await, no blocking)
-      supabase.from('likes').insert([{
-        user_id: user.id,
-        product_id: product.id
-      }]).then(({ error }) => {
+        // Database operation
+        const { error } = await supabase.from('likes').insert([{
+          user_id: user.id,
+          product_id: product.id
+        }]);
+
         if (error) {
           if (error.code === '23505') {
             toast({
@@ -230,34 +249,31 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
             description: `${product.title} added to your likes!`
           });
         }
-      });
-    } catch (error) {
-      console.error('Error tracking like:', error);
-      // Still move to next card even if tracking fails
-      nextCard();
-    }
-  }, [user, toast, nextCard, trackSwipe, trackViewDuration, viewStartTimes]);
+      } catch (error) {
+        console.error('Background like operation failed:', error);
+      }
+    });
+  }, [user, toast, nextCard, trackSwipe, trackViewDuration]);
 
   const handleDislike = useCallback(async () => {
+    // Move to next card IMMEDIATELY for instant animation
+    nextCard();
+
+    // Fire-and-forget background tracking
     if (user && currentProduct) {
-      try {
-        // Track view duration for implicit feedback
-        const viewDuration = trackViewDuration(currentProduct.id, viewStartTimes.get(currentProduct.id) || Date.now());
+      queueMicrotask(() => {
+        const viewDuration = trackViewDuration(currentProduct.id, viewStartTimesRef.current.get(currentProduct.id) || Date.now());
         
-        // Track enhanced swipe with metadata
-        await trackSwipe({
+        trackSwipe({
           productId: currentProduct.id,
           action: 'left',
           product: currentProduct,
           viewDuration,
           confidence: 1.0
-        });
-      } catch (error) {
-        console.error('Error tracking dislike:', error);
-      }
+        }).catch(error => console.error('Error tracking dislike:', error));
+      });
     }
-    nextCard();
-  }, [user, currentProduct, nextCard, trackSwipe, trackViewDuration, viewStartTimes]);
+  }, [user, currentProduct, nextCard, trackSwipe, trackViewDuration]);
 
   const handleAddToWishlist = useCallback(async (product: SwipeProduct) => {
     if (!user) {
@@ -269,44 +285,47 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
       return;
     }
 
-    try {
-      // Track view duration for implicit feedback
-      const viewDuration = trackViewDuration(product.id, viewStartTimes.get(product.id) || Date.now());
-      
-      // Track enhanced swipe with metadata
-      await trackSwipe({
-        productId: product.id,
-        action: 'up',
-        product,
-        viewDuration,
-        confidence: 1.0
-      });
+    // Move to next card immediately for smooth animation
+    nextCard();
 
-      // Move to next card immediately for smooth animation
-      nextCard();
+    // Fire-and-forget background operations
+    queueMicrotask(async () => {
+      try {
+        // Track view duration for implicit feedback
+        const viewDuration = trackViewDuration(product.id, viewStartTimesRef.current.get(product.id) || Date.now());
+        
+        // Track enhanced swipe with metadata (no await)
+        trackSwipe({
+          productId: product.id,
+          action: 'up',
+          product,
+          viewDuration,
+          confidence: 1.0
+        }).catch(error => console.error('Error tracking wishlist:', error));
 
-      // Handle async operation in background
-      await addToWishlist();
-      toast({
-        description: `${product.title} added to your wishlist!`
-      });
-    } catch (error: any) {
-      console.error("Error adding to wishlist:", error.message);
-      
-      // Handle duplicate entry error specifically
-      if (error.message.includes('duplicate key value violates unique constraint')) {
+        // Handle wishlist operation
+        await addToWishlist();
         toast({
-          description: `${product.title} is already in your wishlist!`
+          description: `${product.title} added to your wishlist!`
         });
-      } else {
-        toast({
-          title: "Error",
-          description: "Failed to add to wishlist. Please try again.",
-          variant: "destructive"
-        });
+      } catch (error: any) {
+        console.error("Error adding to wishlist:", error.message);
+        
+        // Handle duplicate entry error specifically
+        if (error.message.includes('duplicate key value violates unique constraint')) {
+          toast({
+            description: `${product.title} is already in your wishlist!`
+          });
+        } else {
+          toast({
+            title: "Error",
+            description: "Failed to add to wishlist. Please try again.",
+            variant: "destructive"
+          });
+        }
       }
-    }
-  }, [user, addToWishlist, toast, nextCard, trackSwipe, trackViewDuration, viewStartTimes]);
+    });
+  }, [user, addToWishlist, toast, nextCard, trackSwipe, trackViewDuration]);
 
   const handleSwipeEnd = useCallback((event: any, info: PanInfo) => {
     const currentProduct = products[index];
@@ -324,9 +343,9 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
     } else if (offsetX < -DISTANCE_THRESHOLD) {
       handleDislike();
     } else {
-      // Reset position very gently if not swiped far enough
-      animate(x, 0, { type: "spring", stiffness: 100, damping: 20 });
-      animate(y, 0, { type: "spring", stiffness: 100, damping: 20 });
+      // Reset position with optimized spring physics
+      animate(x, 0, { type: "spring", stiffness: 200, damping: 25, duration: 0.3 });
+      animate(y, 0, { type: "spring", stiffness: 200, damping: 25, duration: 0.3 });
     }
   }, [x, y, index, products, handleLike, handleDislike, handleAddToWishlist]);
 
@@ -418,7 +437,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
             exit="exit"
             custom={x.get()}
           >
-            <Card className="h-full flex flex-col cursor-grab active:cursor-grabbing overflow-hidden">
+            <Card className="h-full flex flex-col cursor-grab active:cursor-grabbing overflow-hidden" style={{ willChange: 'transform', contain: 'layout style paint' }}>
               <CardContent className="p-4 sm:p-6 flex flex-col h-full">
                  <div 
                    className="relative w-full mb-2 sm:mb-3 overflow-hidden rounded-lg flex-shrink-0"
