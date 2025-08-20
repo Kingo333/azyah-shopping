@@ -451,11 +451,19 @@ export default function Landing() {
           })}
             </div>) : (/* Swipe Interface */
         <div className="mb-12">
-              <div className="max-w-sm mx-auto h-[700px] relative bg-gradient-to-br from-primary/5 to-primary/10 rounded-2xl p-6">
-                <SwipeDeck filter="all" subcategory="" priceRange={{
-              min: 0,
-              max: 1000
-            }} searchQuery="" currency="USD" />
+              <div className="relative w-full max-w-sm mx-auto h-[700px]">
+                <div className="h-full bg-gradient-to-br from-primary/5 to-primary/10 rounded-2xl p-6 flex items-center justify-center">
+                  <div className="w-full max-w-[320px] h-[600px]">
+                    <SwipeDeck 
+                      filter="all" 
+                      subcategory="" 
+                      gender=""
+                      priceRange={{ min: 0, max: 1000 }} 
+                      searchQuery="" 
+                      currency="USD" 
+                    />
+                  </div>
+                </div>
               </div>
               <div className="text-center mt-6">
                 <p className="text-sm text-gray-600 mb-4">
