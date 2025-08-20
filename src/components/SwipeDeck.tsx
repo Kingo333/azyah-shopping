@@ -54,19 +54,14 @@ const cardVariants = {
     opacity: 1,
     y: 0,
     transition: {
-      type: "spring" as const,
-      stiffness: 200,
-      damping: 20
+      duration: 0.5
     }
   },
   exit: (x: number) => ({
     x: x,
     opacity: 0,
     transition: {
-      type: "spring" as const,
-      stiffness: 300,
-      damping: 25,
-      duration: 0.2
+      duration: 0.5
     }
   })
 };
@@ -109,10 +104,11 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
 
   const { trackSwipe, trackViewDuration } = useEnhancedSwipeTracking();
 
-  // Track view start times for implicit feedback
-  const [viewStartTimes, setViewStartTimes] = useState<Map<string, number>>(new Map());
+  // Track view start times for implicit feedback - use ref to avoid re-renders
+  const viewStartTimes = useRef<Map<string, number>>(new Map());
 
   const currentProduct = useMemo(() => products[index] || null, [products, index]);
+  const nextProduct = useMemo(() => products[index + 1] || null, [products, index]);
   const { addToWishlist, isLoading: wishlistLoading } = useWishlist(currentProduct?.id);
 
   // Calculate image height based on aspect ratio with better mobile optimization
@@ -150,23 +146,32 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
   }, []);
 
   const nextCard = useCallback(() => {
-    x.set(0);
-    y.set(0);
-    setIndex(prevIndex => Math.min(prevIndex + 1, products.length - 1));
+    setIndex(prevIndex => {
+      const nextIndex = prevIndex + 1;
+      // Only advance if there are more products
+      if (nextIndex < products.length) {
+        // Reset position immediately when advancing
+        x.set(0);
+        y.set(0);
+        return nextIndex;
+      }
+      // If no more products, stay at current index
+      return prevIndex;
+    });
   }, [x, y, products.length]);
 
-  // Reset index when products change and track view times
+  // Reset index when products change and clean up view times
   useEffect(() => {
     setIndex(0);
     x.set(0);
     y.set(0);
-    setViewStartTimes(new Map());
+    viewStartTimes.current.clear();
   }, [products, x, y]);
 
   // Track view start time for current product
   useEffect(() => {
     if (currentProduct) {
-      setViewStartTimes(prev => new Map(prev.set(currentProduct.id, Date.now())));
+      viewStartTimes.current.set(currentProduct.id, Date.now());
     }
   }, [index, currentProduct]);
 
@@ -187,6 +192,9 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
   }, [x, y]);
 
   const handleLike = useCallback(async (product: SwipeProduct) => {
+    // Always advance to next card for consistent animation
+    nextCard();
+    
     if (!user) {
       toast({
         title: "Sign in required",
@@ -198,21 +206,18 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
 
     try {
       // Track view duration for implicit feedback
-      const viewDuration = trackViewDuration(product.id, viewStartTimes.get(product.id) || Date.now());
+      const viewDuration = trackViewDuration(product.id, viewStartTimes.current.get(product.id) || Date.now());
       
-      // Track enhanced swipe with metadata
-      await trackSwipe({
+      // Track enhanced swipe with metadata (fire-and-forget)
+      trackSwipe({
         productId: product.id,
         action: 'right',
         product,
         viewDuration,
         confidence: 1.0
-      });
+      }).catch(console.error);
 
-      // Move to next card IMMEDIATELY for instant animation
-      nextCard();
-
-      // Fire-and-forget database operation (no await, no blocking)
+      // Fire-and-forget database operation
       supabase.from('likes').insert([{
         user_id: user.id,
         product_id: product.id
@@ -238,33 +243,35 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
       });
     } catch (error) {
       console.error('Error tracking like:', error);
-      // Still move to next card even if tracking fails
-      nextCard();
     }
-  }, [user, toast, nextCard, trackSwipe, trackViewDuration, viewStartTimes]);
+  }, [user, toast, nextCard, trackSwipe, trackViewDuration]);
 
   const handleDislike = useCallback(async () => {
+    nextCard();
+    
     if (user && currentProduct) {
       try {
         // Track view duration for implicit feedback
-        const viewDuration = trackViewDuration(currentProduct.id, viewStartTimes.get(currentProduct.id) || Date.now());
+        const viewDuration = trackViewDuration(currentProduct.id, viewStartTimes.current.get(currentProduct.id) || Date.now());
         
-        // Track enhanced swipe with metadata
-        await trackSwipe({
+        // Track enhanced swipe with metadata (fire-and-forget)
+        trackSwipe({
           productId: currentProduct.id,
           action: 'left',
           product: currentProduct,
           viewDuration,
           confidence: 1.0
-        });
+        }).catch(console.error);
       } catch (error) {
         console.error('Error tracking dislike:', error);
       }
     }
-    nextCard();
-  }, [user, currentProduct, nextCard, trackSwipe, trackViewDuration, viewStartTimes]);
+  }, [user, currentProduct, nextCard, trackSwipe, trackViewDuration]);
 
   const handleAddToWishlist = useCallback(async (product: SwipeProduct) => {
+    // Always advance to next card for consistent animation
+    nextCard();
+    
     if (!user) {
       toast({
         title: "Sign in required",
@@ -276,19 +283,16 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
 
     try {
       // Track view duration for implicit feedback
-      const viewDuration = trackViewDuration(product.id, viewStartTimes.get(product.id) || Date.now());
+      const viewDuration = trackViewDuration(product.id, viewStartTimes.current.get(product.id) || Date.now());
       
-      // Track enhanced swipe with metadata
-      await trackSwipe({
+      // Track enhanced swipe with metadata (fire-and-forget)
+      trackSwipe({
         productId: product.id,
         action: 'up',
         product,
         viewDuration,
         confidence: 1.0
-      });
-
-      // Move to next card immediately for smooth animation
-      nextCard();
+      }).catch(console.error);
 
       // Handle async operation in background
       await addToWishlist();
@@ -311,27 +315,56 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
         });
       }
     }
-  }, [user, addToWishlist, toast, nextCard, trackSwipe, trackViewDuration, viewStartTimes]);
+  }, [user, addToWishlist, toast, nextCard, trackSwipe, trackViewDuration]);
 
   const handleSwipeEnd = useCallback((event: any, info: PanInfo) => {
     const currentProduct = products[index];
     if (!currentProduct) return;
 
     const { x: offsetX, y: offsetY } = info.offset;
+    const { x: velocityX, y: velocityY } = info.velocity;
 
-    // Check for vertical swipe up first (wishlist)
-    if (offsetY < -VERTICAL_THRESHOLD && Math.abs(offsetX) < DISTANCE_THRESHOLD) {
+    // Reduced thresholds for faster response
+    const SWIPE_THRESHOLD = 80;
+    const VERTICAL_SWIPE_THRESHOLD = 80;
+
+    // Check for vertical swipe (wishlist)
+    if (offsetY < -VERTICAL_SWIPE_THRESHOLD && Math.abs(offsetX) < SWIPE_THRESHOLD) {
+      // Trigger action immediately and animate smoothly
       handleAddToWishlist(currentProduct);
-    }
-    // Then check for horizontal swipes
-    else if (offsetX > DISTANCE_THRESHOLD) {
+      animate(x, 0, { duration: 0.2, ease: "easeOut" });
+      animate(y, -window.innerHeight, { duration: 0.3, ease: "easeOut" });
+    } 
+    // Check for right swipe (like)
+    else if (offsetX > SWIPE_THRESHOLD || velocityX > 400) {
+      // Trigger action immediately and animate smoothly
       handleLike(currentProduct);
-    } else if (offsetX < -DISTANCE_THRESHOLD) {
+      animate(x, window.innerWidth + 200, { 
+        duration: 0.3,
+        ease: "easeOut"
+      });
+      animate(y, offsetY + velocityY * 0.05, { 
+        duration: 0.3,
+        ease: "easeOut"
+      });
+    } 
+    // Check for left swipe (dislike)
+    else if (offsetX < -SWIPE_THRESHOLD || velocityX < -400) {
+      // Trigger action immediately and animate smoothly
       handleDislike();
-    } else {
-      // Reset position smoothly if not swiped far enough
-      animate(x, 0, { type: "spring", stiffness: 150, damping: 25 });
-      animate(y, 0, { type: "spring", stiffness: 150, damping: 25 });
+      animate(x, -window.innerWidth - 200, { 
+        duration: 0.3,
+        ease: "easeOut"
+      });
+      animate(y, offsetY + velocityY * 0.05, { 
+        duration: 0.3,
+        ease: "easeOut"
+      });
+    } 
+    // Not enough movement, spring back to center
+    else {
+      animate(x, 0, { type: "spring", stiffness: 400, damping: 40 });
+      animate(y, 0, { type: "spring", stiffness: 400, damping: 40 });
     }
   }, [x, y, index, products, handleLike, handleDislike, handleAddToWishlist]);
 
@@ -399,12 +432,92 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
 
   return (
     <div className="relative w-full h-full">
+      {/* Next card (behind current) */}
+      {nextProduct && (
+        <div className="absolute top-0 left-0 w-full h-full scale-95 opacity-80 z-0">
+          <Card className="h-full flex flex-col overflow-hidden">
+            <CardContent className="p-4 sm:p-6 flex flex-col h-full">
+              <div 
+                className="relative w-full mb-2 sm:mb-3 overflow-hidden rounded-lg flex-shrink-0"
+                style={{
+                  height: `${getImageHeight(imageAspectRatio)}px`
+                }}
+              >
+                <img
+                  {...getResponsiveImageProps(
+                    (() => {
+                      try {
+                        let imageUrl = '';
+                        
+                        if (nextProduct.media_urls) {
+                          let mediaUrls = nextProduct.media_urls;
+                          if (typeof mediaUrls === 'string') {
+                            try {
+                              mediaUrls = JSON.parse(mediaUrls);
+                            } catch (e) {
+                              return '/placeholder.svg';
+                            }
+                          }
+                          
+                          if (Array.isArray(mediaUrls) && mediaUrls.length > 0) {
+                            const firstUrl = mediaUrls[0];
+                            if (typeof firstUrl === 'string' && firstUrl.trim()) {
+                              imageUrl = firstUrl.trim();
+                            }
+                          }
+                        }
+                        
+                        if (!imageUrl && nextProduct.image_url && nextProduct.image_url.trim()) {
+                          imageUrl = nextProduct.image_url.trim();
+                        }
+                        
+                        return imageUrl || '/placeholder.svg';
+                      } catch (error) {
+                        return '/placeholder.svg';
+                      }
+                    })(),
+                    "(max-width: 768px) 100vw, 50vw"
+                  )}
+                  alt={nextProduct.title}
+                  className="object-cover w-full h-full transition-opacity duration-300"
+                  onError={(e) => {
+                    const img = e.target as HTMLImageElement;
+                    if (img.src !== '/placeholder.svg') {
+                      img.src = '/placeholder.svg';
+                    }
+                  }}
+                />
+              </div>
+              
+              <div className="flex flex-col flex-grow space-y-2">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-sm sm:text-base font-semibold line-clamp-2 mb-1">{nextProduct.title}</h3>
+                    <p className="text-xs sm:text-sm text-muted-foreground line-clamp-1">{nextProduct.brands?.name}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <span className="text-base sm:text-lg font-bold">
+                    {new Intl.NumberFormat('en-US', {
+                      style: 'currency',
+                      currency: nextProduct.currency || 'USD'
+                    }).format(nextProduct.price_cents / 100)}
+                  </span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Current card (draggable) */}
       <AnimatePresence initial={false} custom={x.get()}>
         {currentProduct && (
           <motion.div
             key={currentProduct.id}
             ref={cardRef}
-            className="absolute top-0 left-0 w-full h-full"
+            className="absolute top-0 left-0 w-full h-full z-10"
             style={{
               x,
               y,
@@ -422,11 +535,6 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
             animate="visible"
             exit="exit"
             custom={x.get()}
-            transition={{
-              type: "spring",
-              stiffness: 200,
-              damping: 25
-            }}
           >
             <Card className="h-full flex flex-col cursor-grab active:cursor-grabbing overflow-hidden">
               <CardContent className="p-4 sm:p-6 flex flex-col h-full">
