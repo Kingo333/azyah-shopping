@@ -1894,33 +1894,7 @@ export type Database = {
       }
     }
     Views: {
-      subscription_status: {
-        Row: {
-          created_at: string | null
-          current_period_end: string | null
-          id: string | null
-          plan: string | null
-          status: string | null
-          user_id: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          current_period_end?: string | null
-          id?: string | null
-          plan?: string | null
-          status?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          current_period_end?: string | null
-          id?: string | null
-          plan?: string | null
-          status?: string | null
-          user_id?: string | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       admin_get_subscription_details: {

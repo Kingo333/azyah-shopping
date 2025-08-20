@@ -176,12 +176,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const updateProfile = async (data: any) => {
     if (!user) return { error: new Error('No user') };
 
+    // SECURITY FIX: Remove role from data to prevent privilege escalation
+    const { role, ...safeData } = data;
+
     const { error } = await supabase
       .from('users')
       .upsert({ 
         id: user.id,
         email: user.email!,
-        ...data,
+        ...safeData,
         updated_at: new Date().toISOString()
       });
 
