@@ -54,14 +54,19 @@ const cardVariants = {
     opacity: 1,
     y: 0,
     transition: {
-      duration: 0.5
+      type: "spring" as const,
+      stiffness: 200,
+      damping: 20
     }
   },
   exit: (x: number) => ({
     x: x,
     opacity: 0,
     transition: {
-      duration: 0.5
+      type: "spring" as const,
+      stiffness: 300,
+      damping: 25,
+      duration: 0.2
     }
   })
 };
@@ -324,9 +329,9 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
     } else if (offsetX < -DISTANCE_THRESHOLD) {
       handleDislike();
     } else {
-      // Reset position very gently if not swiped far enough
-      animate(x, 0, { type: "spring", stiffness: 100, damping: 20 });
-      animate(y, 0, { type: "spring", stiffness: 100, damping: 20 });
+      // Reset position smoothly if not swiped far enough
+      animate(x, 0, { type: "spring", stiffness: 150, damping: 25 });
+      animate(y, 0, { type: "spring", stiffness: 150, damping: 25 });
     }
   }, [x, y, index, products, handleLike, handleDislike, handleAddToWishlist]);
 
@@ -417,6 +422,11 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
             animate="visible"
             exit="exit"
             custom={x.get()}
+            transition={{
+              type: "spring",
+              stiffness: 200,
+              damping: 25
+            }}
           >
             <Card className="h-full flex flex-col cursor-grab active:cursor-grabbing overflow-hidden">
               <CardContent className="p-4 sm:p-6 flex flex-col h-full">
