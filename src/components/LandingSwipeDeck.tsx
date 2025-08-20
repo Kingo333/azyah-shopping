@@ -112,12 +112,17 @@ const LandingSwipeDeck: React.FC<LandingSwipeDeckProps> = ({
   }, []);
 
   const nextCard = useCallback(() => {
-    x.set(0);
-    y.set(0);
     setCurrentIndex(prevIndex => {
       const nextIndex = prevIndex + 1;
       // Only advance if there are more products
-      return nextIndex < products.length ? nextIndex : prevIndex;
+      if (nextIndex < products.length) {
+        // Reset position immediately when advancing
+        x.set(0);
+        y.set(0);
+        return nextIndex;
+      }
+      // If no more products, stay at current index
+      return prevIndex;
     });
   }, [x, y, products.length]);
 
@@ -181,9 +186,7 @@ const LandingSwipeDeck: React.FC<LandingSwipeDeckProps> = ({
     } 
     // Check for right swipe (like)
     else if (offsetX > DISTANCE_THRESHOLD || velocityX > 500) {
-      // Trigger action immediately for responsiveness
-      handleLike();
-      // Animate card to the right smoothly
+      // Animate card to the right smoothly first
       animate(x, window.innerWidth + 200, { 
         duration: 0.3,
         ease: "easeOut"
@@ -192,17 +195,15 @@ const LandingSwipeDeck: React.FC<LandingSwipeDeckProps> = ({
         duration: 0.3,
         ease: "easeOut"
       });
-      // Reset position after animation completes
+      
+      // Trigger action after a short delay to prevent blank cards
       setTimeout(() => {
-        x.set(0);
-        y.set(0);
-      }, 300);
+        handleLike();
+      }, 100);
     }
     // Check for left swipe (dislike)
     else if (offsetX < -DISTANCE_THRESHOLD || velocityX < -500) {
-      // Trigger action immediately for responsiveness
-      handleDislike();
-      // Animate card to the left smoothly - matching right swipe exactly
+      // Animate card to the left smoothly first
       animate(x, -window.innerWidth - 200, { 
         duration: 0.3,
         ease: "easeOut"
@@ -211,11 +212,11 @@ const LandingSwipeDeck: React.FC<LandingSwipeDeckProps> = ({
         duration: 0.3,
         ease: "easeOut"
       });
-      // Reset position after animation completes
+      
+      // Trigger action after a short delay to prevent blank cards
       setTimeout(() => {
-        x.set(0);
-        y.set(0);
-      }, 300);
+        handleDislike();
+      }, 100);
     }
     // Not enough movement, spring back to center
     else {
