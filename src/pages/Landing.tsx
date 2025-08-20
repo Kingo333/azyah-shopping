@@ -188,16 +188,16 @@ export default function Landing() {
             <div className="space-y-6 sm:space-y-8 lg:space-y-12 z-10 text-center max-w-4xl">
               <div className="space-y-3 sm:space-y-4 lg:space-y-8">
                 <div className="inline-flex items-center space-x-2 lg:space-x-3 bg-background/90 backdrop-blur-sm border border-primary/20 rounded-full px-4 py-2 lg:px-6 lg:py-3 shadow-lg">
-                  <span className="text-xs lg:text-sm font-semibold text-primary uppercase tracking-wider">Luxury Fashion</span>
+                  <span className="text-sm sm:text-base lg:text-lg font-semibold text-primary uppercase tracking-wider">Luxury Fashion</span>
                 </div>
                 
                 <div className="space-y-2 sm:space-y-3 lg:space-y-4">
-                  <h1 className="font-cormorant text-4xl sm:text-5xl md:text-6xl lg:text-8xl xl:text-9xl font-bold leading-[0.9] sm:leading-[0.85] tracking-tight">
+                  <h1 className="font-cormorant text-5xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-9xl font-bold leading-[0.9] sm:leading-[0.85] tracking-tight">
                     <span className="block text-white">Find Your</span>
                     <span className="block bg-gradient-to-r from-primary via-primary to-primary/80 bg-clip-text text-transparent italic">Perfect</span>
                     <span className="block text-white">Style</span>
                   </h1>
-                  <p className="text-sm sm:text-base lg:text-2xl text-gray-200 max-w-md lg:max-w-lg leading-relaxed font-light mx-auto">
+                  <p className="text-base sm:text-lg lg:text-2xl text-gray-200 max-w-md lg:max-w-lg leading-relaxed font-light mx-auto">
                     Smart AI fashion discovery that learns your style.
                   </p>
                 </div>
