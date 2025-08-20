@@ -401,7 +401,12 @@ export default function Landing() {
                       {/* Product Info */}
                       <div className="absolute bottom-4 left-4 right-4 bg-white/95 backdrop-blur-sm rounded-xl p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                         <div className="text-sm font-medium line-clamp-1">{product.title || `Product ${i + 1}`}</div>
-                        <div className="text-xs text-muted-foreground">{typeof product.brand === 'string' ? product.brand : 'Premium Brand'}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {product.brand 
+                            ? (typeof product.brand === 'string' ? product.brand : product.brand.name || 'Premium Brand')
+                            : 'Premium Brand'
+                          }
+                        </div>
                         <div className="flex items-center justify-between mt-2">
                           <div className="text-sm font-bold text-primary">
                             {product.price_cents 
