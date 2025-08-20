@@ -382,12 +382,17 @@ const LandingSwipeDeck: React.FC<LandingSwipeDeckProps> = ({
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
+                        console.log('Shop button clicked for product:', currentProduct);
+                        console.log('External URL:', currentProduct.external_url);
+                        
                         const url = currentProduct.external_url;
                         if (url) {
+                          console.log('Opening external URL:', url);
                           window.open(url, '_blank', 'noopener,noreferrer');
                         } else {
                           // Fallback: search for the product on Google
                           const searchQuery = encodeURIComponent(`${currentProduct.title} ${currentProduct.brand?.name || ''}`);
+                          console.log('No external URL, searching Google:', searchQuery);
                           window.open(`https://www.google.com/search?q=${searchQuery}`, '_blank', 'noopener,noreferrer');
                         }
                       }}
