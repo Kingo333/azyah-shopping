@@ -243,16 +243,37 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
     setLoading(true);
 
     try {
-      // Use soft delete by setting status to 'archived' instead of hard delete
+      // First try to delete related records to avoid foreign key constraints
+      const deletePromises = [
+        supabase.from('cart_items').delete().eq('product_id', product.id),
+        supabase.from('closet_items').delete().eq('product_id', product.id),
+        supabase.from('likes').delete().eq('product_id', product.id),
+        supabase.from('swipes').delete().eq('product_id', product.id),
+        supabase.from('post_products').delete().eq('product_id', product.id)
+      ];
+
+      // Execute all deletions
+      await Promise.allSettled(deletePromises);
+
+      // Now delete the product itself - use hard delete for better UX
       const { error } = await supabase
         .from('products')
-        .update({ 
-          status: 'archived',
-          updated_at: new Date().toISOString()
-        })
+        .delete()
         .eq('id', product.id);
 
-      if (error) throw error;
+      if (error) {
+        // If hard delete fails due to enum validation, fallback to soft delete
+        console.warn('Hard delete failed, trying soft delete:', error);
+        const { error: softError } = await supabase
+          .from('products')
+          .update({ 
+            status: 'archived',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', product.id);
+        
+        if (softError) throw softError;
+      }
 
       toast({ 
         title: "Success", 
