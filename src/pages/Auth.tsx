@@ -10,10 +10,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { GlassPanel } from '@/components/ui/glass-panel';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
-import { Loader2, Sparkles, Heart, Star, ShoppingBag, Store, Building2, ArrowLeft } from 'lucide-react';
+import { Loader2, Sparkles, Heart, Star, ShoppingBag, Store, Building2, ArrowLeft, RefreshCw, Eye, EyeOff } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { checkPasswordStrength } from '@/lib/password-validation';
+import { generateSecurePassword } from '@/lib/password-generator';
 import { PasswordStrengthIndicator } from '@/components/PasswordStrengthIndicator';
+import { toast } from '@/hooks/use-toast';
 
 const Auth = () => {
   const { user, signUp, signIn, loading } = useAuth();
@@ -22,6 +24,7 @@ const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('signin');
   const [selectedRole, setSelectedRole] = useState<string>('');
+  const [showPassword, setShowPassword] = useState(false);
   const [signupForm, setSignupForm] = useState({
     email: '',
     password: '',
@@ -84,6 +87,24 @@ const Auth = () => {
 
   const handleSignupFormChange = (field: string, value: string) => {
     setSignupForm(prev => ({ ...prev, [field]: value }));
+  };
+
+  const generatePassword = () => {
+    const newPassword = generateSecurePassword({
+      length: 16,
+      includeUppercase: true,
+      includeLowercase: true,
+      includeNumbers: true,
+      includeSymbols: true,
+      excludeSimilar: true
+    });
+    
+    setSignupForm(prev => ({ ...prev, password: newPassword }));
+    
+    toast({
+      title: "Password Generated",
+      description: "A secure password has been generated for you. You can modify it if needed.",
+    });
   };
 
 
@@ -345,18 +366,45 @@ const Auth = () => {
                   </div>
                   
                   <div className="space-y-1">
-                    <Label htmlFor="signup-password" className="text-xs font-medium">Password</Label>
-                    <Input
-                      id="signup-password"
-                      name="password"
-                      type="password"
-                      placeholder="Create password (8+ characters)"
-                      required
-                      minLength={8}
-                      value={signupForm.password}
-                      onChange={(e) => handleSignupFormChange("password", e.target.value)}
-                      className="h-10 glass-panel border-white/20 text-sm"
-                    />
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="signup-password" className="text-xs font-medium">Password</Label>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={generatePassword}
+                        className="h-6 px-2 text-xs text-primary hover:bg-primary/10"
+                      >
+                        <RefreshCw className="h-3 w-3 mr-1" />
+                        Generate
+                      </Button>
+                    </div>
+                    <div className="relative">
+                      <Input
+                        id="signup-password"
+                        name="password"
+                        type={showPassword ? "text" : "password"}
+                        placeholder="Create password (8+ characters)"
+                        required
+                        minLength={8}
+                        value={signupForm.password}
+                        onChange={(e) => handleSignupFormChange("password", e.target.value)}
+                        className="h-10 glass-panel border-white/20 text-sm pr-10"
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6 p-0 hover:bg-transparent"
+                      >
+                        {showPassword ? (
+                          <EyeOff className="h-3 w-3 text-muted-foreground" />
+                        ) : (
+                          <Eye className="h-3 w-3 text-muted-foreground" />
+                        )}
+                      </Button>
+                    </div>
                     <PasswordStrengthIndicator 
                       strength={passwordStrength} 
                       password={signupForm.password}
