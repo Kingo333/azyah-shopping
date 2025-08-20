@@ -25,6 +25,8 @@ const Auth = () => {
   const [activeTab, setActiveTab] = useState('signin');
   const [selectedRole, setSelectedRole] = useState<string>('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
   const [signupForm, setSignupForm] = useState({
     email: '',
     password: '',
@@ -105,6 +107,40 @@ const Auth = () => {
       title: "Password Generated",
       description: "A secure password has been generated for you. You can modify it if needed.",
     });
+  };
+
+  const handleForgotPassword = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+        redirectTo: `${window.location.origin}/auth?tab=signin&reset=true`,
+      });
+
+      if (error) {
+        toast({
+          title: "Reset Failed",
+          description: error.message,
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Reset Email Sent",
+          description: "Please check your email for password reset instructions.",
+        });
+        setShowForgotPassword(false);
+        setResetEmail('');
+      }
+    } catch (error: any) {
+      toast({
+        title: "Reset Failed",
+        description: error.message || "Failed to send reset email",
+        variant: "destructive"
+      });
+    }
+    
+    setIsLoading(false);
   };
 
 
@@ -217,7 +253,66 @@ const Auth = () => {
                       'Sign In'
                     )}
                   </Button>
+                  
+                  <div className="text-center">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowForgotPassword(true)}
+                      className="text-sm text-muted-foreground hover:text-primary"
+                    >
+                      Forgot your password?
+                    </Button>
+                  </div>
                 </form>
+
+                {/* Forgot Password Modal */}
+                {showForgotPassword && (
+                  <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+                    <div className="bg-background rounded-lg p-6 w-full max-w-md glass-panel border">
+                      <h3 className="text-lg font-semibold mb-4">Reset Password</h3>
+                      <form onSubmit={handleForgotPassword} className="space-y-4">
+                        <div>
+                          <Label htmlFor="reset-email" className="text-sm font-medium">Email Address</Label>
+                          <Input
+                            id="reset-email"
+                            type="email"
+                            placeholder="Enter your email"
+                            value={resetEmail}
+                            onChange={(e) => setResetEmail(e.target.value)}
+                            required
+                            className="h-12 glass-panel border-white/20"
+                          />
+                        </div>
+                        <div className="flex gap-2">
+                          <Button 
+                            type="submit" 
+                            className="flex-1"
+                            disabled={isLoading}
+                          >
+                            {isLoading ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Sending...
+                              </>
+                            ) : (
+                              'Send Reset Email'
+                            )}
+                          </Button>
+                          <Button 
+                            type="button" 
+                            variant="outline" 
+                            onClick={() => setShowForgotPassword(false)}
+                            disabled={isLoading}
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                )}
               </TabsContent>
 
               {/* Sign Up Tab */}
