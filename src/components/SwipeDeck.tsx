@@ -418,30 +418,54 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                    }}
                    onClick={() => setShowInstructions(true)}
                  >
-                   <img
-                     {...getResponsiveImageProps(
-                       (() => {
-                         try {
-                           const mediaUrls = typeof currentProduct.media_urls === 'string' 
-                             ? JSON.parse(currentProduct.media_urls)
-                             : currentProduct.media_urls;
-                           return Array.isArray(mediaUrls) && mediaUrls.length > 0 
-                             ? mediaUrls[0] 
-                             : currentProduct.image_url || '/placeholder.svg';
-                         } catch {
-                           return currentProduct.image_url || '/placeholder.svg';
-                         }
-                       })(),
-                       "(max-width: 768px) 100vw, 50vw"
-                     )}
-                     alt={currentProduct.title}
-                     className="object-cover w-full h-full"
-                     onLoad={handleImageLoad}
-                     onError={(e) => {
-                       console.warn('Image failed to load for product:', currentProduct.id);
-                       (e.target as HTMLImageElement).src = '/placeholder.svg';
-                     }}
-                   />
+                    <img
+                      {...getResponsiveImageProps(
+                        (() => {
+                          try {
+                            // Better image URL resolution logic
+                            let imageUrl = '';
+                            
+                            // First try image_url if it exists and is valid
+                            if (currentProduct.image_url && currentProduct.image_url.trim()) {
+                              imageUrl = currentProduct.image_url.trim();
+                            } else if (currentProduct.media_urls) {
+                              // Parse media_urls safely
+                              let mediaUrls = currentProduct.media_urls;
+                              if (typeof mediaUrls === 'string') {
+                                try {
+                                  mediaUrls = JSON.parse(mediaUrls);
+                                } catch (e) {
+                                  console.warn('Failed to parse media_urls:', e);
+                                  mediaUrls = [];
+                                }
+                              }
+                              
+                              // Get first valid URL from array
+                              if (Array.isArray(mediaUrls) && mediaUrls.length > 0) {
+                                const firstUrl = mediaUrls[0];
+                                if (typeof firstUrl === 'string' && firstUrl.trim()) {
+                                  imageUrl = firstUrl.trim();
+                                }
+                              }
+                            }
+                            
+                            // Fallback to placeholder if no valid image found
+                            return imageUrl || '/placeholder.svg';
+                          } catch (error) {
+                            console.warn('Error processing image URL for product:', currentProduct.id, error);
+                            return '/placeholder.svg';
+                          }
+                        })(),
+                        "(max-width: 768px) 100vw, 50vw"
+                      )}
+                      alt={currentProduct.title}
+                      className="object-cover w-full h-full transition-opacity duration-300"
+                      onLoad={handleImageLoad}
+                      onError={(e) => {
+                        console.warn('Image failed to load for product:', currentProduct.id, 'URL:', (e.target as HTMLImageElement).src);
+                        (e.target as HTMLImageElement).src = '/placeholder.svg';
+                      }}
+                    />
                 </div>
                 
                 <div className="flex flex-col flex-grow space-y-2">
