@@ -8,9 +8,11 @@ import SwipeDeck from '@/components/SwipeDeck';
 import { clearInvalidSession, debugAuthState } from "@/utils/sessionDebug";
 import { useSmartSwipeProducts } from "@/hooks/useSmartSwipeProducts";
 import { getResponsiveImageProps } from "@/utils/asosImageUtils";
+import { InvestorContactModal } from "@/components/InvestorContactModal";
 export default function Landing() {
   const [isVisible, setIsVisible] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'swipe'>('grid');
+  const [investorModalOpen, setInvestorModalOpen] = useState(false);
   const {
     user,
     loading
@@ -107,7 +109,7 @@ export default function Landing() {
 
           {/* Desktop links */}
           <nav className="hidden lg:flex items-center space-x-8 xl:space-x-12">
-            {[["Discover", "#discover"], ["Features", "#features"], ["For Brands", "#brands"], ["For Retailers", "#retailers"]].map(([label, href]) => <button key={href} onClick={() => scrollToSection(href)} className="relative text-sm font-medium text-muted-foreground hover:text-primary transition-colors group">
+            {[["Discover", "#discover"], ["Features", "#features"], ["For Brands", "#brands"], ["For Retailers", "#retailers"], ["For Investors", "investors"]].map(([label, href]) => <button key={href} onClick={() => href === "investors" ? setInvestorModalOpen(true) : scrollToSection(href)} className="relative text-sm font-medium text-muted-foreground hover:text-primary transition-colors group">
                 {label}
                 <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all group-hover:w-full" />
               </button>)}
@@ -144,10 +146,15 @@ export default function Landing() {
         }
       }}>
             <nav className="flex flex-col space-y-3 sm:space-y-4">
-              {[["Discover", "#discover"], ["Features", "#features"], ["For Brands", "#brands"], ["For Retailers", "#retailers"]].map(([label, href]) => <button key={href} onClick={() => {
-            scrollToSection(href);
-            setMobileMenuOpen(false);
-          }} className="text-base sm:text-lg text-muted-foreground hover:text-primary text-left font-light transition-colors">
+              {[["Discover", "#discover"], ["Features", "#features"], ["For Brands", "#brands"], ["For Retailers", "#retailers"], ["For Investors", "investors"]].map(([label, href]) => <button key={href} onClick={() => {
+                if (href === "investors") {
+                  setInvestorModalOpen(true);
+                  setMobileMenuOpen(false);
+                } else {
+                  scrollToSection(href);
+                  setMobileMenuOpen(false);
+                }
+              }} className="text-base sm:text-lg text-muted-foreground hover:text-primary text-left font-light transition-colors">
                   {label}
                 </button>)}
             </nav>
@@ -690,5 +697,10 @@ export default function Landing() {
           </div>
         </div>
       </footer>
+      
+      <InvestorContactModal 
+        isOpen={investorModalOpen} 
+        onOpenChange={setInvestorModalOpen} 
+      />
     </div>;
 }
