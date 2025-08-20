@@ -18,14 +18,55 @@ export default function Landing() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
   
-  // Fetch products for grid view with stable configuration
+  // Fetch products for grid view with stable configuration and caching
   const gridProductsConfig = useMemo(() => ({
     filter: 'all' as const,
     priceRange: { min: 0, max: 1000 },
     searchQuery: ''
   }), []);
   
+  // Cache key for featured collections
+  const FEATURED_CACHE_KEY = 'azyah_featured_collections';
+  const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
+  
+  // Check for cached products first
+  const [cachedProducts, setCachedProducts] = useState<any[]>([]);
+  const [useCache, setUseCache] = useState(false);
+  
+  useEffect(() => {
+    const cached = localStorage.getItem(FEATURED_CACHE_KEY);
+    if (cached) {
+      try {
+        const { products, timestamp } = JSON.parse(cached);
+        const isExpired = Date.now() - timestamp > CACHE_DURATION;
+        
+        if (!isExpired && products && products.length > 0) {
+          console.log('📦 Using cached featured products:', products.length);
+          setCachedProducts(products);
+          setUseCache(true);
+          return;
+        } else {
+          localStorage.removeItem(FEATURED_CACHE_KEY);
+        }
+      } catch (e) {
+        localStorage.removeItem(FEATURED_CACHE_KEY);
+      }
+    }
+  }, []);
+  
   const { products: gridProducts, isLoading: productsLoading } = useSmartSwipeProducts(gridProductsConfig);
+  
+  // Cache products when they're freshly loaded
+  useEffect(() => {
+    if (!useCache && gridProducts && gridProducts.length > 0 && !productsLoading) {
+      const cacheData = {
+        products: gridProducts.slice(0, 12), // Cache first 12 products for featured
+        timestamp: Date.now()
+      };
+      localStorage.setItem(FEATURED_CACHE_KEY, JSON.stringify(cacheData));
+      console.log('💾 Cached featured products for consistency');
+    }
+  }, [gridProducts, productsLoading, useCache]);
   useEffect(() => setIsVisible(true), []);
 
   // Debug auth state and redirect logic
@@ -365,13 +406,14 @@ export default function Landing() {
           {/* Content based on view mode */}
           {viewMode === 'grid' ? (/* Product Grid */
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-              {productsLoading ? (
+              {(productsLoading && !useCache) ? (
                 // Loading skeletons
                 [...Array(8)].map((_, i) => (
                   <div key={`skeleton-${i}`} className="aspect-[3/4] bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl animate-pulse" />
                 ))
               ) : (
-                (gridProducts?.slice(0, 8) || []).map((product, i) => {
+                // Use cached products if available, otherwise use gridProducts
+                ((useCache ? cachedProducts : gridProducts)?.slice(0, 8) || []).map((product, i) => {
                   const imageUrl = product.image_url || 
                     (product.media_urls && Array.isArray(product.media_urls) && product.media_urls.length > 0 
                       ? product.media_urls[0] 
