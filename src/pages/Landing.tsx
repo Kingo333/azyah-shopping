@@ -208,7 +208,7 @@ export default function Landing() {
                   <span>Explore Collection</span>
                   <ArrowRight className="ml-2 w-4 h-4 lg:w-5 lg:h-5 group-hover:translate-x-1 transition-transform" />
                 </Button>
-                <Button variant="outline" size="sm" className="px-6 py-3 sm:px-8 sm:py-4 lg:px-8 lg:py-4 bg-background/50 backdrop-blur-sm border border-primary/30 hover:bg-background/80 hover:border-primary/50 text-sm sm:text-base font-light">
+                <Button variant="outline" size="sm" className="px-6 py-3 sm:px-8 sm:py-4 lg:px-8 lg:py-4 bg-background/50 backdrop-blur-sm border border-primary/30 hover:bg-background/80 hover:border-primary/50 text-sm sm:text-base font-light" onClick={() => scrollToSection("#features")}>
                   <Play className="mr-2 w-4 h-4 lg:w-5 lg:h-5" /> 
                   <span>View Lookbook</span>
                 </Button>
@@ -416,7 +416,7 @@ export default function Landing() {
       </section>
 
       {/* QUALITY SECTION */}
-      <section className="py-24 lg:py-32 bg-gradient-to-b from-muted/30 to-muted/60 relative">
+      <section id="features" className="py-24 lg:py-32 bg-gradient-to-b from-muted/30 to-muted/60 relative">
         <div className="absolute inset-0 bg-gradient-to-tr from-primary/8 via-transparent to-primary/12 opacity-60" />
         <div className="container max-w-7xl mx-auto px-6 lg:px-12 relative">
           <div className="text-center mb-20">
