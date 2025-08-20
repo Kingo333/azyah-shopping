@@ -9,6 +9,7 @@ import { getResponsiveImageProps } from '@/utils/asosImageUtils';
 import { motion, AnimatePresence, PanInfo, useMotionValue, useTransform, animate } from 'framer-motion';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import ProductDetailPage from '@/components/ProductDetailPage';
 
 interface LandingSwipeDeckProps {
   filter: string;
@@ -57,6 +58,8 @@ const LandingSwipeDeck: React.FC<LandingSwipeDeckProps> = ({
   const [currentIndex, setCurrentIndex] = useState(0);
   const [imageAspectRatio, setImageAspectRatio] = useState<number>(1);
   const [showInstructions, setShowInstructions] = useState(true);
+  const [selectedProduct, setSelectedProduct] = useState<any>(null);
+  const [showProductDetail, setShowProductDetail] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
   
@@ -219,6 +222,38 @@ const LandingSwipeDeck: React.FC<LandingSwipeDeckProps> = ({
     );
   }
 
+  // Handle full-page product detail view
+  if (showProductDetail && selectedProduct) {
+    const transformedProduct = {
+      ...selectedProduct,
+      media_urls: (() => {
+        try {
+          const mediaUrls = typeof selectedProduct.media_urls === 'string' 
+            ? JSON.parse(selectedProduct.media_urls)
+            : selectedProduct.media_urls;
+          return Array.isArray(mediaUrls) ? mediaUrls : [selectedProduct.image_url].filter(Boolean);
+        } catch {
+          return [selectedProduct.image_url].filter(Boolean);
+        }
+      })(),
+      brand: selectedProduct.brand || { name: selectedProduct.merchant_name || 'Unknown' },
+      price_cents: selectedProduct.price_cents,
+      currency: selectedProduct.currency || 'USD'
+    };
+
+    return (
+      <div className="fixed inset-0 z-50 bg-background">
+        <ProductDetailPage
+          product={transformedProduct as any}
+          onBack={() => {
+            setShowProductDetail(false);
+            setSelectedProduct(null);
+          }}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="relative w-full h-full">
       <AnimatePresence initial={false} custom={x.get()}>
@@ -276,6 +311,11 @@ const LandingSwipeDeck: React.FC<LandingSwipeDeckProps> = ({
                     <Button
                       variant="ghost"
                       size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedProduct(currentProduct);
+                        setShowProductDetail(true);
+                      }}
                       className="flex-shrink-0 h-8 px-2 text-xs hover:bg-accent"
                     >
                       <Info className="h-3 w-3 mr-1" />
@@ -342,7 +382,7 @@ const LandingSwipeDeck: React.FC<LandingSwipeDeckProps> = ({
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        const url = currentProduct.external_url || currentProduct.product_url;
+                        const url = currentProduct.external_url;
                         if (url) {
                           window.open(url, '_blank', 'noopener,noreferrer');
                         } else {
