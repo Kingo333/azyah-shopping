@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import CategoryFilter from "@/components/CategoryFilter";
 import type { Gender } from '@/lib/categories';
 import { ArrowLeft, Heart, Search, Menu, Sparkles, ChevronDown, List, LayoutGrid, RefreshCw } from "lucide-react";
-import { updateProductCategories } from "@/utils/categoryUpdater";
+
 import { toast } from "sonner";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -88,25 +88,6 @@ const Swipe = () => {
       return () => clearTimeout(timer);
     }
   }, [showListToggle]);
-  const handleUpdateCategories = async () => {
-    try {
-      toast.loading("Updating product categories...", {
-        id: "category-update"
-      });
-      const result = await updateProductCategories();
-      toast.success(`Updated ${result.totalUpdated} products successfully!`, {
-        id: "category-update"
-      });
-
-      // Refresh the current page to show updated categories
-      window.location.reload();
-    } catch (error) {
-      console.error('Error updating categories:', error);
-      toast.error("Failed to update categories. Please try again.", {
-        id: "category-update"
-      });
-    }
-  };
 
   // Use the personalized products hook for list view
   const {
