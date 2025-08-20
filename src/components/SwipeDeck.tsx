@@ -525,17 +525,52 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                     <div className="pt-2 border-t border-border">
                       <Button
                         onClick={(e) => {
+                          e.preventDefault();
                           e.stopPropagation();
-                          // Track shop now click
-                          if (user) {
-                            supabase.from('events').insert([{
-                              event_type: 'shop_now_click',
-                              user_id: user.id,
-                              product_id: currentProduct.id,
-                              event_data: { source: 'swipe_deck', external_url: currentProduct.external_url }
-                            }]);
+                          console.log('Shop Now clicked - URL:', currentProduct.external_url);
+                          
+                          if (currentProduct.external_url) {
+                            try {
+                              // Validate URL
+                              const url = currentProduct.external_url.startsWith('http') 
+                                ? currentProduct.external_url 
+                                : `https://${currentProduct.external_url}`;
+                              
+                              console.log('Opening URL:', url);
+                              
+                              // Track shop now click
+                              if (user) {
+                                supabase.from('events').insert([{
+                                  event_type: 'shop_now_click',
+                                  user_id: user.id,
+                                  product_id: currentProduct.id,
+                                  event_data: { source: 'swipe_deck', external_url: url }
+                                }]);
+                              }
+                              
+                              const newWindow = window.open(url, '_blank', 'noopener,noreferrer');
+                              
+                              if (!newWindow) {
+                                // Fallback for popup blockers
+                                console.log('Popup blocked, using location.href');
+                                window.location.href = url;
+                              } else {
+                                toast({ description: 'Opening product page...' });
+                              }
+                            } catch (error) {
+                              console.error('Failed to open URL:', error);
+                              toast({ 
+                                description: 'Failed to open product page', 
+                                variant: 'destructive' 
+                              });
+                            }
+                          } else {
+                            console.log('No external URL available');
+                            toast({ 
+                              description: 'Shop link not available for this product', 
+                              variant: 'destructive' 
+                            });
                           }
-                          window.open(currentProduct.external_url, '_blank', 'noopener,noreferrer');
                         }}
                         className="w-full gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground font-semibold shadow-lg pointer-events-auto"
                         size="sm"

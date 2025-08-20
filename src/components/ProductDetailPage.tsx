@@ -34,9 +34,35 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
   const compareAtCents = product?.compare_at_price_cents ?? null;
 
   const handleShopNow = () => {
+    console.log('Product Detail Shop Now clicked - URL:', product?.external_url);
+    
     if (product?.external_url && product?.id) {
-      window.open(product.external_url, '_blank', 'noopener,noreferrer');
+      try {
+        // Validate URL
+        const url = product.external_url.startsWith('http') 
+          ? product.external_url 
+          : `https://${product.external_url}`;
+        
+        console.log('Opening URL:', url);
+        
+        const newWindow = window.open(url, '_blank', 'noopener,noreferrer');
+        
+        if (!newWindow) {
+          // Fallback for popup blockers
+          console.log('Popup blocked, using location.href');
+          window.location.href = url;
+        } else {
+          toast({ description: 'Opening product page...' });
+        }
+      } catch (error) {
+        console.error('Failed to open URL:', error);
+        toast({ 
+          description: 'Failed to open product page', 
+          variant: 'destructive' 
+        });
+      }
     } else {
+      console.log('No external URL available for product:', product?.id);
       toast({ description: 'Shop link not available for this product', variant: 'destructive' });
     }
   };
