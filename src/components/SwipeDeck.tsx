@@ -422,10 +422,10 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                       {...getResponsiveImageProps(
                         (() => {
                           try {
-                            // Enhanced image URL resolution logic with ASOS handling
+                            // Simplified image URL resolution
                             let imageUrl = '';
                             
-                            // First try image_url if it exists and is valid
+                            // First try image_url if it exists
                             if (currentProduct.image_url && currentProduct.image_url.trim()) {
                               imageUrl = currentProduct.image_url.trim();
                             } else if (currentProduct.media_urls) {
@@ -449,19 +449,8 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                               }
                             }
                             
-                            // Enhanced URL validation and ASOS URL fixing
+                            // Return the URL if valid, otherwise use placeholder
                             if (imageUrl) {
-                              // Fix incomplete ASOS URLs
-                              if (imageUrl.includes('images.asos-media.com') && !imageUrl.includes('?')) {
-                                // ASOS URLs often missing file extension, add it
-                                imageUrl = `${imageUrl}?$n_640w$&$p=1:1$`;
-                              } else if (imageUrl.includes('asos') && imageUrl.length < 100) {
-                                // Likely incomplete URL, add parameters
-                                const separator = imageUrl.includes('?') ? '&' : '?';
-                                imageUrl = `${imageUrl}${separator}$n_640w$`;
-                              }
-                              
-                              // Validate URL structure
                               try {
                                 new URL(imageUrl);
                                 return imageUrl;
@@ -471,7 +460,6 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                               }
                             }
                             
-                            // Fallback to placeholder if no valid image found
                             return '/placeholder.svg';
                           } catch (error) {
                             console.warn('Error processing image URL for product:', currentProduct.id, error);
