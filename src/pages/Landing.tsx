@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { ArrowRight, Heart, Users, Star, Sparkles, Play, Menu, X, CheckCircle, ShoppingBag, Globe, Crown, ChevronRight, LayoutGrid, ExternalLink, Shuffle } from "lucide-react";
@@ -18,12 +18,14 @@ export default function Landing() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
   
-  // Fetch products for grid view
-  const { products: gridProducts, isLoading: productsLoading } = useSmartSwipeProducts({
-    filter: 'all',
+  // Fetch products for grid view with stable configuration
+  const gridProductsConfig = useMemo(() => ({
+    filter: 'all' as const,
     priceRange: { min: 0, max: 1000 },
     searchQuery: ''
-  });
+  }), []);
+  
+  const { products: gridProducts, isLoading: productsLoading } = useSmartSwipeProducts(gridProductsConfig);
   useEffect(() => setIsVisible(true), []);
 
   // Debug auth state and redirect logic
@@ -366,14 +368,22 @@ export default function Landing() {
               {productsLoading ? (
                 // Loading skeletons
                 [...Array(8)].map((_, i) => (
-                  <div key={i} className="aspect-[3/4] bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl animate-pulse" />
+                  <div key={`skeleton-${i}`} className="aspect-[3/4] bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl animate-pulse" />
                 ))
               ) : (
                 (gridProducts?.slice(0, 8) || []).map((product, i) => {
-                  const imageProps = getResponsiveImageProps(product.image_url || product.media_urls?.[0] || '/placeholder.svg');
+                  const imageUrl = product.image_url || 
+                    (product.media_urls && Array.isArray(product.media_urls) && product.media_urls.length > 0 
+                      ? product.media_urls[0] 
+                      : typeof product.media_urls === 'string' 
+                        ? JSON.parse(product.media_urls)[0] 
+                        : null) || 
+                    '/placeholder.svg';
+                  
+                  const imageProps = getResponsiveImageProps(imageUrl);
                   
                   return (
-                    <div key={product.id} className="group relative aspect-[3/4] bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2">
+                    <div key={`product-${product.id}`} className="group relative aspect-[3/4] bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2">
                       {/* Product Image */}
                       <img
                         {...imageProps}
@@ -401,7 +411,12 @@ export default function Landing() {
                       {/* Product Info */}
                       <div className="absolute bottom-4 left-4 right-4 bg-white/95 backdrop-blur-sm rounded-xl p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                         <div className="text-sm font-medium line-clamp-1">{product.title || `Product ${i + 1}`}</div>
-                        <div className="text-xs text-muted-foreground">{typeof product.brand === 'string' ? product.brand : 'Premium Brand'}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {product.brand 
+                            ? (typeof product.brand === 'string' ? product.brand : product.brand.name || 'Premium Brand')
+                            : 'Premium Brand'
+                          }
+                        </div>
                         <div className="flex items-center justify-between mt-2">
                           <div className="text-sm font-bold text-primary">
                             {product.price_cents 
@@ -426,10 +441,13 @@ export default function Landing() {
             </div>) : (/* Swipe Interface */
         <div className="mb-12">
               <div className="max-w-sm mx-auto h-[600px] relative bg-gradient-to-br from-primary/5 to-primary/10 rounded-2xl p-4">
-                <SwipeDeck filter="all" subcategory="" priceRange={{
-              min: 0,
-              max: 1000
-            }} searchQuery="" currency="USD" />
+                <SwipeDeck 
+                  filter="all" 
+                  subcategory="" 
+                  priceRange={{ min: 0, max: 1000 }} 
+                  searchQuery="" 
+                  currency="USD" 
+                />
               </div>
               <div className="text-center mt-6">
                 <p className="text-sm text-gray-600 mb-4">
