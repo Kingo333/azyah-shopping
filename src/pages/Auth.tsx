@@ -114,28 +114,37 @@ const Auth = () => {
     setIsLoading(true);
 
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
-        redirectTo: `${window.location.origin}/auth?tab=signin&reset=true`,
+      // Use our custom edge function for better email delivery
+      const response = await fetch('https://klwolsopucgswhtdlsps.supabase.co/functions/v1/send-password-reset', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtsd29sc29wdWNnc3dodGRsc3BzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQyNTQ4NTIsImV4cCI6MjA2OTgzMDg1Mn0.t1GFgR9xiIh7PBmoYs_xKLi1fF1iLTF6pqMlLMHowHQ`,
+        },
+        body: JSON.stringify({
+          email: resetEmail,
+          redirectTo: `${window.location.origin}/auth?tab=signin&reset=true`,
+        }),
       });
 
-      if (error) {
-        toast({
-          title: "Reset Failed",
-          description: error.message,
-          variant: "destructive"
-        });
-      } else {
-        toast({
-          title: "Reset Email Sent",
-          description: "Please check your email for password reset instructions.",
-        });
-        setShowForgotPassword(false);
-        setResetEmail('');
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to send reset email');
       }
+
+      toast({
+        title: "Reset Email Sent",
+        description: "Please check your email for password reset instructions.",
+      });
+      setShowForgotPassword(false);
+      setResetEmail('');
+      
     } catch (error: any) {
+      console.error('Password reset error:', error);
       toast({
         title: "Reset Failed",
-        description: error.message || "Failed to send reset email",
+        description: error.message || "Failed to send reset email. Please try again.",
         variant: "destructive"
       });
     }
