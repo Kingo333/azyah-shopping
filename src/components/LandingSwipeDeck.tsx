@@ -280,7 +280,7 @@ const LandingSwipeDeck: React.FC<LandingSwipeDeckProps> = ({
             custom={x.get()}
           >
             <Card className="h-full flex flex-col cursor-grab active:cursor-grabbing overflow-hidden">
-              <CardContent className="p-4 sm:p-6 lg:p-8 flex flex-col h-full">
+              <CardContent className="p-4 sm:p-6 lg:p-8 lg:pb-12 flex flex-col h-full">
                 <div 
                   className="relative w-full mb-2 sm:mb-3 overflow-hidden rounded-lg flex-shrink-0"
                   style={{
