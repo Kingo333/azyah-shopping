@@ -370,12 +370,6 @@ const LandingSwipeDeck: React.FC<LandingSwipeDeckProps> = ({
         </div>
       )}
 
-      {/* Product Counter */}
-      <div className="absolute bottom-4 left-4 right-4 text-center">
-        <span className="text-xs text-muted-foreground bg-background/80 backdrop-blur-sm px-2 py-1 rounded-full">
-          {currentIndex + 1} of {products.length}
-        </span>
-      </div>
     </div>
   );
 };
