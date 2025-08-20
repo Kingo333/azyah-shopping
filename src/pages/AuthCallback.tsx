@@ -19,28 +19,59 @@ const AuthCallback = () => {
           return;
         }
 
-        const role = (
-          searchParams.get('role') ||
-          (typeof window !== 'undefined' && localStorage.getItem('signup_role')) ||
-          'shopper'
-        ) as UserRole;
+        const intent = (searchParams.get('intent') || 
+                       (typeof window !== 'undefined' && localStorage.getItem('auth_intent')) || 
+                       'signin') as 'signin' | 'signup';
+        const roleParam = searchParams.get('role') as UserRole | null;
 
-        await supabase.auth.updateUser({ data: { role } });
-        await supabase.from('users').upsert({
-          id: session.user.id,
-          email: session.user.email,
-          name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0],
-          role
-        }, {
-          onConflict: 'id'
-        });
+        // Load existing user if any
+        const { data: existing } = await supabase
+          .from('users')
+          .select('id, role')
+          .eq('id', session.user.id)
+          .maybeSingle();
+
+        if (intent === 'signup') {
+          const role: UserRole = roleParam ||
+            (typeof window !== 'undefined' && localStorage.getItem('signup_role') as UserRole) ||
+            'shopper';
+
+          await supabase.auth.updateUser({ data: { role } });
+          await supabase.from('users').upsert({
+            id: session.user.id,
+            email: session.user.email,
+            name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0],
+            role
+          }, {
+            onConflict: 'id'
+          });
+        } else {
+          // intent === 'signin'
+          if (!existing?.id || !existing.role) {
+            // No profile or no role: send them to pick one
+            navigate('/select-role?from=signin', { replace: true });
+            return;
+          }
+        }
+
+        // Resolve role for routing
+        const { data: user } = await supabase
+          .from('users')
+          .select('role')
+          .eq('id', session.user.id)
+          .maybeSingle();
+
+        const role = (user?.role ||
+          roleParam ||
+          (typeof window !== 'undefined' && localStorage.getItem('signup_role')) ||
+          'shopper') as UserRole;
 
         // Clean up localStorage
         localStorage.removeItem('signup_role');
         localStorage.removeItem('auth_intent');
 
         // Route based on role
-        const redirectPath = getRedirectRoute(role as UserRole);
+        const redirectPath = getRedirectRoute(role);
         navigate(redirectPath, { replace: true });
 
       } catch (error: any) {

@@ -94,9 +94,10 @@ const Auth = () => {
     
     setIsLoading(true);
     try {
-      // Role-first sign-in with correct redirectTo format
+      // Intent-based sign-in with correct redirectTo format
+      const intent = activeTab === 'signin' ? 'signin' : 'signup';
       const role = selectedRole || 'shopper';
-      const redirectTo = `${window.location.origin}/auth/callback?role=${role}`;
+      const redirectTo = `${window.location.origin}/auth/callback?intent=${intent}&role=${role}`;
       
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
@@ -111,11 +112,10 @@ const Auth = () => {
       
       if (error) throw error;
       
-      // Store role for callback
+      // Store role and intent for callback
       if (selectedRole) {
         localStorage.setItem('signup_role', selectedRole);
       }
-      const intent = activeTab === 'signin' ? 'signin' : 'signup';
       localStorage.setItem('auth_intent', intent);
     } catch (error: any) {
       console.error('Google sign-in error:', error);

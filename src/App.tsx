@@ -11,6 +11,7 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 import Index from './pages/Index';
 import Auth from './pages/Auth';
 import AuthCallback from './pages/AuthCallback';
+import SelectRole from './pages/SelectRole';
 import Landing from './pages/Landing';
 import UserProfile from './pages/UserProfile';
 import ProfileSettings from './pages/ProfileSettings';
@@ -68,6 +69,7 @@ function App() {
                   } />
                   <Route path="/auth" element={<Auth />} />
                   <Route path="/auth/callback" element={<AuthCallback />} />
+                  <Route path="/select-role" element={<SelectRole />} />
                   <Route path="/profile/:userId" element={
                     <ProtectedRoute>
                       <UserProfile />
