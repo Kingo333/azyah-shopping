@@ -341,10 +341,28 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
 
   // Handle full-page product detail view
   if (showProductDetail && selectedProduct) {
+    // Transform SwipeProduct to Product for ProductDetailPage
+    const transformedProduct = {
+      ...selectedProduct,
+      media_urls: (() => {
+        try {
+          const mediaUrls = typeof selectedProduct.media_urls === 'string' 
+            ? JSON.parse(selectedProduct.media_urls)
+            : selectedProduct.media_urls;
+          return Array.isArray(mediaUrls) ? mediaUrls : [selectedProduct.image_url].filter(Boolean);
+        } catch {
+          return [selectedProduct.image_url].filter(Boolean);
+        }
+      })(),
+      brand: selectedProduct.brands || { name: selectedProduct.merchant_name || 'Unknown' },
+      price_cents: selectedProduct.price_cents,
+      currency: selectedProduct.currency || 'USD'
+    };
+
     return (
       <div className="fixed inset-0 z-50 bg-background">
         <ProductDetailPage
-          product={selectedProduct as any}
+          product={transformedProduct as any}
           onBack={() => {
             setShowProductDetail(false);
             setSelectedProduct(null);
