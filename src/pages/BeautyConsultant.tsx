@@ -1,16 +1,23 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { SEOHead } from "@/components/SEOHead";
 import ShopperNavigation from "@/components/ShopperNavigation";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Upload, Camera, Sparkles } from "lucide-react";
+import { Upload, Send, Sparkles, MapPin, Image as ImageIcon, Bot, User } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+
+type ChatMessage = {
+  id: string;
+  type: 'user' | 'assistant' | 'system';
+  content: string;
+  image?: string;
+  timestamp: Date;
+};
 
 type ConsultationResult = {
   message: string;
@@ -24,12 +31,31 @@ type ConsultationResult = {
 
 export default function BeautyConsultantPage() {
   const { user } = useAuth();
-  const [image, setImage] = useState<File | null>(null);
+  const [messages, setMessages] = useState<ChatMessage[]>([
+    {
+      id: '1',
+      type: 'assistant',
+      content: "Hi! I'm your AI Beauty Consultant. Upload a selfie and I'll analyze your skin tone and provide personalized makeup recommendations. You can also ask me beauty questions anytime! 💄✨",
+      timestamp: new Date()
+    }
+  ]);
+  const [inputMessage, setInputMessage] = useState('');
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [message, setMessage] = useState('');
-  const [region, setRegion] = useState('');
-  const [consultation, setConsultation] = useState<ConsultationResult | null>(null);
+  const [region, setRegion] = useState('US');
   const [loading, setLoading] = useState(false);
+  const [showRegionSelector, setShowRegionSelector] = useState(false);
+  
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -46,7 +72,7 @@ export default function BeautyConsultantPage() {
         return;
       }
 
-      setImage(file);
+      setSelectedImage(file);
       
       // Create preview
       const reader = new FileReader();
@@ -57,19 +83,17 @@ export default function BeautyConsultantPage() {
     }
   };
 
-  const submitConsultation = async () => {
-    if (!image) {
-      toast.error('Please upload an image first');
-      return;
-    }
-    
+  const submitConsultation = async (message: string, image?: File) => {
     setLoading(true);
-    const formData = new FormData();
-    formData.append('image', image);
-    formData.append('message', message || 'Analyze my skin and provide beauty recommendations');
-    formData.append('region', region || 'US');
-
+    
     try {
+      const formData = new FormData();
+      if (image) {
+        formData.append('image', image);
+      }
+      formData.append('message', message || 'Analyze my skin and provide beauty recommendations');
+      formData.append('region', region);
+
       const response = await fetch('https://eoal3jgggfuduet.m.pipedream.net', {
         method: 'POST',
         body: formData
@@ -85,22 +109,74 @@ export default function BeautyConsultantPage() {
         throw new Error(result.error);
       }
       
-      setConsultation(result);
+      // Add assistant response
+      const assistantMessage: ChatMessage = {
+        id: Date.now().toString(),
+        type: 'assistant',
+        content: result.message,
+        timestamp: new Date()
+      };
+      
+      setMessages(prev => [...prev, assistantMessage]);
       toast.success('Beauty consultation completed!');
     } catch (error) {
       console.error('Consultation failed:', error);
+      const errorMessage: ChatMessage = {
+        id: Date.now().toString(),
+        type: 'assistant',
+        content: `I apologize, but I encountered an error: ${error instanceof Error ? error.message : 'Consultation failed. Please try again.'}`,
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, errorMessage]);
       toast.error(error instanceof Error ? error.message : 'Consultation failed. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  const resetConsultation = () => {
-    setImage(null);
+  const handleSendMessage = async () => {
+    if (!inputMessage.trim() && !selectedImage) return;
+
+    // Add user message
+    const userMessage: ChatMessage = {
+      id: Date.now().toString(),
+      type: 'user',
+      content: inputMessage || (selectedImage ? "Here's my selfie for analysis" : ""),
+      image: imagePreview || undefined,
+      timestamp: new Date()
+    };
+    
+    setMessages(prev => [...prev, userMessage]);
+
+    // Submit consultation
+    await submitConsultation(inputMessage, selectedImage || undefined);
+
+    // Clear inputs
+    setInputMessage('');
+    setSelectedImage(null);
     setImagePreview(null);
-    setMessage('');
-    setRegion('');
-    setConsultation(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
+  };
+
+  const clearImage = () => {
+    setSelectedImage(null);
+    setImagePreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const formatTime = (date: Date) => {
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
   return (
@@ -116,88 +192,97 @@ export default function BeautyConsultantPage() {
         <main className="container mx-auto px-4 py-6">
           <div className="max-w-4xl mx-auto">
             {/* Header */}
-            <div className="text-center mb-8">
-              <div className="flex items-center justify-center gap-3 mb-4">
-                <div className="p-3 rounded-full bg-gradient-to-br from-pink-100 to-purple-100 dark:from-pink-900/20 dark:to-purple-900/20">
-                  <Sparkles className="h-8 w-8 text-pink-600 dark:text-pink-400" />
+            <div className="text-center mb-6">
+              <div className="flex items-center justify-center gap-3 mb-2">
+                <div className="p-2 rounded-full bg-gradient-to-br from-pink-100 to-purple-100 dark:from-pink-900/20 dark:to-purple-900/20">
+                  <Sparkles className="h-6 w-6 text-pink-600 dark:text-pink-400" />
                 </div>
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
+                <h1 className="text-2xl font-bold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
                   AI Beauty Consultant
                 </h1>
               </div>
-              <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-                Upload your selfie to get personalized makeup recommendations based on your unique skin tone, type, and preferences.
+              <p className="text-muted-foreground text-sm">
+                Upload your selfie to get personalized makeup recommendations
               </p>
             </div>
 
-            {!consultation ? (
-              /* Upload and Input Form */
-              <Card className="mb-6">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Camera className="h-5 w-5" />
-                    Beauty Analysis
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  {/* Image Upload */}
-                  <div className="space-y-4">
-                    <Label htmlFor="image" className="text-base font-medium">
-                      Upload Your Selfie *
-                    </Label>
-                    <div className="flex items-center justify-center w-full">
-                      <label
-                        htmlFor="image"
-                        className="flex flex-col items-center justify-center w-full h-64 border-2 border-dashed border-muted-foreground/25 rounded-lg cursor-pointer bg-muted/10 hover:bg-muted/20 transition-colors"
-                      >
-                        {imagePreview ? (
-                          <img
-                            src={imagePreview}
-                            alt="Preview"
-                            className="max-h-full max-w-full object-contain rounded-lg"
-                          />
+            {/* Chat Container */}
+            <Card className="h-[70vh] flex flex-col">
+              {/* Messages Area */}
+              <CardContent className="flex-1 overflow-y-auto p-4 space-y-4">
+                {messages.map((message) => (
+                  <div key={message.id} className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
+                    <div className={`flex gap-3 max-w-[80%] ${message.type === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
+                      {/* Avatar */}
+                      <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
+                        message.type === 'user' 
+                          ? 'bg-primary text-primary-foreground' 
+                          : 'bg-gradient-to-br from-pink-100 to-purple-100 dark:from-pink-900/20 dark:to-purple-900/20'
+                      }`}>
+                        {message.type === 'user' ? (
+                          <User className="h-4 w-4" />
                         ) : (
-                          <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                            <Upload className="w-10 h-10 mb-3 text-muted-foreground" />
-                            <p className="mb-2 text-sm text-muted-foreground">
-                              <span className="font-semibold">Click to upload</span> or drag and drop
-                            </p>
-                            <p className="text-xs text-muted-foreground">PNG, JPG up to 5MB</p>
+                          <Bot className="h-4 w-4 text-pink-600 dark:text-pink-400" />
+                        )}
+                      </div>
+                      
+                      {/* Message Content */}
+                      <div className={`rounded-2xl px-4 py-2 ${
+                        message.type === 'user' 
+                          ? 'bg-primary text-primary-foreground' 
+                          : 'bg-muted/80'
+                      }`}>
+                        {message.image && (
+                          <div className="mb-2 rounded-lg overflow-hidden">
+                            <img 
+                              src={message.image} 
+                              alt="Uploaded image" 
+                              className="max-w-48 h-auto object-cover"
+                            />
                           </div>
                         )}
-                        <input 
-                          id="image"
-                          type="file" 
-                          accept="image/*" 
-                          onChange={handleImageUpload}
-                          className="hidden"
-                          required 
-                        />
-                      </label>
+                        <div className="text-sm whitespace-pre-wrap leading-relaxed">
+                          <div dangerouslySetInnerHTML={{ __html: message.content }} />
+                        </div>
+                        <div className={`text-xs mt-1 opacity-70 ${
+                          message.type === 'user' ? 'text-primary-foreground/70' : 'text-muted-foreground'
+                        }`}>
+                          {formatTime(message.timestamp)}
+                        </div>
+                      </div>
                     </div>
                   </div>
-
-                  {/* Questions/Preferences */}
-                  <div className="space-y-2">
-                    <Label htmlFor="message" className="text-base font-medium">
-                      Questions or Preferences (Optional)
-                    </Label>
-                    <Input
-                      id="message"
-                      type="text" 
-                      placeholder="e.g., Looking for everyday natural look, sensitive skin, prefer drugstore brands..."
-                      value={message}
-                      onChange={(e) => setMessage(e.target.value)}
-                      className="w-full"
-                    />
+                ))}
+                
+                {loading && (
+                  <div className="flex justify-start">
+                    <div className="flex gap-3 max-w-[80%]">
+                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-pink-100 to-purple-100 dark:from-pink-900/20 dark:to-purple-900/20 flex items-center justify-center">
+                        <Bot className="h-4 w-4 text-pink-600 dark:text-pink-400" />
+                      </div>
+                      <div className="bg-muted/80 rounded-2xl px-4 py-2">
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-pink-600"></div>
+                          Analyzing your beauty profile...
+                        </div>
+                      </div>
+                    </div>
                   </div>
+                )}
+                
+                <div ref={messagesEndRef} />
+              </CardContent>
 
-                  {/* Region Selection */}
-                  <div className="space-y-2">
-                    <Label className="text-base font-medium">Your Region</Label>
+              {/* Input Area */}
+              <div className="border-t p-4 space-y-3">
+                {/* Region Selector */}
+                {showRegionSelector && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <MapPin className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">Region:</span>
                     <Select value={region} onValueChange={setRegion}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select your region for localized recommendations" />
+                      <SelectTrigger className="w-auto h-8 text-sm">
+                        <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="US">United States</SelectItem>
@@ -210,85 +295,90 @@ export default function BeautyConsultantPage() {
                         <SelectItem value="FR">France</SelectItem>
                       </SelectContent>
                     </Select>
-                  </div>
-
-                  {/* Submit Button */}
-                  <Button 
-                    onClick={submitConsultation} 
-                    disabled={!image || loading}
-                    className="w-full h-12 text-lg font-semibold bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700"
-                  >
-                    {loading ? (
-                      <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                        Analyzing Your Beauty Profile...
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className="h-5 w-5 mr-2" />
-                        Get Beauty Consultation
-                      </>
-                    )}
-                  </Button>
-
-                  {/* Disclaimer */}
-                  <div className="text-xs text-muted-foreground bg-muted/30 p-4 rounded-lg">
-                    <p className="font-semibold mb-2">⚠️ Important Disclaimer:</p>
-                    <p>
-                      This AI provides cosmetic advice only, not medical advice. Always patch test new products for allergic reactions and consult a dermatologist for skin concerns or conditions. Results may vary based on individual skin chemistry.
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            ) : (
-              /* Consultation Results */
-              <Card className="mb-6">
-                <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
-                    <span className="flex items-center gap-2">
-                      <Sparkles className="h-5 w-5 text-pink-600" />
-                      Your Personalized Beauty Consultation
-                    </span>
-                    <Button variant="outline" onClick={resetConsultation}>
-                      New Consultation
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => setShowRegionSelector(false)}
+                      className="h-8 px-2 text-xs"
+                    >
+                      Done
                     </Button>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="prose prose-sm max-w-none dark:prose-invert">
-                    <div dangerouslySetInnerHTML={{ __html: consultation.message }} />
                   </div>
-                </CardContent>
-              </Card>
-            )}
+                )}
 
-            {/* Tips Section */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Tips for Best Results</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid md:grid-cols-2 gap-4 text-sm">
-                  <div className="space-y-2">
-                    <h4 className="font-semibold">Photo Guidelines:</h4>
-                    <ul className="space-y-1 text-muted-foreground">
-                      <li>• Use natural lighting when possible</li>
-                      <li>• Face the camera directly</li>
-                      <li>• Ensure your face is clearly visible</li>
-                      <li>• Remove heavy makeup for accurate analysis</li>
-                    </ul>
+                {/* Image Preview */}
+                {imagePreview && (
+                  <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg">
+                    <img 
+                      src={imagePreview} 
+                      alt="Preview" 
+                      className="w-12 h-12 object-cover rounded"
+                    />
+                    <span className="text-sm text-muted-foreground flex-1">Ready to analyze your selfie</span>
+                    <Button variant="ghost" size="sm" onClick={clearImage} className="h-8 w-8 p-0">
+                      ×
+                    </Button>
                   </div>
-                  <div className="space-y-2">
-                    <h4 className="font-semibold">What to Include:</h4>
-                    <ul className="space-y-1 text-muted-foreground">
-                      <li>• Your skin concerns or goals</li>
-                      <li>• Preferred makeup style (natural, bold, etc.)</li>
-                      <li>• Budget preferences</li>
-                      <li>• Any skin sensitivities</li>
-                    </ul>
+                )}
+
+                {/* Input Row */}
+                <div className="flex items-end gap-2">
+                  <div className="flex gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="h-10 w-10 p-0"
+                      title="Upload image"
+                    >
+                      <ImageIcon className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowRegionSelector(!showRegionSelector)}
+                      className="h-10 w-10 p-0"
+                      title="Select region"
+                    >
+                      <MapPin className="h-4 w-4" />
+                    </Button>
                   </div>
+                  
+                  <div className="flex-1">
+                    <Input
+                      value={inputMessage}
+                      onChange={(e) => setInputMessage(e.target.value)}
+                      onKeyPress={handleKeyPress}
+                      placeholder="Ask about makeup, upload a selfie, or describe your needs..."
+                      className="min-h-10 resize-none"
+                      disabled={loading}
+                    />
+                  </div>
+                  
+                  <Button 
+                    onClick={handleSendMessage}
+                    disabled={(!inputMessage.trim() && !selectedImage) || loading}
+                    size="sm"
+                    className="h-10 w-10 p-0"
+                  >
+                    <Send className="h-4 w-4" />
+                  </Button>
                 </div>
-              </CardContent>
+
+                {/* Hidden file input */}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="hidden"
+                />
+
+                {/* Disclaimer */}
+                <div className="text-xs text-muted-foreground bg-muted/30 p-2 rounded text-center">
+                  ⚠️ Cosmetic advice only, not medical advice. Always patch test new products.
+                </div>
+              </div>
             </Card>
           </div>
         </main>
