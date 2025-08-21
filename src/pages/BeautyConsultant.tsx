@@ -110,8 +110,8 @@ export default function BeautyConsultantPage() {
         throw new Error(result.error);
       }
       
-      // Extract consultation content - handle both possible response formats
-      const consultationContent = result.consultation || result.message || 'I apologize, but I received an incomplete response. Please try again.';
+      // Extract consultation content - handle both old and new response formats
+      const consultationContent = result.consultation?.consultation || result.consultation || result.message || 'I apologize, but I received an incomplete response. Please try again.';
       
       // Add assistant response
       const assistantMessage: ChatMessage = {
