@@ -104,16 +104,20 @@ export default function BeautyConsultantPage() {
       }
       
       const result = await response.json();
+      console.log('Webhook response:', result); // Debug logging
       
       if (result.error) {
         throw new Error(result.error);
       }
       
+      // Extract consultation content - handle both possible response formats
+      const consultationContent = result.consultation || result.message || 'I apologize, but I received an incomplete response. Please try again.';
+      
       // Add assistant response
       const assistantMessage: ChatMessage = {
         id: Date.now().toString(),
         type: 'assistant',
-        content: result.message,
+        content: consultationContent,
         timestamp: new Date()
       };
       
