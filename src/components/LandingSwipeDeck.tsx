@@ -427,23 +427,13 @@ const LandingSwipeDeck: React.FC<LandingSwipeDeckProps> = ({
                         
                         const url = currentProduct.external_url;
                         if (url) {
-                          // Try window.open first, if it fails due to popup blocker, use location.href
-                          const newWindow = window.open(url, '_blank', 'noopener,noreferrer');
-                          
-                          // Check if popup was blocked
-                          if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
-                            // Popup was blocked, open in same tab
-                            window.location.href = url;
-                          }
+                          // Always open in new tab/window
+                          window.open(url, '_blank', 'noopener,noreferrer');
                         } else {
                           // Fallback: search for the product on Google
                           const searchQuery = encodeURIComponent(`${currentProduct.title} ${currentProduct.brand?.name || ''}`);
                           const searchUrl = `https://www.google.com/search?q=${searchQuery}`;
-                          const newWindow = window.open(searchUrl, '_blank', 'noopener,noreferrer');
-                          
-                          if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
-                            window.location.href = searchUrl;
-                          }
+                          window.open(searchUrl, '_blank', 'noopener,noreferrer');
                         }
                       }}
                       className="w-full gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground font-semibold shadow-lg"

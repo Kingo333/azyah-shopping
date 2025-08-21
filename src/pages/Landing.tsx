@@ -420,25 +420,14 @@ export default function Landing() {
                               <ShoppingBag className="w-3 h-3" />
                             </Button>
                             <Button size="sm" variant="ghost" className="h-6 w-6 p-0 rounded-full bg-primary/10" onClick={e => {
+                      e.preventDefault();
                       e.stopPropagation();
                       console.log('Shop now clicked for product:', product);
                       console.log('External URL:', product.external_url);
                       if (product.external_url) {
-                        try {
-                          const newWindow = window.open(product.external_url, '_blank', 'noopener,noreferrer');
-                          // Check if popup was blocked
-                          if (!newWindow || newWindow.closed || typeof newWindow.closed == 'undefined') {
-                            // Fallback: navigate in current tab
-                            window.location.href = product.external_url;
-                          } else {
-                            // Success feedback
-                            console.log('Successfully opened external link');
-                          }
-                        } catch (error) {
-                          console.error('Error opening external link:', error);
-                          // Fallback: navigate in current tab
-                          window.location.href = product.external_url;
-                        }
+                        // Always open in new tab/window
+                        window.open(product.external_url, '_blank', 'noopener,noreferrer');
+                        console.log('Opened external link in new tab');
                       } else {
                         console.warn('No external URL found for product:', product.id);
                         // Could show a toast notification here if needed
