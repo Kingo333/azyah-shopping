@@ -1096,6 +1096,7 @@ export type Database = {
           cancel_url: string | null
           created_at: string | null
           currency: string | null
+          failure_url: string | null
           fee_amount_fils: number | null
           id: string
           latest_error_code: string | null
@@ -1116,6 +1117,7 @@ export type Database = {
           cancel_url?: string | null
           created_at?: string | null
           currency?: string | null
+          failure_url?: string | null
           fee_amount_fils?: number | null
           id?: string
           latest_error_code?: string | null
@@ -1136,6 +1138,7 @@ export type Database = {
           cancel_url?: string | null
           created_at?: string | null
           currency?: string | null
+          failure_url?: string | null
           fee_amount_fils?: number | null
           id?: string
           latest_error_code?: string | null

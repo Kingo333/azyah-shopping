@@ -157,7 +157,11 @@ serve(async (req) => {
 
     if (paymentError) {
       console.error('Payment record creation error:', paymentError);
-      // Continue execution - payment record is for tracking, not critical
+      return jsonResponse({ 
+        error: 'payment_record_failed',
+        details: paymentError.message,
+        ziina_response: { id: out.id, redirect_url: out.redirect_url }
+      }, 500);
     }
 
     // Create or update subscription record
