@@ -1,5 +1,5 @@
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -60,8 +60,13 @@ const LandingSwipeDeck: React.FC<LandingSwipeDeckProps> = ({
   const [showInstructions, setShowInstructions] = useState(true);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [showProductDetail, setShowProductDetail] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
+  
+  // Debouncing refs
+  const lastActionTime = useRef(0);
+  const actionDebounceMs = 300;
   
   const x = useMotionValue(0);
   const y = useMotionValue(0);
@@ -113,6 +118,21 @@ const LandingSwipeDeck: React.FC<LandingSwipeDeckProps> = ({
   }, []);
 
   const nextCard = useCallback(() => {
+    const now = Date.now();
+    
+    // Prevent rapid successive calls
+    if (now - lastActionTime.current < actionDebounceMs || isAnimating) {
+      console.log('🚫 Action blocked - too soon or animating', { 
+        timeSince: now - lastActionTime.current, 
+        isAnimating,
+        required: actionDebounceMs 
+      });
+      return;
+    }
+    
+    lastActionTime.current = now;
+    setIsAnimating(true);
+    
     console.log('🔄 nextCard called, currentIndex:', currentIndex, 'total products:', products.length);
     
     setCurrentIndex(prevIndex => {
@@ -121,61 +141,105 @@ const LandingSwipeDeck: React.FC<LandingSwipeDeckProps> = ({
       
       // Only advance if there are more products
       if (nextIndex < products.length) {
-        // Reset position immediately when advancing
-        x.set(0);
-        y.set(0);
         console.log('✅ Advanced to next card at index', nextIndex);
+        // Reset motion values after a short delay to ensure smooth animation
+        setTimeout(() => {
+          x.set(0);
+          y.set(0);
+          setIsAnimating(false);
+        }, 100);
         return nextIndex;
       }
+      
       // If no more products, reset motion values but stay at current index
       console.log('⚠️ No more products available, staying at index', prevIndex);
-      x.set(0);
-      y.set(0);
+      setTimeout(() => {
+        x.set(0);
+        y.set(0);
+        setIsAnimating(false);
+      }, 100);
       return prevIndex;
     });
-  }, [x, y, products.length, currentIndex]);
+  }, [x, y, products.length, currentIndex, isAnimating, actionDebounceMs]);
 
   const handleLike = useCallback(() => {
-    console.log('👍 Right swipe (like) - advancing to next card');
-    // Always advance to next card for consistent animation
-    nextCard();
+    const now = Date.now();
     
-    if (!user) {
-      toast({
-        title: "Sign in required",
-        description: "Create an account to start liking products!",
-        variant: "destructive"
-      });
+    // Prevent rapid successive calls
+    if (now - lastActionTime.current < actionDebounceMs || isAnimating) {
+      console.log('🚫 Like action blocked - too soon or animating');
       return;
     }
     
-    toast({
-      description: `${currentProduct?.title} added to your likes!`
-    });
-  }, [user, toast, nextCard, currentProduct]);
+    console.log('👍 Right swipe (like) - advancing to next card');
+    
+    // Store current product reference before advancing
+    const productToLike = currentProduct;
+    
+    // Advance to next card
+    nextCard();
+    
+    // Handle user feedback after card advance
+    setTimeout(() => {
+      if (!user) {
+        toast({
+          title: "Sign in required",
+          description: "Create an account to start liking products!",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      toast({
+        description: `${productToLike?.title} added to your likes!`
+      });
+    }, 150);
+  }, [user, toast, nextCard, currentProduct, isAnimating, actionDebounceMs]);
 
   const handleDislike = useCallback(() => {
-    console.log('👎 Left swipe (dislike) - advancing to next card');
-    nextCard();
-  }, [nextCard]);
-
-  const handleAddToWishlist = useCallback(() => {
-    // Always advance to next card for consistent animation
-    nextCard();
+    const now = Date.now();
     
-    if (!user) {
-      toast({
-        title: "Sign in required", 
-        description: "Create an account to start saving products!",
-        variant: "destructive"
-      });
+    // Prevent rapid successive calls
+    if (now - lastActionTime.current < actionDebounceMs || isAnimating) {
+      console.log('🚫 Dislike action blocked - too soon or animating');
       return;
     }
     
-    toast({
-      description: `${currentProduct?.title} added to your wishlist!`
-    });
-  }, [user, nextCard, toast, currentProduct]);
+    console.log('👎 Left swipe (dislike) - advancing to next card');
+    nextCard();
+  }, [nextCard, isAnimating, actionDebounceMs]);
+
+  const handleAddToWishlist = useCallback(() => {
+    const now = Date.now();
+    
+    // Prevent rapid successive calls
+    if (now - lastActionTime.current < actionDebounceMs || isAnimating) {
+      console.log('🚫 Wishlist action blocked - too soon or animating');
+      return;
+    }
+    
+    // Store current product reference before advancing
+    const productToSave = currentProduct;
+    
+    // Advance to next card
+    nextCard();
+    
+    // Handle user feedback after card advance
+    setTimeout(() => {
+      if (!user) {
+        toast({
+          title: "Sign in required", 
+          description: "Create an account to start saving products!",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      toast({
+        description: `${productToSave?.title} added to your wishlist!`
+      });
+    }, 150);
+  }, [user, nextCard, toast, currentProduct, isAnimating, actionDebounceMs]);
 
   const handleSwipeEnd = useCallback((event: any, info: PanInfo) => {
     if (!currentProduct) return;
