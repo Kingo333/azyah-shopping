@@ -15,9 +15,9 @@ import SelectRole from './pages/SelectRole';
 import Landing from './pages/Landing';
 import UserProfile from './pages/UserProfile';
 import ProfileSettings from './pages/ProfileSettings';
-import PaymentSuccess from './pages/payments/ziina/Success';
-import PaymentCancel from './pages/payments/ziina/Cancel';
-import PaymentFailed from './pages/payments/ziina/Failed';
+import PaymentSuccess from './pages/PaymentSuccess';
+import PaymentCancel from './pages/PaymentCancel';
+import PaymentFailed from './pages/PaymentFailed';
 import Swipe from './pages/Swipe';
 import Wishlist from './pages/Wishlist';
 import Likes from './pages/Likes';
@@ -84,14 +84,10 @@ function App() {
                       <ProfileSettings />
                     </ProtectedRoute>
                   } />
-                  {/* New Ziina payment routes */}
-                  <Route path="/payments/ziina/success" element={<PaymentSuccess />} />
-                  <Route path="/payments/ziina/cancel" element={<PaymentCancel />} />
-                  <Route path="/payments/ziina/failed" element={<PaymentFailed />} />
-                  
-                  {/* Legacy payment routes for backward compatibility */}
+                  {/* Payment routes */}
                   <Route path="/payment-success" element={<PaymentSuccess />} />
                   <Route path="/payment-cancel" element={<PaymentCancel />} />
+                  <Route path="/payment-failed" element={<PaymentFailed />} />
                   <Route path="/swipe" element={
                     <ProtectedRoute roles={['shopper', 'admin']}>
                       <Swipe />

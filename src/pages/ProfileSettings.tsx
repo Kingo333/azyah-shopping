@@ -13,8 +13,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/hooks/useSubscription';
 import { supabase } from '@/integrations/supabase/client';
 import { Trash2, Upload, Instagram, Twitter, Globe, Music, Crown, CreditCard, Calendar } from 'lucide-react';
-import PaymentTestButton from '@/components/PaymentTestButton';
-import ZiinaIntegrationStatus from '@/components/ZiinaIntegrationStatus';
+import { PaymentStatus } from '@/components/PaymentStatus';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -602,11 +601,8 @@ const ProfileSettings: React.FC = () => {
             </CardContent>
           </Card>
 
-          {/* Ziina Payment Integration */}
-          <ZiinaIntegrationStatus />
-          
-          {/* Payment Testing */}
-          <PaymentTestButton />
+          {/* Payment Integration Status */}
+          <PaymentStatus />
 
           {/* Actions */}
           <div className="flex justify-between">

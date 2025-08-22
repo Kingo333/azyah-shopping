@@ -89,7 +89,7 @@ export function useSubscription(): UseSubscriptionReturn {
     try {
       setLoading(true);
       
-      const { data, error } = await supabase.functions.invoke('create-premium-payment-intent', {
+      const { data, error } = await supabase.functions.invoke('create-payment-intent', {
         body: { test },
         headers: {
           Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
