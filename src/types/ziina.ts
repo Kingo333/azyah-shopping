@@ -16,12 +16,12 @@ export type PaymentIntentStatus = typeof PaymentIntentStatus[number];
 // Zod Schemas for API Validation
 export const PaymentIntentSchema = z.object({
   id: z.string(),
-  account_id: z.string(),
+  account_id: z.string().optional(),
   amount: z.number(),
   tip_amount: z.number().default(0),
   fee_amount: z.number().nullable(),
   currency_code: z.string(),
-  created_at: z.string(),
+  created_at: z.string().optional(),
   status: z.enum(PaymentIntentStatus),
   operation_id: z.string(),
   message: z.string().nullable(),
@@ -32,7 +32,8 @@ export const PaymentIntentSchema = z.object({
     message: z.string(),
     code: z.string()
   }).nullable(),
-  allow_tips: z.boolean().default(false)
+  allow_tips: z.boolean().default(false),
+  expiry: z.union([z.string(), z.number()]).optional()
 });
 
 export const RefundSchema = z.object({

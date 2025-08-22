@@ -52,23 +52,13 @@ async function createPaymentIntent(params: {
   currency: string;
   successUrl: string;
   cancelUrl: string;
-  failureUrl?: string;
+  failureUrl: string;
   message?: string;
   test?: boolean;
   operationId: string;
 }) {
   const ziinaApiBase = Deno.env.get('ZIINA_API_BASE');
   const ziinaApiToken = Deno.env.get('ZIINA_API_TOKEN');
-  const appBaseUrl = Deno.env.get('APP_BASE_URL');
-
-  // Enhanced environment variable validation with detailed logging
-  const envCheck = {
-    ZIINA_API_BASE: !!ziinaApiBase,
-    ZIINA_API_TOKEN: !!ziinaApiToken,
-    APP_BASE_URL: !!appBaseUrl
-  };
-
-  console.log('Environment variables check:', envCheck);
 
   if (!ziinaApiBase) {
     throw new Error('ZIINA_API_BASE environment variable is missing');
@@ -76,13 +66,10 @@ async function createPaymentIntent(params: {
   if (!ziinaApiToken) {
     throw new Error('ZIINA_API_TOKEN environment variable is missing');
   }
-  if (!appBaseUrl) {
-    throw new Error('APP_BASE_URL environment variable is missing');
-  }
 
   const paymentMessage = params.message || 'Azyah Premium';
 
-  // Create request body according to Ziina API spec (no operation_id, numeric expiry)
+  // Create request body according to Ziina API spec
   const body = {
     amount: params.amount_fils,
     currency_code: params.currency,
@@ -91,22 +78,17 @@ async function createPaymentIntent(params: {
     failure_url: params.failureUrl,
     message: paymentMessage,
     test: params.test || false,
-    expiry: Date.now() + 30 * 60 * 1000, // numeric timestamp (30 minutes from now)
+    expiry: Date.now() + 30 * 60 * 1000, // 30 minutes from now
     allow_tips: false,
   };
 
-  console.log('Creating Ziina payment intent:', { 
-    amount: params.amount_fils, 
+  console.log(JSON.stringify({
+    stage: 'ziina_create',
+    reqKeys: Object.keys(body),
+    amount: params.amount_fils,
     test: params.test,
-    local_operation_id: params.operationId,
-    message: paymentMessage,
-    expiry: body.expiry,
-    urls: {
-      success: params.successUrl,
-      cancel: params.cancelUrl,
-      failure: params.failureUrl
-    }
-  });
+    local_operation_id: params.operationId
+  }));
 
   const response = await fetch(`${ziinaApiBase}/payment_intent`, {
     method: 'POST',
@@ -127,21 +109,21 @@ async function createPaymentIntent(params: {
     data = responseText;
   }
 
-  // Enhanced diagnostic logging with full request/response details
   console.log(JSON.stringify({
     stage: 'ziina_create',
     status: response.status,
-    req: body,
-    res: data,
-    headers: Object.fromEntries(response.headers.entries())
+    resSummary: { 
+      id: data?.id, 
+      status: data?.status, 
+      hasRedirectUrl: !!data?.redirect_url 
+    }
   }));
 
   if (!response.ok) {
     console.error('Ziina API error:', { status: response.status, data });
-    throw new Error(`Ziina API Error: ${response.status} - ${JSON.stringify(data)}`);
+    throw new Error(`ziina_create_failed: ${response.status} - ${JSON.stringify(data)}`);
   }
 
-  console.log('Ziina payment intent created:', { id: data.id, status: data.status });
   return PaymentIntentSchema.parse(data);
 }
 
@@ -158,30 +140,21 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const appBaseUrl = Deno.env.get('APP_BASE_URL');
 
-    // Early environment check with detailed response
     if (!appBaseUrl) {
       console.error('Missing APP_BASE_URL environment variable');
       return jsonResponse({ 
         error: 'Configuration error',
-        details: 'APP_BASE_URL environment variable is missing',
-        env_check: {
-          SUPABASE_URL: !!Deno.env.get('SUPABASE_URL'),
-          SUPABASE_ANON_KEY: !!Deno.env.get('SUPABASE_ANON_KEY'),
-          SUPABASE_SERVICE_ROLE_KEY: !!Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'),
-          ZIINA_API_BASE: !!Deno.env.get('ZIINA_API_BASE'),
-          ZIINA_API_TOKEN: !!Deno.env.get('ZIINA_API_TOKEN'),
-          APP_BASE_URL: !!Deno.env.get('APP_BASE_URL')
-        }
+        details: 'APP_BASE_URL environment variable is missing'
       }, 500);
     }
 
-    // Streamlined Supabase client initialization
+    // Initialize Supabase client for authentication
     const supabaseAnon = createClient(
       supabaseUrl,
       Deno.env.get('SUPABASE_ANON_KEY')!
     );
 
-    // Simplified JWT verification using Supabase's built-in method
+    // Verify JWT token
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       console.error('Missing Authorization header');
@@ -210,7 +183,7 @@ serve(async (req) => {
     const amount_fils = convertAedToFils(validatedBody.amountAed);
     const operationId = crypto.randomUUID();
 
-    // Build callback URLs
+    // Build callback URLs with APP_BASE_URL
     const successUrl = `${appBaseUrl}/payments/ziina/success?pi={PAYMENT_INTENT_ID}`;
     const cancelUrl = `${appBaseUrl}/payments/ziina/cancel?pi={PAYMENT_INTENT_ID}`;
     const failureUrl = `${appBaseUrl}/payments/ziina/failure?pi={PAYMENT_INTENT_ID}`;
@@ -286,7 +259,6 @@ serve(async (req) => {
       }, 400);
     }
     
-    // Enhanced error mapping with upstream status codes
     if (error instanceof Error) {
       if (error.message.includes('environment variable is missing')) {
         return jsonResponse({ 
@@ -295,12 +267,12 @@ serve(async (req) => {
         }, 500);
       }
       
-      if (error.message.includes('Ziina API Error')) {
-        const statusMatch = error.message.match(/Ziina API Error: (\d+)/);
+      if (error.message.includes('ziina_create_failed')) {
+        const statusMatch = error.message.match(/ziina_create_failed: (\d+)/);
         const upstreamStatus = statusMatch ? parseInt(statusMatch[1]) : 502;
         
         return jsonResponse({ 
-          error: 'Ziina API failed',
+          error: 'ziina_create_failed',
           upstream_status: upstreamStatus,
           details: error.message 
         }, 502);

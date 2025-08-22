@@ -32,7 +32,7 @@ serve(async (req) => {
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const appBaseUrl = Deno.env.get('APP_BASE_URL'); // FIXED: Changed from APP_DASHBOARD_URL
+    const appBaseUrl = Deno.env.get('APP_BASE_URL');
 
     if (!appBaseUrl) {
       return new Response(JSON.stringify({ 

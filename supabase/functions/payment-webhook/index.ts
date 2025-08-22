@@ -26,15 +26,15 @@ const WebhookPayloadSchema = z.object({
   })
 });
 
-// FIXED: Synchronous HMAC verification using built-in crypto
-function verifyWebhookSignature(rawBody: string, signature: string, secret: string): boolean {
+// FIXED: Proper synchronous HMAC verification
+async function verifyWebhookSignature(rawBody: string, signature: string, secret: string): Promise<boolean> {
   try {
     const encoder = new TextEncoder();
     const keyBytes = encoder.encode(secret);
     const dataBytes = encoder.encode(rawBody);
     
-    // Create HMAC using Web Crypto API synchronously
-    const keyPromise = crypto.subtle.importKey(
+    // Import key for HMAC
+    const cryptoKey = await crypto.subtle.importKey(
       'raw',
       keyBytes,
       { name: 'HMAC', hash: 'SHA-256' },
@@ -42,26 +42,23 @@ function verifyWebhookSignature(rawBody: string, signature: string, secret: stri
       ['sign']
     );
     
-    // This is still async, but we handle it properly
-    return keyPromise.then(key => 
-      crypto.subtle.sign('HMAC', key, dataBytes)
-    ).then(signatureBuffer => {
-      const expectedSignature = Array.from(new Uint8Array(signatureBuffer))
-        .map(b => b.toString(16).padStart(2, '0'))
-        .join('');
-      
-      console.log('[Ziina Webhook] Signature verification:', {
-        expected: expectedSignature.substring(0, 10) + '...',
-        received: signature.substring(0, 10) + '...',
-        rawBodyLength: rawBody.length,
-        secretLength: secret.length
-      });
-      
-      return signature === expectedSignature;
-    }).catch(error => {
-      console.error('[Ziina Webhook] Signature verification failed:', error);
-      return false;
+    // Sign the data
+    const signatureBuffer = await crypto.subtle.sign('HMAC', cryptoKey, dataBytes);
+    
+    // Convert to hex string
+    const expectedSignature = Array.from(new Uint8Array(signatureBuffer))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('');
+    
+    console.log('[Ziina Webhook] Signature verification:', {
+      expected: expectedSignature.substring(0, 10) + '...',
+      received: signature.substring(0, 10) + '...',
+      rawBodyLength: rawBody.length,
+      secretLength: secret.length,
+      match: signature === expectedSignature
     });
+    
+    return signature === expectedSignature;
   } catch (error) {
     console.error('[Ziina Webhook] Signature verification error:', error);
     return false;
@@ -131,7 +128,7 @@ serve(async (req) => {
       timestamp: new Date().toISOString()
     });
 
-    // Verify IP allowlist (enhanced security)
+    // Verify IP allowlist first
     if (clientIP && !isAllowedIP(clientIP)) {
       console.error('[Ziina Webhook] Unauthorized IP:', clientIP);
       return new Response('Unauthorized IP', { 
@@ -140,7 +137,7 @@ serve(async (req) => {
       });
     }
 
-    // Verify HMAC signature (FIXED: proper async handling)
+    // Verify HMAC signature
     const isValidSignature = await verifyWebhookSignature(rawBody, signature, webhookSecret);
     if (!isValidSignature) {
       console.error('[Ziina Webhook] Invalid signature verification failed');
@@ -182,7 +179,7 @@ serve(async (req) => {
 
     const supabaseService = createClient(supabaseUrl, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
 
-    // Create unique hash for idempotency (enhanced)
+    // Create unique hash for idempotency
     const bodyHash = await createBodyHash(rawBody);
 
     // Check if we've already processed this webhook (idempotency)
@@ -223,7 +220,7 @@ serve(async (req) => {
       });
     }
 
-    // Update payment status with enhanced error handling
+    // Update payment status
     const { data: existingPayment, error: fetchError } = await supabaseService
       .from('payments')
       .select('id, status, user_id')
