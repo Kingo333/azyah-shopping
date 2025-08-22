@@ -30,6 +30,17 @@ serve(async (req) => {
     const ziinaApiBase = Deno.env.get('ZIINA_API_BASE')!;
     const ziinaApiToken = Deno.env.get('ZIINA_API_TOKEN')!;
 
+    if (!supabaseUrl || !ziinaApiBase || !ziinaApiToken) {
+      return jsonResponse({ 
+        error: 'missing_env', 
+        have: { 
+          SUPABASE_URL: !!supabaseUrl, 
+          ZIINA_API_BASE: !!ziinaApiBase, 
+          ZIINA_API_TOKEN: !!ziinaApiToken 
+        } 
+      }, 500);
+    }
+
     // Initialize Supabase client for user authentication
     const supabaseAnon = createClient(
       supabaseUrl,
@@ -97,9 +108,65 @@ serve(async (req) => {
       }, 404);
     }
 
+    // Update payment record status
+    const { error: paymentUpdateError } = await supabaseService
+      .from('payments')
+      .update({ 
+        status: paymentIntent.status,
+        updated_at: new Date().toISOString()
+      })
+      .eq('payment_intent_id', payment_intent_id);
+
+    if (paymentUpdateError) {
+      console.error('Failed to update payment record:', paymentUpdateError);
+      // Don't fail the request - payment tracking is secondary
+    }
+
+    // Update subscription based on payment status
+    const now = new Date();
+    let subscriptionUpdates: Record<string, unknown> = {
+      last_payment_status: paymentIntent.status,
+      updated_at: now.toISOString(),
+    };
+
+    // Handle different payment statuses according to Ziina documentation
+    if (paymentIntent.status === 'completed') {
+      // Payment successful - activate premium for 30 days
+      const periodEnd = new Date(now);
+      periodEnd.setMonth(periodEnd.getMonth() + 1);
+
+      subscriptionUpdates = {
+        ...subscriptionUpdates,
+        status: 'active',
+        current_period_start: now.toISOString(),
+        current_period_end: periodEnd.toISOString(),
+      };
+
+      console.log('Activating premium subscription until:', periodEnd.toISOString());
+    } else if (['failed', 'canceled'].includes(paymentIntent.status)) {
+      // Payment failed or canceled
+      subscriptionUpdates = {
+        ...subscriptionUpdates,
+        status: 'inactive',
+      };
+
+      console.log('Payment failed/canceled, setting status to inactive');
+    }
+
+    // Update subscription
+    const { error: updateError } = await supabaseService
+      .from('subscriptions')
+      .update(subscriptionUpdates)
+      .eq('id', subscription.id);
+
+    if (updateError) {
+      console.error('Error updating subscription:', updateError);
+      return jsonResponse({ error: 'Failed to update subscription' }, 500);
+    }
+
     // Return verification result
     const isCompleted = paymentIntent.status === 'completed';
-    const isActive = isCompleted && subscription.status === 'active';
+    const isActive = isCompleted && subscriptionUpdates.status === 'active';
 
     return jsonResponse({
       payment_intent_id,
@@ -108,8 +175,8 @@ serve(async (req) => {
       currency: paymentIntent.currency_code,
       is_completed: isCompleted,
       is_active: isActive,
-      subscription_status: subscription.status,
-      current_period_end: subscription.current_period_end,
+      subscription_status: subscriptionUpdates.status || subscription.status,
+      current_period_end: subscriptionUpdates.current_period_end || subscription.current_period_end,
     });
 
   } catch (error) {

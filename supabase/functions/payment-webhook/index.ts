@@ -199,6 +199,17 @@ serve(async (req) => {
       return jsonResponse({ error: 'Failed to update subscription' }, 500);
     }
 
+    // Update payment record if it exists
+    if (paymentIntent.status) {
+      await supabase
+        .from('payments')
+        .update({ 
+          status: paymentIntent.status,
+          updated_at: now.toISOString()
+        })
+        .eq('payment_intent_id', paymentIntent.id);
+    }
+
     // Mark webhook as processed
     await supabase
       .from('webhook_events')

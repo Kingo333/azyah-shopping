@@ -24,13 +24,7 @@ serve(async (req) => {
     return jsonResponse({ error: 'Method not allowed' }, 405);
   }
 
-  // Require user JWT (Supabase will also gate before this if verify_jwt=true)
-  const auth = req.headers.get("authorization") || "";
-  if (!auth.startsWith("Bearer ")) {
-    return jsonResponse({ error: "missing_user_jwt" }, 401);
-  }
-
-  // Get environment variables
+  // Get environment variables with validation
   const BASE = Deno.env.get("ZIINA_API_BASE");
   const TOKEN = Deno.env.get("ZIINA_API_TOKEN");
   const APP = Deno.env.get("APP_BASE_URL");
@@ -46,11 +40,15 @@ serve(async (req) => {
   }
 
   try {
-
     // Initialize Supabase client for user authentication
     const supabaseAnon = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // Get user from authorization header
+    // Get user from authorization header (JWT verification handled by Supabase)
+    const auth = req.headers.get("authorization") || "";
+    if (!auth.startsWith("Bearer ")) {
+      return jsonResponse({ error: "missing_user_jwt" }, 401);
+    }
+
     const { data: { user }, error: authError } = await supabaseAnon.auth.getUser(
       auth.replace('Bearer ', '')
     );
@@ -61,29 +59,45 @@ serve(async (req) => {
     }
 
     const { amountAed = 40, test = true, message = "Azyah Premium" } = await req.json();
+    
+    // Convert AED to fils (1 AED = 100 fils) and validate minimum amount (2 AED = 200 fils)
     const amount = Math.round(Number(amountAed) * 100);
     if (!Number.isFinite(amount) || amount < 200) {
-      return jsonResponse({ error: "amount_invalid", amount }, 400);
+      return jsonResponse({ error: "amount_invalid", message: "Minimum amount is 2 AED (200 fils)", amount }, 400);
     }
 
-    console.log(`Creating payment intent for user: ${user.id}, test: ${test}`);
+    console.log(`Creating payment intent for user: ${user.id}, amount: ${amount} fils, test: ${test}`);
 
-    // Create Ziina Payment Intent following the documentation
+    // Build proper URLs with APP_BASE_URL (matching the route structure)
+    const successUrl = `${APP}/payment-success?payment_intent_id={PAYMENT_INTENT_ID}`;
+    const cancelUrl = `${APP}/payment-cancel?payment_intent_id={PAYMENT_INTENT_ID}`;
+    const failureUrl = `${APP}/payment-failed?payment_intent_id={PAYMENT_INTENT_ID}`;
+
+    // Create Ziina Payment Intent following the official documentation
     const payload = {
       amount,
       currency_code: "AED",
       message,
-      success_url: `${APP}/payment-success?payment_intent_id={PAYMENT_INTENT_ID}`,
-      cancel_url: `${APP}/payment-cancel?payment_intent_id={PAYMENT_INTENT_ID}`,
-      failure_url: `${APP}/payment-failed?payment_intent_id={PAYMENT_INTENT_ID}`,
+      success_url: successUrl,
+      cancel_url: cancelUrl,
+      failure_url: failureUrl,
       test: !!test,
-      expiry: Math.floor((Date.now() + 30 * 60 * 1000) / 1000).toString(), // 30 minutes from now in seconds as string
+      expiry: Date.now() + (30 * 60 * 1000), // 30 minutes from now in milliseconds (as number)
       allow_tips: false
     };
 
+    console.log('Sending request to Ziina with payload:', {
+      ...payload,
+      expiry_type: typeof payload.expiry,
+      expiry_value: payload.expiry
+    });
+
     const res = await fetch(`${BASE}/payment_intent`, {
       method: "POST",
-      headers: { Authorization: `Bearer ${TOKEN}`, "Content-Type": "application/json" },
+      headers: { 
+        Authorization: `Bearer ${TOKEN}`, 
+        "Content-Type": "application/json" 
+      },
       body: JSON.stringify(payload)
     });
 
@@ -91,26 +105,59 @@ serve(async (req) => {
     let out: any = null; 
     try { 
       out = raw ? JSON.parse(raw) : null; 
-    } catch {}
+    } catch (parseError) {
+      console.error('Failed to parse Ziina response:', parseError);
+    }
     
-    // Structured logging as requested
-    console.error(JSON.stringify({ 
+    // Structured logging as per requirements
+    console.log(JSON.stringify({ 
       stage: "ziina_create", 
       status: res.status, 
-      req: { amount, currency_code: 'AED', has_urls: true, test: !!test, expiry_type: typeof payload.expiry }, 
-      res: out ?? raw 
+      req_keys: ["amount", "currency_code", "success_url", "cancel_url", "failure_url", "test", "expiry"],
+      res_summary: {
+        status: res.status,
+        id: out?.id,
+        redirect_url: out?.redirect_url,
+        has_error: !!out?.error
+      }
     }));
     
     if (!res.ok) {
+      console.error('Ziina API error:', { status: res.status, response: out || raw });
       return jsonResponse({ 
         error: "ziina_create_failed", 
         upstream_status: res.status, 
-        details: out ?? raw 
+        details: out || raw 
       }, 502);
     }
 
     // Initialize service role client for database operations  
     const supabaseService = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+
+    // Create payment record
+    const paymentData = {
+      user_id: user.id,
+      amount_fils: amount,
+      provider: 'ziina',
+      payment_intent_id: out.id,
+      product: 'consumer_premium',
+      currency: 'AED',
+      status: out.status || 'pending',
+      operation_id: out.operation_id || out.id,
+      redirect_url: out.redirect_url,
+      success_url: successUrl,
+      cancel_url: cancelUrl,
+      failure_url: failureUrl
+    };
+
+    const { error: paymentError } = await supabaseService
+      .from('payments')
+      .insert(paymentData);
+
+    if (paymentError) {
+      console.error('Payment record creation error:', paymentError);
+      // Continue execution - payment record is for tracking, not critical
+    }
 
     // Create or update subscription record
     const subscriptionData = {
@@ -118,7 +165,7 @@ serve(async (req) => {
       plan: 'consumer_premium',
       status: 'pending',
       last_payment_intent_id: out.id,
-      last_payment_status: out.status,
+      last_payment_status: out.status || 'pending',
       updated_at: new Date().toISOString(),
     };
 
@@ -133,7 +180,8 @@ serve(async (req) => {
 
     console.log('Payment intent created successfully:', {
       paymentIntentId: out.id,
-      redirectUrl: out.redirect_url
+      redirectUrl: out.redirect_url,
+      status: out.status
     });
 
     // Return the redirect URL to client (standardized response format)
@@ -143,6 +191,7 @@ serve(async (req) => {
     });
 
   } catch (e) {
+    console.error('Unhandled error in create-payment-intent:', e);
     return jsonResponse({ error: "unhandled", message: String(e) }, 500);
   }
 });

@@ -72,7 +72,7 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.create-payment-intent]
-verify_jwt = false
+verify_jwt = true
 
 [functions.generate-toy-replica]
 verify_jwt = false
