@@ -238,7 +238,8 @@ const LandingSwipeDeck: React.FC<LandingSwipeDeckProps> = ({
     }
   }, [showInstructions]);
 
-  if (isLoading) {
+  // Only show loading if we have no products at all, not when advancing cards
+  if (isLoading && products.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-full">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mb-4"></div>
