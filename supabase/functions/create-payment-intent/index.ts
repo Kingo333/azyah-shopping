@@ -64,26 +64,29 @@ async function createPaymentIntent(params: {
     throw new Error('ZIINA_API_TOKEN not configured');
   }
 
-  // FIXED: Provide a proper message that meets Ziina's length requirements
-  const paymentMessage = params.message || 'Premium Subscription';
+  const paymentMessage = params.message || 'Azyah Premium';
 
+  // FIXED: Remove operation_id from request body and add expiry
   const body = {
     amount: params.amount_fils,
     currency_code: params.currency,
     success_url: params.successUrl,
     cancel_url: params.cancelUrl,
     failure_url: params.failureUrl,
-    message: paymentMessage, // Use the properly formatted message
+    message: paymentMessage,
     test: params.test || false,
+    expiry: Date.now() + 30 * 60 * 1000, // FIXED: Add expiry as numeric timestamp (30 minutes)
     allow_tips: false,
-    operation_id: params.operationId,
+    // REMOVED: operation_id - not sent to Ziina API, kept only for local DB
   };
 
+  // DIAGNOSTIC: Temporary logging for debugging
   console.log('Creating Ziina payment intent:', { 
     amount: params.amount_fils, 
     test: params.test,
-    operation_id: params.operationId,
-    message: paymentMessage, // Log the message being sent
+    local_operation_id: params.operationId, // Log but don't send
+    message: paymentMessage,
+    expiry: body.expiry,
     urls: {
       success: params.successUrl,
       cancel: params.cancelUrl,
@@ -101,11 +104,26 @@ async function createPaymentIntent(params: {
     signal: AbortSignal.timeout(10000),
   });
 
-  const data = await response.json();
+  const responseText = await response.text();
+  let data;
+  
+  try {
+    data = JSON.parse(responseText);
+  } catch (parseError) {
+    data = responseText;
+  }
+
+  // DIAGNOSTIC: Enhanced error logging
+  console.error(JSON.stringify({
+    stage: 'ziina_create',
+    status: response.status,
+    req: body,
+    res: data,
+  }));
 
   if (!response.ok) {
     console.error('Ziina API error:', { status: response.status, data });
-    throw new Error(data.message || `HTTP ${response.status}`);
+    throw new Error(data.message || `HTTP ${response.status}: ${responseText}`);
   }
 
   console.log('Ziina payment intent created:', { id: data.id, status: data.status });
@@ -150,11 +168,11 @@ serve(async (req) => {
     const body = await req.json();
     const validatedBody = CreatePaymentRequestSchema.parse(body);
 
-    // Convert AED to fils - FIXED: 40 AED = 4000 fils
+    // Convert AED to fils
     const amount_fils = convertAedToFils(validatedBody.amountAed);
     const operationId = crypto.randomUUID();
 
-    // Build callback URLs with placeholder for payment intent ID - FIXED: proper URL structure
+    // Build callback URLs with placeholder for payment intent ID
     const successUrl = `${appBaseUrl}/payments/ziina/success?pi={PAYMENT_INTENT_ID}`;
     const cancelUrl = `${appBaseUrl}/payments/ziina/cancel?pi={PAYMENT_INTENT_ID}`;
     const failureUrl = `${appBaseUrl}/payments/ziina/failure?pi={PAYMENT_INTENT_ID}`;
@@ -166,22 +184,22 @@ serve(async (req) => {
       operation_id: operationId
     });
 
-    // Create payment intent with Ziina - FIXED: Use shorter, compliant message
+    // Create payment intent with Ziina
     const paymentIntent = await createPaymentIntent({
       amount_fils,
       currency: 'AED',
       successUrl,
       cancelUrl,
       failureUrl,
-      message: 'Premium Subscription', // FIXED: Shorter message that meets Ziina requirements
+      message: 'Azyah Premium',
       test: validatedBody.test,
-      operationId
+      operationId // Keep for local DB storage only
     });
 
     // Initialize service role client for database operations
     const supabaseService = createClient(supabaseUrl, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
 
-    // Upsert payment record in database
+    // Upsert payment record in database with local operation_id
     const { error: dbError } = await supabaseService
       .from('payments')
       .upsert({
@@ -191,7 +209,7 @@ serve(async (req) => {
         amount_fils: paymentIntent.amount,
         currency: paymentIntent.currency_code,
         status: paymentIntent.status,
-        operation_id: paymentIntent.operation_id,
+        operation_id: operationId, // Store locally for idempotency
         redirect_url: paymentIntent.redirect_url,
         success_url: paymentIntent.success_url,
         cancel_url: paymentIntent.cancel_url,

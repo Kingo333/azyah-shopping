@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
 // Test result type for UI display
@@ -206,34 +205,61 @@ export class PaymentTestSuite {
     }
   }
 
-  // Integration test for payment creation
+  // Integration test for payment creation - IMPROVED with better auth handling
   static async testPaymentCreation(): Promise<PaymentTestResult> {
     const startTime = Date.now();
     console.log('🧪 Testing payment creation flow...');
     
     try {
+      // Check if user is authenticated first
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !session) {
+        console.log(`Payment creation test: ❌ User not authenticated`);
+        return {
+          testName: 'Payment Creation',
+          passed: false,
+          duration: Date.now() - startTime,
+          error: 'User not authenticated - please sign in to test payment creation'
+        };
+      }
+
       const testPayload = {
         product: 'consumer_premium' as const,
         amountAed: 40,
         test: true
       };
 
-      console.log('Creating test payment intent...');
+      console.log('Creating test payment intent with authenticated user...');
+      console.log('User ID:', session.user.id);
+      console.log('Session valid:', !!session.access_token);
       
       const { data, error } = await supabase.functions.invoke('create-payment-intent', {
         body: testPayload,
         headers: {
-          Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+          Authorization: `Bearer ${session.access_token}`
         }
       });
 
       if (error) {
         console.log(`Payment creation test: ❌ ${error.message}`);
+        console.log('Error details:', error);
         return {
           testName: 'Payment Creation',
           passed: false,
           duration: Date.now() - startTime,
-          error: error.message
+          error: `API Error: ${error.message}`
+        };
+      }
+
+      if (!data || !data.redirectUrl || !data.pi) {
+        console.log(`Payment creation test: ❌ Invalid response format`);
+        console.log('Response data:', data);
+        return {
+          testName: 'Payment Creation',
+          passed: false,
+          duration: Date.now() - startTime,
+          error: 'Invalid response format - missing redirectUrl or pi'
         };
       }
 

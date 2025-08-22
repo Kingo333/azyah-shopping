@@ -22,9 +22,6 @@ shadow_database_url = "postgresql://postgres:postgres@127.0.0.1:54322/postgres"
 [edge_functions]
 enabled = true
 
-[functions.create-payment-intent]
-verify_jwt = false
-
 [functions.generate-toy-replica]
 verify_jwt = false
 
