@@ -1,7 +1,7 @@
 
 import { z } from 'zod';
 
-// Payment Intent Status
+// Payment Intent Status Enum
 export const PaymentIntentStatus = [
   'requires_payment_instrument',
   'requires_user_action', 
@@ -13,24 +13,26 @@ export const PaymentIntentStatus = [
 
 export type PaymentIntentStatus = typeof PaymentIntentStatus[number];
 
-// Zod Schemas
+// Zod Schemas for API Validation
 export const PaymentIntentSchema = z.object({
   id: z.string(),
+  account_id: z.string(),
   amount: z.number(),
+  tip_amount: z.number().default(0),
+  fee_amount: z.number().nullable(),
   currency_code: z.string(),
+  created_at: z.string(),
   status: z.enum(PaymentIntentStatus),
+  operation_id: z.string(),
+  message: z.string().nullable(),
   redirect_url: z.string(),
   success_url: z.string(),
   cancel_url: z.string(),
-  fee_amount: z.number().nullable().optional(),
-  tip_amount: z.number().optional().default(0),
-  message: z.string().nullable().optional(),
   latest_error: z.object({
     message: z.string(),
     code: z.string()
-  }).nullable().optional(),
-  created_at: z.string(),
-  updated_at: z.string()
+  }).nullable(),
+  allow_tips: z.boolean().default(false)
 });
 
 export const RefundSchema = z.object({
@@ -43,7 +45,7 @@ export const RefundSchema = z.object({
   error: z.object({
     message: z.string(),
     code: z.string()
-  }).nullable().optional()
+  }).nullable()
 });
 
 export const WebhookPayloadSchema = z.object({
@@ -51,7 +53,7 @@ export const WebhookPayloadSchema = z.object({
   data: PaymentIntentSchema
 });
 
-// Types
+// TypeScript Types
 export type PaymentIntent = z.infer<typeof PaymentIntentSchema>;
 export type Refund = z.infer<typeof RefundSchema>;
 export type WebhookPayload = z.infer<typeof WebhookPayloadSchema>;
@@ -66,6 +68,7 @@ export interface PaymentRecord {
   amount_fils: number;
   currency: string;
   status: PaymentIntentStatus;
+  operation_id: string;
   redirect_url?: string;
   success_url?: string;
   cancel_url?: string;
@@ -83,25 +86,21 @@ export interface WebhookEvent {
   event: string;
   pi_id: string;
   raw_body: Record<string, any>;
-  signature?: string;
+  signature: string;
   ip?: string;
   processed: boolean;
   created_at: string;
 }
 
-// API Types
+// API Request/Response Types
 export interface CreatePaymentIntentRequest {
+  product: 'consumer_premium';
   amountAed: number;
   test?: boolean;
-  message?: string;
 }
 
 export interface CreatePaymentIntentResponse {
   redirectUrl: string;
-  pi: string;
-}
-
-export interface VerifyPaymentRequest {
   pi: string;
 }
 
@@ -114,7 +113,6 @@ export interface PaymentStatusResponse {
   tip_amount_fils: number;
   latest_error_message?: string;
   latest_error_code?: string;
-  is_completed: boolean;
   created_at: string;
   updated_at: string;
 }

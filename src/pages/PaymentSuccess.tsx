@@ -1,22 +1,34 @@
 
 import { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { useZiinaPayments } from '@/hooks/useZiinaPayments';
+import { useAuth } from '@/contexts/AuthContext';
+import { useSubscription } from '@/hooks/useSubscription';
+import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, Crown, Loader2 } from 'lucide-react';
 import { SEOHead } from '@/components/SEOHead';
-import type { PaymentStatusResponse } from '@/types/ziina';
-import { convertFilsToAed } from '@/utils/ziina';
+
+interface PaymentVerification {
+  payment_intent_id: string;
+  status: string;
+  amount: number;
+  currency: string;
+  is_completed: boolean;
+  is_active: boolean;
+  subscription_status: string;
+  current_period_end?: string;
+}
 
 export default function PaymentSuccess() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { verifyPayment } = useZiinaPayments();
+  const { user } = useAuth();
+  const { refetch } = useSubscription();
   const { toast } = useToast();
   
-  const [verification, setVerification] = useState<PaymentStatusResponse | null>(null);
+  const [verification, setVerification] = useState<PaymentVerification | null>(null);
   const [loading, setLoading] = useState(true);
   const [polling, setPolling] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -24,78 +36,113 @@ export default function PaymentSuccess() {
   const paymentIntentId = searchParams.get('pi');
 
   useEffect(() => {
-    if (paymentIntentId) {
-      verifyPaymentStatus();
+    if (paymentIntentId && user) {
+      verifyPayment();
     } else {
       setError('Missing payment information');
       setLoading(false);
     }
-  }, [paymentIntentId]);
+  }, [paymentIntentId, user]);
 
-  const verifyPaymentStatus = async () => {
-    if (!paymentIntentId) return;
-
+  const verifyPayment = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const result = await verifyPayment({ pi: paymentIntentId });
-      
-      if (!result) {
-        setError('Failed to verify payment');
+      console.log('Verifying payment:', paymentIntentId);
+
+      const { data, error } = await supabase.functions.invoke('verify-payment', {
+        body: { payment_intent_id: paymentIntentId },
+        headers: {
+          Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+        }
+      });
+
+      if (error) {
+        console.error('Payment verification error:', error);
+        setError(error.message || 'Failed to verify payment');
+        toast({
+          title: "Verification Error",
+          description: "Could not verify your payment. Please contact support.",
+          variant: "destructive"
+        });
         return;
       }
 
-      setVerification(result);
+      console.log('Payment verification result:', data);
+      setVerification(data);
       
-      if (result.is_completed) {
+      if (data.is_completed) {
         toast({
           title: "Payment Successful!",
           description: "Your premium subscription is now active.",
         });
-      } else if (result.status === 'pending') {
+        // Refresh payment data
+        await refetch();
+      } else if (data.status === 'pending') {
+        // Start polling for pending payments
         startPolling();
       } else {
         toast({
           title: "Payment Incomplete",
-          description: `Payment status: ${result.status}`,
+          description: `Payment status: ${data.status}`,
           variant: "destructive"
         });
       }
 
     } catch (err) {
       console.error('Verification error:', err);
-      setError('An unexpected error occurred');
+      setError(err instanceof Error ? err.message : 'Unknown error');
+      toast({
+        title: "Verification Failed",
+        description: "An unexpected error occurred.",
+        variant: "destructive"
+      });
     } finally {
       setLoading(false);
     }
   };
 
   const startPolling = () => {
-    if (!paymentIntentId) return;
-    
     setPolling(true);
     let pollCount = 0;
     const maxPolls = 15; // 30 seconds (2s interval)
     
     const pollInterval = setInterval(async () => {
       pollCount++;
+      console.log(`Polling payment status (${pollCount}/${maxPolls}):`, paymentIntentId);
       
-      const result = await verifyPayment({ pi: paymentIntentId });
-      if (result) {
-        setVerification(result);
-        
-        if (result.is_completed) {
-          clearInterval(pollInterval);
-          setPolling(false);
-          toast({
-            title: "Payment Confirmed!",
-            description: "Your premium subscription is now active.",
-          });
-        } else if (result.status !== 'pending') {
-          clearInterval(pollInterval);
-          setPolling(false);
+      try {
+        const { data, error } = await supabase.functions.invoke('verify-payment', {
+          body: { payment_intent_id: paymentIntentId },
+          headers: {
+            Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+          }
+        });
+
+        if (!error && data) {
+          setVerification(data);
+          
+          if (data.is_completed) {
+            clearInterval(pollInterval);
+            setPolling(false);
+            toast({
+              title: "Payment Confirmed!",
+              description: "Your premium subscription is now active.",
+            });
+            await refetch();
+          } else if (data.status !== 'pending') {
+            clearInterval(pollInterval);
+            setPolling(false);
+            toast({
+              title: "Payment Status Updated",
+              description: `Payment status: ${data.status}`,
+              variant: data.status === 'failed' ? "destructive" : "default"
+            });
+          }
         }
+      } catch (err) {
+        console.error('Polling error:', err);
       }
       
       if (pollCount >= maxPolls) {
@@ -108,6 +155,18 @@ export default function PaymentSuccess() {
         });
       }
     }, 2000);
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
+  const formatAmount = (amount: number) => {
+    return (amount / 100).toFixed(2);
   };
 
   if (loading) {
@@ -144,7 +203,9 @@ export default function PaymentSuccess() {
               <CardTitle className="text-center text-red-600">Payment Verification Error</CardTitle>
             </CardHeader>
             <CardContent className="text-center space-y-4">
-              <p className="text-muted-foreground">{error}</p>
+              <p className="text-muted-foreground">
+                {error || 'Could not verify your payment'}
+              </p>
               <Button onClick={() => navigate('/dashboard')}>
                 Return to Dashboard
               </Button>
@@ -155,6 +216,7 @@ export default function PaymentSuccess() {
     );
   }
 
+  const isPending = verification.status === 'pending';
   const isCompleted = verification.is_completed;
 
   return (
@@ -193,21 +255,21 @@ export default function PaymentSuccess() {
                 <div>
                   <span className="text-muted-foreground">Amount:</span>
                   <span className="ml-2 font-medium">
-                    {convertFilsToAed(verification.amount_fils).toFixed(2)} {verification.currency}
+                    {formatAmount(verification.amount)} {verification.currency}
                   </span>
                 </div>
                 <div>
                   <span className="text-muted-foreground">Status:</span>
                   <span className={`ml-2 font-medium ${
                     isCompleted ? 'text-green-600' : 
-                    verification.status === 'pending' ? 'text-blue-600' : 'text-orange-600'
+                    isPending ? 'text-blue-600' : 'text-orange-600'
                   }`}>
                     {verification.status}
                   </span>
                 </div>
                 <div className="col-span-2">
                   <span className="text-muted-foreground">Payment ID:</span>
-                  <span className="ml-2 font-mono text-xs">{verification.id}</span>
+                  <span className="ml-2 font-mono text-xs">{verification.payment_intent_id}</span>
                 </div>
               </div>
             </div>
@@ -246,6 +308,10 @@ export default function PaymentSuccess() {
                 Need help? Visit our{' '}
                 <a href="/support" className="text-primary hover:underline">
                   support page
+                </a>{' '}
+                or{' '}
+                <a href="/profile-settings" className="text-primary hover:underline">
+                  manage your subscription
                 </a>
               </p>
             </div>

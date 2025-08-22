@@ -1,7 +1,7 @@
 
 import { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { ZiinaPaymentButton } from '@/components/ZiinaPaymentButton';
+import { useSubscription } from '@/hooks/useSubscription';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { XCircle } from 'lucide-react';
@@ -10,6 +10,7 @@ import { SEOHead } from '@/components/SEOHead';
 export default function PaymentCancel() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { createPaymentIntent } = useSubscription();
   const [countdown, setCountdown] = useState(10);
 
   const paymentIntentId = searchParams.get('pi');
@@ -27,6 +28,10 @@ export default function PaymentCancel() {
 
     return () => clearInterval(timer);
   }, [navigate]);
+
+  const handleRetryPayment = async () => {
+    await createPaymentIntent();
+  };
 
   return (
     <>
@@ -104,9 +109,12 @@ export default function PaymentCancel() {
               >
                 Back to Dashboard
               </Button>
-              <ZiinaPaymentButton className="flex-1">
+              <Button 
+                onClick={handleRetryPayment}
+                className="flex-1"
+              >
                 Try Again
-              </ZiinaPaymentButton>
+              </Button>
             </div>
 
             <div className="text-center pt-4 border-t">

@@ -1,12 +1,10 @@
 
 import React from 'react';
+import { useSubscription } from '@/hooks/useSubscription';
 import { Button } from '@/components/ui/button';
 import { Crown, Loader2 } from 'lucide-react';
-import { useZiinaPayments } from '@/hooks/useZiinaPayments';
-import { FEATURES } from '@/config/features';
-import { MaintenancePaymentButton } from '@/components/MaintenancePaymentButton';
 
-interface ZiinaPaymentButtonProps {
+interface PaymentButtonProps {
   test?: boolean;
   variant?: 'default' | 'outline' | 'secondary' | 'destructive' | 'ghost' | 'link';
   size?: 'default' | 'sm' | 'lg' | 'icon';
@@ -14,30 +12,27 @@ interface ZiinaPaymentButtonProps {
   children?: React.ReactNode;
 }
 
-export function ZiinaPaymentButton({ 
+export function PaymentButton({ 
   test = false, 
   variant = 'default',
   size = 'default',
   className,
   children 
-}: ZiinaPaymentButtonProps) {
-  const { createPaymentIntent, loading } = useZiinaPayments();
-
-  if (FEATURES.PAYMENTS_MAINTENANCE) {
-    return <MaintenancePaymentButton variant={variant} size={size} className={className} />;
-  }
+}: PaymentButtonProps) {
+  const { createPaymentIntent, loading, isPremium } = useSubscription();
 
   const handlePayment = async () => {
-    const result = await createPaymentIntent({
-      amountAed: 40,
-      test,
-      message: 'Azyah Premium Subscription'
-    });
-
-    if (result?.redirectUrl) {
-      window.location.href = result.redirectUrl;
-    }
+    await createPaymentIntent(test);
   };
+
+  if (isPremium) {
+    return (
+      <Button variant="outline" disabled className={className} size={size}>
+        <Crown className="w-4 h-4 mr-2" />
+        Premium Active
+      </Button>
+    );
+  }
 
   return (
     <Button 

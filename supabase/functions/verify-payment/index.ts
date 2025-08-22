@@ -9,8 +9,17 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const VerifyPaymentRequestSchema = z.object({
-  pi: z.string()
+const PaymentIntentSchema = z.object({
+  id: z.string(),
+  amount: z.number(),
+  currency_code: z.string(),
+  status: z.enum(['requires_payment_instrument', 'requires_user_action', 'pending', 'completed', 'failed', 'canceled']),
+  operation_id: z.string(),
+  fee_amount: z.number().nullable(),
+  latest_error: z.object({
+    message: z.string(),
+    code: z.string()
+  }).nullable()
 });
 
 function jsonResponse(data: unknown, status = 200) {
@@ -30,20 +39,17 @@ serve(async (req) => {
   }
 
   try {
-    const ziinaApiBase = Deno.env.get('ZIINA_API_BASE');
-    const ziinaApiToken = Deno.env.get('ZIINA_API_TOKEN');
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const ziinaApiBase = Deno.env.get('ZIINA_API_BASE') || 'https://api-v2.ziina.com/api';
+    const ziinaApiToken = Deno.env.get('ZIINA_API_TOKEN')!;
 
-    if (!ziinaApiBase || !ziinaApiToken) {
-      return jsonResponse({ error: 'Missing environment variables' }, 500);
-    }
-
-    // Authentication
+    // Initialize Supabase client for user authentication
     const supabaseAnon = createClient(
       supabaseUrl,
       Deno.env.get('SUPABASE_ANON_KEY')!
     );
 
+    // Get user from authorization header
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       return jsonResponse({ error: 'Authorization header required' }, 401);
@@ -54,82 +60,91 @@ serve(async (req) => {
     );
 
     if (authError || !user) {
+      console.error('Auth error:', authError);
       return jsonResponse({ error: 'Invalid authentication' }, 401);
     }
 
-    const body = await req.json();
-    const { pi } = VerifyPaymentRequestSchema.parse(body);
+    const { payment_intent_id } = await req.json();
 
-    console.log(`Verifying payment intent: ${pi} for user: ${user.id}`);
+    if (!payment_intent_id) {
+      return jsonResponse({ error: 'Payment intent ID required' }, 400);
+    }
 
-    // Get payment intent from Ziina
-    const ziinaResponse = await fetch(`${ziinaApiBase}/payment_intent/${pi}`, {
+    console.log(`Verifying payment intent: ${payment_intent_id} for user: ${user.id}`);
+
+    // Get payment intent details from Ziina
+    const ziinaResponse = await fetch(`${ziinaApiBase}/payment_intent/${payment_intent_id}`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${ziinaApiToken}`,
         'Content-Type': 'application/json',
       },
-      signal: AbortSignal.timeout(10000),
     });
 
     if (!ziinaResponse.ok) {
       const errorData = await ziinaResponse.json();
+      console.error('Ziina API error:', errorData);
       return jsonResponse({ 
         error: 'Failed to verify payment intent',
-        upstream_status: ziinaResponse.status,
         details: errorData
       }, ziinaResponse.status);
     }
 
     const paymentIntentData = await ziinaResponse.json();
+    const paymentIntent = PaymentIntentSchema.parse(paymentIntentData);
 
-    // Update payment record
+    console.log('Ziina payment intent response:', { 
+      id: paymentIntent.id, 
+      status: paymentIntent.status 
+    });
+
+    // Initialize service role client for database operations
     const supabaseService = createClient(supabaseUrl, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
 
+    // Check if this payment intent belongs to the user and update it
     const { data: payment, error: fetchError } = await supabaseService
       .from('payments')
       .select('*')
       .eq('user_id', user.id)
-      .eq('payment_intent_id', pi)
+      .eq('payment_intent_id', payment_intent_id)
       .single();
 
     if (fetchError || !payment) {
+      console.error('Payment not found:', fetchError);
       return jsonResponse({ 
         error: 'Payment intent not found for this user' 
       }, 404);
     }
 
+    // Update payment status in database
     const { error: updateError } = await supabaseService
       .from('payments')
       .update({
-        status: paymentIntentData.status,
-        fee_amount_fils: paymentIntentData.fee_amount,
-        tip_amount_fils: paymentIntentData.tip_amount || 0,
-        latest_error_message: paymentIntentData.latest_error?.message,
-        latest_error_code: paymentIntentData.latest_error?.code,
+        status: paymentIntent.status,
+        fee_amount_fils: paymentIntent.fee_amount,
+        latest_error_message: paymentIntent.latest_error?.message,
+        latest_error_code: paymentIntent.latest_error?.code,
         updated_at: new Date().toISOString()
       })
-      .eq('payment_intent_id', pi);
+      .eq('payment_intent_id', payment_intent_id);
 
     if (updateError) {
       console.error('Failed to update payment:', updateError);
       return jsonResponse({ error: 'Failed to update payment status' }, 500);
     }
 
-    const isCompleted = paymentIntentData.status === 'completed';
+    // Return verification result
+    const isCompleted = paymentIntent.status === 'completed';
 
     return jsonResponse({
-      id: paymentIntentData.id,
-      status: paymentIntentData.status,
-      amount_fils: paymentIntentData.amount,
-      currency: paymentIntentData.currency_code,
-      fee_amount_fils: paymentIntentData.fee_amount,
-      tip_amount_fils: paymentIntentData.tip_amount || 0,
-      latest_error_message: paymentIntentData.latest_error?.message,
-      latest_error_code: paymentIntentData.latest_error?.code,
+      payment_intent_id: paymentIntent.id,
+      status: paymentIntent.status,
+      amount: paymentIntent.amount,
+      currency: paymentIntent.currency_code,
       is_completed: isCompleted,
-      created_at: payment.created_at,
-      updated_at: new Date().toISOString()
+      is_active: isCompleted,
+      subscription_status: isCompleted ? 'active' : 'pending',
+      current_period_end: isCompleted ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() : null,
     });
 
   } catch (error) {
