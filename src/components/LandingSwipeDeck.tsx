@@ -136,6 +136,7 @@ const LandingSwipeDeck: React.FC<LandingSwipeDeckProps> = ({
   }, [x, y, products.length, currentIndex]);
 
   const handleLike = useCallback(() => {
+    console.log('👍 Right swipe (like) - advancing to next card');
     // Always advance to next card for consistent animation
     nextCard();
     
@@ -154,6 +155,7 @@ const LandingSwipeDeck: React.FC<LandingSwipeDeckProps> = ({
   }, [user, toast, nextCard, currentProduct]);
 
   const handleDislike = useCallback(() => {
+    console.log('👎 Left swipe (dislike) - advancing to next card');
     nextCard();
   }, [nextCard]);
 
