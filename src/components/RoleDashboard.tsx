@@ -348,7 +348,7 @@ const RoleDashboard: React.FC = () => {
       {/* Global Search and Affiliate Hub Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Trending Styles Carousel with Premium Glass Panel */}
-        <GlassPanel variant="premium" className="p-8">
+        <GlassPanel variant="premium" className="p-6">
           <div className="space-y-5">
             <h3 className="text-xl font-cormorant font-semibold flex items-center gap-3">
               <div className="p-2 rounded-full bg-gradient-to-br from-primary/10 to-accent-cartier/10">
