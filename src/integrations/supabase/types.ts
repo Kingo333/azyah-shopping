@@ -2155,6 +2155,15 @@ export type Database = {
         }
         Returns: boolean
       }
+      cleanup_old_ai_assets: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          cleanup_summary: string
+          deleted_assets_count: number
+          deleted_files_count: number
+          deleted_jobs_count: number
+        }[]
+      }
       create_admin_user: {
         Args: Record<PropertyKey, never>
         Returns: undefined
@@ -2162,6 +2171,16 @@ export type Database = {
       embed_query: {
         Args: { query_text: string }
         Returns: number[]
+      }
+      get_cleanup_stats: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          assets_eligible_for_cleanup: number
+          jobs_eligible_for_cleanup: number
+          next_cleanup_estimate: string
+          total_assets: number
+          total_jobs: number
+        }[]
       }
       get_current_user_role: {
         Args: Record<PropertyKey, never>
