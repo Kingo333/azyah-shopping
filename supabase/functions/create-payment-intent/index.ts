@@ -168,9 +168,9 @@ serve(async (req) => {
     const subscriptionData = {
       user_id: user.id,
       plan: 'consumer_premium',
-      status: 'pending',
+      status: 'inactive', // Use 'inactive' until payment is confirmed by webhook
       last_payment_intent_id: out.id,
-      last_payment_status: out.status || 'pending',
+      last_payment_status: out.status || 'requires_payment_instrument',
       updated_at: new Date().toISOString(),
     };
 
