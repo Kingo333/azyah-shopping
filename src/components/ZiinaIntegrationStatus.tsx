@@ -37,8 +37,8 @@ export const ZiinaIntegrationStatus = () => {
     },
     {
       component: "Webhook Registration",
-      status: "pending",
-      description: "Click 'Register Webhook' button to complete"
+      status: "ready",
+      description: "Webhook successfully registered with Ziina"
     }
   ];
 
