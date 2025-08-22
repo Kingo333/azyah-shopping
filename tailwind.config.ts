@@ -173,21 +173,29 @@ export default {
 					}
 				},
 				'aura-wave': {
-					'0%, 100%': {
-						transform: 'translate(-10%, -10%) rotate(0deg) scale(1)',
-						opacity: '0.6'
-					},
-					'25%': {
-						transform: 'translate(-15%, -5%) rotate(90deg) scale(1.1)',
+					'0%': {
+						transform: 'translate(-10%, -10%) rotate(0deg) scale(1) skewX(0deg)',
 						opacity: '0.8'
 					},
-					'50%': {
-						transform: 'translate(-5%, -15%) rotate(180deg) scale(0.9)',
-						opacity: '0.4'
+					'20%': {
+						transform: 'translate(-12%, -8%) rotate(45deg) scale(1.05) skewX(5deg)',
+						opacity: '0.9'
 					},
-					'75%': {
-						transform: 'translate(-20%, -10%) rotate(270deg) scale(1.05)',
+					'40%': {
+						transform: 'translate(-8%, -12%) rotate(90deg) scale(0.95) skewX(-3deg)',
 						opacity: '0.7'
+					},
+					'60%': {
+						transform: 'translate(-15%, -5%) rotate(180deg) scale(1.1) skewX(8deg)',
+						opacity: '0.85'
+					},
+					'80%': {
+						transform: 'translate(-5%, -15%) rotate(270deg) scale(1.02) skewX(-5deg)',
+						opacity: '0.75'
+					},
+					'100%': {
+						transform: 'translate(-10%, -10%) rotate(360deg) scale(1) skewX(0deg)',
+						opacity: '0.8'
 					}
 				}
 			},
@@ -200,7 +208,7 @@ export default {
 				'glow-pulse': 'glow-pulse 2s ease-in-out infinite',
 				'luxury-glow': 'luxury-glow 3s ease-in-out infinite',
 				'cartier-glow': 'cartier-glow 2s ease-in-out infinite',
-				'aura-wave': 'aura-wave 20s ease-in-out infinite'
+				'aura-wave': 'aura-wave 25s ease-in-out infinite'
 			},
 			boxShadow: {
 				'glow': 'var(--shadow-glow)',
