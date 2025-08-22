@@ -84,10 +84,17 @@ function App() {
                       <ProfileSettings />
                     </ProtectedRoute>
                   } />
-                  {/* Payment routes */}
+                  
+                  {/* Updated Ziina payment routes to match edge function URLs */}
+                  <Route path="/payments/ziina/success" element={<PaymentSuccess />} />
+                  <Route path="/payments/ziina/cancel" element={<PaymentCancel />} />
+                  <Route path="/payments/ziina/failure" element={<PaymentFailed />} />
+                  
+                  {/* Keep legacy routes for backward compatibility during transition */}
                   <Route path="/payment-success" element={<PaymentSuccess />} />
                   <Route path="/payment-cancel" element={<PaymentCancel />} />
                   <Route path="/payment-failed" element={<PaymentFailed />} />
+                  
                   <Route path="/swipe" element={
                     <ProtectedRoute roles={['shopper', 'admin']}>
                       <Swipe />
