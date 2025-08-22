@@ -57,16 +57,24 @@ async function createPaymentIntent(params: {
   test?: boolean;
   operationId: string;
 }) {
-  const ziinaApiBase = Deno.env.get('ZIINA_API_BASE') || 'https://api-v2.ziina.com/api';
+  // Step 1: Validate environment variables first
+  const ziinaApiBase = Deno.env.get('ZIINA_API_BASE');
   const ziinaApiToken = Deno.env.get('ZIINA_API_TOKEN');
+  const appBaseUrl = Deno.env.get('APP_DASHBOARD_URL');
 
+  if (!ziinaApiBase) {
+    throw new Error('ZIINA_API_BASE environment variable is missing');
+  }
   if (!ziinaApiToken) {
-    throw new Error('ZIINA_API_TOKEN not configured');
+    throw new Error('ZIINA_API_TOKEN environment variable is missing');
+  }
+  if (!appBaseUrl) {
+    throw new Error('APP_DASHBOARD_URL environment variable is missing');
   }
 
   const paymentMessage = params.message || 'Azyah Premium';
 
-  // FIXED: Remove operation_id from request body and add expiry
+  // Step 2: Create correct request body (no operation_id, numeric expiry)
   const body = {
     amount: params.amount_fils,
     currency_code: params.currency,
@@ -75,12 +83,11 @@ async function createPaymentIntent(params: {
     failure_url: params.failureUrl,
     message: paymentMessage,
     test: params.test || false,
-    expiry: Date.now() + 30 * 60 * 1000, // FIXED: Add expiry as numeric timestamp (30 minutes)
+    expiry: Date.now() + 30 * 60 * 1000, // numeric timestamp (30 minutes from now)
     allow_tips: false,
     // REMOVED: operation_id - not sent to Ziina API, kept only for local DB
   };
 
-  // DIAGNOSTIC: Temporary logging for debugging
   console.log('Creating Ziina payment intent:', { 
     amount: params.amount_fils, 
     test: params.test,
@@ -113,7 +120,7 @@ async function createPaymentIntent(params: {
     data = responseText;
   }
 
-  // DIAGNOSTIC: Enhanced error logging
+  // Step 3: Enhanced diagnostic logging
   console.error(JSON.stringify({
     stage: 'ziina_create',
     status: response.status,
@@ -246,6 +253,30 @@ serve(async (req) => {
         error: 'Validation error',
         details: error.errors 
       }, 400);
+    }
+    
+    // Step 4: Map upstream failures to clear status codes
+    if (error instanceof Error) {
+      if (error.message.includes('environment variable is missing')) {
+        return jsonResponse({ 
+          error: 'Configuration error',
+          details: error.message 
+        }, 500);
+      }
+      
+      if (error.message.includes('HTTP 401') || error.message.includes('HTTP 403')) {
+        return jsonResponse({ 
+          error: 'Ziina authentication failed',
+          details: error.message 
+        }, 502);
+      }
+      
+      if (error.message.includes('HTTP 422')) {
+        return jsonResponse({ 
+          error: 'Ziina validation failed',
+          details: error.message 
+        }, 502);
+      }
     }
     
     return jsonResponse({ 
