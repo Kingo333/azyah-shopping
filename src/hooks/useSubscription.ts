@@ -89,10 +89,11 @@ export function useSubscription(): UseSubscriptionReturn {
     try {
       setLoading(true);
       
+      const { data: { session } } = await supabase.auth.getSession();
       const { data, error } = await supabase.functions.invoke('create-payment-intent', {
-        body: { test },
+        body: { amountAed: 40, test, message: "Azyah Premium" },
         headers: {
-          Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+          Authorization: `Bearer ${session?.access_token}`
         }
       });
 
@@ -106,9 +107,10 @@ export function useSubscription(): UseSubscriptionReturn {
         return;
       }
 
-      if (data?.redirect_url) {
+      // Handle new response format: { redirectUrl, pi }
+      if (data?.redirectUrl) {
         // Redirect to Ziina checkout
-        window.location.href = data.redirect_url;
+        window.location.href = data.redirectUrl;
       } else {
         toast({
           title: "Payment Error", 

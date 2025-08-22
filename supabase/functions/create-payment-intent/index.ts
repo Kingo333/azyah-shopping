@@ -1,69 +1,58 @@
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { serve } from "https://deno.land/std/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Content-Type': 'application/json'
 };
 
 function jsonResponse(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    headers: corsHeaders,
   });
 }
 
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response("ok", { headers: corsHeaders });
   }
 
   if (req.method !== 'POST') {
     return jsonResponse({ error: 'Method not allowed' }, 405);
   }
 
-  try {
-    // Get environment variables
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const ziinaApiBase = Deno.env.get('ZIINA_API_BASE')!;
-    const ziinaApiToken = Deno.env.get('ZIINA_API_TOKEN')!;
-    const appBaseUrl = Deno.env.get('APP_BASE_URL')!;
+  // Require user JWT (Supabase will also gate before this if verify_jwt=true)
+  const auth = req.headers.get("authorization") || "";
+  if (!auth.startsWith("Bearer ")) {
+    return jsonResponse({ error: "missing_user_jwt" }, 401);
+  }
 
-    // Validate required environment variables
-    if (!supabaseUrl || !ziinaApiBase || !ziinaApiToken || !appBaseUrl) {
-      console.error('Missing required environment variables:', {
-        supabaseUrl: !!supabaseUrl,
-        ziinaApiBase: !!ziinaApiBase,
-        ziinaApiToken: !!ziinaApiToken,
-        appBaseUrl: !!appBaseUrl
-      });
-      return jsonResponse({ 
-        error: 'Server configuration error',
-        missing_env: {
-          SUPABASE_URL: !!supabaseUrl,
-          ZIINA_API_BASE: !!ziinaApiBase,
-          ZIINA_API_TOKEN: !!ziinaApiToken,
-          APP_BASE_URL: !!appBaseUrl
-        }
-      }, 500);
-    }
+  // Get environment variables
+  const BASE = Deno.env.get("ZIINA_API_BASE");
+  const TOKEN = Deno.env.get("ZIINA_API_TOKEN");
+  const APP = Deno.env.get("APP_BASE_URL");
+  const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+  const SUPABASE_SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
+
+  if (!BASE || !TOKEN || !APP || !SUPABASE_URL || !SUPABASE_SERVICE_KEY || !SUPABASE_ANON_KEY) {
+    return jsonResponse({ 
+      error: "missing_env", 
+      have: { BASE: !!BASE, TOKEN: !!TOKEN, APP: !!APP, SUPABASE_URL: !!SUPABASE_URL, SUPABASE_SERVICE_KEY: !!SUPABASE_SERVICE_KEY, SUPABASE_ANON_KEY: !!SUPABASE_ANON_KEY } 
+    }, 500);
+  }
+
+  try {
 
     // Initialize Supabase client for user authentication
-    const supabaseAnon = createClient(
-      supabaseUrl,
-      Deno.env.get('SUPABASE_ANON_KEY')!
-    );
+    const supabaseAnon = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     // Get user from authorization header
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      return jsonResponse({ error: 'Authorization header required' }, 401);
-    }
-
     const { data: { user }, error: authError } = await supabaseAnon.auth.getUser(
-      authHeader.replace('Bearer ', '')
+      auth.replace('Bearer ', '')
     );
 
     if (authError || !user) {
@@ -71,56 +60,65 @@ serve(async (req) => {
       return jsonResponse({ error: 'Invalid authentication' }, 401);
     }
 
-    const { test = false } = await req.json().catch(() => ({ test: false }));
+    const { amountAed = 40, test = true, message = "Azyah Premium" } = await req.json();
+    const amount = Math.round(Number(amountAed) * 100);
+    if (!Number.isFinite(amount) || amount < 200) {
+      return jsonResponse({ error: "amount_invalid", amount }, 400);
+    }
 
     console.log(`Creating payment intent for user: ${user.id}, test: ${test}`);
 
     // Create Ziina Payment Intent following the documentation
-    const paymentPayload = {
-      amount: 4000, // 40 AED in fils (smallest currency unit)
+    const payload = {
+      amount,
       currency_code: "AED",
-      message: "Premium Subscription - 40 AED / month",
-      success_url: `${appBaseUrl}/payment-success?payment_intent_id={PAYMENT_INTENT_ID}`,
-      cancel_url: `${appBaseUrl}/payment-cancel?payment_intent_id={PAYMENT_INTENT_ID}`,
-      failure_url: `${appBaseUrl}/payment-failed?payment_intent_id={PAYMENT_INTENT_ID}`,
+      message,
+      success_url: `${APP}/payment-success?payment_intent_id={PAYMENT_INTENT_ID}`,
+      cancel_url: `${APP}/payment-cancel?payment_intent_id={PAYMENT_INTENT_ID}`,
+      failure_url: `${APP}/payment-failed?payment_intent_id={PAYMENT_INTENT_ID}`,
       test: !!test,
-      expiry: Date.now() + (24 * 60 * 60 * 1000), // 24 hours from now
+      expiry: Math.floor((Date.now() + 30 * 60 * 1000) / 1000).toString(), // 30 minutes from now in seconds as string
       allow_tips: false
     };
 
-    console.log('Creating payment intent with Ziina API:', JSON.stringify(paymentPayload, null, 2));
-
-    const ziinaResponse = await fetch(`${ziinaApiBase}/payment_intent`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${ziinaApiToken}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(paymentPayload),
+    const res = await fetch(`${BASE}/payment_intent`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${TOKEN}`, "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
     });
 
-    const responseData = await ziinaResponse.json();
-    console.log('Ziina API response:', { status: ziinaResponse.status, data: responseData });
-
-    if (!ziinaResponse.ok) {
-      console.error('Ziina API error:', responseData);
+    const raw = await res.text(); 
+    let out: any = null; 
+    try { 
+      out = raw ? JSON.parse(raw) : null; 
+    } catch {}
+    
+    // Structured logging as requested
+    console.error(JSON.stringify({ 
+      stage: "ziina_create", 
+      status: res.status, 
+      req: { amount, currency_code: 'AED', has_urls: true, test: !!test, expiry_type: typeof payload.expiry }, 
+      res: out ?? raw 
+    }));
+    
+    if (!res.ok) {
       return jsonResponse({ 
-        error: 'ziina_create_failed',
-        upstream_status: ziinaResponse.status,
-        details: responseData
+        error: "ziina_create_failed", 
+        upstream_status: res.status, 
+        details: out ?? raw 
       }, 502);
     }
 
-    // Initialize service role client for database operations
-    const supabaseService = createClient(supabaseUrl, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+    // Initialize service role client for database operations  
+    const supabaseService = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
     // Create or update subscription record
     const subscriptionData = {
       user_id: user.id,
-      plan: 'premium',
+      plan: 'consumer_premium',
       status: 'pending',
-      last_payment_intent_id: responseData.id,
-      last_payment_status: responseData.status,
+      last_payment_intent_id: out.id,
+      last_payment_status: out.status,
       updated_at: new Date().toISOString(),
     };
 
@@ -134,20 +132,17 @@ serve(async (req) => {
     }
 
     console.log('Payment intent created successfully:', {
-      paymentIntentId: responseData.id,
-      redirectUrl: responseData.redirect_url
+      paymentIntentId: out.id,
+      redirectUrl: out.redirect_url
     });
 
-    // Return the redirect URL to client
-    return jsonResponse({
-      redirect_url: responseData.redirect_url,
-      payment_intent_id: responseData.id,
-    });
-
-  } catch (error) {
-    console.error('Error in create-payment-intent:', error);
+    // Return the redirect URL to client (standardized response format)
     return jsonResponse({ 
-      error: error instanceof Error ? error.message : String(error) 
-    }, 500);
+      redirectUrl: out.redirect_url, 
+      pi: out.id 
+    });
+
+  } catch (e) {
+    return jsonResponse({ error: "unhandled", message: String(e) }, 500);
   }
 });

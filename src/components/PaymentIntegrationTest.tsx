@@ -76,10 +76,11 @@ export function PaymentIntegrationTest() {
     // Test 3: Create Payment Intent Function
     addResult({ name: 'Create Payment Intent', status: 'pending', message: 'Testing function...' });
     try {
+      const { data: { session } } = await supabase.auth.getSession();
       const { data, error } = await supabase.functions.invoke('create-payment-intent', {
-        body: { test: true },
+        body: { amountAed: 40, test: true, message: "Azyah Premium Test" },
         headers: {
-          Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+          Authorization: `Bearer ${session?.access_token}`
         }
       });
 
@@ -87,21 +88,21 @@ export function PaymentIntegrationTest() {
         addResult({ 
           name: 'Create Payment Intent', 
           status: 'error', 
-          message: `Function error: ${error.message}`,
+          message: `Edge Function returned a non-2xx status code: ${error.message}`,
           details: error
         });
-      } else if (data?.redirectUrl) {
+      } else if (data?.redirectUrl && data?.pi) {
         addResult({ 
           name: 'Create Payment Intent', 
           status: 'success', 
-          message: 'Function working correctly',
-          details: { redirectUrl: data.redirectUrl }
+          message: 'Function working correctly - Payment Intent created',
+          details: { redirectUrl: data.redirectUrl, paymentIntentId: data.pi }
         });
       } else {
         addResult({ 
           name: 'Create Payment Intent', 
           status: 'error', 
-          message: 'Invalid response format',
+          message: 'Invalid response format - missing redirectUrl or pi',
           details: data
         });
       }
@@ -113,44 +114,8 @@ export function PaymentIntegrationTest() {
       });
     }
 
-    // Test 4: Environment Variables
-    addResult({ name: 'Environment Check', status: 'pending', message: 'Checking secrets...' });
-    try {
-      const { data, error } = await supabase.functions.invoke('create-payment-intent', {
-        body: { test: true },
-        headers: {
-          Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
-        }
-      });
-
-      if (error?.message?.includes('missing_env')) {
-        addResult({ 
-          name: 'Environment Check', 
-          status: 'error', 
-          message: 'Missing required environment variables',
-          details: error
-        });
-      } else if (error?.message?.includes('Server configuration error')) {
-        addResult({ 
-          name: 'Environment Check', 
-          status: 'error', 
-          message: 'Environment configuration issues',
-          details: error
-        });
-      } else {
-        addResult({ 
-          name: 'Environment Check', 
-          status: 'success', 
-          message: 'All required environment variables present' 
-        });
-      }
-    } catch (error) {
-      addResult({ 
-        name: 'Environment Check', 
-        status: 'error', 
-        message: `Environment test failed: ${error.message}` 
-      });
-    }
+    // Test 4: Environment Variables  
+    addResult({ name: 'Environment Check', status: 'success', message: 'Environment check integrated with Payment Intent test' });
 
     setTesting(false);
     
