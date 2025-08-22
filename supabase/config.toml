@@ -8,73 +8,48 @@ schemas = ["public", "graphql_public"]
 extra_search_path = ["public", "extensions"]
 max_rows = 1000
 
-[auth]
+[db]
+port = 54322
+
+[studio]
+enabled = true
+port = 54323
+
+[inbucket]
 enabled = true
 port = 54324
-site_url = "https://localhost:3000"
-additional_redirect_urls = ["https://lovable.dev"]
-jwt_expiry = 3600
-enable_signup = true
 
-[db]
-shadow_database_url = "postgresql://postgres:postgres@127.0.0.1:54322/postgres"
-
-[edge_functions]
+[storage]
 enabled = true
+port = 54325
+file_size_limit = "50MiB"
+
+[auth]
+enabled = true
+port = 54326
+
+[auth.email]
+enable_signup = true
+double_confirm_changes = true
+enable_confirmations = false
+
+[edge_runtime]
+enabled = true
+port = 54327
+
+[analytics]
+enabled = false
+port = 54328
+vector_port = 54329
 
 [functions.create-payment-intent]
 verify_jwt = true
 
-[functions.generate-toy-replica]
-verify_jwt = false
-
-[functions.google-shopping-search]
-verify_jwt = false
-
-[functions.import-asos]
-verify_jwt = false
-
-[functions.import-asos-async]
-verify_jwt = false
-
-[functions.import-asos-bulk]
-verify_jwt = false
-
-[functions.import-asos-chunked]
-verify_jwt = false
-
-[functions.import-asos-ultra]
-verify_jwt = false
+[functions.verify-payment]
+verify_jwt = true
 
 [functions.payment-webhook]
 verify_jwt = false
 
-[functions.process-import]
-verify_jwt = false
-
-[functions.product-extractor]
-verify_jwt = false
-
 [functions.register-webhook]
-verify_jwt = false
-
-[functions.robots-checker]
-verify_jwt = false
-
-[functions.test-axesso-api]
-verify_jwt = false
-
-[functions.tryon-jobs]
-verify_jwt = false
-
-[functions.update-product-categories]
-verify_jwt = false
-
-[functions.verify-payment]
 verify_jwt = true
-
-[functions.website-discovery]
-verify_jwt = false
-
-[functions.send-password-reset]
-verify_jwt = false
