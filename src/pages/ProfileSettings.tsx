@@ -20,12 +20,14 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Check, ChevronsUpDown } from 'lucide-react';
 import { COUNTRIES } from '@/lib/countries';
+import { CITIES } from '@/lib/cities';
 
 interface ProfileData {
   name: string;
   username: string;
   bio: string;
   country: string;
+  city: string;
   avatar_url: string;
   socials: {
     instagram?: string;
@@ -49,10 +51,12 @@ const ProfileSettings: React.FC = () => {
     username: '',
     bio: '',
     country: '',
+    city: '',
     avatar_url: '',
     socials: {}
   });
   const [countryOpen, setCountryOpen] = useState(false);
+  const [cityOpen, setCityOpen] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -81,6 +85,7 @@ const ProfileSettings: React.FC = () => {
           username: data.email?.split('@')[0] || '',
           bio: data.bio || '',
           country: data.country || '',
+          city: data.city || '',
           avatar_url: data.avatar_url || '',
           socials: (typeof data.socials === 'object' && data.socials !== null) ? data.socials as any : {}
         });
@@ -118,6 +123,7 @@ const ProfileSettings: React.FC = () => {
           name: profileData.name,
           bio: profileData.bio,
           country: profileData.country,
+          city: profileData.city,
           avatar_url: profileData.avatar_url,
           socials: profileData.socials,
           updated_at: new Date().toISOString()
