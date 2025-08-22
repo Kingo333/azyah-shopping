@@ -10,10 +10,10 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import { useSubscription } from '@/hooks/useSubscription';
+import { useZiinaPayments } from '@/hooks/useZiinaPayments';
 import { supabase } from '@/integrations/supabase/client';
 import { Trash2, Upload, Instagram, Twitter, Globe, Music, Crown, CreditCard, Calendar } from 'lucide-react';
-import { PaymentStatus } from '@/components/PaymentStatus';
+import { ZiinaPaymentButton } from '@/components/ZiinaPaymentButton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -39,7 +39,7 @@ interface ProfileData {
 
 const ProfileSettings: React.FC = () => {
   const { user, signOut } = useAuth();
-  const { payment, isPremium, createPaymentIntent, cancelSubscription } = useSubscription();
+  const { payment, isPremium, createPayment } = useZiinaPayments();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
@@ -466,7 +466,7 @@ const ProfileSettings: React.FC = () => {
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       <div>
                         <span className="text-muted-foreground">Status:</span>
-                        <p className="font-medium capitalize">{payment?.status}</p>
+                        <p className="font-medium capitalize">{payment?.status || 'active'}</p>
                       </div>
                       <div>
                         <span className="text-muted-foreground">Plan:</span>
@@ -520,19 +520,20 @@ const ProfileSettings: React.FC = () => {
                   <div className="flex flex-col sm:flex-row gap-3">
                     <Button 
                       variant="outline" 
-                      onClick={cancelSubscription}
                       className="flex-1"
+                      disabled
                     >
                       <Calendar className="h-4 w-4 mr-2" />
                       Manage Subscription
                     </Button>
-                    <Button 
-                      onClick={() => createPaymentIntent()}
+                    <ZiinaPaymentButton 
+                      amountAed={40}
                       className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+                      message="Premium subscription renewal"
                     >
                       <CreditCard className="h-4 w-4 mr-2" />
                       Renew Premium
-                    </Button>
+                    </ZiinaPaymentButton>
                   </div>
                 </div>
               ) : (
@@ -571,21 +572,19 @@ const ProfileSettings: React.FC = () => {
                     </div>
                   </div>
 
-                  <Button 
-                    onClick={() => createPaymentIntent()}
+                  <ZiinaPaymentButton 
+                    amountAed={40}
                     className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
                     size="lg"
+                    message="Premium subscription upgrade"
                   >
                     <Crown className="h-4 w-4 mr-2" />
                     Unlock Premium Access — 40 AED/month • 20 AI Try-ons daily • Unlimited replica • UGC collabs
-                  </Button>
+                  </ZiinaPaymentButton>
                 </div>
               )}
             </CardContent>
           </Card>
-
-          {/* Payment Integration Status */}
-          <PaymentStatus />
 
           {/* Actions */}
           <div className="flex justify-between">
