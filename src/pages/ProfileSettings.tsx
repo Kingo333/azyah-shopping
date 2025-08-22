@@ -601,8 +601,8 @@ const ProfileSettings: React.FC = () => {
             </CardContent>
           </Card>
 
-          {/* Payment Integration Test */}
-          <PaymentIntegrationTest />
+          {/* Payment Integration Test - Only for shopper@test.com */}
+          {user?.email === 'shopper@test.com' && <PaymentIntegrationTest />}
 
           {/* Actions */}
           <div className="flex justify-between">
