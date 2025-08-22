@@ -8,13 +8,15 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface ToyReplicaUploaderProps {
-  onFileUploaded: (toyReplicaId: string, fileName: string, previewUrl: string) => void;
-  onUploadStart: () => void;
-  onUploadError: (error: string) => void;
+  onImageSelect?: (imageUrl: string) => void;
+  onFileUploaded?: (toyReplicaId: string, fileName: string, previewUrl: string) => void;
+  onUploadStart?: () => void;
+  onUploadError?: (error: string) => void;
   disabled?: boolean;
 }
 
 export const ToyReplicaUploader: React.FC<ToyReplicaUploaderProps> = ({
+  onImageSelect,
   onFileUploaded,
   onUploadStart,
   onUploadError,
@@ -27,7 +29,13 @@ export const ToyReplicaUploader: React.FC<ToyReplicaUploaderProps> = ({
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     if (!user) {
-      onUploadError("Please log in to upload images");
+      const errorMsg = "Please log in to upload images";
+      onUploadError?.(errorMsg);
+      toast({
+        title: "Authentication Required",
+        description: errorMsg,
+        variant: "destructive"
+      });
       return;
     }
 
@@ -36,74 +44,97 @@ export const ToyReplicaUploader: React.FC<ToyReplicaUploaderProps> = ({
 
     // Validate file
     if (file.size > 10 * 1024 * 1024) { // 10MB
-      onUploadError("File size must be less than 10MB");
+      const errorMsg = "File size must be less than 10MB";
+      onUploadError?.(errorMsg);
+      toast({
+        title: "File Too Large",
+        description: errorMsg,
+        variant: "destructive"
+      });
       return;
     }
 
     const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
     if (!validTypes.includes(file.type)) {
-      onUploadError("Please upload a JPEG, PNG, or WebP image");
+      const errorMsg = "Please upload a JPEG, PNG, or WebP image";
+      onUploadError?.(errorMsg);
+      toast({
+        title: "Invalid File Type",
+        description: errorMsg,
+        variant: "destructive"
+      });
       return;
     }
 
     try {
       setUploading(true);
-      onUploadStart();
+      onUploadStart?.();
 
       // Create preview
       const previewUrl = URL.createObjectURL(file);
       setPreview(previewUrl);
-
-      // Create toy replica record first
-      const { data: toyReplica, error: createError } = await supabase
-        .from('toy_replicas')
-        .insert({
-          user_id: user.id,
-          status: 'queued'
-        })
-        .select()
-        .single();
-
-      if (createError || !toyReplica) {
-        throw new Error(`Failed to create toy replica record: ${createError?.message}`);
-      }
-
-      // Upload to storage
-      const fileExtension = file.name.split('.').pop() || 'jpg';
-      const fileName = `${user.id}/${toyReplica.id}.${fileExtension}`;
       
-      const { error: uploadError } = await supabase.storage
-        .from('toy-replica-source')
-        .upload(fileName, file, {
-          contentType: file.type,
-          upsert: true
-        });
+      // Call onImageSelect for simple use cases
+      onImageSelect?.(previewUrl);
 
-      if (uploadError) {
-        throw new Error(`Upload failed: ${uploadError.message}`);
+      // For full upload functionality (if onFileUploaded is provided)
+      if (onFileUploaded) {
+        // Create toy replica record first
+        const { data: toyReplica, error: createError } = await supabase
+          .from('toy_replicas')
+          .insert({
+            user_id: user.id,
+            status: 'queued'
+          })
+          .select()
+          .single();
+
+        if (createError || !toyReplica) {
+          throw new Error(`Failed to create toy replica record: ${createError?.message}`);
+        }
+
+        // Upload to storage
+        const fileExtension = file.name.split('.').pop() || 'jpg';
+        const fileName = `${user.id}/${toyReplica.id}.${fileExtension}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('toy-replica-source')
+          .upload(fileName, file, {
+            contentType: file.type,
+            upsert: true
+          });
+
+        if (uploadError) {
+          throw new Error(`Upload failed: ${uploadError.message}`);
+        }
+
+        // Update toy replica with source URL
+        const { error: updateError } = await supabase
+          .from('toy_replicas')
+          .update({ source_url: fileName })
+          .eq('id', toyReplica.id);
+
+        if (updateError) {
+          throw new Error(`Failed to update toy replica: ${updateError.message}`);
+        }
+
+        onFileUploaded(toyReplica.id, fileName, previewUrl);
       }
-
-      // Update toy replica with source URL
-      const { error: updateError } = await supabase
-        .from('toy_replicas')
-        .update({ source_url: fileName })
-        .eq('id', toyReplica.id);
-
-      if (updateError) {
-        throw new Error(`Failed to update toy replica: ${updateError.message}`);
-      }
-
-      onFileUploaded(toyReplica.id, fileName, previewUrl);
 
     } catch (error) {
       console.error('Upload error:', error);
       const errorMsg = error instanceof Error ? error.message : 'Upload failed';
-      onUploadError(errorMsg);
+      onUploadError?.(errorMsg);
+      toast({
+        title: "Upload Failed",
+        description: errorMsg,
+        variant: "destructive"
+      });
       setPreview(null);
     } finally {
       setUploading(false);
     }
-  }, [user, onFileUploaded, onUploadStart, onUploadError]);
+  }, [user, onImageSelect, onFileUploaded, onUploadStart, onUploadError, toast]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -167,7 +198,7 @@ export const ToyReplicaUploader: React.FC<ToyReplicaUploaderProps> = ({
           </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Image className="h-4 w-4" />
-            <span>Ready to generate LEGO mini-figure</span>
+            <span>Ready to generate toy replica</span>
           </div>
         </div>
       )}
