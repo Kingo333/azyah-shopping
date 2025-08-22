@@ -1,3 +1,4 @@
+
 project_id = "klwolsopucgswhtdlsps"
 
 [api]
@@ -69,7 +70,7 @@ verify_jwt = false
 [functions.bitstudio-video]
 verify_jwt = false
 
-[functions.create-premium-payment-intent]
+[functions.create-payment-intent]
 verify_jwt = false
 
 [functions.generate-toy-replica]
