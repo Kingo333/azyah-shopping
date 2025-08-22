@@ -186,6 +186,29 @@
 
   .dashboard-bg {
     background: var(--gradient-dashboard);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .dashboard-bg::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: 
+      radial-gradient(circle at 30% 70%, hsl(var(--primary) / 0.03) 0%, transparent 50%),
+      radial-gradient(circle at 70% 30%, hsl(var(--accent-cartier) / 0.02) 0%, transparent 50%),
+      radial-gradient(circle at 50% 50%, hsl(var(--primary-glow) / 0.04) 0%, transparent 70%);
+    animation: aura-wave 20s ease-in-out infinite;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .dashboard-bg > * {
+    position: relative;
+    z-index: 1;
   }
 
   .premium-hover {

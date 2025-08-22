@@ -171,6 +171,24 @@ export default {
 					'50%': {
 						boxShadow: '0 0 40px hsl(var(--accent-cartier) / 0.6)'
 					}
+				},
+				'aura-wave': {
+					'0%, 100%': {
+						transform: 'translate(-10%, -10%) rotate(0deg) scale(1)',
+						opacity: '0.6'
+					},
+					'25%': {
+						transform: 'translate(-15%, -5%) rotate(90deg) scale(1.1)',
+						opacity: '0.8'
+					},
+					'50%': {
+						transform: 'translate(-5%, -15%) rotate(180deg) scale(0.9)',
+						opacity: '0.4'
+					},
+					'75%': {
+						transform: 'translate(-20%, -10%) rotate(270deg) scale(1.05)',
+						opacity: '0.7'
+					}
 				}
 			},
 			animation: {
@@ -181,7 +199,8 @@ export default {
 				'slide-up': 'slide-up 0.3s ease-out',
 				'glow-pulse': 'glow-pulse 2s ease-in-out infinite',
 				'luxury-glow': 'luxury-glow 3s ease-in-out infinite',
-				'cartier-glow': 'cartier-glow 2s ease-in-out infinite'
+				'cartier-glow': 'cartier-glow 2s ease-in-out infinite',
+				'aura-wave': 'aura-wave 20s ease-in-out infinite'
 			},
 			boxShadow: {
 				'glow': 'var(--shadow-glow)',
