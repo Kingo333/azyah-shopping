@@ -235,7 +235,7 @@ const FeaturedBrands: React.FC<FeaturedBrandsProps> = ({ limit = 6, showMore = t
                     }
                     
                     const imageProps = imageUrl.includes('asos-media.com') 
-                      ? getResponsiveImageProps(imageUrl, 'thumbnail', "(max-width: 768px) 64px, 64px")
+                      ? getResponsiveImageProps(imageUrl, "(max-width: 768px) 64px, 64px")
                       : { src: imageUrl };
                     
                     return (

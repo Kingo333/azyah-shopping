@@ -192,7 +192,7 @@ const BrandDetail = () => {
               {products.map((product) => {
                 const imageUrl = getImageUrl(product);
                 const imageProps = imageUrl.includes('asos-media.com') 
-                  ? getResponsiveImageProps(imageUrl, 'gallery', "(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw")
+                  ? getResponsiveImageProps(imageUrl, "(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw")
                   : { src: imageUrl };
 
                 return (

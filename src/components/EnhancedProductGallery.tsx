@@ -1,10 +1,10 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ZoomIn, RotateCw, Loader2 } from 'lucide-react';
+import { ZoomIn, RotateCw } from 'lucide-react';
 import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
 import { getResponsiveImageProps } from '@/utils/asosImageUtils';
 
@@ -39,27 +39,26 @@ export const EnhancedProductGallery: React.FC<EnhancedProductGalleryProps> = ({
     setIsZoomed(!isZoomed);
   };
 
-  const handleImageChange = useCallback((index: number) => {
+  const handleImageChange = (index: number) => {
     setSelectedImage(index);
     setImageLoaded(false);
     setImageError(false);
-    setRotation(0); // Reset rotation when changing images
-  }, []);
+  };
 
-  const handleImageLoad = useCallback(() => {
+  const handleImageLoad = () => {
     setImageLoaded(true);
-  }, []);
+  };
 
-  const handleImageError = useCallback(() => {
+  const handleImageError = () => {
     setImageError(true);
     setImageLoaded(true);
-  }, []);
+  };
 
   return (
     <div className="space-y-4">
       {/* Main Image Display */}
       <div className="relative aspect-square md:aspect-[4/5] overflow-hidden rounded-lg bg-accent group">
-        {/* Loading State */}
+        {/* Loading Skeleton */}
         {!imageLoaded && (
           <div className="absolute inset-0 bg-muted animate-pulse flex items-center justify-center">
             <div className="text-muted-foreground text-sm">Loading...</div>
@@ -70,7 +69,6 @@ export const EnhancedProductGallery: React.FC<EnhancedProductGalleryProps> = ({
           key={selectedImage}
           {...getResponsiveImageProps(
             images[selectedImage] || '/placeholder.svg',
-            'detail',
             "(max-width: 768px) 90vw, 50vw"
           )}
           alt={`${productTitle} view ${selectedImage + 1}`}
@@ -132,7 +130,7 @@ export const EnhancedProductGallery: React.FC<EnhancedProductGalleryProps> = ({
               whileTap={{ scale: 0.95 }}
             >
               <img
-                {...getResponsiveImageProps(image, 'thumbnail', "64px")}
+                {...getResponsiveImageProps(image, "64px")}
                 alt={`${productTitle} thumbnail ${index + 1}`}
                 className="w-full h-full object-cover"
                 loading="lazy"
