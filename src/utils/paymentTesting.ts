@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 
 // Test result type for UI display
@@ -6,6 +7,7 @@ export interface PaymentTestResult {
   passed: boolean;
   duration: number;
   error?: string;
+  details?: any;
 }
 
 // Unit Test Functions for Payment Flow
@@ -130,7 +132,7 @@ export class PaymentTestSuite {
     }
   }
 
-  // Test Zod schema validation - FIXED with complete test data
+  // Test Zod schema validation
   static async testZodSchemas(): Promise<PaymentTestResult> {
     const startTime = Date.now();
     console.log('🧪 Testing Zod schema validation...');
@@ -205,7 +207,7 @@ export class PaymentTestSuite {
     }
   }
 
-  // Integration test for payment creation - FIXED with consistent error handling
+  // Enhanced integration test for payment creation with proper JWT handling
   static async testPaymentCreation(): Promise<PaymentTestResult> {
     const startTime = Date.now();
     console.log('🧪 Testing payment creation flow...');
@@ -220,7 +222,8 @@ export class PaymentTestSuite {
           testName: 'Payment Creation',
           passed: false,
           duration: Date.now() - startTime,
-          error: 'User not authenticated - please sign in to test payment creation'
+          error: 'User not authenticated - please sign in to test payment creation',
+          details: { sessionError: sessionError?.message }
         };
       }
 
@@ -233,6 +236,7 @@ export class PaymentTestSuite {
       console.log('Creating test payment intent with authenticated user...');
       console.log('User ID:', session.user.id);
       console.log('Session valid:', !!session.access_token);
+      console.log('Token preview:', session.access_token?.substring(0, 20) + '...');
       
       const { data, error } = await supabase.functions.invoke('create-payment-intent', {
         body: testPayload,
@@ -245,21 +249,38 @@ export class PaymentTestSuite {
         console.log(`Payment creation test: ❌ ${error.message}`);
         console.log('Error details:', error);
         
-        // Provide more specific error messages based on the error type
+        // Enhanced error categorization
+        let errorCategory = 'Unknown';
         let errorMessage = `API Error: ${error.message}`;
-        if (error.message?.includes('Configuration error')) {
+        
+        if (error.message?.includes('Configuration error') || error.message?.includes('missing')) {
+          errorCategory = 'Configuration';
           errorMessage = 'Edge function configuration error - check Supabase secrets (ZIINA_API_TOKEN, ZIINA_API_BASE, APP_BASE_URL)';
-        } else if (error.message?.includes('Ziina authentication failed')) {
-          errorMessage = 'Ziina API authentication failed - check ZIINA_API_TOKEN validity and permissions';
-        } else if (error.message?.includes('Ziina validation failed')) {
-          errorMessage = 'Ziina API validation failed - check request body format';
+        } else if (error.message?.includes('Ziina API failed') || error.message?.includes('upstream_status')) {
+          errorCategory = 'Ziina API';
+          errorMessage = `Ziina API error - check API token validity and request format: ${error.message}`;
+        } else if (error.message?.includes('Invalid authentication') || error.message?.includes('Authorization')) {
+          errorCategory = 'Authentication';
+          errorMessage = 'JWT authentication failed - check session token validity';
+        } else if (error.message?.includes('Validation error')) {
+          errorCategory = 'Validation';
+          errorMessage = 'Request validation failed - check request body format';
         }
         
         return {
           testName: 'Payment Creation',
           passed: false,
           duration: Date.now() - startTime,
-          error: errorMessage
+          error: errorMessage,
+          details: {
+            category: errorCategory,
+            originalError: error,
+            sessionInfo: {
+              userId: session.user.id,
+              hasToken: !!session.access_token,
+              tokenLength: session.access_token?.length
+            }
+          }
         };
       }
 
@@ -270,7 +291,8 @@ export class PaymentTestSuite {
           testName: 'Payment Creation',
           passed: false,
           duration: Date.now() - startTime,
-          error: 'Invalid response format - missing redirectUrl or pi'
+          error: 'Invalid response format - missing redirectUrl or pi',
+          details: { responseData: data }
         };
       }
 
@@ -281,7 +303,12 @@ export class PaymentTestSuite {
       return {
         testName: 'Payment Creation',
         passed: true,
-        duration: Date.now() - startTime
+        duration: Date.now() - startTime,
+        details: {
+          paymentIntentId: data.pi,
+          redirectUrlPreview: data.redirectUrl?.substring(0, 50) + '...',
+          fullRedirectUrl: data.redirectUrl
+        }
       };
     } catch (error) {
       console.error('Payment creation test failed:', error);
@@ -289,7 +316,8 @@ export class PaymentTestSuite {
         testName: 'Payment Creation',
         passed: false,
         duration: Date.now() - startTime,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
+        details: { errorType: error?.constructor?.name }
       };
     }
   }
@@ -330,7 +358,8 @@ export class PaymentTestSuite {
     return {
       testName: 'Webhook Simulation',
       passed: true,
-      duration: Date.now() - startTime
+      duration: Date.now() - startTime,
+      details: { simulatedPayload: simulatedWebhook }
     };
   }
 
@@ -356,9 +385,22 @@ export class PaymentTestSuite {
     results.push(await this.testWebhookSimulation());
     
     console.log('\n✨ Payment Test Suite Complete!');
+    
+    // Log summary
+    const passed = results.filter(r => r.passed).length;
+    const total = results.length;
+    console.log(`📊 Summary: ${passed}/${total} tests passed`);
+    
+    if (passed < total) {
+      console.log('❌ Failed tests:');
+      results.filter(r => !r.passed).forEach(r => {
+        console.log(`  - ${r.testName}: ${r.error}`);
+      });
+    }
+    
     return results;
   }
 }
 
-// Export for easy testing in console - now returns results
+// Export for easy testing in console
 export const runPaymentTests = (): Promise<PaymentTestResult[]> => PaymentTestSuite.runAllTests();
