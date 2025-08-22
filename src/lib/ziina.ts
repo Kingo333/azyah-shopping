@@ -4,7 +4,7 @@ import { PaymentIntent, PaymentIntentSchema, Refund, RefundSchema } from '@/type
 
 const ZIINA_API_BASE = process.env.ZIINA_API_BASE || 'https://api-v2.ziina.com/api';
 const ZIINA_API_TOKEN = process.env.ZIINA_API_TOKEN;
-const APP_BASE_URL = process.env.APP_DASHBOARD_URL || 'https://klwolsopucgswhtdlsps.supabase.co';
+const APP_BASE_URL = process.env.APP_BASE_URL || 'https://klwolsopucgswhtdlsps.supabase.co'; // FIXED: Changed from APP_DASHBOARD_URL
 
 if (!ZIINA_API_TOKEN) {
   throw new Error('ZIINA_API_TOKEN environment variable is required');
