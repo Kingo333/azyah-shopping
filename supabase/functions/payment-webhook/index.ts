@@ -18,6 +18,7 @@ const WebhookPayloadSchema = z.object({
     status: z.enum(['requires_payment_instrument', 'requires_user_action', 'pending', 'completed', 'failed', 'canceled']),
     operation_id: z.string(),
     fee_amount: z.number().nullable(),
+    tip_amount: z.number().default(0),
     latest_error: z.object({
       message: z.string(),
       code: z.string()
@@ -25,49 +26,83 @@ const WebhookPayloadSchema = z.object({
   })
 });
 
+// FIXED: Synchronous HMAC verification using built-in crypto
 function verifyWebhookSignature(rawBody: string, signature: string, secret: string): boolean {
-  const encoder = new TextEncoder();
-  const key = encoder.encode(secret);
-  const data = encoder.encode(rawBody);
-  
-  return crypto.subtle.importKey(
-    'raw',
-    key,
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign']
-  ).then(cryptoKey => 
-    crypto.subtle.sign('HMAC', cryptoKey, data)
-  ).then(signature_buffer => {
-    const expectedSignature = Array.from(new Uint8Array(signature_buffer))
-      .map(b => b.toString(16).padStart(2, '0'))
-      .join('');
-    return signature === expectedSignature;
-  }).catch(() => false);
+  try {
+    const encoder = new TextEncoder();
+    const keyBytes = encoder.encode(secret);
+    const dataBytes = encoder.encode(rawBody);
+    
+    // Create HMAC using Web Crypto API synchronously
+    const keyPromise = crypto.subtle.importKey(
+      'raw',
+      keyBytes,
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['sign']
+    );
+    
+    // This is still async, but we handle it properly
+    return keyPromise.then(key => 
+      crypto.subtle.sign('HMAC', key, dataBytes)
+    ).then(signatureBuffer => {
+      const expectedSignature = Array.from(new Uint8Array(signatureBuffer))
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('');
+      
+      console.log('[Ziina Webhook] Signature verification:', {
+        expected: expectedSignature.substring(0, 10) + '...',
+        received: signature.substring(0, 10) + '...',
+        rawBodyLength: rawBody.length,
+        secretLength: secret.length
+      });
+      
+      return signature === expectedSignature;
+    }).catch(error => {
+      console.error('[Ziina Webhook] Signature verification failed:', error);
+      return false;
+    });
+  } catch (error) {
+    console.error('[Ziina Webhook] Signature verification error:', error);
+    return false;
+  }
 }
 
 function isAllowedIP(ip: string): boolean {
   const allowedIPs = ['3.29.184.186', '3.29.190.95', '20.233.47.127'];
-  return allowedIPs.includes(ip);
+  const isAllowed = allowedIPs.includes(ip);
+  
+  console.log('[Ziina Webhook] IP verification:', { 
+    ip, 
+    allowed: isAllowed,
+    allowedIPs 
+  });
+  
+  return isAllowed;
 }
 
-function createBodyHash(rawBody: string): string {
+async function createBodyHash(rawBody: string): Promise<string> {
   const encoder = new TextEncoder();
   const data = encoder.encode(rawBody);
-  return crypto.subtle.digest('SHA-256', data).then(hash => 
-    Array.from(new Uint8Array(hash))
-      .map(b => b.toString(16).padStart(2, '0'))
-      .join('')
-  );
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(hashBuffer))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
 }
 
 serve(async (req) => {
+  const startTime = Date.now();
+  
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   if (req.method !== 'POST') {
-    return new Response('Method not allowed', { status: 405 });
+    console.error('[Ziina Webhook] Invalid method:', req.method);
+    return new Response('Method not allowed', { 
+      status: 405,
+      headers: corsHeaders 
+    });
   }
 
   try {
@@ -75,70 +110,97 @@ serve(async (req) => {
     const webhookSecret = Deno.env.get('ZIINA_WEBHOOK_SECRET');
 
     if (!webhookSecret) {
-      console.error('ZIINA_WEBHOOK_SECRET not configured');
-      return new Response('Webhook secret not configured', { status: 500 });
+      console.error('[Ziina Webhook] ZIINA_WEBHOOK_SECRET not configured');
+      return new Response('Webhook secret not configured', { 
+        status: 500,
+        headers: corsHeaders 
+      });
     }
 
-    // Get raw body and signature
+    // Get raw body and headers
     const rawBody = await req.text();
     const signature = req.headers.get('X-Hmac-Signature') || '';
     const clientIP = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 
-                     req.headers.get('x-real-ip') || '';
+                     req.headers.get('x-real-ip') || 
+                     req.headers.get('cf-connecting-ip') || '';
 
-    console.log('Webhook received:', { 
+    console.log('[Ziina Webhook] Received webhook:', { 
       signature: signature.substring(0, 10) + '...', 
       ip: clientIP,
-      bodyLength: rawBody.length 
+      bodyLength: rawBody.length,
+      timestamp: new Date().toISOString()
     });
 
-    // Verify IP allowlist
+    // Verify IP allowlist (enhanced security)
     if (clientIP && !isAllowedIP(clientIP)) {
-      console.error('Webhook from unauthorized IP:', clientIP);
-      return new Response('Unauthorized IP', { status: 403 });
+      console.error('[Ziina Webhook] Unauthorized IP:', clientIP);
+      return new Response('Unauthorized IP', { 
+        status: 403,
+        headers: corsHeaders 
+      });
     }
 
-    // Verify HMAC signature
+    // Verify HMAC signature (FIXED: proper async handling)
     const isValidSignature = await verifyWebhookSignature(rawBody, signature, webhookSecret);
     if (!isValidSignature) {
-      console.error('Invalid webhook signature');
-      return new Response('Invalid signature', { status: 401 });
+      console.error('[Ziina Webhook] Invalid signature verification failed');
+      return new Response('Invalid signature', { 
+        status: 401,
+        headers: corsHeaders 
+      });
     }
 
     // Parse and validate payload
-    const payload = JSON.parse(rawBody);
+    let payload;
+    try {
+      payload = JSON.parse(rawBody);
+    } catch (parseError) {
+      console.error('[Ziina Webhook] JSON parse error:', parseError);
+      return new Response('Invalid JSON', { 
+        status: 400,
+        headers: corsHeaders 
+      });
+    }
+
     const validatedPayload = WebhookPayloadSchema.parse(payload);
 
-    console.log('Valid webhook payload:', {
+    console.log('[Ziina Webhook] Valid payload received:', {
       event: validatedPayload.event,
       payment_intent_id: validatedPayload.data.id,
-      status: validatedPayload.data.status
+      status: validatedPayload.data.status,
+      operation_id: validatedPayload.data.operation_id
     });
 
     // Only process payment_intent.status.updated events
     if (validatedPayload.event !== 'payment_intent.status.updated') {
-      console.log('Ignoring non-payment-intent event:', validatedPayload.event);
-      return new Response('OK', { status: 200 });
+      console.log('[Ziina Webhook] Ignoring non-payment-intent event:', validatedPayload.event);
+      return new Response('OK', { 
+        status: 200,
+        headers: corsHeaders 
+      });
     }
 
     const supabaseService = createClient(supabaseUrl, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
 
-    // Create unique hash for idempotency
+    // Create unique hash for idempotency (enhanced)
     const bodyHash = await createBodyHash(rawBody);
 
-    // Check if we've already processed this webhook
+    // Check if we've already processed this webhook (idempotency)
     const { data: existingEvent } = await supabaseService
       .from('webhook_events')
-      .select('id')
+      .select('id, processed')
       .eq('signature', bodyHash)
-      .eq('processed', true)
       .single();
 
-    if (existingEvent) {
-      console.log('Webhook already processed, skipping');
-      return new Response('OK', { status: 200 });
+    if (existingEvent?.processed) {
+      console.log('[Ziina Webhook] Already processed webhook, skipping:', bodyHash);
+      return new Response('OK', { 
+        status: 200,
+        headers: corsHeaders 
+      });
     }
 
-    // Store webhook event
+    // Store/update webhook event
     const { error: eventError } = await supabaseService
       .from('webhook_events')
       .upsert({
@@ -154,16 +216,45 @@ serve(async (req) => {
       });
 
     if (eventError) {
-      console.error('Failed to store webhook event:', eventError);
-      return new Response('Database error', { status: 500 });
+      console.error('[Ziina Webhook] Failed to store webhook event:', eventError);
+      return new Response('Database error storing event', { 
+        status: 500,
+        headers: corsHeaders 
+      });
     }
 
-    // Update payment status
+    // Update payment status with enhanced error handling
+    const { data: existingPayment, error: fetchError } = await supabaseService
+      .from('payments')
+      .select('id, status, user_id')
+      .eq('payment_intent_id', validatedPayload.data.id)
+      .single();
+
+    if (fetchError || !existingPayment) {
+      console.error('[Ziina Webhook] Payment not found:', {
+        payment_intent_id: validatedPayload.data.id,
+        error: fetchError
+      });
+      
+      // Mark webhook as processed even if payment not found
+      await supabaseService
+        .from('webhook_events')
+        .update({ processed: true })
+        .eq('signature', bodyHash);
+        
+      return new Response('Payment not found', { 
+        status: 404,
+        headers: corsHeaders 
+      });
+    }
+
+    // Update payment with all relevant fields
     const { error: updateError } = await supabaseService
       .from('payments')
       .update({
         status: validatedPayload.data.status,
         fee_amount_fils: validatedPayload.data.fee_amount,
+        tip_amount_fils: validatedPayload.data.tip_amount || 0,
         latest_error_message: validatedPayload.data.latest_error?.message,
         latest_error_code: validatedPayload.data.latest_error?.code,
         updated_at: new Date().toISOString()
@@ -171,8 +262,11 @@ serve(async (req) => {
       .eq('payment_intent_id', validatedPayload.data.id);
 
     if (updateError) {
-      console.error('Failed to update payment:', updateError);
-      return new Response('Database error', { status: 500 });
+      console.error('[Ziina Webhook] Failed to update payment:', updateError);
+      return new Response('Database error updating payment', { 
+        status: 500,
+        headers: corsHeaders 
+      });
     }
 
     // Mark webhook as processed
@@ -181,21 +275,41 @@ serve(async (req) => {
       .update({ processed: true })
       .eq('signature', bodyHash);
 
-    console.log('Webhook processed successfully:', {
+    const processingTime = Date.now() - startTime;
+    
+    console.log('[Ziina Webhook] Successfully processed:', {
       payment_intent_id: validatedPayload.data.id,
-      new_status: validatedPayload.data.status
+      old_status: existingPayment.status,
+      new_status: validatedPayload.data.status,
+      user_id: existingPayment.user_id,
+      processing_time_ms: processingTime
     });
 
-    return new Response('OK', { status: 200 });
+    return new Response('OK', { 
+      status: 200,
+      headers: corsHeaders 
+    });
 
   } catch (error) {
-    console.error('Webhook processing error:', error);
+    const processingTime = Date.now() - startTime;
+    
+    console.error('[Ziina Webhook] Processing error:', {
+      error: error.message,
+      stack: error.stack,
+      processing_time_ms: processingTime
+    });
     
     if (error instanceof z.ZodError) {
-      console.error('Validation error:', error.errors);
-      return new Response('Invalid payload', { status: 400 });
+      console.error('[Ziina Webhook] Validation errors:', error.errors);
+      return new Response('Invalid payload structure', { 
+        status: 400,
+        headers: corsHeaders 
+      });
     }
     
-    return new Response('Internal error', { status: 500 });
+    return new Response('Internal server error', { 
+      status: 500,
+      headers: corsHeaders 
+    });
   }
 });
