@@ -1,5 +1,4 @@
 
-
 project_id = "klwolsopucgswhtdlsps"
 
 [api]
@@ -22,54 +21,6 @@ shadow_database_url = "postgresql://postgres:postgres@127.0.0.1:54322/postgres"
 
 [edge_functions]
 enabled = true
-
-[functions.beauty-consult]
-verify_jwt = false
-
-[functions.beauty-voice]
-verify_jwt = false
-
-[functions.beauty-speech-to-text]
-verify_jwt = false
-
-[functions.beauty-text-consult]
-verify_jwt = false
-
-[functions.beauty-product-search]
-verify_jwt = false
-
-[functions.beauty-ingest-docs]
-verify_jwt = false
-
-[functions.beauty-ingest-products]
-verify_jwt = false
-
-[functions.bitstudio-edit]
-verify_jwt = false
-
-[functions.bitstudio-generate]
-verify_jwt = false
-
-[functions.bitstudio-health]
-verify_jwt = false
-
-[functions.bitstudio-inpaint]
-verify_jwt = false
-
-[functions.bitstudio-status]
-verify_jwt = false
-
-[functions.bitstudio-tryon]
-verify_jwt = false
-
-[functions.bitstudio-upload]
-verify_jwt = false
-
-[functions.bitstudio-upscale]
-verify_jwt = false
-
-[functions.bitstudio-video]
-verify_jwt = false
 
 [functions.create-payment-intent]
 verify_jwt = false
@@ -119,9 +70,11 @@ verify_jwt = false
 [functions.update-product-categories]
 verify_jwt = false
 
+[functions.verify-payment]
+verify_jwt = false
+
 [functions.website-discovery]
 verify_jwt = false
 
 [functions.send-password-reset]
 verify_jwt = false
-

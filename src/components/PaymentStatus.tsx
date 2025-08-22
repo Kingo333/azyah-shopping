@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -15,7 +16,12 @@ export function PaymentStatus() {
     {
       component: "Payment Intent Creation",
       status: "ready",
-      description: "Create payment intents with proper URLs"
+      description: "Create payment intents with Ziina API"
+    },
+    {
+      component: "Payment Verification",
+      status: "ready", 
+      description: "Verify payment status after completion"
     },
     {
       component: "Success Page",
@@ -35,7 +41,7 @@ export function PaymentStatus() {
     {
       component: "Webhook Handler",
       status: "ready",
-      description: "Processes payment status updates"
+      description: "Processes Ziina payment notifications"
     }
   ];
 
@@ -104,9 +110,7 @@ export function PaymentStatus() {
       {/* Integration Status */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            Ziina Payment Integration Status
-          </CardTitle>
+          <CardTitle>Ziina Payment Integration Status</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           {integrationComponents.map((item, index) => (
@@ -126,7 +130,7 @@ export function PaymentStatus() {
       {/* Configured URLs */}
       <Card>
         <CardHeader>
-          <CardTitle>Configured URLs</CardTitle>
+          <CardTitle>Payment Flow URLs</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           {configuredUrls.map((item, index) => (
@@ -144,10 +148,10 @@ export function PaymentStatus() {
         </CardContent>
       </Card>
 
-      {/* Setup Steps */}
+      {/* Payment Testing */}
       <Card>
         <CardHeader>
-          <CardTitle>Setup Steps</CardTitle>
+          <CardTitle>Test Payment Flow</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-4">
@@ -158,7 +162,7 @@ export function PaymentStatus() {
               <div className="space-y-2 flex-1">
                 <p className="font-medium">Register webhook with Ziina</p>
                 <p className="text-muted-foreground text-sm">
-                  This registers your webhook URL with Ziina to receive payment notifications
+                  Register your webhook URL to receive payment notifications
                 </p>
                 <Button 
                   onClick={handleRegisterWebhook}
@@ -177,28 +181,16 @@ export function PaymentStatus() {
               <div className="space-y-2 flex-1">
                 <p className="font-medium">Test the payment flow</p>
                 <p className="text-muted-foreground text-sm">
-                  Use the test payment button to verify everything works correctly
+                  Test both sandbox and live payment processing
                 </p>
                 <div className="flex gap-2">
                   <PaymentButton test={true} size="sm">
-                    Test Payment (Free)
+                    Test Payment (Sandbox)
                   </PaymentButton>
                   <PaymentButton test={false} size="sm">
-                    Real Payment (40 AED)
+                    Live Payment (40 AED)
                   </PaymentButton>
                 </div>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3">
-              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">
-                3
-              </div>
-              <div className="space-y-2 flex-1">
-                <p className="font-medium">Configure Ziina Dashboard URLs</p>
-                <p className="text-muted-foreground text-sm">
-                  In your Ziina dashboard, configure the URLs shown above for your application
-                </p>
               </div>
             </div>
           </div>

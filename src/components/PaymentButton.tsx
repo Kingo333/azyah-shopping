@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useSubscription } from '@/hooks/useSubscription';
 import { Button } from '@/components/ui/button';
@@ -26,7 +27,7 @@ export function PaymentButton({
 
   if (isPremium) {
     return (
-      <Button variant="outline" disabled className={className}>
+      <Button variant="outline" disabled className={className} size={size}>
         <Crown className="w-4 h-4 mr-2" />
         Premium Active
       </Button>
@@ -46,7 +47,7 @@ export function PaymentButton({
       ) : (
         <Crown className="w-4 h-4 mr-2" />
       )}
-      {children || (test ? 'Test Payment' : 'Upgrade to Premium')}
+      {children || (test ? 'Test Payment (Free)' : 'Upgrade to Premium')}
     </Button>
   );
 }
