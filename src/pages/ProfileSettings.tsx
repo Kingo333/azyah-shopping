@@ -85,7 +85,7 @@ const ProfileSettings: React.FC = () => {
           username: data.email?.split('@')[0] || '',
           bio: data.bio || '',
           country: data.country || '',
-          city: data.city || '',
+          city: (data as any).city || '',
           avatar_url: data.avatar_url || '',
           socials: (typeof data.socials === 'object' && data.socials !== null) ? data.socials as any : {}
         });
