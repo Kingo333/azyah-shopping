@@ -12,7 +12,6 @@ interface ZiinaPaymentButtonProps {
   size?: 'default' | 'sm' | 'lg' | 'icon';
   className?: string;
   children?: React.ReactNode;
-  message?: string;
 }
 
 export function ZiinaPaymentButton({ 
@@ -20,8 +19,7 @@ export function ZiinaPaymentButton({
   variant = 'default',
   size = 'default',
   className,
-  children,
-  message = 'Azyah Premium Subscription'
+  children 
 }: ZiinaPaymentButtonProps) {
   const { createPaymentIntent, loading } = useZiinaPayments();
 
@@ -33,7 +31,7 @@ export function ZiinaPaymentButton({
     const result = await createPaymentIntent({
       amountAed: 40,
       test,
-      message
+      message: 'Azyah Premium Subscription'
     });
 
     if (result?.redirectUrl) {
