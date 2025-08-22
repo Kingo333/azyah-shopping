@@ -32,10 +32,13 @@ interface ProfileData {
   socials: {
     instagram?: string;
     instagram_followers?: number;
+    instagram_url?: string;
     twitter?: string;
     twitter_followers?: number;
+    twitter_url?: string;
     tiktok?: string;
     tiktok_followers?: number;
+    tiktok_url?: string;
     website?: string;
   };
 }
@@ -406,6 +409,21 @@ const ProfileSettings: React.FC = () => {
                     />
                   </div>
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="instagram-url" className="text-sm">Profile Link</Label>
+                  <div className="flex">
+                    <div className="flex items-center px-3 bg-muted border border-r-0 rounded-l-md text-sm text-muted-foreground">
+                      https://instagram.com/
+                    </div>
+                    <Input
+                      id="instagram-url"
+                      value={profileData.socials.instagram_url || ''}
+                      onChange={(e) => handleSocialChange('instagram_url', e.target.value)}
+                      placeholder="username"
+                      className="rounded-l-none"
+                    />
+                  </div>
+                </div>
               </div>
 
               <div className="space-y-4">
@@ -438,6 +456,21 @@ const ProfileSettings: React.FC = () => {
                     />
                   </div>
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="twitter-url" className="text-sm">Profile Link</Label>
+                  <div className="flex">
+                    <div className="flex items-center px-3 bg-muted border border-r-0 rounded-l-md text-sm text-muted-foreground">
+                      https://x.com/
+                    </div>
+                    <Input
+                      id="twitter-url"
+                      value={profileData.socials.twitter_url || ''}
+                      onChange={(e) => handleSocialChange('twitter_url', e.target.value)}
+                      placeholder="username"
+                      className="rounded-l-none"
+                    />
+                  </div>
+                </div>
               </div>
 
               <div className="space-y-4">
@@ -467,6 +500,21 @@ const ProfileSettings: React.FC = () => {
                       onChange={(e) => handleSocialChange('tiktok_followers', parseInt(e.target.value) || 0)}
                       placeholder="0"
                       min="0"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="tiktok-url" className="text-sm">Profile Link</Label>
+                  <div className="flex">
+                    <div className="flex items-center px-3 bg-muted border border-r-0 rounded-l-md text-sm text-muted-foreground">
+                      https://tiktok.com/@
+                    </div>
+                    <Input
+                      id="tiktok-url"
+                      value={profileData.socials.tiktok_url || ''}
+                      onChange={(e) => handleSocialChange('tiktok_url', e.target.value)}
+                      placeholder="username"
+                      className="rounded-l-none"
                     />
                   </div>
                 </div>
