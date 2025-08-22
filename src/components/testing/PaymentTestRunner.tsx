@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -143,6 +142,11 @@ export function PaymentTestRunner() {
                       {result.duration}ms
                     </span>
                   </div>
+                  {result.error && (
+                    <div className="text-xs text-red-600 mt-1">
+                      {result.error}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

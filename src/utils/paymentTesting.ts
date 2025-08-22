@@ -1,11 +1,20 @@
 
 import { supabase } from '@/integrations/supabase/client';
 
+// Test result type for UI display
+export interface PaymentTestResult {
+  testName: string;
+  passed: boolean;
+  duration: number;
+  error?: string;
+}
+
 // Unit Test Functions for Payment Flow
 export class PaymentTestSuite {
   
   // Test AED to Fils conversion
-  static testAedToFilsConversion() {
+  static testAedToFilsConversion(): PaymentTestResult {
+    const startTime = Date.now();
     const testCases = [
       { aed: 40, expectedFils: 4000 },
       { aed: 2, expectedFils: 200 }, // minimum
@@ -16,22 +25,35 @@ export class PaymentTestSuite {
 
     console.log('🧪 Testing AED to Fils conversion...');
     
+    let allPassed = true;
     testCases.forEach(({ aed, expectedFils }) => {
       const fils = Math.round(aed * 100);
       const isValid = fils >= 200; // minimum 2 AED = 200 fils
+      const testPassed = fils === expectedFils && isValid;
       
       console.log(`${aed} AED → ${fils} fils (expected: ${expectedFils}) ${
-        fils === expectedFils && isValid ? '✅' : '❌'
+        testPassed ? '✅' : '❌'
       }`);
       
       if (fils < 200) {
         console.log(`  ⚠️  Below minimum: ${aed} AED (${fils} fils) < 2 AED (200 fils)`);
       }
+      
+      if (!testPassed && fils >= 200) {
+        allPassed = false;
+      }
     });
+
+    return {
+      testName: 'AED to Fils Conversion',
+      passed: allPassed,
+      duration: Date.now() - startTime
+    };
   }
 
   // Test HMAC signature verification
-  static async testHMACVerification() {
+  static async testHMACVerification(): Promise<PaymentTestResult> {
+    const startTime = Date.now();
     console.log('🧪 Testing HMAC signature verification...');
     
     const testSecret = 'test-webhook-secret-12345';
@@ -67,8 +89,20 @@ export class PaymentTestSuite {
       const isInvalid = await this.verifySignature(testBody, invalidSignature, testSecret);
       console.log(`Invalid signature test: ${!isInvalid ? '✅' : '❌'}`);
       
+      return {
+        testName: 'HMAC Signature Verification',
+        passed: isValid && !isInvalid,
+        duration: Date.now() - startTime
+      };
+      
     } catch (error) {
       console.error('HMAC test failed:', error);
+      return {
+        testName: 'HMAC Signature Verification',
+        passed: false,
+        duration: Date.now() - startTime,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
     }
   }
 
@@ -98,7 +132,8 @@ export class PaymentTestSuite {
   }
 
   // Test Zod schema validation
-  static testZodSchemas() {
+  static async testZodSchemas(): Promise<PaymentTestResult> {
+    const startTime = Date.now();
     console.log('🧪 Testing Zod schema validation...');
     
     const validPaymentIntent = {
@@ -128,26 +163,39 @@ export class PaymentTestSuite {
     };
 
     try {
-      import('@/types/ziina').then(({ WebhookPayloadSchema }) => {
-        // Test valid payload
-        const validResult = WebhookPayloadSchema.safeParse(validPaymentIntent);
-        console.log(`Valid payload test: ${validResult.success ? '✅' : '❌'}`);
-        
-        // Test invalid payload
-        const invalidResult = WebhookPayloadSchema.safeParse(invalidPaymentIntent);
-        console.log(`Invalid payload test: ${!invalidResult.success ? '✅' : '❌'}`);
-        
-        if (!invalidResult.success) {
-          console.log('  Expected validation errors:', invalidResult.error.issues.length);
-        }
-      });
+      const { WebhookPayloadSchema } = await import('@/types/ziina');
+      
+      // Test valid payload
+      const validResult = WebhookPayloadSchema.safeParse(validPaymentIntent);
+      console.log(`Valid payload test: ${validResult.success ? '✅' : '❌'}`);
+      
+      // Test invalid payload
+      const invalidResult = WebhookPayloadSchema.safeParse(invalidPaymentIntent);
+      console.log(`Invalid payload test: ${!invalidResult.success ? '✅' : '❌'}`);
+      
+      if (!invalidResult.success) {
+        console.log('  Expected validation errors:', invalidResult.error.issues.length);
+      }
+
+      return {
+        testName: 'Zod Schema Validation',
+        passed: validResult.success && !invalidResult.success,
+        duration: Date.now() - startTime
+      };
     } catch (error) {
       console.error('Zod schema test failed:', error);
+      return {
+        testName: 'Zod Schema Validation',
+        passed: false,
+        duration: Date.now() - startTime,
+        error: error instanceof Error ? error.message : 'Schema import failed'
+      };
     }
   }
 
   // Integration test for payment creation
-  static async testPaymentCreation() {
+  static async testPaymentCreation(): Promise<PaymentTestResult> {
+    const startTime = Date.now();
     console.log('🧪 Testing payment creation flow...');
     
     try {
@@ -168,21 +216,37 @@ export class PaymentTestSuite {
 
       if (error) {
         console.log(`Payment creation test: ❌ ${error.message}`);
-        return;
+        return {
+          testName: 'Payment Creation',
+          passed: false,
+          duration: Date.now() - startTime,
+          error: error.message
+        };
       }
 
       console.log(`Payment creation test: ✅`);
       console.log(`  Redirect URL: ${data.redirectUrl?.substring(0, 50)}...`);
       console.log(`  Payment Intent ID: ${data.pi}`);
       
-      return data;
+      return {
+        testName: 'Payment Creation',
+        passed: true,
+        duration: Date.now() - startTime
+      };
     } catch (error) {
       console.error('Payment creation test failed:', error);
+      return {
+        testName: 'Payment Creation',
+        passed: false,
+        duration: Date.now() - startTime,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
     }
   }
 
   // Test webhook simulation
-  static async testWebhookSimulation() {
+  static async testWebhookSimulation(): Promise<PaymentTestResult> {
+    const startTime = Date.now();
     console.log('🧪 Testing webhook simulation...');
     
     const simulatedWebhook = {
@@ -206,30 +270,38 @@ export class PaymentTestSuite {
     console.log('Webhook simulation prepared ✅');
     console.log('  To test: Send this payload to /functions/v1/payment-webhook');
     
-    return simulatedWebhook;
+    return {
+      testName: 'Webhook Simulation',
+      passed: true,
+      duration: Date.now() - startTime
+    };
   }
 
   // Run all tests
-  static async runAllTests() {
+  static async runAllTests(): Promise<PaymentTestResult[]> {
     console.log('🚀 Running Payment Test Suite...\n');
     
-    this.testAedToFilsConversion();
+    const results: PaymentTestResult[] = [];
+    
+    // Run tests sequentially
+    results.push(this.testAedToFilsConversion());
     console.log('');
     
-    await this.testHMACVerification();
+    results.push(await this.testHMACVerification());
     console.log('');
     
-    this.testZodSchemas();
+    results.push(await this.testZodSchemas());
     console.log('');
     
-    await this.testPaymentCreation();
+    results.push(await this.testPaymentCreation());
     console.log('');
     
-    await this.testWebhookSimulation();
+    results.push(await this.testWebhookSimulation());
     
     console.log('\n✨ Payment Test Suite Complete!');
+    return results;
   }
 }
 
-// Export for easy testing in console
-export const runPaymentTests = () => PaymentTestSuite.runAllTests();
+// Export for easy testing in console - now returns results
+export const runPaymentTests = (): Promise<PaymentTestResult[]> => PaymentTestSuite.runAllTests();
