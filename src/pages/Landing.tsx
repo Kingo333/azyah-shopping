@@ -224,8 +224,8 @@ export default function Landing() {
                   <p className="text-lg sm:text-xl lg:text-2xl text-gray-200 max-w-md lg:max-w-lg leading-relaxed font-light mx-auto">
                     Smart AI fashion discovery that learns your style.
                   </p>
-                  <p className="text-sm sm:text-base lg:text-lg text-gray-300/80 max-w-sm lg:max-w-md leading-relaxed font-light mx-auto mt-2">
-                    Earn rewards with every purchase and unlock exclusive benefits.
+                  <p className="text-sm sm:text-base lg:text-lg text-gray-300/90 max-w-sm lg:max-w-md leading-relaxed font-light mx-auto mt-3 bg-white/5 backdrop-blur-sm rounded-full px-4 py-2 border border-white/10">
+                    ✨ Earn style points with every swipe • Unlock premium collections & early access
                   </p>
                 </div>
               </div>
