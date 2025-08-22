@@ -323,6 +323,50 @@ const ProfileSettings: React.FC = () => {
                   </PopoverContent>
                 </Popover>
               </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="city">City</Label>
+                <Popover open={cityOpen} onOpenChange={setCityOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={cityOpen}
+                      className="w-full justify-between"
+                    >
+                      {profileData.city || "Select your city..."}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0">
+                    <Command>
+                      <CommandInput placeholder="Search cities..." />
+                      <CommandList>
+                        <CommandEmpty>No city found.</CommandEmpty>
+                        <CommandGroup>
+                          {CITIES.map((city) => (
+                            <CommandItem
+                              key={city.code}
+                              value={city.name}
+                              onSelect={(currentValue) => {
+                                handleInputChange('city', currentValue === profileData.city ? "" : currentValue);
+                                setCityOpen(false);
+                              }}
+                            >
+                              <Check
+                                className={`mr-2 h-4 w-4 ${
+                                  profileData.city === city.name ? "opacity-100" : "opacity-0"
+                                }`}
+                              />
+                              {city.name}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+              </div>
             </CardContent>
           </Card>
 
