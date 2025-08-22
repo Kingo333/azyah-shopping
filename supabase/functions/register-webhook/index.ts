@@ -1,3 +1,4 @@
+
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
@@ -14,7 +15,6 @@ function jsonResponse(data: unknown, status = 200) {
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -24,27 +24,38 @@ serve(async (req) => {
   }
 
   try {
-    // Get environment variables
-    const ziinaApiBase = Deno.env.get('ZIINA_API_BASE')!;
-    const ziinaApiToken = Deno.env.get('ZIINA_API_TOKEN')!;
-    const webhookSecret = Deno.env.get('ZIINA_WEBHOOK_SECRET')!;
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const ziinaApiBase = Deno.env.get('ZIINA_API_BASE');
+    const ziinaApiToken = Deno.env.get('ZIINA_API_TOKEN');
+    const webhookSecret = Deno.env.get('ZIINA_WEBHOOK_SECRET');
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
 
-    console.log('Registering webhook with Ziina...');
+    if (!ziinaApiBase || !ziinaApiToken || !webhookSecret || !supabaseUrl) {
+      return jsonResponse({ 
+        error: 'Missing environment variables',
+        env_check: {
+          ZIINA_API_BASE: !!ziinaApiBase,
+          ZIINA_API_TOKEN: !!ziinaApiToken,
+          ZIINA_WEBHOOK_SECRET: !!webhookSecret,
+          SUPABASE_URL: !!supabaseUrl
+        }
+      }, 500);
+    }
 
     // Extract project ID from Supabase URL
     const projectId = supabaseUrl.match(/https:\/\/([^.]+)\.supabase\.co/)?.[1];
     if (!projectId) {
-      throw new Error('Could not extract project ID from Supabase URL');
+      return jsonResponse({ error: 'Could not extract project ID from Supabase URL' }, 500);
     }
 
     // Construct webhook URL
     const webhookUrl = `https://${projectId}.supabase.co/functions/v1/payment-webhook`;
     
-    console.log('Webhook URL:', webhookUrl);
-    console.log('Using webhook secret:', webhookSecret ? 'Set' : 'Not set');
+    console.log('Registering webhook:', {
+      url: webhookUrl,
+      hasSecret: !!webhookSecret
+    });
 
-    // Register webhook with Ziina following the documentation
+    // Register webhook with Ziina
     const webhookPayload = {
       url: webhookUrl,
       secret: webhookSecret
@@ -57,18 +68,20 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(webhookPayload),
+      signal: AbortSignal.timeout(10000),
     });
 
     const responseBody = await ziinaResponse.json();
+    
     console.log('Ziina webhook registration response:', { 
       status: ziinaResponse.status, 
       body: responseBody 
     });
 
     if (!ziinaResponse.ok) {
-      console.error('Ziina webhook registration failed:', responseBody);
       return jsonResponse({ 
-        error: responseBody?.error || 'Webhook registration failed',
+        error: 'Webhook registration failed',
+        upstream_status: ziinaResponse.status,
         details: responseBody
       }, ziinaResponse.status);
     }
@@ -82,7 +95,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in register-webhook:', error);
     return jsonResponse({ 
-      error: error instanceof Error ? error.message : String(error) 
+      error: error instanceof Error ? error.message : 'Unknown error' 
     }, 500);
   }
 });

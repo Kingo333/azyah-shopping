@@ -1,343 +1,252 @@
 
 # Ziina Payment Integration
 
-This document provides comprehensive information about the Ziina payment integration implementation in the Azyah platform.
+This document describes the complete Ziina payment integration for premium subscriptions.
 
 ## Overview
 
-The Ziina payment integration handles premium subscription payments for consumers. It uses a hosted checkout flow where users are redirected to Ziina's payment page and then returned to our platform upon completion.
+The system implements a secure payment flow using Ziina's Payment Intent API with the following features:
 
-**Premium Features:**
-- 40 AED/month subscription
-- 20 AI Try-ons daily
-- Unlimited replica generation
-- UGC collaboration access
+- Server-to-server payment intent creation
+- Hosted checkout with Apple Pay / Google Pay support
+- Webhook-based status updates with HMAC verification
+- IP allowlist security
+- Idempotent webhook processing
+- Comprehensive test suite
 
 ## Environment Variables
 
-The following environment variables must be configured in Supabase Edge Functions:
+Set these secrets in Supabase Edge Functions:
 
 ```bash
-# Ziina API Configuration
-ZIINA_API_BASE=https://api-v2.ziina.com/api
-ZIINA_API_TOKEN=<your-ziina-api-token>
-ZIINA_WEBHOOK_SECRET=<your-webhook-secret>
-
-# Application Configuration
-APP_BASE_URL=https://your-production-domain.com
-
-# Supabase Configuration (auto-configured)
-SUPABASE_URL=<your-supabase-url>
-SUPABASE_ANON_KEY=<your-supabase-anon-key>
-SUPABASE_SERVICE_ROLE_KEY=<your-supabase-service-role-key>
+supabase secrets set \
+  ZIINA_API_BASE="https://api-v2.ziina.com/api" \
+  ZIINA_API_TOKEN="your_ziina_api_token_here" \
+  ZIINA_WEBHOOK_SECRET="your_webhook_secret_here" \
+  APP_BASE_URL="https://azyahstyle.com"
 ```
 
-### Setting Environment Variables
+Required scopes for `ZIINA_API_TOKEN`:
+- `write_payment_intents`
+- `write_webhooks` 
+- `write_refunds`
 
-```bash
-# Set secrets in Supabase
-supabase secrets set ZIINA_API_TOKEN=your_token_here
-supabase secrets set ZIINA_WEBHOOK_SECRET=your_webhook_secret_here
-supabase secrets set APP_BASE_URL=https://your-domain.com
+## Database Schema
 
-# Deploy functions after setting secrets
-supabase functions deploy
+### payments table
+```sql
+CREATE TABLE public.payments (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  provider text NOT NULL DEFAULT 'ziina',
+  payment_intent_id text UNIQUE NOT NULL,
+  user_id uuid NOT NULL,
+  product text NOT NULL CHECK (product IN ('consumer_premium')),
+  amount_fils int NOT NULL CHECK (amount_fils >= 200),
+  currency text NOT NULL DEFAULT 'AED',
+  status text NOT NULL CHECK (status IN (
+    'requires_payment_instrument','requires_user_action','pending','completed','failed','canceled'
+  )),
+  redirect_url text,
+  success_url text,
+  cancel_url text,
+  fee_amount_fils int,
+  tip_amount_fils int DEFAULT 0,
+  latest_error_message text,
+  latest_error_code text,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+```
+
+### webhook_events table
+```sql
+CREATE TABLE public.webhook_events (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  provider text NOT NULL DEFAULT 'ziina',
+  event text NOT NULL,
+  pi_id text NOT NULL,
+  raw_body jsonb NOT NULL,
+  signature text,
+  ip inet,
+  processed boolean NOT NULL DEFAULT false,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
 ```
 
 ## API Endpoints
 
 ### Edge Functions
 
-1. **create-payment-intent**
-   - **URL:** `https://your-project.supabase.co/functions/v1/create-payment-intent`
-   - **Method:** POST
-   - **Auth:** Required (Bearer token)
-   - **Body:**
-     ```json
-     {
-       "product": "consumer_premium",
-       "amountAed": 40,
-       "test": false
-     }
-     ```
-   - **Response:**
-     ```json
-     {
-       "redirectUrl": "https://checkout.ziina.com/...",
-       "pi": "pi_123456789"
-     }
-     ```
+1. **create-payment-intent** - Creates payment intents with Ziina
+   - Method: POST
+   - Auth: JWT required
+   - Body: `{ amountAed: number, test?: boolean, message?: string }`
+   - Returns: `{ redirectUrl: string, pi: string }`
 
-2. **verify-payment**
-   - **URL:** `https://your-project.supabase.co/functions/v1/verify-payment`
-   - **Method:** POST
-   - **Auth:** Required (Bearer token)
-   - **Body:**
-     ```json
-     {
-       "payment_intent_id": "pi_123456789"
-     }
-     ```
+2. **verify-payment** - Verifies payment status
+   - Method: POST  
+   - Auth: JWT required
+   - Body: `{ pi: string }`
+   - Returns: Payment status object
 
-3. **payment-webhook**
-   - **URL:** `https://your-project.supabase.co/functions/v1/payment-webhook`
-   - **Method:** POST
-   - **Auth:** None (HMAC verified)
-   - **Headers:** `X-Hmac-Signature: <hmac-signature>`
+3. **payment-webhook** - Handles Ziina webhooks
+   - Method: POST
+   - Auth: None (IP + HMAC verified)
+   - Verifies HMAC signature and IP allowlist
+   - Updates payment status in database
 
-## Frontend Flow
+4. **register-webhook** - Registers webhook with Ziina
+   - Method: POST
+   - Auth: JWT required
+   - Returns: Registration status
 
-### 1. Payment Initiation
+## Payment Flow
 
+### 1. Create Payment Intent
 ```typescript
-import { useSubscription } from '@/hooks/useSubscription';
+const result = await supabase.functions.invoke('create-payment-intent', {
+  body: { amountAed: 40, test: true },
+  headers: { Authorization: `Bearer ${userJWT}` }
+});
 
-const { createPaymentIntent } = useSubscription();
-
-// Initiate payment
-await createPaymentIntent(false); // false = production, true = test mode
+// Redirect user to result.redirectUrl
+window.location.href = result.redirectUrl;
 ```
 
-### 2. Payment Pages
+### 2. User Completes Payment
+User is redirected to one of:
+- `/payments/ziina/success?pi={PAYMENT_INTENT_ID}` - Success
+- `/payments/ziina/cancel?pi={PAYMENT_INTENT_ID}` - Canceled  
+- `/payments/ziina/failure?pi={PAYMENT_INTENT_ID}` - Failed
 
-- **Success:** `/payments/ziina/success?pi={PAYMENT_INTENT_ID}`
-- **Cancel:** `/payments/ziina/cancel?pi={PAYMENT_INTENT_ID}`  
-- **Failure:** `/payments/ziina/failure?pi={PAYMENT_INTENT_ID}`
-
-The success page automatically polls the payment status and grants premium access when completed.
-
-### 3. Premium Access Check
-
+### 3. Status Verification
+Success page polls for status updates:
 ```typescript
-import { useSubscription } from '@/hooks/useSubscription';
-
-const { isPremium } = useSubscription();
-
-if (isPremium) {
-  // Grant access to premium features
-}
+const status = await supabase.functions.invoke('verify-payment', {
+  body: { pi: paymentIntentId },
+  headers: { Authorization: `Bearer ${userJWT}` }
+});
 ```
 
-## Database Schema
+### 4. Webhook Updates
+Ziina sends status updates to `/functions/v1/payment-webhook`:
+- IP allowlist verification: `3.29.184.186`, `3.29.190.95`, `20.233.47.127`
+- HMAC verification using `X-Hmac-Signature` header
+- Idempotent processing prevents duplicate updates
 
-### Payments Table
+## Security Features
 
-```sql
-CREATE TABLE payments (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  provider TEXT DEFAULT 'ziina',
-  payment_intent_id TEXT UNIQUE NOT NULL,
-  user_id UUID NOT NULL,
-  product TEXT NOT NULL DEFAULT 'consumer_premium',
-  amount_fils INTEGER NOT NULL,
-  currency TEXT DEFAULT 'AED',
-  status payment_intent_status NOT NULL,
-  operation_id TEXT NOT NULL,
-  redirect_url TEXT,
-  success_url TEXT,
-  cancel_url TEXT,
-  fee_amount_fils INTEGER,
-  tip_amount_fils INTEGER DEFAULT 0,
-  latest_error_message TEXT,
-  latest_error_code TEXT,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-```
-
-### Webhook Events Table
-
-```sql
-CREATE TABLE webhook_events (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  provider TEXT NOT NULL DEFAULT 'ziina',
-  event TEXT NOT NULL,
-  pi_id TEXT NOT NULL,
-  raw_body JSONB NOT NULL,
-  signature TEXT UNIQUE NOT NULL,
-  ip TEXT,
-  processed BOOLEAN DEFAULT FALSE,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-```
-
-## Webhook Configuration
-
-### Register Webhook
-
-```bash
-curl -X POST https://api-v2.ziina.com/api/webhook \
-  -H "Authorization: Bearer YOUR_ZIINA_API_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "url": "https://your-project.supabase.co/functions/v1/payment-webhook",
-    "secret": "YOUR_WEBHOOK_SECRET"
-  }'
-```
-
-### Delete Webhook
-
-```bash
-curl -X DELETE https://api-v2.ziina.com/api/webhook \
-  -H "Authorization: Bearer YOUR_ZIINA_API_TOKEN"
-```
+- **HMAC Verification**: All webhooks verified with SHA-256 HMAC
+- **IP Allowlist**: Only Ziina IPs can send webhooks
+- **JWT Authentication**: All user-facing endpoints require authentication
+- **Secret Management**: API tokens never exposed to frontend
+- **Idempotency**: Duplicate webhooks are ignored
+- **Request Timeouts**: 10-second timeouts on external API calls
 
 ## Testing
 
-### Test Payment Creation
+### Unit Tests
+- AED to fils conversion
+- HMAC signature verification
+- IP allowlist validation
+- Zod schema validation
 
+### Integration Tests
+- Payment intent creation
+- Payment verification
+- Webhook simulation
+
+### Run Tests
+```typescript
+import { runZiinaTests } from '@/utils/ziinaTests';
+
+const results = await runZiinaTests();
+console.log(`${results.filter(r => r.passed).length}/${results.length} tests passed`);
+```
+
+## cURL Examples
+
+### Create Payment Intent
 ```bash
-curl -X POST https://your-project.supabase.co/functions/v1/create-payment-intent \
-  -H "Authorization: Bearer YOUR_USER_JWT_TOKEN" \
+curl -X POST "https://api-v2.ziina.com/api/payment_intent" \
+  -H "Authorization: Bearer $ZIINA_API_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "product": "consumer_premium",
-    "amountAed": 40,
-    "test": true
+    "amount": 4000,
+    "currency_code": "AED",
+    "message": "Azyah Premium",
+    "success_url": "https://azyahstyle.com/payments/ziina/success?pi={PAYMENT_INTENT_ID}",
+    "cancel_url": "https://azyahstyle.com/payments/ziina/cancel?pi={PAYMENT_INTENT_ID}",
+    "failure_url": "https://azyahstyle.com/payments/ziina/failure?pi={PAYMENT_INTENT_ID}",  
+    "test": true,
+    "expiry": '$(( $(date +%s%3N) + 1800000 ))',
+    "allow_tips": false
   }'
 ```
 
-### Test Webhook Signature
-
-```typescript
-import { verifyWebhookSignature } from '@/lib/ziina';
-
-const isValid = await verifyWebhookSignature(
-  rawBody,
-  signature,
-  webhookSecret
-);
+### Fetch Payment Status
+```bash
+curl -X GET "https://api-v2.ziina.com/api/payment_intent/{id}" \
+  -H "Authorization: Bearer $ZIINA_API_TOKEN"
 ```
 
-## Security
-
-### HMAC Verification
-
-All webhook requests are verified using HMAC-SHA256:
-
-```typescript
-const expectedSignature = crypto
-  .createHmac('sha256', webhookSecret)
-  .update(rawBody)
-  .digest('hex');
-
-const isValid = signature === expectedSignature;
+### Register Webhook
+```bash
+curl -X POST "https://api-v2.ziina.com/api/webhook" \
+  -H "Authorization: Bearer $ZIINA_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://klwolsopucgswhtdlsps.supabase.co/functions/v1/payment-webhook",
+    "secret": "your_webhook_secret_here"
+  }'
 ```
 
-### IP Allowlist
+## Deployment
 
-Webhook requests are only accepted from these Ziina IP addresses:
-- `3.29.184.186`
-- `3.29.190.95`
-- `20.233.47.127`
+1. **Set Secrets**: Configure all environment variables in Supabase
+2. **Deploy Functions**: Functions auto-deploy when code changes
+3. **Run Migrations**: Apply database schema changes
+4. **Register Webhook**: Call register-webhook endpoint once
+5. **Test**: Run test suite in both test and live modes
+6. **Remove Maintenance Flag**: Set `FEATURES.PAYMENTS_MAINTENANCE = false`
 
-### Row Level Security
+## Troubleshooting
 
-- Users can only view their own payment records
-- Webhook updates use service role permissions
-- Admin panel requires admin role
+### Common Issues
 
-## Error Handling
+1. **401 Unauthorized**: Check JWT token and user authentication
+2. **Environment Variables**: Verify all secrets are set in Supabase
+3. **Webhook Failures**: Check IP allowlist and HMAC signature
+4. **Payment Stuck**: Verify webhook registration and check logs
 
-### Common Error Responses
+### Debug Commands
+```bash
+# Check webhook registration
+curl -X GET "https://api-v2.ziina.com/api/webhook" \
+  -H "Authorization: Bearer $ZIINA_API_TOKEN"
 
-1. **Configuration Error (500)**
-   ```json
-   {
-     "error": "Configuration error",
-     "details": "APP_BASE_URL environment variable is missing"
-   }
-   ```
-
-2. **Ziina API Error (502)**
-   ```json
-   {
-     "error": "ziina_create_failed",
-     "upstream_status": 400,
-     "details": "Invalid request parameters"
-   }
-   ```
-
-3. **Authentication Error (401)**
-   ```json
-   {
-     "error": "Invalid authentication",
-     "details": "User not found"
-   }
-   ```
-
-## Monitoring and Logs
-
-### Structured Logging
-
-All API calls include structured JSON logs:
-
-```json
-{
-  "stage": "ziina_create",
-  "status": 200,
-  "reqKeys": ["amount", "currency_code", "test"],
-  "resSummary": {
-    "id": "pi_123456789",
-    "status": "requires_user_action",
-    "hasRedirectUrl": true
-  }
-}
+# View edge function logs
+supabase functions logs create-payment-intent
+supabase functions logs payment-webhook
 ```
 
-### Admin Panel
+### Monitoring
+- Monitor edge function logs for errors
+- Track payment success/failure rates
+- Set up alerts for webhook processing failures
+- Monitor IP allowlist violations
 
-Access the payment admin panel at `/admin` (admin users only) to:
-- View recent payments and their status
-- Monitor webhook events
-- Check refund status
-- Debug payment issues
+## Rollback Procedure
 
-## Operations Runbook
-
-### Rotating API Tokens
-
-1. Generate new token in Ziina dashboard
-2. Update Supabase secret:
-   ```bash
-   supabase secrets set ZIINA_API_TOKEN=new_token_here
-   ```
-3. Deploy functions:
-   ```bash
-   supabase functions deploy
-   ```
-
-### Rotating Webhook Secret
-
-1. Generate new secret (use strong random string)
-2. Update Supabase secret:
-   ```bash
-   supabase secrets set ZIINA_WEBHOOK_SECRET=new_secret_here
-   ```
-3. Re-register webhook with new secret
-4. Deploy functions
-
-### Troubleshooting Common Issues
-
-1. **Payment stuck in pending**
-   - Check webhook events in admin panel
-   - Verify webhook is registered correctly
-   - Check Ziina API logs
-
-2. **Webhook signature failures**
-   - Verify ZIINA_WEBHOOK_SECRET is correct
-   - Check IP allowlist configuration
-   - Ensure raw body is used for signature
-
-3. **Environment variable issues**
-   - Use `APP_BASE_URL` consistently (not `APP_DASHBOARD_URL`)
-   - Ensure all required secrets are set
-   - Re-deploy functions after changing secrets
+To rollback to maintenance mode:
+1. Set `FEATURES.PAYMENTS_MAINTENANCE = true`
+2. Delete webhook: `curl -X DELETE "https://api-v2.ziina.com/api/webhook" -H "Authorization: Bearer $ZIINA_API_TOKEN"`
+3. Disable edge functions if needed
 
 ## Support
 
-For payment-related issues:
-1. Check the admin panel for payment status
-2. Review Edge Function logs in Supabase dashboard
-3. Verify webhook registration with Ziina
-4. Contact Ziina support for API-related issues
+For production issues:
+- Check edge function logs first
+- Verify webhook delivery in Ziina dashboard
+- Contact Ziina support for API issues
+- Review payment records in database for status
