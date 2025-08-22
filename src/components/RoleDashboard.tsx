@@ -283,7 +283,7 @@ const RoleDashboard: React.FC = () => {
               <div className="relative">
                 <Button 
                   variant="outline" 
-                  className="h-14 sm:h-16 flex-col gap-1 sm:gap-2 relative bg-gradient-to-br from-pink-50 to-purple-50 dark:from-pink-950/20 dark:to-purple-950/20 border-pink-200 dark:border-pink-800 opacity-60 cursor-not-allowed"
+                  className="btn-luxury h-14 sm:h-16 flex-col gap-1 sm:gap-2 opacity-60 cursor-not-allowed"
                   data-qa="qa-beauty"
                   disabled
                 >
