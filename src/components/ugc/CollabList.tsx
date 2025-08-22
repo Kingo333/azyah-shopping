@@ -1,17 +1,20 @@
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCollaborations } from '@/hooks/useCollaborations';
+import { useSubscription } from '@/hooks/useSubscription';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Users, Calendar, DollarSign, Gift } from 'lucide-react';
+import { Users, Calendar, DollarSign, Gift, Crown, ArrowUp } from 'lucide-react';
 import { PLATFORM_OPTIONS } from '@/types/ugc';
 import { CollabDetailModal } from './CollabDetailModal';
 import { Collaboration } from '@/types/ugc';
 
+
 export const CollabList: React.FC = () => {
   const { user } = useAuth();
+  const { isPremium, createPaymentIntent } = useSubscription();
   const [selectedCollab, setSelectedCollab] = useState<Collaboration | null>(null);
   const { data: collaborations, isLoading } = useCollaborations('shopper');
 
@@ -78,11 +81,29 @@ export const CollabList: React.FC = () => {
     );
   }
 
+  // Apply freemium logic: show only 3 collaborations for non-premium users
+  const displayedCollaborations = isPremium ? collaborations : collaborations.slice(0, 3);
+  const hasMoreCollaborations = !isPremium && collaborations.length > 3;
+
   return (
     <>
       <ScrollArea className="h-full pr-4">
         <div className="grid gap-4">
-          {collaborations.map((collab) => (
+          {!isPremium && collaborations.length > 3 && (
+            <div className="mb-4 p-3 bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20 rounded-lg">
+              <div className="flex items-center gap-2 mb-2">
+                <Crown className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium">
+                  Showing 3 of {collaborations.length} collaborations
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Upgrade to premium to see all available collaborations
+              </p>
+            </div>
+          )}
+          
+          {displayedCollaborations.map((collab) => (
             <Card key={collab.id} className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => setSelectedCollab(collab)}>
               <CardContent className="p-4">
                 <div className="flex items-start justify-between mb-3">
@@ -163,6 +184,41 @@ export const CollabList: React.FC = () => {
               </CardContent>
             </Card>
           ))}
+          
+          {hasMoreCollaborations && (
+            <Card className="border-2 border-dashed border-primary/30 bg-gradient-to-br from-primary/5 to-primary/10">
+              <CardContent className="p-6 text-center">
+                <div className="space-y-4">
+                  <div className="flex justify-center">
+                    <div className="p-3 bg-primary/20 rounded-full">
+                      <Crown className="h-8 w-8 text-primary" />
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <h3 className="text-lg font-semibold font-cormorant mb-2">
+                      Unlock All Collaborations
+                    </h3>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Upgrade to premium to see {collaborations.length - 3} more collaboration opportunities and get unlimited access to all UGC partnerships.
+                    </p>
+                  </div>
+                  
+                  <Button 
+                    onClick={() => createPaymentIntent()}
+                    className="w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
+                  >
+                    <ArrowUp className="h-4 w-4 mr-2" />
+                    Upgrade to Premium
+                  </Button>
+                  
+                  <p className="text-xs text-muted-foreground">
+                    40 AED/month • Cancel anytime
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </ScrollArea>
 
