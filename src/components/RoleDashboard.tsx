@@ -280,20 +280,18 @@ const RoleDashboard: React.FC = () => {
               <span className="text-xs sm:text-sm">Swipe</span>
             </Button>
             {isEnabled('ai_beauty_consultant') ? (
-              <div className="relative">
-                <Button 
-                  variant="outline"
-                  className="h-14 sm:h-16 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300 relative cursor-not-allowed"
-                  data-qa="qa-beauty"
-                  disabled
-                >
-                  <WandSparkles className="h-5 w-5 sm:h-6 sm:w-6 text-pink-600" />
-                  <span className="text-xs sm:text-sm text-pink-600">Beauty Guide</span>
-                  <Badge variant="secondary" className="absolute -top-1 -right-1 text-xs px-1 py-0 h-4">
-                    Soon
-                  </Badge>
-                </Button>
-              </div>
+              <Button 
+                variant="outline"
+                className="h-14 sm:h-16 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300 relative cursor-not-allowed"
+                data-qa="qa-beauty"
+                disabled
+              >
+                <WandSparkles className="h-5 w-5 sm:h-6 sm:w-6 text-pink-600" />
+                <span className="text-xs sm:text-sm text-pink-600">Beauty Guide</span>
+                <Badge variant="secondary" className="absolute -top-1 -right-1 text-xs px-1 py-0 h-4">
+                  Soon
+                </Badge>
+              </Button>
             ) : (
               <Button 
                 onClick={() => navigate('/fashion-feed')} 
