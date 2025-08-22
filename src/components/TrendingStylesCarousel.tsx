@@ -554,18 +554,18 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
 
                 {/* Product Info */}
                 <div className="flex-1 flex flex-col">
-                  <h4 className="font-semibold text-sm mb-2 group-hover:text-primary transition-colors line-clamp-2 leading-tight">
+                  <h4 className="font-medium text-xs mb-1 group-hover:text-primary transition-colors line-clamp-2 leading-tight">
                     {formatProductTitle(product.title)}
                   </h4>
                   
                   <div className="flex items-center justify-between mt-auto">
-                    <span className="font-bold text-base text-primary">
+                    <span className="font-bold text-sm text-primary">
                       {formatPrice(product.price_cents, product.currency)}
                     </span>
                     
                     <Button
                       size="sm"
-                      className="h-8 px-4 text-xs font-medium"
+                      className="h-7 px-3 text-xs font-medium"
                       onClick={(e) => {
                         e.stopPropagation();
                         handleShopNow(product.external_url);
