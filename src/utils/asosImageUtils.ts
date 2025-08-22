@@ -9,12 +9,12 @@ interface AsosImageConfig {
   fit: string;
 }
 
-// Mobile-optimized configurations for better performance
+// Ultra-optimized for mobile speed
 const IMAGE_CONFIGS: Record<ImageContext, AsosImageConfig> = {
-  thumbnail: { width: 100, quality: 75, format: 'jpg', fit: 'constrain' },
-  main: { width: 500, quality: 80, format: 'jpg', fit: 'constrain' },       // Mobile swipe optimized
-  detail: { width: 700, quality: 82, format: 'jpg', fit: 'constrain' },     // Modal detail optimized  
-  gallery: { width: 400, quality: 78, format: 'jpg', fit: 'constrain' }     // Grid view optimized
+  thumbnail: { width: 80, quality: 70, format: 'jpg', fit: 'constrain' },
+  main: { width: 400, quality: 75, format: 'jpg', fit: 'constrain' },       // Aggressive mobile optimization
+  detail: { width: 600, quality: 78, format: 'jpg', fit: 'constrain' },     // Faster modal loading
+  gallery: { width: 320, quality: 72, format: 'jpg', fit: 'constrain' }     // Minimal grid loading
 };
 
 // Progressive loading configurations
@@ -93,15 +93,15 @@ function createAsosUrl(urlObj: URL, config: any): string {
   return newUrl.toString();
 }
 
-// Build mobile-optimized srcSet for responsive images
+// Build ultra-fast mobile srcSet 
 export function buildAsosSrcSet(baseUrl: string, context: ImageContext = 'main'): string {
   const widths = context === 'thumbnail' 
-    ? [64, 100, 150] 
+    ? [64, 80]                // Minimal thumbnail sizes
     : context === 'main' 
-    ? [300, 500, 700]        // Mobile-first approach for swipe
+    ? [300, 400]              // Fast swipe loading
     : context === 'detail'
-    ? [400, 700, 900]        // Modal detail sizes
-    : [250, 400, 600];       // Gallery grid sizes
+    ? [400, 600]              // Quick modal opening
+    : [200, 320];             // Minimal grid sizes
     
   return widths.map(width => {
     const url = upgradeAsosImageUrl(baseUrl, context);
