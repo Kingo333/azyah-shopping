@@ -1,348 +1,535 @@
+
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/router';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
-import {
-  Table,
-  TableHeader,
-  TableRow,
-  TableHead,
-  TableBody,
-  TableCell,
-} from "@/components/ui/table"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { MoreVertical, Copy, Edit, Trash, UserPlus, CheckCircle, XCircle, AlertTriangle, ShieldAlert, ShieldCheck, ArrowLeft, ArrowRight, RefreshCcw, Plus, User, Mail, Lock, HelpCircle, Sparkles } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
-import { Textarea } from "@/components/ui/textarea"
 import { GlassPanel } from '@/components/ui/glass-panel';
-import { AiStudioModal } from '@/components/AiStudioModal';
+import { useNavigate } from 'react-router-dom';
+import { useToast } from '@/hooks/use-toast';
+import GlobalSearch from '@/components/GlobalSearch';
+import DashboardHeader from '@/components/DashboardHeader';
+import AffiliateHub from '@/components/AffiliateHub';
+import AiStudioModal from '@/components/AiStudioModal';
+import PremiumBanner from '@/components/PremiumBanner';
+import { Heart, ShoppingBag, Search, Sparkles, Package, BarChart3, Users, Settings, Store, TrendingUp, Plus, Eye, DollarSign, Globe, Bell, LogOut, User, Archive, Trophy, MapPin, Blocks, WandSparkles } from 'lucide-react';
+import Leaderboard from '@/components/Leaderboard';
+import TrendingStylesCarousel from '@/components/TrendingStylesCarousel';
+import { UGCCollabButton } from '@/components/ugc/UGCCollabButton';
+import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
+import { FeedbackModal } from '@/components/FeedbackModal';
 
 interface UserProfile {
   id: string;
+  name: string;
+  role: 'shopper' | 'brand' | 'retailer' | 'admin';
+  avatar_url?: string;
   email: string;
-  role: string;
-  created_at: string;
-  updated_at: string;
-  is_active: boolean;
-  profile?: {
-    full_name: string;
-    avatar_url: string;
-  };
+}
+
+interface DashboardStats {
+  totalProducts?: number;
+  totalViews?: number;
+  totalSales?: number;
+  totalRevenue?: number;
+  totalWishlistItems?: number;
+  totalCartItems?: number;
 }
 
 const RoleDashboard: React.FC = () => {
   const { user, signOut } = useAuth();
-  const router = useRouter();
+  console.log('RoleDashboard: user state:', user);
+  const navigate = useNavigate();
   const { toast } = useToast();
-  const [profiles, setProfiles] = useState<UserProfile[]>([]);
+  const { isEnabled } = useFeatureFlags();
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [stats, setStats] = useState<DashboardStats>({});
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [newEmail, setNewEmail] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [isAiStudioModalOpen, setIsAiStudioModalOpen] = useState(false);
-  const [showAiStudio, setShowAiStudio] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [activeLeaderboard, setActiveLeaderboard] = useState<'global' | 'country'>('global');
+  const [aiStudioModalOpen, setAiStudioModalOpen] = useState(false);
 
   useEffect(() => {
-    if (!user) {
-      router.push('/login');
-      return;
-    }
+    const initializeDashboard = async () => {
+      console.log('Initializing dashboard, user:', user);
+      
+      if (!user) {
+        console.log('No user found, setting loading to false');
+        setLoading(false);
+        return;
+      }
 
-    const fetchProfiles = async () => {
-      setLoading(true);
       try {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select(`
-            id,
-            email,
-            role,
-            created_at,
-            updated_at,
-            is_active,
-            profile:profiles!inner(full_name, avatar_url)
-          `)
-          .order('created_at', { ascending: false });
-
-        if (error) {
-          console.error('Error fetching profiles:', error);
-          setError(error.message);
-        } else if (data) {
-          setProfiles(data as UserProfile[]);
-        }
-      } catch (err) {
-        console.error('Unexpected error:', err);
-        setError('An unexpected error occurred.');
+        await fetchUserProfile();
+        await fetchDashboardStats();
+      } catch (error) {
+        console.error('Error initializing dashboard:', error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchProfiles();
-  }, [user, router]);
+    initializeDashboard();
+  }, [user]);
 
-  const handleCreateUser = async () => {
-    if (!newEmail || !newPassword) {
-      toast({
-        title: 'Error',
-        description: 'Email and password are required.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
+  const fetchUserProfile = async () => {
+    if (!user) return;
+    
+    console.log('Fetching user profile for:', user.id);
+    
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email: newEmail,
-        password: newPassword,
-        options: {
-          data: {
-            role: 'user', // Default role
-          },
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
-        },
-      });
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      console.log('RoleDashboard: User query result:', { data, error, userId: user.id });
 
       if (error) {
-        console.error('Error creating user:', error);
-        toast({
-          title: 'Error',
-          description: error.message,
-          variant: 'destructive',
-        });
-      } else {
-        console.log('User created successfully:', data);
-        toast({
-          title: 'Success',
-          description: 'User created successfully. Check email to verify.',
-        });
-        setIsCreateModalOpen(false);
-        setNewEmail('');
-        setNewPassword('');
+        console.error('Error fetching user profile:', error);
+        throw error;
       }
-    } catch (err) {
-      console.error('Unexpected error:', err);
-      toast({
-        title: 'Error',
-        description: 'An unexpected error occurred.',
-        variant: 'destructive',
-      });
+
+      if (data) {
+        console.log('Found user profile:', data, 'Role:', data.role);
+        setUserProfile(data);
+      } else {
+        // User profile doesn't exist, check if role is in user_metadata
+        const roleFromMetadata = user.user_metadata?.role || 'shopper';
+        console.log('Creating new user profile with role from metadata:', roleFromMetadata);
+        
+        const defaultProfile = {
+          id: user.id,
+          name: user.user_metadata?.name || user.email?.split('@')[0] || 'User',
+          role: roleFromMetadata as 'shopper' | 'brand' | 'retailer' | 'admin',
+          email: user.email!
+        };
+
+        const { error: insertError } = await supabase
+          .from('users')
+          .insert([defaultProfile]);
+
+        if (insertError) {
+          console.error('Error creating user profile:', insertError);
+          // Even if insert fails, use the profile from metadata
+        }
+        
+        setUserProfile(defaultProfile);
+      }
+    } catch (error) {
+      console.error('Error with user profile:', error);
+      // Fallback to user_metadata role if available
+      const roleFromMetadata = user.user_metadata?.role || 'shopper';
+      const fallbackProfile = {
+        id: user.id,
+        name: user.user_metadata?.name || user.email?.split('@')[0] || 'User',
+        role: roleFromMetadata as 'shopper' | 'brand' | 'retailer' | 'admin',
+        email: user.email!
+      };
+      setUserProfile(fallbackProfile);
     }
   };
 
-  const handleToggleActive = async (profileId: string, currentStatus: boolean) => {
+  const fetchDashboardStats = async () => {
+    if (!user) return;
+    
+    console.log('Fetching dashboard stats for:', user.id);
+    
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ is_active: !currentStatus })
-        .eq('id', profileId);
+      // Fetch basic stats for all roles
+      const [wishlistData, cartData] = await Promise.all([
+        supabase.from('wishlist_items').select('*').eq('wishlist_id', user.id),
+        supabase.from('cart_items').select('*').eq('user_id', user.id)
+      ]);
 
-      if (error) {
-        console.error('Error toggling active status:', error);
-        toast({
-          title: 'Error',
-          description: error.message,
-          variant: 'destructive',
-        });
-      } else {
-        setProfiles(profiles.map(p =>
-          p.id === profileId ? { ...p, is_active: !currentStatus } : p
-        ));
-        toast({
-          title: 'Success',
-          description: `User ${currentStatus ? 'deactivated' : 'activated'} successfully.`,
-        });
+      const dashboardStats: DashboardStats = {
+        totalWishlistItems: wishlistData?.data?.length || 0,
+        totalCartItems: cartData?.data?.length || 0
+      };
+
+      // Role-specific stats
+      if (userProfile?.role === 'brand' || userProfile?.role === 'retailer') {
+        try {
+          const { data: products } = await supabase
+            .from('products')
+            .select('*')
+            .eq(userProfile.role === 'brand' ? 'brand_id' : 'retailer_id', user.id);
+          dashboardStats.totalProducts = products?.length || 0;
+        } catch (roleError) {
+          console.warn('Failed to fetch role-specific stats:', roleError);
+          dashboardStats.totalProducts = 0;
+        }
       }
-    } catch (err) {
-      console.error('Unexpected error:', err);
-      toast({
-        title: 'Error',
-        description: 'An unexpected error occurred.',
-        variant: 'destructive',
+      
+      setStats(dashboardStats);
+      console.log('Dashboard stats updated:', dashboardStats);
+    } catch (error) {
+      console.error('Error fetching dashboard stats:', error);
+      // Set default stats on error
+      setStats({
+        totalWishlistItems: 0,
+        totalCartItems: 0,
+        totalProducts: 0
       });
     }
   };
 
-  const handleSignOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      console.error('Error signing out:', error);
-      toast({
-        title: 'Error',
-        description: error.message,
-        variant: 'destructive',
-      });
-    } else {
-      router.push('/login');
-    }
+  const formatPrice = (cents: number): string => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD'
+    }).format(cents / 100);
   };
 
+  const handleToyReplicaClick = async () => {
+    // Navigate to the toy replica page
+    navigate('/toy-replica');
+  };
+
+  // Show loading spinner
   if (loading) {
-    return <div className="text-center mt-8">Loading profiles...</div>;
-  }
-
-  if (error) {
-    return <div className="text-center mt-8 text-red-500">Error: {error}</div>;
-  }
-
-  return (
-    <div className="container mx-auto p-4">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold">Role Dashboard</h1>
-          <p className="text-muted-foreground">Manage user roles and permissions.</p>
+    console.log('Showing loading spinner');
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p>Loading dashboard...</p>
         </div>
-        <div className="space-x-2">
-          <Button onClick={() => setIsCreateModalOpen(true)}>
-            <UserPlus className="h-4 w-4 mr-2" />
-            Create User
-          </Button>
-          <Button variant="destructive" onClick={handleSignOut}>
-            Sign Out
+      </div>
+    );
+  }
+
+  // Show sign-in prompt if no user
+  if (!user) {
+    console.log('No user, showing sign-in prompt');
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <h2 className="text-2xl font-bold">Welcome to Azyah</h2>
+          <p className="text-muted-foreground">Please sign in to access your dashboard</p>
+          <Button onClick={() => navigate('/auth')}>
+            Sign In
           </Button>
         </div>
       </div>
+    );
+  }
 
-      {/* User Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>User Profiles</CardTitle>
-          <CardDescription>A list of all user profiles in the system.</CardDescription>
-        </CardHeader>
-        <CardContent className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {profiles.map((profile) => (
-                <TableRow key={profile.id}>
-                  <TableCell>
-                    <div className="flex items-center space-x-2">
-                      <Avatar>
-                        <AvatarImage src={profile.profile?.avatar_url || `https://avatar.vercel.sh/${profile.profile?.full_name || profile.email}.png`} />
-                        <AvatarFallback>{profile.profile?.full_name?.slice(0, 2)?.toUpperCase() || profile.email?.slice(0, 2)?.toUpperCase()}</AvatarFallback>
-                      </Avatar>
-                      <span>{profile.profile?.full_name || 'N/A'}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>{profile.email}</TableCell>
-                  <TableCell>{profile.role}</TableCell>
-                  <TableCell>
-                    <Badge variant={profile.is_active ? 'default' : 'secondary'}>
-                      {profile.is_active ? 'Active' : 'Inactive'}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0">
-                          <span className="sr-only">Open menu</span>
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem onClick={() => navigator.clipboard.writeText(profile.id)}>
-                          <Copy className="h-4 w-4 mr-2" />
-                          Copy user ID
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => handleToggleActive(profile.id, profile.is_active)}>
-                          {profile.is_active ? (
-                            <>
-                              <XCircle className="h-4 w-4 mr-2 text-red-500" />
-                              Deactivate
-                            </>
-                          ) : (
-                            <>
-                              <CheckCircle className="h-4 w-4 mr-2 text-green-500" />
-                              Activate
-                            </>
-                          )}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem className="text-red-500">
-                          <Trash className="h-4 w-4 mr-2" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+  if (!userProfile) {
+    console.log('No user profile, showing error');
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <p>Error loading profile</p>
+        </div>
+      </div>
+    );
+  }
 
-      {/* Create User Modal */}
-      <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Create New User</DialogTitle>
-            <DialogDescription>
-              Enter the email and password for the new user.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="email" className="text-right">
-                Email
-              </Label>
-              <Input id="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} className="col-span-3" />
+  console.log('Rendering dashboard for user:', userProfile);
+
+  const renderShopperDashboard = () => (
+    <div className="space-y-4">
+      {/* Premium Banner */}
+      <PremiumBanner />
+      
+      {/* Quick Actions with Premium Glass Panel */}
+      <GlassPanel variant="premium" className="p-8">
+        <div className="space-y-6">
+          <h2 className="text-2xl font-cormorant font-semibold flex items-center gap-3 text-foreground/90">
+            Quick Actions
+          </h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-4 sm:gap-5">
+            <Button 
+              onClick={() => navigate('/swipe')} 
+              className="btn-luxury h-16 sm:h-20 flex-col gap-1 sm:gap-2"
+            >
+              <Heart className="h-5 w-5 sm:h-6 sm:w-6" />
+              <span className="text-xs sm:text-sm">Swipe</span>
+            </Button>
+            {isEnabled('ai_beauty_consultant') ? (
+              <Button 
+                onClick={() => navigate('/beauty-consultant')} 
+                variant="outline" 
+                className="h-16 sm:h-20 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300 relative bg-gradient-to-br from-pink-50 to-purple-50 dark:from-pink-950/20 dark:to-purple-950/20 border-pink-200 dark:border-pink-800"
+                data-qa="qa-beauty"
+              >
+                <WandSparkles className="h-5 w-5 sm:h-6 sm:w-6 text-pink-600" />
+                <span className="text-xs sm:text-sm text-pink-600">Beauty Guide</span>
+                <Badge variant="secondary" className="absolute -top-1 -right-1 text-xs px-1 py-0 h-4">
+                  Coming Soon
+                </Badge>
+              </Button>
+            ) : (
+              <Button 
+                onClick={() => navigate('/fashion-feed')} 
+                variant="outline" 
+                className="h-16 sm:h-20 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300"
+              >
+                <Users className="h-5 w-5 sm:h-6 sm:w-6" />
+                <span className="text-xs sm:text-sm">Feed</span>
+              </Button>
+            )}
+            <Button 
+              onClick={() => navigate('/explore')} 
+              variant="outline" 
+              className="h-16 sm:h-20 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300"
+            >
+              <Search className="h-5 w-5 sm:h-6 sm:w-6" />
+              <span className="text-xs sm:text-sm">Explore</span>
+            </Button>
+            <Button 
+              onClick={() => setAiStudioModalOpen(true)}
+              variant="outline" 
+              className="h-16 sm:h-20 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300 relative bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 border-purple-200 dark:border-purple-800"
+            >
+              <Sparkles className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600" />
+              <span className="text-xs sm:text-sm text-purple-600">AI Studio</span>
+              <Badge variant="secondary" className="absolute -top-1 -right-1 text-xs px-1 py-0 h-4">
+                New
+              </Badge>
+            </Button>
+            <UGCCollabButton />
+            <Button 
+              onClick={() => navigate('/wishlist')} 
+              variant="outline" 
+              className="h-16 sm:h-20 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300"
+            >
+              <ShoppingBag className="h-5 w-5 sm:h-6 sm:w-6" />
+              <span className="text-xs sm:text-sm">Wishlist</span>
+            </Button>
+            <Button 
+              onClick={handleToyReplicaClick}
+              variant="outline" 
+              className="h-16 sm:h-20 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300 relative bg-gradient-to-br from-green-50 to-blue-50 dark:from-green-950/20 dark:to-blue-950/20 border-green-200 dark:border-green-800"
+            >
+              <Blocks className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
+              <span className="text-xs sm:text-sm text-green-600">Toy Replica</span>
+              <Badge variant="secondary" className="absolute -top-1 -right-1 text-xs px-1 py-0 h-4">
+                AI
+              </Badge>
+            </Button>
+          </div>
+        </div>
+      </GlassPanel>
+
+      {/* Global Search and Affiliate Hub Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Trending Styles Carousel with Premium Glass Panel */}
+        <GlassPanel variant="premium" className="p-8">
+          <div className="space-y-5">
+            <h3 className="text-xl font-cormorant font-semibold flex items-center gap-3">
+              <div className="p-2 rounded-full bg-gradient-to-br from-primary/10 to-accent-cartier/10">
+                <TrendingUp className="h-5 w-5 text-primary" />
+              </div>
+              Trending Styles
+            </h3>
+            <p className="text-muted-foreground leading-relaxed">
+              Discover what's trending now and shop the latest styles everyone's talking about.
+            </p>
+            <TrendingStylesCarousel limit={8} />
+          </div>
+        </GlassPanel>
+
+        {/* Affiliate Hub - Desktop with Premium Glass Panel */}
+        <div className="hidden lg:block">
+          <GlassPanel variant="premium" className="p-8">
+            <AffiliateHub showTitle={false} />
+          </GlassPanel>
+        </div>
+      </div>
+
+      {/* Affiliate Hub - Mobile with Premium Glass Panel */}
+      <div className="block lg:hidden">
+        <GlassPanel variant="premium" className="p-8">
+          <AffiliateHub />
+        </GlassPanel>
+      </div>
+
+      {/* Closets Preview with Premium Glass Panel */}
+      <GlassPanel variant="premium" className="p-8">
+        <div className="space-y-5">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xl font-cormorant font-semibold flex items-center gap-3">
+              <div className="p-2 rounded-full bg-gradient-to-br from-primary/10 to-accent-cartier/10">
+                <Archive className="h-5 w-5 text-primary" />
+              </div>
+              My Closets
+            </h3>
+            <Button variant="premium" size="sm" onClick={() => navigate('/closets')}>
+              <Archive className="h-4 w-4 mr-2" />
+              View All
+            </Button>
+          </div>
+          <div className="text-center py-12 space-y-3">
+            <div className="w-16 h-16 mx-auto rounded-full bg-gradient-to-br from-primary/10 to-accent-cartier/10 flex items-center justify-center mb-4">
+              <Archive className="h-8 w-8 text-primary/60" />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="password" className="text-right">
-                Password
-              </Label>
-              <Input type="password" id="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="col-span-3" />
+            <p className="text-muted-foreground text-lg">
+              Create your first closet to organize your style discoveries
+            </p>
+          </div>
+        </div>
+      </GlassPanel>
+
+      {/* Fashion Leaderboards with Premium Glass Panel */}
+      <GlassPanel variant="premium" className="p-8">
+        <div className="space-y-6">
+          <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+            <h3 className="text-xl font-cormorant font-semibold flex items-center gap-3">
+              <div className="p-2 rounded-full bg-gradient-to-br from-yellow-500/10 to-orange-500/10">
+                <Trophy className="h-5 w-5 text-yellow-500" />
+              </div>
+              Fashion Leaderboards
+            </h3>
+            <div className="flex gap-2">
+              <Button 
+                variant={activeLeaderboard === 'global' ? 'premium' : 'outline'} 
+                size="sm" 
+                onClick={() => setActiveLeaderboard('global')} 
+                className="flex-1 sm:flex-none"
+              >
+                <Globe className="h-3 w-3 mr-2" />
+                Global
+              </Button>
+              <Button 
+                variant={activeLeaderboard === 'country' ? 'premium' : 'outline'} 
+                size="sm" 
+                onClick={() => setActiveLeaderboard('country')} 
+                className="flex-1 sm:flex-none"
+              >
+                <MapPin className="h-3 w-3 mr-2" />
+                Country
+              </Button>
             </div>
           </div>
-          <DialogFooter>
-            <Button type="button" variant="secondary" onClick={() => setIsCreateModalOpen(false)}>
-              Cancel
-            </Button>
-            <Button type="submit" onClick={handleCreateUser}>
-              Create
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          <Leaderboard type={activeLeaderboard} country={user?.user_metadata?.country} />
+        </div>
+      </GlassPanel>
 
-      {/* AI Studio Button */}
-      <Button onClick={() => setShowAiStudio(true)} className="w-full mt-4">
-        <Sparkles className="h-4 w-4 mr-2" />
-        Open AI Studio
-      </Button>
-
-      {/* AI Studio Modal */}
-      <AiStudioModal 
-        isOpen={showAiStudio} 
-        onClose={() => setShowAiStudio(false)} 
-      />
+      {/* Feedback Section */}
+      <div className="flex justify-end">
+        <FeedbackModal userType="shopper" />
+      </div>
     </div>
+  );
+
+  const renderBrandDashboard = () => (
+    <div className="space-y-4">
+
+      {/* Quick Actions */}
+      <GlassPanel variant="premium" className="p-8">
+        <div className="space-y-6">
+          <h3 className="text-xl font-cormorant font-semibold">Brand Management</h3>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <Button onClick={() => navigate('/brand-portal')} variant="premium" className="h-24 flex-col gap-3">
+              <Package className="h-7 w-7" />
+              <span className="font-medium">Products</span>
+            </Button>
+            <Button onClick={() => navigate('/brand-portal')} variant="outline" className="h-24 flex-col gap-3 hover:scale-105 transition-transform">
+              <BarChart3 className="h-7 w-7" />
+              <span className="font-medium">Analytics</span>
+            </Button>
+            <Button onClick={() => navigate('/brand-portal')} variant="outline" className="h-24 flex-col gap-3 hover:scale-105 transition-transform">
+              <Settings className="h-7 w-7" />
+              <span className="font-medium">Settings</span>
+            </Button>
+          </div>
+        </div>
+      </GlassPanel>
+    </div>
+  );
+
+  const renderRetailerDashboard = () => (
+    <div className="space-y-4">
+
+      {/* Quick Actions */}
+      <GlassPanel variant="premium" className="p-8">
+        <div className="space-y-6">
+          <h3 className="text-xl font-cormorant font-semibold">Retailer Management</h3>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <Button onClick={() => navigate('/retailer-portal')} variant="premium" className="h-24 flex-col gap-3">
+              <Package className="h-7 w-7" />
+              <span className="font-medium">Inventory</span>
+            </Button>
+            <Button onClick={() => navigate('/retailer-portal')} variant="outline" className="h-24 flex-col gap-3 hover:scale-105 transition-transform">
+              <Store className="h-7 w-7" />
+              <span className="font-medium">Brands</span>
+            </Button>
+            <Button onClick={() => navigate('/retailer-portal')} variant="outline" className="h-24 flex-col gap-3 hover:scale-105 transition-transform">
+              <BarChart3 className="h-7 w-7" />
+              <span className="font-medium">Analytics</span>
+            </Button>
+          </div>
+        </div>
+      </GlassPanel>
+    </div>
+  );
+
+  return (
+    <ErrorBoundary>
+      <div className="min-h-screen dashboard-bg pb-20 sm:pb-0">
+        <div className="container mx-auto max-w-7xl px-4 py-6">
+          {/* Header with Dashboard Header component */}
+          <div className="mb-6">
+            <DashboardHeader />
+          </div>
+
+          {/* Role-based Dashboard Content - Only render ONE dashboard */}
+          {userProfile?.role === 'shopper' && renderShopperDashboard()}
+          {userProfile?.role === 'brand' && renderBrandDashboard()}
+          {userProfile?.role === 'retailer' && renderRetailerDashboard()}
+          {userProfile?.role === 'admin' && (
+            <div className="space-y-4">
+              <GlassPanel variant="premium" className="p-8">
+                <div className="text-center space-y-4">
+                  <h2 className="text-2xl font-cormorant font-semibold">Admin Dashboard</h2>
+                  <p className="text-muted-foreground">
+                    As an admin, you have access to all portals. Choose which portal to access:
+                  </p>
+                  <div className="flex flex-wrap gap-4 justify-center">
+                    <Button onClick={() => navigate('/brand-portal')} variant="premium">
+                      <Package className="h-4 w-4 mr-2" />
+                      Brand Portal
+                    </Button>
+                    <Button onClick={() => navigate('/retailer-portal')} variant="outline">
+                      <Store className="h-4 w-4 mr-2" />
+                      Retailer Portal
+                    </Button>
+                  </div>
+                </div>
+              </GlassPanel>
+            </div>
+          )}
+          
+          {/* Show error if no valid role */}
+          {userProfile && !['shopper', 'brand', 'retailer', 'admin'].includes(userProfile.role) && (
+            <div className="space-y-4">
+              <GlassPanel variant="premium" className="p-8">
+                <div className="text-center space-y-4">
+                  <h2 className="text-xl font-semibold text-destructive">Invalid Role</h2>
+                  <p className="text-muted-foreground">
+                    Your account role "{userProfile.role}" is not recognized. Please contact support.
+                  </p>
+                </div>
+              </GlassPanel>
+            </div>
+          )}
+        </div>
+        
+        {/* Global Search Modal */}
+        <GlobalSearch isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
+        
+        {/* AI Studio Modal */}
+        <AiStudioModal 
+          open={aiStudioModalOpen} 
+          onClose={() => setAiStudioModalOpen(false)} 
+        />
+      </div>
+    </ErrorBoundary>
   );
 };
 

@@ -1,225 +1,354 @@
-
-import React, { useState, useRef, useCallback } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import React, { useState, useEffect } from 'react';
+import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { Upload, Sparkles, Crown, X, AlertCircle } from 'lucide-react';
+import { GlassPanel } from '@/components/ui/glass-panel';
+import { Download, Loader2, Sparkles } from 'lucide-react';
+import { useBitStudio } from '@/hooks/useBitStudio';
+import { BITSTUDIO_IMAGE_TYPES } from '@/lib/bitstudio-types';
 import { useToast } from '@/hooks/use-toast';
-import { useZiinaPayments } from '@/hooks/useZiinaPayments';
+import { useAiAssets } from '@/hooks/useAiAssets';
+import { useSubscription } from '@/hooks/useSubscription';
+import { AiStudioHeader } from './AiStudio/AiStudioHeader';
+import { AiStudioResultsPanel } from './AiStudio/AiStudioResultsPanel';
 import { AiStudioUploadPanel } from './AiStudio/AiStudioUploadPanel';
 import { AiStudioControlsPanel } from './AiStudio/AiStudioControlsPanel';
-import { AiStudioResultsPanel } from './AiStudio/AiStudioResultsPanel';
 import { AiStudioHelpPanel } from './AiStudio/AiStudioHelpPanel';
 
-interface AiStudioModalProps {
-  isOpen: boolean;
+export interface AiStudioModalProps {
+  open: boolean;
   onClose: () => void;
+  trigger?: React.ReactNode;
 }
 
-interface ImageUploadResult {
-  url: string;
-  file: File;
-}
-
-const AiStudioModal: React.FC<AiStudioModalProps> = ({ isOpen, onClose }) => {
-  const { toast } = useToast();
-  const { isPremium, createPayment } = useZiinaPayments();
-  
-  // State for upload panel
+const AiStudioModal: React.FC<AiStudioModalProps> = ({
+  open,
+  onClose,
+  trigger
+}) => {
+  // File uploads
   const [personFile, setPersonFile] = useState<File | null>(null);
   const [outfitFile, setOutfitFile] = useState<File | null>(null);
-  const [personImageId, setPersonImageId] = useState<string | null>(null);
-  const [outfitImageId, setOutfitImageId] = useState<string | null>(null);
-  
-  // State for controls panel
-  const [loading, setLoading] = useState(false);
-  const [uploadingPerson, setUploadingPerson] = useState(false);
-  const [uploadingOutfit, setUploadingOutfit] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
+  const [outfitUrl, setOutfitUrl] = useState('');
+
+  // Form data
   const [prompt, setPrompt] = useState('');
   const [resolution, setResolution] = useState<'standard' | 'high'>('standard');
-  const [remainingGenerations, setRemainingGenerations] = useState(3);
-  const maxGenerations = isPremium ? Infinity : 4;
-  
-  // State for results panel
+  const [numImages, setNumImages] = useState(1);
+  const [showSettings, setShowSettings] = useState(false);
+
+  // Results
   const [currentResult, setCurrentResult] = useState<any>(null);
-  const [assets, setAssets] = useState<any[]>([]);
+  const [personImageId, setPersonImageId] = useState<string | null>(null);
+  const [outfitImageId, setOutfitImageId] = useState<string | null>(null);
+
+  const {
+    loading,
+    error,
+    uploadImage,
+    virtualTryOn,
+    clearError
+  } = useBitStudio();
   
-  // State for help panel
-  const [error, setError] = useState<string | null>(null);
+  const { toast } = useToast();
+  const { assets, loading: assetsLoading, fetchAssets, saveAsset, deleteAssets } = useAiAssets();
+  const { isPremium, createPaymentIntent } = useSubscription();
+
+  // Generation limits based on user type
+  const maxGenerations = isPremium ? 20 : 4;
+  
+  // For premium users, count today's generations; for free users, count all lifetime generations
+  const relevantAssets = isPremium 
+    ? assets.filter(asset => {
+        const assetDate = new Date(asset.created_at);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        return assetDate >= today;
+      })
+    : assets;
+    
+  const remainingGenerations = maxGenerations - relevantAssets.length;
+
+  useEffect(() => {
+    if (open) {
+      fetchAssets();
+    }
+  }, [open]); // Remove fetchAssets dependency to prevent infinite loop
+
+  // Effect to show helpful messages when images are uploaded
+  useEffect(() => {
+    if (personImageId && outfitImageId && !loading && !currentResult) {
+      toast({
+        title: 'Ready to Generate',
+        description: 'Both images uploaded successfully! Click "Generate Try-On" to see the result.',
+      });
+    }
+  }, [personImageId, outfitImageId, loading, currentResult, toast]);
+
+  // File validation helper
+  const validateFile = (file: File): boolean => {
+    if (file.size > 10 * 1024 * 1024) {
+      toast({
+        title: 'File Too Large',
+        description: 'Please select an image file smaller than 10MB',
+        variant: 'destructive'
+      });
+      return false;
+    }
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: 'Invalid File Type',
+        description: 'Please select an image file',
+        variant: 'destructive'
+      });
+      return false;
+    }
+    return true;
+  };
+
+  // State for tracking upload status
+  const [uploadingPerson, setUploadingPerson] = useState(false);
+  const [uploadingOutfit, setUploadingOutfit] = useState(false);
+
+  // File upload handlers
+  const handleFileUpload = async (file: File, type: string, setImageId: (id: string) => void, setUploading: (uploading: boolean) => void) => {
+    if (!file || !validateFile(file)) return;
+    try {
+      setUploading(true);
+      clearError();
+      const result = await uploadImage(file, type);
+      if (result?.id) {
+        setImageId(result.id);
+        toast({
+          title: 'Upload Complete',
+          description: `${type === BITSTUDIO_IMAGE_TYPES.PERSON ? 'Person' : 'Outfit'} image uploaded successfully`
+        });
+      }
+    } catch (err) {
+      console.error('Upload error:', err);
+      toast({
+        title: 'Upload Failed',
+        description: `Failed to upload ${type === BITSTUDIO_IMAGE_TYPES.PERSON ? 'person' : 'outfit'} image. Please try again.`,
+        variant: 'destructive'
+      });
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const handlePersonUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setUploadingPerson(true);
       setPersonFile(file);
-      // Simulate upload
-      setTimeout(() => {
-        setPersonImageId(`person_${Date.now()}`);
-        setUploadingPerson(false);
-      }, 1000);
+      handleFileUpload(file, BITSTUDIO_IMAGE_TYPES.PERSON, setPersonImageId, setUploadingPerson);
     }
   };
 
   const handleOutfitUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setUploadingOutfit(true);
       setOutfitFile(file);
-      // Simulate upload
-      setTimeout(() => {
-        setOutfitImageId(`outfit_${Date.now()}`);
-        setUploadingOutfit(false);
-      }, 1000);
+      handleFileUpload(file, BITSTUDIO_IMAGE_TYPES.OUTFIT, setOutfitImageId, setUploadingOutfit);
     }
   };
 
-  const handleGenerate = async () => {
+  // Virtual Try-On handler
+  const handleVirtualTryOn = async () => {
     if (!personImageId || !outfitImageId) {
-      setError('Please upload both images first');
+      toast({
+        title: 'Missing Images',
+        description: 'Please upload both person and outfit images',
+        variant: 'destructive'
+      });
       return;
     }
 
-    setLoading(true);
-    setError(null);
+    if (remainingGenerations <= 0) {
+      toast({
+        title: 'Generation Limit Reached',
+        description: isPremium 
+          ? 'You have reached your daily limit of 20 try-ons' 
+          : 'You have reached your lifetime limit of 4 generations. Upgrade to Premium for 20 daily try-ons.',
+        variant: 'destructive'
+      });
+      return;
+    }
 
-    // Simulate generation
-    setTimeout(() => {
-      const newResult = {
-        path: `https://picsum.photos/512?random=${Math.random()}`,
-        status: 'completed',
-        credits_used: resolution === 'high' ? 2 : 1
-      };
-      setCurrentResult(newResult);
-      setAssets([...assets, { id: Date.now().toString(), asset_url: newResult.path }]);
-      setRemainingGenerations(prev => prev - 1);
-      setLoading(false);
-    }, 3000);
-  };
+    try {
+      const result = await virtualTryOn({
+        person_image_id: personImageId,
+        outfit_image_id: outfitImageId,
+        resolution: resolution as 'standard' | 'high',
+        num_images: numImages,
+        prompt: prompt || undefined
+      });
 
-  const handleDownload = () => {
-    if (currentResult?.path) {
-      window.open(currentResult.path, '_blank');
+      if (result) {
+        setCurrentResult(result);
+        
+        // Save the result to database (assets list is updated automatically by saveAsset)
+        if (result.path) {
+          const savedAsset = await saveAsset(result.path, result.id, `Virtual Try-On ${new Date().toLocaleDateString()}`);
+          if (savedAsset) {
+            toast({
+              title: 'Try-On Complete',
+              description: 'Result saved successfully',
+            });
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Virtual try-on failed:', error);
+      toast({
+        title: 'Try-On Failed',
+        description: 'There was an error generating your try-on. Please try again.',
+        variant: 'destructive'
+      });
     }
   };
 
-  const handleResultSelect = (result: any) => {
-    setCurrentResult(result);
+  const downloadImage = async () => {
+    if (!currentResult?.path) return;
+    try {
+      const response = await fetch(currentResult.path);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `bitstudio-tryon-${currentResult.id}.png`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (err) {
+      toast({
+        title: 'Download Failed',
+        description: 'Could not download the image',
+        variant: 'destructive'
+      });
+    }
   };
 
-  const handleUpgradeClick = () => {
-    createPayment(40, false, 'Premium subscription upgrade');
+  const handleUpgradeClick = async () => {
+    await createPaymentIntent();
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl">
-        <DialogHeader>
-          <DialogTitle className="flex items-center">
-            <Sparkles className="mr-2 h-6 w-6 text-yellow-500" />
-            AI Studio
-            {isPremium ? (
-              <Badge variant="secondary" className="ml-2 flex items-center gap-1">
-                <Crown className="h-3 w-3" />
-                Premium
-              </Badge>
-            ) : null}
-          </DialogTitle>
-        </DialogHeader>
+    <Dialog open={open} onOpenChange={v => { if (!v) onClose(); }}>
+      {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
+      <DialogContent className="max-w-[95vw] w-[95vw] h-[100dvh] p-0 border-0 md:max-w-7xl md:h-[95vh] md:max-h-[95vh] md:overflow-hidden">
+        <div className="h-full flex flex-col bg-gradient-to-br from-background via-background/95 to-muted/50 md:overflow-hidden">
+          {/* Header */}
+          <div className="flex-shrink-0 z-10">
+            <AiStudioHeader 
+              isPremium={isPremium}
+              onUpgradeClick={handleUpgradeClick}
+              onClose={onClose}
+            />
+          </div>
 
-        <Card className="mb-4">
-          <CardContent className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              {isPremium ? (
-                <>
-                  <Sparkles className="h-5 w-5 text-green-500" />
-                  <p className="text-sm">
-                    You have unlimited access to AI image generation!
-                  </p>
-                </>
-              ) : (
-                <>
-                  <AlertCircle className="h-5 w-5 text-orange-500" />
-                  <p className="text-sm">
-                    Upgrade to Premium for unlimited access!
-                  </p>
-                </>
-              )}
+          {/* Main Content - Mobile First Layout */}
+          <div className="flex-1 lg:flex lg:flex-row lg:min-h-0 relative">
+            
+            {/* Mobile: Simple scrollable container */}
+            <div className="lg:hidden">
+              <div className="p-3 space-y-2 pb-20 overflow-y-auto" style={{ height: 'calc(100dvh - 100px)' }}>
+                {/* Results Panel - Mobile */}
+                <AiStudioResultsPanel 
+                  loading={loading}
+                  currentResult={currentResult}
+                  assets={assets}
+                  remainingGenerations={remainingGenerations}
+                  isPremium={isPremium}
+                  onDownload={downloadImage}
+                  onResultSelect={setCurrentResult}
+                  onDeleteAssets={deleteAssets}
+                />
+                
+                {/* Controls Panel */}
+                <AiStudioControlsPanel 
+                  loading={loading}
+                  uploadingPerson={uploadingPerson}
+                  uploadingOutfit={uploadingOutfit}
+                  showSettings={showSettings}
+                  prompt={prompt}
+                  resolution={resolution}
+                  remainingGenerations={remainingGenerations}
+                  maxGenerations={maxGenerations}
+                  isPremium={isPremium}
+                  personImageId={personImageId}
+                  outfitImageId={outfitImageId}
+                  personFile={personFile}
+                  outfitFile={outfitFile}
+                  onShowSettingsToggle={() => setShowSettings(!showSettings)}
+                  onPromptChange={setPrompt}
+                  onResolutionChange={setResolution}
+                  onGenerate={handleVirtualTryOn}
+                  onPersonUpload={handlePersonUpload}
+                  onOutfitUpload={handleOutfitUpload}
+                />
+
+                {/* Help Panel */}
+                <AiStudioHelpPanel 
+                  error={error}
+                  resolution={resolution}
+                  onResolutionChange={setResolution}
+                />
+              </div>
             </div>
-            {!isPremium && (
-              <Button size="sm" onClick={handleUpgradeClick}>
-                <Crown className="mr-2 h-4 w-4" />
-                Upgrade
-              </Button>
-            )}
-          </CardContent>
-        </Card>
 
-        <Separator className="mb-4" />
+            {/* Desktop Layout */}
+            <div className="hidden lg:flex flex-1 gap-3 p-3 min-h-0">
+              {/* Results Section - Desktop */}
+              <div className="flex-1 min-h-0">
+                <AiStudioResultsPanel 
+                  loading={loading}
+                  currentResult={currentResult}
+                  assets={assets}
+                  remainingGenerations={remainingGenerations}
+                  isPremium={isPremium}
+                  onDownload={downloadImage}
+                  onResultSelect={setCurrentResult}
+                  onDeleteAssets={deleteAssets}
+                />
+              </div>
 
-        {/* Main Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {/* Left Panel */}
-          <div className="space-y-4">
-            <AiStudioUploadPanel
-              personFile={personFile}
-              outfitFile={outfitFile}
-              personImageId={personImageId}
-              outfitImageId={outfitImageId}
-              onPersonUpload={handlePersonUpload}
-              onOutfitUpload={handleOutfitUpload}
-            />
-            
-            <AiStudioControlsPanel
-              loading={loading}
-              uploadingPerson={uploadingPerson}
-              uploadingOutfit={uploadingOutfit}
-              showSettings={showSettings}
-              prompt={prompt}
-              resolution={resolution}
-              remainingGenerations={remainingGenerations}
-              maxGenerations={maxGenerations}
-              isPremium={isPremium}
-              personImageId={personImageId}
-              outfitImageId={outfitImageId}
-              personFile={personFile}
-              outfitFile={outfitFile}
-              onShowSettingsToggle={() => setShowSettings(!showSettings)}
-              onPromptChange={setPrompt}
-              onResolutionChange={setResolution}
-              onGenerate={handleGenerate}
-              onPersonUpload={handlePersonUpload}
-              onOutfitUpload={handleOutfitUpload}
-            />
+              {/* Controls Section - Desktop */}
+              <div className="w-80 flex-shrink-0 min-h-0">
+                <div className="h-full space-y-3 overflow-y-auto scrollbar-thin">
+                  {/* Controls Panel */}
+                  <AiStudioControlsPanel 
+                    loading={loading}
+                    uploadingPerson={uploadingPerson}
+                    uploadingOutfit={uploadingOutfit}
+                    showSettings={showSettings}
+                    prompt={prompt}
+                    resolution={resolution}
+                    remainingGenerations={remainingGenerations}
+                    maxGenerations={maxGenerations}
+                    isPremium={isPremium}
+                    personImageId={personImageId}
+                    outfitImageId={outfitImageId}
+                    personFile={personFile}
+                    outfitFile={outfitFile}
+                    onShowSettingsToggle={() => setShowSettings(!showSettings)}
+                    onPromptChange={setPrompt}
+                    onResolutionChange={setResolution}
+                    onGenerate={handleVirtualTryOn}
+                    onPersonUpload={handlePersonUpload}
+                    onOutfitUpload={handleOutfitUpload}
+                  />
+
+                  {/* Help Panel */}
+                  <AiStudioHelpPanel 
+                    error={error}
+                    resolution={resolution}
+                    onResolutionChange={setResolution}
+                  />
+                </div>
+              </div>
+            </div>
           </div>
-
-          {/* Right Panel */}
-          <div className="space-y-4">
-            <AiStudioResultsPanel
-              loading={loading}
-              currentResult={currentResult}
-              assets={assets}
-              remainingGenerations={remainingGenerations}
-              isPremium={isPremium}
-              onDownload={handleDownload}
-              onResultSelect={handleResultSelect}
-            />
-            
-            <AiStudioHelpPanel
-              error={error}
-              resolution={resolution}
-              onResolutionChange={setResolution}
-            />
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="mt-4 flex justify-end">
-          <Button variant="secondary" size="sm" onClick={onClose}>
-            Close
-          </Button>
         </div>
       </DialogContent>
     </Dialog>
