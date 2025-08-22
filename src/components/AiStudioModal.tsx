@@ -26,46 +26,87 @@ interface ImageUploadResult {
 const AiStudioModal: React.FC<AiStudioModalProps> = ({ isOpen, onClose }) => {
   const { toast } = useToast();
   const { isPremium, createPayment } = useZiinaPayments();
-  const [uploadedImage, setUploadedImage] = useState<ImageUploadResult | null>(null);
-  const [generatedImages, setGeneratedImages] = useState<string[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [activePanel, setActivePanel] = useState<'upload' | 'controls' | 'results' | 'help'>('upload');
+  
+  // State for upload panel
+  const [personFile, setPersonFile] = useState<File | null>(null);
+  const [outfitFile, setOutfitFile] = useState<File | null>(null);
+  const [personImageId, setPersonImageId] = useState<string | null>(null);
+  const [outfitImageId, setOutfitImageId] = useState<string | null>(null);
+  
+  // State for controls panel
+  const [loading, setLoading] = useState(false);
+  const [uploadingPerson, setUploadingPerson] = useState(false);
+  const [uploadingOutfit, setUploadingOutfit] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [prompt, setPrompt] = useState('');
-  const [numImages, setNumImages] = useState(1);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [generationError, setGenerationError] = useState<string | null>(null);
-  const [isMaxReached, setIsMaxReached] = useState(false);
+  const [resolution, setResolution] = useState<'standard' | 'high'>('standard');
+  const [remainingGenerations, setRemainingGenerations] = useState(3);
+  const maxGenerations = isPremium ? Infinity : 4;
+  
+  // State for results panel
+  const [currentResult, setCurrentResult] = useState<any>(null);
+  const [assets, setAssets] = useState<any[]>([]);
+  
+  // State for help panel
+  const [error, setError] = useState<string | null>(null);
 
-  const handleImageUpload = (result: ImageUploadResult) => {
-    setUploadedImage(result);
-    setActivePanel('controls');
-  };
-
-  const handleControlsSubmit = async (prompt: string, numImages: number) => {
-    setPrompt(prompt);
-    setNumImages(numImages);
-    setIsGenerating(true);
-    setGenerationError(null);
-
-    // Simulate AI image generation (replace with actual API call)
-    await simulateImageGeneration(prompt, numImages);
-  };
-
-  const simulateImageGeneration = async (prompt: string, numImages: number) => {
-    return new Promise((resolve) => {
+  const handlePersonUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setUploadingPerson(true);
+      setPersonFile(file);
+      // Simulate upload
       setTimeout(() => {
-        const newImages = Array.from({ length: numImages }, (_, i) => `https://picsum.photos/256?random=${Math.random()}`);
-        setGeneratedImages(newImages);
-        setIsGenerating(false);
-        setActivePanel('results');
-        resolve(null);
-      }, 2000);
-    });
+        setPersonImageId(`person_${Date.now()}`);
+        setUploadingPerson(false);
+      }, 1000);
+    }
   };
 
-  const handlePanelChange = (panel: 'upload' | 'controls' | 'results' | 'help') => {
-    setActivePanel(panel);
+  const handleOutfitUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setUploadingOutfit(true);
+      setOutfitFile(file);
+      // Simulate upload
+      setTimeout(() => {
+        setOutfitImageId(`outfit_${Date.now()}`);
+        setUploadingOutfit(false);
+      }, 1000);
+    }
+  };
+
+  const handleGenerate = async () => {
+    if (!personImageId || !outfitImageId) {
+      setError('Please upload both images first');
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    // Simulate generation
+    setTimeout(() => {
+      const newResult = {
+        path: `https://picsum.photos/512?random=${Math.random()}`,
+        status: 'completed',
+        credits_used: resolution === 'high' ? 2 : 1
+      };
+      setCurrentResult(newResult);
+      setAssets([...assets, { id: Date.now().toString(), asset_url: newResult.path }]);
+      setRemainingGenerations(prev => prev - 1);
+      setLoading(false);
+    }, 3000);
+  };
+
+  const handleDownload = () => {
+    if (currentResult?.path) {
+      window.open(currentResult.path, '_blank');
+    }
+  };
+
+  const handleResultSelect = (result: any) => {
+    setCurrentResult(result);
   };
 
   const handleUpgradeClick = () => {
@@ -118,34 +159,64 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({ isOpen, onClose }) => {
 
         <Separator className="mb-4" />
 
-        {/* Panel Content */}
-        {activePanel === 'upload' && (
-          <AiStudioUploadPanel />
-        )}
-        {activePanel === 'controls' && uploadedImage && (
-          <AiStudioControlsPanel />
-        )}
-        {activePanel === 'results' && generatedImages.length > 0 && (
-          <AiStudioResultsPanel />
-        )}
-        {activePanel === 'help' && (
-          <AiStudioHelpPanel />
-        )}
+        {/* Main Content */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* Left Panel */}
+          <div className="space-y-4">
+            <AiStudioUploadPanel
+              personFile={personFile}
+              outfitFile={outfitFile}
+              personImageId={personImageId}
+              outfitImageId={outfitImageId}
+              onPersonUpload={handlePersonUpload}
+              onOutfitUpload={handleOutfitUpload}
+            />
+            
+            <AiStudioControlsPanel
+              loading={loading}
+              uploadingPerson={uploadingPerson}
+              uploadingOutfit={uploadingOutfit}
+              showSettings={showSettings}
+              prompt={prompt}
+              resolution={resolution}
+              remainingGenerations={remainingGenerations}
+              maxGenerations={maxGenerations}
+              isPremium={isPremium}
+              personImageId={personImageId}
+              outfitImageId={outfitImageId}
+              personFile={personFile}
+              outfitFile={outfitFile}
+              onShowSettingsToggle={() => setShowSettings(!showSettings)}
+              onPromptChange={setPrompt}
+              onResolutionChange={setResolution}
+              onGenerate={handleGenerate}
+              onPersonUpload={handlePersonUpload}
+              onOutfitUpload={handleOutfitUpload}
+            />
+          </div>
 
-        {/* Panel Navigation */}
-        <div className="mt-4 flex justify-between">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              if (activePanel === 'controls') setActivePanel('upload');
-              else if (activePanel === 'results') setActivePanel('controls');
-              else if (activePanel === 'help') setActivePanel('upload');
-            }}
-            disabled={activePanel === 'upload'}
-          >
-            Back
-          </Button>
+          {/* Right Panel */}
+          <div className="space-y-4">
+            <AiStudioResultsPanel
+              loading={loading}
+              currentResult={currentResult}
+              assets={assets}
+              remainingGenerations={remainingGenerations}
+              isPremium={isPremium}
+              onDownload={handleDownload}
+              onResultSelect={handleResultSelect}
+            />
+            
+            <AiStudioHelpPanel
+              error={error}
+              resolution={resolution}
+              onResolutionChange={setResolution}
+            />
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="mt-4 flex justify-end">
           <Button variant="secondary" size="sm" onClick={onClose}>
             Close
           </Button>
