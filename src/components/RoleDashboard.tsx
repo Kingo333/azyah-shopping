@@ -56,26 +56,36 @@ const RoleDashboard = () => {
   const { user } = useAuth();
   const { isPremium } = useSubscription();
   const [isAdmin, setIsAdmin] = useState(false);
+  const [userOrgId, setUserOrgId] = useState<string>('');
+  const [userOrgType, setUserOrgType] = useState<'brand' | 'retailer'>('brand');
   const [isAiStudioOpen, setIsAiStudioOpen] = useState(false);
 
   useEffect(() => {
-    const checkAdminStatus = async () => {
+    const checkUserData = async () => {
       if (user) {
         const { data, error } = await supabase
           .from('users')
-          .select('role')
+          .select('role, organization_id, organization_type')
           .eq('id', user.id)
           .single();
 
         if (error) {
-          console.error('Error fetching user role:', error);
-        } else if (data && data.role === 'admin') {
-          setIsAdmin(true);
+          console.error('Error fetching user data:', error);
+        } else if (data) {
+          if (data.role === 'admin') {
+            setIsAdmin(true);
+          }
+          if (data.organization_id) {
+            setUserOrgId(data.organization_id);
+          }
+          if (data.organization_type) {
+            setUserOrgType(data.organization_type as 'brand' | 'retailer');
+          }
         }
       }
     };
 
-    checkAdminStatus();
+    checkUserData();
   }, [user]);
 
   const handleAiStudioOpen = () => {
@@ -105,14 +115,17 @@ const RoleDashboard = () => {
           <TasteProfileDashboard />
         </DashboardCard>
 
-        {isPremium && (
+        {isPremium && userOrgId && (
           <DashboardCard
             title="UGC Collaboration"
             description="Collaborate with users to generate content for your store."
             icon={<Users className="h-4 w-4" />}
             badge="Premium"
           >
-            <CollabDashboard />
+            <CollabDashboard 
+              ownerOrgId={userOrgId}
+              orgType={userOrgType}
+            />
           </DashboardCard>
         )}
 
