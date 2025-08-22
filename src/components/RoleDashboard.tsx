@@ -1,535 +1,424 @@
-
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
-import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { GlassPanel } from '@/components/ui/glass-panel';
-import { useNavigate } from 'react-router-dom';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import GlobalSearch from '@/components/GlobalSearch';
-import DashboardHeader from '@/components/DashboardHeader';
-import AffiliateHub from '@/components/AffiliateHub';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import {
+  Users,
+  TrendingUp,
+  DollarSign,
+  Eye,
+  UserPlus,
+  Calendar,
+  BarChart3,
+  Settings,
+  Crown,
+  Sparkles,
+  ShoppingBag,
+  Heart,
+  MessageSquare,
+  Star,
+  Search,
+  Filter,
+  Download,
+  RefreshCw,
+  Mail,
+  Phone,
+  MapPin,
+  Globe,
+  Building,
+  Package,
+  AlertCircle,
+  CheckCircle,
+  XCircle,
+  Clock
+} from 'lucide-react';
 import AiStudioModal from '@/components/AiStudioModal';
-import PremiumBanner from '@/components/PremiumBanner';
-import { Heart, ShoppingBag, Search, Sparkles, Package, BarChart3, Users, Settings, Store, TrendingUp, Plus, Eye, DollarSign, Globe, Bell, LogOut, User, Archive, Trophy, MapPin, Blocks, WandSparkles } from 'lucide-react';
-import Leaderboard from '@/components/Leaderboard';
-import TrendingStylesCarousel from '@/components/TrendingStylesCarousel';
-import { UGCCollabButton } from '@/components/ugc/UGCCollabButton';
-import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
-import { FeedbackModal } from '@/components/FeedbackModal';
+
+interface StatsCardProps {
+  title: string;
+  value: number;
+  icon: React.ReactNode;
+  description: string;
+}
+
+interface ActivityItem {
+  id: string;
+  timestamp: string;
+  user: string;
+  action: string;
+  details: string;
+}
+
+interface Report {
+  id: string;
+  date: string;
+  metrics: {
+    views: number;
+    likes: number;
+    comments: number;
+    shares: number;
+  };
+}
 
 interface UserProfile {
   id: string;
-  name: string;
-  role: 'shopper' | 'brand' | 'retailer' | 'admin';
-  avatar_url?: string;
   email: string;
+  role: string;
+  created_at: string;
+  is_active: boolean;
+  last_login?: string;
 }
 
-interface DashboardStats {
-  totalProducts?: number;
-  totalViews?: number;
-  totalSales?: number;
-  totalRevenue?: number;
-  totalWishlistItems?: number;
-  totalCartItems?: number;
-}
-
-const RoleDashboard: React.FC = () => {
-  const { user, signOut } = useAuth();
-  console.log('RoleDashboard: user state:', user);
+const RoleDashboard = () => {
+  const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { isEnabled } = useFeatureFlags();
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-  const [stats, setStats] = useState<DashboardStats>({});
-  const [loading, setLoading] = useState(true);
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [activeLeaderboard, setActiveLeaderboard] = useState<'global' | 'country'>('global');
-  const [aiStudioModalOpen, setAiStudioModalOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('overview');
+  const [userProfiles, setUserProfiles] = useState<UserProfile[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedRole, setSelectedRole] = useState('all');
+  const [aiStudioOpen, setAiStudioOpen] = useState(false);
 
   useEffect(() => {
-    const initializeDashboard = async () => {
-      console.log('Initializing dashboard, user:', user);
-      
-      if (!user) {
-        console.log('No user found, setting loading to false');
-        setLoading(false);
+    loadUserProfiles();
+  }, []);
+
+  const loadUserProfiles = async () => {
+    try {
+      setIsLoading(true);
+      // Use users table instead of profiles since profiles doesn't exist
+      const { data, error } = await supabase
+        .from('users')
+        .select('id, email, role, created_at, is_active, last_login')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error loading user profiles:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to load user profiles',
+          variant: 'destructive'
+        });
         return;
       }
 
-      try {
-        await fetchUserProfile();
-        await fetchDashboardStats();
-      } catch (error) {
-        console.error('Error initializing dashboard:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    initializeDashboard();
-  }, [user]);
-
-  const fetchUserProfile = async () => {
-    if (!user) return;
-    
-    console.log('Fetching user profile for:', user.id);
-    
-    try {
-      const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', user.id)
-        .maybeSingle();
-
-      console.log('RoleDashboard: User query result:', { data, error, userId: user.id });
-
-      if (error) {
-        console.error('Error fetching user profile:', error);
-        throw error;
-      }
-
-      if (data) {
-        console.log('Found user profile:', data, 'Role:', data.role);
-        setUserProfile(data);
-      } else {
-        // User profile doesn't exist, check if role is in user_metadata
-        const roleFromMetadata = user.user_metadata?.role || 'shopper';
-        console.log('Creating new user profile with role from metadata:', roleFromMetadata);
-        
-        const defaultProfile = {
-          id: user.id,
-          name: user.user_metadata?.name || user.email?.split('@')[0] || 'User',
-          role: roleFromMetadata as 'shopper' | 'brand' | 'retailer' | 'admin',
-          email: user.email!
-        };
-
-        const { error: insertError } = await supabase
-          .from('users')
-          .insert([defaultProfile]);
-
-        if (insertError) {
-          console.error('Error creating user profile:', insertError);
-          // Even if insert fails, use the profile from metadata
-        }
-        
-        setUserProfile(defaultProfile);
-      }
+      setUserProfiles(data as UserProfile[]);
     } catch (error) {
-      console.error('Error with user profile:', error);
-      // Fallback to user_metadata role if available
-      const roleFromMetadata = user.user_metadata?.role || 'shopper';
-      const fallbackProfile = {
-        id: user.id,
-        name: user.user_metadata?.name || user.email?.split('@')[0] || 'User',
-        role: roleFromMetadata as 'shopper' | 'brand' | 'retailer' | 'admin',
-        email: user.email!
-      };
-      setUserProfile(fallbackProfile);
+      console.error('Error loading user profiles:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const fetchDashboardStats = async () => {
-    if (!user) return;
-    
-    console.log('Fetching dashboard stats for:', user.id);
-    
+  const updateUserStatus = async (userId: string, isActive: boolean) => {
     try {
-      // Fetch basic stats for all roles
-      const [wishlistData, cartData] = await Promise.all([
-        supabase.from('wishlist_items').select('*').eq('wishlist_id', user.id),
-        supabase.from('cart_items').select('*').eq('user_id', user.id)
-      ]);
+      const { error } = await supabase
+        .from('users')
+        .update({ is_active: isActive })
+        .eq('id', userId);
 
-      const dashboardStats: DashboardStats = {
-        totalWishlistItems: wishlistData?.data?.length || 0,
-        totalCartItems: cartData?.data?.length || 0
-      };
-
-      // Role-specific stats
-      if (userProfile?.role === 'brand' || userProfile?.role === 'retailer') {
-        try {
-          const { data: products } = await supabase
-            .from('products')
-            .select('*')
-            .eq(userProfile.role === 'brand' ? 'brand_id' : 'retailer_id', user.id);
-          dashboardStats.totalProducts = products?.length || 0;
-        } catch (roleError) {
-          console.warn('Failed to fetch role-specific stats:', roleError);
-          dashboardStats.totalProducts = 0;
-        }
+      if (error) {
+        throw error;
       }
-      
-      setStats(dashboardStats);
-      console.log('Dashboard stats updated:', dashboardStats);
-    } catch (error) {
-      console.error('Error fetching dashboard stats:', error);
-      // Set default stats on error
-      setStats({
-        totalWishlistItems: 0,
-        totalCartItems: 0,
-        totalProducts: 0
+
+      toast({
+        title: 'Success',
+        description: `User ${isActive ? 'activated' : 'deactivated'} successfully`
+      });
+
+      loadUserProfiles();
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive'
       });
     }
   };
 
-  const formatPrice = (cents: number): string => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(cents / 100);
-  };
+  const filteredUsers = userProfiles.filter(user => {
+    const matchesSearch = user.email.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesRole = selectedRole === 'all' || user.role === selectedRole;
+    return matchesSearch && matchesRole;
+  });
 
-  const handleToyReplicaClick = async () => {
-    // Navigate to the toy replica page
-    navigate('/toy-replica');
-  };
+  const totalUsers = userProfiles.length;
+  const activeUsers = userProfiles.filter(u => u.is_active).length;
+  const adminUsers = userProfiles.filter(u => u.role === 'admin').length;
+  const premiumUsers = userProfiles.filter(u => u.role === 'premium').length;
 
-  // Show loading spinner
-  if (loading) {
-    console.log('Showing loading spinner');
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p>Loading dashboard...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Show sign-in prompt if no user
   if (!user) {
-    console.log('No user, showing sign-in prompt');
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <h2 className="text-2xl font-bold">Welcome to Azyah</h2>
-          <p className="text-muted-foreground">Please sign in to access your dashboard</p>
-          <Button onClick={() => navigate('/auth')}>
-            Sign In
-          </Button>
-        </div>
-      </div>
-    );
+    return null;
   }
-
-  if (!userProfile) {
-    console.log('No user profile, showing error');
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <p>Error loading profile</p>
-        </div>
-      </div>
-    );
-  }
-
-  console.log('Rendering dashboard for user:', userProfile);
-
-  const renderShopperDashboard = () => (
-    <div className="space-y-4">
-      {/* Premium Banner */}
-      <PremiumBanner />
-      
-      {/* Quick Actions with Premium Glass Panel */}
-      <GlassPanel variant="premium" className="p-8">
-        <div className="space-y-6">
-          <h2 className="text-2xl font-cormorant font-semibold flex items-center gap-3 text-foreground/90">
-            Quick Actions
-          </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-4 sm:gap-5">
-            <Button 
-              onClick={() => navigate('/swipe')} 
-              className="btn-luxury h-16 sm:h-20 flex-col gap-1 sm:gap-2"
-            >
-              <Heart className="h-5 w-5 sm:h-6 sm:w-6" />
-              <span className="text-xs sm:text-sm">Swipe</span>
-            </Button>
-            {isEnabled('ai_beauty_consultant') ? (
-              <Button 
-                onClick={() => navigate('/beauty-consultant')} 
-                variant="outline" 
-                className="h-16 sm:h-20 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300 relative bg-gradient-to-br from-pink-50 to-purple-50 dark:from-pink-950/20 dark:to-purple-950/20 border-pink-200 dark:border-pink-800"
-                data-qa="qa-beauty"
-              >
-                <WandSparkles className="h-5 w-5 sm:h-6 sm:w-6 text-pink-600" />
-                <span className="text-xs sm:text-sm text-pink-600">Beauty Guide</span>
-                <Badge variant="secondary" className="absolute -top-1 -right-1 text-xs px-1 py-0 h-4">
-                  Coming Soon
-                </Badge>
-              </Button>
-            ) : (
-              <Button 
-                onClick={() => navigate('/fashion-feed')} 
-                variant="outline" 
-                className="h-16 sm:h-20 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300"
-              >
-                <Users className="h-5 w-5 sm:h-6 sm:w-6" />
-                <span className="text-xs sm:text-sm">Feed</span>
-              </Button>
-            )}
-            <Button 
-              onClick={() => navigate('/explore')} 
-              variant="outline" 
-              className="h-16 sm:h-20 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300"
-            >
-              <Search className="h-5 w-5 sm:h-6 sm:w-6" />
-              <span className="text-xs sm:text-sm">Explore</span>
-            </Button>
-            <Button 
-              onClick={() => setAiStudioModalOpen(true)}
-              variant="outline" 
-              className="h-16 sm:h-20 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300 relative bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 border-purple-200 dark:border-purple-800"
-            >
-              <Sparkles className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600" />
-              <span className="text-xs sm:text-sm text-purple-600">AI Studio</span>
-              <Badge variant="secondary" className="absolute -top-1 -right-1 text-xs px-1 py-0 h-4">
-                New
-              </Badge>
-            </Button>
-            <UGCCollabButton />
-            <Button 
-              onClick={() => navigate('/wishlist')} 
-              variant="outline" 
-              className="h-16 sm:h-20 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300"
-            >
-              <ShoppingBag className="h-5 w-5 sm:h-6 sm:w-6" />
-              <span className="text-xs sm:text-sm">Wishlist</span>
-            </Button>
-            <Button 
-              onClick={handleToyReplicaClick}
-              variant="outline" 
-              className="h-16 sm:h-20 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300 relative bg-gradient-to-br from-green-50 to-blue-50 dark:from-green-950/20 dark:to-blue-950/20 border-green-200 dark:border-green-800"
-            >
-              <Blocks className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
-              <span className="text-xs sm:text-sm text-green-600">Toy Replica</span>
-              <Badge variant="secondary" className="absolute -top-1 -right-1 text-xs px-1 py-0 h-4">
-                AI
-              </Badge>
-            </Button>
-          </div>
-        </div>
-      </GlassPanel>
-
-      {/* Global Search and Affiliate Hub Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Trending Styles Carousel with Premium Glass Panel */}
-        <GlassPanel variant="premium" className="p-8">
-          <div className="space-y-5">
-            <h3 className="text-xl font-cormorant font-semibold flex items-center gap-3">
-              <div className="p-2 rounded-full bg-gradient-to-br from-primary/10 to-accent-cartier/10">
-                <TrendingUp className="h-5 w-5 text-primary" />
-              </div>
-              Trending Styles
-            </h3>
-            <p className="text-muted-foreground leading-relaxed">
-              Discover what's trending now and shop the latest styles everyone's talking about.
-            </p>
-            <TrendingStylesCarousel limit={8} />
-          </div>
-        </GlassPanel>
-
-        {/* Affiliate Hub - Desktop with Premium Glass Panel */}
-        <div className="hidden lg:block">
-          <GlassPanel variant="premium" className="p-8">
-            <AffiliateHub showTitle={false} />
-          </GlassPanel>
-        </div>
-      </div>
-
-      {/* Affiliate Hub - Mobile with Premium Glass Panel */}
-      <div className="block lg:hidden">
-        <GlassPanel variant="premium" className="p-8">
-          <AffiliateHub />
-        </GlassPanel>
-      </div>
-
-      {/* Closets Preview with Premium Glass Panel */}
-      <GlassPanel variant="premium" className="p-8">
-        <div className="space-y-5">
-          <div className="flex items-center justify-between">
-            <h3 className="text-xl font-cormorant font-semibold flex items-center gap-3">
-              <div className="p-2 rounded-full bg-gradient-to-br from-primary/10 to-accent-cartier/10">
-                <Archive className="h-5 w-5 text-primary" />
-              </div>
-              My Closets
-            </h3>
-            <Button variant="premium" size="sm" onClick={() => navigate('/closets')}>
-              <Archive className="h-4 w-4 mr-2" />
-              View All
-            </Button>
-          </div>
-          <div className="text-center py-12 space-y-3">
-            <div className="w-16 h-16 mx-auto rounded-full bg-gradient-to-br from-primary/10 to-accent-cartier/10 flex items-center justify-center mb-4">
-              <Archive className="h-8 w-8 text-primary/60" />
-            </div>
-            <p className="text-muted-foreground text-lg">
-              Create your first closet to organize your style discoveries
-            </p>
-          </div>
-        </div>
-      </GlassPanel>
-
-      {/* Fashion Leaderboards with Premium Glass Panel */}
-      <GlassPanel variant="premium" className="p-8">
-        <div className="space-y-6">
-          <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
-            <h3 className="text-xl font-cormorant font-semibold flex items-center gap-3">
-              <div className="p-2 rounded-full bg-gradient-to-br from-yellow-500/10 to-orange-500/10">
-                <Trophy className="h-5 w-5 text-yellow-500" />
-              </div>
-              Fashion Leaderboards
-            </h3>
-            <div className="flex gap-2">
-              <Button 
-                variant={activeLeaderboard === 'global' ? 'premium' : 'outline'} 
-                size="sm" 
-                onClick={() => setActiveLeaderboard('global')} 
-                className="flex-1 sm:flex-none"
-              >
-                <Globe className="h-3 w-3 mr-2" />
-                Global
-              </Button>
-              <Button 
-                variant={activeLeaderboard === 'country' ? 'premium' : 'outline'} 
-                size="sm" 
-                onClick={() => setActiveLeaderboard('country')} 
-                className="flex-1 sm:flex-none"
-              >
-                <MapPin className="h-3 w-3 mr-2" />
-                Country
-              </Button>
-            </div>
-          </div>
-          <Leaderboard type={activeLeaderboard} country={user?.user_metadata?.country} />
-        </div>
-      </GlassPanel>
-
-      {/* Feedback Section */}
-      <div className="flex justify-end">
-        <FeedbackModal userType="shopper" />
-      </div>
-    </div>
-  );
-
-  const renderBrandDashboard = () => (
-    <div className="space-y-4">
-
-      {/* Quick Actions */}
-      <GlassPanel variant="premium" className="p-8">
-        <div className="space-y-6">
-          <h3 className="text-xl font-cormorant font-semibold">Brand Management</h3>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            <Button onClick={() => navigate('/brand-portal')} variant="premium" className="h-24 flex-col gap-3">
-              <Package className="h-7 w-7" />
-              <span className="font-medium">Products</span>
-            </Button>
-            <Button onClick={() => navigate('/brand-portal')} variant="outline" className="h-24 flex-col gap-3 hover:scale-105 transition-transform">
-              <BarChart3 className="h-7 w-7" />
-              <span className="font-medium">Analytics</span>
-            </Button>
-            <Button onClick={() => navigate('/brand-portal')} variant="outline" className="h-24 flex-col gap-3 hover:scale-105 transition-transform">
-              <Settings className="h-7 w-7" />
-              <span className="font-medium">Settings</span>
-            </Button>
-          </div>
-        </div>
-      </GlassPanel>
-    </div>
-  );
-
-  const renderRetailerDashboard = () => (
-    <div className="space-y-4">
-
-      {/* Quick Actions */}
-      <GlassPanel variant="premium" className="p-8">
-        <div className="space-y-6">
-          <h3 className="text-xl font-cormorant font-semibold">Retailer Management</h3>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            <Button onClick={() => navigate('/retailer-portal')} variant="premium" className="h-24 flex-col gap-3">
-              <Package className="h-7 w-7" />
-              <span className="font-medium">Inventory</span>
-            </Button>
-            <Button onClick={() => navigate('/retailer-portal')} variant="outline" className="h-24 flex-col gap-3 hover:scale-105 transition-transform">
-              <Store className="h-7 w-7" />
-              <span className="font-medium">Brands</span>
-            </Button>
-            <Button onClick={() => navigate('/retailer-portal')} variant="outline" className="h-24 flex-col gap-3 hover:scale-105 transition-transform">
-              <BarChart3 className="h-7 w-7" />
-              <span className="font-medium">Analytics</span>
-            </Button>
-          </div>
-        </div>
-      </GlassPanel>
-    </div>
-  );
 
   return (
-    <ErrorBoundary>
-      <div className="min-h-screen dashboard-bg pb-20 sm:pb-0">
-        <div className="container mx-auto max-w-7xl px-4 py-6">
-          {/* Header with Dashboard Header component */}
-          <div className="mb-6">
-            <DashboardHeader />
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto p-6">
+        {/* Header */}
+        <div className="flex justify-between items-center mb-8">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
+            <p className="text-muted-foreground">
+              Manage users, monitor activity, and view analytics
+            </p>
           </div>
-
-          {/* Role-based Dashboard Content - Only render ONE dashboard */}
-          {userProfile?.role === 'shopper' && renderShopperDashboard()}
-          {userProfile?.role === 'brand' && renderBrandDashboard()}
-          {userProfile?.role === 'retailer' && renderRetailerDashboard()}
-          {userProfile?.role === 'admin' && (
-            <div className="space-y-4">
-              <GlassPanel variant="premium" className="p-8">
-                <div className="text-center space-y-4">
-                  <h2 className="text-2xl font-cormorant font-semibold">Admin Dashboard</h2>
-                  <p className="text-muted-foreground">
-                    As an admin, you have access to all portals. Choose which portal to access:
-                  </p>
-                  <div className="flex flex-wrap gap-4 justify-center">
-                    <Button onClick={() => navigate('/brand-portal')} variant="premium">
-                      <Package className="h-4 w-4 mr-2" />
-                      Brand Portal
-                    </Button>
-                    <Button onClick={() => navigate('/retailer-portal')} variant="outline">
-                      <Store className="h-4 w-4 mr-2" />
-                      Retailer Portal
-                    </Button>
-                  </div>
-                </div>
-              </GlassPanel>
-            </div>
-          )}
-          
-          {/* Show error if no valid role */}
-          {userProfile && !['shopper', 'brand', 'retailer', 'admin'].includes(userProfile.role) && (
-            <div className="space-y-4">
-              <GlassPanel variant="premium" className="p-8">
-                <div className="text-center space-y-4">
-                  <h2 className="text-xl font-semibold text-destructive">Invalid Role</h2>
-                  <p className="text-muted-foreground">
-                    Your account role "{userProfile.role}" is not recognized. Please contact support.
-                  </p>
-                </div>
-              </GlassPanel>
-            </div>
-          )}
+          <div className="flex gap-2">
+            <Button 
+              onClick={() => setAiStudioOpen(true)}
+              className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+            >
+              <Sparkles className="h-4 w-4 mr-2" />
+              AI Studio
+            </Button>
+            <Button variant="outline" onClick={loadUserProfiles}>
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Refresh
+            </Button>
+          </div>
         </div>
-        
-        {/* Global Search Modal */}
-        <GlobalSearch isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
-        
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Users</CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{totalUsers}</div>
+              <p className="text-xs text-muted-foreground">
+                Registered users
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Active Users</CardTitle>
+              <CheckCircle className="h-4 w-4 text-green-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{activeUsers}</div>
+              <p className="text-xs text-muted-foreground">
+                Currently active
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Admin Users</CardTitle>
+              <Crown className="h-4 w-4 text-purple-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{adminUsers}</div>
+              <p className="text-xs text-muted-foreground">
+                Admin accounts
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Premium Users</CardTitle>
+              <Star className="h-4 w-4 text-gold-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{premiumUsers}</div>
+              <p className="text-xs text-muted-foreground">
+                Premium subscriptions
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Main Content */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="users">Users</TabsTrigger>
+            <TabsTrigger value="analytics">Analytics</TabsTrigger>
+            <TabsTrigger value="settings">Settings</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="users" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>User Management</CardTitle>
+                <div className="flex gap-4">
+                  <div className="flex-1">
+                    <Input
+                      placeholder="Search users by email..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="max-w-sm"
+                    />
+                  </div>
+                  <Select value={selectedRole} onValueChange={setSelectedRole}>
+                    <SelectTrigger className="w-40">
+                      <SelectValue placeholder="Filter by role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Roles</SelectItem>
+                      <SelectItem value="shopper">Shopper</SelectItem>
+                      <SelectItem value="brand">Brand</SelectItem>
+                      <SelectItem value="retailer">Retailer</SelectItem>
+                      <SelectItem value="admin">Admin</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {isLoading ? (
+                  <div className="text-center py-8">
+                    <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4" />
+                    <p>Loading users...</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {filteredUsers.map((userProfile) => (
+                      <div key={userProfile.id} className="flex items-center justify-between p-4 border rounded-lg">
+                        <div className="flex items-center space-x-4">
+                          <div>
+                            <p className="font-medium">{userProfile.email}</p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <Badge variant={userProfile.role === 'admin' ? 'default' : 'secondary'}>
+                                {userProfile.role}
+                              </Badge>
+                              <Badge variant={userProfile.is_active ? 'default' : 'destructive'}>
+                                {userProfile.is_active ? 'Active' : 'Inactive'}
+                              </Badge>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => updateUserStatus(userProfile.id, !userProfile.is_active)}
+                          >
+                            {userProfile.is_active ? 'Deactivate' : 'Activate'}
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="analytics">
+            <Card>
+              <CardHeader>
+                <CardTitle>Analytics Dashboard</CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Track key metrics and gain insights into user behavior
+                </p>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">Total Views</CardTitle>
+                      <Eye className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">12,450</div>
+                      <p className="text-xs text-muted-foreground">
+                        Page views this month
+                      </p>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">New Signups</CardTitle>
+                      <UserPlus className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">+235</div>
+                      <p className="text-xs text-muted-foreground">
+                        New users this month
+                      </p>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">Revenue</CardTitle>
+                      <DollarSign className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">$34,500</div>
+                      <p className="text-xs text-muted-foreground">
+                        Monthly revenue
+                      </p>
+                    </CardContent>
+                  </Card>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="settings">
+            <Card>
+              <CardHeader>
+                <CardTitle>Dashboard Settings</CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Configure dashboard preferences and manage integrations
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="theme">Theme</Label>
+                  <Select>
+                    <SelectTrigger className="w-50">
+                      <SelectValue placeholder="System" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="system">System</SelectItem>
+                      <SelectItem value="light">Light</SelectItem>
+                      <SelectItem value="dark">Dark</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="language">Language</Label>
+                  <Select>
+                    <SelectTrigger className="w-50">
+                      <SelectValue placeholder="English" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="en">English</SelectItem>
+                      <SelectItem value="es">Spanish</SelectItem>
+                      <SelectItem value="fr">French</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+
         {/* AI Studio Modal */}
         <AiStudioModal 
-          open={aiStudioModalOpen} 
-          onClose={() => setAiStudioModalOpen(false)} 
+          open={aiStudioOpen}
+          onClose={() => setAiStudioOpen(false)}
         />
       </div>
-    </ErrorBoundary>
+    </div>
   );
 };
 
