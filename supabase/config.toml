@@ -1,4 +1,5 @@
 
+
 project_id = "klwolsopucgswhtdlsps"
 
 [api]
@@ -94,10 +95,16 @@ verify_jwt = false
 [functions.import-asos-ultra]
 verify_jwt = false
 
+[functions.payment-webhook]
+verify_jwt = false
+
 [functions.process-import]
 verify_jwt = false
 
 [functions.product-extractor]
+verify_jwt = false
+
+[functions.register-webhook]
 verify_jwt = false
 
 [functions.robots-checker]
@@ -118,5 +125,3 @@ verify_jwt = false
 [functions.send-password-reset]
 verify_jwt = false
 
-[functions.ziina-webhook]
-verify_jwt = false
