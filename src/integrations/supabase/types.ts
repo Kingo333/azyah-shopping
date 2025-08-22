@@ -1090,69 +1090,6 @@ export type Database = {
         }
         Relationships: []
       }
-      payments: {
-        Row: {
-          amount_fils: number
-          cancel_url: string | null
-          created_at: string | null
-          currency: string | null
-          fee_amount_fils: number | null
-          id: string
-          latest_error_code: string | null
-          latest_error_message: string | null
-          operation_id: string
-          payment_intent_id: string
-          product: string
-          provider: string | null
-          redirect_url: string | null
-          status: string
-          success_url: string | null
-          tip_amount_fils: number | null
-          updated_at: string | null
-          user_id: string | null
-        }
-        Insert: {
-          amount_fils: number
-          cancel_url?: string | null
-          created_at?: string | null
-          currency?: string | null
-          fee_amount_fils?: number | null
-          id?: string
-          latest_error_code?: string | null
-          latest_error_message?: string | null
-          operation_id: string
-          payment_intent_id: string
-          product?: string
-          provider?: string | null
-          redirect_url?: string | null
-          status: string
-          success_url?: string | null
-          tip_amount_fils?: number | null
-          updated_at?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          amount_fils?: number
-          cancel_url?: string | null
-          created_at?: string | null
-          currency?: string | null
-          fee_amount_fils?: number | null
-          id?: string
-          latest_error_code?: string | null
-          latest_error_message?: string | null
-          operation_id?: string
-          payment_intent_id?: string
-          product?: string
-          provider?: string | null
-          redirect_url?: string | null
-          status?: string
-          success_url?: string | null
-          tip_amount_fils?: number | null
-          updated_at?: string | null
-          user_id?: string | null
-        }
-        Relationships: []
-      }
       post_images: {
         Row: {
           id: string
@@ -1616,6 +1553,45 @@ export type Database = {
         }
         Relationships: []
       }
+      subscriptions: {
+        Row: {
+          created_at: string | null
+          current_period_end: string | null
+          current_period_start: string | null
+          id: string
+          last_payment_intent_id: string | null
+          last_payment_status: string | null
+          plan: string
+          status: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string
+          last_payment_intent_id?: string | null
+          last_payment_status?: string | null
+          plan?: string
+          status?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string
+          last_payment_intent_id?: string | null
+          last_payment_status?: string | null
+          plan?: string
+          status?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       swipes: {
         Row: {
           action: Database["public"]["Enums"]["swipe_action"]
@@ -1861,42 +1837,6 @@ export type Database = {
           socials?: Json | null
           updated_at?: string
           website?: string | null
-        }
-        Relationships: []
-      }
-      webhook_events: {
-        Row: {
-          created_at: string | null
-          event: string
-          id: string
-          ip: unknown | null
-          pi_id: string
-          processed: boolean | null
-          provider: string | null
-          raw_body: Json
-          signature: string
-        }
-        Insert: {
-          created_at?: string | null
-          event: string
-          id?: string
-          ip?: unknown | null
-          pi_id: string
-          processed?: boolean | null
-          provider?: string | null
-          raw_body: Json
-          signature: string
-        }
-        Update: {
-          created_at?: string | null
-          event?: string
-          id?: string
-          ip?: unknown | null
-          pi_id?: string
-          processed?: boolean | null
-          provider?: string | null
-          raw_body?: Json
-          signature?: string
         }
         Relationships: []
       }

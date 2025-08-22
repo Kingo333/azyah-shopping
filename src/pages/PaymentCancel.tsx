@@ -1,7 +1,6 @@
-
 import { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { ZiinaPaymentButton } from '@/components/ZiinaPaymentButton';
+import { useSubscription } from '@/hooks/useSubscription';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { XCircle } from 'lucide-react';
@@ -10,9 +9,10 @@ import { SEOHead } from '@/components/SEOHead';
 export default function PaymentCancel() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { createPaymentIntent } = useSubscription();
   const [countdown, setCountdown] = useState(10);
 
-  const paymentIntentId = searchParams.get('pi');
+  const paymentIntentId = searchParams.get('payment_intent_id');
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -27,6 +27,10 @@ export default function PaymentCancel() {
 
     return () => clearInterval(timer);
   }, [navigate]);
+
+  const handleRetryPayment = async () => {
+    await createPaymentIntent();
+  };
 
   return (
     <>
@@ -82,9 +86,13 @@ export default function PaymentCancel() {
               <h3 className="font-semibold mb-3 text-blue-800 dark:text-blue-200">
                 Premium Benefits You're Missing
               </h3>
-              <div className="text-sm text-blue-700 dark:text-blue-300">
-                <strong>Unlock Premium Access — 40 AED/month • 20 AI Try-ons daily • Unlimited replica • UGC collabs</strong>
-              </div>
+              <ul className="text-sm space-y-1 text-blue-700 dark:text-blue-300">
+                <li>• AI-powered toy replica generation</li>
+                <li>• Advanced fashion recommendations</li>
+                <li>• Unlimited AI try-on sessions</li>
+                <li>• Priority customer support</li>
+                <li>• Exclusive premium content</li>
+              </ul>
             </div>
 
             {/* Auto-redirect notice */}
@@ -104,9 +112,12 @@ export default function PaymentCancel() {
               >
                 Back to Dashboard
               </Button>
-              <ZiinaPaymentButton className="flex-1">
+              <Button 
+                onClick={handleRetryPayment}
+                className="flex-1"
+              >
                 Try Again
-              </ZiinaPaymentButton>
+              </Button>
             </div>
 
             <div className="text-center pt-4 border-t">

@@ -1,17 +1,11 @@
-
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
-import { z } from 'https://esm.sh/zod@3.22.4';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
-
-const VerifyPaymentRequestSchema = z.object({
-  pi: z.string()
-});
 
 function jsonResponse(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -21,6 +15,7 @@ function jsonResponse(data: unknown, status = 200) {
 }
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -30,20 +25,18 @@ serve(async (req) => {
   }
 
   try {
-    const ziinaApiBase = Deno.env.get('ZIINA_API_BASE');
-    const ziinaApiToken = Deno.env.get('ZIINA_API_TOKEN');
+    // Get environment variables
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const ziinaApiBase = Deno.env.get('ZIINA_API_BASE')!;
+    const ziinaApiToken = Deno.env.get('ZIINA_API_TOKEN')!;
 
-    if (!ziinaApiBase || !ziinaApiToken) {
-      return jsonResponse({ error: 'Missing environment variables' }, 500);
-    }
-
-    // Authentication
+    // Initialize Supabase client for user authentication
     const supabaseAnon = createClient(
       supabaseUrl,
       Deno.env.get('SUPABASE_ANON_KEY')!
     );
 
+    // Get user from authorization header
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       return jsonResponse({ error: 'Authorization header required' }, 401);
@@ -54,96 +47,75 @@ serve(async (req) => {
     );
 
     if (authError || !user) {
+      console.error('Auth error:', authError);
       return jsonResponse({ error: 'Invalid authentication' }, 401);
     }
 
-    const body = await req.json();
-    const { pi } = VerifyPaymentRequestSchema.parse(body);
+    const { payment_intent_id } = await req.json();
 
-    console.log(`Verifying payment intent: ${pi} for user: ${user.id}`);
+    if (!payment_intent_id) {
+      return jsonResponse({ error: 'Payment intent ID required' }, 400);
+    }
 
-    // Get payment intent from Ziina
-    const ziinaResponse = await fetch(`${ziinaApiBase}/payment_intent/${pi}`, {
+    console.log(`Verifying payment intent: ${payment_intent_id} for user: ${user.id}`);
+
+    // Get payment intent details from Ziina
+    const ziinaResponse = await fetch(`${ziinaApiBase}/payment_intent/${payment_intent_id}`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${ziinaApiToken}`,
         'Content-Type': 'application/json',
       },
-      signal: AbortSignal.timeout(10000),
     });
 
+    const paymentIntent = await ziinaResponse.json();
+    console.log('Ziina payment intent response:', { status: ziinaResponse.status, data: paymentIntent });
+
     if (!ziinaResponse.ok) {
-      const errorData = await ziinaResponse.json();
+      console.error('Ziina API error:', paymentIntent);
       return jsonResponse({ 
         error: 'Failed to verify payment intent',
-        upstream_status: ziinaResponse.status,
-        details: errorData
+        details: paymentIntent
       }, ziinaResponse.status);
     }
 
-    const paymentIntentData = await ziinaResponse.json();
-
-    // Update payment record
+    // Initialize service role client for database operations
     const supabaseService = createClient(supabaseUrl, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
 
-    const { data: payment, error: fetchError } = await supabaseService
-      .from('payments')
+    // Check if this payment intent belongs to the user
+    const { data: subscription, error: fetchError } = await supabaseService
+      .from('subscriptions')
       .select('*')
       .eq('user_id', user.id)
-      .eq('payment_intent_id', pi)
+      .eq('last_payment_intent_id', payment_intent_id)
       .single();
 
-    if (fetchError || !payment) {
+    if (fetchError || !subscription) {
+      console.error('Subscription not found:', fetchError);
       return jsonResponse({ 
         error: 'Payment intent not found for this user' 
       }, 404);
     }
 
-    const { error: updateError } = await supabaseService
-      .from('payments')
-      .update({
-        status: paymentIntentData.status,
-        fee_amount_fils: paymentIntentData.fee_amount,
-        tip_amount_fils: paymentIntentData.tip_amount || 0,
-        latest_error_message: paymentIntentData.latest_error?.message,
-        latest_error_code: paymentIntentData.latest_error?.code,
-        updated_at: new Date().toISOString()
-      })
-      .eq('payment_intent_id', pi);
-
-    if (updateError) {
-      console.error('Failed to update payment:', updateError);
-      return jsonResponse({ error: 'Failed to update payment status' }, 500);
-    }
-
-    const isCompleted = paymentIntentData.status === 'completed';
+    // Return verification result
+    const isCompleted = paymentIntent.status === 'completed';
+    const isActive = isCompleted && subscription.status === 'active';
 
     return jsonResponse({
-      id: paymentIntentData.id,
-      status: paymentIntentData.status,
-      amount_fils: paymentIntentData.amount,
-      currency: paymentIntentData.currency_code,
-      fee_amount_fils: paymentIntentData.fee_amount,
-      tip_amount_fils: paymentIntentData.tip_amount || 0,
-      latest_error_message: paymentIntentData.latest_error?.message,
-      latest_error_code: paymentIntentData.latest_error?.code,
+      payment_intent_id,
+      status: paymentIntent.status,
+      amount: paymentIntent.amount,
+      currency: paymentIntent.currency_code,
       is_completed: isCompleted,
-      created_at: payment.created_at,
-      updated_at: new Date().toISOString()
+      is_active: isActive,
+      subscription_status: subscription.status,
+      current_period_end: subscription.current_period_end,
     });
 
   } catch (error) {
     console.error('Error in verify-payment:', error);
-    
-    if (error instanceof z.ZodError) {
-      return jsonResponse({ 
-        error: 'Validation error',
-        details: error.errors 
-      }, 400);
-    }
-    
     return jsonResponse({ 
-      error: error instanceof Error ? error.message : 'Unknown error' 
+      error: error instanceof Error ? error.message : String(error) 
     }, 500);
   }
 });

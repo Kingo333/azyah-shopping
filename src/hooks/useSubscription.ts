@@ -1,66 +1,189 @@
-
 import { useState, useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
-export interface Subscription {
+interface Subscription {
   id: string;
   user_id: string;
   plan: string;
   status: string;
-  current_period_end: string;
-  created_at: string;
+  current_period_start: string | null;
+  current_period_end: string | null;
+  last_payment_intent_id: string | null;
+  last_payment_status: string | null;
+  created_at: string | null;
+  updated_at: string | null;
 }
 
-export function useSubscription() {
+interface UseSubscriptionReturn {
+  subscription: Subscription | null;
+  isPremium: boolean;
+  loading: boolean;
+  error: string | null;
+  createPaymentIntent: (test?: boolean) => Promise<void>;
+  cancelSubscription: () => Promise<void>;
+  refetch: () => Promise<void>;
+}
+
+export function useSubscription(): UseSubscriptionReturn {
+  const { user } = useAuth();
+  const { toast } = useToast();
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Check if user has active premium subscription
+  const isPremium = (() => {
+    if (!subscription) return false;
+    
+    const now = new Date();
+    return (subscription.status === 'active' || subscription.status === 'canceled') &&
+           subscription.current_period_end &&
+           new Date(subscription.current_period_end) >= now;
+  })();
+
+  const fetchSubscription = async () => {
+    if (!user) {
+      setSubscription(null);
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setError(null);
+      const { data, error } = await supabase
+        .from('subscriptions')
+        .select('*')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error fetching subscription:', error);
+        setError(error.message);
+      } else {
+        setSubscription(data);
+      }
+    } catch (err) {
+      console.error('Unexpected error fetching subscription:', err);
+      setError(err instanceof Error ? err.message : 'Unknown error');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchSubscription = async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-          setLoading(false);
-          return;
-        }
-
-        // Check for completed payments as a proxy for subscription status
-        const { data: payments } = await supabase
-          .from('payments')
-          .select('*')
-          .eq('user_id', user.id)
-          .eq('status', 'completed')
-          .order('created_at', { ascending: false })
-          .limit(1);
-
-        if (payments && payments.length > 0) {
-          const payment = payments[0];
-          // Create a mock subscription based on successful payment
-          const mockSubscription: Subscription = {
-            id: payment.id,
-            user_id: user.id,
-            plan: 'premium',
-            status: 'active',
-            current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-            created_at: payment.created_at
-          };
-          setSubscription(mockSubscription);
-        }
-      } catch (error) {
-        console.error('Error fetching subscription:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchSubscription();
-  }, []);
+  }, [user]);
 
-  const isPremium = subscription?.status === 'active';
+  const createPaymentIntent = async (test = false) => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to upgrade to premium",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      setLoading(true);
+      
+      const { data, error } = await supabase.functions.invoke('create-payment-intent', {
+        body: { test },
+        headers: {
+          Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+        }
+      });
+
+      if (error) {
+        console.error('Payment intent creation error:', error);
+        toast({
+          title: "Payment Error",
+          description: error.message || 'Failed to create payment',
+          variant: "destructive"
+        });
+        return;
+      }
+
+      if (data?.redirect_url) {
+        // Redirect to Ziina checkout
+        window.location.href = data.redirect_url;
+      } else {
+        toast({
+          title: "Payment Error", 
+          description: "No payment URL received",
+          variant: "destructive"
+        });
+      }
+    } catch (err) {
+      console.error('Unexpected error creating payment intent:', err);
+      toast({
+        title: "Payment Error",
+        description: "An unexpected error occurred",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const cancelSubscription = async () => {
+    if (!user || !subscription) {
+      toast({
+        title: "Error",
+        description: "No active subscription found",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      setLoading(true);
+      
+      const { error } = await supabase
+        .from('subscriptions')
+        .update({ 
+          status: 'canceled',
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', user.id);
+
+      if (error) {
+        console.error('Subscription cancellation error:', error);
+        toast({
+          title: "Cancellation Error",
+          description: error.message,
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Subscription Canceled",
+          description: "Your premium access will remain active until the current period ends.",
+        });
+        await fetchSubscription(); // Refresh subscription data
+      }
+    } catch (err) {
+      console.error('Unexpected error canceling subscription:', err);
+      toast({
+        title: "Cancellation Error",
+        description: "An unexpected error occurred",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const refetch = fetchSubscription;
 
   return {
     subscription,
+    isPremium,
     loading,
-    isPremium
+    error,
+    createPaymentIntent,
+    cancelSubscription,
+    refetch
   };
 }

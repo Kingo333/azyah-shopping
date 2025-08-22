@@ -1,7 +1,6 @@
-
 import { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { ZiinaPaymentButton } from '@/components/ZiinaPaymentButton';
+import { useSubscription } from '@/hooks/useSubscription';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { AlertCircle } from 'lucide-react';
@@ -10,9 +9,10 @@ import { SEOHead } from '@/components/SEOHead';
 export default function PaymentFailed() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { createPaymentIntent } = useSubscription();
   const [countdown, setCountdown] = useState(15);
 
-  const paymentIntentId = searchParams.get('pi');
+  const paymentIntentId = searchParams.get('payment_intent_id');
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -27,6 +27,10 @@ export default function PaymentFailed() {
 
     return () => clearInterval(timer);
   }, [navigate]);
+
+  const handleRetryPayment = async () => {
+    await createPaymentIntent();
+  };
 
   return (
     <>
@@ -109,9 +113,12 @@ export default function PaymentFailed() {
               >
                 Back to Dashboard
               </Button>
-              <ZiinaPaymentButton className="flex-1">
+              <Button 
+                onClick={handleRetryPayment}
+                className="flex-1"
+              >
                 Try Again
-              </ZiinaPaymentButton>
+              </Button>
             </div>
 
             <div className="text-center pt-4 border-t">
@@ -119,6 +126,10 @@ export default function PaymentFailed() {
                 Still having issues?{' '}
                 <a href="/support" className="text-primary hover:underline">
                   Contact Support
+                </a>{' '}
+                or{' '}
+                <a href="/profile-settings" className="text-primary hover:underline">
+                  Payment Settings
                 </a>
               </p>
             </div>
