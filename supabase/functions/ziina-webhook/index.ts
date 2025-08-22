@@ -88,15 +88,15 @@ serve(async (req) => {
     const event = JSON.parse(body);
     console.log('Parsed webhook event:', event);
 
-    // Validate event structure
-    if (!event?.type || !event?.data?.id || !event?.data?.status) {
+    // Validate event structure - Ziina uses 'event' field, not 'type'
+    if (!event?.event || !event?.data?.id || !event?.data?.status) {
       console.error('Invalid webhook payload structure:', event);
       return jsonResponse({ error: 'Invalid payload structure' }, 400);
     }
 
     // Only handle payment intent status updates
-    if (event.type !== 'payment_intent.status.updated') {
-      console.log('Ignoring event type:', event.type);
+    if (event.event !== 'payment_intent.status.updated') {
+      console.log('Ignoring event type:', event.event);
       return jsonResponse({ ok: true, note: 'Event type not handled' });
     }
 
