@@ -279,6 +279,14 @@ const RoleDashboard: React.FC = () => {
               <Heart className="h-5 w-5 sm:h-6 sm:w-6" />
               <span className="text-xs sm:text-sm">Swipe</span>
             </Button>
+            <Button 
+              onClick={() => navigate('/explore')} 
+              variant="outline" 
+              className="h-14 sm:h-16 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300"
+            >
+              <Search className="h-5 w-5 sm:h-6 sm:w-6" />
+              <span className="text-xs sm:text-sm">Explore</span>
+            </Button>
             {isEnabled('ai_beauty_consultant') ? (
               <Button 
                 variant="outline"
@@ -302,14 +310,6 @@ const RoleDashboard: React.FC = () => {
                 <span className="text-xs sm:text-sm">Feed</span>
               </Button>
             )}
-            <Button 
-              onClick={() => navigate('/explore')} 
-              variant="outline" 
-              className="h-14 sm:h-16 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300"
-            >
-              <Search className="h-5 w-5 sm:h-6 sm:w-6" />
-              <span className="text-xs sm:text-sm">Explore</span>
-            </Button>
             <Button 
               onClick={() => setAiStudioModalOpen(true)}
               variant="outline" 
