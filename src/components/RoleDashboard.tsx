@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -6,6 +5,7 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { GlassPanel } from '@/components/ui/glass-panel';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
@@ -14,7 +14,33 @@ import DashboardHeader from '@/components/DashboardHeader';
 import AffiliateHub from '@/components/AffiliateHub';
 import AiStudioModal from '@/components/AiStudioModal';
 import PremiumBanner from '@/components/PremiumBanner';
-import { Heart, ShoppingBag, Search, Sparkles, Package, BarChart3, Users, Settings, Store, TrendingUp, Plus, Eye, DollarSign, Globe, Bell, LogOut, User, Archive, Trophy, MapPin, Blocks, WandSparkles } from 'lucide-react';
+import { 
+  Heart, 
+  ShoppingBag, 
+  Search, 
+  Sparkles, 
+  Package, 
+  BarChart3, 
+  Users, 
+  Settings, 
+  Store, 
+  TrendingUp, 
+  Plus, 
+  Eye, 
+  DollarSign, 
+  Globe, 
+  Bell, 
+  LogOut, 
+  User, 
+  Archive, 
+  Trophy, 
+  MapPin, 
+  Blocks, 
+  WandSparkles,
+  ChevronDown,
+  ChevronUp,
+  Gift
+} from 'lucide-react';
 import Leaderboard from '@/components/Leaderboard';
 import TrendingStylesCarousel from '@/components/TrendingStylesCarousel';
 import { UGCCollabButton } from '@/components/ugc/UGCCollabButton';
@@ -51,6 +77,8 @@ const RoleDashboard: React.FC = () => {
   const [searchOpen, setSearchOpen] = useState(false);
   const [activeLeaderboard, setActiveLeaderboard] = useState<'global' | 'country'>('global');
   const [aiStudioModalOpen, setAiStudioModalOpen] = useState(false);
+  const [isClosetsMinimized, setIsClosetsMinimized] = useState(true);
+  const [isAffiliateMinimized, setIsAffiliateMinimized] = useState(true);
 
   useEffect(() => {
     const initializeDashboard = async () => {
@@ -340,7 +368,22 @@ const RoleDashboard: React.FC = () => {
         {/* Affiliate Hub - Desktop with Premium Glass Panel */}
         <div className="hidden lg:block">
           <GlassPanel variant="premium" className="p-8">
-            <AffiliateHub showTitle={false} />
+            <Collapsible open={!isAffiliateMinimized} onOpenChange={setIsAffiliateMinimized}>
+              <CollapsibleTrigger asChild>
+                <Button variant="ghost" className="w-full justify-between p-0 h-auto">
+                  <h3 className="text-xl font-cormorant font-semibold flex items-center gap-3">
+                    <div className="p-2 rounded-full bg-gradient-to-br from-primary/10 to-accent-cartier/10">
+                      <Gift className="h-5 w-5 text-primary" />
+                    </div>
+                    Affiliate Hub
+                  </h3>
+                  {isAffiliateMinimized ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="mt-4">
+                <AffiliateHub showTitle={false} />
+              </CollapsibleContent>
+            </Collapsible>
           </GlassPanel>
         </div>
       </div>
@@ -348,34 +391,58 @@ const RoleDashboard: React.FC = () => {
       {/* Affiliate Hub - Mobile with Premium Glass Panel */}
       <div className="block lg:hidden">
         <GlassPanel variant="premium" className="p-8">
-          <AffiliateHub />
+          <Collapsible open={!isAffiliateMinimized} onOpenChange={setIsAffiliateMinimized}>
+            <CollapsibleTrigger asChild>
+              <Button variant="ghost" className="w-full justify-between p-0 h-auto">
+                <h3 className="text-xl font-cormorant font-semibold flex items-center gap-3">
+                  <div className="p-2 rounded-full bg-gradient-to-br from-primary/10 to-accent-cartier/10">
+                    <Gift className="h-5 w-5 text-primary" />
+                  </div>
+                  Affiliate Hub
+                </h3>
+                {isAffiliateMinimized ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="mt-4">
+              <AffiliateHub />
+            </CollapsibleContent>
+          </Collapsible>
         </GlassPanel>
       </div>
 
       {/* Closets Preview with Premium Glass Panel */}
       <GlassPanel variant="premium" className="p-8">
-        <div className="space-y-5">
-          <div className="flex items-center justify-between">
-            <h3 className="text-xl font-cormorant font-semibold flex items-center gap-3">
-              <div className="p-2 rounded-full bg-gradient-to-br from-primary/10 to-accent-cartier/10">
-                <Archive className="h-5 w-5 text-primary" />
-              </div>
-              My Closets
-            </h3>
-            <Button variant="premium" size="sm" onClick={() => navigate('/closets')}>
-              <Archive className="h-4 w-4 mr-2" />
-              View All
-            </Button>
-          </div>
-          <div className="text-center py-12 space-y-3">
-            <div className="w-16 h-16 mx-auto rounded-full bg-gradient-to-br from-primary/10 to-accent-cartier/10 flex items-center justify-center mb-4">
-              <Archive className="h-8 w-8 text-primary/60" />
+        <Collapsible open={!isClosetsMinimized} onOpenChange={setIsClosetsMinimized}>
+          <div className="space-y-5">
+            <div className="flex items-center justify-between">
+              <CollapsibleTrigger asChild>
+                <Button variant="ghost" className="justify-start p-0 h-auto">
+                  <h3 className="text-xl font-cormorant font-semibold flex items-center gap-3">
+                    <div className="p-2 rounded-full bg-gradient-to-br from-primary/10 to-accent-cartier/10">
+                      <Archive className="h-5 w-5 text-primary" />
+                    </div>
+                    My Closets
+                    {isClosetsMinimized ? <ChevronDown className="h-4 w-4 ml-2" /> : <ChevronUp className="h-4 w-4 ml-2" />}
+                  </h3>
+                </Button>
+              </CollapsibleTrigger>
+              <Button variant="premium" size="sm" onClick={() => navigate('/closets')}>
+                <Archive className="h-4 w-4 mr-2" />
+                View All
+              </Button>
             </div>
-            <p className="text-muted-foreground text-lg">
-              Create your first closet to organize your style discoveries
-            </p>
+            <CollapsibleContent>
+              <div className="text-center py-12 space-y-3">
+                <div className="w-16 h-16 mx-auto rounded-full bg-gradient-to-br from-primary/10 to-accent-cartier/10 flex items-center justify-center mb-4">
+                  <Archive className="h-8 w-8 text-primary/60" />
+                </div>
+                <p className="text-muted-foreground text-lg">
+                  Create your first closet to organize your style discoveries
+                </p>
+              </div>
+            </CollapsibleContent>
           </div>
-        </div>
+        </Collapsible>
       </GlassPanel>
 
       {/* Fashion Leaderboards with Premium Glass Panel */}
