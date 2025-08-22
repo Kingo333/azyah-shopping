@@ -1,11 +1,36 @@
+
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+import { z } from 'https://esm.sh/zod@3.22.4';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+// Validation schemas
+const CreatePaymentRequestSchema = z.object({
+  product: z.literal('consumer_premium'),
+  amountAed: z.number().min(2, 'Minimum amount is 2 AED'),
+  test: z.boolean().optional().default(false)
+});
+
+const PaymentIntentSchema = z.object({
+  id: z.string(),
+  amount: z.number(),
+  currency_code: z.string(),
+  status: z.enum(['requires_payment_instrument', 'requires_user_action', 'pending', 'completed', 'failed', 'canceled']),
+  operation_id: z.string(),
+  redirect_url: z.string(),
+  success_url: z.string(),
+  cancel_url: z.string(),
+  fee_amount: z.number().nullable(),
+  latest_error: z.object({
+    message: z.string(),
+    code: z.string()
+  }).nullable()
+});
 
 function jsonResponse(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -14,8 +39,69 @@ function jsonResponse(data: unknown, status = 200) {
   });
 }
 
+function convertAedToFils(aed: number): number {
+  const fils = Math.round(aed * 100);
+  if (fils < 200) {
+    throw new Error('Minimum amount is 2 AED (200 fils)');
+  }
+  return fils;
+}
+
+async function createPaymentIntent(params: {
+  amount_fils: number;
+  currency: string;
+  successUrl: string;
+  cancelUrl: string;
+  failureUrl?: string;
+  message?: string;
+  test?: boolean;
+  operationId: string;
+}) {
+  const ziinaApiBase = Deno.env.get('ZIINA_API_BASE') || 'https://api-v2.ziina.com/api';
+  const ziinaApiToken = Deno.env.get('ZIINA_API_TOKEN');
+
+  if (!ziinaApiToken) {
+    throw new Error('ZIINA_API_TOKEN not configured');
+  }
+
+  const body = {
+    amount: params.amount_fils,
+    currency_code: params.currency,
+    success_url: params.successUrl,
+    cancel_url: params.cancelUrl,
+    failure_url: params.failureUrl,
+    message: params.message || 'Premium Subscription Payment',
+    test: params.test || false,
+    allow_tips: false,
+    operation_id: params.operationId,
+  };
+
+  console.log('Creating Ziina payment intent:', { 
+    amount: params.amount_fils, 
+    test: params.test,
+    operation_id: params.operationId 
+  });
+
+  const response = await fetch(`${ziinaApiBase}/payment_intent`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${ziinaApiToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    console.error('Ziina API error:', { status: response.status, data });
+    throw new Error(data.message || `HTTP ${response.status}`);
+  }
+
+  return PaymentIntentSchema.parse(data);
+}
+
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -25,17 +111,8 @@ serve(async (req) => {
   }
 
   try {
-    // Get environment variables
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const ziinaApiBase = Deno.env.get('ZIINA_API_BASE')!;
-    const ziinaApiToken = Deno.env.get('ZIINA_API_TOKEN')!;
-    const appDashboardUrl = Deno.env.get('APP_DASHBOARD_URL')!;
-
-    // Validate required environment variables
-    if (!supabaseUrl || !ziinaApiBase || !ziinaApiToken || !appDashboardUrl) {
-      console.error('Missing required environment variables');
-      return jsonResponse({ error: 'Server configuration error' }, 500);
-    }
+    const appBaseUrl = Deno.env.get('APP_DASHBOARD_URL') || 'https://klwolsopucgswhtdlsps.supabase.co';
 
     // Initialize Supabase client for user authentication
     const supabaseAnon = createClient(
@@ -58,79 +135,90 @@ serve(async (req) => {
       return jsonResponse({ error: 'Invalid authentication' }, 401);
     }
 
-    const { test = false } = await req.json().catch(() => ({ test: false }));
+    // Parse and validate request body
+    const body = await req.json();
+    const validatedBody = CreatePaymentRequestSchema.parse(body);
 
-    console.log(`Creating payment intent for user: ${user.id}, test: ${test}`);
+    // Convert AED to fils
+    const amount_fils = convertAedToFils(validatedBody.amountAed);
+    const operationId = crypto.randomUUID();
 
-    // Create Ziina Payment Intent following the documentation
-    const paymentPayload = {
-      amount: 4000, // 40 AED in fils (smallest currency unit)
-      currency_code: "AED",
-      message: "Premium Subscription - 40 AED / month",
-      success_url: `${appDashboardUrl}/payment-success?payment_intent_id={PAYMENT_INTENT_ID}`,
-      cancel_url: `${appDashboardUrl}/payment-cancel?payment_intent_id={PAYMENT_INTENT_ID}`,
-      failure_url: `${appDashboardUrl}/payment-failed?payment_intent_id={PAYMENT_INTENT_ID}`,
-      test: !!test
-    };
+    // Build callback URLs with placeholder for payment intent ID
+    const successUrl = `${appBaseUrl}/payment-success?payment_intent_id={PAYMENT_INTENT_ID}`;
+    const cancelUrl = `${appBaseUrl}/payment-cancel?payment_intent_id={PAYMENT_INTENT_ID}`;
+    const failureUrl = `${appBaseUrl}/payment-failed?payment_intent_id={PAYMENT_INTENT_ID}`;
 
-    console.log('Creating payment intent with Ziina API:', JSON.stringify(paymentPayload, null, 2));
-
-    const ziinaResponse = await fetch(`${ziinaApiBase}/payment_intent`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${ziinaApiToken}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(paymentPayload),
+    console.log('Creating payment intent for user:', user.id, {
+      amount_fils,
+      test: validatedBody.test,
+      operation_id: operationId
     });
 
-    const responseData = await ziinaResponse.json();
-    console.log('Ziina API response:', { status: ziinaResponse.status, data: responseData });
-
-    if (!ziinaResponse.ok) {
-      console.error('Ziina API error:', responseData);
-      return jsonResponse({ 
-        error: responseData?.error || 'Payment intent creation failed' 
-      }, ziinaResponse.status);
-    }
+    // Create payment intent with Ziina
+    const paymentIntent = await createPaymentIntent({
+      amount_fils,
+      currency: 'AED',
+      successUrl,
+      cancelUrl,
+      failureUrl,
+      message: 'Unlock Premium Access — 40 AED/month • 20 AI Try-ons daily • Unlimited replica • UGC collabs',
+      test: validatedBody.test,
+      operationId
+    });
 
     // Initialize service role client for database operations
     const supabaseService = createClient(supabaseUrl, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
 
-    // Create or update subscription record
-    const subscriptionData = {
-      user_id: user.id,
-      plan: 'premium',
-      status: 'pending',
-      last_payment_intent_id: responseData.id,
-      last_payment_status: responseData.status,
-      updated_at: new Date().toISOString(),
-    };
+    // Upsert payment record in database
+    const { error: dbError } = await supabaseService
+      .from('payments')
+      .upsert({
+        payment_intent_id: paymentIntent.id,
+        user_id: user.id,
+        product: validatedBody.product,
+        amount_fils: paymentIntent.amount,
+        currency: paymentIntent.currency_code,
+        status: paymentIntent.status,
+        operation_id: paymentIntent.operation_id,
+        redirect_url: paymentIntent.redirect_url,
+        success_url: paymentIntent.success_url,
+        cancel_url: paymentIntent.cancel_url,
+        fee_amount_fils: paymentIntent.fee_amount,
+        tip_amount_fils: 0,
+        latest_error_message: paymentIntent.latest_error?.message,
+        latest_error_code: paymentIntent.latest_error?.code
+      }, {
+        onConflict: 'operation_id'
+      });
 
-    const { error: upsertError } = await supabaseService
-      .from('subscriptions')
-      .upsert(subscriptionData, { onConflict: 'user_id' });
-
-    if (upsertError) {
-      console.error('Subscription upsert error:', upsertError);
-      return jsonResponse({ error: 'Failed to create subscription record' }, 500);
+    if (dbError) {
+      console.error('Database error:', dbError);
+      return jsonResponse({ error: 'Failed to save payment record' }, 500);
     }
 
     console.log('Payment intent created successfully:', {
-      paymentIntentId: responseData.id,
-      redirectUrl: responseData.redirect_url
+      pi: paymentIntent.id,
+      status: paymentIntent.status,
+      redirect_url: paymentIntent.redirect_url
     });
 
-    // Return the redirect URL to client
     return jsonResponse({
-      redirect_url: responseData.redirect_url,
-      payment_intent_id: responseData.id,
+      redirectUrl: paymentIntent.redirect_url,
+      pi: paymentIntent.id
     });
 
   } catch (error) {
     console.error('Error in create-payment-intent:', error);
+    
+    if (error instanceof z.ZodError) {
+      return jsonResponse({ 
+        error: 'Validation error',
+        details: error.errors 
+      }, 400);
+    }
+    
     return jsonResponse({ 
-      error: error instanceof Error ? error.message : String(error) 
+      error: error instanceof Error ? error.message : 'Unknown error' 
     }, 500);
   }
 });

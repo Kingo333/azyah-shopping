@@ -1,189 +1,201 @@
+
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+import { z } from 'https://esm.sh/zod@3.22.4';
 
-// Ziina webhook source IP addresses for security (from documentation)
-const ALLOWED_IPS = [
-  '3.29.184.186',
-  '3.29.190.95', 
-  '20.233.47.127'
-];
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
 
-function jsonResponse(data: unknown, status = 200) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { 'Content-Type': 'application/json' },
-  });
-}
+const WebhookPayloadSchema = z.object({
+  event: z.string(),
+  data: z.object({
+    id: z.string(),
+    amount: z.number(),
+    currency_code: z.string(),
+    status: z.enum(['requires_payment_instrument', 'requires_user_action', 'pending', 'completed', 'failed', 'canceled']),
+    operation_id: z.string(),
+    fee_amount: z.number().nullable(),
+    latest_error: z.object({
+      message: z.string(),
+      code: z.string()
+    }).nullable()
+  })
+});
 
-// HMAC verification helper following Ziina documentation
-async function verifyHmacSignature(body: string, signature: string, secret: string): Promise<boolean> {
-  if (!secret || !signature) return false;
+function verifyWebhookSignature(rawBody: string, signature: string, secret: string): boolean {
+  const encoder = new TextEncoder();
+  const key = encoder.encode(secret);
+  const data = encoder.encode(rawBody);
   
-  try {
-    const encoder = new TextEncoder();
-    const key = await crypto.subtle.importKey(
-      'raw',
-      encoder.encode(secret),
-      { name: 'HMAC', hash: 'SHA-256' },
-      false,
-      ['sign']
-    );
-    
-    const expectedSignature = await crypto.subtle.sign('HMAC', key, encoder.encode(body));
-    const expectedHex = Array.from(new Uint8Array(expectedSignature))
+  return crypto.subtle.importKey(
+    'raw',
+    key,
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  ).then(cryptoKey => 
+    crypto.subtle.sign('HMAC', cryptoKey, data)
+  ).then(signature_buffer => {
+    const expectedSignature = Array.from(new Uint8Array(signature_buffer))
       .map(b => b.toString(16).padStart(2, '0'))
       .join('');
-    
-    return signature === expectedHex;
-  } catch (error) {
-    console.error('HMAC verification error:', error);
-    return false;
-  }
+    return signature === expectedSignature;
+  }).catch(() => false);
+}
+
+function isAllowedIP(ip: string): boolean {
+  const allowedIPs = ['3.29.184.186', '3.29.190.95', '20.233.47.127'];
+  return allowedIPs.includes(ip);
+}
+
+function createBodyHash(rawBody: string): string {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(rawBody);
+  return crypto.subtle.digest('SHA-256', data).then(hash => 
+    Array.from(new Uint8Array(hash))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('')
+  );
 }
 
 serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
   if (req.method !== 'POST') {
-    return jsonResponse({ error: 'Method not allowed' }, 405);
+    return new Response('Method not allowed', { status: 405 });
   }
 
   try {
-    // Get environment variables
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const webhookSecret = Deno.env.get('ZIINA_WEBHOOK_SECRET') || '';
+    const webhookSecret = Deno.env.get('ZIINA_WEBHOOK_SECRET');
 
-    // Get client IP for security validation
-    const clientIP = req.headers.get('x-forwarded-for')?.split(',')[0] || 
-                     req.headers.get('x-real-ip') || 
-                     'unknown';
-
-    console.log('Webhook received from IP:', clientIP);
-
-    // Validate source IP (following Ziina documentation)
-    if (clientIP !== 'unknown' && !ALLOWED_IPS.includes(clientIP)) {
-      console.warn('Webhook from unauthorized IP:', clientIP);
-      // Note: You may want to disable this check in development
-      // return jsonResponse({ error: 'Unauthorized IP' }, 403);
+    if (!webhookSecret) {
+      console.error('ZIINA_WEBHOOK_SECRET not configured');
+      return new Response('Webhook secret not configured', { status: 500 });
     }
 
-    const body = await req.text();
-    console.log('Webhook payload received:', body);
+    // Get raw body and signature
+    const rawBody = await req.text();
+    const signature = req.headers.get('X-Hmac-Signature') || '';
+    const clientIP = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 
+                     req.headers.get('x-real-ip') || '';
 
-    // Verify HMAC signature if secret is provided
-    if (webhookSecret) {
-      const signature = req.headers.get('X-Hmac-Signature');
-      if (!signature) {
-        console.error('Missing HMAC signature');
-        return jsonResponse({ error: 'Missing signature' }, 401);
-      }
-
-      const isValidSignature = await verifyHmacSignature(body, signature, webhookSecret);
-      if (!isValidSignature) {
-        console.error('Invalid HMAC signature');
-        return jsonResponse({ error: 'Invalid signature' }, 401);
-      }
-      console.log('HMAC signature verified successfully');
-    }
-
-    const event = JSON.parse(body);
-    console.log('Parsed webhook event:', event);
-
-    // Validate event structure following Ziina documentation
-    if (!event?.event || !event?.data?.id || !event?.data?.status) {
-      console.error('Invalid webhook payload structure:', event);
-      return jsonResponse({ error: 'Invalid payload structure' }, 400);
-    }
-
-    // Only handle payment intent status updates
-    if (event.event !== 'payment_intent.status.updated') {
-      console.log('Ignoring event type:', event.event);
-      return jsonResponse({ ok: true, note: 'Event type not handled' });
-    }
-
-    const paymentIntent = event.data;
-    console.log('Processing payment intent update:', {
-      id: paymentIntent.id,
-      status: paymentIntent.status
+    console.log('Webhook received:', { 
+      signature: signature.substring(0, 10) + '...', 
+      ip: clientIP,
+      bodyLength: rawBody.length 
     });
 
-    // Initialize Supabase service client
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-    // Find subscription by payment intent ID
-    const { data: subscription, error: fetchError } = await supabase
-      .from('subscriptions')
-      .select('*')
-      .eq('last_payment_intent_id', paymentIntent.id)
-      .maybeSingle();
-
-    if (fetchError) {
-      console.error('Error fetching subscription:', fetchError);
-      return jsonResponse({ error: 'Database error' }, 500);
+    // Verify IP allowlist
+    if (clientIP && !isAllowedIP(clientIP)) {
+      console.error('Webhook from unauthorized IP:', clientIP);
+      return new Response('Unauthorized IP', { status: 403 });
     }
 
-    if (!subscription) {
-      console.log('No matching subscription found for payment intent:', paymentIntent.id);
-      return jsonResponse({ ok: true, note: 'No matching subscription found' });
+    // Verify HMAC signature
+    const isValidSignature = await verifyWebhookSignature(rawBody, signature, webhookSecret);
+    if (!isValidSignature) {
+      console.error('Invalid webhook signature');
+      return new Response('Invalid signature', { status: 401 });
     }
 
-    console.log('Found subscription:', subscription.id, 'for user:', subscription.user_id);
+    // Parse and validate payload
+    const payload = JSON.parse(rawBody);
+    const validatedPayload = WebhookPayloadSchema.parse(payload);
 
-    const now = new Date();
-    let updates: Record<string, unknown> = {
-      last_payment_status: paymentIntent.status,
-      updated_at: now.toISOString(),
-    };
+    console.log('Valid webhook payload:', {
+      event: validatedPayload.event,
+      payment_intent_id: validatedPayload.data.id,
+      status: validatedPayload.data.status
+    });
 
-    // Handle different payment statuses following Ziina documentation
-    if (paymentIntent.status === 'completed') {
-      // Payment successful - activate premium for 30 days
-      const periodEnd = new Date(now);
-      periodEnd.setMonth(periodEnd.getMonth() + 1);
-
-      updates = {
-        ...updates,
-        status: 'active',
-        current_period_start: now.toISOString(),
-        current_period_end: periodEnd.toISOString(),
-      };
-
-      console.log('Activating premium subscription until:', periodEnd.toISOString());
-    } else if (['failed', 'canceled'].includes(paymentIntent.status)) {
-      // Payment failed or canceled
-      updates = {
-        ...updates,
-        status: 'none',
-      };
-
-      console.log('Payment failed/canceled, setting status to none');
-    } else {
-      console.log('Payment status update:', paymentIntent.status, 'no action needed');
+    // Only process payment_intent.status.updated events
+    if (validatedPayload.event !== 'payment_intent.status.updated') {
+      console.log('Ignoring non-payment-intent event:', validatedPayload.event);
+      return new Response('OK', { status: 200 });
     }
 
-    // Update subscription
-    const { error: updateError } = await supabase
-      .from('subscriptions')
-      .update(updates)
-      .eq('id', subscription.id);
+    const supabaseService = createClient(supabaseUrl, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+
+    // Create unique hash for idempotency
+    const bodyHash = await createBodyHash(rawBody);
+
+    // Check if we've already processed this webhook
+    const { data: existingEvent } = await supabaseService
+      .from('webhook_events')
+      .select('id')
+      .eq('signature', bodyHash)
+      .eq('processed', true)
+      .single();
+
+    if (existingEvent) {
+      console.log('Webhook already processed, skipping');
+      return new Response('OK', { status: 200 });
+    }
+
+    // Store webhook event
+    const { error: eventError } = await supabaseService
+      .from('webhook_events')
+      .upsert({
+        provider: 'ziina',
+        event: validatedPayload.event,
+        pi_id: validatedPayload.data.id,
+        raw_body: payload,
+        signature: bodyHash,
+        ip: clientIP,
+        processed: false
+      }, {
+        onConflict: 'signature'
+      });
+
+    if (eventError) {
+      console.error('Failed to store webhook event:', eventError);
+      return new Response('Database error', { status: 500 });
+    }
+
+    // Update payment status
+    const { error: updateError } = await supabaseService
+      .from('payments')
+      .update({
+        status: validatedPayload.data.status,
+        fee_amount_fils: validatedPayload.data.fee_amount,
+        latest_error_message: validatedPayload.data.latest_error?.message,
+        latest_error_code: validatedPayload.data.latest_error?.code,
+        updated_at: new Date().toISOString()
+      })
+      .eq('payment_intent_id', validatedPayload.data.id);
 
     if (updateError) {
-      console.error('Error updating subscription:', updateError);
-      return jsonResponse({ error: 'Failed to update subscription' }, 500);
+      console.error('Failed to update payment:', updateError);
+      return new Response('Database error', { status: 500 });
     }
 
-    console.log('Subscription updated successfully:', {
-      subscriptionId: subscription.id,
-      status: updates.status,
-      userId: subscription.user_id
+    // Mark webhook as processed
+    await supabaseService
+      .from('webhook_events')
+      .update({ processed: true })
+      .eq('signature', bodyHash);
+
+    console.log('Webhook processed successfully:', {
+      payment_intent_id: validatedPayload.data.id,
+      new_status: validatedPayload.data.status
     });
 
-    return jsonResponse({ ok: true, status: 'processed' });
+    return new Response('OK', { status: 200 });
 
   } catch (error) {
-    console.error('Error processing webhook:', error);
-    return jsonResponse({ 
-      error: error instanceof Error ? error.message : String(error) 
-    }, 500);
+    console.error('Webhook processing error:', error);
+    
+    if (error instanceof z.ZodError) {
+      console.error('Validation error:', error.errors);
+      return new Response('Invalid payload', { status: 400 });
+    }
+    
+    return new Response('Internal error', { status: 500 });
   }
 });

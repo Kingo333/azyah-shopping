@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -72,7 +73,7 @@ export default function PaymentSuccess() {
           title: "Payment Successful!",
           description: "Your premium subscription is now active.",
         });
-        // Refresh subscription data
+        // Refresh payment data
         await refetch();
       } else {
         toast({
@@ -101,6 +102,10 @@ export default function PaymentSuccess() {
       month: 'long',
       day: 'numeric'
     });
+  };
+
+  const formatAmount = (amount: number) => {
+    return (amount / 100).toFixed(2);
   };
 
   if (loading) {
@@ -175,7 +180,7 @@ export default function PaymentSuccess() {
                 <div>
                   <span className="text-muted-foreground">Amount:</span>
                   <span className="ml-2 font-medium">
-                    {verification.amount / 100} {verification.currency}
+                    {formatAmount(verification.amount)} {verification.currency}
                   </span>
                 </div>
                 <div>
@@ -189,41 +194,14 @@ export default function PaymentSuccess() {
               </div>
             </div>
 
-            {/* Subscription Status */}
-            <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
-              <h3 className="font-semibold mb-3 text-green-800 dark:text-green-200">
-                Subscription Status
-              </h3>
-              <div className="space-y-2 text-sm">
-                <div>
-                  <span className="text-muted-foreground">Status:</span>
-                  <span className="ml-2 font-medium capitalize">
-                    {verification.subscription_status}
-                  </span>
-                </div>
-                {verification.current_period_end && (
-                  <div>
-                    <span className="text-muted-foreground">Active until:</span>
-                    <span className="ml-2 font-medium">
-                      {formatDate(verification.current_period_end)}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
-
             {/* Premium Benefits */}
             <div className="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-4">
               <h3 className="font-semibold mb-3 text-amber-800 dark:text-amber-200">
                 Premium Benefits Unlocked
               </h3>
-              <ul className="text-sm space-y-1 text-amber-700 dark:text-amber-300">
-                <li>• AI-powered toy replica generation</li>
-                <li>• Advanced fashion recommendations</li>
-                <li>• Unlimited AI try-on sessions</li>
-                <li>• Priority customer support</li>
-                <li>• Exclusive premium content</li>
-              </ul>
+              <div className="text-sm text-amber-700 dark:text-amber-300">
+                <strong>Unlock Premium Access — 40 AED/month • 20 AI Try-ons daily • Unlimited replica • UGC collabs</strong>
+              </div>
             </div>
 
             {/* Action Buttons */}

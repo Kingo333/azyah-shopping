@@ -47,7 +47,7 @@ export function PaymentButton({
       ) : (
         <Crown className="w-4 h-4 mr-2" />
       )}
-      {children || (test ? 'Test Payment (Free)' : 'Upgrade to Premium')}
+      {children || (test ? 'Test Payment (Free)' : 'Upgrade to Premium - 40 AED')}
     </Button>
   );
 }
