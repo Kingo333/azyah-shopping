@@ -485,7 +485,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                         // Mobile-optimized sizing is now handled by default in getResponsiveImageProps
                       )}
                       alt={currentProduct.title}
-                      className="object-cover w-full h-full"
+                      className="object-cover w-full h-full transition-opacity duration-300"
                       onLoad={handleImageLoad}
                       onError={(e) => {
                         const img = e.target as HTMLImageElement;
