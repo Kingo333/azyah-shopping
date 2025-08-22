@@ -172,30 +172,38 @@ export default {
 						boxShadow: '0 0 40px hsl(var(--accent-cartier) / 0.6)'
 					}
 				},
-				'aura-wave': {
+				'aurora-flow': {
 					'0%': {
-						transform: 'translate(-10%, -10%) rotate(0deg) scale(1) skewX(0deg)',
-						opacity: '0.8'
-					},
-					'20%': {
-						transform: 'translate(-12%, -8%) rotate(45deg) scale(1.05) skewX(5deg)',
-						opacity: '0.9'
-					},
-					'40%': {
-						transform: 'translate(-8%, -12%) rotate(90deg) scale(0.95) skewX(-3deg)',
+						transform: 'translate(-8%, -12%) rotate(0deg) scale(1) skewY(2deg)',
 						opacity: '0.7'
 					},
-					'60%': {
-						transform: 'translate(-15%, -5%) rotate(180deg) scale(1.1) skewX(8deg)',
+					'15%': {
+						transform: 'translate(-12%, -8%) rotate(15deg) scale(1.03) skewY(-1deg)',
 						opacity: '0.85'
 					},
-					'80%': {
-						transform: 'translate(-5%, -15%) rotate(270deg) scale(1.02) skewX(-5deg)',
+					'30%': {
+						transform: 'translate(-6%, -14%) rotate(30deg) scale(0.98) skewY(3deg)',
+						opacity: '0.6'
+					},
+					'45%': {
+						transform: 'translate(-14%, -6%) rotate(45deg) scale(1.05) skewY(-2deg)',
+						opacity: '0.8'
+					},
+					'60%': {
+						transform: 'translate(-10%, -10%) rotate(60deg) scale(1.01) skewY(1deg)',
+						opacity: '0.65'
+					},
+					'75%': {
+						transform: 'translate(-4%, -16%) rotate(75deg) scale(0.96) skewY(-3deg)',
 						opacity: '0.75'
 					},
+					'90%': {
+						transform: 'translate(-16%, -4%) rotate(90deg) scale(1.04) skewY(2deg)',
+						opacity: '0.9'
+					},
 					'100%': {
-						transform: 'translate(-10%, -10%) rotate(360deg) scale(1) skewX(0deg)',
-						opacity: '0.8'
+						transform: 'translate(-8%, -12%) rotate(0deg) scale(1) skewY(2deg)',
+						opacity: '0.7'
 					}
 				}
 			},
@@ -208,7 +216,7 @@ export default {
 				'glow-pulse': 'glow-pulse 2s ease-in-out infinite',
 				'luxury-glow': 'luxury-glow 3s ease-in-out infinite',
 				'cartier-glow': 'cartier-glow 2s ease-in-out infinite',
-				'aura-wave': 'aura-wave 25s ease-in-out infinite'
+				'aurora-flow': 'aurora-flow 30s ease-in-out infinite'
 			},
 			boxShadow: {
 				'glow': 'var(--shadow-glow)',
