@@ -110,6 +110,33 @@ serve(async (req) => {
     // Initialize Supabase service client
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+    // Check for idempotency - store webhook event
+    const { data: existingEvent } = await supabase
+      .from('webhook_events')
+      .select('processed')
+      .eq('pi_id', paymentIntent.id)
+      .eq('event', event.event)
+      .eq('processed', true)
+      .maybeSingle();
+
+    if (existingEvent) {
+      console.log(`Webhook already processed for PI: ${paymentIntent.id}`);
+      return jsonResponse({ ok: true, note: 'Already processed' });
+    }
+
+    // Store webhook event for idempotency
+    await supabase
+      .from('webhook_events')
+      .insert({
+        provider: 'ziina',
+        event: event.event,
+        pi_id: paymentIntent.id,
+        raw_body: event,
+        signature: req.headers.get('X-Hmac-Signature'),
+        ip: clientIP,
+        processed: false
+      });
+
     // Find subscription by payment intent ID
     const { data: subscription, error: fetchError } = await supabase
       .from('subscriptions')
@@ -153,10 +180,10 @@ serve(async (req) => {
       // Payment failed or canceled
       updates = {
         ...updates,
-        status: 'none',
+        status: 'inactive',
       };
 
-      console.log('Payment failed/canceled, setting status to none');
+      console.log('Payment failed/canceled, setting status to inactive');
     } else {
       console.log('Payment status update:', paymentIntent.status, 'no action needed');
     }
@@ -171,6 +198,13 @@ serve(async (req) => {
       console.error('Error updating subscription:', updateError);
       return jsonResponse({ error: 'Failed to update subscription' }, 500);
     }
+
+    // Mark webhook as processed
+    await supabase
+      .from('webhook_events')
+      .update({ processed: true })
+      .eq('pi_id', paymentIntent.id)
+      .eq('event', event.event);
 
     console.log('Subscription updated successfully:', {
       subscriptionId: subscription.id,

@@ -29,12 +29,25 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const ziinaApiBase = Deno.env.get('ZIINA_API_BASE')!;
     const ziinaApiToken = Deno.env.get('ZIINA_API_TOKEN')!;
-    const appDashboardUrl = Deno.env.get('APP_DASHBOARD_URL')!;
+    const appBaseUrl = Deno.env.get('APP_BASE_URL')!;
 
     // Validate required environment variables
-    if (!supabaseUrl || !ziinaApiBase || !ziinaApiToken || !appDashboardUrl) {
-      console.error('Missing required environment variables');
-      return jsonResponse({ error: 'Server configuration error' }, 500);
+    if (!supabaseUrl || !ziinaApiBase || !ziinaApiToken || !appBaseUrl) {
+      console.error('Missing required environment variables:', {
+        supabaseUrl: !!supabaseUrl,
+        ziinaApiBase: !!ziinaApiBase,
+        ziinaApiToken: !!ziinaApiToken,
+        appBaseUrl: !!appBaseUrl
+      });
+      return jsonResponse({ 
+        error: 'Server configuration error',
+        missing_env: {
+          SUPABASE_URL: !!supabaseUrl,
+          ZIINA_API_BASE: !!ziinaApiBase,
+          ZIINA_API_TOKEN: !!ziinaApiToken,
+          APP_BASE_URL: !!appBaseUrl
+        }
+      }, 500);
     }
 
     // Initialize Supabase client for user authentication
@@ -67,10 +80,12 @@ serve(async (req) => {
       amount: 4000, // 40 AED in fils (smallest currency unit)
       currency_code: "AED",
       message: "Premium Subscription - 40 AED / month",
-      success_url: `${appDashboardUrl}/payment-success?payment_intent_id={PAYMENT_INTENT_ID}`,
-      cancel_url: `${appDashboardUrl}/payment-cancel?payment_intent_id={PAYMENT_INTENT_ID}`,
-      failure_url: `${appDashboardUrl}/payment-failed?payment_intent_id={PAYMENT_INTENT_ID}`,
-      test: !!test
+      success_url: `${appBaseUrl}/payment-success?payment_intent_id={PAYMENT_INTENT_ID}`,
+      cancel_url: `${appBaseUrl}/payment-cancel?payment_intent_id={PAYMENT_INTENT_ID}`,
+      failure_url: `${appBaseUrl}/payment-failed?payment_intent_id={PAYMENT_INTENT_ID}`,
+      test: !!test,
+      expiry: Date.now() + (24 * 60 * 60 * 1000), // 24 hours from now
+      allow_tips: false
     };
 
     console.log('Creating payment intent with Ziina API:', JSON.stringify(paymentPayload, null, 2));
@@ -90,8 +105,10 @@ serve(async (req) => {
     if (!ziinaResponse.ok) {
       console.error('Ziina API error:', responseData);
       return jsonResponse({ 
-        error: responseData?.error || 'Payment intent creation failed' 
-      }, ziinaResponse.status);
+        error: 'ziina_create_failed',
+        upstream_status: ziinaResponse.status,
+        details: responseData
+      }, 502);
     }
 
     // Initialize service role client for database operations
