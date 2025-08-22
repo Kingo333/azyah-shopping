@@ -9,12 +9,12 @@ interface AsosImageConfig {
   fit: string;
 }
 
-// Ultra-optimized for mobile speed
+// Balanced quality and speed for mobile
 const IMAGE_CONFIGS: Record<ImageContext, AsosImageConfig> = {
   thumbnail: { width: 80, quality: 70, format: 'jpg', fit: 'constrain' },
-  main: { width: 400, quality: 75, format: 'jpg', fit: 'constrain' },       // Aggressive mobile optimization
-  detail: { width: 600, quality: 78, format: 'jpg', fit: 'constrain' },     // Faster modal loading
-  gallery: { width: 320, quality: 72, format: 'jpg', fit: 'constrain' }     // Minimal grid loading
+  main: { width: 450, quality: 85, format: 'jpg', fit: 'constrain' },       // Higher quality for main swipe images
+  detail: { width: 600, quality: 82, format: 'jpg', fit: 'constrain' },     
+  gallery: { width: 320, quality: 72, format: 'jpg', fit: 'constrain' }     
 };
 
 // Progressive loading configurations
@@ -98,7 +98,7 @@ export function buildAsosSrcSet(baseUrl: string, context: ImageContext = 'main')
   const widths = context === 'thumbnail' 
     ? [64, 80]                // Minimal thumbnail sizes
     : context === 'main' 
-    ? [300, 400]              // Fast swipe loading
+    ? [350, 450, 600]         // Better quality range for main images
     : context === 'detail'
     ? [400, 600]              // Quick modal opening
     : [200, 320];             // Minimal grid sizes
