@@ -500,7 +500,7 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
       <CarouselContent className="-ml-4 md:-ml-8">
         {trendingProducts.map((product, index) => (
           <CarouselItem key={product.id} className="pl-4 md:pl-8 basis-full md:basis-1/2">
-            <Card className="group hover:shadow-xl transition-all duration-300 h-full">
+            <Card className="group hover:shadow-xl transition-all duration-300 h-full glass-premium">
               <CardContent className="p-6 md:p-8 h-full flex flex-col">
                 {/* Header */}
                 <div className="flex items-center justify-between mb-4">

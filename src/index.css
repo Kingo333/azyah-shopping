@@ -6,9 +6,9 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
+    --background: 210 20% 98%;
     --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
+    --card: 0 0% 98%;
     --card-foreground: 222.2 84% 4.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
@@ -48,10 +48,10 @@
     --shadow-cartier: 0 4px 24px hsl(var(--accent-cartier) / 0.15);
     
     /* Premium Glass Effects */
-    --glass-bg: rgba(255, 255, 255, 0.08);
-    --glass-border: rgba(255, 255, 255, 0.12);
-    --glass-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
-    --glass-shadow-premium: 0 8px 40px rgba(0, 0, 0, 0.12);
+    --glass-bg: rgba(240, 242, 247, 0.7);
+    --glass-border: rgba(226, 232, 240, 0.8);
+    --glass-shadow: 0 8px 32px rgba(148, 163, 184, 0.15);
+    --glass-shadow-premium: 0 8px 40px rgba(100, 116, 139, 0.08);
     --glass-backdrop: blur(20px) saturate(180%);
     
     /* Premium gradients */
