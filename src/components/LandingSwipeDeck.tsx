@@ -242,14 +242,20 @@ const LandingSwipeDeck: React.FC<LandingSwipeDeckProps> = ({
   }, [user, nextCard, toast, currentProduct, isAnimating, actionDebounceMs]);
 
   const handleSwipeEnd = useCallback((event: any, info: PanInfo) => {
-    if (!currentProduct) return;
+    if (!currentProduct || isAnimating) return;
 
     const { x: offsetX, y: offsetY } = info.offset;
     const { x: velocityX, y: velocityY } = info.velocity;
 
+    // Prevent any other handlers from firing during gesture
+    event?.preventDefault?.();
+    event?.stopPropagation?.();
+
+    console.log('🎯 Swipe detected:', { offsetX, offsetY, velocityX, velocityY });
+
     // Check for vertical swipe (wishlist)
     if (offsetY < -VERTICAL_THRESHOLD && Math.abs(offsetX) < DISTANCE_THRESHOLD) {
-      // Trigger action immediately for responsiveness
+      console.log('📌 Vertical swipe detected - adding to wishlist');
       handleAddToWishlist();
       // Animate card up smoothly
       animate(x, 0, { duration: 0.3 });
@@ -261,20 +267,21 @@ const LandingSwipeDeck: React.FC<LandingSwipeDeckProps> = ({
     } 
     // Check for right swipe (like)
     else if (offsetX > DISTANCE_THRESHOLD || velocityX > 500) {
-      // Trigger action immediately
+      console.log('💖 Right swipe detected - liking product');
       handleLike();
     }
     // Check for left swipe (dislike)
     else if (offsetX < -DISTANCE_THRESHOLD || velocityX < -500) {
-      // Trigger action immediately
+      console.log('❌ Left swipe detected - disliking product');
       handleDislike();
     }
     // Not enough movement, spring back to center
     else {
+      console.log('↩️ Insufficient movement - springing back');
       animate(x, 0, { type: "spring", stiffness: 400, damping: 40 });
       animate(y, 0, { type: "spring", stiffness: 400, damping: 40 });
     }
-  }, [currentProduct, handleLike, handleDislike, handleAddToWishlist, x, y]);
+  }, [currentProduct, handleLike, handleDislike, handleAddToWishlist, x, y, isAnimating]);
 
   const getImageUrl = (product: any) => {
     try {
@@ -453,8 +460,12 @@ const LandingSwipeDeck: React.FC<LandingSwipeDeckProps> = ({
                           variant="ghost"
                           size="icon"
                           onClick={(e) => {
+                            e.preventDefault();
                             e.stopPropagation();
-                            handleDislike();
+                            // Only allow button clicks when not animating
+                            if (!isAnimating) {
+                              handleDislike();
+                            }
                           }}
                           className="h-8 w-8 rounded-full bg-destructive/10 hover:bg-destructive/20"
                         >
@@ -464,8 +475,12 @@ const LandingSwipeDeck: React.FC<LandingSwipeDeckProps> = ({
                           variant="ghost"
                           size="icon"
                           onClick={(e) => {
+                            e.preventDefault();
                             e.stopPropagation();
-                            handleAddToWishlist();
+                            // Only allow button clicks when not animating
+                            if (!isAnimating) {
+                              handleAddToWishlist();
+                            }
                           }}
                           className="h-8 w-8 rounded-full bg-accent/10 hover:bg-accent/20"
                         >
@@ -475,8 +490,12 @@ const LandingSwipeDeck: React.FC<LandingSwipeDeckProps> = ({
                           variant="ghost"
                           size="icon"
                           onClick={(e) => {
+                            e.preventDefault();
                             e.stopPropagation();
-                            handleLike();
+                            // Only allow button clicks when not animating
+                            if (!isAnimating) {
+                              handleLike();
+                            }
                           }}
                           className="h-8 w-8 rounded-full bg-primary/10 hover:bg-primary/20"
                         >
