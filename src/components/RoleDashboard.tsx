@@ -12,7 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import GlobalSearch from '@/components/GlobalSearch';
 import DashboardHeader from '@/components/DashboardHeader';
 import AffiliateHub from '@/components/AffiliateHub';
-import AiStudioModal from '@/components/AiStudioModal';
+import { AiStudioModal } from '@/components/AiStudioModal';
 import PremiumBanner from '@/components/PremiumBanner';
 import { Heart, ShoppingBag, Search, Sparkles, Package, BarChart3, Users, Settings, Store, TrendingUp, Plus, Eye, DollarSign, Globe, Bell, LogOut, User, Archive, Trophy, MapPin, Blocks, WandSparkles } from 'lucide-react';
 import Leaderboard from '@/components/Leaderboard';
