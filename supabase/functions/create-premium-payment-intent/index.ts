@@ -13,6 +13,16 @@ const ziinaApiBase = Deno.env.get('ZIINA_API_BASE')!;
 const ziinaApiToken = Deno.env.get('ZIINA_API_TOKEN')!;
 const appDashboardUrl = Deno.env.get('APP_DASHBOARD_URL')!;
 
+// Debug logging for environment variables
+console.log('Environment check:', {
+  hasSupabaseUrl: !!supabaseUrl,
+  hasServiceKey: !!supabaseServiceKey,
+  hasZiinaBase: !!ziinaApiBase,
+  hasZiinaToken: !!ziinaApiToken,
+  appDashboardUrl: appDashboardUrl || 'UNDEFINED',
+  appDashboardUrlLength: appDashboardUrl?.length || 0
+});
+
 function jsonResponse(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
@@ -55,6 +65,15 @@ serve(async (req) => {
     const { test } = await req.json().catch(() => ({ test: false }));
 
     console.log(`Creating payment intent for user: ${user.id}, test: ${test}`);
+    console.log('Using APP_DASHBOARD_URL:', appDashboardUrl);
+
+    // Validate APP_DASHBOARD_URL
+    if (!appDashboardUrl || appDashboardUrl === 'undefined') {
+      console.error('APP_DASHBOARD_URL is not properly set:', appDashboardUrl);
+      return jsonResponse({ 
+        error: 'Server configuration error: APP_DASHBOARD_URL not set' 
+      }, 500);
+    }
 
     // Create Ziina Payment Intent
     const paymentPayload = {
@@ -67,7 +86,7 @@ serve(async (req) => {
       test: !!test
     };
 
-    console.log('Calling Ziina API with payload:', { ...paymentPayload, test });
+    console.log('Calling Ziina API with payload:', JSON.stringify(paymentPayload, null, 2));
 
     const ziinaResponse = await fetch(`${ziinaApiBase}/payment_intent`, {
       method: 'POST',
