@@ -20,6 +20,7 @@ import TrendingStylesCarousel from '@/components/TrendingStylesCarousel';
 import { UGCCollabButton } from '@/components/ugc/UGCCollabButton';
 import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
 import { FeedbackModal } from '@/components/FeedbackModal';
+import { PaymentIntegrationTest } from '@/components/PaymentIntegrationTest';
 
 interface UserProfile {
   id: string;
@@ -502,6 +503,9 @@ const RoleDashboard: React.FC = () => {
                   </div>
                 </div>
               </GlassPanel>
+              
+              {/* Payment Integration Test */}
+              <PaymentIntegrationTest />
             </div>
           )}
           
