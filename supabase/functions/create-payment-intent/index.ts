@@ -64,13 +64,16 @@ async function createPaymentIntent(params: {
     throw new Error('ZIINA_API_TOKEN not configured');
   }
 
+  // FIXED: Provide a proper message that meets Ziina's length requirements
+  const paymentMessage = params.message || 'Premium Subscription';
+
   const body = {
     amount: params.amount_fils,
     currency_code: params.currency,
     success_url: params.successUrl,
     cancel_url: params.cancelUrl,
     failure_url: params.failureUrl,
-    message: params.message || 'Premium Subscription Payment',
+    message: paymentMessage, // Use the properly formatted message
     test: params.test || false,
     allow_tips: false,
     operation_id: params.operationId,
@@ -80,6 +83,7 @@ async function createPaymentIntent(params: {
     amount: params.amount_fils, 
     test: params.test,
     operation_id: params.operationId,
+    message: paymentMessage, // Log the message being sent
     urls: {
       success: params.successUrl,
       cancel: params.cancelUrl,
@@ -162,14 +166,14 @@ serve(async (req) => {
       operation_id: operationId
     });
 
-    // Create payment intent with Ziina
+    // Create payment intent with Ziina - FIXED: Use shorter, compliant message
     const paymentIntent = await createPaymentIntent({
       amount_fils,
       currency: 'AED',
       successUrl,
       cancelUrl,
       failureUrl,
-      message: 'Unlock Premium Access — 40 AED/month • 20 AI Try-ons daily • Unlimited replica • UGC collabs',
+      message: 'Premium Subscription', // FIXED: Shorter message that meets Ziina requirements
       test: validatedBody.test,
       operationId
     });

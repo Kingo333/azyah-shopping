@@ -131,25 +131,34 @@ export class PaymentTestSuite {
     }
   }
 
-  // Test Zod schema validation
+  // Test Zod schema validation - FIXED with complete test data
   static async testZodSchemas(): Promise<PaymentTestResult> {
     const startTime = Date.now();
     console.log('🧪 Testing Zod schema validation...');
     
+    // Complete valid payload with all required fields
     const validPaymentIntent = {
       event: 'payment_intent.status.updated',
       data: {
         id: 'pi_test_123',
+        account_id: 'acc_test_456',
         amount: 4000,
+        tip_amount: 0,
+        fee_amount: 120,
         currency_code: 'AED',
+        created_at: '2024-01-15T10:30:00Z',
         status: 'completed',
         operation_id: 'op_test_456',
-        fee_amount: 120,
-        tip_amount: 0,
-        latest_error: null
+        message: 'Premium Subscription Payment',
+        redirect_url: 'https://ziina.com/payment/pi_test_123',
+        success_url: 'https://app.example.com/payments/success?pi=pi_test_123',
+        cancel_url: 'https://app.example.com/payments/cancel?pi=pi_test_123',
+        latest_error: null,
+        allow_tips: false
       }
     };
 
+    // Invalid payload - missing required fields
     const invalidPaymentIntent = {
       event: 'payment_intent.status.updated',
       data: {
@@ -158,7 +167,7 @@ export class PaymentTestSuite {
         currency_code: 'AED',
         status: 'invalid_status', // Invalid enum value
         operation_id: 'op_test_456'
-        // Missing required fields
+        // Missing required fields: account_id, created_at, message, urls, etc.
       }
     };
 
@@ -168,6 +177,9 @@ export class PaymentTestSuite {
       // Test valid payload
       const validResult = WebhookPayloadSchema.safeParse(validPaymentIntent);
       console.log(`Valid payload test: ${validResult.success ? '✅' : '❌'}`);
+      if (!validResult.success) {
+        console.log('  Validation errors:', validResult.error.issues);
+      }
       
       // Test invalid payload
       const invalidResult = WebhookPayloadSchema.safeParse(invalidPaymentIntent);
@@ -180,7 +192,8 @@ export class PaymentTestSuite {
       return {
         testName: 'Zod Schema Validation',
         passed: validResult.success && !invalidResult.success,
-        duration: Date.now() - startTime
+        duration: Date.now() - startTime,
+        error: !validResult.success ? 'Valid payload failed validation' : undefined
       };
     } catch (error) {
       console.error('Zod schema test failed:', error);
@@ -253,13 +266,20 @@ export class PaymentTestSuite {
       event: 'payment_intent.status.updated',
       data: {
         id: 'pi_test_simulation_' + Date.now(),
+        account_id: 'acc_test_' + Date.now(),
         amount: 4000,
+        tip_amount: 0,
+        fee_amount: 120,
         currency_code: 'AED',
+        created_at: new Date().toISOString(),
         status: 'completed',
         operation_id: 'op_test_' + Date.now(),
-        fee_amount: 120,
-        tip_amount: 0,
-        latest_error: null
+        message: 'Test webhook simulation',
+        redirect_url: 'https://ziina.com/payment/pi_test_simulation_' + Date.now(),
+        success_url: 'https://app.example.com/payments/success',
+        cancel_url: 'https://app.example.com/payments/cancel',
+        latest_error: null,
+        allow_tips: false
       }
     };
 
