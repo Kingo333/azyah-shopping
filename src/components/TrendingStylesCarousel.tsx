@@ -501,9 +501,9 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
         {trendingProducts.map((product, index) => (
           <CarouselItem key={product.id} className="pl-4 md:pl-8 basis-full md:basis-1/2">
             <Card className="group hover:shadow-xl transition-all duration-300 h-full glass-premium">
-              <CardContent className="p-6 md:p-8 h-full flex flex-col">
+              <CardContent className="p-4 md:p-6 h-full flex flex-col">
                 {/* Header */}
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center justify-between mb-3">
                   <Badge variant={index < 3 ? "default" : "secondary"} className="text-xs px-2 py-0.5">
                     #{index + 1} Trending
                   </Badge>
@@ -512,8 +512,8 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
                   </div>
                 </div>
 
-                {/* Product Image */}
-                <div className="relative aspect-[4/3] mb-4 rounded-xl overflow-hidden bg-gray-50">
+                {/* Product Image - Made more prominent */}
+                <div className="relative aspect-[3/4] mb-3 rounded-xl overflow-hidden bg-gray-50">
                   <img
                     src={product.image_url}
                     alt={product.title}
