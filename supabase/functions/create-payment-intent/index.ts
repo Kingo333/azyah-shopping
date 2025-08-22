@@ -82,14 +82,15 @@ serve(async (req) => {
       cancel_url: cancelUrl,
       failure_url: failureUrl,
       test: !!test,
-      expiry: Date.now() + (30 * 60 * 1000), // 30 minutes from now in milliseconds (as number)
+      expiry: String(Date.now() + (30 * 60 * 1000)), // 30 minutes from now as string (Ziina requires string)
       allow_tips: false
     };
 
     console.log('Sending request to Ziina with payload:', {
       ...payload,
       expiry_type: typeof payload.expiry,
-      expiry_value: payload.expiry
+      expiry_value: payload.expiry,
+      expiry_timestamp: new Date(parseInt(payload.expiry)).toISOString()
     });
 
     const res = await fetch(`${BASE}/payment_intent`, {
