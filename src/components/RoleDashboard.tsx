@@ -290,7 +290,7 @@ const RoleDashboard: React.FC = () => {
                   <WandSparkles className="h-5 w-5 sm:h-6 sm:w-6 text-pink-600" />
                   <span className="text-xs sm:text-sm text-pink-600">Beauty Guide</span>
                   <Badge variant="secondary" className="absolute -top-1 -right-1 text-xs px-1 py-0 h-4">
-                    Coming Soon
+                    Soon
                   </Badge>
                 </Button>
               </div>
