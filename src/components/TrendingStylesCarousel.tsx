@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/carousel";
 import { TrendingUp, Heart, ShoppingBag, ExternalLink } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { upgradeAsosImageUrl, getResponsiveImageProps } from '@/utils/asosImageUtils';
 
 interface TrendingProduct {
   id: string;
@@ -237,7 +238,7 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
     
     // Try image_url first
     if (product.image_url) {
-      return product.image_url;
+      return upgradeAsosImageUrl(product.image_url, 800);
     }
     
     // Then try media_urls array
@@ -246,15 +247,15 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
       console.log('First media item:', firstMedia, 'Type:', typeof firstMedia);
       
       if (typeof firstMedia === 'string') {
-        return firstMedia;
+        return upgradeAsosImageUrl(firstMedia, 800);
       } else if (firstMedia && typeof firstMedia === 'object') {
         // Try different possible properties
-        if (firstMedia.url) return firstMedia.url;
-        if (firstMedia.src) return firstMedia.src;
-        if (firstMedia.href) return firstMedia.href;
+        if (firstMedia.url) return upgradeAsosImageUrl(firstMedia.url, 800);
+        if (firstMedia.src) return upgradeAsosImageUrl(firstMedia.src, 800);
+        if (firstMedia.href) return upgradeAsosImageUrl(firstMedia.href, 800);
         // If it's an array within array, get the first string
         if (Array.isArray(firstMedia) && firstMedia.length > 0) {
-          return firstMedia[0];
+          return upgradeAsosImageUrl(firstMedia[0], 800);
         }
       }
     }
