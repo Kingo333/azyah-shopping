@@ -4,7 +4,7 @@ import { PaymentIntent, PaymentIntentSchema, Refund, RefundSchema } from '@/type
 
 const ZIINA_API_BASE = process.env.ZIINA_API_BASE || 'https://api-v2.ziina.com/api';
 const ZIINA_API_TOKEN = process.env.ZIINA_API_TOKEN;
-const APP_BASE_URL = process.env.APP_BASE_URL || 'https://klwolsopucgswhtdlsps.supabase.co';
+const APP_BASE_URL = process.env.APP_DASHBOARD_URL || 'https://klwolsopucgswhtdlsps.supabase.co';
 
 if (!ZIINA_API_TOKEN) {
   throw new Error('ZIINA_API_TOKEN environment variable is required');
@@ -45,6 +45,8 @@ async function makeRequest<T>(
   
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
+      console.log(`[Ziina API] ${method} ${url}`, { attempt: attempt + 1, body });
+      
       const response = await fetch(url, {
         method,
         headers: {
@@ -56,6 +58,8 @@ async function makeRequest<T>(
       });
 
       const data = await response.json();
+      
+      console.log(`[Ziina API] Response ${response.status}:`, data);
 
       if (!response.ok) {
         throw new ZiinaError(
@@ -68,6 +72,8 @@ async function makeRequest<T>(
 
       return data;
     } catch (error) {
+      console.error(`[Ziina API] Attempt ${attempt + 1} failed:`, error);
+      
       if (attempt === retries || !(error instanceof Error) || !error.message.includes('5')) {
         throw error;
       }
@@ -119,9 +125,10 @@ export async function createOrUpdateWebhook(url: string, secret: string): Promis
     };
 
     await makeRequest('/webhook', 'POST', body);
+    console.log(`[Ziina API] Webhook registered successfully:`, { url });
     return { success: true };
   } catch (error) {
-    console.error('Failed to create/update webhook:', error);
+    console.error('[Ziina API] Failed to create/update webhook:', error);
     return { 
       success: false, 
       error: error instanceof Error ? error.message : 'Unknown error' 
@@ -142,17 +149,31 @@ export function verifyWebhookSignature(
   signature: string,
   secret: string
 ): boolean {
-  const expectedSignature = crypto
-    .createHmac('sha256', secret)
-    .update(rawBody)
-    .digest('hex');
-  
-  return signature === expectedSignature;
+  try {
+    const expectedSignature = crypto
+      .createHmac('sha256', secret)
+      .update(rawBody)
+      .digest('hex');
+    
+    console.log('[Ziina Webhook] Signature verification:', {
+      expected: expectedSignature.substring(0, 10) + '...',
+      received: signature.substring(0, 10) + '...',
+      match: signature === expectedSignature
+    });
+    
+    return signature === expectedSignature;
+  } catch (error) {
+    console.error('[Ziina Webhook] Signature verification failed:', error);
+    return false;
+  }
 }
 
 export function isAllowedIP(ip: string): boolean {
   const allowedIPs = ['3.29.184.186', '3.29.190.95', '20.233.47.127'];
-  return allowedIPs.includes(ip);
+  const isAllowed = allowedIPs.includes(ip);
+  
+  console.log('[Ziina Webhook] IP check:', { ip, allowed: isAllowed });
+  return isAllowed;
 }
 
 export function convertAedToFils(aed: number): number {
@@ -160,6 +181,7 @@ export function convertAedToFils(aed: number): number {
   if (fils < 200) {
     throw new Error('Minimum amount is 2 AED (200 fils)');
   }
+  console.log('[Ziina] Amount conversion:', { aed, fils });
   return fils;
 }
 

@@ -79,7 +79,12 @@ async function createPaymentIntent(params: {
   console.log('Creating Ziina payment intent:', { 
     amount: params.amount_fils, 
     test: params.test,
-    operation_id: params.operationId 
+    operation_id: params.operationId,
+    urls: {
+      success: params.successUrl,
+      cancel: params.cancelUrl,
+      failure: params.failureUrl
+    }
   });
 
   const response = await fetch(`${ziinaApiBase}/payment_intent`, {
@@ -89,6 +94,7 @@ async function createPaymentIntent(params: {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(body),
+    signal: AbortSignal.timeout(10000),
   });
 
   const data = await response.json();
@@ -98,6 +104,7 @@ async function createPaymentIntent(params: {
     throw new Error(data.message || `HTTP ${response.status}`);
   }
 
+  console.log('Ziina payment intent created:', { id: data.id, status: data.status });
   return PaymentIntentSchema.parse(data);
 }
 
@@ -139,17 +146,18 @@ serve(async (req) => {
     const body = await req.json();
     const validatedBody = CreatePaymentRequestSchema.parse(body);
 
-    // Convert AED to fils
+    // Convert AED to fils - FIXED: 40 AED = 4000 fils
     const amount_fils = convertAedToFils(validatedBody.amountAed);
     const operationId = crypto.randomUUID();
 
-    // Build callback URLs with placeholder for payment intent ID
-    const successUrl = `${appBaseUrl}/payment-success?payment_intent_id={PAYMENT_INTENT_ID}`;
-    const cancelUrl = `${appBaseUrl}/payment-cancel?payment_intent_id={PAYMENT_INTENT_ID}`;
-    const failureUrl = `${appBaseUrl}/payment-failed?payment_intent_id={PAYMENT_INTENT_ID}`;
+    // Build callback URLs with placeholder for payment intent ID - FIXED: proper URL structure
+    const successUrl = `${appBaseUrl}/payments/ziina/success?pi={PAYMENT_INTENT_ID}`;
+    const cancelUrl = `${appBaseUrl}/payments/ziina/cancel?pi={PAYMENT_INTENT_ID}`;
+    const failureUrl = `${appBaseUrl}/payments/ziina/failure?pi={PAYMENT_INTENT_ID}`;
 
     console.log('Creating payment intent for user:', user.id, {
       amount_fils,
+      amount_aed: validatedBody.amountAed,
       test: validatedBody.test,
       operation_id: operationId
     });
@@ -199,7 +207,8 @@ serve(async (req) => {
     console.log('Payment intent created successfully:', {
       pi: paymentIntent.id,
       status: paymentIntent.status,
-      redirect_url: paymentIntent.redirect_url
+      redirect_url: paymentIntent.redirect_url,
+      operation_id: operationId
     });
 
     return jsonResponse({

@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useSubscription } from '@/hooks/useSubscription';
@@ -12,7 +13,7 @@ export default function PaymentFailed() {
   const { createPaymentIntent } = useSubscription();
   const [countdown, setCountdown] = useState(15);
 
-  const paymentIntentId = searchParams.get('payment_intent_id');
+  const paymentIntentId = searchParams.get('pi');
 
   useEffect(() => {
     const timer = setInterval(() => {

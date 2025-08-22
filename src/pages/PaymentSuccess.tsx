@@ -7,7 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, Crown } from 'lucide-react';
+import { CheckCircle, Crown, Loader2 } from 'lucide-react';
 import { SEOHead } from '@/components/SEOHead';
 
 interface PaymentVerification {
@@ -30,9 +30,10 @@ export default function PaymentSuccess() {
   
   const [verification, setVerification] = useState<PaymentVerification | null>(null);
   const [loading, setLoading] = useState(true);
+  const [polling, setPolling] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const paymentIntentId = searchParams.get('payment_intent_id');
+  const paymentIntentId = searchParams.get('pi');
 
   useEffect(() => {
     if (paymentIntentId && user) {
@@ -47,6 +48,8 @@ export default function PaymentSuccess() {
     try {
       setLoading(true);
       setError(null);
+
+      console.log('Verifying payment:', paymentIntentId);
 
       const { data, error } = await supabase.functions.invoke('verify-payment', {
         body: { payment_intent_id: paymentIntentId },
@@ -66,6 +69,7 @@ export default function PaymentSuccess() {
         return;
       }
 
+      console.log('Payment verification result:', data);
       setVerification(data);
       
       if (data.is_completed) {
@@ -75,10 +79,13 @@ export default function PaymentSuccess() {
         });
         // Refresh payment data
         await refetch();
+      } else if (data.status === 'pending') {
+        // Start polling for pending payments
+        startPolling();
       } else {
         toast({
-          title: "Payment Pending",
-          description: "Your payment is being processed.",
+          title: "Payment Incomplete",
+          description: `Payment status: ${data.status}`,
           variant: "destructive"
         });
       }
@@ -94,6 +101,60 @@ export default function PaymentSuccess() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const startPolling = () => {
+    setPolling(true);
+    let pollCount = 0;
+    const maxPolls = 15; // 30 seconds (2s interval)
+    
+    const pollInterval = setInterval(async () => {
+      pollCount++;
+      console.log(`Polling payment status (${pollCount}/${maxPolls}):`, paymentIntentId);
+      
+      try {
+        const { data, error } = await supabase.functions.invoke('verify-payment', {
+          body: { payment_intent_id: paymentIntentId },
+          headers: {
+            Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+          }
+        });
+
+        if (!error && data) {
+          setVerification(data);
+          
+          if (data.is_completed) {
+            clearInterval(pollInterval);
+            setPolling(false);
+            toast({
+              title: "Payment Confirmed!",
+              description: "Your premium subscription is now active.",
+            });
+            await refetch();
+          } else if (data.status !== 'pending') {
+            clearInterval(pollInterval);
+            setPolling(false);
+            toast({
+              title: "Payment Status Updated",
+              description: `Payment status: ${data.status}`,
+              variant: data.status === 'failed' ? "destructive" : "default"
+            });
+          }
+        }
+      } catch (err) {
+        console.error('Polling error:', err);
+      }
+      
+      if (pollCount >= maxPolls) {
+        clearInterval(pollInterval);
+        setPolling(false);
+        toast({
+          title: "Payment Verification Timeout",
+          description: "Payment is still processing. Please check back in a few minutes.",
+          variant: "default"
+        });
+      }
+    }, 2000);
   };
 
   const formatDate = (dateString: string) => {
@@ -119,7 +180,7 @@ export default function PaymentSuccess() {
           <Card className="w-full max-w-md">
             <CardContent className="pt-6">
               <div className="text-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" />
                 <p>Verifying your payment...</p>
               </div>
             </CardContent>
@@ -155,22 +216,36 @@ export default function PaymentSuccess() {
     );
   }
 
+  const isPending = verification.status === 'pending';
+  const isCompleted = verification.is_completed;
+
   return (
     <>
       <SEOHead 
-        title="Payment Successful"
-        description="Your premium subscription payment was successful"
+        title={isCompleted ? "Payment Successful" : "Payment Processing"}
+        description={isCompleted ? "Your premium subscription payment was successful" : "Your payment is being processed"}
       />
       <div className="min-h-screen flex items-center justify-center p-4">
         <Card className="w-full max-w-2xl">
           <CardHeader className="text-center">
             <div className="flex justify-center mb-4">
               <div className="relative">
-                <CheckCircle className="h-16 w-16 text-green-500" />
+                {isCompleted ? (
+                  <CheckCircle className="h-16 w-16 text-green-500" />
+                ) : (
+                  <Loader2 className="h-16 w-16 text-blue-500 animate-spin" />
+                )}
                 <Crown className="h-6 w-6 text-amber-500 absolute -top-1 -right-1" />
               </div>
             </div>
-            <CardTitle className="text-2xl text-green-600">Payment Successful!</CardTitle>
+            <CardTitle className={`text-2xl ${isCompleted ? 'text-green-600' : 'text-blue-600'}`}>
+              {isCompleted ? 'Payment Successful!' : 'Confirming your payment...'}
+            </CardTitle>
+            {polling && (
+              <p className="text-sm text-muted-foreground mt-2">
+                Please wait while we confirm your payment status
+              </p>
+            )}
           </CardHeader>
           <CardContent className="space-y-6">
             {/* Payment Details */}
@@ -184,8 +259,13 @@ export default function PaymentSuccess() {
                   </span>
                 </div>
                 <div>
-                  <span className="text-muted-foreground">Plan:</span>
-                  <span className="ml-2 font-medium">Premium Subscription</span>
+                  <span className="text-muted-foreground">Status:</span>
+                  <span className={`ml-2 font-medium ${
+                    isCompleted ? 'text-green-600' : 
+                    isPending ? 'text-blue-600' : 'text-orange-600'
+                  }`}>
+                    {verification.status}
+                  </span>
                 </div>
                 <div className="col-span-2">
                   <span className="text-muted-foreground">Payment ID:</span>
@@ -197,7 +277,7 @@ export default function PaymentSuccess() {
             {/* Premium Benefits */}
             <div className="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-4">
               <h3 className="font-semibold mb-3 text-amber-800 dark:text-amber-200">
-                Premium Benefits Unlocked
+                {isCompleted ? 'Premium Benefits Unlocked' : 'Premium Benefits'}
               </h3>
               <div className="text-sm text-amber-700 dark:text-amber-300">
                 <strong>Unlock Premium Access — 40 AED/month • 20 AI Try-ons daily • Unlimited replica • UGC collabs</strong>
@@ -205,21 +285,23 @@ export default function PaymentSuccess() {
             </div>
 
             {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row gap-3 pt-4">
-              <Button 
-                onClick={() => navigate('/dashboard')}
-                className="flex-1"
-              >
-                Go to Dashboard
-              </Button>
-              <Button 
-                variant="outline"
-                onClick={() => navigate('/toy-replica')}
-                className="flex-1"
-              >
-                Try Toy Replica
-              </Button>
-            </div>
+            {!polling && (
+              <div className="flex flex-col sm:flex-row gap-3 pt-4">
+                <Button 
+                  onClick={() => navigate('/dashboard')}
+                  className="flex-1"
+                >
+                  Go to Dashboard
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={() => navigate('/toy-replica')}
+                  className="flex-1"
+                >
+                  Try Toy Replica
+                </Button>
+              </div>
+            )}
 
             <div className="text-center pt-4 border-t">
               <p className="text-sm text-muted-foreground">

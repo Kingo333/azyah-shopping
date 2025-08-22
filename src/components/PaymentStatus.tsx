@@ -16,49 +16,54 @@ export function PaymentStatus() {
     {
       component: "Payment Intent Creation",
       status: "ready",
-      description: "Create payment intents with Ziina API"
+      description: "Create payment intents with Ziina API (40 AED = 4000 fils)"
     },
     {
       component: "Payment Verification",
       status: "ready", 
-      description: "Verify payment status after completion"
+      description: "Verify payment status with polling for pending payments"
     },
     {
       component: "Success Page",
       status: "ready", 
-      description: "/payment-success with payment verification"
+      description: "/payments/ziina/success with payment verification & polling"
     },
     {
       component: "Cancel Page",
       status: "ready",
-      description: "/payment-cancel for cancelled payments"
+      description: "/payments/ziina/cancel for cancelled payments"
     },
     {
       component: "Failed Page",
       status: "ready",
-      description: "/payment-failed for failed payments"
+      description: "/payments/ziina/failure for failed payments"
     },
     {
       component: "Webhook Handler",
       status: "ready",
-      description: "Processes Ziina payment notifications"
+      description: "Processes Ziina payment notifications with HMAC & IP verification"
+    },
+    {
+      component: "Refund Support",
+      status: "ready",
+      description: "Admin-only refund details via GET /refund/{id}"
     }
   ];
 
   const configuredUrls = [
     {
       label: "Success URL",
-      url: `${window.location.origin}/payment-success?payment_intent_id={PAYMENT_INTENT_ID}`,
+      url: `${window.location.origin}/payments/ziina/success?pi={PAYMENT_INTENT_ID}`,
       status: "configured"
     },
     {
       label: "Cancel URL", 
-      url: `${window.location.origin}/payment-cancel?payment_intent_id={PAYMENT_INTENT_ID}`,
+      url: `${window.location.origin}/payments/ziina/cancel?pi={PAYMENT_INTENT_ID}`,
       status: "configured"
     },
     {
       label: "Failed URL",
-      url: `${window.location.origin}/payment-failed?payment_intent_id={PAYMENT_INTENT_ID}`,
+      url: `${window.location.origin}/payments/ziina/failure?pi={PAYMENT_INTENT_ID}`,
       status: "configured"
     },
     {
@@ -127,6 +132,23 @@ export function PaymentStatus() {
         </CardContent>
       </Card>
 
+      {/* Premium Copy Display */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Premium Subscription Copy</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-4">
+            <p className="text-amber-800 dark:text-amber-200 font-medium">
+              "Unlock Premium Access — 40 AED/month • 20 AI Try-ons daily • Unlimited replica • UGC collabs"
+            </p>
+            <p className="text-sm text-amber-700 dark:text-amber-300 mt-2">
+              This exact copy is used in checkout & receipt pages as specified.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Configured URLs */}
       <Card>
         <CardHeader>
@@ -181,7 +203,7 @@ export function PaymentStatus() {
               <div className="space-y-2 flex-1">
                 <p className="font-medium">Test the payment flow</p>
                 <p className="text-muted-foreground text-sm">
-                  Test both sandbox and live payment processing
+                  Test both sandbox and live payment processing (40 AED = 4000 fils)
                 </p>
                 <div className="flex gap-2">
                   <PaymentButton test={true} size="sm">
@@ -190,6 +212,23 @@ export function PaymentStatus() {
                   <PaymentButton test={false} size="sm">
                     Live Payment (40 AED)
                   </PaymentButton>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3">
+              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">
+                3
+              </div>
+              <div className="space-y-2 flex-1">
+                <p className="font-medium">Verify complete flow</p>
+                <p className="text-muted-foreground text-sm">
+                  Test create → pay → webhook → verify → premium activation
+                </p>
+                <div className="text-xs text-muted-foreground">
+                  • Success page polls for 30s on pending payments<br/>
+                  • Webhook verifies HMAC signature & IP allowlist<br/>
+                  • Premium copy displayed verbatim on success
                 </div>
               </div>
             </div>
