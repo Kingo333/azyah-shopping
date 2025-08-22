@@ -11,7 +11,6 @@ const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const ziinaApiBase = Deno.env.get('ZIINA_API_BASE')!;
 const ziinaApiToken = Deno.env.get('ZIINA_API_TOKEN')!;
-const appDashboardUrl = Deno.env.get('APP_DASHBOARD_URL')!;
 
 function jsonResponse(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -52,79 +51,69 @@ serve(async (req) => {
       return jsonResponse({ error: 'Invalid authentication' }, 401);
     }
 
-    const { test } = await req.json().catch(() => ({ test: false }));
+    const { payment_intent_id } = await req.json();
 
-    console.log(`Creating payment intent for user: ${user.id}, test: ${test}`);
+    if (!payment_intent_id) {
+      return jsonResponse({ error: 'Payment intent ID required' }, 400);
+    }
 
-    // Create Ziina Payment Intent
-    const paymentPayload = {
-      amount: 4000, // 40 AED in fils
-      currency_code: "AED",
-      message: "Premium Shopper — 40 AED / month",
-      success_url: `${appDashboardUrl}/payments/ziina/success?pi={PAYMENT_INTENT_ID}`,
-      cancel_url: `${appDashboardUrl}/payments/ziina/cancel?pi={PAYMENT_INTENT_ID}`,
-      failure_url: `${appDashboardUrl}/payments/ziina/failed?pi={PAYMENT_INTENT_ID}`,
-      test: !!test
-    };
+    console.log(`Verifying payment intent: ${payment_intent_id} for user: ${user.id}`);
 
-    console.log('Calling Ziina API with payload:', { ...paymentPayload, test });
-
-    const ziinaResponse = await fetch(`${ziinaApiBase}/payment_intent`, {
-      method: 'POST',
+    // Get payment intent details from Ziina
+    const ziinaResponse = await fetch(`${ziinaApiBase}/payment_intent/${payment_intent_id}`, {
+      method: 'GET',
       headers: {
         'Authorization': `Bearer ${ziinaApiToken}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(paymentPayload),
     });
 
-    const ziinaResponseBody = await ziinaResponse.json();
-    console.log('Ziina API response:', { status: ziinaResponse.status, body: ziinaResponseBody });
+    const paymentIntent = await ziinaResponse.json();
+    console.log('Ziina payment intent response:', { status: ziinaResponse.status, data: paymentIntent });
 
     if (!ziinaResponse.ok) {
-      console.error('Ziina API error:', ziinaResponseBody);
+      console.error('Ziina API error:', paymentIntent);
       return jsonResponse({ 
-        error: ziinaResponseBody?.error || 'Payment intent creation failed' 
+        error: 'Failed to verify payment intent',
+        details: paymentIntent
       }, ziinaResponse.status);
     }
 
     // Initialize service role client for database operations
     const supabaseService = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Upsert subscription record
-    const subscriptionData = {
-      user_id: user.id,
-      plan: 'premium',
-      status: 'none',
-      last_payment_intent_id: ziinaResponseBody.id,
-      last_payment_status: ziinaResponseBody.status,
-      updated_at: new Date().toISOString(),
-    };
-
-    console.log('Upserting subscription:', subscriptionData);
-
-    const { error: upsertError } = await supabaseService
+    // Check if this payment intent belongs to the user
+    const { data: subscription, error: fetchError } = await supabaseService
       .from('subscriptions')
-      .upsert(subscriptionData, { onConflict: 'user_id' });
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('last_payment_intent_id', payment_intent_id)
+      .single();
 
-    if (upsertError) {
-      console.error('Subscription upsert error:', upsertError);
-      return jsonResponse({ error: 'Failed to create subscription record' }, 500);
+    if (fetchError || !subscription) {
+      console.error('Subscription not found:', fetchError);
+      return jsonResponse({ 
+        error: 'Payment intent not found for this user' 
+      }, 404);
     }
 
-    console.log('Payment intent created successfully:', {
-      paymentIntentId: ziinaResponseBody.id,
-      redirectUrl: ziinaResponseBody.redirect_url
-    });
+    // Return verification result
+    const isCompleted = paymentIntent.status === 'completed';
+    const isActive = isCompleted && subscription.status === 'active';
 
-    // Return redirect URL to client
     return jsonResponse({
-      redirect_url: ziinaResponseBody.redirect_url,
-      payment_intent_id: ziinaResponseBody.id,
+      payment_intent_id,
+      status: paymentIntent.status,
+      amount: paymentIntent.amount,
+      currency: paymentIntent.currency_code,
+      is_completed: isCompleted,
+      is_active: isActive,
+      subscription_status: subscription.status,
+      current_period_end: subscription.current_period_end,
     });
 
   } catch (error) {
-    console.error('Error in create-premium-payment-intent:', error);
+    console.error('Error in verify-ziina-payment:', error);
     return jsonResponse({ 
       error: error instanceof Error ? error.message : String(error) 
     }, 500);
