@@ -368,7 +368,7 @@ const RoleDashboard: React.FC = () => {
         {/* Affiliate Hub - Desktop with Premium Glass Panel */}
         <div className="hidden lg:block">
           <GlassPanel variant="premium" className="p-8">
-            <Collapsible open={!isAffiliateMinimized} onOpenChange={setIsAffiliateMinimized}>
+            <Collapsible open={!isAffiliateMinimized} onOpenChange={(open) => setIsAffiliateMinimized(!open)}>
               <CollapsibleTrigger asChild>
                 <Button variant="ghost" className="w-full justify-between p-0 h-auto">
                   <h3 className="text-xl font-cormorant font-semibold flex items-center gap-3">
@@ -391,7 +391,7 @@ const RoleDashboard: React.FC = () => {
       {/* Affiliate Hub - Mobile with Premium Glass Panel */}
       <div className="block lg:hidden">
         <GlassPanel variant="premium" className="p-8">
-          <Collapsible open={!isAffiliateMinimized} onOpenChange={setIsAffiliateMinimized}>
+          <Collapsible open={!isAffiliateMinimized} onOpenChange={(open) => setIsAffiliateMinimized(!open)}>
             <CollapsibleTrigger asChild>
               <Button variant="ghost" className="w-full justify-between p-0 h-auto">
                 <h3 className="text-xl font-cormorant font-semibold flex items-center gap-3">
@@ -412,7 +412,7 @@ const RoleDashboard: React.FC = () => {
 
       {/* Closets Preview with Premium Glass Panel */}
       <GlassPanel variant="premium" className="p-8">
-        <Collapsible open={!isClosetsMinimized} onOpenChange={setIsClosetsMinimized}>
+        <Collapsible open={!isClosetsMinimized} onOpenChange={(open) => setIsClosetsMinimized(!open)}>
           <div className="space-y-5">
             <div className="flex items-center justify-between">
               <CollapsibleTrigger asChild>
