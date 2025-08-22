@@ -39,7 +39,7 @@ interface ProfileData {
 
 const ProfileSettings: React.FC = () => {
   const { user, signOut } = useAuth();
-  const { payment, isPremium, createPayment } = useZiinaPayments();
+  const { payment, isPremium } = useZiinaPayments();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
@@ -527,7 +527,6 @@ const ProfileSettings: React.FC = () => {
                       Manage Subscription
                     </Button>
                     <ZiinaPaymentButton 
-                      amountAed={40}
                       className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
                       message="Premium subscription renewal"
                     >
@@ -573,7 +572,6 @@ const ProfileSettings: React.FC = () => {
                   </div>
 
                   <ZiinaPaymentButton 
-                    amountAed={40}
                     className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
                     size="lg"
                     message="Premium subscription upgrade"

@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -119,25 +120,16 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({ isOpen, onClose }) => {
 
         {/* Panel Content */}
         {activePanel === 'upload' && (
-          <AiStudioUploadPanel onImageUpload={handleImageUpload} />
+          <AiStudioUploadPanel />
         )}
         {activePanel === 'controls' && uploadedImage && (
-          <AiStudioControlsPanel
-            uploadedImageUrl={uploadedImage.url}
-            onSubmit={handleControlsSubmit}
-            isGenerating={isGenerating}
-          />
+          <AiStudioControlsPanel />
         )}
         {activePanel === 'results' && generatedImages.length > 0 && (
-          <AiStudioResultsPanel
-            generatedImages={generatedImages}
-            prompt={prompt}
-            numImages={numImages}
-            onBack={() => setActivePanel('controls')}
-          />
+          <AiStudioResultsPanel />
         )}
         {activePanel === 'help' && (
-          <AiStudioHelpPanel onBack={() => setActivePanel('upload')} />
+          <AiStudioHelpPanel />
         )}
 
         {/* Panel Navigation */}

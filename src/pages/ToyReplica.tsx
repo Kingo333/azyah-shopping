@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,7 +7,7 @@ import { useZiinaPayments } from '@/hooks/useZiinaPayments';
 import { useAuth } from '@/contexts/AuthContext';
 import { ToyReplicaUploader } from '@/components/ToyReplicaUploader';
 import { BackButton } from '@/components/ui/back-button';
-import { Crown, Sparkles, Upload, Zap, Star } from 'lucide-react';
+import { Crown, Sparkles, Upload, Zap, Star, AlertCircle } from 'lucide-react';
 import { ZiinaPaymentButton } from '@/components/ZiinaPaymentButton';
 
 interface UploadedImage {
@@ -109,7 +110,7 @@ const ToyReplica: React.FC = () => {
             </CardHeader>
             <CardContent>
               <ToyReplicaUploader
-                onUpload={handleImageUpload}
+                onImageUpload={handleImageUpload}
                 fileInputRef={fileInputRef}
                 uploadedImages={uploadedImages}
                 onClear={handleClearImages}
@@ -154,7 +155,6 @@ const ToyReplica: React.FC = () => {
           {/* Upgrade Button */}
           {!isPremium && (
             <ZiinaPaymentButton
-              amountAed={40}
               className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
               size="lg"
               message="Premium subscription upgrade"
