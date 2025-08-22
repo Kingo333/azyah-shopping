@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { AlertTriangle, RefreshCw, Eye, EyeOff } from 'lucide-react';
-import type { PaymentRecord } from '@/types/ziina';
+import type { PaymentRecord, PaymentIntentStatus } from '@/types/ziina';
 
 interface PaymentWithUser extends PaymentRecord {
   user_email?: string;
@@ -71,28 +71,40 @@ export function PaymentAdminPanel() {
       setLoading(true);
       setError(null);
 
-      // Fetch payments with user information
-      const { data, error } = await supabase
+      // First fetch payments
+      const { data: paymentsData, error: paymentsError } = await supabase
         .from('payments')
-        .select(`
-          *,
-          users!payments_user_id_fkey (
-            email,
-            name
-          )
-        `)
+        .select('*')
         .order('created_at', { ascending: false })
         .limit(50);
 
-      if (error) throw error;
+      if (paymentsError) throw paymentsError;
 
-      const paymentsWithUser = data?.map(payment => ({
-        ...payment,
-        user_email: payment.users?.email,
-        user_name: payment.users?.name
-      })) || [];
+      // Then fetch user data for each payment
+      const paymentsWithUserData: PaymentWithUser[] = [];
+      
+      for (const payment of paymentsData || []) {
+        let userData = null;
+        
+        if (payment.user_id) {
+          const { data: user } = await supabase
+            .from('users')
+            .select('email, name')
+            .eq('id', payment.user_id)
+            .single();
+          
+          userData = user;
+        }
 
-      setPayments(paymentsWithUser);
+        paymentsWithUserData.push({
+          ...payment,
+          status: payment.status as PaymentIntentStatus,
+          user_email: userData?.email || 'Unknown',
+          user_name: userData?.name || 'Unknown User'
+        });
+      }
+
+      setPayments(paymentsWithUserData);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch payments');
     } finally {
@@ -204,8 +216,8 @@ export function PaymentAdminPanel() {
 
                     <div>
                       <p className="text-sm font-medium">Timestamps</p>
-                      <p className="text-xs">Created: {formatDate(payment.created_at)}</p>
-                      <p className="text-xs">Updated: {formatDate(payment.updated_at)}</p>
+                      <p className="text-xs">Created: {formatDate(payment.created_at || '')}</p>
+                      <p className="text-xs">Updated: {formatDate(payment.updated_at || '')}</p>
                       
                       {payment.fee_amount_fils && (
                         <p className="text-xs mt-1">
