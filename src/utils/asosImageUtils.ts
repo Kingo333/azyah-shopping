@@ -9,12 +9,12 @@ interface AsosImageConfig {
   fit: string;
 }
 
-// Context-specific image configurations for optimal performance
+// Simplified context-specific configurations for better performance
 const IMAGE_CONFIGS: Record<ImageContext, AsosImageConfig> = {
-  thumbnail: { width: 120, quality: 70, format: 'jpg', fit: 'constrain' },
-  main: { width: 800, quality: 85, format: 'jpg', fit: 'constrain' },
-  detail: { width: 1200, quality: 90, format: 'jpg', fit: 'constrain' },
-  gallery: { width: 600, quality: 80, format: 'jpg', fit: 'constrain' }
+  thumbnail: { width: 120, quality: 75, format: 'jpg', fit: 'constrain' },
+  main: { width: 600, quality: 80, format: 'jpg', fit: 'constrain' },
+  detail: { width: 800, quality: 85, format: 'jpg', fit: 'constrain' },
+  gallery: { width: 500, quality: 80, format: 'jpg', fit: 'constrain' }
 };
 
 // Progressive loading configurations
