@@ -13,6 +13,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/hooks/useSubscription';
 import { supabase } from '@/integrations/supabase/client';
 import { Trash2, Upload, Instagram, Twitter, Globe, Music, Crown, CreditCard, Calendar } from 'lucide-react';
+import PaymentTestButton from '@/components/PaymentTestButton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -597,6 +598,16 @@ const ProfileSettings: React.FC = () => {
                   </Button>
                 </div>
               )}
+            </CardContent>
+          </Card>
+
+          {/* Payment Testing */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Payment Testing</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <PaymentTestButton />
             </CardContent>
           </Card>
 
