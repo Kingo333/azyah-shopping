@@ -22,7 +22,7 @@ export const UGCCollabButton: React.FC<UGCCollabButtonProps> = ({ className }) =
       <Button 
         onClick={() => setIsModalOpen(true)} 
         variant="outline" 
-        className={`h-16 sm:h-20 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300 relative ${className}`}
+        className={`h-14 sm:h-16 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300 relative ${className}`}
       >
         <Badge variant="secondary" className="absolute -top-1 -right-1 text-xs px-1 py-0 h-4">
           New

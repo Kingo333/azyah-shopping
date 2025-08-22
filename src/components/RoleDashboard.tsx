@@ -274,7 +274,7 @@ const RoleDashboard: React.FC = () => {
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-4 sm:gap-5">
             <Button 
               onClick={() => navigate('/swipe')} 
-              className="btn-luxury h-16 sm:h-20 flex-col gap-1 sm:gap-2"
+              className="btn-luxury h-14 sm:h-16 flex-col gap-1 sm:gap-2"
             >
               <Heart className="h-5 w-5 sm:h-6 sm:w-6" />
               <span className="text-xs sm:text-sm">Swipe</span>
@@ -283,7 +283,7 @@ const RoleDashboard: React.FC = () => {
               <div className="relative">
                 <Button 
                   variant="outline" 
-                  className="h-16 sm:h-20 flex-col gap-1 sm:gap-2 relative bg-gradient-to-br from-pink-50 to-purple-50 dark:from-pink-950/20 dark:to-purple-950/20 border-pink-200 dark:border-pink-800 opacity-60 cursor-not-allowed"
+                  className="h-14 sm:h-16 flex-col gap-1 sm:gap-2 relative bg-gradient-to-br from-pink-50 to-purple-50 dark:from-pink-950/20 dark:to-purple-950/20 border-pink-200 dark:border-pink-800 opacity-60 cursor-not-allowed"
                   data-qa="qa-beauty"
                   disabled
                 >
@@ -298,7 +298,7 @@ const RoleDashboard: React.FC = () => {
               <Button 
                 onClick={() => navigate('/fashion-feed')} 
                 variant="outline" 
-                className="h-16 sm:h-20 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300"
+                className="h-14 sm:h-16 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300"
               >
                 <Users className="h-5 w-5 sm:h-6 sm:w-6" />
                 <span className="text-xs sm:text-sm">Feed</span>
@@ -307,7 +307,7 @@ const RoleDashboard: React.FC = () => {
             <Button 
               onClick={() => navigate('/explore')} 
               variant="outline" 
-              className="h-16 sm:h-20 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300"
+              className="h-14 sm:h-16 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300"
             >
               <Search className="h-5 w-5 sm:h-6 sm:w-6" />
               <span className="text-xs sm:text-sm">Explore</span>
@@ -315,7 +315,7 @@ const RoleDashboard: React.FC = () => {
             <Button 
               onClick={() => setAiStudioModalOpen(true)}
               variant="outline" 
-              className="h-16 sm:h-20 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300 relative bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 border-purple-200 dark:border-purple-800"
+              className="h-14 sm:h-16 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300 relative bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 border-purple-200 dark:border-purple-800"
             >
               <Sparkles className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600" />
               <span className="text-xs sm:text-sm text-purple-600">AI Studio</span>
@@ -327,7 +327,7 @@ const RoleDashboard: React.FC = () => {
             <Button 
               onClick={() => navigate('/wishlist')} 
               variant="outline" 
-              className="h-16 sm:h-20 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300"
+              className="h-14 sm:h-16 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300"
             >
               <ShoppingBag className="h-5 w-5 sm:h-6 sm:w-6" />
               <span className="text-xs sm:text-sm">Wishlist</span>
@@ -335,7 +335,7 @@ const RoleDashboard: React.FC = () => {
             <Button 
               onClick={handleToyReplicaClick}
               variant="outline" 
-              className="h-16 sm:h-20 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300 relative bg-gradient-to-br from-green-50 to-blue-50 dark:from-green-950/20 dark:to-blue-950/20 border-green-200 dark:border-green-800"
+              className="h-14 sm:h-16 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300 relative bg-gradient-to-br from-green-50 to-blue-50 dark:from-green-950/20 dark:to-blue-950/20 border-green-200 dark:border-green-800"
             >
               <Blocks className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
               <span className="text-xs sm:text-sm text-green-600">Toy Replica</span>
