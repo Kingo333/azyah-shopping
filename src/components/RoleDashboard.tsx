@@ -282,7 +282,8 @@ const RoleDashboard: React.FC = () => {
             {isEnabled('ai_beauty_consultant') ? (
               <div className="relative">
                 <Button 
-                  className="btn-luxury h-14 sm:h-16 flex-col gap-1 sm:gap-2 opacity-60 cursor-not-allowed"
+                  variant="outline"
+                  className="h-14 sm:h-16 flex-col gap-1 sm:gap-2 opacity-60 cursor-not-allowed"
                   data-qa="qa-beauty"
                   disabled
                 >
