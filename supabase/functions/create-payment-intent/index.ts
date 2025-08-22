@@ -57,10 +57,10 @@ async function createPaymentIntent(params: {
   test?: boolean;
   operationId: string;
 }) {
-  // Step 1: Validate environment variables first
+  // Step 1: Validate environment variables first - FIXED: Use consistent naming
   const ziinaApiBase = Deno.env.get('ZIINA_API_BASE');
   const ziinaApiToken = Deno.env.get('ZIINA_API_TOKEN');
-  const appBaseUrl = Deno.env.get('APP_DASHBOARD_URL');
+  const appBaseUrl = Deno.env.get('APP_BASE_URL'); // FIXED: Changed from APP_DASHBOARD_URL
 
   if (!ziinaApiBase) {
     throw new Error('ZIINA_API_BASE environment variable is missing');
@@ -69,7 +69,7 @@ async function createPaymentIntent(params: {
     throw new Error('ZIINA_API_TOKEN environment variable is missing');
   }
   if (!appBaseUrl) {
-    throw new Error('APP_DASHBOARD_URL environment variable is missing');
+    throw new Error('APP_BASE_URL environment variable is missing');
   }
 
   const paymentMessage = params.message || 'Azyah Premium';
@@ -148,7 +148,14 @@ serve(async (req) => {
 
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const appBaseUrl = Deno.env.get('APP_DASHBOARD_URL') || 'https://klwolsopucgswhtdlsps.supabase.co';
+    const appBaseUrl = Deno.env.get('APP_BASE_URL'); // FIXED: Use consistent naming
+
+    if (!appBaseUrl) {
+      return jsonResponse({ 
+        error: 'Configuration error',
+        details: 'APP_BASE_URL environment variable is missing'
+      }, 500);
+    }
 
     // Initialize Supabase client for user authentication
     const supabaseAnon = createClient(

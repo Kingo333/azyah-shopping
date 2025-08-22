@@ -205,7 +205,7 @@ export class PaymentTestSuite {
     }
   }
 
-  // Integration test for payment creation - IMPROVED with better auth and error handling
+  // Integration test for payment creation - FIXED with consistent error handling
   static async testPaymentCreation(): Promise<PaymentTestResult> {
     const startTime = Date.now();
     console.log('🧪 Testing payment creation flow...');
@@ -248,7 +248,7 @@ export class PaymentTestSuite {
         // Provide more specific error messages based on the error type
         let errorMessage = `API Error: ${error.message}`;
         if (error.message?.includes('Configuration error')) {
-          errorMessage = 'Edge function configuration error - check Supabase secrets (ZIINA_API_TOKEN, ZIINA_API_BASE, APP_DASHBOARD_URL)';
+          errorMessage = 'Edge function configuration error - check Supabase secrets (ZIINA_API_TOKEN, ZIINA_API_BASE, APP_BASE_URL)';
         } else if (error.message?.includes('Ziina authentication failed')) {
           errorMessage = 'Ziina API authentication failed - check ZIINA_API_TOKEN validity and permissions';
         } else if (error.message?.includes('Ziina validation failed')) {
