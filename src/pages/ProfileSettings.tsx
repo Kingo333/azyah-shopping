@@ -39,7 +39,7 @@ interface ProfileData {
 
 const ProfileSettings: React.FC = () => {
   const { user, signOut } = useAuth();
-  const { subscription, isPremium, createPaymentIntent, cancelSubscription } = useSubscription();
+  const { payment, isPremium, createPaymentIntent, cancelSubscription } = useSubscription();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
@@ -458,7 +458,7 @@ const ProfileSettings: React.FC = () => {
                       <div>
                         <h3 className="font-semibold text-foreground">Premium Active</h3>
                         <p className="text-sm text-muted-foreground">
-                          You have full access to all premium features
+                          Unlock Premium Access — 40 AED/month • 20 AI Try-ons daily • Unlimited replica • UGC collabs
                         </p>
                       </div>
                     </div>
@@ -466,18 +466,18 @@ const ProfileSettings: React.FC = () => {
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       <div>
                         <span className="text-muted-foreground">Status:</span>
-                        <p className="font-medium capitalize">{subscription?.status}</p>
+                        <p className="font-medium capitalize">{payment?.status}</p>
                       </div>
                       <div>
                         <span className="text-muted-foreground">Plan:</span>
                         <p className="font-medium">Premium Shopper</p>
                       </div>
-                      {subscription?.current_period_end && (
+                      {payment?.created_at && (
                         <>
                           <div>
-                            <span className="text-muted-foreground">Active Until:</span>
+                            <span className="text-muted-foreground">Active Since:</span>
                             <p className="font-medium">
-                              {new Date(subscription.current_period_end).toLocaleDateString('en-US', {
+                              {new Date(payment.created_at).toLocaleDateString('en-US', {
                                 year: 'numeric',
                                 month: 'long',
                                 day: 'numeric'
@@ -485,8 +485,8 @@ const ProfileSettings: React.FC = () => {
                             </p>
                           </div>
                           <div>
-                            <span className="text-muted-foreground">Renewal:</span>
-                            <p className="font-medium">Manual</p>
+                            <span className="text-muted-foreground">Payment Method:</span>
+                            <p className="font-medium">Ziina</p>
                           </div>
                         </>
                       )}
@@ -499,58 +499,41 @@ const ProfileSettings: React.FC = () => {
                       <ul className="space-y-1 text-sm text-muted-foreground">
                         <li className="flex items-center gap-2">
                           <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
+                          20 AI Try-ons daily
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
                           Unlimited Toy Replica generations
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
+                          UGC collaboration access
                         </li>
                         <li className="flex items-center gap-2">
                           <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
                           Priority customer support
                         </li>
-                        <li className="flex items-center gap-2">
-                          <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
-                          Full access to premium features
-                        </li>
                       </ul>
                     </div>
                   </div>
 
-                  {subscription?.status === 'active' && (
-                    <div className="flex flex-col sm:flex-row gap-3">
-                      <Button 
-                        variant="outline" 
-                        onClick={cancelSubscription}
-                        className="flex-1"
-                      >
-                        <Calendar className="h-4 w-4 mr-2" />
-                        Cancel Premium
-                      </Button>
-                      <Button 
-                        onClick={() => createPaymentIntent()}
-                        className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
-                      >
-                        <CreditCard className="h-4 w-4 mr-2" />
-                        Renew Early
-                      </Button>
-                    </div>
-                  )}
-
-                  {subscription?.status === 'canceled' && (
-                    <div className="p-3 bg-orange-50 dark:bg-orange-950/20 rounded-lg border border-orange-200 dark:border-orange-800">
-                      <p className="text-sm text-orange-800 dark:text-orange-200 mb-2">
-                        Your subscription has been canceled but remains active until {' '}
-                        {subscription?.current_period_end && 
-                          new Date(subscription.current_period_end).toLocaleDateString()
-                        }.
-                      </p>
-                      <Button 
-                        onClick={() => createPaymentIntent()}
-                        size="sm"
-                        className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
-                      >
-                        <CreditCard className="h-4 w-4 mr-2" />
-                        Reactivate Premium
-                      </Button>
-                    </div>
-                  )}
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <Button 
+                      variant="outline" 
+                      onClick={cancelSubscription}
+                      className="flex-1"
+                    >
+                      <Calendar className="h-4 w-4 mr-2" />
+                      Manage Subscription
+                    </Button>
+                    <Button 
+                      onClick={() => createPaymentIntent()}
+                      className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+                    >
+                      <CreditCard className="h-4 w-4 mr-2" />
+                      Renew Premium
+                    </Button>
+                  </div>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -578,7 +561,7 @@ const ProfileSettings: React.FC = () => {
                         </li>
                         <li className="flex items-center gap-2">
                           <div className="w-1.5 h-1.5 bg-orange-500 rounded-full"></div>
-                          Limited access to premium features
+                          Limited AI Try-on access
                         </li>
                         <li className="flex items-center gap-2">
                           <div className="w-1.5 h-1.5 bg-orange-500 rounded-full"></div>
@@ -594,7 +577,7 @@ const ProfileSettings: React.FC = () => {
                     size="lg"
                   >
                     <Crown className="h-4 w-4 mr-2" />
-                    Upgrade to Premium - 40 AED/month
+                    Unlock Premium Access — 40 AED/month • 20 AI Try-ons daily • Unlimited replica • UGC collabs
                   </Button>
                 </div>
               )}

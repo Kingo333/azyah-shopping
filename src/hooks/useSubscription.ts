@@ -3,14 +3,16 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import type { PaymentRecord, CreatePaymentIntentRequest, CreatePaymentIntentResponse, PaymentStatusResponse } from '@/types/ziina';
+import type { PaymentRecord, CreatePaymentIntentRequest, CreatePaymentIntentResponse, PaymentStatusResponse, PaymentIntentStatus } from '@/types/ziina';
 
 interface UseSubscriptionReturn {
   payment: PaymentRecord | null;
+  subscription: PaymentRecord | null; // Alias for backward compatibility
   isPremium: boolean;
   loading: boolean;
   error: string | null;
   createPaymentIntent: (test?: boolean) => Promise<void>;
+  cancelSubscription: () => Promise<void>; // Placeholder for backward compatibility
   refetch: () => Promise<void>;
 }
 
@@ -48,8 +50,27 @@ export function useSubscription(): UseSubscriptionReturn {
       if (error) {
         console.error('Error fetching payment:', error);
         setError(error.message);
+      } else if (data) {
+        // Ensure the status is properly typed by validating it
+        const validStatuses: PaymentIntentStatus[] = [
+          'requires_payment_instrument',
+          'requires_user_action', 
+          'pending',
+          'completed',
+          'failed',
+          'canceled'
+        ];
+        
+        const typedPayment: PaymentRecord = {
+          ...data,
+          status: validStatuses.includes(data.status as PaymentIntentStatus) 
+            ? (data.status as PaymentIntentStatus)
+            : 'pending' // Default fallback
+        };
+        
+        setPayment(typedPayment);
       } else {
-        setPayment(data);
+        setPayment(null);
       }
     } catch (err) {
       console.error('Unexpected error fetching payment:', err);
@@ -122,14 +143,25 @@ export function useSubscription(): UseSubscriptionReturn {
     }
   };
 
+  // Placeholder function for backward compatibility
+  const cancelSubscription = async () => {
+    toast({
+      title: "Info",
+      description: "Subscription cancellation will be implemented soon",
+      variant: "default"
+    });
+  };
+
   const refetch = fetchPayment;
 
   return {
     payment,
+    subscription: payment, // Alias for backward compatibility
     isPremium,
     loading,
     error,
     createPaymentIntent,
+    cancelSubscription,
     refetch
   };
 }
