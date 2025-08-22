@@ -481,6 +481,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                             return '/placeholder.svg';
                           }
                         })(),
+                        'main',
                         "(max-width: 768px) 100vw, 50vw"
                       )}
                       alt={currentProduct.title}

@@ -364,7 +364,7 @@ export const WishlistManager: React.FC = () => {
                         {(() => {
                           const imageUrl = item.product.media_urls[0] || '/placeholder.svg';
                           const imageProps = imageUrl.includes('asos-media.com') 
-                            ? getResponsiveImageProps(imageUrl, viewMode === 'grid' ? "(max-width: 768px) 50vw, 25vw" : "96px")
+                            ? getResponsiveImageProps(imageUrl, viewMode === 'grid' ? 'gallery' : 'thumbnail', viewMode === 'grid' ? "(max-width: 768px) 50vw, 25vw" : "96px")
                             : { src: imageUrl };
                           
                           return (

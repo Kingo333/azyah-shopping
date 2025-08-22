@@ -160,6 +160,7 @@ const ProductListView: React.FC<ProductListViewProps> = ({ products, isLoading }
                      <img
                       {...getResponsiveImageProps(
                         product.media_urls?.[0] || '/placeholder.svg',
+                        'gallery',
                         "(max-width: 768px) 50vw, 25vw"
                       )}
                       alt={product.title}
