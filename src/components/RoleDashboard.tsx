@@ -271,7 +271,7 @@ const RoleDashboard: React.FC = () => {
           <h2 className="text-2xl font-cormorant font-semibold flex items-center gap-3 text-foreground/90">
             Quick Actions
           </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-4 sm:gap-5">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3 sm:gap-4">
             <Button 
               onClick={() => navigate('/swipe')} 
               className="btn-luxury h-14 sm:h-16 flex-col gap-1 sm:gap-2"
