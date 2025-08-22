@@ -481,8 +481,8 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                             return '/placeholder.svg';
                           }
                         })(),
-                        'main',
-                        "(max-width: 768px) 100vw, 50vw"
+                        'main'
+                        // Mobile-optimized sizing is now handled by default in getResponsiveImageProps
                       )}
                       alt={currentProduct.title}
                       className="object-cover w-full h-full transition-opacity duration-300"

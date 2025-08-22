@@ -9,12 +9,12 @@ interface AsosImageConfig {
   fit: string;
 }
 
-// Simplified context-specific configurations for better performance
+// Mobile-optimized configurations for better performance
 const IMAGE_CONFIGS: Record<ImageContext, AsosImageConfig> = {
-  thumbnail: { width: 120, quality: 75, format: 'jpg', fit: 'constrain' },
-  main: { width: 600, quality: 80, format: 'jpg', fit: 'constrain' },
-  detail: { width: 800, quality: 85, format: 'jpg', fit: 'constrain' },
-  gallery: { width: 500, quality: 80, format: 'jpg', fit: 'constrain' }
+  thumbnail: { width: 100, quality: 75, format: 'jpg', fit: 'constrain' },
+  main: { width: 500, quality: 80, format: 'jpg', fit: 'constrain' },       // Mobile swipe optimized
+  detail: { width: 700, quality: 82, format: 'jpg', fit: 'constrain' },     // Modal detail optimized  
+  gallery: { width: 400, quality: 78, format: 'jpg', fit: 'constrain' }     // Grid view optimized
 };
 
 // Progressive loading configurations
@@ -93,13 +93,15 @@ function createAsosUrl(urlObj: URL, config: any): string {
   return newUrl.toString();
 }
 
-// Build context-aware srcSet for responsive images
+// Build mobile-optimized srcSet for responsive images
 export function buildAsosSrcSet(baseUrl: string, context: ImageContext = 'main'): string {
   const widths = context === 'thumbnail' 
-    ? [64, 120, 180] 
+    ? [64, 100, 150] 
     : context === 'main' 
-    ? [400, 600, 800, 1000]
-    : [600, 900, 1200, 1600];
+    ? [300, 500, 700]        // Mobile-first approach for swipe
+    : context === 'detail'
+    ? [400, 700, 900]        // Modal detail sizes
+    : [250, 400, 600];       // Gallery grid sizes
     
   return widths.map(width => {
     const url = upgradeAsosImageUrl(baseUrl, context);
@@ -117,9 +119,9 @@ export function getResponsiveImageProps(
 ) {
   const defaultSizes = {
     thumbnail: "64px",
-    main: "(max-width: 768px) 90vw, 50vw",
-    detail: "(max-width: 768px) 95vw, 60vw",
-    gallery: "(max-width: 768px) 100vw, 40vw"
+    main: "(max-width: 480px) 100vw, (max-width: 768px) 90vw, 50vw",      // Mobile-first sizing
+    detail: "(max-width: 480px) 95vw, (max-width: 768px) 85vw, 60vw",    // Mobile modal optimized
+    gallery: "(max-width: 480px) 50vw, (max-width: 768px) 45vw, 25vw"    // Mobile grid optimized
   };
 
   const src = upgradeAsosImageUrl(imageUrl, context);
