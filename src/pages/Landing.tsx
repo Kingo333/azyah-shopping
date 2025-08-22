@@ -224,6 +224,9 @@ export default function Landing() {
                   <p className="text-lg sm:text-xl lg:text-2xl text-gray-200 max-w-md lg:max-w-lg leading-relaxed font-light mx-auto">
                     Smart AI fashion discovery that learns your style.
                   </p>
+                  <p className="text-sm sm:text-base lg:text-lg text-gray-300/80 max-w-sm lg:max-w-md leading-relaxed font-light mx-auto mt-2">
+                    Earn rewards with every purchase and unlock exclusive benefits.
+                  </p>
                 </div>
               </div>
 
