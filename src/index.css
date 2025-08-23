@@ -5,27 +5,9 @@
 @tailwind utilities;
 
 @layer base {
-:root {
-    --background: 220 14% 96%;
-    --foreground: 0 0% 11%;
-    
-    /* Luxury Design System */
-    --brand-primary: 348 77% 42%;
-    --brand-primary-700: 348 89% 35%;
-    --brand-primary-100: 348 100% 95%;
-    --ink: 0 0% 11%;
-    --ink-muted: 215 16% 47%;
-    --surface: 0 0% 100%;
-    --surface-alt: 220 14% 96%;
-    --border-luxury: 220 13% 91%;
-    --success: 142 72% 29%;
-    --warning: 45 93% 47%;
-    --danger: 0 72% 51%;
-    --info: 270 95% 75%;
-    
-    /* Shadows */
-    --shadow-card: 0 8px 24px rgba(0, 0, 0, 0.06);
-    --shadow-soft: 0 2px 6px rgba(0, 0, 0, 0.04);
+  :root {
+    --background: 210 20% 98%;
+    --foreground: 222.2 84% 4.9%;
     --card: 0 0% 98%;
     --card-foreground: 222.2 84% 4.9%;
     --popover: 0 0% 100%;
