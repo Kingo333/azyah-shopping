@@ -265,177 +265,168 @@ const RoleDashboard: React.FC = () => {
       {/* Premium Banner */}
       <PremiumBanner />
       
-      {/* Quick Actions with Premium Glass Panel */}
-      <GlassPanel variant="premium" className="p-8">
-        <div className="space-y-6">
-          <h2 className="text-2xl font-cormorant font-semibold flex items-center gap-3 text-foreground/90">
-            Quick Actions
-          </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3 sm:gap-4">
+      {/* Quick Actions */}
+      <GlassPanel variant="premium" className="p-6">
+        <div className="space-y-4">
+          <div>
+            <h2 className="text-lg font-bold mb-1">Quick Actions</h2>
+            <p className="text-xs text-muted-foreground">Jump into Azyah tools.</p>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
             <Button 
-              onClick={() => navigate('/swipe')} 
-              className="btn-luxury h-14 sm:h-16 flex-col gap-1 sm:gap-2"
+              onClick={() => navigate('/swipe')}
+              className="h-20 flex-col gap-2 bg-white border border-border shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-150"
+              variant="outline"
             >
-              <Heart className="h-5 w-5 sm:h-6 sm:w-6" />
-              <span className="text-xs sm:text-sm">Swipe</span>
+              <div className="w-7 h-7 rounded-full bg-red-100 flex items-center justify-center">
+                <Heart className="h-4 w-4 text-red-600" />
+              </div>
+              <span className="text-sm font-semibold">Swipe</span>
             </Button>
+            
             <Button 
               onClick={() => setAiStudioModalOpen(true)}
-              variant="outline" 
-              className="h-14 sm:h-16 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300 relative bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 border-purple-200 dark:border-purple-800"
+              className="h-20 flex-col gap-2 bg-white border border-border shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 relative"
+              variant="outline"
             >
-              <Sparkles className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600" />
-              <span className="text-xs sm:text-sm text-purple-600">AI Studio</span>
-              <Badge variant="secondary" className="absolute -top-1 -right-1 text-xs px-1 py-0 h-4">
+              <div className="w-7 h-7 rounded-full bg-purple-100 flex items-center justify-center">
+                <Sparkles className="h-4 w-4 text-purple-600" />
+              </div>
+              <span className="text-sm font-semibold">AI Studio</span>
+              <Badge className="absolute -top-1 -right-1 bg-red-100 text-red-600 text-xs px-2 py-0.5 h-5">
                 New
               </Badge>
             </Button>
+            
             <Button 
-              onClick={() => navigate('/wishlist')} 
-              variant="outline" 
-              className="h-14 sm:h-16 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300"
+              onClick={() => navigate('/wishlist')}
+              className="h-20 flex-col gap-2 bg-white border border-border shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-150"
+              variant="outline"
             >
-              <ShoppingBag className="h-5 w-5 sm:h-6 sm:w-6" />
-              <span className="text-xs sm:text-sm">Wishlist</span>
+              <div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center">
+                <ShoppingBag className="h-4 w-4 text-gray-600" />
+              </div>
+              <span className="text-sm font-semibold">Wishlist</span>
             </Button>
+            
             <Button 
-              onClick={() => navigate('/explore')} 
-              variant="outline" 
-              className="h-14 sm:h-16 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300"
+              onClick={() => navigate('/explore')}
+              className="h-20 flex-col gap-2 bg-white border border-border shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-150"
+              variant="outline"
             >
-              <Search className="h-5 w-5 sm:h-6 sm:w-6" />
-              <span className="text-xs sm:text-sm">Explore</span>
+              <div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center">
+                <Search className="h-4 w-4 text-gray-600" />
+              </div>
+              <span className="text-sm font-semibold">Explore</span>
             </Button>
+            
             {isEnabled('ai_beauty_consultant') ? (
               <Button 
-                variant="outline"
-                className="h-14 sm:h-16 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300 relative cursor-not-allowed"
-                data-qa="qa-beauty"
                 disabled
+                className="h-20 flex-col gap-2 bg-white border border-border shadow-sm opacity-60 cursor-not-allowed relative"
+                variant="outline"
+                data-qa="qa-beauty"
               >
-                <WandSparkles className="h-5 w-5 sm:h-6 sm:w-6 text-pink-600" />
-                <span className="text-xs sm:text-sm text-pink-600">Beauty Guide</span>
-                <Badge variant="secondary" className="absolute -top-1 -right-1 text-xs px-1 py-0 h-4">
+                <div className="w-7 h-7 rounded-full bg-orange-100 flex items-center justify-center">
+                  <WandSparkles className="h-4 w-4 text-orange-600" />
+                </div>
+                <span className="text-sm font-semibold">Beauty Guide</span>
+                <Badge className="absolute -top-1 -right-1 bg-gray-100 text-gray-600 text-xs px-2 py-0.5 h-5">
                   Soon
                 </Badge>
               </Button>
             ) : (
               <Button 
-                onClick={() => navigate('/fashion-feed')} 
-                variant="outline" 
-                className="h-14 sm:h-16 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300"
+                onClick={() => navigate('/fashion-feed')}
+                className="h-20 flex-col gap-2 bg-white border border-border shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-150"
+                variant="outline"
               >
-                <Users className="h-5 w-5 sm:h-6 sm:w-6" />
-                <span className="text-xs sm:text-sm">Feed</span>
+                <div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center">
+                  <Users className="h-4 w-4 text-gray-600" />
+                </div>
+                <span className="text-sm font-semibold">Feed</span>
               </Button>
             )}
-            <UGCCollabButton />
+            
+            <div className="col-span-2">
+              <UGCCollabButton />
+            </div>
+            
             <Button 
               onClick={handleToyReplicaClick}
-              variant="outline" 
-              className="h-14 sm:h-16 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300 relative bg-gradient-to-br from-green-50 to-blue-50 dark:from-green-950/20 dark:to-blue-950/20 border-green-200 dark:border-green-800"
+              className="col-span-2 h-20 flex-row gap-3 bg-white border border-border shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 relative justify-start px-4"
+              variant="outline"
             >
-              <Blocks className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
-              <span className="text-xs sm:text-sm text-green-600">Toy Replica</span>
-              <Badge variant="secondary" className="absolute -top-1 -right-1 text-xs px-1 py-0 h-4">
+              <div className="w-7 h-7 rounded-full bg-green-100 flex items-center justify-center">
+                <Blocks className="h-4 w-4 text-green-600" />
+              </div>
+              <span className="text-sm font-semibold">Toy Replica</span>
+              <Badge className="ml-auto bg-green-100 text-green-600 text-xs px-2 py-0.5 h-5">
                 AI
               </Badge>
             </Button>
           </div>
         </div>
       </GlassPanel>
-
-      {/* Global Search and Affiliate Hub Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Trending Styles Carousel with Premium Glass Panel */}
-        <GlassPanel variant="premium" className="p-6">
-          <div className="space-y-5">
-            <h3 className="text-xl font-cormorant font-semibold flex items-center gap-3">
-              <div className="p-2 rounded-full bg-gradient-to-br from-primary/10 to-accent-cartier/10">
-                <TrendingUp className="h-5 w-5 text-primary" />
-              </div>
-              Trending Styles
-            </h3>
-            <p className="text-muted-foreground leading-relaxed">
-              Discover what's trending now and shop the latest styles everyone's talking about.
-            </p>
-            <TrendingStylesCarousel limit={8} />
+      {/* Trending Styles Carousel */}
+      <GlassPanel variant="premium" className="p-6">
+        <div className="space-y-4">
+          <div>
+            <h2 className="text-lg font-bold mb-1">Trending Styles</h2>
+            <p className="text-xs text-muted-foreground">Discover what's trending now.</p>
           </div>
-        </GlassPanel>
-
-        {/* Affiliate Hub - Desktop with Premium Glass Panel */}
-        <div className="hidden lg:block">
-          <GlassPanel variant="premium" className="p-8">
-            <Collapsible open={!isAffiliateMinimized} onOpenChange={(open) => setIsAffiliateMinimized(!open)}>
-              <CollapsibleTrigger asChild>
-                <Button variant="ghost" className="w-full justify-between p-0 h-auto">
-                  <h3 className="text-xl font-cormorant font-semibold flex items-center gap-3">
-                    <div className="p-2 rounded-full bg-gradient-to-br from-primary/10 to-accent-cartier/10">
-                      <Gift className="h-5 w-5 text-primary" />
-                    </div>
-                    Affiliate Hub
-                  </h3>
-                  {isAffiliateMinimized ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
-                </Button>
-              </CollapsibleTrigger>
-              <CollapsibleContent className="mt-4">
-                <AffiliateHub showTitle={false} />
-              </CollapsibleContent>
-            </Collapsible>
-          </GlassPanel>
+          <TrendingStylesCarousel limit={6} />
         </div>
-      </div>
+      </GlassPanel>
 
-      {/* Affiliate Hub - Mobile with Premium Glass Panel */}
-      <div className="block lg:hidden">
-        <GlassPanel variant="premium" className="p-8">
-          <Collapsible open={!isAffiliateMinimized} onOpenChange={(open) => setIsAffiliateMinimized(!open)}>
-            <CollapsibleTrigger asChild>
-              <Button variant="ghost" className="w-full justify-between p-0 h-auto">
-                <h3 className="text-xl font-cormorant font-semibold flex items-center gap-3">
-                  <div className="p-2 rounded-full bg-gradient-to-br from-primary/10 to-accent-cartier/10">
-                    <Gift className="h-5 w-5 text-primary" />
-                  </div>
-                  Affiliate Hub
-                </h3>
-                {isAffiliateMinimized ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
-              </Button>
-            </CollapsibleTrigger>
-            <CollapsibleContent className="mt-4">
-              <AffiliateHub />
-            </CollapsibleContent>
-          </Collapsible>
-        </GlassPanel>
-      </div>
+      {/* Affiliate Hub */}
+      <GlassPanel variant="premium" className="p-6">
+        <Collapsible open={!isAffiliateMinimized} onOpenChange={(open) => setIsAffiliateMinimized(!open)}>
+          <CollapsibleTrigger asChild>
+            <Button variant="ghost" className="w-full justify-between p-0 h-auto">
+              <div className="flex items-center gap-3">
+                <Gift className="h-4 w-4 text-primary" />
+                <span className="text-lg font-bold">Affiliate Hub</span>
+              </div>
+              {isAffiliateMinimized ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="mt-4">
+            <AffiliateHub showTitle={false} />
+          </CollapsibleContent>
+        </Collapsible>
+      </GlassPanel>
 
-      {/* Closets Preview with Premium Glass Panel */}
-      <GlassPanel variant="premium" className="p-8">
+      {/* My Closets */}
+      <GlassPanel variant="premium" className="p-6">
         <Collapsible open={!isClosetsMinimized} onOpenChange={(open) => setIsClosetsMinimized(!open)}>
-          <div className="space-y-5">
+          <div className="space-y-4">
             <div className="flex items-center justify-between">
               <CollapsibleTrigger asChild>
                 <Button variant="ghost" className="justify-start p-0 h-auto">
-                  <h3 className="text-xl font-cormorant font-semibold flex items-center gap-3">
-                    <div className="p-2 rounded-full bg-gradient-to-br from-primary/10 to-accent-cartier/10">
-                      <Archive className="h-5 w-5 text-primary" />
-                    </div>
-                    My Closets
+                  <div className="flex items-center gap-3">
+                    <Archive className="h-4 w-4 text-primary" />
+                    <span className="text-lg font-bold">My Closets</span>
                     {isClosetsMinimized ? <ChevronDown className="h-4 w-4 ml-2" /> : <ChevronUp className="h-4 w-4 ml-2" />}
-                  </h3>
+                  </div>
                 </Button>
               </CollapsibleTrigger>
-              <Button variant="premium" size="sm" onClick={() => navigate('/closets')}>
-                <Archive className="h-4 w-4 mr-2" />
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => navigate('/closets')}
+                className="rounded-full border-primary text-primary hover:bg-primary hover:text-white"
+              >
                 View All
               </Button>
             </div>
             <CollapsibleContent>
-              <div className="text-center py-12 space-y-3">
-                <div className="w-16 h-16 mx-auto rounded-full bg-gradient-to-br from-primary/10 to-accent-cartier/10 flex items-center justify-center mb-4">
-                  <Archive className="h-8 w-8 text-primary/60" />
+              <div className="text-center py-8 space-y-3">
+                <div className="w-12 h-12 mx-auto rounded-full bg-muted flex items-center justify-center">
+                  <Archive className="h-6 w-6 text-muted-foreground" />
                 </div>
-                <p className="text-muted-foreground text-lg">
-                  Create your first closet to organize your style discoveries
+                <p className="text-sm text-muted-foreground">
+                  Start a closet to organize your discoveries
                 </p>
               </div>
             </CollapsibleContent>
@@ -443,37 +434,62 @@ const RoleDashboard: React.FC = () => {
         </Collapsible>
       </GlassPanel>
 
-      {/* Fashion Leaderboards with Premium Glass Panel */}
-      <GlassPanel variant="premium" className="p-8">
-        <div className="space-y-6">
-          <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
-            <h3 className="text-xl font-cormorant font-semibold flex items-center gap-3">
-              <div className="p-2 rounded-full bg-gradient-to-br from-yellow-500/10 to-orange-500/10">
-                <Trophy className="h-5 w-5 text-yellow-500" />
-              </div>
-              Fashion Leaderboards
-            </h3>
-            <div className="flex gap-2">
-              <Button 
-                variant={activeLeaderboard === 'global' ? 'premium' : 'outline'} 
-                size="sm" 
-                onClick={() => setActiveLeaderboard('global')} 
-                className="flex-1 sm:flex-none"
-              >
-                <Globe className="h-3 w-3 mr-2" />
-                Global
+      {/* Fashion Leaderboards */}
+      <GlassPanel variant="premium" className="p-6">
+        <div className="space-y-4">
+          <div>
+            <h2 className="text-lg font-bold mb-1">Fashion Leaderboards</h2>
+            <p className="text-xs text-muted-foreground">See how you rank among fellow fashion enthusiasts.</p>
+          </div>
+          
+          {/* Scope tabs */}
+          <div className="flex space-x-0 bg-muted rounded-full p-1">
+            <Button
+              onClick={() => setActiveLeaderboard('global')}
+              variant={activeLeaderboard === 'global' ? 'default' : 'ghost'}
+              size="sm"
+              className="flex-1 rounded-full text-sm font-medium"
+            >
+              Global
+            </Button>
+            <Button
+              onClick={() => setActiveLeaderboard('country')}
+              variant={activeLeaderboard === 'country' ? 'default' : 'ghost'}
+              size="sm"
+              className="flex-1 rounded-full text-sm font-medium"
+            >
+              Country
+            </Button>
+          </div>
+          
+          {/* Time period tabs */}
+          <div className="flex justify-center space-x-0">
+            <div className="flex bg-muted rounded-full p-1">
+              <Button variant="default" size="sm" className="px-3 py-1.5 rounded-full text-xs font-medium">
+                This Week
               </Button>
-              <Button 
-                variant={activeLeaderboard === 'country' ? 'premium' : 'outline'} 
-                size="sm" 
-                onClick={() => setActiveLeaderboard('country')} 
-                className="flex-1 sm:flex-none"
-              >
-                <MapPin className="h-3 w-3 mr-2" />
-                Country
+              <Button variant="ghost" size="sm" className="px-3 py-1.5 rounded-full text-xs font-medium">
+                This Month
+              </Button>
+              <Button variant="ghost" size="sm" className="px-3 py-1.5 rounded-full text-xs font-medium">
+                All Time
               </Button>
             </div>
           </div>
+          
+          {/* Your rank spotlight */}
+          <div className="bg-gradient-to-r from-primary/5 to-transparent p-3 rounded-xl border border-primary/20">
+            <div className="flex items-center gap-3">
+              <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center">
+                <Trophy className="h-4 w-4 text-primary" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold">Your Current Rank</p>
+                <p className="text-xs text-muted-foreground">#1 globally</p>
+              </div>
+            </div>
+          </div>
+          
           <Leaderboard type={activeLeaderboard} country={user?.user_metadata?.country} />
         </div>
       </GlassPanel>
