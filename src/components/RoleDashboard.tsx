@@ -464,45 +464,42 @@ const RoleDashboard: React.FC = () => {
             <p className="text-sm text-[hsl(var(--ink-muted))]">See how you rank among fashion enthusiasts</p>
           </div>
 
-          {/* Scope Tabs */}
-          <div className="flex gap-1 p-1 bg-[hsl(var(--surface-alt))] rounded-full border border-[hsl(var(--border-luxury))]">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setActiveLeaderboard('global')}
-              className={`flex-1 rounded-full h-8 text-sm ${
-                activeLeaderboard === 'global' 
-                  ? 'bg-[hsl(var(--brand-primary))]/10 text-[hsl(var(--brand-primary))] border border-[hsl(var(--brand-primary))]/20' 
-                  : 'text-[hsl(var(--ink-muted))] hover:bg-[hsl(var(--surface-alt))]'
-              }`}
-            >
-              Global
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setActiveLeaderboard('country')}
-              className={`flex-1 rounded-full h-8 text-sm ${
-                activeLeaderboard === 'country' 
-                  ? 'bg-[hsl(var(--brand-primary))]/10 text-[hsl(var(--brand-primary))] border border-[hsl(var(--brand-primary))]/20' 
-                  : 'text-[hsl(var(--ink-muted))] hover:bg-[hsl(var(--surface-alt))]'
-              }`}
-            >
-              Country
-            </Button>
-          </div>
-
-          {/* Time Period Tabs */}
-          <div className="flex gap-1 p-1 bg-[hsl(var(--surface-alt))] rounded-full border border-[hsl(var(--border-luxury))]">
-            <Button variant="ghost" size="sm" className="flex-1 rounded-full h-8 text-sm bg-[hsl(var(--brand-primary))]/10 text-[hsl(var(--brand-primary))] border border-[hsl(var(--brand-primary))]/20">
-              This Week
-            </Button>
-            <Button variant="ghost" size="sm" className="flex-1 rounded-full h-8 text-sm text-[hsl(var(--ink-muted))] hover:bg-[hsl(var(--surface-alt))]">
-              This Month
-            </Button>
-            <Button variant="ghost" size="sm" className="flex-1 rounded-full h-8 text-sm text-[hsl(var(--ink-muted))] hover:bg-[hsl(var(--surface-alt))]">
-              All Time
-            </Button>
+          {/* Scope and Time Period Combined Tabs */}
+          <div className="grid grid-cols-2 gap-2">
+            <div className="flex gap-1 p-1 bg-[hsl(var(--surface-alt))] rounded-full border border-[hsl(var(--border-luxury))]">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setActiveLeaderboard('global')}
+                className={`flex-1 rounded-full h-8 text-xs ${
+                  activeLeaderboard === 'global' 
+                    ? 'bg-[hsl(var(--brand-primary))]/10 text-[hsl(var(--brand-primary))] border border-[hsl(var(--brand-primary))]/20' 
+                    : 'text-[hsl(var(--ink-muted))] hover:bg-[hsl(var(--surface-alt))]'
+                }`}
+              >
+                Global
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setActiveLeaderboard('country')}
+                className={`flex-1 rounded-full h-8 text-xs ${
+                  activeLeaderboard === 'country' 
+                    ? 'bg-[hsl(var(--brand-primary))]/10 text-[hsl(var(--brand-primary))] border border-[hsl(var(--brand-primary))]/20' 
+                    : 'text-[hsl(var(--ink-muted))] hover:bg-[hsl(var(--surface-alt))]'
+                }`}
+              >
+                Country
+              </Button>
+            </div>
+            <div className="flex gap-1 p-1 bg-[hsl(var(--surface-alt))] rounded-full border border-[hsl(var(--border-luxury))]">
+              <Button variant="ghost" size="sm" className="flex-1 rounded-full h-8 text-xs bg-[hsl(var(--brand-primary))]/10 text-[hsl(var(--brand-primary))] border border-[hsl(var(--brand-primary))]/20">
+                Week
+              </Button>
+              <Button variant="ghost" size="sm" className="flex-1 rounded-full h-8 text-xs text-[hsl(var(--ink-muted))] hover:bg-[hsl(var(--surface-alt))]">
+                Month
+              </Button>
+            </div>
           </div>
 
           {/* Your Rank Card */}
@@ -513,7 +510,7 @@ const RoleDashboard: React.FC = () => {
               </div>
               <div className="flex-1">
                 <p className="text-sm font-medium text-[hsl(var(--ink))]">Your Current Rank</p>
-                <p className="text-xs text-[hsl(var(--ink-muted))]">#1 globally</p>
+                <p className="text-xs text-[hsl(var(--ink-muted))]">Top 5% this week</p>
               </div>
               <div className="text-2xl font-bold text-[hsl(var(--brand-primary))]">#1</div>
             </div>
