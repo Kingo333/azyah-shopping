@@ -39,10 +39,7 @@ import {
   WandSparkles,
   ChevronDown,
   ChevronUp,
-  ChevronRight,
-  Gift,
-  Star,
-  Camera
+  Gift
 } from 'lucide-react';
 import Leaderboard from '@/components/Leaderboard';
 import TrendingStylesCarousel from '@/components/TrendingStylesCarousel';
@@ -64,8 +61,8 @@ interface DashboardStats {
   totalViews?: number;
   totalSales?: number;
   totalRevenue?: number;
-  wishlistItems?: number;
-  cartItems?: number;
+  totalWishlistItems?: number;
+  totalCartItems?: number;
 }
 
 const RoleDashboard: React.FC = () => {
@@ -80,8 +77,8 @@ const RoleDashboard: React.FC = () => {
   const [searchOpen, setSearchOpen] = useState(false);
   const [activeLeaderboard, setActiveLeaderboard] = useState<'global' | 'country'>('global');
   const [aiStudioModalOpen, setAiStudioModalOpen] = useState(false);
-  const [showAiStudio, setShowAiStudio] = useState(false);
-  const [showUGCCollab, setShowUGCCollab] = useState(false);
+  const [isClosetsMinimized, setIsClosetsMinimized] = useState(true);
+  const [isAffiliateMinimized, setIsAffiliateMinimized] = useState(true);
 
   useEffect(() => {
     const initializeDashboard = async () => {
@@ -178,8 +175,8 @@ const RoleDashboard: React.FC = () => {
       ]);
 
       const dashboardStats: DashboardStats = {
-        wishlistItems: wishlistData?.data?.length || 0,
-        cartItems: cartData?.data?.length || 0
+        totalWishlistItems: wishlistData?.data?.length || 0,
+        totalCartItems: cartData?.data?.length || 0
       };
 
       // Role-specific stats
@@ -202,8 +199,8 @@ const RoleDashboard: React.FC = () => {
       console.error('Error fetching dashboard stats:', error);
       // Set default stats on error
       setStats({
-        wishlistItems: 0,
-        cartItems: 0,
+        totalWishlistItems: 0,
+        totalCartItems: 0,
         totalProducts: 0
       });
     }
@@ -264,200 +261,225 @@ const RoleDashboard: React.FC = () => {
   console.log('Rendering dashboard for user:', userProfile);
 
   const renderShopperDashboard = () => (
-    <div className="space-y-8">
-      {/* Hero Section */}
-      <div className="bg-gradient-to-r from-background to-muted/30 rounded-2xl p-8 border border-border/50">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-          <div className="space-y-2">
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
-              Welcome back, {userProfile?.name || 'Fashionista'}! 👋
-            </h1>
-            <p className="text-muted-foreground text-lg">
-              Ready to discover your next favorite piece?
-            </p>
-          </div>
-          <div className="flex gap-6">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-primary">{stats.wishlistItems || 0}</div>
-              <div className="text-sm text-muted-foreground">Wishlist Items</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-primary">{stats.cartItems || 0}</div>
-              <div className="text-sm text-muted-foreground">Cart Items</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Core Shopping Actions */}
-      <div className="space-y-6">
-        <div>
-          <h2 className="text-xl font-semibold text-foreground mb-2">Quick Actions</h2>
-          <p className="text-muted-foreground text-sm">Jump into your favorite shopping activities</p>
-        </div>
-        
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Button
-            onClick={() => navigate('/swipe')}
-            className="h-24 flex flex-col items-center justify-center gap-3 bg-gradient-to-br from-primary to-primary/80 text-primary-foreground hover:from-primary/90 hover:to-primary/70 border-0 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
-          >
-            <Heart className="w-8 h-8" />
-            <div className="text-center">
-              <div className="font-semibold">Swipe Mode</div>
-              <div className="text-xs opacity-90">Discover your style</div>
-            </div>
-          </Button>
-          
-          <Button
-            onClick={() => navigate('/wishlist')}
-            className="h-24 flex flex-col items-center justify-center gap-3 bg-gradient-to-br from-secondary to-secondary/80 text-secondary-foreground hover:from-secondary/90 hover:to-secondary/70 border-0 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
-          >
-            <Star className="w-8 h-8" />
-            <div className="text-center">
-              <div className="font-semibold">My Wishlist</div>
-              <div className="text-xs opacity-90">Saved favorites</div>
-            </div>
-          </Button>
-        </div>
-
-        {/* AI & Discovery Tools */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <Button
-            onClick={() => setShowAiStudio(true)}
-            className="h-20 flex flex-col items-center justify-center gap-2 bg-card hover:bg-accent text-card-foreground border border-border rounded-xl transition-all duration-200 relative group"
-            variant="outline"
-          >
-            <Sparkles className="w-6 h-6 text-primary group-hover:scale-110 transition-transform" />
-            <span className="font-medium text-sm">AI Studio</span>
-            <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs px-2 py-0.5 rounded-full">New</span>
-          </Button>
-          
-          <Button
-            onClick={() => navigate('/image-search')}
-            className="h-20 flex flex-col items-center justify-center gap-2 bg-card hover:bg-accent text-card-foreground border border-border rounded-xl transition-all duration-200 group"
-            variant="outline"
-          >
-            <Camera className="w-6 h-6 text-primary group-hover:scale-110 transition-transform" />
-            <span className="font-medium text-sm">Visual Search</span>
-          </Button>
-          
-          <Button
-            onClick={() => setShowUGCCollab(true)}
-            className="h-20 flex flex-col items-center justify-center gap-2 bg-card hover:bg-accent text-card-foreground border border-border rounded-xl transition-all duration-200 group"
-            variant="outline"
-          >
-            <Users className="w-6 h-6 text-primary group-hover:scale-110 transition-transform" />
-            <span className="font-medium text-sm">UGC Collab</span>
-          </Button>
-          
-          <Button
-            onClick={() => navigate('/beauty-consultant')}
-            className="h-20 flex flex-col items-center justify-center gap-2 bg-card hover:bg-accent text-card-foreground border border-border rounded-xl transition-all duration-200 relative group"
-            variant="outline"
-          >
-            <Sparkles className="w-6 h-6 text-primary group-hover:scale-110 transition-transform" />
-            <span className="font-medium text-sm">Beauty Guide</span>
-            <span className="absolute -top-1 -right-1 bg-muted text-muted-foreground text-xs px-2 py-0.5 rounded-full">Soon</span>
-          </Button>
-        </div>
-      </div>
-
-      {/* Trending Styles Section */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-xl font-semibold text-foreground">Trending Now</h2>
-            <p className="text-muted-foreground text-sm">What's hot in fashion right now</p>
-          </div>
-          <Button 
-            onClick={() => navigate('/trending-styles')} 
-            variant="ghost" 
-            size="sm"
-            className="text-primary hover:text-primary/80 hover:bg-primary/10"
-          >
-            View All <ChevronRight className="w-4 h-4 ml-1" />
-          </Button>
-        </div>
-        <ErrorBoundary>
-          <TrendingStylesCarousel />
-        </ErrorBoundary>
-      </div>
-
-      {/* My Closets Section */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-xl font-semibold text-foreground">My Closets</h2>
-            <p className="text-muted-foreground text-sm">Organize and manage your style collections</p>
-          </div>
-          <Button 
-            onClick={() => navigate('/closets')} 
-            variant="ghost" 
-            size="sm"
-            className="text-primary hover:text-primary/80 hover:bg-primary/10"
-          >
-            Manage <ChevronRight className="w-4 h-4 ml-1" />
-          </Button>
-        </div>
-        <div className="bg-gradient-to-r from-card to-muted/30 border border-border rounded-xl p-6 hover:shadow-lg transition-all duration-300">
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-xl flex items-center justify-center">
-              <ShoppingBag className="w-7 h-7 text-primary" />
-            </div>
-            <div className="flex-1">
-              <h3 className="font-semibold text-card-foreground">Organize Your Style</h3>
-              <p className="text-muted-foreground">Create collections and manage your favorite looks</p>
-            </div>
-            <Button 
-              onClick={() => navigate('/closets')} 
-              className="bg-primary hover:bg-primary/90 shadow-lg"
-            >
-              Open Closets
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      {/* Premium Upsell - Strategically placed */}
+    <div className="space-y-4">
+      {/* Premium Banner */}
       <PremiumBanner />
-
-      {/* Community & Rewards */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Affiliate Hub */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-semibold text-foreground">Affiliate Rewards</h2>
-              <p className="text-muted-foreground text-sm">Earn while you shop</p>
-            </div>
+      
+      {/* Quick Actions with Premium Glass Panel */}
+      <GlassPanel variant="premium" className="p-8">
+        <div className="space-y-6">
+          <h2 className="text-2xl font-cormorant font-semibold flex items-center gap-3 text-foreground/90">
+            Quick Actions
+          </h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3 sm:gap-4">
             <Button 
-              onClick={() => navigate('/affiliate')} 
-              variant="ghost" 
-              size="sm"
-              className="text-primary hover:text-primary/80 hover:bg-primary/10"
+              onClick={() => navigate('/swipe')} 
+              className="btn-luxury h-14 sm:h-16 flex-col gap-1 sm:gap-2"
             >
-              View Hub <ChevronRight className="w-4 h-4 ml-1" />
+              <Heart className="h-5 w-5 sm:h-6 sm:w-6" />
+              <span className="text-xs sm:text-sm">Swipe</span>
+            </Button>
+            <Button 
+              onClick={() => setAiStudioModalOpen(true)}
+              variant="outline" 
+              className="h-14 sm:h-16 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300 relative bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 border-purple-200 dark:border-purple-800"
+            >
+              <Sparkles className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600" />
+              <span className="text-xs sm:text-sm text-purple-600">AI Studio</span>
+              <Badge variant="secondary" className="absolute -top-1 -right-1 text-xs px-1 py-0 h-4">
+                New
+              </Badge>
+            </Button>
+            <Button 
+              onClick={() => navigate('/wishlist')} 
+              variant="outline" 
+              className="h-14 sm:h-16 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300"
+            >
+              <ShoppingBag className="h-5 w-5 sm:h-6 sm:w-6" />
+              <span className="text-xs sm:text-sm">Wishlist</span>
+            </Button>
+            <Button 
+              onClick={() => navigate('/explore')} 
+              variant="outline" 
+              className="h-14 sm:h-16 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300"
+            >
+              <Search className="h-5 w-5 sm:h-6 sm:w-6" />
+              <span className="text-xs sm:text-sm">Explore</span>
+            </Button>
+            {isEnabled('ai_beauty_consultant') ? (
+              <Button 
+                variant="outline"
+                className="h-14 sm:h-16 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300 relative cursor-not-allowed"
+                data-qa="qa-beauty"
+                disabled
+              >
+                <WandSparkles className="h-5 w-5 sm:h-6 sm:w-6 text-pink-600" />
+                <span className="text-xs sm:text-sm text-pink-600">Beauty Guide</span>
+                <Badge variant="secondary" className="absolute -top-1 -right-1 text-xs px-1 py-0 h-4">
+                  Soon
+                </Badge>
+              </Button>
+            ) : (
+              <Button 
+                onClick={() => navigate('/fashion-feed')} 
+                variant="outline" 
+                className="h-14 sm:h-16 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300"
+              >
+                <Users className="h-5 w-5 sm:h-6 sm:w-6" />
+                <span className="text-xs sm:text-sm">Feed</span>
+              </Button>
+            )}
+            <UGCCollabButton />
+            <Button 
+              onClick={handleToyReplicaClick}
+              variant="outline" 
+              className="h-14 sm:h-16 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300 relative bg-gradient-to-br from-green-50 to-blue-50 dark:from-green-950/20 dark:to-blue-950/20 border-green-200 dark:border-green-800"
+            >
+              <Blocks className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
+              <span className="text-xs sm:text-sm text-green-600">Toy Replica</span>
+              <Badge variant="secondary" className="absolute -top-1 -right-1 text-xs px-1 py-0 h-4">
+                AI
+              </Badge>
             </Button>
           </div>
-          <ErrorBoundary>
-            <AffiliateHub />
-          </ErrorBoundary>
         </div>
+      </GlassPanel>
 
-        {/* Leaderboards */}
-        <div className="space-y-4">
-          <div>
-            <h2 className="text-lg font-semibold text-foreground">Community Leaders</h2>
-            <p className="text-muted-foreground text-sm">See who's trending</p>
+      {/* Global Search and Affiliate Hub Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Trending Styles Carousel with Premium Glass Panel */}
+        <GlassPanel variant="premium" className="p-6">
+          <div className="space-y-5">
+            <h3 className="text-xl font-cormorant font-semibold flex items-center gap-3">
+              <div className="p-2 rounded-full bg-gradient-to-br from-primary/10 to-accent-cartier/10">
+                <TrendingUp className="h-5 w-5 text-primary" />
+              </div>
+              Trending Styles
+            </h3>
+            <p className="text-muted-foreground leading-relaxed">
+              Discover what's trending now and shop the latest styles everyone's talking about.
+            </p>
+            <TrendingStylesCarousel limit={8} />
           </div>
-          <ErrorBoundary>
-            <Leaderboard />
-          </ErrorBoundary>
+        </GlassPanel>
+
+        {/* Affiliate Hub - Desktop with Premium Glass Panel */}
+        <div className="hidden lg:block">
+          <GlassPanel variant="premium" className="p-8">
+            <Collapsible open={!isAffiliateMinimized} onOpenChange={(open) => setIsAffiliateMinimized(!open)}>
+              <CollapsibleTrigger asChild>
+                <Button variant="ghost" className="w-full justify-between p-0 h-auto">
+                  <h3 className="text-xl font-cormorant font-semibold flex items-center gap-3">
+                    <div className="p-2 rounded-full bg-gradient-to-br from-primary/10 to-accent-cartier/10">
+                      <Gift className="h-5 w-5 text-primary" />
+                    </div>
+                    Affiliate Hub
+                  </h3>
+                  {isAffiliateMinimized ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="mt-4">
+                <AffiliateHub showTitle={false} />
+              </CollapsibleContent>
+            </Collapsible>
+          </GlassPanel>
         </div>
       </div>
+
+      {/* Affiliate Hub - Mobile with Premium Glass Panel */}
+      <div className="block lg:hidden">
+        <GlassPanel variant="premium" className="p-8">
+          <Collapsible open={!isAffiliateMinimized} onOpenChange={(open) => setIsAffiliateMinimized(!open)}>
+            <CollapsibleTrigger asChild>
+              <Button variant="ghost" className="w-full justify-between p-0 h-auto">
+                <h3 className="text-xl font-cormorant font-semibold flex items-center gap-3">
+                  <div className="p-2 rounded-full bg-gradient-to-br from-primary/10 to-accent-cartier/10">
+                    <Gift className="h-5 w-5 text-primary" />
+                  </div>
+                  Affiliate Hub
+                </h3>
+                {isAffiliateMinimized ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="mt-4">
+              <AffiliateHub />
+            </CollapsibleContent>
+          </Collapsible>
+        </GlassPanel>
+      </div>
+
+      {/* Closets Preview with Premium Glass Panel */}
+      <GlassPanel variant="premium" className="p-8">
+        <Collapsible open={!isClosetsMinimized} onOpenChange={(open) => setIsClosetsMinimized(!open)}>
+          <div className="space-y-5">
+            <div className="flex items-center justify-between">
+              <CollapsibleTrigger asChild>
+                <Button variant="ghost" className="justify-start p-0 h-auto">
+                  <h3 className="text-xl font-cormorant font-semibold flex items-center gap-3">
+                    <div className="p-2 rounded-full bg-gradient-to-br from-primary/10 to-accent-cartier/10">
+                      <Archive className="h-5 w-5 text-primary" />
+                    </div>
+                    My Closets
+                    {isClosetsMinimized ? <ChevronDown className="h-4 w-4 ml-2" /> : <ChevronUp className="h-4 w-4 ml-2" />}
+                  </h3>
+                </Button>
+              </CollapsibleTrigger>
+              <Button variant="premium" size="sm" onClick={() => navigate('/closets')}>
+                <Archive className="h-4 w-4 mr-2" />
+                View All
+              </Button>
+            </div>
+            <CollapsibleContent>
+              <div className="text-center py-12 space-y-3">
+                <div className="w-16 h-16 mx-auto rounded-full bg-gradient-to-br from-primary/10 to-accent-cartier/10 flex items-center justify-center mb-4">
+                  <Archive className="h-8 w-8 text-primary/60" />
+                </div>
+                <p className="text-muted-foreground text-lg">
+                  Create your first closet to organize your style discoveries
+                </p>
+              </div>
+            </CollapsibleContent>
+          </div>
+        </Collapsible>
+      </GlassPanel>
+
+      {/* Fashion Leaderboards with Premium Glass Panel */}
+      <GlassPanel variant="premium" className="p-8">
+        <div className="space-y-6">
+          <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+            <h3 className="text-xl font-cormorant font-semibold flex items-center gap-3">
+              <div className="p-2 rounded-full bg-gradient-to-br from-yellow-500/10 to-orange-500/10">
+                <Trophy className="h-5 w-5 text-yellow-500" />
+              </div>
+              Fashion Leaderboards
+            </h3>
+            <div className="flex gap-2">
+              <Button 
+                variant={activeLeaderboard === 'global' ? 'premium' : 'outline'} 
+                size="sm" 
+                onClick={() => setActiveLeaderboard('global')} 
+                className="flex-1 sm:flex-none"
+              >
+                <Globe className="h-3 w-3 mr-2" />
+                Global
+              </Button>
+              <Button 
+                variant={activeLeaderboard === 'country' ? 'premium' : 'outline'} 
+                size="sm" 
+                onClick={() => setActiveLeaderboard('country')} 
+                className="flex-1 sm:flex-none"
+              >
+                <MapPin className="h-3 w-3 mr-2" />
+                Country
+              </Button>
+            </div>
+          </div>
+          <Leaderboard type={activeLeaderboard} country={user?.user_metadata?.country} />
+        </div>
+      </GlassPanel>
 
       {/* Feedback Section */}
-      <div className="flex justify-end pt-4">
+      <div className="flex justify-end">
         <FeedbackModal userType="shopper" />
       </div>
     </div>
@@ -574,17 +596,9 @@ const RoleDashboard: React.FC = () => {
         
         {/* AI Studio Modal */}
         <AiStudioModal 
-          open={aiStudioModalOpen || showAiStudio} 
-          onClose={() => {
-            setAiStudioModalOpen(false);
-            setShowAiStudio(false);
-          }} 
+          open={aiStudioModalOpen} 
+          onClose={() => setAiStudioModalOpen(false)} 
         />
-        
-        {/* UGC Collab Modal */}
-        {showUGCCollab && (
-          <UGCCollabButton />
-        )}
       </div>
     </ErrorBoundary>
   );
