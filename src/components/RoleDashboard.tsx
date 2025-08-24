@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { SEOHead } from '@/components/SEOHead';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -539,6 +540,10 @@ const RoleDashboard: React.FC = () => {
 
   return (
     <ErrorBoundary>
+      <SEOHead 
+        title="Azyah - Fashion Discovery Platform"
+        description="Discover, shop and create your perfect style with AI-powered fashion recommendations"
+      />
       <div className="min-h-screen dashboard-bg pb-20 sm:pb-0">
         <div className="container mx-auto max-w-7xl px-4 py-6">
           {/* Header with Dashboard Header component */}
