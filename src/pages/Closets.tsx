@@ -1,4 +1,4 @@
-import React, { useState, Suspense } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,10 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { useClosets, usePublicClosets, useCreateCloset } from '@/hooks/useClosets';
-import { Grid3X3, LayoutGrid, Search, Plus, Star, Lock, Globe, Heart } from 'lucide-react';
-
-// Lazy load the MasonryMoodBoards component
-const MasonryMoodBoards = React.lazy(() => import('@/components/MasonryMoodBoards'));
+import { Grid3X3, Search, Plus, Star, Lock, Globe, Heart } from 'lucide-react';
 
 const LoadingFallback = () => (
   <div className="space-y-4">
@@ -28,8 +25,7 @@ const LoadingFallback = () => (
 );
 
 const Closets = () => {
-  const [activeTab, setActiveTab] = useState<'explore' | 'my-closets' | 'mood-boards'>('my-closets');
-  const [viewMode, setViewMode] = useState<'grid' | 'masonry'>('grid');
+  const [activeTab, setActiveTab] = useState<'explore' | 'my-closets'>('my-closets');
   const [searchQuery, setSearchQuery] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newClosetData, setNewClosetData] = useState({
@@ -64,7 +60,7 @@ const Closets = () => {
             <div className="flex items-center gap-3">
               <BackButton />
               <div>
-                <h1 className="text-2xl font-bold text-foreground">Closets & Mood Boards</h1>
+                <h1 className="text-2xl font-bold text-foreground">My Closets</h1>
                 <p className="text-muted-foreground">Discover and create curated fashion collections</p>
               </div>
             </div>
@@ -84,40 +80,18 @@ const Closets = () => {
             >
               My Closets
             </Button>
-            <Button
-              variant={activeTab === 'mood-boards' ? 'default' : 'outline'}
-              onClick={() => setActiveTab('mood-boards')}
-            >
-              Mood Boards
-            </Button>
           </div>
 
-          {/* Search and View Controls */}
+          {/* Search Controls */}
           <div className="flex flex-col sm:flex-row gap-4 items-center">
             <div className="relative flex-1 max-w-md">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search mood boards..."
+                placeholder="Search closets..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10"
               />
-            </div>
-            <div className="flex gap-2">
-              <Button
-                variant={viewMode === 'grid' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setViewMode('grid')}
-              >
-                <Grid3X3 className="h-4 w-4" />
-              </Button>
-              <Button
-                variant={viewMode === 'masonry' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setViewMode('masonry')}
-              >
-                <LayoutGrid className="h-4 w-4" />
-              </Button>
             </div>
           </div>
         </div>
@@ -336,11 +310,6 @@ const Closets = () => {
           </div>
         )}
 
-        {activeTab === 'mood-boards' && (
-          <Suspense fallback={<LoadingFallback />}>
-            <MasonryMoodBoards viewMode={viewMode} />
-          </Suspense>
-        )}
       </div>
     </div>
   );
