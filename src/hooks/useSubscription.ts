@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { storePaymentSessionBackup } from '@/utils/paymentSessionManager';
 
 interface Subscription {
   id: string;
@@ -89,11 +90,23 @@ export function useSubscription(): UseSubscriptionReturn {
     try {
       setLoading(true);
       
-      const { data: { session } } = await supabase.auth.getSession();
+      // Refresh session before payment to ensure it's valid
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !session) {
+        console.error('Session validation failed:', sessionError);
+        toast({
+          title: "Authentication Error",
+          description: "Please refresh the page and try again",
+          variant: "destructive"
+        });
+        return;
+      }
+
       const { data, error } = await supabase.functions.invoke('create-payment-intent', {
         body: { amountAed: 40, test, message: "Azyah Premium" },
         headers: {
-          Authorization: `Bearer ${session?.access_token}`
+          Authorization: `Bearer ${session.access_token}`
         }
       });
 
@@ -109,6 +122,9 @@ export function useSubscription(): UseSubscriptionReturn {
 
       // Handle new response format: { redirectUrl, pi }
       if (data?.redirectUrl) {
+        // Store session backup before redirect
+        storePaymentSessionBackup(session, user, data.pi);
+        
         // Redirect to Ziina checkout
         window.location.href = data.redirectUrl;
       } else {

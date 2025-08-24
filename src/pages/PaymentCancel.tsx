@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { XCircle } from 'lucide-react';
 import { useSubscription } from '@/hooks/useSubscription';
 import { SEOHead } from '@/components/SEOHead';
+import { clearPaymentSessionBackup } from '@/utils/paymentSessionManager';
 
 export default function PaymentCancel() {
   const [searchParams] = useSearchParams();
@@ -14,6 +15,9 @@ export default function PaymentCancel() {
   const { createPaymentIntent, loading } = useSubscription();
 
   useEffect(() => {
+    // Clear payment session backup when payment is canceled
+    clearPaymentSessionBackup();
+    
     const timer = setInterval(() => {
       setCountdown((prev) => {
         if (prev <= 1) {

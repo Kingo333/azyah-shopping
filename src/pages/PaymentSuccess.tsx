@@ -6,6 +6,7 @@ import { CheckCircle, Clock, AlertCircle } from 'lucide-react';
 import { useSubscription } from '@/hooks/useSubscription';
 import { SEOHead } from '@/components/SEOHead';
 import { supabase } from '@/integrations/supabase/client';
+import { clearPaymentSessionBackup } from '@/utils/paymentSessionManager';
 
 interface PaymentStatus {
   status: string;
@@ -52,6 +53,9 @@ export default function PaymentSuccess() {
       return;
     }
 
+    // Clear payment session backup on successful payment page load
+    clearPaymentSessionBackup();
+    
     verifyPayment();
 
     // Poll for payment completion (every 2s up to 30s for pending payments)

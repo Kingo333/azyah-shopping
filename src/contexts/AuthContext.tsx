@@ -7,6 +7,12 @@ import { CredentialsSchema } from '@/lib/password-validation';
 import { getRedirectRoute } from '@/lib/rbac';
 import type { UserRole } from '@/lib/rbac';
 import { isVisualEditsMode, setStableAuthState, getStableAuthState, clearStableAuthState } from '@/utils/visualEditsDetection';
+import { 
+  getPaymentSessionBackup, 
+  clearPaymentSessionBackup, 
+  isPaymentFlowActive, 
+  isPaymentReturnPage 
+} from '@/utils/paymentSessionManager';
 
 interface AuthContextType {
   user: User | null;
@@ -37,20 +43,51 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
-    // Set up auth state listener
+    // Check for payment session backup first (handles returning from payment)
+    const handlePaymentReturn = () => {
+      if (isPaymentReturnPage() && isPaymentFlowActive()) {
+        const paymentBackup = getPaymentSessionBackup();
+        if (paymentBackup) {
+          console.log('Restoring session from payment backup');
+          setSession(paymentBackup.session);
+          setUser(paymentBackup.user);
+          setStableAuthState(paymentBackup.user, paymentBackup.session);
+          setLoading(false);
+          
+          // Clear backup after successful restore
+          setTimeout(() => clearPaymentSessionBackup(), 1000);
+          return true;
+        }
+      }
+      return false;
+    };
+
+    // Try to restore from payment backup first
+    if (handlePaymentReturn()) {
+      return;
+    }
+
+    // Set up auth state listener with payment flow awareness
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         console.log('AuthContext: Auth state changed:', { event, user: session?.user?.email });
         
+        // Prevent logout during payment flow unless explicitly signed out
+        if (event === 'SIGNED_OUT' && isPaymentFlowActive() && !isPaymentReturnPage()) {
+          console.log('Preventing logout during payment flow');
+          return;
+        }
+        
         // Store stable auth state for Visual Edits compatibility
         if (session?.user) {
           setStableAuthState(session.user, session);
-        } else {
+        } else if (event === 'SIGNED_OUT') {
           clearStableAuthState();
+          clearPaymentSessionBackup(); // Clear payment backup on explicit logout
         }
         
         // Clear role cache on sign out only if not in Visual Edits mode
-        if (event === 'SIGNED_OUT' && !isVisualEditsMode()) {
+        if (event === 'SIGNED_OUT' && !isVisualEditsMode() && !isPaymentFlowActive()) {
           import('@/lib/roleCache').then(({ clearRoleCache }) => {
             clearRoleCache();
           });
@@ -62,8 +99,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     );
 
-    // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    // Check for existing session with payment flow awareness
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (error && isPaymentFlowActive()) {
+        // Try to restore from payment backup if session check fails during payment
+        const paymentBackup = getPaymentSessionBackup();
+        if (paymentBackup) {
+          console.log('Session check failed, restoring from payment backup');
+          setSession(paymentBackup.session);
+          setUser(paymentBackup.user);
+          setStableAuthState(paymentBackup.user, paymentBackup.session);
+          setLoading(false);
+          return;
+        }
+      }
+
       if (session?.user) {
         setStableAuthState(session.user, session);
       }
