@@ -2,28 +2,51 @@ import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { XCircle } from 'lucide-react';
+import { XCircle, Loader2 } from 'lucide-react';
 import { useSubscription } from '@/hooks/useSubscription';
+import { useAuth } from '@/contexts/AuthContext';
 import { SEOHead } from '@/components/SEOHead';
-import { clearPaymentSessionBackup } from '@/utils/paymentSessionManager';
+import { clearPaymentSessionBackup, getPaymentSessionBackup } from '@/utils/paymentSessionManager';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function PaymentCancel() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const paymentIntentId = searchParams.get('payment_intent_id');
   const [countdown, setCountdown] = useState(10);
+  const [navigating, setNavigating] = useState(false);
   const { createPaymentIntent, loading } = useSubscription();
+  const { user, session } = useAuth();
 
   useEffect(() => {
+    // Try to restore session from backup if missing
+    const restoreSession = async () => {
+      if (!session || !user) {
+        const backup = getPaymentSessionBackup();
+        if (backup) {
+          try {
+            await supabase.auth.setSession({
+              access_token: backup.session.access_token,
+              refresh_token: backup.session.refresh_token
+            });
+          } catch (error) {
+            console.error('Failed to restore session from backup:', error);
+          }
+        }
+      }
+    };
+
+    restoreSession();
+
     // Delay clearing payment session backup to allow auth recovery
     const clearTimer = setTimeout(() => {
       clearPaymentSessionBackup();
-    }, 2000);
+    }, 5000);
     
     const redirectTimer = setInterval(() => {
       setCountdown((prev) => {
         if (prev <= 1) {
-          navigate('/dashboard');
+          handleNavigateToDashboard();
           return 0;
         }
         return prev - 1;
@@ -35,6 +58,32 @@ export default function PaymentCancel() {
       clearInterval(redirectTimer);
     };
   }, [navigate]);
+
+  const handleNavigateToDashboard = async () => {
+    setNavigating(true);
+    
+    // Ensure we have a valid session before navigating
+    if (!session || !user) {
+      const backup = getPaymentSessionBackup();
+      if (backup) {
+        try {
+          await supabase.auth.setSession({
+            access_token: backup.session.access_token,
+            refresh_token: backup.session.refresh_token
+          });
+          // Wait a moment for the auth state to update
+          setTimeout(() => {
+            navigate('/dashboard');
+          }, 100);
+          return;
+        } catch (error) {
+          console.error('Failed to restore session:', error);
+        }
+      }
+    }
+    
+    navigate('/dashboard');
+  };
 
   const handleRetryPayment = async () => {
     await createPaymentIntent(false);
@@ -81,11 +130,19 @@ export default function PaymentCancel() {
 
             <div className="space-y-2">
               <Button 
-                onClick={() => navigate('/dashboard')} 
+                onClick={handleNavigateToDashboard}
                 variant="outline"
                 className="w-full"
+                disabled={navigating}
               >
-                Back to Dashboard
+                {navigating ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Loading...
+                  </>
+                ) : (
+                  'Back to Dashboard'
+                )}
               </Button>
               
               <Button 

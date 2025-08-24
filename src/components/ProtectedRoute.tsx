@@ -6,6 +6,8 @@ import { canAccessRoute, getRedirectRoute } from '@/lib/rbac';
 import { getUserRole } from '@/lib/roleCache';
 import type { UserRole } from '@/lib/rbac';
 import { isVisualEditsMode } from '@/utils/visualEditsDetection';
+import { isPaymentReturnPage, getPaymentSessionBackup } from '@/utils/paymentSessionManager';
+import { supabase } from '@/integrations/supabase/client';
 
 const DEBUG_AUTH = process.env.NODE_ENV === 'development';
 
@@ -20,6 +22,7 @@ const ProtectedRoute = ({ children, roles }: ProtectedRouteProps) => {
   const [userRole, setUserRole] = useState<UserRole | null>(null);
   const [roleLoading, setRoleLoading] = useState(true);
   const [authStable, setAuthStable] = useState(isVisualEditsMode()); // Immediately stable in Visual Edits
+  const [sessionRestoreAttempted, setSessionRestoreAttempted] = useState(false);
 
   useEffect(() => {
     // In Visual Edits mode, skip stability delay for immediate response
@@ -28,13 +31,39 @@ const ProtectedRoute = ({ children, roles }: ProtectedRouteProps) => {
       return;
     }
 
-    // Add minimal delay for non-Visual Edits mode
+    // Extended delay for payment return pages to allow session restoration
+    const isPaymentReturn = isPaymentReturnPage();
+    const delay = isPaymentReturn ? 200 : 50;
+
     const stabilityTimer = setTimeout(() => {
       setAuthStable(true);
-    }, 50);
+    }, delay);
 
     return () => clearTimeout(stabilityTimer);
   }, []);
+
+  // Attempt session restoration from payment backup if user is missing
+  useEffect(() => {
+    const attemptSessionRestore = async () => {
+      if (!user && !loading && !sessionRestoreAttempted && isPaymentReturnPage()) {
+        setSessionRestoreAttempted(true);
+        const backup = getPaymentSessionBackup();
+        if (backup) {
+          try {
+            if (DEBUG_AUTH) console.log('ProtectedRoute: Attempting session restore from payment backup');
+            await supabase.auth.setSession({
+              access_token: backup.session.access_token,
+              refresh_token: backup.session.refresh_token
+            });
+          } catch (error) {
+            console.error('ProtectedRoute: Failed to restore session from backup:', error);
+          }
+        }
+      }
+    };
+
+    attemptSessionRestore();
+  }, [user, loading, sessionRestoreAttempted]);
 
   useEffect(() => {
     const fetchUserRole = async () => {
