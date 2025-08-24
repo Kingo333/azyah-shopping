@@ -63,7 +63,7 @@ export default function PaymentCancel() {
     setNavigating(true);
     
     // Clear the title before navigation
-    document.title = 'Azyah';
+    document.title = 'Azyah - Fashion Discovery Platform';
     
     // Ensure we have a valid session before navigating
     if (!session || !user) {
@@ -95,7 +95,7 @@ export default function PaymentCancel() {
   return (
     <>
       <SEOHead 
-        title="Azyah"
+        title="Azyah - Fashion Discovery Platform"
         description="Your payment was canceled"
       />
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
