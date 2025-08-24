@@ -284,7 +284,6 @@ const RoleDashboard: React.FC = () => {
               variant="outline" 
               className="h-14 sm:h-16 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300 relative bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 border-purple-200 dark:border-purple-800"
             >
-              <Sparkles className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600" />
               <span className="text-xs sm:text-sm text-purple-600">AI Studio</span>
               <Badge variant="secondary" className="absolute -top-1 -right-1 text-xs px-1 py-0 h-4">
                 New
