@@ -543,6 +543,7 @@ const RoleDashboard: React.FC = () => {
       <SEOHead 
         title="Azyah - Fashion Discovery Platform"
         description="Discover, shop and create your perfect style with AI-powered fashion recommendations"
+        key="dashboard-seo" // Force re-render to override payment cancel title
       />
       <div className="min-h-screen dashboard-bg pb-20 sm:pb-0">
         <div className="container mx-auto max-w-7xl px-4 py-6">
