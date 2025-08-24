@@ -54,8 +54,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setStableAuthState(paymentBackup.user, paymentBackup.session);
           setLoading(false);
           
-          // Only clear backup if not on payment-cancel (let cancel page handle it)
-          if (!window.location.pathname.includes('/payment-cancel')) {
+          // Only clear backup if not on payment pages (let payment page handle it)
+          if (!window.location.pathname.includes('/payment-cancel') && 
+              !window.location.pathname.includes('/payment-failed')) {
             setTimeout(() => clearPaymentSessionBackup(), 1000);
           }
           return true;
