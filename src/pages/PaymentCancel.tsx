@@ -13,7 +13,7 @@ export default function PaymentCancel() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const paymentIntentId = searchParams.get('payment_intent_id');
-  const [countdown, setCountdown] = useState(10);
+  const [countdown, setCountdown] = useState(4);
   const [navigating, setNavigating] = useState(false);
   const { createPaymentIntent, loading } = useSubscription();
   const { user, session } = useAuth();
