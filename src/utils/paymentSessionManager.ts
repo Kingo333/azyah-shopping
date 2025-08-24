@@ -67,6 +67,7 @@ export const isPaymentReturnPage = (): boolean => {
     pathname === '/payment-success' ||
     pathname === '/payment-cancel' ||
     pathname === '/payment-failed' ||
-    searchParams.has('payment_intent_id')
+    searchParams.has('payment_intent_id') ||
+    searchParams.has('canceled')
   );
 };

@@ -15,20 +15,25 @@ export default function PaymentCancel() {
   const { createPaymentIntent, loading } = useSubscription();
 
   useEffect(() => {
-    // Clear payment session backup when payment is canceled
-    clearPaymentSessionBackup();
+    // Delay clearing payment session backup to allow auth recovery
+    const clearTimer = setTimeout(() => {
+      clearPaymentSessionBackup();
+    }, 2000);
     
-    const timer = setInterval(() => {
+    const redirectTimer = setInterval(() => {
       setCountdown((prev) => {
         if (prev <= 1) {
-          navigate('/');
+          navigate('/dashboard');
           return 0;
         }
         return prev - 1;
       });
     }, 1000);
 
-    return () => clearInterval(timer);
+    return () => {
+      clearTimeout(clearTimer);
+      clearInterval(redirectTimer);
+    };
   }, [navigate]);
 
   const handleRetryPayment = async () => {

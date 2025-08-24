@@ -45,7 +45,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Check for payment session backup first (handles returning from payment)
     const handlePaymentReturn = () => {
-      if (isPaymentReturnPage() && isPaymentFlowActive()) {
+      if (isPaymentReturnPage()) {
         const paymentBackup = getPaymentSessionBackup();
         if (paymentBackup) {
           console.log('Restoring session from payment backup');
@@ -54,8 +54,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setStableAuthState(paymentBackup.user, paymentBackup.session);
           setLoading(false);
           
-          // Clear backup after successful restore
-          setTimeout(() => clearPaymentSessionBackup(), 1000);
+          // Only clear backup if not on payment-cancel (let cancel page handle it)
+          if (!window.location.pathname.includes('/payment-cancel')) {
+            setTimeout(() => clearPaymentSessionBackup(), 1000);
+          }
           return true;
         }
       }
