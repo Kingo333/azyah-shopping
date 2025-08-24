@@ -19,8 +19,6 @@ export default function PaymentCancel() {
   const { user, session } = useAuth();
 
   useEffect(() => {
-    console.log('PaymentCancel: Starting 4-second countdown');
-    
     // Try to restore session from backup if missing
     const restoreSession = async () => {
       if (!session || !user) {
@@ -47,9 +45,7 @@ export default function PaymentCancel() {
     
     const redirectTimer = setInterval(() => {
       setCountdown((prev) => {
-        console.log('PaymentCancel countdown:', prev - 1);
         if (prev <= 1) {
-          console.log('PaymentCancel: Countdown finished, navigating to dashboard');
           handleNavigateToDashboard();
           return 0;
         }
@@ -58,7 +54,6 @@ export default function PaymentCancel() {
     }, 1000);
 
     return () => {
-      console.log('PaymentCancel: Cleaning up timers');
       clearTimeout(clearTimer);
       clearInterval(redirectTimer);
     };
@@ -66,10 +61,6 @@ export default function PaymentCancel() {
 
   const handleNavigateToDashboard = async () => {
     setNavigating(true);
-    console.log('PaymentCancel: Navigating to dashboard');
-    
-    // Clear the current page title before navigation
-    document.title = 'Azyah';
     
     // Ensure we have a valid session before navigating
     if (!session || !user) {
@@ -101,7 +92,7 @@ export default function PaymentCancel() {
   return (
     <>
       <SEOHead 
-        title="Azyah"
+        title="Payment Canceled - Azyah"
         description="Your payment was canceled"
       />
       <div className="min-h-screen bg-background flex items-center justify-center p-4">

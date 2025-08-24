@@ -82,10 +82,6 @@ const RoleDashboard: React.FC = () => {
   const [isAffiliateMinimized, setIsAffiliateMinimized] = useState(true);
 
   useEffect(() => {
-    // Ensure the correct title is always set on dashboard load
-    document.title = 'Azyah - Fashion Discovery Platform';
-    console.log('RoleDashboard: Set title to "Azyah - Fashion Discovery Platform"');
-    
     const initializeDashboard = async () => {
       console.log('Initializing dashboard, user:', user);
       
