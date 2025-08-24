@@ -76,12 +76,12 @@ export default function PaymentCancel() {
             </div>
 
             <p className="text-sm text-muted-foreground">
-              Redirecting to home in {countdown} seconds...
+              Redirecting to dashboard in {countdown} seconds...
             </p>
 
             <div className="space-y-2">
               <Button 
-                onClick={() => navigate('/')} 
+                onClick={() => navigate('/dashboard')} 
                 variant="outline"
                 className="w-full"
               >
