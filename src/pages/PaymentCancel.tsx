@@ -21,16 +21,18 @@ export default function PaymentCancel() {
   useEffect(() => {
     // Try to restore session from backup if missing
     const restoreSession = async () => {
+      console.log('PaymentCancel: Checking auth state - session:', !!session, 'user:', !!user);
       if (!session || !user) {
         const backup = getPaymentSessionBackup();
         if (backup) {
           try {
+            console.log('PaymentCancel: Restoring session from backup');
             await supabase.auth.setSession({
               access_token: backup.session.access_token,
               refresh_token: backup.session.refresh_token
             });
           } catch (error) {
-            console.error('Failed to restore session from backup:', error);
+            console.error('PaymentCancel: Failed to restore session from backup:', error);
           }
         }
       }
@@ -57,7 +59,7 @@ export default function PaymentCancel() {
       clearTimeout(clearTimer);
       clearInterval(redirectTimer);
     };
-  }, [navigate]);
+  }, [navigate, session, user]);
 
   const handleNavigateToDashboard = async () => {
     setNavigating(true);
