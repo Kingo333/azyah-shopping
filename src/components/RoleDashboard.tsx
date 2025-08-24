@@ -82,6 +82,9 @@ const RoleDashboard: React.FC = () => {
   const [isAffiliateMinimized, setIsAffiliateMinimized] = useState(true);
 
   useEffect(() => {
+    // Set correct page title
+    document.title = 'Azyah - Fashion Discovery Platform';
+    
     const initializeDashboard = async () => {
       console.log('Initializing dashboard, user:', user);
       

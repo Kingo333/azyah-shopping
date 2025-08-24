@@ -62,6 +62,9 @@ export default function PaymentCancel() {
   const handleNavigateToDashboard = async () => {
     setNavigating(true);
     
+    // Clear the title before navigation
+    document.title = 'Azyah';
+    
     // Ensure we have a valid session before navigating
     if (!session || !user) {
       const backup = getPaymentSessionBackup();
@@ -92,7 +95,7 @@ export default function PaymentCancel() {
   return (
     <>
       <SEOHead 
-        title="Payment Canceled - Azyah"
+        title="Azyah"
         description="Your payment was canceled"
       />
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
