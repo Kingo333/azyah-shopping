@@ -1,5 +1,5 @@
-const CACHE_NAME = 'azyah-v1';
-const OFFLINE_CACHE = 'azyah-offline-v1';
+const CACHE_NAME = 'azyah-v2';
+const OFFLINE_CACHE = 'azyah-offline-v2';
 
 // Static assets to cache
 const STATIC_ASSETS = [

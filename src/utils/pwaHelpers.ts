@@ -3,8 +3,15 @@
 export const registerSW = async () => {
   if ('serviceWorker' in navigator) {
     try {
-      const registration = await navigator.serviceWorker.register('/sw.js');
+      // Force service worker update
+      const registration = await navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' });
       console.log('SW registered: ', registration);
+      
+      // Force immediate update
+      if (registration.waiting) {
+        registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+      }
+      
       return registration;
     } catch (error) {
       console.log('SW registration failed: ', error);
