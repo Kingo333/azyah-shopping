@@ -155,9 +155,13 @@ export const BoardCanvas = forwardRef<HTMLDivElement, BoardCanvasProps>(({
     >
       {/* Canvas Container */}
       <div 
-        className="relative w-full max-w-4xl mx-auto min-h-[580px] shadow-2xl rounded-lg overflow-visible"
+        className="relative w-full mx-auto min-h-[580px] shadow-2xl rounded-lg overflow-visible"
         style={{
           backgroundColor: boardState.canvas.background.color,
+          width: boardState.slots.length > 0 
+            ? `${Math.max(800, Math.max(...boardState.slots.map(slot => slot.x + slot.w)) + 40)}px`
+            : '100%',
+          maxWidth: '100%',
           height: boardState.slots.length > 0 
             ? `${Math.max(580, Math.max(...boardState.slots.map(slot => slot.y + slot.h)) + 40)}px`
             : '580px'
