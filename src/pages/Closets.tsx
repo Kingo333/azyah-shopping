@@ -69,20 +69,59 @@ const Closets = () => {
             </div>
           </div>
 
-          {/* Tabs */}
-          <div className="flex gap-4 mb-4">
-            <Button
-              variant={activeTab === 'explore' ? 'default' : 'outline'}
-              onClick={() => setActiveTab('explore')}
-            >
-              Explore
-            </Button>
-            <Button
-              variant={activeTab === 'my-closets' ? 'default' : 'outline'}
-              onClick={() => setActiveTab('my-closets')}
-            >
-              My Closets
-            </Button>
+          {/* Header Actions */}
+          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between mb-4">
+            <div className="flex gap-4">
+              <Button
+                variant={activeTab === 'explore' ? 'default' : 'outline'}
+                onClick={() => setActiveTab('explore')}
+              >
+                Explore
+              </Button>
+              <Button
+                variant={activeTab === 'my-closets' ? 'default' : 'outline'}
+                onClick={() => setActiveTab('my-closets')}
+              >
+                My Closets
+              </Button>
+            </div>
+            
+            <div className="flex gap-2">
+              <Button 
+                variant="outline"
+                onClick={() => {
+                  if (myClosets && myClosets.length > 0) {
+                    setSelectedClosetId(myClosets[0].id);
+                    setShowMoodBoardBuilder(true);
+                  }
+                }}
+                disabled={!myClosets || myClosets.length === 0}
+              >
+                <Palette className="h-4 w-4 mr-2" />
+                Create Look
+              </Button>
+              
+              <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <Plus className="h-4 w-4 mr-2" />
+                    New Closet
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Create New Closet</DialogTitle>
+                  </DialogHeader>
+                  <CreateClosetForm 
+                    newClosetData={newClosetData}
+                    setNewClosetData={setNewClosetData}
+                    onSubmit={handleCreateCloset}
+                    isLoading={createClosetMutation.isPending}
+                    onCancel={() => setShowCreateModal(false)}
+                  />
+                </DialogContent>
+              </Dialog>
+            </div>
           </div>
 
           {/* Search Controls */}
@@ -155,48 +194,11 @@ const Closets = () => {
         )}
 
         {activeTab === 'my-closets' && (
-          <div className="space-y-6">{/* Main actions for My Closets */}
+          <div className="space-y-6">
             <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
               <div>
                 <h2 className="text-lg font-semibold">Your Fashion Collections</h2>
                 <p className="text-sm text-muted-foreground">Organize your wardrobe and create stunning mood boards</p>
-              </div>
-              
-              <div className="flex gap-2">
-                <Button 
-                  variant="outline"
-                  onClick={() => {
-                    if (myClosets && myClosets.length > 0) {
-                      setSelectedClosetId(myClosets[0].id);
-                      setShowMoodBoardBuilder(true);
-                    }
-                  }}
-                  disabled={!myClosets || myClosets.length === 0}
-                >
-                  <Palette className="h-4 w-4 mr-2" />
-                  Create Look
-                </Button>
-                
-                <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
-                  <DialogTrigger asChild>
-                    <Button>
-                      <Plus className="h-4 w-4 mr-2" />
-                      New Closet
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Create New Closet</DialogTitle>
-                    </DialogHeader>
-                    <CreateClosetForm 
-                      newClosetData={newClosetData}
-                      setNewClosetData={setNewClosetData}
-                      onSubmit={handleCreateCloset}
-                      isLoading={createClosetMutation.isPending}
-                      onCancel={() => setShowCreateModal(false)}
-                    />
-                  </DialogContent>
-                </Dialog>
               </div>
             </div>
             {loadingMyClosets ? (
