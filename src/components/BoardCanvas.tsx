@@ -154,13 +154,10 @@ export const BoardCanvas = forwardRef<HTMLDivElement, BoardCanvasProps>(({
     >
       {/* Canvas Container */}
       <div 
-        className="relative mx-auto my-8 shadow-2xl rounded-lg overflow-hidden"
+        className="relative w-full max-w-4xl mx-auto h-80 shadow-2xl rounded-lg overflow-hidden"
         style={{
-          width: boardState.canvas.width * 0.6,
-          height: boardState.canvas.height * 0.6,
           backgroundColor: boardState.canvas.background.color,
-          transform: 'scale(0.8)',
-          transformOrigin: 'top center'
+          aspectRatio: `${boardState.canvas.width} / ${boardState.canvas.height}`
         }}
       >
         {/* Grid overlay */}
