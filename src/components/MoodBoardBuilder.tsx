@@ -1,6 +1,7 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
@@ -41,6 +42,7 @@ export const MoodBoardBuilder: React.FC<MoodBoardBuilderProps> = ({
   lookId,
   onClose
 }) => {
+  const isMobile = useIsMobile();
   const [boardState, setBoardState] = useState({
     canvas: {
       width: 1080,
@@ -211,15 +213,15 @@ export const MoodBoardBuilder: React.FC<MoodBoardBuilderProps> = ({
   return (
     <div className="fixed inset-0 bg-background z-50 flex flex-col">
       {/* Top Bar */}
-      <div className="border-b bg-card p-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="sm" onClick={onClose}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Closet
+      <div className={`border-b bg-card ${isMobile ? 'p-2' : 'p-4'}`}>
+        <div className={`flex items-center justify-between ${isMobile ? 'flex-col gap-2' : ''}`}>
+          <div className={`flex items-center ${isMobile ? 'gap-2 w-full justify-between' : 'gap-4'}`}>
+            <Button variant="ghost" size={isMobile ? "sm" : "sm"} onClick={onClose}>
+              <ArrowLeft className="h-4 w-4 mr-1" />
+              {isMobile ? 'Back' : 'Back to Closet'}
             </Button>
             
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
               <Button variant="ghost" size="sm" onClick={handleUndo}>
                 <Undo className="h-4 w-4" />
               </Button>
@@ -229,28 +231,30 @@ export const MoodBoardBuilder: React.FC<MoodBoardBuilderProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className={`flex items-center gap-2 ${isMobile ? 'w-full' : ''}`}>
             <Button 
               variant="outline" 
               size="sm" 
               onClick={() => setShowTemplates(true)}
+              className={isMobile ? 'flex-1' : ''}
             >
-              <Grid3X3 className="h-4 w-4 mr-2" />
-              Templates
+              <Grid3X3 className="h-4 w-4 mr-1" />
+              {isMobile ? 'Templates' : 'Templates'}
             </Button>
             
-            <Button variant="outline" size="sm" onClick={handleSave}>
-              <Save className="h-4 w-4 mr-2" />
-              Save Draft
+            <Button variant="outline" size="sm" onClick={handleSave} className={isMobile ? 'flex-1' : ''}>
+              <Save className="h-4 w-4 mr-1" />
+              {isMobile ? 'Save' : 'Save Draft'}
             </Button>
             
             <Button 
               variant="default" 
               size="sm" 
               onClick={() => setShowPublishDialog(true)}
+              className={isMobile ? 'flex-1' : ''}
             >
-              <Share2 className="h-4 w-4 mr-2" />
-              Publish
+              <Share2 className="h-4 w-4 mr-1" />
+              {isMobile ? 'Publish' : 'Publish'}
             </Button>
           </div>
         </div>
@@ -258,21 +262,22 @@ export const MoodBoardBuilder: React.FC<MoodBoardBuilderProps> = ({
 
       {/* Main Content */}
       <div className="flex-1 overflow-hidden">
-        <ResizablePanelGroup direction="horizontal">
+        <ResizablePanelGroup direction={isMobile ? "vertical" : "horizontal"}>
           {/* Left Drawer - Closet Items */}
-          <ResizablePanel defaultSize={25} minSize={20} maxSize={35}>
-            <div className="h-full border-r bg-muted/50">
-              <div className="p-4 border-b">
+          <ResizablePanel defaultSize={isMobile ? 30 : 25} minSize={isMobile ? 25 : 20} maxSize={isMobile ? 40 : 35}>
+            <div className={`h-full bg-muted/50 ${isMobile ? 'border-b' : 'border-r'}`}>
+              <div className={`border-b ${isMobile ? 'p-2' : 'p-4'}`}>
                 <div className="space-y-3">
                   <Input
-                    placeholder="Search items..."
+                    placeholder={isMobile ? "Search..." : "Search items..."}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
+                    className={isMobile ? 'text-sm' : ''}
                   />
                 </div>
               </div>
               
-              <div className="h-[calc(100%-80px)] overflow-auto">
+              <div className={`overflow-auto ${isMobile ? 'h-[calc(100%-60px)]' : 'h-[calc(100%-80px)]'}`}>
                 <ClosetGrid
                   items={closetItems}
                   onDragStart={handleDragStart}
@@ -282,11 +287,11 @@ export const MoodBoardBuilder: React.FC<MoodBoardBuilderProps> = ({
             </div>
           </ResizablePanel>
 
-          <ResizableHandle />
+          <ResizableHandle withHandle={!isMobile} />
 
           {/* Center - Canvas */}
-          <ResizablePanel defaultSize={50} minSize={40}>
-            <div className="h-full relative bg-gradient-to-br from-gray-50 to-gray-100">
+          <ResizablePanel defaultSize={isMobile ? 45 : 50} minSize={isMobile ? 35 : 40}>
+            <div className="h-full relative bg-gradient-to-br from-gray-50 to-gray-100 overflow-auto">
               <BoardCanvas
                 ref={canvasRef}
                 boardState={boardState}
@@ -300,51 +305,55 @@ export const MoodBoardBuilder: React.FC<MoodBoardBuilderProps> = ({
             </div>
           </ResizablePanel>
 
-          <ResizableHandle />
+          {!isMobile && (
+            <>
+              <ResizableHandle />
 
-          {/* Right Drawer - Inspector */}
-          <ResizablePanel defaultSize={25} minSize={20} maxSize={35}>
-            <div className="h-full border-l bg-muted/50">
-              <div className="p-4 border-b">
-                <h3 className="font-medium">Inspector</h3>
-              </div>
-              
-              <div className="p-4 space-y-4">
-                {boardState.selectedSlotIds.length > 0 ? (
-                  <div className="space-y-3">
-                    <h4 className="text-sm font-medium">Selected Item</h4>
-                    {/* Slot controls would go here */}
+              {/* Right Drawer - Inspector */}
+              <ResizablePanel defaultSize={25} minSize={20} maxSize={35}>
+                <div className="h-full border-l bg-muted/50">
+                  <div className="p-4 border-b">
+                    <h3 className="font-medium">Inspector</h3>
                   </div>
-                ) : (
-                  <div className="space-y-3">
-                    <h4 className="text-sm font-medium">Canvas Settings</h4>
-                    
-                    <div className="space-y-2">
-                      <label className="text-xs font-medium">Background</label>
-                      <div className="flex gap-2">
-                        <Button
-                          variant={boardState.canvas.background.type === 'solid' ? 'default' : 'outline'}
-                          size="sm"
-                          onClick={() => {
-                            const newState = {
-                              ...boardState,
-                              canvas: {
-                                ...boardState.canvas,
-                                background: { type: 'solid', color: '#F6F6F4' }
-                              }
-                            };
-                            saveToHistory(newState);
-                          }}
-                        >
-                          <Square className="h-3 w-3" />
-                        </Button>
+                  
+                  <div className="p-4 space-y-4">
+                    {boardState.selectedSlotIds.length > 0 ? (
+                      <div className="space-y-3">
+                        <h4 className="text-sm font-medium">Selected Item</h4>
+                        {/* Slot controls would go here */}
                       </div>
-                    </div>
+                    ) : (
+                      <div className="space-y-3">
+                        <h4 className="text-sm font-medium">Canvas Settings</h4>
+                        
+                        <div className="space-y-2">
+                          <label className="text-xs font-medium">Background</label>
+                          <div className="flex gap-2">
+                            <Button
+                              variant={boardState.canvas.background.type === 'solid' ? 'default' : 'outline'}
+                              size="sm"
+                              onClick={() => {
+                                const newState = {
+                                  ...boardState,
+                                  canvas: {
+                                    ...boardState.canvas,
+                                    background: { type: 'solid', color: '#F6F6F4' }
+                                  }
+                                };
+                                saveToHistory(newState);
+                              }}
+                            >
+                              <Square className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-            </div>
-          </ResizablePanel>
+                </div>
+              </ResizablePanel>
+            </>
+          )}
         </ResizablePanelGroup>
       </div>
 

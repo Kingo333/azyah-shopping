@@ -2,6 +2,7 @@ import React, { forwardRef, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Move, RotateCw, X, Copy } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface Slot {
   id: string;
@@ -47,6 +48,7 @@ export const BoardCanvas = forwardRef<HTMLDivElement, BoardCanvasProps>(({
   dragPreview,
   saveToHistory
 }, ref) => {
+  const isMobile = useIsMobile();
   const GRID_SIZE = 8;
 
   // Snap position to grid
@@ -155,16 +157,30 @@ export const BoardCanvas = forwardRef<HTMLDivElement, BoardCanvasProps>(({
     >
       {/* Canvas Container */}
       <div 
-        className="relative w-full mx-auto min-h-[580px] shadow-2xl rounded-lg overflow-visible"
+        className={`relative mx-auto shadow-2xl rounded-lg overflow-visible ${
+          isMobile ? 'min-h-[400px] mx-2' : 'min-h-[580px]'
+        }`}
         style={{
           backgroundColor: boardState.canvas.background.color,
-          width: boardState.slots.length > 0 
-            ? `${Math.max(800, Math.max(...boardState.slots.map(slot => slot.x + slot.w)) + 40)}px`
-            : '100%',
-          maxWidth: '100%',
-          height: boardState.slots.length > 0 
-            ? `${Math.max(580, Math.max(...boardState.slots.map(slot => slot.y + slot.h)) + 40)}px`
-            : '580px'
+          width: isMobile 
+            ? 'calc(100vw - 16px)'
+            : boardState.slots.length > 0 
+              ? `${Math.max(800, Math.max(...boardState.slots.map(slot => slot.x + slot.w)) + 40)}px`
+              : '100%',
+          maxWidth: isMobile ? 'calc(100vw - 16px)' : '100%',
+          height: isMobile
+            ? boardState.slots.length > 0 
+              ? `${Math.max(400, Math.max(...boardState.slots.map(slot => slot.y + slot.h)) + 20)}px`
+              : '400px'
+            : boardState.slots.length > 0 
+              ? `${Math.max(580, Math.max(...boardState.slots.map(slot => slot.y + slot.h)) + 40)}px`
+              : '580px'
+        }}
+        onTouchMove={(e) => {
+          // Prevent default scroll behavior during touch interactions
+          if (isDragging) {
+            e.preventDefault();
+          }
         }}
       >
         {/* Grid overlay */}
@@ -212,12 +228,12 @@ export const BoardCanvas = forwardRef<HTMLDivElement, BoardCanvasProps>(({
       {/* Instructions */}
       {boardState.slots.length === 0 && !isDragging && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="text-center space-y-2">
-            <h3 className="text-lg font-medium text-muted-foreground">
+          <div className={`text-center space-y-2 ${isMobile ? 'px-4' : ''}`}>
+            <h3 className={`font-medium text-muted-foreground ${isMobile ? 'text-base' : 'text-lg'}`}>
               Create Your Look
             </h3>
-            <p className="text-sm text-muted-foreground">
-              Drag items from your closet to start building your mood board
+            <p className={`text-muted-foreground ${isMobile ? 'text-xs' : 'text-sm'}`}>
+              {isMobile ? 'Drag items from your closet' : 'Drag items from your closet to start building your mood board'}
             </p>
           </div>
         </div>
@@ -253,6 +269,7 @@ const SlotComponent: React.FC<SlotComponentProps> = ({
   const [isDragging, setIsDragging] = React.useState(false);
   const [isResizing, setIsResizing] = React.useState(false);
   const [dragStart, setDragStart] = React.useState({ x: 0, y: 0 });
+  const isMobile = useIsMobile();
 
   const handleMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -260,6 +277,16 @@ const SlotComponent: React.FC<SlotComponentProps> = ({
     setIsDragging(true);
     setDragStart({ x: e.clientX - slot.x, y: e.clientY - slot.y });
     onSelect(e.metaKey || e.ctrlKey);
+  };
+
+  // Touch event handlers for mobile
+  const handleTouchStart = (e: React.TouchEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const touch = e.touches[0];
+    setIsDragging(true);
+    setDragStart({ x: touch.clientX - slot.x, y: touch.clientY - slot.y });
+    onSelect(false); // No multi-select on mobile
   };
 
   const handleMouseMove = React.useCallback((e: MouseEvent) => {
@@ -283,7 +310,34 @@ const SlotComponent: React.FC<SlotComponentProps> = ({
     }
   }, [isDragging, isResizing, dragStart, onMove, onResize, slot.x, slot.y, slot.w, slot.h]);
 
+  const handleTouchMove = React.useCallback((e: TouchEvent) => {
+    if (!isDragging && !isResizing) return;
+    
+    e.preventDefault();
+    const touch = e.touches[0];
+    
+    if (isDragging) {
+      const newX = touch.clientX - dragStart.x;
+      const newY = touch.clientY - dragStart.y;
+      onMove(newX - slot.x, newY - slot.y);
+    }
+    
+    if (isResizing) {
+      const deltaX = touch.clientX - dragStart.x;
+      const deltaY = touch.clientY - dragStart.y;
+      const newW = Math.max(50, slot.w + deltaX);
+      const newH = Math.max(50, slot.h + deltaY);
+      onResize(newW, newH);
+      setDragStart({ x: touch.clientX, y: touch.clientY });
+    }
+  }, [isDragging, isResizing, dragStart, onMove, onResize, slot.x, slot.y, slot.w, slot.h]);
+
   const handleMouseUp = React.useCallback(() => {
+    setIsDragging(false);
+    setIsResizing(false);
+  }, []);
+
+  const handleTouchEnd = React.useCallback(() => {
     setIsDragging(false);
     setIsResizing(false);
   }, []);
@@ -292,18 +346,22 @@ const SlotComponent: React.FC<SlotComponentProps> = ({
     if (isDragging || isResizing) {
       document.addEventListener('mousemove', handleMouseMove);
       document.addEventListener('mouseup', handleMouseUp);
+      document.addEventListener('touchmove', handleTouchMove, { passive: false });
+      document.addEventListener('touchend', handleTouchEnd);
       return () => {
         document.removeEventListener('mousemove', handleMouseMove);
         document.removeEventListener('mouseup', handleMouseUp);
+        document.removeEventListener('touchmove', handleTouchMove);
+        document.removeEventListener('touchend', handleTouchEnd);
       };
     }
-  }, [isDragging, isResizing, handleMouseMove, handleMouseUp]);
+  }, [isDragging, isResizing, handleMouseMove, handleMouseUp, handleTouchMove, handleTouchEnd]);
 
   return (
     <div
       className={`absolute group select-none ${
         isSelected ? 'ring-2 ring-primary ring-offset-2' : ''
-      } ${isDragging ? 'cursor-grabbing z-50' : 'cursor-grab'}`}
+      } ${isDragging ? 'cursor-grabbing z-50' : 'cursor-grab'} ${isMobile ? 'touch-none' : ''}`}
       style={{
         left: slot.x,
         top: slot.y,
@@ -314,6 +372,7 @@ const SlotComponent: React.FC<SlotComponentProps> = ({
         userSelect: 'none'
       }}
       onMouseDown={handleMouseDown}
+      onTouchStart={handleTouchStart}
       draggable={false}
     >
       {/* Slot content */}
@@ -362,22 +421,43 @@ const SlotComponent: React.FC<SlotComponentProps> = ({
         <>
           {/* Resize handle */}
           <div
-            className="absolute -bottom-1 -right-1 w-4 h-4 bg-primary rounded-full cursor-se-resize z-20 pointer-events-auto"
+            className={`absolute -bottom-1 -right-1 bg-primary rounded-full cursor-se-resize z-20 pointer-events-auto ${
+              isMobile ? 'w-6 h-6' : 'w-4 h-4'
+            }`}
             onMouseDown={(e) => {
               e.stopPropagation();
               e.preventDefault();
               setIsResizing(true);
               setDragStart({ x: e.clientX, y: e.clientY });
             }}
+            onTouchStart={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              const touch = e.touches[0];
+              setIsResizing(true);
+              setDragStart({ x: touch.clientX, y: touch.clientY });
+            }}
           />
 
           {/* Action buttons */}
-          <div className="absolute -top-8 left-0 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            <Button size="sm" variant="secondary" onClick={onDuplicate}>
-              <Copy className="h-3 w-3" />
+          <div className={`absolute left-0 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity ${
+            isMobile ? '-top-12' : '-top-8'
+          }`}>
+            <Button 
+              size="sm" 
+              variant="secondary" 
+              onClick={onDuplicate}
+              className={isMobile ? 'min-w-[44px] h-8' : ''}
+            >
+              <Copy className={`${isMobile ? 'h-4 w-4' : 'h-3 w-3'}`} />
             </Button>
-            <Button size="sm" variant="destructive" onClick={onDelete}>
-              <X className="h-3 w-3" />
+            <Button 
+              size="sm" 
+              variant="destructive" 
+              onClick={onDelete}
+              className={isMobile ? 'min-w-[44px] h-8' : ''}
+            >
+              <X className={`${isMobile ? 'h-4 w-4' : 'h-3 w-3'}`} />
             </Button>
           </div>
         </>
