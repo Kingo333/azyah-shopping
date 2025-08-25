@@ -247,8 +247,6 @@ const SlotComponent: React.FC<SlotComponentProps> = ({
   const [dragStart, setDragStart] = React.useState({ x: 0, y: 0 });
 
   const handleMouseDown = (e: React.MouseEvent) => {
-    if (e.target !== e.currentTarget) return;
-    
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(true);
@@ -257,13 +255,25 @@ const SlotComponent: React.FC<SlotComponentProps> = ({
   };
 
   const handleMouseMove = React.useCallback((e: MouseEvent) => {
-    if (!isDragging) return;
+    if (!isDragging && !isResizing) return;
     
     e.preventDefault();
-    const newX = e.clientX - dragStart.x;
-    const newY = e.clientY - dragStart.y;
-    onMove(newX - slot.x, newY - slot.y);
-  }, [isDragging, dragStart, onMove, slot.x, slot.y]);
+    
+    if (isDragging) {
+      const newX = e.clientX - dragStart.x;
+      const newY = e.clientY - dragStart.y;
+      onMove(newX - slot.x, newY - slot.y);
+    }
+    
+    if (isResizing) {
+      const deltaX = e.clientX - dragStart.x;
+      const deltaY = e.clientY - dragStart.y;
+      const newW = Math.max(50, slot.w + deltaX);
+      const newH = Math.max(50, slot.h + deltaY);
+      onResize(newW, newH);
+      setDragStart({ x: e.clientX, y: e.clientY });
+    }
+  }, [isDragging, isResizing, dragStart, onMove, onResize, slot.x, slot.y, slot.w, slot.h]);
 
   const handleMouseUp = React.useCallback(() => {
     setIsDragging(false);
@@ -299,21 +309,29 @@ const SlotComponent: React.FC<SlotComponentProps> = ({
       draggable={false}
     >
       {/* Slot content */}
-      <Card className="w-full h-full border-2 border-dashed border-gray-300 bg-white/80 backdrop-blur-sm overflow-hidden">
+      <Card 
+        className="w-full h-full border-2 border-dashed border-gray-300 bg-white/80 backdrop-blur-sm overflow-hidden pointer-events-none"
+        onMouseDown={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          handleMouseDown(e);
+        }}
+      >
         {slot.item ? (
           <div className="relative w-full h-full">
             <img
               src={slot.item.image_bg_removed_url || slot.item.image_url || '/placeholder.svg'}
               alt={slot.item.title || 'Item'}
-              className="w-full h-full object-contain p-2"
+              className="w-full h-full object-contain p-2 pointer-events-none select-none"
               style={{
                 borderRadius: slot.mask === 'circle' ? '50%' : 
                            slot.mask === 'round' ? '8px' : '0px'
               }}
+              draggable={false}
             />
             
             {/* Item info overlay */}
-            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none select-none">
               <p className="text-white text-xs font-medium truncate">
                 {slot.item.title}
               </p>
@@ -336,10 +354,12 @@ const SlotComponent: React.FC<SlotComponentProps> = ({
         <>
           {/* Resize handle */}
           <div
-            className="absolute -bottom-1 -right-1 w-3 h-3 bg-primary rounded-full cursor-se-resize"
+            className="absolute -bottom-1 -right-1 w-4 h-4 bg-primary rounded-full cursor-se-resize z-20 pointer-events-auto"
             onMouseDown={(e) => {
               e.stopPropagation();
+              e.preventDefault();
               setIsResizing(true);
+              setDragStart({ x: e.clientX, y: e.clientY });
             }}
           />
 
