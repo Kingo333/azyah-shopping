@@ -71,10 +71,11 @@ export const BoardCanvas = forwardRef<HTMLDivElement, BoardCanvasProps>(({
     setBoardState(prev => {
       const newSlots = prev.slots.map(slot => {
         if (slot.id === slotId) {
+          // Allow movement beyond current canvas bounds - canvas will expand
           return {
             ...slot,
-            x: Math.max(0, Math.min(slot.x + deltaX, prev.canvas.width - slot.w)),
-            y: Math.max(0, Math.min(slot.y + deltaY, prev.canvas.height - slot.h))
+            x: Math.max(0, slot.x + deltaX),
+            y: Math.max(0, slot.y + deltaY)
           };
         }
         return slot;
@@ -154,9 +155,12 @@ export const BoardCanvas = forwardRef<HTMLDivElement, BoardCanvasProps>(({
     >
       {/* Canvas Container */}
       <div 
-        className="relative w-full max-w-4xl mx-auto h-[580px] shadow-2xl rounded-lg overflow-hidden"
+        className="relative w-full max-w-4xl mx-auto min-h-[580px] shadow-2xl rounded-lg overflow-visible"
         style={{
-          backgroundColor: boardState.canvas.background.color
+          backgroundColor: boardState.canvas.background.color,
+          height: boardState.slots.length > 0 
+            ? `${Math.max(580, Math.max(...boardState.slots.map(slot => slot.y + slot.h)) + 40)}px`
+            : '580px'
         }}
       >
         {/* Grid overlay */}
