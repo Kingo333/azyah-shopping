@@ -247,6 +247,7 @@ export const CreateLookSection: React.FC<CreateLookSectionProps> = ({ closetId }
                             variant="ghost" 
                             size="sm" 
                             onClick={() => setClosetCollapsed(true)}
+                            className="shadow-md hover:shadow-lg transition-shadow"
                           >
                             <span className="text-xs">hide</span>
                           </Button>
@@ -283,6 +284,7 @@ export const CreateLookSection: React.FC<CreateLookSectionProps> = ({ closetId }
                             variant="ghost" 
                             size="sm" 
                             onClick={() => setClosetCollapsed(true)}
+                            className="shadow-md hover:shadow-lg transition-shadow"
                           >
                             <span className="text-xs">hide</span>
                           </Button>
@@ -309,7 +311,7 @@ export const CreateLookSection: React.FC<CreateLookSectionProps> = ({ closetId }
                   variant="ghost" 
                   size="sm" 
                   onClick={() => setClosetCollapsed(false)}
-                  className="absolute left-2 top-2 z-10"
+                  className="absolute left-2 top-2 z-10 shadow-lg hover:shadow-xl transition-shadow bg-background/90 backdrop-blur-sm"
                 >
                   <span className="text-xs">open closet</span>
                 </Button>
@@ -320,7 +322,7 @@ export const CreateLookSection: React.FC<CreateLookSectionProps> = ({ closetId }
                   variant="ghost" 
                   size="sm" 
                   onClick={() => setInspectorCollapsed(false)}
-                  className="absolute right-2 top-2 z-10"
+                  className="absolute right-2 top-2 z-10 shadow-lg hover:shadow-xl transition-shadow bg-background/90 backdrop-blur-sm"
                 >
                   <span className="text-xs">open inspector</span>
                 </Button>
@@ -363,6 +365,7 @@ export const CreateLookSection: React.FC<CreateLookSectionProps> = ({ closetId }
                       variant="ghost" 
                       size="sm" 
                       onClick={() => setInspectorCollapsed(true)}
+                      className="shadow-md hover:shadow-lg transition-shadow"
                     >
                       <span className="text-xs">hide</span>
                     </Button>
