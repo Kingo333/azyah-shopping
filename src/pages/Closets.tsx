@@ -9,7 +9,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { useClosets, usePublicClosets, useCreateCloset } from '@/hooks/useClosets';
-import { Grid3X3, Search, Plus, Star, Lock, Globe, Heart } from 'lucide-react';
+import { Grid3X3, Search, Plus, Star, Lock, Globe, Heart, Palette } from 'lucide-react';
+import { MoodBoardBuilder } from '@/components/MoodBoardBuilder';
 
 const LoadingFallback = () => (
   <div className="space-y-4">
@@ -33,6 +34,8 @@ const Closets = () => {
     description: '',
     is_public: false
   });
+  const [showMoodBoardBuilder, setShowMoodBoardBuilder] = useState(false);
+  const [selectedClosetId, setSelectedClosetId] = useState<string | null>(null);
 
   const { data: myClosets, isLoading: loadingMyClosets } = useClosets();
   const { data: publicClosets, isLoading: loadingPublicClosets } = usePublicClosets();
@@ -182,9 +185,21 @@ const Closets = () => {
                         <span className="text-sm text-muted-foreground">
                           Created {new Date(closet.created_at).toLocaleDateString()}
                         </span>
-                        <Button variant="outline" size="sm">
-                          View Items
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button variant="outline" size="sm">
+                            View Items
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            onClick={() => {
+                              setSelectedClosetId(closet.id);
+                              setShowMoodBoardBuilder(true);
+                            }}
+                          >
+                            <Palette className="h-4 w-4 mr-1" />
+                            Create Look
+                          </Button>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
@@ -308,6 +323,17 @@ const Closets = () => {
               </div>
             )}
           </div>
+        )}
+
+        {/* Mood Board Builder */}
+        {showMoodBoardBuilder && selectedClosetId && (
+          <MoodBoardBuilder
+            closetId={selectedClosetId}
+            onClose={() => {
+              setShowMoodBoardBuilder(false);
+              setSelectedClosetId(null);
+            }}
+          />
         )}
 
       </div>

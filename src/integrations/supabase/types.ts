@@ -381,24 +381,54 @@ export type Database = {
       closet_items: {
         Row: {
           added_at: string
+          attrs: Json | null
+          brand: string | null
+          category: string | null
           closet_id: string
+          color: string | null
+          currency: string | null
+          external_product_id: string | null
           id: string
+          image_bg_removed_url: string | null
+          image_url: string | null
+          price_cents: number | null
           product_id: string
           sort_order: number | null
+          title: string | null
         }
         Insert: {
           added_at?: string
+          attrs?: Json | null
+          brand?: string | null
+          category?: string | null
           closet_id: string
+          color?: string | null
+          currency?: string | null
+          external_product_id?: string | null
           id?: string
+          image_bg_removed_url?: string | null
+          image_url?: string | null
+          price_cents?: number | null
           product_id: string
           sort_order?: number | null
+          title?: string | null
         }
         Update: {
           added_at?: string
+          attrs?: Json | null
+          brand?: string | null
+          category?: string | null
           closet_id?: string
+          color?: string | null
+          currency?: string | null
+          external_product_id?: string | null
           id?: string
+          image_bg_removed_url?: string | null
+          image_url?: string | null
+          price_cents?: number | null
           product_id?: string
           sort_order?: number | null
+          title?: string | null
         }
         Relationships: [
           {
@@ -1086,6 +1116,161 @@ export type Database = {
           created_at?: string
           id?: string
           product_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      look_items: {
+        Row: {
+          closet_item_id: string | null
+          created_at: string | null
+          id: string
+          look_id: string
+          product_snapshot: Json | null
+          slot: Json
+          z_index: number | null
+        }
+        Insert: {
+          closet_item_id?: string | null
+          created_at?: string | null
+          id?: string
+          look_id: string
+          product_snapshot?: Json | null
+          slot?: Json
+          z_index?: number | null
+        }
+        Update: {
+          closet_item_id?: string | null
+          created_at?: string | null
+          id?: string
+          look_id?: string
+          product_snapshot?: Json | null
+          slot?: Json
+          z_index?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "look_items_closet_item_id_fkey"
+            columns: ["closet_item_id"]
+            isOneToOne: false
+            referencedRelation: "closet_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "look_items_look_id_fkey"
+            columns: ["look_id"]
+            isOneToOne: false
+            referencedRelation: "looks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      look_templates: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          is_public: boolean | null
+          name: string
+          template_data: Json
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_public?: boolean | null
+          name: string
+          template_data?: Json
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_public?: boolean | null
+          name?: string
+          template_data?: Json
+          user_id?: string
+        }
+        Relationships: []
+      }
+      look_votes: {
+        Row: {
+          created_at: string | null
+          id: string
+          look_id: string
+          value: number
+          voter_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          look_id: string
+          value: number
+          voter_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          look_id?: string
+          value?: number
+          voter_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "look_votes_look_id_fkey"
+            columns: ["look_id"]
+            isOneToOne: false
+            referencedRelation: "looks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      looks: {
+        Row: {
+          canvas: Json
+          cover_image_url: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          is_public: boolean | null
+          mood: string | null
+          occasion: string | null
+          published_at: string | null
+          tags: string[] | null
+          title: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          canvas?: Json
+          cover_image_url?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_public?: boolean | null
+          mood?: string | null
+          occasion?: string | null
+          published_at?: string | null
+          tags?: string[] | null
+          title: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          canvas?: Json
+          cover_image_url?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_public?: boolean | null
+          mood?: string | null
+          occasion?: string | null
+          published_at?: string | null
+          tags?: string[] | null
+          title?: string
+          updated_at?: string | null
           user_id?: string
         }
         Relationships: []
