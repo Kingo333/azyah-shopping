@@ -73,8 +73,8 @@ export const BoardCanvas = forwardRef<HTMLDivElement, BoardCanvasProps>(({
         if (slot.id === slotId) {
           return {
             ...slot,
-            x: snapToGrid(Math.max(0, slot.x + deltaX)),
-            y: snapToGrid(Math.max(0, slot.y + deltaY))
+            x: Math.max(0, Math.min(slot.x + deltaX, prev.canvas.width - slot.w)),
+            y: Math.max(0, Math.min(slot.y + deltaY, prev.canvas.height - slot.h))
           };
         }
         return slot;
@@ -82,7 +82,7 @@ export const BoardCanvas = forwardRef<HTMLDivElement, BoardCanvasProps>(({
 
       return { ...prev, slots: newSlots };
     });
-  }, [setBoardState, snapToGrid]);
+  }, [setBoardState]);
 
   // Handle slot resize
   const handleSlotResize = useCallback((slotId: string, newW: number, newH: number) => {
@@ -250,6 +250,7 @@ const SlotComponent: React.FC<SlotComponentProps> = ({
     if (e.target !== e.currentTarget) return;
     
     e.preventDefault();
+    e.stopPropagation();
     setIsDragging(true);
     setDragStart({ x: e.clientX - slot.x, y: e.clientY - slot.y });
     onSelect(e.metaKey || e.ctrlKey);
@@ -258,6 +259,7 @@ const SlotComponent: React.FC<SlotComponentProps> = ({
   const handleMouseMove = React.useCallback((e: MouseEvent) => {
     if (!isDragging) return;
     
+    e.preventDefault();
     const newX = e.clientX - dragStart.x;
     const newY = e.clientY - dragStart.y;
     onMove(newX - slot.x, newY - slot.y);
@@ -281,18 +283,20 @@ const SlotComponent: React.FC<SlotComponentProps> = ({
 
   return (
     <div
-      className={`absolute group cursor-move ${
+      className={`absolute group select-none ${
         isSelected ? 'ring-2 ring-primary ring-offset-2' : ''
-      }`}
+      } ${isDragging ? 'cursor-grabbing z-50' : 'cursor-grab'}`}
       style={{
         left: slot.x,
         top: slot.y,
         width: slot.w,
         height: slot.h,
         transform: slot.rotation ? `rotate(${slot.rotation}deg)` : undefined,
-        zIndex: isSelected ? 10 : 1
+        zIndex: isSelected ? 10 : isDragging ? 50 : 1,
+        userSelect: 'none'
       }}
       onMouseDown={handleMouseDown}
+      draggable={false}
     >
       {/* Slot content */}
       <Card className="w-full h-full border-2 border-dashed border-gray-300 bg-white/80 backdrop-blur-sm overflow-hidden">
