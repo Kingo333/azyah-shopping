@@ -142,7 +142,7 @@ export const BoardCanvas = forwardRef<HTMLDivElement, BoardCanvasProps>(({
   return (
     <div 
       ref={ref}
-      className="relative w-full h-80 overflow-auto bg-gradient-to-br from-gray-50 to-white"
+      className="relative w-full h-full overflow-auto bg-gradient-to-br from-gray-50 to-white"
       onDrop={onDrop}
       onDragOver={onDragOver}
       style={{
