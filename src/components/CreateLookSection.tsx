@@ -10,7 +10,7 @@ import { useWishlistProducts } from '@/hooks/useWishlistProducts';
 import { useProducts } from '@/hooks/useProducts';
 import { useEnhancedClosetItems } from '@/hooks/useEnhancedClosets';
 import { useCreateLook, useUpdateLook } from '@/hooks/useLooks';
-import { Palette, Heart, ShoppingBag, Plus, Grid3X3, Save, Share2, Square, Undo, Redo, ChevronDown, ChevronUp } from 'lucide-react';
+import { Palette, Heart, ShoppingBag, Plus, Grid3X3, Save, Share2, Square, Undo, Redo } from 'lucide-react';
 import { BoardCanvas } from '@/components/BoardCanvas';
 import { TemplateSelector } from '@/components/TemplateSelector';
 import { toast } from '@/hooks/use-toast';
@@ -248,7 +248,7 @@ export const CreateLookSection: React.FC<CreateLookSectionProps> = ({ closetId }
                             size="sm" 
                             onClick={() => setClosetCollapsed(true)}
                           >
-                            <ChevronUp className="h-3 w-3" />
+                            <span className="text-xs">hide</span>
                           </Button>
                         </div>
                         <div className="grid grid-cols-2 gap-2">
@@ -284,7 +284,7 @@ export const CreateLookSection: React.FC<CreateLookSectionProps> = ({ closetId }
                             size="sm" 
                             onClick={() => setClosetCollapsed(true)}
                           >
-                            <ChevronUp className="h-3 w-3" />
+                            <span className="text-xs">hide</span>
                           </Button>
                         </div>
                         <div className="text-center py-8">
@@ -311,8 +311,7 @@ export const CreateLookSection: React.FC<CreateLookSectionProps> = ({ closetId }
                   onClick={() => setClosetCollapsed(false)}
                   className="absolute left-2 top-2 z-10"
                 >
-                  <ChevronDown className="h-4 w-4 mr-1" />
-                  <span className="text-xs">Closet</span>
+                  <span className="text-xs">open closet</span>
                 </Button>
               )}
               
@@ -323,8 +322,7 @@ export const CreateLookSection: React.FC<CreateLookSectionProps> = ({ closetId }
                   onClick={() => setInspectorCollapsed(false)}
                   className="absolute right-2 top-2 z-10"
                 >
-                  <span className="text-xs">Inspector</span>
-                  <ChevronDown className="h-4 w-4 ml-1" />
+                  <span className="text-xs">open inspector</span>
                 </Button>
               )}
               
@@ -366,7 +364,7 @@ export const CreateLookSection: React.FC<CreateLookSectionProps> = ({ closetId }
                       size="sm" 
                       onClick={() => setInspectorCollapsed(true)}
                     >
-                      <ChevronUp className="h-3 w-3" />
+                      <span className="text-xs">hide</span>
                     </Button>
                   </div>
                   
