@@ -154,7 +154,7 @@ export const BoardCanvas = forwardRef<HTMLDivElement, BoardCanvasProps>(({
     >
       {/* Canvas Container */}
       <div 
-        className="relative w-full max-w-4xl mx-auto h-[600px] shadow-2xl rounded-lg overflow-hidden"
+        className="relative w-full max-w-4xl mx-auto h-[580px] shadow-2xl rounded-lg overflow-hidden"
         style={{
           backgroundColor: boardState.canvas.background.color
         }}
