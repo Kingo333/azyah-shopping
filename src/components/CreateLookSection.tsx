@@ -226,8 +226,13 @@ export const CreateLookSection: React.FC<CreateLookSectionProps> = ({ closetId }
       <div className="h-[600px] border rounded-lg overflow-hidden">
         <ResizablePanelGroup direction="horizontal">
           {/* Left Panel - Closet Items */}
-          <ResizablePanel defaultSize={25} minSize={20} maxSize={35}>
-              <div className="h-full border-r bg-muted/30">
+          <ResizablePanel 
+            defaultSize={closetCollapsed ? 5 : 25} 
+            minSize={closetCollapsed ? 5 : 20} 
+            maxSize={closetCollapsed ? 5 : 35}
+          >
+            <div className="h-full border-r bg-muted/30">
+              {!closetCollapsed && (
                 <div className="p-4 border-b">
                   <Input
                     placeholder="Search items..."
@@ -235,57 +240,88 @@ export const CreateLookSection: React.FC<CreateLookSectionProps> = ({ closetId }
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
                 </div>
-                
-                <div className="h-[calc(100%-80px)] overflow-auto">
-                  {closetItems.length > 0 ? (
-                    <div className="p-2">
-                      <div className="grid grid-cols-2 gap-2">
-                        {closetItems.map((item) => (
-                          <Card 
-                            key={item.id}
-                            className="cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow"
-                            draggable
-                            onDragStart={(e) => handleDragStart(item, e)}
-                          >
-                            <div className="aspect-square bg-muted rounded-t-lg overflow-hidden">
-                              <img 
-                                src={getImageUrl(item)} 
-                                alt={item.title || 'Item'}
-                                className="w-full h-full object-cover"
-                              />
-                            </div>
-                            <CardContent className="p-2">
-                              <p className="text-xs font-medium line-clamp-1">
-                                {item.title || 'Untitled'}
-                              </p>
-                            </CardContent>
-                          </Card>
-                        ))}
-                      </div>
+              )}
+              
+              <div className={`h-${closetCollapsed ? 'full' : '[calc(100%-80px)]'} overflow-auto`}>
+                {closetCollapsed ? (
+                  <div className="flex flex-col items-center p-2">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => setClosetCollapsed(false)}
+                      className="rotate-90 whitespace-nowrap"
+                    >
+                      <ChevronDown className="h-4 w-4" />
+                    </Button>
+                    <span className="text-xs text-muted-foreground mt-2 transform rotate-90 whitespace-nowrap">
+                      Closet
+                    </span>
+                  </div>
+                ) : closetItems.length > 0 ? (
+                  <div className="p-2">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-xs font-medium">Closet Items</span>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => setClosetCollapsed(true)}
+                      >
+                        <ChevronUp className="h-3 w-3" />
+                      </Button>
                     </div>
-                  ) : (
-                    <Collapsible open={!closetCollapsed} onOpenChange={(open) => setClosetCollapsed(!open)}>
-                      <CollapsibleTrigger asChild>
-                        <Button variant="ghost" className="w-full justify-between p-4 h-auto">
-                          <span className="text-sm text-muted-foreground">No items in this closet yet</span>
-                          {closetCollapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
-                        </Button>
-                      </CollapsibleTrigger>
-                      <CollapsibleContent>
-                        <div className="text-center py-8 px-4">
-                          <p className="text-xs text-muted-foreground">Add items to your closet to start creating looks</p>
-                        </div>
-                      </CollapsibleContent>
-                    </Collapsible>
-                  )}
-                </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      {closetItems.map((item) => (
+                        <Card 
+                          key={item.id}
+                          className="cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow"
+                          draggable
+                          onDragStart={(e) => handleDragStart(item, e)}
+                        >
+                          <div className="aspect-square bg-muted rounded-t-lg overflow-hidden">
+                            <img 
+                              src={getImageUrl(item)} 
+                              alt={item.title || 'Item'}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          <CardContent className="p-2">
+                            <p className="text-xs font-medium line-clamp-1">
+                              {item.title || 'Untitled'}
+                            </p>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-4">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-xs font-medium">Closet Items</span>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => setClosetCollapsed(true)}
+                      >
+                        <ChevronUp className="h-3 w-3" />
+                      </Button>
+                    </div>
+                    <div className="text-center py-8">
+                      <p className="text-xs text-muted-foreground">No items in this closet yet</p>
+                      <p className="text-xs text-muted-foreground mt-1">Add items to start creating looks</p>
+                    </div>
+                  </div>
+                )}
               </div>
+            </div>
           </ResizablePanel>
 
           <ResizableHandle />
 
           {/* Center Panel - Canvas */}
-          <ResizablePanel defaultSize={50} minSize={40}>
+          <ResizablePanel 
+            defaultSize={inspectorCollapsed && closetCollapsed ? 90 : inspectorCollapsed || closetCollapsed ? 70 : 50} 
+            minSize={40}
+          >
             <div className="h-full relative bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
               {boardState.slots.length === 0 ? (
                 <div 
@@ -315,17 +351,39 @@ export const CreateLookSection: React.FC<CreateLookSectionProps> = ({ closetId }
           <ResizableHandle />
 
           {/* Right Panel - Inspector */}
-          <ResizablePanel defaultSize={25} minSize={20} maxSize={35}>
+          <ResizablePanel 
+            defaultSize={inspectorCollapsed ? 5 : 25} 
+            minSize={inspectorCollapsed ? 5 : 20} 
+            maxSize={inspectorCollapsed ? 5 : 35}
+          >
             <div className="h-full border-l bg-muted/30">
-              <Collapsible open={!inspectorCollapsed} onOpenChange={(open) => setInspectorCollapsed(!open)}>
-                <CollapsibleTrigger asChild>
-                  <Button variant="ghost" className="w-full justify-between p-4 border-b h-auto">
-                    <h3 className="font-medium">Inspector</h3>
-                    {inspectorCollapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+              {inspectorCollapsed ? (
+                <div className="flex flex-col items-center p-2">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => setInspectorCollapsed(false)}
+                    className="rotate-90 whitespace-nowrap"
+                  >
+                    <ChevronDown className="h-4 w-4" />
                   </Button>
-                </CollapsibleTrigger>
-                
-                <CollapsibleContent>
+                  <span className="text-xs text-muted-foreground mt-2 transform rotate-90 whitespace-nowrap">
+                    Inspector
+                  </span>
+                </div>
+              ) : (
+                <>
+                  <div className="p-4 border-b flex justify-between items-center">
+                    <h3 className="font-medium">Inspector</h3>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => setInspectorCollapsed(true)}
+                    >
+                      <ChevronUp className="h-3 w-3" />
+                    </Button>
+                  </div>
+                  
                   <div className="p-4 space-y-4">
                     <div className="space-y-3">
                       <h4 className="text-sm font-medium">Canvas Settings</h4>
@@ -353,8 +411,8 @@ export const CreateLookSection: React.FC<CreateLookSectionProps> = ({ closetId }
                       </div>
                     </div>
                   </div>
-                </CollapsibleContent>
-              </Collapsible>
+                </>
+              )}
             </div>
           </ResizablePanel>
         </ResizablePanelGroup>
