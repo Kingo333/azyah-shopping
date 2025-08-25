@@ -325,8 +325,8 @@ const SlotComponent: React.FC<SlotComponentProps> = ({
             </div>
           </div>
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-gray-400">
-            <span className="text-xs">Drop item here</span>
+          <div className="w-full h-full flex items-center justify-center text-gray-400 pointer-events-none select-none">
+            <span className="text-xs pointer-events-none">Drop item here</span>
           </div>
         )}
       </Card>
