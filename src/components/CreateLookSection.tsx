@@ -13,29 +13,8 @@ interface CreateLookSectionProps {
 }
 
 export const CreateLookSection: React.FC<CreateLookSectionProps> = ({ closetId }) => {
-  const [showMoodBoard, setShowMoodBoard] = useState(false);
-  const [draggedItem, setDraggedItem] = useState<any>(null);
-  
   const { wishlistProducts, isLoading: wishlistLoading } = useWishlistProducts();
   const { data: products, isLoading: productsLoading } = useProducts({ limit: 50 });
-
-  const handleDragStart = (item: any, event: React.DragEvent) => {
-    setDraggedItem(item);
-    event.dataTransfer.effectAllowed = 'copy';
-  };
-
-  const handleDragOver = (event: React.DragEvent) => {
-    event.preventDefault();
-    event.dataTransfer.dropEffect = 'copy';
-  };
-
-  const handleDrop = (event: React.DragEvent) => {
-    event.preventDefault();
-    if (draggedItem && closetId) {
-      // Open mood board with the dragged item
-      setShowMoodBoard(true);
-    }
-  };
 
   const formatPrice = (priceCents: number, currency: string) => {
     const price = priceCents / 100;
@@ -67,44 +46,13 @@ export const CreateLookSection: React.FC<CreateLookSectionProps> = ({ closetId }
 
   return (
     <div className="space-y-6">
-      {/* Create Look Canvas */}
-      <Card className="border-2 border-dashed border-primary/20 bg-primary/5">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Palette className="h-5 w-5" />
-            Create Your Look
-          </CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Drag items from your wishlist or products below to start creating your look
-          </p>
-        </CardHeader>
-        <CardContent>
-          <div 
-            className="min-h-32 border-2 border-dashed border-primary/30 rounded-lg bg-background/50 flex items-center justify-center transition-colors hover:bg-primary/5"
-            onDragOver={handleDragOver}
-            onDrop={handleDrop}
-          >
-            {draggedItem ? (
-              <div className="text-center">
-                <Plus className="h-8 w-8 text-primary mx-auto mb-2" />
-                <p className="text-sm text-primary font-medium">Drop to add to your look</p>
-              </div>
-            ) : (
-              <div className="text-center">
-                <ShoppingBag className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                <p className="text-sm text-muted-foreground">Drag items here or click to start creating</p>
-                <Button 
-                  variant="outline" 
-                  className="mt-2"
-                  onClick={() => setShowMoodBoard(true)}
-                >
-                  Start Creating
-                </Button>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+      {/* Main Mood Board Builder - Always visible */}
+      <div className="bg-card rounded-lg border">
+        <MoodBoardBuilder
+          closetId={closetId}
+          onClose={() => {}} // No close button since it's embedded
+        />
+      </div>
 
       {/* Wishlist Carousel */}
       <div className="space-y-4">
@@ -125,11 +73,7 @@ export const CreateLookSection: React.FC<CreateLookSectionProps> = ({ closetId }
             <CarouselContent className="-ml-2">
               {wishlistProducts.map((item) => (
                 <CarouselItem key={item.id} className="pl-2 basis-48">
-                  <Card 
-                    className="cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow"
-                    draggable
-                    onDragStart={(e) => handleDragStart(item.product, e)}
-                  >
+                  <Card className="cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow">
                     <div className="aspect-square bg-muted rounded-t-lg overflow-hidden">
                       <img 
                         src={getImageUrl(item.product)} 
@@ -180,12 +124,7 @@ export const CreateLookSection: React.FC<CreateLookSectionProps> = ({ closetId }
         ) : products && products.length > 0 ? (
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
             {products.map((product) => (
-              <Card 
-                key={product.id}
-                className="cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow"
-                draggable
-                onDragStart={(e) => handleDragStart(product, e)}
-              >
+              <Card key={product.id} className="cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow">
                 <div className="aspect-square bg-muted rounded-t-lg overflow-hidden">
                   <img 
                     src={getImageUrl(product)} 
@@ -211,17 +150,6 @@ export const CreateLookSection: React.FC<CreateLookSectionProps> = ({ closetId }
           </div>
         )}
       </div>
-
-      {/* Mood Board Builder Modal */}
-      {showMoodBoard && closetId && (
-        <MoodBoardBuilder
-          closetId={closetId}
-          onClose={() => {
-            setShowMoodBoard(false);
-            setDraggedItem(null);
-          }}
-        />
-      )}
     </div>
   );
 };
