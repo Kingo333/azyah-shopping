@@ -230,3 +230,25 @@ export const useRemoveFromCloset = () => {
     }
   });
 };
+
+export const useDeleteCloset = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (closetId: string) => {
+      const { error } = await supabase
+        .from('closets')
+        .delete()
+        .eq('id', closetId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['closets'] });
+      toast({
+        title: "Closet deleted",
+        description: "Your closet has been deleted successfully."
+      });
+    }
+  });
+};

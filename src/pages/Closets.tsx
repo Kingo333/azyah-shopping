@@ -8,9 +8,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { useClosets, usePublicClosets, useCreateCloset } from '@/hooks/useClosets';
-import { Grid3X3, Search, Plus, Star, Lock, Globe, Heart, Palette } from 'lucide-react';
-import { MoodBoardBuilder } from '@/components/MoodBoardBuilder';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { useClosets, usePublicClosets, useCreateCloset, useDeleteCloset } from '@/hooks/useClosets';
+import { Grid3X3, Search, Plus, Star, Lock, Globe, Heart, Palette, Trash2 } from 'lucide-react';
+import { CreateLookSection } from '@/components/CreateLookSection';
 
 const LoadingFallback = () => (
   <div className="space-y-4">
@@ -34,12 +35,14 @@ const Closets = () => {
     description: '',
     is_public: false
   });
-  const [showMoodBoardBuilder, setShowMoodBoardBuilder] = useState(false);
-  const [selectedClosetId, setSelectedClosetId] = useState<string | null>(null);
 
   const { data: myClosets, isLoading: loadingMyClosets } = useClosets();
   const { data: publicClosets, isLoading: loadingPublicClosets } = usePublicClosets();
   const createClosetMutation = useCreateCloset();
+  const deleteClosetMutation = useDeleteCloset();
+
+  // Get the default closet for Create Look section
+  const defaultClosetId = myClosets?.[0]?.id;
 
   const handleCreateCloset = async () => {
     if (!newClosetData.title.trim()) return;
@@ -69,59 +72,40 @@ const Closets = () => {
             </div>
           </div>
 
-          {/* Header Actions */}
-          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between mb-4">
-            <div className="flex gap-4">
-              <Button
-                variant={activeTab === 'explore' ? 'default' : 'outline'}
-                onClick={() => setActiveTab('explore')}
-              >
-                Explore
-              </Button>
-              <Button
-                variant={activeTab === 'my-closets' ? 'default' : 'outline'}
-                onClick={() => setActiveTab('my-closets')}
-              >
-                My Closets
-              </Button>
-            </div>
-            
-            <div className="flex gap-2">
-              <Button 
-                variant="outline"
-                onClick={() => {
-                  if (myClosets && myClosets.length > 0) {
-                    setSelectedClosetId(myClosets[0].id);
-                    setShowMoodBoardBuilder(true);
-                  }
-                }}
-                disabled={!myClosets || myClosets.length === 0}
-              >
-                <Palette className="h-4 w-4 mr-2" />
-                Create Look
-              </Button>
-              
-              <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
-                <DialogTrigger asChild>
-                  <Button>
-                    <Plus className="h-4 w-4 mr-2" />
-                    New Closet
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Create New Closet</DialogTitle>
-                  </DialogHeader>
-                  <CreateClosetForm 
-                    newClosetData={newClosetData}
-                    setNewClosetData={setNewClosetData}
-                    onSubmit={handleCreateCloset}
-                    isLoading={createClosetMutation.isPending}
-                    onCancel={() => setShowCreateModal(false)}
-                  />
-                </DialogContent>
-              </Dialog>
-            </div>
+          {/* Tabs */}
+          <div className="flex gap-4 mb-4">
+            <Button
+              variant={activeTab === 'explore' ? 'default' : 'outline'}
+              onClick={() => setActiveTab('explore')}
+            >
+              Explore
+            </Button>
+            <Button
+              variant={activeTab === 'my-closets' ? 'default' : 'outline'}
+              onClick={() => setActiveTab('my-closets')}
+            >
+              My Closets
+            </Button>
+            <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
+              <DialogTrigger asChild>
+                <Button variant="outline">
+                  <Plus className="h-4 w-4 mr-2" />
+                  New Closet
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Create New Closet</DialogTitle>
+                </DialogHeader>
+                <CreateClosetForm 
+                  newClosetData={newClosetData}
+                  setNewClosetData={setNewClosetData}
+                  onSubmit={handleCreateCloset}
+                  isLoading={createClosetMutation.isPending}
+                  onCancel={() => setShowCreateModal(false)}
+                />
+              </DialogContent>
+            </Dialog>
           </div>
 
           {/* Search Controls */}
@@ -141,6 +125,13 @@ const Closets = () => {
 
       {/* Content */}
       <div className="mx-auto max-w-7xl p-4">
+        {/* Create Look Section - Always visible at main level */}
+        {activeTab === 'my-closets' && (
+          <div className="mb-8">
+            <CreateLookSection closetId={defaultClosetId} />
+          </div>
+        )}
+
         {activeTab === 'explore' && (
           <div>
             {loadingPublicClosets ? (
@@ -198,7 +189,7 @@ const Closets = () => {
             <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
               <div>
                 <h2 className="text-lg font-semibold">Your Fashion Collections</h2>
-                <p className="text-sm text-muted-foreground">Organize your wardrobe and create stunning mood boards</p>
+                <p className="text-sm text-muted-foreground">Manage your closets and organize your wardrobe</p>
               </div>
             </div>
             {loadingMyClosets ? (
@@ -209,10 +200,8 @@ const Closets = () => {
                   <ClosetCard 
                     key={closet.id} 
                     closet={closet}
-                    onCreateLook={() => {
-                      setSelectedClosetId(closet.id);
-                      setShowMoodBoardBuilder(true);
-                    }}
+                    onDelete={() => deleteClosetMutation.mutate(closet.id)}
+                    isDeleting={deleteClosetMutation.isPending}
                   />
                 ))}
               </div>
@@ -228,16 +217,6 @@ const Closets = () => {
           </div>
         )}
 
-        {/* Mood Board Builder */}
-        {showMoodBoardBuilder && selectedClosetId && (
-          <MoodBoardBuilder
-            closetId={selectedClosetId}
-            onClose={() => {
-              setShowMoodBoardBuilder(false);
-              setSelectedClosetId(null);
-            }}
-          />
-        )}
 
       </div>
     </div>
@@ -247,10 +226,11 @@ const Closets = () => {
 // Separate components for better organization
 interface ClosetCardProps {
   closet: any;
-  onCreateLook: () => void;
+  onDelete: () => void;
+  isDeleting?: boolean;
 }
 
-const ClosetCard: React.FC<ClosetCardProps> = ({ closet, onCreateLook }) => {
+const ClosetCard: React.FC<ClosetCardProps> = ({ closet, onDelete, isDeleting }) => {
   return (
     <Card className="hover:shadow-lg transition-shadow group">
       <CardHeader>
@@ -296,10 +276,27 @@ const ClosetCard: React.FC<ClosetCardProps> = ({ closet, onCreateLook }) => {
               <Button variant="outline" size="sm">
                 View Items
               </Button>
-              <Button size="sm" onClick={onCreateLook}>
-                <Palette className="h-4 w-4 mr-1" />
-                Create Look
-              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive" size="sm" disabled={isDeleting}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete Closet</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to delete "{closet.title}"? This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={onDelete}>
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
           </div>
         </div>
