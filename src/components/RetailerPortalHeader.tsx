@@ -45,11 +45,15 @@ export const RetailerPortalHeader: React.FC<RetailerPortalHeaderProps> = ({
 
   return (
     <div className={cn("flex flex-col md:flex-row items-start md:items-center justify-between mb-4 md:mb-8 p-3 md:p-4 rounded-lg bg-card border border-border gap-3 md:gap-0", className)}>
-      <div className="flex items-center gap-3 md:gap-4">
-        <div className="text-foreground">
-          <h1 className="text-xl md:text-3xl font-bold">Retailer Portal</h1>
-          <p className="text-sm md:text-base text-muted-foreground mt-1 dark:text-muted-foreground/80">
-            {retailer?.name || 'Your Store'}
+      <div className="flex items-center gap-3 md:gap-4 min-w-0 flex-1">
+        <div className="text-foreground min-w-0">
+          <h1 className="text-lg md:text-3xl font-bold truncate">
+            <span className="hidden md:inline">Retailer Portal</span>
+            <span className="md:hidden">{retailer?.name || 'Your Store'}</span>
+          </h1>
+          <p className="text-xs md:text-base text-muted-foreground mt-0.5 md:mt-1 dark:text-muted-foreground/80 truncate">
+            <span className="hidden md:inline">{retailer?.name || 'Your Store'}</span>
+            <span className="md:hidden">Retailer Portal</span>
           </p>
         </div>
       </div>
