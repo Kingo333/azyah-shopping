@@ -443,53 +443,44 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                    }}
                    onClick={() => setShowInstructions(true)}
                  >
-                     <img
-                       {...getResponsiveImageProps(
-                         (() => {
-                           console.log(`=== SwipeDeck Image Debug for Product ID: ${currentProduct.id} ===`);
-                           console.log('Product title:', currentProduct.title);
-                           console.log('Raw media_urls:', currentProduct.media_urls);
-                           console.log('Raw image_url:', currentProduct.image_url);
-                           
-                           try {
-                             // Priority 1: Parse media_urls as JSON string (primary ASOS format)
-                             if (currentProduct.media_urls && typeof currentProduct.media_urls === 'string' && (currentProduct.media_urls as string).trim()) {
-                               try {
-                                 const parsed = JSON.parse(currentProduct.media_urls);
-                                 if (Array.isArray(parsed) && parsed.length > 0) {
-                                   const validImages = parsed.filter(url => url && typeof url === 'string' && url.trim());
-                                   if (validImages.length > 0) {
-                                     console.log('Using first image from parsed media_urls:', validImages[0]);
-                                     return validImages[0].trim();
-                                   }
-                                 }
-                               } catch (e) {
-                                 console.warn('Failed to parse media_urls:', currentProduct.media_urls, e);
-                               }
-                             }
-                             
-                             // Priority 2: Use media_urls as array
-                             if (Array.isArray(currentProduct.media_urls) && currentProduct.media_urls.length > 0) {
-                               const validImages = currentProduct.media_urls.filter(url => url && typeof url === 'string' && url.trim());
-                               if (validImages.length > 0) {
-                                 console.log('Using first image from media_urls array:', validImages[0]);
-                                 return validImages[0].trim();
-                               }
-                             }
-                             
-                             // Priority 3: Fallback to image_url
-                             if (currentProduct.image_url && currentProduct.image_url.trim()) {
-                               console.log('Using image_url fallback:', currentProduct.image_url);
-                               return currentProduct.image_url.trim();
-                             }
-                             
-                             console.log('No valid images found, using placeholder');
-                             return '/placeholder.svg';
-                           } catch (error) {
-                             console.warn('Error processing image URL for product:', currentProduct.id, error);
-                             return '/placeholder.svg';
-                           }
-                         })(),
+                    <img
+                      {...getResponsiveImageProps(
+                        (() => {
+                          try {
+                            let imageUrl = '';
+                            
+                            // Try media_urls first since most products have this
+                            if (currentProduct.media_urls) {
+                              let mediaUrls = currentProduct.media_urls;
+                              if (typeof mediaUrls === 'string') {
+                                try {
+                                  mediaUrls = JSON.parse(mediaUrls);
+                                } catch (e) {
+                                  console.warn('Failed to parse media_urls:', e);
+                                  return '/placeholder.svg';
+                                }
+                              }
+                              
+                              if (Array.isArray(mediaUrls) && mediaUrls.length > 0) {
+                                const firstUrl = mediaUrls[0];
+                                if (typeof firstUrl === 'string' && firstUrl.trim()) {
+                                  imageUrl = firstUrl.trim();
+                                }
+                              }
+                            }
+                            
+                            // Fallback to image_url if media_urls is empty
+                            if (!imageUrl && currentProduct.image_url && currentProduct.image_url.trim()) {
+                              imageUrl = currentProduct.image_url.trim();
+                            }
+                            
+                            // Return valid URL or placeholder
+                            return imageUrl || '/placeholder.svg';
+                          } catch (error) {
+                            console.warn('Error processing image URL for product:', currentProduct.id, error);
+                            return '/placeholder.svg';
+                          }
+                        })(),
                         "(max-width: 768px) 100vw, 50vw"
                       )}
                       alt={currentProduct.title}

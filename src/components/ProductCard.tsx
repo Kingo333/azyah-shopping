@@ -34,55 +34,36 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   };
 
   const getImageUrl = (item: any) => {
-    console.log(`=== ProductCard Image Debug for Product ID: ${item.id} ===`);
-    console.log('Product title:', item.title);
-    console.log('Raw media_urls:', item.media_urls);
-    console.log('Raw image_url:', item.image_url);
+    // Handle different data structures for images
+    if (item.image_url) return item.image_url;
     
-    // Priority 1: Parse media_urls as JSON string (primary ASOS format)
-    if (item.media_urls && typeof item.media_urls === 'string' && item.media_urls.trim()) {
+    // Handle media_urls as array
+    if (item.media_urls && Array.isArray(item.media_urls) && item.media_urls.length > 0) {
+      return item.media_urls[0];
+    }
+    
+    // Handle media_urls as JSON string (ASOS products)
+    if (item.media_urls && typeof item.media_urls === 'string') {
       try {
         const parsed = JSON.parse(item.media_urls);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          const validImages = parsed.filter(url => url && typeof url === 'string' && url.trim());
-          if (validImages.length > 0) {
-            console.log('Using first image from parsed media_urls:', validImages[0]);
-            return validImages[0].trim();
-          }
+          return parsed[0];
         }
       } catch (e) {
-        console.warn('Failed to parse media_urls:', item.media_urls, e);
+        console.warn('Failed to parse media_urls:', item.media_urls);
       }
     }
     
-    // Priority 2: Use media_urls as array
-    if (Array.isArray(item.media_urls) && item.media_urls.length > 0) {
-      const validImages = item.media_urls.filter(url => url && typeof url === 'string' && url.trim());
-      if (validImages.length > 0) {
-        console.log('Using first image from media_urls array:', validImages[0]);
-        return validImages[0].trim();
-      }
-    }
-    
-    // Priority 3: Fallback to image_url
-    if (item.image_url && item.image_url.trim()) {
-      console.log('Using image_url fallback:', item.image_url);
-      return item.image_url.trim();
-    }
-    
-    // Handle nested product structure from likes/wishlist
+    // Handle product nested structure from likes
     if (item.product?.media_urls && Array.isArray(item.product.media_urls) && item.product.media_urls.length > 0) {
-      console.log('Using nested product media_urls:', item.product.media_urls[0]);
       return item.product.media_urls[0];
     }
     
     // Handle products table direct access
     if (item.products?.media_urls && Array.isArray(item.products.media_urls) && item.products.media_urls.length > 0) {
-      console.log('Using products table media_urls:', item.products.media_urls[0]);
       return item.products.media_urls[0];
     }
     
-    console.log('No valid images found, using placeholder');
     return '/placeholder.svg';
   };
 
