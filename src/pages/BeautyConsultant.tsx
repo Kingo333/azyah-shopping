@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Upload, Send, Sparkles, MapPin, Image as ImageIcon, Bot, User, Mic, ToggleLeft, ToggleRight, Package } from "lucide-react";
+import { Upload, Send, Sparkles, MapPin, Image as ImageIcon, Bot, User, Mic, ToggleLeft, ToggleRight, Package, Clock } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { VoiceRecorder } from "@/components/VoiceRecorder";
 import { VoiceMessage } from "@/components/VoiceMessage";
@@ -495,12 +495,30 @@ export default function BeautyConsultantPage() {
             </div>
 
             {/* Credits Display */}
-            <div className="mb-4 max-w-md mx-auto">
+            <div className="mb-4 max-w-md mx-auto space-y-2">
               <CreditsDisplay 
                 creditsRemaining={credits?.credits_remaining || 0}
                 isPremium={credits?.is_premium || false}
                 loading={creditsLoading}
               />
+              
+              {/* Chat Persistence Info */}
+              <div className="text-center text-xs text-muted-foreground bg-muted/20 rounded-lg p-2 border border-border/30">
+                <div className="flex items-center justify-center gap-1 mb-1">
+                  <Clock className="h-3 w-3" />
+                  <span className="font-medium">Chat Memory</span>
+                </div>
+                {credits?.is_premium ? (
+                  <p>
+                    <span className="text-amber-500 font-medium">Premium:</span> Chat history and AI memory persist permanently
+                  </p>
+                ) : (
+                  <p>
+                    Chat history resets after 24 hours. 
+                    <span className="text-amber-500 font-medium ml-1">Upgrade to Premium</span> for permanent memory
+                  </p>
+                )}
+              </div>
             </div>
 
             {/* Chat Container */}
