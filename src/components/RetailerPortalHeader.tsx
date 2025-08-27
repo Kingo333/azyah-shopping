@@ -44,39 +44,40 @@ export const RetailerPortalHeader: React.FC<RetailerPortalHeaderProps> = ({
   };
 
   return (
-    <div className={cn("flex items-center justify-between mb-8 p-4 rounded-lg bg-card border border-border", className)}>
-      <div className="flex items-center gap-4">
+    <div className={cn("flex flex-col md:flex-row items-start md:items-center justify-between mb-4 md:mb-8 p-3 md:p-4 rounded-lg bg-card border border-border gap-3 md:gap-0", className)}>
+      <div className="flex items-center gap-3 md:gap-4">
         <div className="text-foreground">
-          <h1 className="text-3xl font-bold">Retailer Portal</h1>
-          <p className="text-muted-foreground mt-1 dark:text-muted-foreground/80">
+          <h1 className="text-xl md:text-3xl font-bold">Retailer Portal</h1>
+          <p className="text-sm md:text-base text-muted-foreground mt-1 dark:text-muted-foreground/80">
             {retailer?.name || 'Your Store'}
           </p>
         </div>
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 md:gap-3 w-full md:w-auto justify-between md:justify-end">
         {/* Theme Toggle */}
-        <Button variant="ghost" size="sm" onClick={handleThemeToggle} className="hover:bg-accent/50 dark:hover:bg-accent/20 hover:scale-105 transition-all">
-          {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+        <Button variant="ghost" size="sm" onClick={handleThemeToggle} className="hover:bg-accent/50 dark:hover:bg-accent/20 hover:scale-105 transition-all h-8 w-8 md:h-10 md:w-10">
+          {theme === 'dark' ? <Sun className="h-4 w-4 md:h-5 md:w-5" /> : <Moon className="h-4 w-4 md:h-5 md:w-5" />}
         </Button>
 
         {onAddProduct && (
-          <Button onClick={onAddProduct} className="gap-2 bg-primary hover:bg-primary/90 dark:bg-primary dark:hover:bg-primary/80">
-            <Plus className="h-4 w-4" />
-            Add Product
+          <Button onClick={onAddProduct} className="gap-1 md:gap-2 bg-primary hover:bg-primary/90 dark:bg-primary dark:hover:bg-primary/80 h-8 md:h-10 text-xs md:text-sm px-2 md:px-4">
+            <Plus className="h-3 w-3 md:h-4 md:w-4" />
+            <span className="hidden sm:inline">Add Product</span>
+            <span className="sm:hidden">Add</span>
           </Button>
         )}
 
         {/* User Menu */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" className="flex items-center gap-3 hover:bg-accent/50 dark:hover:bg-accent/20 hover:scale-105 transition-all">
-              <Avatar className="h-8 w-8 border-2 border-border dark:border-border/50">
-                <AvatarFallback className="text-sm bg-gradient-to-br from-primary/20 to-accent/20 dark:from-primary/30 dark:to-accent/30">
+            <Button variant="ghost" size="sm" className="flex items-center gap-2 md:gap-3 hover:bg-accent/50 dark:hover:bg-accent/20 hover:scale-105 transition-all h-8 md:h-10">
+              <Avatar className="h-6 w-6 md:h-8 md:w-8 border-2 border-border dark:border-border/50">
+                <AvatarFallback className="text-xs md:text-sm bg-gradient-to-br from-primary/20 to-accent/20 dark:from-primary/30 dark:to-accent/30">
                   {getUserName().charAt(0).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
-              <span className="hidden sm:inline text-sm font-medium">
+              <span className="hidden md:inline text-sm font-medium">
                 {getUserName()}
               </span>
             </Button>
