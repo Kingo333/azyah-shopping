@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { text, voice_id, want_mp3 } = await req.json();
+    const { text, voice_id, want_mp3, save_to_storage } = await req.json();
 
     if (!text) {
       throw new Error('Text is required');
@@ -30,8 +30,9 @@ serve(async (req) => {
       body: JSON.stringify({
         model: 'tts-1',
         input: text,
-        voice: voice_id || 'alloy',
+        voice: voice_id || 'nova',
         response_format: want_mp3 ? 'mp3' : 'wav',
+        speed: 1.0
       }),
     });
 
@@ -41,8 +42,56 @@ serve(async (req) => {
       throw new Error(`OpenAI TTS error: ${errorText}`);
     }
 
-    // Convert audio buffer to base64
     const arrayBuffer = await response.arrayBuffer();
+
+    // If save_to_storage is requested, upload to Supabase Storage
+    if (save_to_storage) {
+      const supabaseUrl = Deno.env.get('SUPABASE_URL');
+      const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+
+      if (supabaseUrl && supabaseServiceKey) {
+        try {
+          const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2');
+          const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+          const fileName = `azyah_${Date.now()}.${want_mp3 ? 'mp3' : 'wav'}`;
+          const filePath = `responses/${fileName}`;
+
+          const { error } = await supabase.storage
+            .from('azyah-audio')
+            .upload(filePath, new Uint8Array(arrayBuffer), {
+              contentType: want_mp3 ? 'audio/mpeg' : 'audio/wav',
+              upsert: false,
+            });
+
+          if (error) {
+            console.error('Storage upload error:', error);
+          } else {
+            const { data } = supabase.storage
+              .from('azyah-audio')
+              .getPublicUrl(filePath);
+
+            console.log('Voice generation and storage successful');
+
+            return new Response(
+              JSON.stringify({
+                success: true,
+                audio_url: data.publicUrl,
+                mime: want_mp3 ? 'audio/mpeg' : 'audio/wav',
+                message: 'Voice generation and storage completed'
+              }),
+              {
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              }
+            );
+          }
+        } catch (storageError) {
+          console.error('Storage error:', storageError);
+        }
+      }
+    }
+
+    // Fallback: return base64 audio
     const base64Audio = btoa(
       String.fromCharCode(...new Uint8Array(arrayBuffer))
     );

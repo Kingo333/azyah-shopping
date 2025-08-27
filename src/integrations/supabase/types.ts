@@ -1983,6 +1983,45 @@ export type Database = {
           },
         ]
       }
+      user_sessions: {
+        Row: {
+          conversation_history: Json | null
+          created_at: string | null
+          expires_at: string | null
+          id: string
+          is_active: boolean | null
+          last_activity: string | null
+          preferences: Json | null
+          session_data: Json | null
+          session_id: string
+          user_id: string
+        }
+        Insert: {
+          conversation_history?: Json | null
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_activity?: string | null
+          preferences?: Json | null
+          session_data?: Json | null
+          session_id: string
+          user_id: string
+        }
+        Update: {
+          conversation_history?: Json | null
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_activity?: string | null
+          preferences?: Json | null
+          session_data?: Json | null
+          session_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_taste_profiles: {
         Row: {
           brand_preferences: Json | null

@@ -98,56 +98,63 @@ export default function BeautyConsultantPage() {
     setLoading(true);
     
     try {
-      const formData = new FormData();
-      
-      if (message) {
-        formData.append('message', message);
-      }
-      
-      if (image) {
-        formData.append('selfie', image);
-      }
-      
-      if (audioBlob) {
-        formData.append('audio', audioBlob);
-      }
-      
-      formData.append('region', region);
-      formData.append('user_id', user?.id || 'anonymous');
+      // Convert files to base64 for the API
+      let imageBase64 = '';
+      let audioBase64 = '';
 
-      const response = await fetch('https://eoal3jgggfuduet.m.pipedream.net', {
-        method: 'POST',
-        body: formData
+      if (image) {
+        imageBase64 = await fileToBase64(image);
+      }
+
+      if (audioBlob) {
+        audioBase64 = await blobToBase64(audioBlob);
+      }
+
+      // Create request payload
+      const payload = {
+        user_id: user?.id || 'anonymous_' + Date.now(),
+        message: message || '',
+        region: region,
+        image: imageBase64,
+        audio: audioBase64
+      };
+
+      console.log('Sending consultation request:', { ...payload, image: imageBase64 ? '[image data]' : '', audio: audioBase64 ? '[audio data]' : '' });
+
+      const { createClient } = await import('@supabase/supabase-js');
+      const supabase = createClient(
+        'https://klwolsopucgswhtdlsps.supabase.co',
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtsd29sc29wdWNnc3dodGRsc3BzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQyNTQ4NTIsImV4cCI6MjA2OTgzMDg1Mn0.t1GFgR9xiIh7PBmoYs_xKLi1fF1iLTF6pqMlLMHowHQ'
+      );
+
+      const response = await supabase.functions.invoke('beauty-consultation', {
+        body: payload
       });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+
+      if (response.error) {
+        throw new Error(response.error.message || 'Consultation failed');
       }
-      
-      const result: ConsultationResult = await response.json();
-      console.log('Webhook response:', result);
-      
-      if (!result.success) {
-        throw new Error('Consultation was not successful');
-      }
-      
+
+      const result = response.data;
+      console.log('Consultation result:', result);
+
       // Add assistant response with voice support
       const assistantMessage: ChatMessage = {
         id: Date.now().toString(),
         type: 'assistant',
         content: result.consultation.text,
         timestamp: new Date(),
-        audioUrl: result.consultation.audio_file,
+        audioUrl: result.consultation.audio_url,
         transcription: result.consultation.voice_summary,
-        isVoice: !!result.consultation.audio_file,
+        isVoice: !!result.consultation.audio_url,
       };
       
       setMessages(prev => [...prev, assistantMessage]);
       
       // Auto-play Azyah's voice response if available
-      if (result.consultation.audio_file) {
+      if (result.consultation.audio_url) {
         setIsPlayingVoice(true);
-        const audio = new Audio(result.consultation.audio_file);
+        const audio = new Audio(result.consultation.audio_url);
         audio.onended = () => setIsPlayingVoice(false);
         audio.onerror = () => setIsPlayingVoice(false);
         audio.play().catch(() => setIsPlayingVoice(false));
@@ -167,6 +174,35 @@ export default function BeautyConsultantPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Helper functions to convert files to base64
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => {
+        const result = reader.result as string;
+        // Remove data:image/jpeg;base64, prefix
+        const base64 = result.split(',')[1];
+        resolve(base64);
+      };
+      reader.onerror = error => reject(error);
+    });
+  };
+
+  const blobToBase64 = (blob: Blob): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(blob);
+      reader.onload = () => {
+        const result = reader.result as string;
+        // Remove data:audio/webm;base64, prefix
+        const base64 = result.split(',')[1];
+        resolve(base64);
+      };
+      reader.onerror = error => reject(error);
+    });
   };
 
   const handleSendMessage = async () => {
