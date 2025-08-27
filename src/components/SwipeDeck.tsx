@@ -438,7 +438,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
             exit="exit"
             custom={x.get()}
           >
-            <Card className="h-full flex flex-col cursor-grab active:cursor-grabbing overflow-hidden" style={{ willChange: 'transform', contain: 'layout style paint' }}>
+            <Card className="h-full flex flex-col cursor-grab active:cursor-grabbing overflow-hidden min-h-[650px] max-w-md mx-auto" style={{ willChange: 'transform', contain: 'layout style paint' }}>
               <CardContent className="p-4 sm:p-5 lg:pb-6 flex flex-col h-full bg-background/60 backdrop-blur-sm min-h-[600px]">
                  <div 
                    className="relative w-full overflow-hidden rounded-lg flex-shrink-0"
