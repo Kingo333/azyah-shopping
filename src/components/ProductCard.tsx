@@ -28,9 +28,18 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   };
 
   const getImageUrl = (item: any) => {
+    // Handle different data structures for images
     if (item.image_url) return item.image_url;
     if (item.media_urls && Array.isArray(item.media_urls) && item.media_urls.length > 0) {
       return item.media_urls[0];
+    }
+    // Handle product nested structure from likes
+    if (item.product?.media_urls && Array.isArray(item.product.media_urls) && item.product.media_urls.length > 0) {
+      return item.product.media_urls[0];
+    }
+    // Handle products table direct access
+    if (item.products?.media_urls && Array.isArray(item.products.media_urls) && item.products.media_urls.length > 0) {
+      return item.products.media_urls[0];
     }
     return '/placeholder.svg';
   };
