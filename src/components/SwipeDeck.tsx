@@ -418,7 +418,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
           <motion.div
             key={currentProduct.id}
             ref={cardRef}
-            className="absolute -top-3 sm:top-0 left-0 w-full h-full"
+            className="absolute -top-6 sm:top-0 left-0 w-full h-full"
             style={{
               x,
               y,
