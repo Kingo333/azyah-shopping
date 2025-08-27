@@ -505,10 +505,10 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
               <CardContent className="p-4 md:p-6 h-full flex flex-col">
                 {/* Header */}
                 <div className="flex items-center justify-between mb-3">
-                  <Badge variant={index < 3 ? "default" : "secondary"} className="text-xs px-2 py-0.5">
+                  <Badge variant={index < 3 ? "default" : "secondary"} className="text-[10px] px-1.5 py-0.5">
                     #{index + 1} Trending
                   </Badge>
-                  <div className="text-xs text-muted-foreground font-medium">
+                  <div className="text-[10px] text-muted-foreground font-medium">
                     {product.brand_name}
                   </div>
                 </div>
@@ -555,18 +555,18 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
 
                 {/* Product Info */}
                 <div className="flex-1 flex flex-col">
-                  <h4 className="font-medium text-xs mb-1 group-hover:text-primary transition-colors line-clamp-2 leading-tight">
+                  <h4 className="font-medium text-[11px] mb-1 group-hover:text-primary transition-colors line-clamp-2 leading-tight">
                     {formatProductTitle(product.title)}
                   </h4>
                   
                   <div className="flex items-center justify-between mt-auto">
-                    <span className="font-bold text-sm text-primary">
+                    <span className="font-bold text-xs text-primary">
                       {formatPrice(product.price_cents, product.currency)}
                     </span>
                     
                     <Button
                       size="sm"
-                      className="h-7 px-3 text-xs font-medium"
+                      className="h-6 px-2 text-[10px] font-medium"
                       onClick={(e) => {
                         e.stopPropagation();
                         handleShopNow(product.external_url);
