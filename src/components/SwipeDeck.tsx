@@ -418,7 +418,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
           <motion.div
             key={currentProduct.id}
             ref={cardRef}
-            className="absolute -top-16 sm:top-0 left-0 w-full h-full"
+            className="absolute -top-12 sm:top-0 left-0 w-full h-full"
             style={{
               x,
               y,
@@ -471,7 +471,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                     )}
                 </div>
                 
-                 <div className="flex flex-col flex-grow space-y-1 mt-1 sm:mt-4 mx-2">
+                 <div className="flex flex-col flex-grow space-y-1 mt-4 mx-2">
                    <div className="flex items-start justify-between gap-2">
                      <div className="flex-1 min-w-0">
                        <h3 className="text-sm sm:text-base font-semibold line-clamp-1">{currentProduct.title}</h3>
@@ -618,7 +618,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
 
       {/* Swipe instructions - auto-hide after 3 seconds, show on image tap */}
       {showInstructions && (
-        <div className="absolute top-1 left-4 right-4 text-center z-10">
+        <div className="absolute top-4 left-4 right-4 text-center">
           <div className="bg-black/20 backdrop-blur-sm rounded-lg p-2 text-white text-xs">
             ← Pass • ↑ Save • Like →
           </div>
