@@ -8,6 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useWishlist } from '@/hooks/useWishlist';
 import ProductDetailPage from '@/components/ProductDetailPage';
+
 interface SwipeProduct {
   id: string;
   title: string;
@@ -26,6 +27,7 @@ interface SwipeProduct {
   merchant_name?: string;
   ar_mesh_url?: string;
 }
+
 import { useNavigate } from 'react-router-dom';
 import { TopCategory, SubCategory } from '@/lib/categories';
 import { useUnifiedProducts } from '@/hooks/useUnifiedProducts';
@@ -347,7 +349,6 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
     }
   }, [x, y, index, products, handleLike, handleDislike, handleAddToWishlist]);
 
-
   const handleProductClick = (product: SwipeProduct) => {
     setSelectedProduct(product);
     setShowProductDetail(true);
@@ -442,7 +443,8 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                  <div 
                    className="relative w-full overflow-hidden rounded-lg flex-shrink-0"
                    style={{
-                     height: `${getImageHeight(imageAspectRatio)}px`
+                     height: `${getImageHeight(imageAspectRatio)}px`,
+                     maxHeight: `${getImageHeight(imageAspectRatio)}px`
                    }}
                    onClick={() => setShowInstructions(true)}
                  >
@@ -452,7 +454,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                         "(max-width: 768px) 100vw, 50vw"
                       )}
                       alt={currentProduct.title}
-                      className="object-contain w-full h-full transition-opacity duration-300"
+                      className="object-contain w-full h-full transition-opacity duration-300 max-h-full"
                       onLoad={handleImageLoad}
                       onError={(e) => {
                         const img = e.target as HTMLImageElement;
@@ -460,6 +462,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                         console.warn('Image failed to load for product:', currentProduct.id, 'URL:', originalSrc);
                         img.src = '/placeholder.svg';
                       }}
+                      style={{ maxHeight: '100%', maxWidth: '100%' }}
                     />
                     
                      {/* Multiple images indicator and swipe instructions on same line */}
@@ -488,7 +491,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                      </div>
                  </div>
                  
-                  <div className="flex flex-col flex-grow space-y-1 -mt-3 mx-2">
+                  <div className="flex flex-col flex-grow space-y-1 mt-2 mx-2">
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
                         <h3 className="text-sm sm:text-base font-semibold line-clamp-1">{currentProduct.title}</h3>
@@ -629,10 +632,6 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
           </motion.div>
         )}
       </AnimatePresence>
-
-
-
-
 
       {/* No More Products State */}
       {index >= products.length && products.length > 0 && (
