@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Upload, Send, Sparkles, MapPin, Image as ImageIcon, Bot, User, Mic } from "lucide-react";
+import { Upload, Send, Sparkles, MapPin, Image as ImageIcon, Bot, User, Mic, ToggleLeft, ToggleRight, Package } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { VoiceRecorder } from "@/components/VoiceRecorder";
 import { VoiceMessage } from "@/components/VoiceMessage";
@@ -59,8 +59,17 @@ export default function BeautyConsultantPage() {
   const [showRegionSelector, setShowRegionSelector] = useState(false);
   const [isPlayingVoice, setIsPlayingVoice] = useState(false);
   
+  // Product Analysis Mode
+  const [analysisMode, setAnalysisMode] = useState<'chat' | 'product_analysis'>('chat');
+  const [productImage, setProductImage] = useState<File | null>(null);
+  const [skinImage, setSkinImage] = useState<File | null>(null);
+  const [productImagePreview, setProductImagePreview] = useState<string | null>(null);
+  const [skinImagePreview, setSkinImagePreview] = useState<string | null>(null);
+  
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const productFileInputRef = useRef<HTMLInputElement>(null);
+  const skinFileInputRef = useRef<HTMLInputElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -70,24 +79,25 @@ export default function BeautyConsultantPage() {
     scrollToBottom();
   }, [messages]);
 
+  const validateImageFile = (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select a valid image file');
+      return false;
+    }
+    
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image size should be less than 5MB');
+      return false;
+    }
+    
+    return true;
+  };
+
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      // Validate file type
-      if (!file.type.startsWith('image/')) {
-        toast.error('Please select a valid image file');
-        return;
-      }
-      
-      // Validate file size (5MB limit)
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error('Image size should be less than 5MB');
-        return;
-      }
-
+    if (file && validateImageFile(file)) {
       setSelectedImage(file);
       
-      // Create preview
       const reader = new FileReader();
       reader.onload = (e) => {
         setImagePreview(e.target?.result as string);
@@ -96,8 +106,41 @@ export default function BeautyConsultantPage() {
     }
   };
 
+  const handleProductImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && validateImageFile(file)) {
+      setProductImage(file);
+      
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setProductImagePreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSkinImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && validateImageFile(file)) {
+      setSkinImage(file);
+      
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setSkinImagePreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const submitConsultation = async (message: string, image?: File, audioBlob?: Blob) => {
     setLoading(true);
+    
+    // Validate product analysis mode requirements
+    if (analysisMode === 'product_analysis' && (!productImage || !skinImage)) {
+      toast.error('Please upload both product and skin images for analysis');
+      setLoading(false);
+      return;
+    }
     
     try {
       // Convert files to base64 for the API
@@ -113,13 +156,32 @@ export default function BeautyConsultantPage() {
       }
 
       // Create request payload
-      const payload = {
-        user_id: user?.id || 'anonymous_' + Date.now(),
-        message: message || '',
-        region: region,
-        image: imageBase64,
-        audio: audioBase64
-      };
+        const payload: any = {
+          user_id: user?.id || 'anonymous_' + Date.now(),
+          message: message || '',
+          region: region,
+          mode: analysisMode
+        };
+        
+        if (analysisMode === 'product_analysis') {
+          if (productImage) {
+            const productBase64 = await fileToBase64(productImage);
+            payload.product_image = productBase64;
+          }
+          
+          if (skinImage) {
+            const skinBase64 = await fileToBase64(skinImage);
+            payload.skin_image = skinBase64;
+          }
+        } else {
+          if (imageBase64) {
+            payload.image = imageBase64;
+          }
+        }
+        
+        if (audioBase64) {
+          payload.audio = audioBase64;
+        }
 
       console.log('Sending consultation request:', { ...payload, image: imageBase64 ? '[image data]' : '', audio: audioBase64 ? '[audio data]' : '' });
 
@@ -223,38 +285,62 @@ export default function BeautyConsultantPage() {
   };
 
   const handleSendMessage = async () => {
-    if (!inputMessage.trim() && !selectedImage) return;
+    if (analysisMode === 'product_analysis') {
+      if (!productImage || !skinImage) {
+        toast.error('Please upload both product and skin images for analysis');
+        return;
+      }
+      
+      if (!user) {
+        toast.error('Please sign in to use the beauty consultant');
+        return;
+      }
 
-    if (!user) {
-      toast.error('Please sign in to use the beauty consultant');
-      return;
-    }
+      if (!credits || credits.credits_remaining <= 0) {
+        toast.error('No credits remaining. Upgrade to premium for more credits!');
+        return;
+      }
 
-    if (!credits || credits.credits_remaining <= 0) {
-      toast.error('No credits remaining. Upgrade to premium for more credits!');
-      return;
-    }
+      // Add user message with both images
+      const userMessage: ChatMessage = {
+        id: Date.now().toString(),
+        type: 'user',
+        content: inputMessage.trim() || "Analyze product compatibility",
+        timestamp: new Date()
+      };
+      
+      setMessages(prev => [...prev, userMessage]);
+      await submitConsultation(inputMessage.trim() || "Analyze product compatibility", undefined);
+      setInputMessage('');
+      clearProductAnalysisImages();
+    } else {
+      if (!inputMessage.trim() && !selectedImage) return;
 
-    // Add user message
-    const userMessage: ChatMessage = {
-      id: Date.now().toString(),
-      type: 'user',
-      content: inputMessage || (selectedImage ? "Here's my selfie for analysis" : ""),
-      image: imagePreview || undefined,
-      timestamp: new Date()
-    };
-    
-    setMessages(prev => [...prev, userMessage]);
+      if (!user) {
+        toast.error('Please sign in to use the beauty consultant');
+        return;
+      }
 
-    // Submit consultation
-    await submitConsultation(inputMessage, selectedImage || undefined);
+      if (!credits || credits.credits_remaining <= 0) {
+        toast.error('No credits remaining. Upgrade to premium for more credits!');
+        return;
+      }
 
-    // Clear inputs
-    setInputMessage('');
-    setSelectedImage(null);
-    setImagePreview(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+      // Add user message
+      const userMessage: ChatMessage = {
+        id: Date.now().toString(),
+        type: 'user',
+        content: inputMessage || (selectedImage ? "Here's my image for analysis" : ""),
+        image: imagePreview || undefined,
+        timestamp: new Date()
+      };
+      
+      setMessages(prev => [...prev, userMessage]);
+      await submitConsultation(inputMessage, selectedImage || undefined);
+      
+      // Clear inputs
+      setInputMessage('');
+      clearImage();
     }
   };
 
@@ -299,6 +385,19 @@ export default function BeautyConsultantPage() {
     }
   };
 
+  const clearProductAnalysisImages = () => {
+    setProductImage(null);
+    setProductImagePreview(null);
+    setSkinImage(null);
+    setSkinImagePreview(null);
+    if (productFileInputRef.current) {
+      productFileInputRef.current.value = '';
+    }
+    if (skinFileInputRef.current) {
+      skinFileInputRef.current.value = '';
+    }
+  };
+
   const formatTime = (date: Date) => {
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
@@ -336,6 +435,41 @@ export default function BeautyConsultantPage() {
               <p className="text-muted-foreground text-sm max-w-md mx-auto leading-relaxed">
                 Voice conversations, selfie analysis, and personalized beauty advice
               </p>
+            </div>
+
+            {/* Mode Toggle */}
+            <div className="mb-4 max-w-md mx-auto">
+              <div className="flex items-center justify-center gap-3 p-3 bg-muted/30 rounded-xl border border-border/30">
+                <div className="flex items-center gap-2 text-sm">
+                  <div className={`p-1.5 rounded-lg transition-all duration-300 ${analysisMode === 'chat' ? 'bg-primary/20 text-primary' : 'bg-muted/50 text-muted-foreground'}`}>
+                    <Bot className="h-3 w-3" />
+                  </div>
+                  <span className={`font-medium transition-colors duration-300 ${analysisMode === 'chat' ? 'text-primary' : 'text-muted-foreground'}`}>Chat</span>
+                </div>
+                
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setAnalysisMode(analysisMode === 'chat' ? 'product_analysis' : 'chat');
+                    clearImage();
+                    clearProductAnalysisImages();
+                  }}
+                  className="h-8 w-8 p-0 rounded-lg hover:bg-primary/10 transition-all duration-300"
+                >
+                  {analysisMode === 'chat' ? 
+                    <ToggleLeft className="h-4 w-4 text-muted-foreground" /> : 
+                    <ToggleRight className="h-4 w-4 text-primary" />
+                  }
+                </Button>
+                
+                <div className="flex items-center gap-2 text-sm">
+                  <div className={`p-1.5 rounded-lg transition-all duration-300 ${analysisMode === 'product_analysis' ? 'bg-primary/20 text-primary' : 'bg-muted/50 text-muted-foreground'}`}>
+                    <Package className="h-3 w-3" />
+                  </div>
+                  <span className={`font-medium transition-colors duration-300 ${analysisMode === 'product_analysis' ? 'text-primary' : 'text-muted-foreground'}`}>Product Analysis</span>
+                </div>
+              </div>
             </div>
 
             {/* Credits Display */}
@@ -482,8 +616,8 @@ export default function BeautyConsultantPage() {
                   </div>
                 )}
 
-                {/* Image Preview */}
-                {imagePreview && (
+                {/* Image Previews */}
+                {analysisMode === 'chat' && imagePreview && (
                   <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-xl border border-border/30 animate-scale-in">
                     <div className="relative">
                       <img 
@@ -506,10 +640,10 @@ export default function BeautyConsultantPage() {
                     </div>
                     <div className="flex-1">
                       <p className="text-sm font-medium text-foreground">
-                        {loading ? "Scanning image..." : "Selfie ready"}
+                        {loading ? "Scanning image..." : "Image ready"}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {loading ? "AI analyzing your features" : "Analyzing your skin tone and features"}
+                        {loading ? "AI analyzing image content" : "Ready for beauty analysis"}
                       </p>
                     </div>
                     <Button 
@@ -524,6 +658,85 @@ export default function BeautyConsultantPage() {
                   </div>
                 )}
 
+                {/* Product Analysis Images */}
+                {analysisMode === 'product_analysis' && (productImagePreview || skinImagePreview) && (
+                  <div className="space-y-3">
+                    {productImagePreview && (
+                      <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-xl border border-border/30 animate-scale-in">
+                        <div className="relative">
+                          <img 
+                            src={productImagePreview} 
+                            alt="Product Preview" 
+                            className="w-14 h-14 object-cover rounded-lg border border-border/30 shadow-sm"
+                          />
+                          {loading && (
+                            <div className="absolute inset-0 rounded-lg overflow-hidden">
+                              <div className="absolute inset-0 bg-primary/20 backdrop-blur-[1px]"></div>
+                              <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-primary to-transparent animate-[scan_2s_ease-in-out_infinite]"></div>
+                            </div>
+                          )}
+                          <div className="absolute -top-1 -right-1 w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
+                            <Package className="h-2 w-2 text-white" />
+                          </div>
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-foreground">Product Image</p>
+                          <p className="text-xs text-muted-foreground">Beauty product for analysis</p>
+                        </div>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => {
+                            setProductImage(null);
+                            setProductImagePreview(null);
+                          }} 
+                          className="h-8 w-8 p-0 hover:bg-destructive/10 hover:text-destructive"
+                          disabled={loading}
+                        >
+                          ×
+                        </Button>
+                      </div>
+                    )}
+
+                    {skinImagePreview && (
+                      <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-xl border border-border/30 animate-scale-in">
+                        <div className="relative">
+                          <img 
+                            src={skinImagePreview} 
+                            alt="Skin Preview" 
+                            className="w-14 h-14 object-cover rounded-lg border border-border/30 shadow-sm"
+                          />
+                          {loading && (
+                            <div className="absolute inset-0 rounded-lg overflow-hidden">
+                              <div className="absolute inset-0 bg-primary/20 backdrop-blur-[1px]"></div>
+                              <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-primary to-transparent animate-[scan_2s_ease-in-out_infinite]"></div>
+                            </div>
+                          )}
+                          <div className="absolute -top-1 -right-1 w-4 h-4 bg-amber-500 rounded-full flex items-center justify-center">
+                            <User className="h-2 w-2 text-white" />
+                          </div>
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-foreground">Skin/Face Image</p>
+                          <p className="text-xs text-muted-foreground">Your skin tone reference</p>
+                        </div>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => {
+                            setSkinImage(null);
+                            setSkinImagePreview(null);
+                          }} 
+                          className="h-8 w-8 p-0 hover:bg-destructive/10 hover:text-destructive"
+                          disabled={loading}
+                        >
+                          ×
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {/* Input Row */}
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-end gap-3">
                   {/* Action Buttons */}
@@ -532,16 +745,43 @@ export default function BeautyConsultantPage() {
                       onTranscription={handleVoiceTranscription}
                       disabled={loading}
                     />
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => fileInputRef.current?.click()}
-                      className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl border-border/50 bg-background/50 hover:bg-primary/5 hover:border-primary/30 transition-all duration-300"
-                      title="Upload selfie"
-                      disabled={loading}
-                    >
-                      <ImageIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                    </Button>
+                    
+                    {analysisMode === 'chat' ? (
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl border-border/50 bg-background/50 hover:bg-primary/5 hover:border-primary/30 transition-all duration-300"
+                        title="Upload image"
+                        disabled={loading}
+                      >
+                        <ImageIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                      </Button>
+                    ) : (
+                      <>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => productFileInputRef.current?.click()}
+                          className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl border-border/50 bg-background/50 hover:bg-blue-500/5 hover:border-blue-500/30 transition-all duration-300"
+                          title="Upload product image"
+                          disabled={loading}
+                        >
+                          <Package className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-blue-500" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => skinFileInputRef.current?.click()}
+                          className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl border-border/50 bg-background/50 hover:bg-amber-500/5 hover:border-amber-500/30 transition-all duration-300"
+                          title="Upload skin/face image"
+                          disabled={loading}
+                        >
+                          <User className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-amber-500" />
+                        </Button>
+                      </>
+                    )}
+                    
                     <Button
                       variant="outline"
                       size="icon"
@@ -560,13 +800,16 @@ export default function BeautyConsultantPage() {
                       value={inputMessage}
                       onChange={(e) => setInputMessage(e.target.value)}
                       onKeyPress={handleKeyPress}
-                      placeholder="Ask about skincare, makeup, or beauty tips..."
+                      placeholder={analysisMode === 'product_analysis' ? 
+                        "Upload product & skin images for compatibility analysis..." : 
+                        "Ask about skincare, makeup, or beauty tips..."
+                      }
                       className="h-11 sm:h-12 pr-14 rounded-xl border-border/50 bg-background/50 backdrop-blur-sm focus:border-primary/50 focus:ring-primary/20 transition-all duration-300"
                       disabled={loading}
                     />
                     <Button
                       onClick={handleSendMessage}
-                      disabled={loading || (!inputMessage.trim() && !selectedImage)}
+                      disabled={loading || (analysisMode === 'product_analysis' ? (!productImage || !skinImage) : (!inputMessage.trim() && !selectedImage))}
                       className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 sm:h-8 sm:w-8 p-0 rounded-lg bg-primary hover:bg-primary/90 transition-all duration-300 hover:scale-105 disabled:hover:scale-100"
                     >
                       <Send className="h-3 w-3" />
@@ -576,12 +819,17 @@ export default function BeautyConsultantPage() {
 
                 {/* Quick Actions */}
                 <div className="flex flex-wrap gap-2 pt-1">
-                  {[
+                  {(analysisMode === 'chat' ? [
                     "Analyze my skin tone",
                     "Foundation recommendations", 
                     "Evening makeup look",
                     "Skincare routine"
-                  ].map((suggestion, index) => (
+                  ] : [
+                    "Is this foundation a good match?",
+                    "Will this lipstick suit me?",
+                    "Rate this product compatibility",
+                    "How should I apply this?"
+                  ]).map((suggestion, index) => (
                     <Button
                       key={suggestion}
                       variant="outline"
@@ -607,12 +855,26 @@ export default function BeautyConsultantPage() {
           </div>
         </main>
 
-        {/* Hidden File Input */}
+        {/* Hidden File Inputs */}
         <input
           ref={fileInputRef}
           type="file"
           accept="image/*"
           onChange={handleImageUpload}
+          className="hidden"
+        />
+        <input
+          ref={productFileInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handleProductImageUpload}
+          className="hidden"
+        />
+        <input
+          ref={skinFileInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handleSkinImageUpload}
           className="hidden"
         />
       </div>

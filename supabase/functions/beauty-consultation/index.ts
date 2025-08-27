@@ -12,6 +12,9 @@ interface ConsultationRequest {
   region?: string;
   image?: string; // base64 image
   audio?: string; // base64 audio
+  mode?: 'chat' | 'product_analysis';
+  product_image?: string; // base64 image for product analysis
+  skin_image?: string; // base64 image for product analysis
 }
 
 interface SessionData {
@@ -38,7 +41,7 @@ serve(async (req) => {
 
     // Parse request body
     const body: ConsultationRequest = await req.json();
-    const { user_id, message = '', region = '', image, audio } = body;
+    const { user_id, message = '', region = '', image, audio, mode = 'chat', product_image, skin_image } = body;
 
     if (!user_id) {
       throw new Error('user_id is required');
@@ -97,10 +100,16 @@ serve(async (req) => {
 
     // Handle image analysis if provided
     let skinAnalysis = '';
-    if (image) {
-      console.log('Analyzing selfie...');
+    let productAnalysis = '';
+    
+    if (mode === 'product_analysis' && product_image && skin_image) {
+      console.log('Analyzing product and skin for compatibility...');
+      productAnalysis = await analyzeProductCompatibility(product_image, skin_image, userText, region, openaiApiKey);
+      console.log('Product compatibility analysis completed');
+    } else if (image) {
+      console.log('Analyzing image...');
       skinAnalysis = await analyzeSelfie(image, userText, region, openaiApiKey);
-      console.log('Skin analysis completed');
+      console.log('Image analysis completed');
     }
 
     // Record user turn
@@ -114,9 +123,11 @@ serve(async (req) => {
     console.log('Generating consultation...');
     const consultation = await generateConsultation({
       skinAnalysis,
+      productAnalysis,
       history: session.conversation_history || [],
       region,
       userMessage: userText,
+      mode,
       openaiApiKey
     });
 
@@ -294,15 +305,18 @@ async function transcribeAudio(base64Audio: string, openaiApiKey: string): Promi
 async function analyzeSelfie(base64Image: string, userMessage: string, region: string, openaiApiKey: string): Promise<string> {
   const dataUrl = `data:image/jpeg;base64,${base64Image}`;
   const systemPrompt = `
-You are Azyah, a warm professional beauty consultant. Analyze selfies for:
-- Skin type (oily/dry/combination/normal/sensitive)
-- Tone depth (very light → very deep) 
-- Undertone (cool/warm/neutral)
-- Visible concerns (acne, hyperpigmentation, fine lines)
-- Lighting conditions + confidence.
-Ask up to 2 clarifying questions if needed. Include a brief cosmetic advice disclaimer. Keep under 300 words.
+You are Azyah, a warm professional beauty consultant. First describe what you see in the image, then provide analysis:
+
+WHAT I SEE: Start by describing what's in the image (face, hand, arm, product, etc.)
+
+ANALYSIS: Then provide relevant beauty analysis:
+- If it's skin/face: skin type, tone depth, undertone, visible concerns, lighting conditions
+- If it's a beauty product: identify the product type, shade, finish, suitability
+- If it's swatches or reference: analyze colors, undertones, compatibility
+
+Give suggestions based on what you observe. Keep under 300 words.
 Region context: ${region || 'Not specified'}
-User says: ${userMessage || 'Analyze my skin.'}
+User says: ${userMessage || 'Tell me what you see and analyze this for me.'}
   `.trim();
 
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -330,6 +344,69 @@ User says: ${userMessage || 'Analyze my skin.'}
 
   if (!response.ok) {
     throw new Error(`Vision analysis failed: ${await response.text()}`);
+  }
+
+  const result = await response.json();
+  return result.choices[0]?.message?.content || '';
+}
+
+async function analyzeProductCompatibility(productImage: string, skinImage: string, userMessage: string, region: string, openaiApiKey: string): Promise<string> {
+  const productDataUrl = `data:image/jpeg;base64,${productImage}`;
+  const skinDataUrl = `data:image/jpeg;base64,${skinImage}`;
+  
+  const systemPrompt = `
+You are Azyah, a professional beauty consultant specializing in product compatibility analysis.
+
+TASK: Analyze the compatibility between the beauty product and the person's skin tone/type.
+
+ANALYSIS STEPS:
+1. PRODUCT IDENTIFICATION: Identify the product type, shade, finish, and undertones
+2. SKIN ANALYSIS: Analyze skin tone depth, undertones, and type from the skin/face image
+3. COMPATIBILITY SCORE: Rate compatibility 0-100% based on:
+   - Undertone matching (warm/cool/neutral)
+   - Shade depth compatibility
+   - Skin type suitability
+   - Product formulation match
+
+RESPONSE FORMAT:
+- Start with: "PRODUCT: [product description]"
+- Then: "SKIN: [skin analysis]" 
+- Then: "COMPATIBILITY SCORE: [0-100]%"
+- Explain the reasoning
+- Give application tips
+- Suggest alternatives if score is below 70%
+
+Keep under 400 words. Be specific and helpful.
+Region context: ${region || 'Not specified'}
+User says: ${userMessage || 'Analyze if this product works for my skin.'}
+  `.trim();
+
+  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${openaiApiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'gpt-4o',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        {
+          role: 'user',
+          content: [
+            { type: 'text', text: 'Please analyze the compatibility between this product and skin.' },
+            { type: 'image_url', image_url: { url: productDataUrl, detail: 'high' } },
+            { type: 'image_url', image_url: { url: skinDataUrl, detail: 'high' } },
+          ],
+        },
+      ],
+      temperature: 0.7,
+      max_completion_tokens: 700,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Product compatibility analysis failed: ${await response.text()}`);
   }
 
   const result = await response.json();
@@ -367,20 +444,25 @@ function validateAndSanitizeInput(input: string): string {
 
 async function generateConsultation({
   skinAnalysis,
+  productAnalysis,
   history,
   region,
   userMessage,
+  mode,
   openaiApiKey
 }: {
   skinAnalysis?: string;
+  productAnalysis?: string;
   history: Array<{role:'user'|'assistant'; content:string}>;
   region?: string;
   userMessage?: string;
+  mode?: string;
   openaiApiKey: string;
 }): Promise<string> {
   // Security: Validate and sanitize all inputs
   const sanitizedUserMessage = validateAndSanitizeInput(userMessage || '');
   const sanitizedSkinAnalysis = validateAndSanitizeInput(skinAnalysis || '');
+  const sanitizedProductAnalysis = validateAndSanitizeInput(productAnalysis || '');
   const sanitizedRegion = validateAndSanitizeInput(region || '');
   
   const systemPrompt = `
@@ -398,8 +480,18 @@ Your expertise is limited to:
 - Makeup application techniques and product suggestions
 - Beauty trends and color matching
 - Skin analysis and beauty concerns
+- Product compatibility analysis and recommendations
 
 Guidelines:
+${mode === 'product_analysis' ? `
+PRODUCT ANALYSIS MODE:
+- Provide a confidence score (0-100%) for product compatibility
+- Format: "**Compatibility Score: XX%**" at the start
+- Explain why this score based on skin tone/type match
+- Give application tips specific to this product
+- Suggest alternatives if compatibility is low
+` : `
+CHAT MODE:
 - One short paragraph (2–4 sentences) per turn
 - Max 2 clarifying questions when needed
 - Recommend up to 1–2 items per category with brief explanations
@@ -408,6 +500,7 @@ Guidelines:
 - Add 1–3 brief technique tips for complexion
 - Consider regional availability at a high level
 - Close with a single next step question
+`}
   `.trim();
 
   const messages = [
@@ -417,7 +510,8 @@ Guidelines:
       role: 'user',
       content: `Region: ${sanitizedRegion || 'Not specified'}\n` +
                (sanitizedUserMessage ? `User: ${sanitizedUserMessage}\n` : '') +
-               `Skin Analysis:\n${sanitizedSkinAnalysis || 'No selfie provided — give general guidance.'}`
+               (sanitizedProductAnalysis ? `Product Analysis:\n${sanitizedProductAnalysis}\n` : '') +
+               (sanitizedSkinAnalysis ? `Image Analysis:\n${sanitizedSkinAnalysis}` : 'No image provided — give general guidance.')
     }
   ];
 
