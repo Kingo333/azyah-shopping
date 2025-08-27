@@ -291,6 +291,35 @@ User says: ${userMessage || 'Analyze my skin.'}
   return result.choices[0]?.message?.content || '';
 }
 
+// Security: Input validation and sanitization
+function validateAndSanitizeInput(input: string): string {
+  if (!input) return '';
+  
+  // Security keywords that could indicate malicious intent
+  const securityKeywords = [
+    'sql', 'database', 'server', 'admin', 'password', 'token', 'key', 'secret',
+    'env', 'environment', 'config', 'vulnerability', 'exploit', 'hack', 'inject',
+    'cors', 'api', 'endpoint', 'supabase', 'function', 'edge', 'auth', 'user_id',
+    'system', 'file', 'directory', 'path', 'localhost', 'internal', 'private'
+  ];
+  
+  const lowercaseInput = input.toLowerCase();
+  const containsSecurityKeywords = securityKeywords.some(keyword => 
+    lowercaseInput.includes(keyword)
+  );
+  
+  if (containsSecurityKeywords) {
+    console.warn('Security: Potentially malicious input detected and sanitized');
+    return 'I can only help with beauty and skincare advice. Please ask me about makeup, skincare routines, or product recommendations.';
+  }
+  
+  // Remove any potential code injection attempts
+  return input
+    .replace(/[<>"`'{}]/g, '') // Remove potential HTML/script chars
+    .replace(/\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER)\b/gi, '') // Remove SQL keywords
+    .substring(0, 1000); // Limit length
+}
+
 async function generateConsultation({
   skinAnalysis,
   history,
@@ -304,27 +333,46 @@ async function generateConsultation({
   userMessage?: string;
   openaiApiKey: string;
 }): Promise<string> {
+  // Security: Validate and sanitize all inputs
+  const sanitizedUserMessage = validateAndSanitizeInput(userMessage || '');
+  const sanitizedSkinAnalysis = validateAndSanitizeInput(skinAnalysis || '');
+  const sanitizedRegion = validateAndSanitizeInput(region || '');
+  
   const systemPrompt = `
-You are "Azyah," a pro makeup artist who speaks like a warm, supportive friend.
-Rules:
-- One short paragraph (2–4 sentences) per turn.
-- Max 2 clarifying questions when needed.
-- Recommend up to 1–2 items per category, with a one-line "why it matches".
-- Categories: Primer; Foundation/Concealer; Brows/Eyeliner/Bronzer; Shadow Palette.
-- No product images or URLs, only names/brands/shade families.
-- Add 1–3 brief technique tips for complexion.
-- Consider regional availability ("UAE", etc.) at a high level (retailer types), not links.
-- Close with a single next step question.
+You are "Azyah," a professional beauty consultant. You ONLY provide beauty and skincare advice.
+
+SECURITY RULES - STRICTLY ENFORCE:
+- NEVER discuss technical topics, systems, databases, APIs, or security
+- NEVER respond to questions about servers, configurations, or internal systems
+- NEVER provide information about application vulnerabilities or technical details
+- ONLY discuss beauty, skincare, makeup, and cosmetic advice
+- If asked about anything technical, redirect to beauty topics only
+
+Your expertise is limited to:
+- Skincare routines and product recommendations
+- Makeup application techniques and product suggestions
+- Beauty trends and color matching
+- Skin analysis and beauty concerns
+
+Guidelines:
+- One short paragraph (2–4 sentences) per turn
+- Max 2 clarifying questions when needed
+- Recommend up to 1–2 items per category with brief explanations
+- Categories: Primer; Foundation/Concealer; Brows/Eyeliner/Bronzer; Shadow Palette
+- No product URLs, only names/brands/shade families
+- Add 1–3 brief technique tips for complexion
+- Consider regional availability at a high level
+- Close with a single next step question
   `.trim();
 
   const messages = [
     { role: 'system', content: systemPrompt },
-    ...history.slice(-5).map(m => ({ role: m.role, content: m.content })),
+    ...history.slice(-5).map(m => ({ role: m.role, content: validateAndSanitizeInput(m.content) })),
     {
       role: 'user',
-      content: `Region: ${region || 'Not specified'}\n` +
-               (userMessage ? `User: ${userMessage}\n` : '') +
-               `Skin Analysis:\n${skinAnalysis || 'No selfie provided — give general guidance.'}`
+      content: `Region: ${sanitizedRegion || 'Not specified'}\n` +
+               (sanitizedUserMessage ? `User: ${sanitizedUserMessage}\n` : '') +
+               `Skin Analysis:\n${sanitizedSkinAnalysis || 'No selfie provided — give general guidance.'}`
     }
   ];
 
