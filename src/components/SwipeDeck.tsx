@@ -444,7 +444,8 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                    className="relative w-full overflow-hidden rounded-lg flex-shrink-0"
                    style={{
                      height: `${getImageHeight(imageAspectRatio)}px`,
-                     maxHeight: `${getImageHeight(imageAspectRatio)}px`
+                     maxHeight: `${getImageHeight(imageAspectRatio)}px`,
+                     overflow: 'hidden'
                    }}
                    onClick={() => setShowInstructions(true)}
                  >
