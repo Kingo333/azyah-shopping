@@ -618,7 +618,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
 
       {/* Swipe instructions - auto-hide after 3 seconds, show on image tap */}
       {showInstructions && (
-        <div className="absolute top-4 right-4">
+        <div className="absolute top-4 left-4 right-4 text-center">
           <div className="bg-black/20 backdrop-blur-sm rounded-lg p-2 text-white text-xs">
             ← Pass • ↑ Save • Like →
           </div>
