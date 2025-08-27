@@ -251,7 +251,7 @@ const RetailerPortal = () => {
 
   return (
     <div className="min-h-screen bg-background dark:bg-slate-950">
-      <div className="container max-w-7xl mx-auto p-6">
+      <div className="container max-w-7xl mx-auto p-3 md:p-6">
         {/* Header */}
         <RetailerPortalHeader 
           retailer={retailer}
@@ -259,39 +259,39 @@ const RetailerPortal = () => {
         />
 
         {/* Feedback Section */}
-        <div className="mb-8 flex justify-end">
+        <div className="mb-4 md:mb-8 flex justify-end">
           <FeedbackModal userType="retailer" />
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 mb-6 md:mb-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Products</CardTitle>
-              <Package className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-xs md:text-sm font-medium">Total Products</CardTitle>
+              <Package className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{products.length}</div>
+              <div className="text-lg md:text-2xl font-bold">{products.length}</div>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Brands</CardTitle>
-              <Store className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-xs md:text-sm font-medium">Brands</CardTitle>
+              <Store className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{brands?.length || 0}</div>
+              <div className="text-lg md:text-2xl font-bold">{brands?.length || 0}</div>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Active Products</CardTitle>
-              <ShoppingBag className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-xs md:text-sm font-medium">Active Products</CardTitle>
+              <ShoppingBag className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
+              <div className="text-lg md:text-2xl font-bold">
                 {products.filter(p => p.status === 'active').length}
               </div>
             </CardContent>
@@ -299,11 +299,11 @@ const RetailerPortal = () => {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Low Stock</CardTitle>
-              <Package className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-xs md:text-sm font-medium">Low Stock</CardTitle>
+              <Package className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
+              <div className="text-lg md:text-2xl font-bold">
                 {products.filter(p => (p.stock_qty || 0) <= 5).length}
               </div>
             </CardContent>
@@ -311,13 +311,13 @@ const RetailerPortal = () => {
         </div>
 
         {/* Tabs */}
-        <Tabs defaultValue="products" className="space-y-6">
-          <TabsList className="bg-muted/50 dark:bg-slate-800/50">
-            <TabsTrigger value="products" className="data-[state=active]:bg-background dark:data-[state=active]:bg-slate-700">Products</TabsTrigger>
-            <TabsTrigger value="collabs" className="data-[state=active]:bg-background dark:data-[state=active]:bg-slate-700">Collabs</TabsTrigger>
-            <TabsTrigger value="brands" className="data-[state=active]:bg-background dark:data-[state=active]:bg-slate-700">Brands</TabsTrigger>
-            <TabsTrigger value="analytics" className="data-[state=active]:bg-background dark:data-[state=active]:bg-slate-700">Analytics</TabsTrigger>
-            <TabsTrigger value="settings" className="data-[state=active]:bg-background dark:data-[state=active]:bg-slate-700">Settings</TabsTrigger>
+        <Tabs defaultValue="products" className="space-y-4 md:space-y-6">
+          <TabsList className="bg-muted/50 dark:bg-slate-800/50 grid w-full grid-cols-5 md:flex md:w-auto">
+            <TabsTrigger value="products" className="data-[state=active]:bg-background dark:data-[state=active]:bg-slate-700 text-xs md:text-sm">Products</TabsTrigger>
+            <TabsTrigger value="collabs" className="data-[state=active]:bg-background dark:data-[state=active]:bg-slate-700 text-xs md:text-sm">Collabs</TabsTrigger>
+            <TabsTrigger value="brands" className="data-[state=active]:bg-background dark:data-[state=active]:bg-slate-700 text-xs md:text-sm">Brands</TabsTrigger>
+            <TabsTrigger value="analytics" className="data-[state=active]:bg-background dark:data-[state=active]:bg-slate-700 text-xs md:text-sm">Analytics</TabsTrigger>
+            <TabsTrigger value="settings" className="data-[state=active]:bg-background dark:data-[state=active]:bg-slate-700 text-xs md:text-sm">Settings</TabsTrigger>
           </TabsList>
 
           <TabsContent value="products">
@@ -427,10 +427,10 @@ const RetailerPortal = () => {
           </TabsContent>
 
           <TabsContent value="collabs">
-            <div className="space-y-4">
-              <div className="bg-muted/50 dark:bg-slate-800/50 rounded-lg p-4 border border-border/50">
-                <h3 className="font-medium mb-2">What are Collaborations?</h3>
-                <p className="text-sm text-muted-foreground">
+            <div className="space-y-3 md:space-y-4">
+              <div className="bg-muted/50 dark:bg-slate-800/50 rounded-lg p-3 md:p-4 border border-border/50">
+                <h3 className="font-medium mb-2 text-sm md:text-base">What are Collaborations?</h3>
+                <p className="text-xs md:text-sm text-muted-foreground">
                   Create collaboration campaigns to work with content creators and influencers. Set your requirements, 
                   compensation, and deliverables. Creators can apply to your campaigns, and you can manage applications 
                   and track campaign performance all in one place.
