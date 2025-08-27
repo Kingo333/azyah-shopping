@@ -655,9 +655,7 @@ export default function BeautyConsultantPage() {
                               <ImageIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                             </Button>
                           </TooltipTrigger>
-                          <TooltipContent side="top" className="animate-fade-in">
-                            <p className="text-xs">📸 Click to insert photos</p>
-                          </TooltipContent>
+                          
                         </Tooltip>
                       </TooltipProvider> : <div className="flex flex-col gap-3">
                         <div className="flex gap-1.5 sm:gap-2">
