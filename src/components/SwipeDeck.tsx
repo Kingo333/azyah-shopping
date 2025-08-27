@@ -3,7 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { motion, AnimatePresence, PanInfo, useMotionValue, useTransform, animate } from 'framer-motion';
-import { Heart, X, RotateCcw, Sparkles, ShoppingBag, TrendingUp, Users, Star, ExternalLink, Camera, Search, Info } from 'lucide-react';
+import { Heart, X, RotateCcw, Sparkles, ShoppingBag, TrendingUp, Users, Star, ExternalLink, Camera, Search, Info, Image } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useWishlist } from '@/hooks/useWishlist';
@@ -465,7 +465,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                     {/* Multiple images indicator for ASOS products */}
                     {hasMultipleImages(currentProduct) && (
                       <div className="absolute top-4 left-4 bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full flex items-center gap-1 shadow-lg">
-                        <Camera className="h-3 w-3" />
+                        <Image className="h-3 w-3" />
                         {getImageCount(currentProduct)}
                       </div>
                     )}
