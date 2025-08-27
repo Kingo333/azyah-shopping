@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, Heart, ShoppingBag, ExternalLink, Info } from 'lucide-react';
+import { Plus, Heart, ShoppingBag, ExternalLink, Info, Image } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { getPrimaryImageUrl, hasMultipleImages, getImageCount } from '@/utils/imageHelpers';
 
@@ -104,8 +104,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         
         {/* Multiple images indicator for ASOS products */}
         {hasMultipleImages(product) && (
-          <div className="absolute top-2 left-2 bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full opacity-90">
-            +{getImageCount(product) - 1}
+          <div className="absolute top-2 left-2 bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full flex items-center gap-1 opacity-90">
+            <Image className="h-3 w-3" />
+            {getImageCount(product)}
           </div>
         )}
         
@@ -148,7 +149,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         )}
         
         {/* Product Info Overlay (appears on hover) */}
-        <div className="absolute bottom-4 left-4 right-4 bg-white/95 backdrop-blur-sm rounded-xl p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+        <div className="absolute bottom-4 left-4 right-4 bg-white/60 backdrop-blur-sm rounded-xl p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
           <div className="text-sm font-medium line-clamp-1 mb-1">
             {product.brands?.name || product.brand?.name || product.brand_name || product.merchant_name || 'Unknown Brand'}
           </div>
