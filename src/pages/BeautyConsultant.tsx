@@ -361,6 +361,12 @@ export default function BeautyConsultantPage() {
   };
 
   const handleVoiceTranscription = async (transcription: string) => {
+    // Disable voice in product analysis mode if images aren't uploaded
+    if (analysisMode === 'product_analysis' && (!productImage || !skinImage)) {
+      toast.error('Please upload both product and skin images before using voice');
+      return;
+    }
+
     // Add voice message to chat
     const voiceMessage: ChatMessage = {
       id: Date.now().toString(),
@@ -756,11 +762,11 @@ export default function BeautyConsultantPage() {
                 {/* Input Row */}
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-end gap-3">
                   {/* Action Buttons */}
-                  <div className="flex gap-1.5 sm:gap-2 order-2 sm:order-1">
-                    <VoiceRecorder
-                      onTranscription={handleVoiceTranscription}
-                      disabled={loading}
-                    />
+                   <div className="flex gap-1.5 sm:gap-2 order-2 sm:order-1">
+                     <VoiceRecorder
+                       onTranscription={handleVoiceTranscription}
+                       disabled={loading || (analysisMode === 'product_analysis' && (!productImage || !skinImage))}
+                     />
                     
                     {analysisMode === 'chat' ? (
                       <Button
@@ -781,7 +787,9 @@ export default function BeautyConsultantPage() {
                               variant="outline"
                               size="icon"
                               onClick={() => productFileInputRef.current?.click()}
-                              className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl border-border/50 bg-background/50 hover:bg-blue-500/5 hover:border-blue-500/30 transition-all duration-300"
+                              className={`h-10 w-10 sm:h-12 sm:w-12 rounded-xl border-border/50 bg-background/50 hover:bg-blue-500/5 hover:border-blue-500/30 transition-all duration-300 ${
+                                !productImage ? 'animate-pulse shadow-lg shadow-blue-500/20 border-blue-500/30' : ''
+                              }`}
                               title="Upload product image"
                               disabled={loading}
                             >
@@ -794,7 +802,9 @@ export default function BeautyConsultantPage() {
                               variant="outline"
                               size="icon"
                               onClick={() => skinFileInputRef.current?.click()}
-                              className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl border-border/50 bg-background/50 hover:bg-amber-500/5 hover:border-amber-500/30 transition-all duration-300"
+                              className={`h-10 w-10 sm:h-12 sm:w-12 rounded-xl border-border/50 bg-background/50 hover:bg-amber-500/5 hover:border-amber-500/30 transition-all duration-300 ${
+                                !skinImage ? 'animate-pulse shadow-lg shadow-amber-500/20 border-amber-500/30' : ''
+                              }`}
                               title="Upload skin/face image"
                               disabled={loading}
                             >
@@ -860,7 +870,7 @@ export default function BeautyConsultantPage() {
                       size="sm"
                       onClick={() => setInputMessage(suggestion)}
                       className="h-7 sm:h-8 px-2 sm:px-3 text-xs rounded-lg border-border/30 bg-background/30 hover:bg-primary/5 hover:border-primary/30 transition-all duration-300"
-                      disabled={loading}
+                      disabled={loading || (analysisMode === 'product_analysis' && (!productImage || !skinImage))}
                     >
                       {suggestion}
                     </Button>
