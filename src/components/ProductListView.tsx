@@ -194,7 +194,7 @@ const ProductListView: React.FC<ProductListViewProps> = ({ products, isLoading }
                 {/* Hover gradient overlay */}
                 <div className="absolute inset-0 bg-gradient-to-t from-primary/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 
-                {/* Top-right like button */}
+                {/* Top-right action buttons */}
                 <div className="absolute top-2 right-2 flex flex-col space-y-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                   <Button
                     size="sm"
@@ -204,11 +204,56 @@ const ProductListView: React.FC<ProductListViewProps> = ({ products, isLoading }
                   >
                     <Heart className="h-4 w-4" />
                   </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-8 w-8 rounded-full bg-white/90 hover:bg-white backdrop-blur-sm text-base"
+                    onClick={async () => {
+                      if (!user) {
+                        toast({
+                          title: "Sign in required",
+                          description: "You must be signed in to add to wishlist.",
+                          variant: "destructive"
+                        });
+                        return;
+                      }
+
+                      try {
+                        const { error } = await supabase.from('wishlists').insert([{
+                          user_id: user.id,
+                          product_id: product.id
+                        }]);
+
+                        if (error) {
+                          if (error.code === '23505') {
+                            toast({
+                              description: `${product.title} is already in your wishlist!`
+                            });
+                          } else {
+                            throw error;
+                          }
+                        } else {
+                          toast({
+                            description: `${product.title} added to your wishlist!`
+                          });
+                        }
+                      } catch (error: any) {
+                        console.error("Error adding to wishlist:", error.message);
+                        toast({
+                          title: "Error",
+                          description: "Failed to add to wishlist. Please try again.",
+                          variant: "destructive"
+                        });
+                      }
+                    }}
+                  >
+                    🛍️
+                  </Button>
                 </div>
                 
-                {/* Product Info Overlay (appears on hover) */}
+                {/* Product Info Overlay (appears on hover) - smaller overlay */}
                 <div className="absolute bottom-4 left-4 right-4 bg-white/95 backdrop-blur-sm rounded-xl p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                  <div className="text-sm font-medium line-clamp-1 mb-1">
+                  <div className="text-xs font-medium line-clamp-1 mb-1">
                     {product.title}
                   </div>
                   <div className="text-xs text-muted-foreground mb-1">
@@ -218,9 +263,8 @@ const ProductListView: React.FC<ProductListViewProps> = ({ products, isLoading }
                     {formatPrice(product.price_cents, product.currency)}
                   </div>
                   
-                  {/* Action buttons - Wishlist under Like conceptually, but in overlay */}
-                  <div className="flex space-x-2 mb-2">
-                    <WishlistButton productId={product.id} />
+                  {/* Action buttons */}
+                  <div className="flex space-x-2">
                     <Button
                       size="sm"
                       variant="ghost"
@@ -229,20 +273,19 @@ const ProductListView: React.FC<ProductListViewProps> = ({ products, isLoading }
                     >
                       <Info className="h-3 w-3" />
                     </Button>
+                    
+                    {/* Shop Now button - no emoji */}
+                    {product.external_url && (
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => window.open(product.external_url, '_blank', 'noopener,noreferrer')}
+                        className="flex-1 text-xs h-8"
+                      >
+                        Shop Now
+                      </Button>
+                    )}
                   </div>
-                  
-                  {/* Shop Now button - prominent red button */}
-                  {product.external_url && (
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => window.open(product.external_url, '_blank', 'noopener,noreferrer')}
-                      className="w-full text-xs h-8"
-                    >
-                      <ExternalLink className="h-3 w-3 mr-1" />
-                      Shop Now
-                    </Button>
-                  )}
                 </div>
               </div>
             </div>
