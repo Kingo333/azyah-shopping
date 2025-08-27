@@ -31,6 +31,7 @@ import { TopCategory, SubCategory } from '@/lib/categories';
 import { useUnifiedProducts } from '@/hooks/useUnifiedProducts';
 import { useEnhancedSwipeTracking } from '@/hooks/useEnhancedSwipeTracking';
 import { getResponsiveImageProps } from '@/utils/asosImageUtils';
+import { getPrimaryImageUrl, hasMultipleImages, getImageCount } from '@/utils/imageHelpers';
 import { supabase } from '@/integrations/supabase/client';
 
 interface SwipeDeckProps {
@@ -445,42 +446,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                  >
                     <img
                       {...getResponsiveImageProps(
-                        (() => {
-                          try {
-                            let imageUrl = '';
-                            
-                            // Try media_urls first since most products have this
-                            if (currentProduct.media_urls) {
-                              let mediaUrls = currentProduct.media_urls;
-                              if (typeof mediaUrls === 'string') {
-                                try {
-                                  mediaUrls = JSON.parse(mediaUrls);
-                                } catch (e) {
-                                  console.warn('Failed to parse media_urls:', e);
-                                  return '/placeholder.svg';
-                                }
-                              }
-                              
-                              if (Array.isArray(mediaUrls) && mediaUrls.length > 0) {
-                                const firstUrl = mediaUrls[0];
-                                if (typeof firstUrl === 'string' && firstUrl.trim()) {
-                                  imageUrl = firstUrl.trim();
-                                }
-                              }
-                            }
-                            
-                            // Fallback to image_url if media_urls is empty
-                            if (!imageUrl && currentProduct.image_url && currentProduct.image_url.trim()) {
-                              imageUrl = currentProduct.image_url.trim();
-                            }
-                            
-                            // Return valid URL or placeholder
-                            return imageUrl || '/placeholder.svg';
-                          } catch (error) {
-                            console.warn('Error processing image URL for product:', currentProduct.id, error);
-                            return '/placeholder.svg';
-                          }
-                        })(),
+                        getPrimaryImageUrl(currentProduct),
                         "(max-width: 768px) 100vw, 50vw"
                       )}
                       alt={currentProduct.title}
@@ -490,19 +456,17 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                         const img = e.target as HTMLImageElement;
                         const originalSrc = img.src;
                         console.warn('Image failed to load for product:', currentProduct.id, 'URL:', originalSrc);
-                        
-                        // Try fallback strategies before using placeholder
-                        if (originalSrc.includes('$n_640w$')) {
-                          // Remove size parameters and try original URL
-                          const fallbackUrl = originalSrc.split('?')[0];
-                          console.log('Trying fallback URL:', fallbackUrl);
-                          img.src = fallbackUrl;
-                        } else if (originalSrc !== '/placeholder.svg') {
-                          // Final fallback to placeholder
-                          img.src = '/placeholder.svg';
-                        }
+                        img.src = '/placeholder.svg';
                       }}
                     />
+                    
+                    {/* Multiple images indicator for ASOS products */}
+                    {hasMultipleImages(currentProduct) && (
+                      <div className="absolute top-4 left-4 bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full flex items-center gap-1 shadow-lg">
+                        <Camera className="h-3 w-3" />
+                        {getImageCount(currentProduct)}
+                      </div>
+                    )}
                 </div>
                 
                 <div className="flex flex-col flex-grow space-y-2">

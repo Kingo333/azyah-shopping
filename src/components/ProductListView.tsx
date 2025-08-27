@@ -2,7 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Heart, X, ShoppingBag, Sparkles, Info, ExternalLink } from 'lucide-react';
+import { Heart, X, ShoppingBag, Sparkles, Info, ExternalLink, Image } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useWishlist } from '@/hooks/useWishlist';
@@ -10,6 +10,7 @@ import { Product } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import ProductDetailPage from '@/components/ProductDetailPage';
 import { getResponsiveImageProps } from '@/utils/asosImageUtils';
+import { getPrimaryImageUrl, hasMultipleImages, getImageCount } from '@/utils/imageHelpers';
 
 interface ProductListViewProps {
   products: Product[];
@@ -73,29 +74,6 @@ const ProductListView: React.FC<ProductListViewProps> = ({ products, isLoading }
     }).format(cents / 100);
   };
 
-  const getImageUrl = (product: Product) => {
-    // Handle image_url first
-    if (product.image_url) return product.image_url;
-    
-    // Handle media_urls as array
-    if (product.media_urls && Array.isArray(product.media_urls) && product.media_urls.length > 0) {
-      return product.media_urls[0];
-    }
-    
-    // Handle media_urls as JSON string (ASOS products)
-    if (product.media_urls && typeof product.media_urls === 'string') {
-      try {
-        const parsed = JSON.parse(product.media_urls);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed[0];
-        }
-      } catch (e) {
-        console.warn('Failed to parse media_urls:', product.media_urls);
-      }
-    }
-    
-    return '/placeholder.svg';
-  };
 
   if (isLoading) {
     return (
@@ -181,7 +159,7 @@ const ProductListView: React.FC<ProductListViewProps> = ({ products, isLoading }
               <div className="aspect-[3/4] bg-muted rounded-2xl overflow-hidden relative">
                 <img
                   {...getResponsiveImageProps(
-                    getImageUrl(product),
+                    getPrimaryImageUrl(product),
                     "(max-width: 768px) 50vw, 25vw"
                   )}
                   alt={product.title}
@@ -190,6 +168,14 @@ const ProductListView: React.FC<ProductListViewProps> = ({ products, isLoading }
                     (e.target as HTMLImageElement).src = '/placeholder.svg';
                   }}
                 />
+                
+                {/* Multiple images indicator for ASOS products */}
+                {hasMultipleImages(product) && (
+                  <div className="absolute top-2 left-2 bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full flex items-center gap-1 opacity-90">
+                    <Image className="h-3 w-3" />
+                    {getImageCount(product)}
+                  </div>
+                )}
                 
                 {/* Hover gradient overlay */}
                 <div className="absolute inset-0 bg-gradient-to-t from-primary/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />

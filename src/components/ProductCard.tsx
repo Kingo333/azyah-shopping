@@ -3,6 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Plus, Heart, ShoppingBag, ExternalLink, Info } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { getPrimaryImageUrl, hasMultipleImages, getImageCount } from '@/utils/imageHelpers';
 
 interface ProductCardProps {
   product: any;
@@ -33,39 +34,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     }).format(price);
   };
 
-  const getImageUrl = (item: any) => {
-    // Handle different data structures for images
-    if (item.image_url) return item.image_url;
-    
-    // Handle media_urls as array
-    if (item.media_urls && Array.isArray(item.media_urls) && item.media_urls.length > 0) {
-      return item.media_urls[0];
-    }
-    
-    // Handle media_urls as JSON string (ASOS products)
-    if (item.media_urls && typeof item.media_urls === 'string') {
-      try {
-        const parsed = JSON.parse(item.media_urls);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed[0];
-        }
-      } catch (e) {
-        console.warn('Failed to parse media_urls:', item.media_urls);
-      }
-    }
-    
-    // Handle product nested structure from likes
-    if (item.product?.media_urls && Array.isArray(item.product.media_urls) && item.product.media_urls.length > 0) {
-      return item.product.media_urls[0];
-    }
-    
-    // Handle products table direct access
-    if (item.products?.media_urls && Array.isArray(item.products.media_urls) && item.products.media_urls.length > 0) {
-      return item.products.media_urls[0];
-    }
-    
-    return '/placeholder.svg';
-  };
 
   const handleTouchStart = useCallback(() => {
     if (isMobile && onAddToBoard) {
@@ -129,10 +97,17 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     >
       <div className="aspect-[3/4] bg-muted rounded-2xl overflow-hidden relative">
         <img 
-          src={getImageUrl(product)} 
+          src={getPrimaryImageUrl(product)} 
           alt={product.title}
           className="w-full h-full object-cover"
         />
+        
+        {/* Multiple images indicator for ASOS products */}
+        {hasMultipleImages(product) && (
+          <div className="absolute top-2 left-2 bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full opacity-90">
+            +{getImageCount(product) - 1}
+          </div>
+        )}
         
         {/* Hover gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-primary/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
