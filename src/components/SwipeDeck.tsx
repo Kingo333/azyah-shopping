@@ -438,7 +438,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
             custom={x.get()}
           >
             <Card className="h-full flex flex-col cursor-grab active:cursor-grabbing overflow-hidden" style={{ willChange: 'transform', contain: 'layout style paint' }}>
-              <CardContent className="p-2 sm:p-3 lg:pb-6 flex flex-col h-full bg-background/60 backdrop-blur-sm overflow-hidden">
+              <CardContent className="p-2 sm:p-3 lg:pb-4 flex flex-col h-full bg-background/60 backdrop-blur-sm">
                  <div 
                    className="relative w-full mb-1 sm:mb-2 overflow-hidden rounded-lg flex-shrink-0"
                    style={{
@@ -599,8 +599,8 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                             });
                           }
                         }}
-                        className="w-full gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground font-semibold shadow-lg pointer-events-auto py-3"
-                        size="default"
+                        className="w-full gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground font-semibold shadow-lg pointer-events-auto"
+                        size="sm"
                       >
                         Shop Now
                       </Button>
