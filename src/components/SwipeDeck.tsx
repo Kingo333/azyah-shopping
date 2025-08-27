@@ -462,25 +462,16 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                       }}
                     />
                     
-                     {/* Multiple images indicator and swipe instructions */}
-                     <div className="absolute top-4 left-0 right-0 flex items-center justify-between px-4">
-                       <div className="flex items-center">
-                         {hasMultipleImages(currentProduct) && (
-                           <div className="bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full flex items-center gap-1 shadow-lg">
-                             <Image className="h-3 w-3" />
-                             {getImageCount(currentProduct)}
-                           </div>
-                         )}
-                       </div>
-                       {showInstructions && (
-                         <div className="bg-background/80 text-foreground text-xs px-2 py-1 rounded-full backdrop-blur-sm shadow-lg">
-                           ← Pass • ↑ Save • Like →
-                         </div>
-                       )}
-                     </div>
+                    {/* Multiple images indicator for ASOS products */}
+                    {hasMultipleImages(currentProduct) && (
+                      <div className="absolute top-4 left-4 bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full flex items-center gap-1 shadow-lg">
+                        <Image className="h-3 w-3" />
+                        {getImageCount(currentProduct)}
+                      </div>
+                    )}
                 </div>
                 
-                 <div className="flex flex-col flex-grow space-y-1 -mt-6 mx-2">
+                 <div className="flex flex-col flex-grow space-y-1 -mt-4 mx-2">
                    <div className="flex items-start justify-between gap-2">
                      <div className="flex-1 min-w-0">
                        <h3 className="text-sm sm:text-base font-semibold line-clamp-1">{currentProduct.title}</h3>
@@ -625,6 +616,14 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
 
 
 
+      {/* Swipe instructions - auto-hide after 3 seconds, show on image tap */}
+      {showInstructions && (
+        <div className="absolute top-4 left-4 right-4 text-center">
+          <div className="bg-black/20 backdrop-blur-sm rounded-lg p-2 text-white text-xs">
+            ← Pass • ↑ Save • Like →
+          </div>
+        </div>
+      )}
 
       {/* No More Products State */}
       {index >= products.length && products.length > 0 && (
