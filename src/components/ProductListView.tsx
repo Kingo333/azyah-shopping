@@ -207,7 +207,7 @@ const ProductListView: React.FC<ProductListViewProps> = ({ products, isLoading }
                   <Button
                     size="sm"
                     variant="ghost"
-                    className="h-8 w-8 rounded-full bg-white/90 hover:bg-white backdrop-blur-sm text-base"
+                    className="h-8 w-8 rounded-full bg-white/90 hover:bg-white backdrop-blur-sm"
                     onClick={async () => {
                       if (!user) {
                         toast({
@@ -247,7 +247,7 @@ const ProductListView: React.FC<ProductListViewProps> = ({ products, isLoading }
                       }
                     }}
                   >
-                    🛍️
+                    <ShoppingBag className="h-4 w-4" />
                   </Button>
                 </div>
                 
