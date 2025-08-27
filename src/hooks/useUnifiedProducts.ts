@@ -28,6 +28,7 @@ export const useUnifiedProducts = (filters: UnifiedProductFilters): UnifiedProdu
 
   const fetchProducts = useCallback(async () => {
     setIsLoading(true);
+    console.log('Fetching products with filters:', filters);
     
     try {
       // Build base query with comprehensive joins
@@ -60,10 +61,10 @@ export const useUnifiedProducts = (filters: UnifiedProductFilters): UnifiedProdu
         query = query.eq('subcategory_slug', filters.subcategory as any);
       }
 
-      // Gender filtering with fallbacks
-      if (filters.gender) {
-        // Check both direct gender column and attributes fallback
-        query = query.or(`gender.eq.${filters.gender},attributes->gender_target.eq."${filters.gender}"`);
+      // Gender filtering with fallbacks - include null gender when no specific gender selected
+      if (filters.gender && filters.gender !== 'all') {
+        // Check both direct gender column and attributes fallback, plus null values
+        query = query.or(`gender.eq.${filters.gender},attributes->gender_target.eq."${filters.gender}",gender.is.null`);
       }
 
       // Price range filtering
@@ -98,6 +99,8 @@ export const useUnifiedProducts = (filters: UnifiedProductFilters): UnifiedProdu
 
       const { data, error } = await query;
 
+      console.log('Query result:', { data: data?.length, error });
+
       if (error) {
         console.error('Error fetching products:', error);
         toast({
@@ -105,6 +108,7 @@ export const useUnifiedProducts = (filters: UnifiedProductFilters): UnifiedProdu
           description: error.message,
           variant: "destructive"
         });
+        setIsLoading(false);
         return;
       }
 
@@ -176,6 +180,7 @@ export const useUnifiedProducts = (filters: UnifiedProductFilters): UnifiedProdu
         }
       }
 
+      console.log('Setting products:', processedProducts.length);
       setProducts(processedProducts);
     } catch (error) {
       console.error('Error in fetchProducts:', error);
@@ -187,7 +192,18 @@ export const useUnifiedProducts = (filters: UnifiedProductFilters): UnifiedProdu
     } finally {
       setIsLoading(false);
     }
-  }, [filters, user?.id]);
+  }, [
+    filters.category,
+    filters.subcategory, 
+    filters.gender,
+    filters.priceRange.min,
+    filters.priceRange.max,
+    filters.currency,
+    filters.searchQuery,
+    filters.limit,
+    filters.offset,
+    user?.id
+  ]);
 
   const refetch = useCallback(() => {
     fetchProducts();
