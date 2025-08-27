@@ -1,58 +1,44 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import CategoryFilter from "@/components/CategoryFilter";
-import type { Gender } from '@/lib/categories';
-import { ArrowLeft, Heart, Search, Menu, Sparkles, ChevronDown, List, LayoutGrid, RefreshCw } from "lucide-react";
-
-import { toast } from "sonner";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { ArrowLeft, Heart, Search, Sparkles, List, LayoutGrid } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAuth } from "@/contexts/AuthContext";
 import SwipeDeck from '@/components/SwipeDeck';
 import ProductListView from '@/components/ProductListView';
-import { usePersonalizedProducts } from '@/hooks/usePersonalizedProducts';
+import { useUnifiedProducts } from '@/hooks/useUnifiedProducts';
+import UnifiedCategoryFilter from '@/components/UnifiedCategoryFilter';
+import type { UnifiedFilterState } from '@/components/UnifiedCategoryFilter';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 const Swipe = () => {
   const navigate = useNavigate();
-  const {
-    user,
-    loading
-  } = useAuth();
+  const { user, loading } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // Initialize state from URL params
-  const [selectedGenders, setSelectedGenders] = useState<Gender[]>(() => {
+  // Initialize unified filter state from URL params
+  const [filters, setFilters] = useState<UnifiedFilterState>(() => {
     const genderParam = searchParams.get('gender');
-    if (genderParam && ['men', 'women', 'unisex', 'kids'].includes(genderParam)) {
-      return [genderParam as Gender];
-    }
-    return [];
-  });
-  const [selectedCategories, setSelectedCategories] = useState<string[]>(() => {
     const categoryParam = searchParams.get('category');
-    // Set any category that's not a gender as a category filter
-    if (categoryParam && !['men', 'women', 'unisex', 'kids'].includes(categoryParam)) {
-      return [categoryParam];
-    }
-    return [];
+    const subcategoryParam = searchParams.get('subcategory');
+    
+    return {
+      genders: genderParam && ['men', 'women', 'unisex', 'kids'].includes(genderParam) 
+        ? [genderParam as any] : [],
+      categories: categoryParam && !['men', 'women', 'unisex', 'kids'].includes(categoryParam) 
+        ? [categoryParam as any] : [],
+      subcategories: subcategoryParam ? [subcategoryParam as any] : [],
+      priceRange: {
+        min: parseInt(searchParams.get('minPrice') || '0'),
+        max: parseInt(searchParams.get('maxPrice') || '1000')
+      },
+      currency: searchParams.get('currency') || 'USD',
+      searchQuery: searchParams.get('search') || ''
+    };
   });
-  const [selectedSubcategories, setSelectedSubcategories] = useState<string[]>(searchParams.get('subcategory') ? [searchParams.get('subcategory')!] : []);
-  const [priceRange, setPriceRange] = useState<{
-    min: number;
-    max: number;
-  }>({
-    min: parseInt(searchParams.get('minPrice') || '0'),
-    max: parseInt(searchParams.get('maxPrice') || '1000')
-  });
-  const [searchQuery, setSearchQuery] = useState<string>(searchParams.get('search') || '');
-  const [selectedCurrency, setSelectedCurrency] = useState<string>(searchParams.get('currency') || 'USD');
-  const [showFilters, setShowFilters] = useState(false);
+
   const [viewMode, setViewMode] = useState<'swipe' | 'list'>('swipe');
   const [showTooltip, setShowTooltip] = useState(false);
 
@@ -89,33 +75,28 @@ const Swipe = () => {
     }
   }, [showListToggle]);
 
-  // Use the personalized products hook for list view
-  const {
-    products,
-    isLoading: productsLoading
-  } = usePersonalizedProducts({
-    filter: selectedCategories[0] || 'all',
-    subcategory: selectedSubcategories[0] || '',
-    gender: selectedGenders[0] || '',
-    priceRange,
-    searchQuery,
-    currency: selectedCurrency
+  // Use unified products hook
+  const { products, isLoading: productsLoading } = useUnifiedProducts({
+    category: filters.categories[0] || 'all',
+    subcategory: filters.subcategories[0],
+    gender: filters.genders[0],
+    priceRange: filters.priceRange,
+    searchQuery: filters.searchQuery,
+    currency: filters.currency
   });
 
   // Update URL when filters change
   useEffect(() => {
     const params = new URLSearchParams();
-    if (selectedGenders[0]) params.set('gender', selectedGenders[0]);
-    if (selectedCategories[0]) params.set('category', selectedCategories[0]);
-    if (selectedSubcategories[0]) params.set('subcategory', selectedSubcategories[0]);
-    if (priceRange.min > 0) params.set('minPrice', priceRange.min.toString());
-    if (priceRange.max < 1000) params.set('maxPrice', priceRange.max.toString());
-    if (searchQuery) params.set('search', searchQuery);
-    if (selectedCurrency !== 'USD') params.set('currency', selectedCurrency);
-    setSearchParams(params, {
-      replace: true
-    });
-  }, [selectedGenders, selectedCategories, selectedSubcategories, priceRange, searchQuery, selectedCurrency, setSearchParams]);
+    if (filters.genders[0]) params.set('gender', filters.genders[0]);
+    if (filters.categories[0]) params.set('category', filters.categories[0]);
+    if (filters.subcategories[0]) params.set('subcategory', filters.subcategories[0]);
+    if (filters.priceRange.min > 0) params.set('minPrice', filters.priceRange.min.toString());
+    if (filters.priceRange.max < 1000) params.set('maxPrice', filters.priceRange.max.toString());
+    if (filters.searchQuery) params.set('search', filters.searchQuery);
+    if (filters.currency !== 'USD') params.set('currency', filters.currency);
+    setSearchParams(params, { replace: true });
+  }, [filters, setSearchParams]);
   if (loading) {
     return <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="flex flex-col items-center space-y-4">
@@ -132,13 +113,13 @@ const Swipe = () => {
     return null;
   }
   const getCurrentCategoryDisplay = () => {
-    if (selectedGenders.length === 0 && selectedCategories.length === 0) return 'All Categories';
+    if (filters.genders.length === 0 && filters.categories.length === 0) return 'All Categories';
     const displays = [];
-    if (selectedGenders.length > 0) {
-      displays.push(selectedGenders[0].charAt(0).toUpperCase() + selectedGenders[0].slice(1));
+    if (filters.genders.length > 0) {
+      displays.push(filters.genders[0].charAt(0).toUpperCase() + filters.genders[0].slice(1));
     }
-    if (selectedCategories.length > 0) {
-      displays.push(selectedCategories[0].split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' '));
+    if (filters.categories.length > 0) {
+      displays.push(filters.categories[0].split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' '));
     }
     return displays.join(' · ') || 'All Categories';
   };
@@ -187,7 +168,13 @@ const Swipe = () => {
               {/* Search Bar */}
               <div className="relative flex-1 max-w-[160px] sm:max-w-[200px]">
                 <Search className="absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
-                <Input type="text" placeholder="Search..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="pl-7 sm:pl-10 h-8 sm:h-9 text-sm bg-background/50 backdrop-blur-sm border-border/50 focus-visible:ring-ring/50 focus-visible:border-ring" />
+                <Input 
+                  type="text" 
+                  placeholder="Search..." 
+                  value={filters.searchQuery} 
+                  onChange={e => setFilters(prev => ({ ...prev, searchQuery: e.target.value }))} 
+                  className="pl-7 sm:pl-10 h-8 sm:h-9 text-sm bg-background/50 backdrop-blur-sm border-border/50 focus-visible:ring-ring/50 focus-visible:border-ring" 
+                />
               </div>
 
               <Button variant="ghost" size="sm" onClick={() => navigate("/likes")} className="hover:bg-accent/50 p-2 flex-shrink-0">
@@ -195,80 +182,14 @@ const Swipe = () => {
                 <span className="hidden lg:inline lg:ml-2">Likes</span>
               </Button>
               
-              {/* Filters Menu */}
-              <Popover open={showFilters} onOpenChange={setShowFilters}>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" size="sm" className="bg-gradient-feature border-0 hover:shadow-soft p-2 flex-shrink-0">
-                    <Menu className="h-4 w-4" />
-                    <span className="hidden lg:inline lg:ml-2">Filters</span>
-                    <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4 ml-1" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[90vw] max-w-sm glass-premium border-white/20 shadow-elegant z-50" align="end">
-                  <div className="space-y-4 sm:space-y-6">
-                    <div className="space-y-2">
-                      <h4 className="font-semibold text-base sm:text-lg">Filters</h4>
-                      <p className="text-xs sm:text-sm text-muted-foreground">
-                        Customize your experience
-                      </p>
-                    </div>
-                    
-                    {/* Category Filter */}
-                    <div className="space-y-3">
-                      <Label className="text-sm font-medium">Category</Label>
-                      <CategoryFilter selectedGenders={selectedGenders} selectedCategories={selectedCategories as any} selectedSubcategories={selectedSubcategories as any} onGenderChange={setSelectedGenders} onCategoryChange={categories => setSelectedCategories(categories as string[])} onSubcategoryChange={subcategories => setSelectedSubcategories(subcategories as string[])} />
-                    </div>
-
-                    {/* Currency Filter */}
-                    <div className="space-y-3">
-                      <Label className="text-sm font-medium">Currency</Label>
-                      <Select value={selectedCurrency} onValueChange={setSelectedCurrency}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select currency" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="USD">USD ($)</SelectItem>
-                          <SelectItem value="EUR">EUR (€)</SelectItem>
-                          <SelectItem value="GBP">GBP (£)</SelectItem>
-                          <SelectItem value="AED">AED (د.إ)</SelectItem>
-                          <SelectItem value="SAR">SAR (﷼)</SelectItem>
-                          <SelectItem value="KWD">KWD (د.ك)</SelectItem>
-                          <SelectItem value="BHD">BHD (د.ب)</SelectItem>
-                          <SelectItem value="QAR">QAR (ر.ق)</SelectItem>
-                          <SelectItem value="OMR">OMR (ر.ع.)</SelectItem>
-                          <SelectItem value="JOD">JOD (د.أ)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {/* Price Range Filter */}
-                    <div className="space-y-3 sm:space-y-4">
-                      <Label className="text-sm font-medium">Price Range</Label>
-                      
-                      <div className="grid grid-cols-2 gap-2 sm:gap-3">
-                        <div className="space-y-2">
-                          <Label htmlFor="minPrice" className="text-xs font-medium">Min</Label>
-                          <Input id="minPrice" type="number" min="0" placeholder="0" value={priceRange.min || ''} onChange={e => setPriceRange(prev => ({
-                          ...prev,
-                          min: e.target.value === '' ? 0 : Number(e.target.value)
-                        }))} className="h-8 sm:h-9 text-sm" />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="maxPrice" className="text-xs font-medium">Max</Label>
-                          <Input id="maxPrice" type="number" min="0" placeholder="1000" value={priceRange.max || ''} onChange={e => setPriceRange(prev => ({
-                          ...prev,
-                          max: e.target.value === '' ? 1000 : Number(e.target.value)
-                        }))} className="h-8 sm:h-9 text-sm" />
-                        </div>
-                      </div>
-                    </div>
-
-                    <Button onClick={() => setShowFilters(false)} size="sm" className="w-full h-9">
-                      Apply Filters
-                    </Button>
-                  </div>
-                </PopoverContent>
-              </Popover>
+              {/* Unified Category Filter */}
+              <UnifiedCategoryFilter 
+                filters={filters}
+                onFiltersChange={setFilters}
+                compact={true}
+                showPriceRange={true}
+                showCurrency={true}
+              />
             </div>
           </div>
         </div>
@@ -281,18 +202,29 @@ const Swipe = () => {
             Your Fashion Feed
           </h2>
           <p className="text-xs sm:text-base text-muted-foreground">
-            {searchQuery ? `Searching for "${searchQuery}"` : "Swipe through curated collections tailored just for you"}
+            {filters.searchQuery ? `Searching for "${filters.searchQuery}"` : "Swipe through curated collections tailored just for you"}
           </p>
         </div>
 
         {/* Content Container */}
-        {viewMode === 'swipe' ? <div className="flex-1 flex items-center justify-center min-h-[600px] px-4">
+        {viewMode === 'swipe' ? (
+          <div className="flex-1 flex items-center justify-center min-h-[600px] px-4">
             <div className="relative w-full max-w-[380px] sm:max-w-md lg:max-w-lg h-[calc(100vh-220px)] lg:h-[calc(100vh-180px)] max-h-[700px] lg:max-h-[800px]">
-              <SwipeDeck filter={selectedCategories[0] || 'all'} subcategory={selectedSubcategories[0] || ''} gender={selectedGenders[0] || ''} priceRange={priceRange} searchQuery={searchQuery} currency={selectedCurrency} />
+              <SwipeDeck 
+                filter={filters.categories[0] || 'all'} 
+                subcategory={filters.subcategories[0] || ''} 
+                gender={filters.genders[0] || ''} 
+                priceRange={filters.priceRange} 
+                searchQuery={filters.searchQuery} 
+                currency={filters.currency} 
+              />
             </div>
-          </div> : <div className="flex-1">
+          </div>
+        ) : (
+          <div className="flex-1">
             <ProductListView products={products} isLoading={productsLoading} />
-          </div>}
+          </div>
+        )}
       </main>
     </div>;
 };

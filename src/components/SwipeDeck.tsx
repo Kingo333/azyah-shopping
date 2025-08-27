@@ -28,7 +28,7 @@ interface SwipeProduct {
 }
 import { useNavigate } from 'react-router-dom';
 import { TopCategory, SubCategory } from '@/lib/categories';
-import { useEnhancedSwipeProducts } from '@/hooks/useEnhancedSwipeProducts';
+import { useUnifiedProducts } from '@/hooks/useUnifiedProducts';
 import { useEnhancedSwipeTracking } from '@/hooks/useEnhancedSwipeTracking';
 import { getResponsiveImageProps } from '@/utils/asosImageUtils';
 import { supabase } from '@/integrations/supabase/client';
@@ -98,12 +98,12 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
   const scale = useTransform(x, [-200, 0, 200], [0.8, 1, 0.8]);
   const cardRef = useRef<HTMLDivElement>(null);
 
-  // Use the enhanced swipe products hook with AI-powered personalization
-  const { products, isLoading } = useEnhancedSwipeProducts({
-    filter: filter || 'all',
+  // Use the unified products hook with AI-powered personalization
+  const { products, isLoading } = useUnifiedProducts({
+    category: filter || 'all',
     subcategory,
     gender,
-    priceRange: [priceRange.min, priceRange.max],
+    priceRange,
     searchQuery,
     currency
   });
@@ -509,7 +509,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
                       <h3 className="text-sm sm:text-base font-semibold line-clamp-2 mb-1">{currentProduct.title}</h3>
-                      <p className="text-xs sm:text-sm text-muted-foreground line-clamp-1">{currentProduct.brands?.name}</p>
+                      <p className="text-xs sm:text-sm text-muted-foreground line-clamp-1">{currentProduct.brand?.name}</p>
                     </div>
                     <Button
                       variant="ghost"
