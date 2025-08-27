@@ -190,34 +190,37 @@ export const CreateLookSection: React.FC<CreateLookSectionProps> = ({ closetId }
   return (
     <div className="space-y-6">
       {/* Top Controls */}
-      <div className="flex items-center justify-between bg-card p-4 rounded-lg border">
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" onClick={handleUndo}>
-            <Undo className="h-4 w-4" />
+      <div className="flex items-center justify-between bg-card p-2 md:p-4 rounded-lg border">
+        <div className="flex items-center gap-1 md:gap-2">
+          <Button variant="ghost" size="sm" onClick={handleUndo} className="h-8 w-8 md:h-10 md:w-auto px-2 md:px-3">
+            <Undo className="h-3 w-3 md:h-4 md:w-4" />
+            <span className="hidden md:inline ml-1">Undo</span>
           </Button>
-          <Button variant="ghost" size="sm" onClick={handleRedo}>
-            <Redo className="h-4 w-4" />
+          <Button variant="ghost" size="sm" onClick={handleRedo} className="h-8 w-8 md:h-10 md:w-auto px-2 md:px-3">
+            <Redo className="h-3 w-3 md:h-4 md:w-4" />
+            <span className="hidden md:inline ml-1">Redo</span>
           </Button>
         </div>
         
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 md:gap-2">
           <Button 
             variant="outline" 
             size="sm" 
             onClick={() => setShowTemplates(true)}
+            className="h-8 px-2 md:h-10 md:px-3"
           >
-            <Grid3X3 className="h-4 w-4 mr-2" />
-            Templates
+            <Grid3X3 className="h-3 w-3 md:h-4 md:w-4" />
+            <span className="hidden sm:inline ml-1 md:ml-2 text-xs md:text-sm">Templates</span>
           </Button>
           
-          <Button variant="outline" size="sm" onClick={handleSave}>
-            <Save className="h-4 w-4 mr-2" />
-            Save Draft
+          <Button variant="outline" size="sm" onClick={handleSave} className="h-8 px-2 md:h-10 md:px-3">
+            <Save className="h-3 w-3 md:h-4 md:w-4" />
+            <span className="hidden sm:inline ml-1 md:ml-2 text-xs md:text-sm">Save</span>
           </Button>
           
-          <Button variant="default" size="sm">
-            <Share2 className="h-4 w-4 mr-2" />
-            Publish
+          <Button variant="default" size="sm" className="h-8 px-2 md:h-10 md:px-3">
+            <Share2 className="h-3 w-3 md:h-4 md:w-4" />
+            <span className="hidden sm:inline ml-1 md:ml-2 text-xs md:text-sm">Publish</span>
           </Button>
         </div>
       </div>
