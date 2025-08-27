@@ -122,23 +122,23 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
     const isMobile = window.innerWidth < 640;
     
     if (isMobile) {
-      // For mobile, leave more space for content below
+      // For mobile, bigger image with less space for content below
       const availableHeight = window.innerHeight * 0.85;
-      const detailsMinHeight = 160; // Increased space for price, buttons, and shop button
+      const detailsMinHeight = 120; // Reduced space for content
       const maxImageHeight = availableHeight - detailsMinHeight;
-      const minHeight = 280; // Reduced to allow more content space
-      const calculatedHeight = 350 / aspectRatio;
+      const minHeight = 320; // Increased minimum height
+      const calculatedHeight = 400 / aspectRatio; // Increased base height
       
       return Math.max(minHeight, Math.min(maxImageHeight, calculatedHeight));
     } else {
-      // Desktop: leave more space for content below
-      const maxHeight = window.innerHeight * 0.55; // Reduced to allow more content space
-      const minHeight = 220; // Reduced to allow more content space
-      const calculatedHeight = 450 / aspectRatio;
+      // Desktop: bigger image
+      const maxHeight = window.innerHeight * 0.65; // Increased from 0.55
+      const minHeight = 280; // Increased minimum height
+      const calculatedHeight = 520 / aspectRatio; // Increased base height
       
-      // For very long images (tall aspect ratio), still allow more height
+      // For very long images (tall aspect ratio), allow more height
       if (aspectRatio < 0.6) {
-        return Math.max(minHeight, Math.min(window.innerHeight * 0.4, calculatedHeight));
+        return Math.max(minHeight, Math.min(window.innerHeight * 0.5, calculatedHeight));
       }
       
       return Math.max(minHeight, Math.min(maxHeight, calculatedHeight));
@@ -471,7 +471,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                     )}
                 </div>
                 
-                 <div className="flex flex-col flex-grow space-y-1 mt-3 mx-2">
+                 <div className="flex flex-col flex-grow space-y-1 mt-4 mx-2">
                    <div className="flex items-start justify-between gap-2">
                      <div className="flex-1 min-w-0">
                        <h3 className="text-sm sm:text-base font-semibold line-clamp-1">{currentProduct.title}</h3>
