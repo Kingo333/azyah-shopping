@@ -75,13 +75,13 @@ export const RetailerPortalHeader: React.FC<RetailerPortalHeaderProps> = ({
         {/* User Menu */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" className="flex items-center gap-2 md:gap-3 hover:bg-accent/50 dark:hover:bg-accent/20 hover:scale-105 transition-all h-8 md:h-10">
-              <Avatar className="h-6 w-6 md:h-8 md:w-8 border-2 border-border dark:border-border/50">
+            <Button variant="ghost" size="sm" className="flex items-center gap-1 md:gap-3 hover:bg-accent/50 dark:hover:bg-accent/20 hover:scale-105 transition-all h-8 md:h-10 max-w-24 md:max-w-none">
+              <Avatar className="h-6 w-6 md:h-8 md:w-8 border-2 border-border dark:border-border/50 flex-shrink-0">
                 <AvatarFallback className="text-xs md:text-sm bg-gradient-to-br from-primary/20 to-accent/20 dark:from-primary/30 dark:to-accent/30">
                   {getUserName().charAt(0).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
-              <span className="hidden md:inline text-sm font-medium">
+              <span className="text-xs md:text-sm font-medium truncate min-w-0">
                 {getUserName()}
               </span>
             </Button>
