@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Grid3X3, Sparkles } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface Template {
   id: string;
@@ -23,7 +24,27 @@ export const TemplateSelector: React.FC<TemplateSelectorProps> = ({
   onClose,
   onSelectTemplate
 }) => {
-  const predefinedTemplates: Template[] = [
+  const isMobile = useIsMobile();
+  
+  // Scale template slots for mobile screens
+  const scaleTemplate = (template: Template): Template => {
+    const scale = isMobile ? 0.4 : 1; // Scale down to 40% on mobile
+    const canvasScale = isMobile ? { width: 432, height: 576 } : { width: 1080, height: 1440 }; // Mobile canvas is smaller
+    
+    return {
+      ...template,
+      slots: template.slots.map(slot => ({
+        ...slot,
+        x: Math.round(slot.x * scale),
+        y: Math.round(slot.y * scale),
+        w: Math.round(slot.w * scale),
+        h: Math.round(slot.h * scale),
+        padding: Math.max(4, Math.round(slot.padding * scale))
+      }))
+    };
+  };
+
+  const baseTemplates: Template[] = [
     {
       id: 'editorial-3up',
       name: 'Editorial 3-Up',
@@ -109,6 +130,29 @@ export const TemplateSelector: React.FC<TemplateSelectorProps> = ({
       ]
     },
     {
+      id: 'mobile-stack',
+      name: 'Mobile Stack',
+      description: 'Vertical layout optimized for mobile viewing',
+      preview: '/api/placeholder/300/200',
+      slots: [
+        {
+          id: 'main',
+          x: 40, y: 40, w: 350, h: 200,
+          type: 'wide', size: 'L', mask: 'rect', padding: 12
+        },
+        {
+          id: 'acc1',
+          x: 40, y: 260, w: 170, h: 120,
+          type: 'square', size: 'M', mask: 'rect', padding: 8
+        },
+        {
+          id: 'acc2',
+          x: 220, y: 260, w: 170, h: 120,
+          type: 'square', size: 'M', mask: 'rect', padding: 8
+        }
+      ]
+    },
+    {
       id: 'accessories-rail',
       name: 'Accessories Rail',
       description: 'Horizontal showcase for jewelry, bags, and small accessories',
@@ -143,33 +187,38 @@ export const TemplateSelector: React.FC<TemplateSelectorProps> = ({
     }
   ];
 
+  // Filter templates based on device type and scale them
+  const predefinedTemplates = isMobile 
+    ? baseTemplates.filter(t => t.id === 'mobile-stack' || t.id === 'editorial-3up' || t.id === 'abaya-set').map(scaleTemplate)
+    : baseTemplates.map(scaleTemplate);
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-auto">
+      <DialogContent className="max-w-sm md:max-w-4xl max-h-[80vh] overflow-auto mx-2">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5" />
+          <DialogTitle className="flex items-center gap-2 text-base md:text-lg">
+            <Sparkles className="h-4 w-4 md:h-5 md:w-5" />
             Choose a Template
           </DialogTitle>
         </DialogHeader>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 mt-4">
           {predefinedTemplates.map((template) => (
             <Card 
               key={template.id} 
-              className="p-4 cursor-pointer hover:shadow-lg transition-shadow group"
+              className="p-3 md:p-4 cursor-pointer hover:shadow-lg transition-shadow group"
               onClick={() => onSelectTemplate(template)}
             >
-              <div className="space-y-3">
+              <div className="space-y-2 md:space-y-3">
                 {/* Template preview */}
                 <div className="aspect-[3/2] bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg flex items-center justify-center border-2 border-dashed border-gray-200 group-hover:border-primary transition-colors">
-                  <Grid3X3 className="h-8 w-8 text-gray-400 group-hover:text-primary transition-colors" />
+                  <Grid3X3 className="h-6 w-6 md:h-8 md:w-8 text-gray-400 group-hover:text-primary transition-colors" />
                 </div>
 
                 {/* Template info */}
                 <div>
-                  <h3 className="font-medium text-sm">{template.name}</h3>
-                  <p className="text-xs text-muted-foreground mt-1">
+                  <h3 className="font-medium text-xs md:text-sm">{template.name}</h3>
+                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
                     {template.description}
                   </p>
                 </div>
@@ -179,8 +228,12 @@ export const TemplateSelector: React.FC<TemplateSelectorProps> = ({
                   <span className="text-xs text-muted-foreground">
                     {template.slots.length} slots
                   </span>
-                  <Button size="sm" variant="outline" className="opacity-0 group-hover:opacity-100 transition-opacity">
-                    Use Template
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    Use
                   </Button>
                 </div>
               </div>
@@ -188,8 +241,8 @@ export const TemplateSelector: React.FC<TemplateSelectorProps> = ({
           ))}
         </div>
 
-        <div className="flex justify-end gap-2 mt-6">
-          <Button variant="outline" onClick={onClose}>
+        <div className="flex justify-end gap-2 mt-4 md:mt-6">
+          <Button variant="outline" onClick={onClose} size="sm">
             Cancel
           </Button>
         </div>
