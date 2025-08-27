@@ -122,23 +122,23 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
     const isMobile = window.innerWidth < 640;
     
     if (isMobile) {
-      // For mobile, maximize image space
-      const availableHeight = window.innerHeight * 0.85; // Use more of the screen
-      const detailsMinHeight = 100; // Reduced minimum space needed for details
+      // For mobile, leave more space for content below
+      const availableHeight = window.innerHeight * 0.85;
+      const detailsMinHeight = 160; // Increased space for price, buttons, and shop button
       const maxImageHeight = availableHeight - detailsMinHeight;
-      const minHeight = 320; // Increased minimum for better visibility
-      const calculatedHeight = 400 / aspectRatio;
+      const minHeight = 280; // Reduced to allow more content space
+      const calculatedHeight = 350 / aspectRatio;
       
       return Math.max(minHeight, Math.min(maxImageHeight, calculatedHeight));
     } else {
-      // Desktop: maximize image space while keeping details visible
-      const maxHeight = window.innerHeight * 0.65; // Increased from 0.55
-      const minHeight = 250;
-      const calculatedHeight = 500 / aspectRatio;
+      // Desktop: leave more space for content below
+      const maxHeight = window.innerHeight * 0.55; // Reduced to allow more content space
+      const minHeight = 220; // Reduced to allow more content space
+      const calculatedHeight = 450 / aspectRatio;
       
       // For very long images (tall aspect ratio), still allow more height
       if (aspectRatio < 0.6) {
-        return Math.max(minHeight, Math.min(window.innerHeight * 0.45, calculatedHeight));
+        return Math.max(minHeight, Math.min(window.innerHeight * 0.4, calculatedHeight));
       }
       
       return Math.max(minHeight, Math.min(maxHeight, calculatedHeight));
