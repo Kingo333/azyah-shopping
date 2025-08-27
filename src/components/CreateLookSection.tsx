@@ -471,7 +471,7 @@ export const CreateLookSection: React.FC<CreateLookSectionProps> = ({ closetId }
         )}
       </div>
 
-      {/* Products Grid */}
+      {/* Liked Products Grid */}
       <div className="space-y-4">
         <div className="flex items-center gap-2">
           <Heart className="h-5 w-5" />
