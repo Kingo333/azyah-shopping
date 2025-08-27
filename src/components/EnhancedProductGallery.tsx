@@ -23,14 +23,6 @@ export const EnhancedProductGallery: React.FC<EnhancedProductGalleryProps> = ({
   hasARMesh = false,
   onARTryOn
 }) => {
-  // DEBUG: Log what EnhancedProductGallery receives
-  console.log('=== EnhancedProductGallery Debug ===');
-  console.log('Product ID:', productId);
-  console.log('Images received:', images);
-  console.log('Images length:', images?.length || 0);
-  console.log('Has multiple images:', (images?.length || 0) > 1);
-  console.log('=== End EnhancedProductGallery Debug ===');
-  
   const { isEnabled } = useFeatureFlags();
   const navigate = useNavigate();
   const [selectedImage, setSelectedImage] = useState(0);
@@ -160,14 +152,6 @@ export const EnhancedProductGallery: React.FC<EnhancedProductGalleryProps> = ({
         {isZoomed && (
           <span className="text-primary">Tap image to zoom out</span>
         )}
-      </div>
-      
-      {/* DEBUG: Show image data in UI */}
-      <div className="text-xs p-2 bg-red-100 border rounded">
-        DEBUG: Gallery received {images.length} images
-        <div className="mt-1 text-xs text-gray-600">
-          URLs: {images.slice(0, 2).map((url, i) => `${i+1}. ${url.substring(0, 50)}...`).join(', ')}
-        </div>
       </div>
     </div>
   );
