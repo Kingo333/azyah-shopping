@@ -462,13 +462,21 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                       }}
                     />
                     
-                    {/* Multiple images indicator for ASOS products */}
-                    {hasMultipleImages(currentProduct) && (
-                      <div className="absolute top-4 left-4 bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full flex items-center gap-1 shadow-lg">
-                        <Image className="h-3 w-3" />
-                        {getImageCount(currentProduct)}
-                      </div>
-                    )}
+                     {/* Multiple images indicator and swipe instructions */}
+                     <div className="absolute top-4 left-4 right-4 flex items-center justify-between">
+                       {hasMultipleImages(currentProduct) && (
+                         <div className="bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full flex items-center gap-1 shadow-lg">
+                           <Image className="h-3 w-3" />
+                           {getImageCount(currentProduct)}
+                         </div>
+                       )}
+                       
+                       {showInstructions && (
+                         <div className="bg-black/80 text-white text-xs px-2 py-1 rounded-md backdrop-blur-sm">
+                           ← Pass • ↑ Save • Like →
+                         </div>
+                       )}
+                     </div>
                 </div>
                 
                  <div className="flex flex-col flex-grow space-y-1 -mt-4 mx-2">
@@ -616,14 +624,6 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
 
 
 
-      {/* Swipe instructions - auto-hide after 3 seconds, show on image tap */}
-      {showInstructions && (
-        <div className="absolute top-4 left-4 right-4 text-center">
-          <div className="bg-black/20 backdrop-blur-sm rounded-lg p-2 text-white text-xs">
-            ← Pass • ↑ Save • Like →
-          </div>
-        </div>
-      )}
 
       {/* No More Products State */}
       {index >= products.length && products.length > 0 && (
