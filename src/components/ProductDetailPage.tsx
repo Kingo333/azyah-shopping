@@ -38,11 +38,23 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
     
     let finalImages: string[] = [];
     
-    // Priority 1: Parse media_urls as JSON string (primary ASOS format)
-    if (product.media_urls && typeof product.media_urls === 'string' && (product.media_urls as string).trim()) {
+    // Priority 1: Use media_urls as array (PRIMARY format from Supabase JSONB)
+    if (Array.isArray(product.media_urls) && product.media_urls.length > 0) {
+      const validImages = product.media_urls
+        .filter(url => url && typeof url === 'string' && url.trim())
+        .map(url => url.trim());
+      
+      if (validImages.length > 0) {
+        console.log(`✅ Using ${validImages.length} images from media_urls array:`, validImages);
+        finalImages = validImages;
+      }
+    }
+    
+    // Priority 2: Parse media_urls as JSON string (fallback format)
+    if (finalImages.length === 0 && product.media_urls && typeof product.media_urls === 'string' && (product.media_urls as string).trim()) {
       try {
         const parsed = JSON.parse(product.media_urls);
-        console.log('Successfully parsed media_urls:', parsed);
+        console.log('Successfully parsed media_urls JSON:', parsed);
         
         if (Array.isArray(parsed) && parsed.length > 0) {
           const validImages = parsed
@@ -50,40 +62,28 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
             .map(url => url.trim());
           
           if (validImages.length > 0) {
-            console.log(`Using ${validImages.length} images from parsed media_urls:`, validImages);
+            console.log(`✅ Using ${validImages.length} images from parsed media_urls:`, validImages);
             finalImages = validImages;
           }
         }
       } catch (e) {
-        console.warn('Failed to parse media_urls JSON:', product.media_urls, 'Error:', e);
-      }
-    }
-    
-    // Priority 2: Use media_urls as array (alternative format)
-    if (finalImages.length === 0 && Array.isArray(product.media_urls) && product.media_urls.length > 0) {
-      const validImages = product.media_urls
-        .filter(url => url && typeof url === 'string' && url.trim())
-        .map(url => url.trim());
-      
-      if (validImages.length > 0) {
-        console.log(`Using ${validImages.length} images from media_urls array:`, validImages);
-        finalImages = validImages;
+        console.warn('❌ Failed to parse media_urls JSON:', product.media_urls, 'Error:', e);
       }
     }
     
     // Priority 3: Fallback to image_url
     if (finalImages.length === 0 && product.image_url && product.image_url.trim()) {
-      console.log('Using image_url as fallback:', product.image_url);
+      console.log('⚠️ Using image_url as fallback:', product.image_url);
       finalImages = [product.image_url.trim()];
     }
     
     // Final fallback to placeholder
     if (finalImages.length === 0) {
-      console.warn('No valid images found, using placeholder');
+      console.warn('❌ No valid images found, using placeholder');
       finalImages = ['/placeholder.svg'];
     }
 
-    console.log(`Final image array (${finalImages.length} images):`, finalImages);
+    console.log(`🎯 Final image array (${finalImages.length} images):`, finalImages);
     console.log('=== End ASOS Image Debug ===');
     
     return finalImages;
