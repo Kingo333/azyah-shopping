@@ -67,6 +67,13 @@ export default function BeautyConsultantPage() {
   const [skinImage, setSkinImage] = useState<File | null>(null);
   const [productImagePreview, setProductImagePreview] = useState<string | null>(null);
   const [skinImagePreview, setSkinImagePreview] = useState<string | null>(null);
+  
+  // Tooltip tracking for insert image buttons
+  const [showImageTooltips, setShowImageTooltips] = useState(false);
+  const [hasShownTooltips, setHasShownTooltips] = useState(() => {
+    // Check if tooltips have been shown in this session
+    return sessionStorage.getItem('beautyConsultant_tooltips_shown') === 'true';
+  });
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const productFileInputRef = useRef<HTMLInputElement>(null);
@@ -92,7 +99,19 @@ export default function BeautyConsultantPage() {
       }
       return newMessages;
     });
-  }, [analysisMode]);
+
+    // Show tooltips when switching to product analysis mode (one-time per session)
+    if (analysisMode === 'product_analysis' && !hasShownTooltips) {
+      setShowImageTooltips(true);
+      setHasShownTooltips(true);
+      sessionStorage.setItem('beautyConsultant_tooltips_shown', 'true');
+      
+      // Hide tooltips after 1 second
+      setTimeout(() => {
+        setShowImageTooltips(false);
+      }, 1000);
+    }
+  }, [analysisMode, hasShownTooltips]);
   const validateImageFile = (file: File) => {
     if (!file.type.startsWith('image/')) {
       toast.error('Please select a valid image file');
@@ -661,26 +680,30 @@ export default function BeautyConsultantPage() {
                         <div className="flex gap-1.5 sm:gap-2">
                           <div className="flex flex-col items-center gap-1">
                             <TooltipProvider>
-                              <Tooltip open={!productImage} onOpenChange={() => {}}>
+                              <Tooltip open={showImageTooltips || !productImage} onOpenChange={() => {}}>
                                 <TooltipTrigger asChild>
                                   <Button variant="outline" size="icon" onClick={() => productFileInputRef.current?.click()} className={`h-10 w-10 sm:h-12 sm:w-12 rounded-xl border-border/50 bg-background/50 hover:bg-blue-500/5 hover:border-blue-500/30 transition-all duration-300 ${!productImage ? '!animate-slow-pulse shadow-lg shadow-blue-500/20 border-blue-500/30' : ''}`} title="Upload product image" disabled={loading}>
                                     <Package className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-blue-500" />
                                   </Button>
                                 </TooltipTrigger>
-                                
+                                <TooltipContent side="top" className="bg-background border shadow-lg">
+                                  <p className="text-xs font-medium">Click to insert product image</p>
+                                </TooltipContent>
                               </Tooltip>
                             </TooltipProvider>
                             <span className="text-xs text-muted-foreground text-center">Product</span>
                           </div>
                           <div className="flex flex-col items-center gap-1">
                             <TooltipProvider>
-                              <Tooltip open={!skinImage} onOpenChange={() => {}}>
+                              <Tooltip open={showImageTooltips || !skinImage} onOpenChange={() => {}}>
                                 <TooltipTrigger asChild>
                                   <Button variant="outline" size="icon" onClick={() => skinFileInputRef.current?.click()} className={`h-10 w-10 sm:h-12 sm:w-12 rounded-xl border-border/50 bg-background/50 hover:bg-amber-500/5 hover:border-amber-500/30 transition-all duration-300 ${!skinImage ? '!animate-slow-pulse shadow-lg shadow-amber-500/20 border-amber-500/30' : ''}`} title="Upload skin/face image" disabled={loading}>
                                     <User className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-amber-500" />
                                   </Button>
                                 </TooltipTrigger>
-                                
+                                <TooltipContent side="top" className="bg-background border shadow-lg">
+                                  <p className="text-xs font-medium">Click to insert skin/face image</p>
+                                </TooltipContent>
                               </Tooltip>
                             </TooltipProvider>
                             <span className="text-xs text-muted-foreground text-center">Skin/Face</span>
