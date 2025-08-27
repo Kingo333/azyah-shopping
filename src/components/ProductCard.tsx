@@ -1,19 +1,25 @@
 import React, { useState, useCallback } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
+import { Plus, Heart, ShoppingBag, ExternalLink, Info } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 interface ProductCardProps {
   product: any;
   onDragStart: (product: any, e: React.DragEvent) => void;
   onAddToBoard?: (product: any) => void;
+  onLike?: (product: any) => void;
+  onWishlist?: (product: any) => void;
+  onInfo?: (product: any) => void;
 }
 
 export const ProductCard: React.FC<ProductCardProps> = ({
   product,
   onDragStart,
-  onAddToBoard
+  onAddToBoard,
+  onLike,
+  onWishlist,
+  onInfo
 }) => {
   const [showPlusButton, setShowPlusButton] = useState(false);
   const [pressTimer, setPressTimer] = useState<NodeJS.Timeout | null>(null);
@@ -61,15 +67,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     return '/placeholder.svg';
   };
 
-  const getBrandName = (item: any) => {
-    // Handle different data structures for brand
-    if (item.brand_name) return item.brand_name;
-    if (item.brand?.name) return item.brand.name;
-    if (item.product?.brand?.name) return item.product.brand.name;
-    if (item.products?.brand?.name) return item.products.brand.name;
-    return 'Unknown Brand';
-  };
-
   const handleTouchStart = useCallback(() => {
     if (isMobile && onAddToBoard) {
       const timer = setTimeout(() => {
@@ -95,6 +92,32 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     }
   }, [onAddToBoard, product]);
 
+  const handleShopNow = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (product.external_url) {
+      window.open(product.external_url, '_blank', 'noopener,noreferrer');
+    }
+  }, [product.external_url]);
+
+  const handleLike = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (onLike) onLike(product);
+  }, [onLike, product]);
+
+  const handleWishlist = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (onWishlist) onWishlist(product);
+  }, [onWishlist, product]);
+
+  const handleInfo = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (onInfo) onInfo(product);
+  }, [onInfo, product]);
+
   return (
     <div 
       className="group relative bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 cursor-grab active:cursor-grabbing"
@@ -114,51 +137,84 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         {/* Hover gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-primary/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
         
-        {/* Mobile add button (top-right) */}
+        {/* Top-right action buttons */}
+        <div className="absolute top-2 right-2 flex flex-col space-y-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+          {onLike && (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-8 w-8 rounded-full bg-white/90 hover:bg-white backdrop-blur-sm"
+              onClick={handleLike}
+            >
+              <Heart className="h-4 w-4" />
+            </Button>
+          )}
+          {onWishlist && (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-8 w-8 rounded-full bg-white/90 hover:bg-white backdrop-blur-sm"
+              onClick={handleWishlist}
+            >
+              <ShoppingBag className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+        
+        {/* Mobile add button (shows on long press) */}
         {showPlusButton && onAddToBoard && (
           <Button
             size="sm"
-            className="absolute top-2 right-2 h-6 w-6 rounded-full bg-green-500 hover:bg-green-600 shadow-lg"
+            className="absolute top-2 right-2 h-8 w-8 rounded-full bg-primary/90 hover:bg-primary backdrop-blur-sm"
             onClick={handleAddClick}
           >
-            <Plus className="h-3 w-3" />
+            <Plus className="h-4 w-4" />
           </Button>
         )}
         
         {/* Product Info Overlay (appears on hover) */}
         <div className="absolute bottom-4 left-4 right-4 bg-white/95 backdrop-blur-sm rounded-xl p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
           <div className="text-sm font-medium line-clamp-1 mb-1">
-            {getBrandName(product)}
+            {product.title}
           </div>
           <div className="text-xs font-semibold text-primary mb-2">
             {formatPrice(product.price_cents, product.currency)}
           </div>
           
-          {/* Desktop action buttons */}
-          {!isMobile && onAddToBoard && (
-            <div className="flex gap-2">
-              <Button
-                size="sm"
-                variant="destructive"
-                className="flex-1 text-xs h-7"
-                onClick={handleAddClick}
-              >
-                Add to Board
-              </Button>
+          {/* Action buttons row */}
+          <div className="flex space-x-2">
+            {onAddToBoard && (
               <Button
                 size="sm"
                 variant="outline"
                 className="flex-1 text-xs h-7"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  // Handle shop action
-                }}
+                onClick={handleAddClick}
               >
-                Shop
+                <Plus className="h-3 w-3 mr-1" />
+                Add
               </Button>
-            </div>
-          )}
+            )}
+            <Button
+              size="sm"
+              variant="destructive"
+              className="flex-1 text-xs h-7"
+              onClick={handleShopNow}
+              disabled={!product.external_url}
+            >
+              <ExternalLink className="h-3 w-3 mr-1" />
+              Shop
+            </Button>
+            {onInfo && (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 w-7 p-0 rounded-full bg-primary/10"
+                onClick={handleInfo}
+              >
+                <Info className="h-3 w-3" />
+              </Button>
+            )}
+          </div>
         </div>
       </div>
     </div>
