@@ -122,23 +122,23 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
     const isMobile = window.innerWidth < 640;
     
     if (isMobile) {
-      // For mobile, allow more image space for long images and ensure details fit below
-      const availableHeight = window.innerHeight * 0.8; // Use more of the screen
-      const detailsMinHeight = 120; // Minimum space needed for details
+      // For mobile, maximize image space
+      const availableHeight = window.innerHeight * 0.85; // Use more of the screen
+      const detailsMinHeight = 100; // Reduced minimum space needed for details
       const maxImageHeight = availableHeight - detailsMinHeight;
-      const minHeight = 280; // Increased minimum for better visibility
-      const calculatedHeight = 320 / aspectRatio;
+      const minHeight = 320; // Increased minimum for better visibility
+      const calculatedHeight = 400 / aspectRatio;
       
       return Math.max(minHeight, Math.min(maxImageHeight, calculatedHeight));
     } else {
-      // Desktop: make longer images smaller while keeping whole image visible
-      const maxHeight = window.innerHeight * 0.55; // Reduced from 0.7 to give more space for details
-      const minHeight = 200;
-      const calculatedHeight = 400 / aspectRatio;
+      // Desktop: maximize image space while keeping details visible
+      const maxHeight = window.innerHeight * 0.65; // Increased from 0.55
+      const minHeight = 250;
+      const calculatedHeight = 500 / aspectRatio;
       
-      // For very long images (tall aspect ratio), limit height more
+      // For very long images (tall aspect ratio), still allow more height
       if (aspectRatio < 0.6) {
-        return Math.max(minHeight, Math.min(window.innerHeight * 0.35, calculatedHeight));
+        return Math.max(minHeight, Math.min(window.innerHeight * 0.45, calculatedHeight));
       }
       
       return Math.max(minHeight, Math.min(maxHeight, calculatedHeight));
@@ -438,9 +438,9 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
             custom={x.get()}
           >
             <Card className="h-full flex flex-col cursor-grab active:cursor-grabbing overflow-hidden" style={{ willChange: 'transform', contain: 'layout style paint' }}>
-              <CardContent className="p-4 sm:p-6 lg:pb-8 flex flex-col h-full bg-background/80 backdrop-blur-sm">
+              <CardContent className="p-2 sm:p-3 lg:pb-4 flex flex-col h-full bg-background/60 backdrop-blur-sm">
                  <div 
-                   className="relative w-full mb-2 sm:mb-3 overflow-hidden rounded-lg flex-shrink-0"
+                   className="relative w-full mb-1 sm:mb-2 overflow-hidden rounded-lg flex-shrink-0"
                    style={{
                      height: `${getImageHeight(imageAspectRatio)}px`
                    }}
@@ -471,12 +471,12 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                     )}
                 </div>
                 
-                <div className="flex flex-col flex-grow space-y-2">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-sm sm:text-base font-semibold line-clamp-2 mb-1">{currentProduct.title}</h3>
-                      <p className="text-xs sm:text-sm text-muted-foreground line-clamp-1">{currentProduct.brand?.name}</p>
-                    </div>
+                 <div className="flex flex-col flex-grow space-y-1">
+                   <div className="flex items-start justify-between gap-2">
+                     <div className="flex-1 min-w-0">
+                       <h3 className="text-sm sm:text-base font-semibold line-clamp-1">{currentProduct.title}</h3>
+                        <p className="text-xs text-muted-foreground line-clamp-1">{currentProduct.brands?.name || currentProduct.merchant_name}</p>
+                     </div>
                     <Button
                       variant="ghost"
                       size="sm"
