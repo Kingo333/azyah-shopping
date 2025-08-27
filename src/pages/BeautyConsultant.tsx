@@ -466,7 +466,7 @@ export default function BeautyConsultantPage() {
                 {/* Input Row */}
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-end gap-3">
                   {/* Action Buttons */}
-                  <div className="flex gap-2 order-2 sm:order-1">
+                  <div className="flex gap-1.5 sm:gap-2 order-2 sm:order-1">
                     <VoiceRecorder
                       onTranscription={handleVoiceTranscription}
                       disabled={loading}
@@ -475,21 +475,21 @@ export default function BeautyConsultantPage() {
                       variant="outline"
                       size="icon"
                       onClick={() => fileInputRef.current?.click()}
-                      className="h-11 w-11 sm:h-12 sm:w-12 rounded-xl border-border/50 bg-background/50 hover:bg-primary/5 hover:border-primary/30 transition-all duration-300"
+                      className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl border-border/50 bg-background/50 hover:bg-primary/5 hover:border-primary/30 transition-all duration-300"
                       title="Upload selfie"
                       disabled={loading}
                     >
-                      <ImageIcon className="h-4 w-4" />
+                      <ImageIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                     </Button>
                     <Button
                       variant="outline"
                       size="icon"
                       onClick={() => setShowRegionSelector(!showRegionSelector)}
-                      className="h-11 w-11 sm:h-12 sm:w-12 rounded-xl border-border/50 bg-background/50 hover:bg-primary/5 hover:border-primary/30 transition-all duration-300"
+                      className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl border-border/50 bg-background/50 hover:bg-primary/5 hover:border-primary/30 transition-all duration-300"
                       title="Select region"
                       disabled={loading}
                     >
-                      <MapPin className="h-4 w-4" />
+                      <MapPin className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                     </Button>
                   </div>
                   
