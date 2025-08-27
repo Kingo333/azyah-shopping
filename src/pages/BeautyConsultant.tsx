@@ -351,12 +351,22 @@ export default function BeautyConsultantPage() {
                               : 'bg-card/60 border-border/50'
                           }`}>
                             {message.image && (
-                              <div className="mb-3 rounded-xl overflow-hidden border border-border/30">
+                              <div className="mb-3 rounded-xl overflow-hidden border border-border/30 relative">
                                 <img 
                                   src={message.image} 
                                   alt="Uploaded selfie" 
                                   className="w-full max-w-56 h-auto object-cover transition-transform duration-300 hover:scale-105"
                                 />
+                                {loading && index === messages.length - 1 && (
+                                  <div className="absolute inset-0 rounded-xl overflow-hidden">
+                                    <div className="absolute inset-0 bg-primary/20 backdrop-blur-[1px]"></div>
+                                    <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-primary to-transparent animate-[scan_2s_ease-in-out_infinite]"></div>
+                                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-2 px-3 py-1.5 bg-black/50 rounded-full backdrop-blur-sm">
+                                      <div className="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
+                                      <span className="text-xs text-white font-medium">Scanning...</span>
+                                    </div>
+                                  </div>
+                                )}
                               </div>
                             )}
                             <div className="text-sm leading-relaxed">
@@ -444,19 +454,33 @@ export default function BeautyConsultantPage() {
                         alt="Preview" 
                         className="w-14 h-14 object-cover rounded-lg border border-border/30 shadow-sm"
                       />
+                      {loading && (
+                        <div className="absolute inset-0 rounded-lg overflow-hidden">
+                          <div className="absolute inset-0 bg-primary/20 backdrop-blur-[1px]"></div>
+                          <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-primary to-transparent animate-[scan_2s_ease-in-out_infinite]"></div>
+                          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-primary animate-pulse">
+                            <div className="w-2 h-2 rounded-full bg-primary animate-ping"></div>
+                          </div>
+                        </div>
+                      )}
                       <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
                         <ImageIcon className="h-2 w-2 text-white" />
                       </div>
                     </div>
                     <div className="flex-1">
-                      <p className="text-sm font-medium text-foreground">Selfie ready</p>
-                      <p className="text-xs text-muted-foreground">Analyzing your skin tone and features</p>
+                      <p className="text-sm font-medium text-foreground">
+                        {loading ? "Scanning image..." : "Selfie ready"}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {loading ? "AI analyzing your features" : "Analyzing your skin tone and features"}
+                      </p>
                     </div>
                     <Button 
                       variant="ghost" 
                       size="sm" 
                       onClick={clearImage} 
                       className="h-8 w-8 p-0 hover:bg-destructive/10 hover:text-destructive"
+                      disabled={loading}
                     >
                       ×
                     </Button>

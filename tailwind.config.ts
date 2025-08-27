@@ -205,6 +205,19 @@ export default {
 						transform: 'translate(-8%, -12%) rotate(0deg) scale(1) skewY(2deg)',
 						opacity: '0.7'
 					}
+				},
+				'scan': {
+					'0%': {
+						transform: 'translateY(-100%)',
+						opacity: '0'
+					},
+					'50%': {
+						opacity: '1'
+					},
+					'100%': {
+						transform: 'translateY(6400%)',
+						opacity: '0'
+					}
 				}
 			},
 			animation: {
