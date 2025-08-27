@@ -162,10 +162,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         </div>
         
         {/* Mobile add button (shows on long press) */}
-        {showPlusButton && onAddToBoard && (
+        {showPlusButton && onAddToBoard && isMobile && (
           <Button
             size="sm"
-            className="absolute top-2 right-2 h-8 w-8 rounded-full bg-primary/90 hover:bg-primary backdrop-blur-sm"
+            className="absolute top-2 right-2 h-8 w-8 rounded-full bg-green-500 hover:bg-green-600 text-white shadow-lg"
             onClick={handleAddClick}
           >
             <Plus className="h-4 w-4" />
@@ -175,7 +175,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         {/* Product Info Overlay (appears on hover) */}
         <div className="absolute bottom-4 left-4 right-4 bg-white/95 backdrop-blur-sm rounded-xl p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
           <div className="text-sm font-medium line-clamp-1 mb-1">
-            {product.title}
+            {product.brand || product.brand_name || 'Unknown Brand'}
           </div>
           <div className="text-xs font-semibold text-primary mb-2">
             {formatPrice(product.price_cents, product.currency)}
@@ -183,7 +183,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           
           {/* Action buttons row */}
           <div className="flex space-x-2">
-            {onAddToBoard && (
+            {onAddToBoard && !isMobile && (
               <Button
                 size="sm"
                 variant="outline"
