@@ -359,7 +359,7 @@ const RetailerPortal = () => {
                          </div>
                         <CardContent className="p-2 md:p-4">
                           <div className="space-y-1 md:space-y-2">
-                            <h3 className="font-semibold line-clamp-2 text-sm md:text-base">{product.title}</h3>
+                            <h3 className="font-semibold line-clamp-2 text-xs md:text-sm">{product.title}</h3>
                             {product.brand && (
                               <div className="flex items-center gap-1 md:gap-2">
                                 {product.brand.logo_url && (
