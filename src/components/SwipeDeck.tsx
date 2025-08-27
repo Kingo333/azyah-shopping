@@ -462,21 +462,38 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                       }}
                     />
                     
-                    {/* Multiple images indicator for ASOS products */}
-                    {hasMultipleImages(currentProduct) && (
-                      <div className="absolute top-4 left-4 bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full flex items-center gap-1 shadow-lg">
-                        <Image className="h-3 w-3" />
-                        {getImageCount(currentProduct)}
-                      </div>
-                    )}
-                </div>
-                
-                 <div className="flex flex-col flex-grow space-y-1 -mt-3 mx-2">
-                   <div className="flex items-start justify-between gap-2">
-                     <div className="flex-1 min-w-0">
-                       <h3 className="text-sm sm:text-base font-semibold line-clamp-1">{currentProduct.title}</h3>
-                        <p className="text-xs text-muted-foreground line-clamp-1">{currentProduct.brand?.name || currentProduct.merchant_name}</p>
+                     {/* Multiple images indicator and swipe instructions on same line */}
+                     <div className="absolute top-4 left-4 flex items-center gap-3">
+                       {hasMultipleImages(currentProduct) && (
+                         <div className="bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full flex items-center gap-1 shadow-lg">
+                           <Image className="h-3 w-3" />
+                           {getImageCount(currentProduct)}
+                         </div>
+                       )}
+                       
+                       {/* Swipe Instructions */}
+                       <AnimatePresence>
+                         {showInstructions && (
+                           <motion.div
+                             initial={{ opacity: 0, y: -10 }}
+                             animate={{ opacity: 1, y: 0 }}
+                             exit={{ opacity: 0, y: -10 }}
+                             transition={{ duration: 0.3 }}
+                             className="bg-black/75 text-white text-xs px-2 py-1 rounded-full"
+                           >
+                             ← Pass • ↑ Save • Like →
+                           </motion.div>
+                         )}
+                       </AnimatePresence>
                      </div>
+                 </div>
+                 
+                  <div className="flex flex-col flex-grow space-y-1 -mt-3 mx-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-sm sm:text-base font-semibold line-clamp-1">{currentProduct.title}</h3>
+                         <p className="text-xs text-muted-foreground line-clamp-1">{currentProduct.brand?.name || currentProduct.merchant_name}</p>
+                      </div>
                     <Button
                       variant="ghost"
                       size="sm"
@@ -616,14 +633,6 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
 
 
 
-      {/* Swipe instructions - auto-hide after 3 seconds, show on image tap */}
-      {showInstructions && (
-        <div className="absolute top-4 left-4 right-4 text-center">
-          <div className="bg-black/20 backdrop-blur-sm rounded-lg p-2 text-white text-xs">
-            ← Pass • ↑ Save • Like →
-          </div>
-        </div>
-      )}
 
       {/* No More Products State */}
       {index >= products.length && products.length > 0 && (
