@@ -516,7 +516,7 @@ export default function BeautyConsultantPage() {
                 ) : (
                   <p>
                     Chat history resets after 24 hours. 
-                    <span className="text-amber-500 font-medium ml-1">Upgrade to Premium</span> for permanent memory & more credits
+                    <span className="text-amber-500 font-medium ml-1">Upgrade to Premium</span> for permanent memory
                   </p>
                 )}
               </div>
