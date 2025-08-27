@@ -201,6 +201,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               onClick={handleShopNow}
               disabled={!product.external_url}
             >
+              <ExternalLink className="h-3 w-3 mr-1" />
               Shop
             </Button>
             {onInfo && (
