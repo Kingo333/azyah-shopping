@@ -87,7 +87,7 @@ export default function BeautyConsultantPage() {
         newMessages[0] = {
           ...newMessages[0],
           content: analysisMode === 'product_analysis' 
-            ? "Hi! I'm Azyah, your AI Beauty Consultant. Upload a product and your skin/face photo to get a compatibility analysis with confidence scoring! 💄✨"
+            ? "Hi! I'm Azyah, your AI Beauty Consultant. Upload a product and your skin/face photo to get a compatibility score with confidence rating! 💄✨"
             : "Hi! I'm Azyah, your AI Beauty Consultant. Upload a selfie, speak to me, or ask any beauty question for personalized recommendations! 💄✨"
         };
       }
@@ -483,7 +483,7 @@ export default function BeautyConsultantPage() {
                   <div className={`p-1.5 rounded-lg transition-all duration-300 ${analysisMode === 'product_analysis' ? 'bg-primary/20 text-primary' : 'bg-muted/50 text-muted-foreground'}`}>
                     <Package className="h-3 w-3" />
                   </div>
-                  <span className={`font-medium transition-colors duration-300 ${analysisMode === 'product_analysis' ? 'text-primary' : 'text-muted-foreground'}`}>Product Analysis</span>
+                  <span className={`font-medium transition-colors duration-300 ${analysisMode === 'product_analysis' ? 'text-primary' : 'text-muted-foreground'}`}>Product Score</span>
                 </div>
               </div>
             </div>
