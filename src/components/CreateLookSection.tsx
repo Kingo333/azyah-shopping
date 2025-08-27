@@ -7,12 +7,15 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useWishlistProducts } from '@/hooks/useWishlistProducts';
+import { useLikedProducts } from '@/hooks/useLikedProducts';
 import { useProducts } from '@/hooks/useProducts';
 import { useEnhancedClosetItems } from '@/hooks/useEnhancedClosets';
 import { useCreateLook, useUpdateLook } from '@/hooks/useLooks';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { Palette, Heart, ShoppingBag, Plus, Grid3X3, Save, Share2, Square, Undo, Redo } from 'lucide-react';
 import { BoardCanvas } from '@/components/BoardCanvas';
 import { TemplateSelector } from '@/components/TemplateSelector';
+import { ProductCard } from '@/components/ProductCard';
 import { toast } from '@/hooks/use-toast';
 
 interface CreateLookSectionProps {
@@ -44,8 +47,10 @@ export const CreateLookSection: React.FC<CreateLookSectionProps> = ({ closetId }
   const updateLookMutation = useUpdateLook();
 
   const { wishlistProducts, isLoading: wishlistLoading } = useWishlistProducts();
+  const { likedProducts, isLoading: likedLoading } = useLikedProducts();
   const { data: products, isLoading: productsLoading } = useProducts({ limit: 50 });
   const { data: closetItems = [] } = useEnhancedClosetItems(closetId || '', 'all', searchQuery);
+  const isMobile = useIsMobile();
 
   // Save board state to history for undo/redo
   const saveToHistory = useCallback((newState: any) => {
@@ -469,48 +474,47 @@ export const CreateLookSection: React.FC<CreateLookSectionProps> = ({ closetId }
       {/* Products Grid */}
       <div className="space-y-4">
         <div className="flex items-center gap-2">
-          <ShoppingBag className="h-5 w-5" />
-          <h3 className="text-lg font-semibold">All Products</h3>
-          <Badge variant="secondary">{products?.length || 0}</Badge>
+          <Heart className="h-5 w-5" />
+          <h3 className="text-lg font-semibold">My Liked Products</h3>
+          <Badge variant="secondary">{likedProducts?.length || 0}</Badge>
         </div>
         
-        {productsLoading ? (
+        {likedLoading ? (
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-            {Array.from({ length: 12 }, (_, i) => (
+            {Array.from({ length: 8 }, (_, i) => (
               <div key={i} className="aspect-square bg-muted rounded-lg animate-pulse" />
             ))}
           </div>
-        ) : products && products.length > 0 ? (
+        ) : likedProducts && likedProducts.length > 0 ? (
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-            {products.map((product) => (
-              <Card 
-                key={product.id} 
-                className="cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow"
-                draggable
-                onDragStart={(e) => handleDragStart(product, e)}
-              >
-                <div className="aspect-square bg-muted rounded-t-lg overflow-hidden">
-                  <img 
-                    src={getImageUrl(product)} 
-                    alt={product.title}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <CardContent className="p-2">
-                  <h4 className="font-medium text-xs line-clamp-2 mb-1">
-                    {product.title}
-                  </h4>
-                  <p className="font-semibold text-xs">
-                    {formatPrice(product.price_cents, product.currency)}
-                  </p>
-                </CardContent>
-              </Card>
+            {likedProducts.map((product) => (
+              <ProductCard
+                key={product.id}
+                product={product}
+                onDragStart={handleDragStart}
+                onAddToBoard={isMobile ? (prod) => {
+                  const fakeEvent = {
+                    dataTransfer: { setData: () => {} },
+                    clientX: 200,
+                    clientY: 200
+                  } as any;
+                  handleDragStart(prod, fakeEvent);
+                  handleDrop({
+                    preventDefault: () => {},
+                    stopPropagation: () => {},
+                    clientX: 200,
+                    clientY: 200,
+                    currentTarget: document.querySelector('.board-canvas') || document.body
+                  } as any);
+                } : undefined}
+              />
             ))}
           </div>
         ) : (
           <div className="text-center py-8 bg-muted/30 rounded-lg">
-            <ShoppingBag className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-            <p className="text-muted-foreground">No products available</p>
+            <Heart className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+            <p className="text-muted-foreground">No liked products yet</p>
+            <p className="text-sm text-muted-foreground mt-1">Like products to see them here</p>
           </div>
         )}
       </div>

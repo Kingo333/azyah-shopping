@@ -103,8 +103,8 @@ export const TemplateSelector: React.FC<TemplateSelectorProps> = ({
     },
     {
       id: 'abaya-set',
-      name: 'Abaya Set',
-      description: 'Modest wear collection with abaya, scarf, bag, and accessories',
+      name: 'Outfit & Items',
+      description: 'Complete outfit collection with main pieces and accessories',
       preview: '/api/placeholder/300/200',
       slots: [
         {
@@ -188,9 +188,16 @@ export const TemplateSelector: React.FC<TemplateSelectorProps> = ({
   ];
 
   // Filter templates based on device type and scale them
+  // Make abaya-set (now "Outfit & Items") the default first template
   const predefinedTemplates = isMobile 
-    ? baseTemplates.filter(t => t.id === 'mobile-stack' || t.id === 'editorial-3up' || t.id === 'abaya-set').map(scaleTemplate)
-    : baseTemplates.map(scaleTemplate);
+    ? [
+        baseTemplates.find(t => t.id === 'abaya-set'),
+        ...baseTemplates.filter(t => t.id !== 'abaya-set' && (t.id === 'mobile-stack' || t.id === 'editorial-3up'))
+      ].filter(Boolean).map(scaleTemplate)
+    : [
+        baseTemplates.find(t => t.id === 'abaya-set'),
+        ...baseTemplates.filter(t => t.id !== 'abaya-set')
+      ].filter(Boolean).map(scaleTemplate);
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
