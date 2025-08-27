@@ -25,8 +25,29 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
   const [isClosetModalOpen, setIsClosetModalOpen] = useState(false);
 
   const images = useMemo<string[]>(() => {
-    const media = (product?.media_urls ?? []) as unknown as string[];
-    return Array.isArray(media) ? media.filter(Boolean) : [];
+    // Handle image_url first
+    if (product?.image_url) {
+      return [product.image_url];
+    }
+    
+    // Handle media_urls as array
+    if (product?.media_urls && Array.isArray(product.media_urls) && product.media_urls.length > 0) {
+      return product.media_urls.filter(Boolean);
+    }
+    
+    // Handle media_urls as JSON string (ASOS products)
+    if (product?.media_urls && typeof product.media_urls === 'string') {
+      try {
+        const parsed = JSON.parse(product.media_urls);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.filter(Boolean);
+        }
+      } catch (e) {
+        console.warn('Failed to parse media_urls:', product.media_urls);
+      }
+    }
+    
+    return ['/placeholder.svg'];
   }, [product]);
 
   const priceCurrency = product?.currency || 'USD';
