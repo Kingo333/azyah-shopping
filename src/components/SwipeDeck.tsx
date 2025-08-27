@@ -464,13 +464,14 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                     
                      {/* Multiple images indicator and swipe instructions */}
                      <div className="absolute top-4 left-0 right-0 flex items-center justify-between px-4">
-                       {hasMultipleImages(currentProduct) && (
-                         <div className="bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full flex items-center gap-1 shadow-lg">
-                           <Image className="h-3 w-3" />
-                           {getImageCount(currentProduct)}
-                         </div>
-                       )}
-                       <div className="flex-1" />
+                       <div className="flex items-center">
+                         {hasMultipleImages(currentProduct) && (
+                           <div className="bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full flex items-center gap-1 shadow-lg">
+                             <Image className="h-3 w-3" />
+                             {getImageCount(currentProduct)}
+                           </div>
+                         )}
+                       </div>
                        {showInstructions && (
                          <div className="bg-background/80 text-foreground text-xs px-2 py-1 rounded-full backdrop-blur-sm shadow-lg">
                            ← Pass • ↑ Save • Like →
