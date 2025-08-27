@@ -788,7 +788,7 @@ export default function BeautyConsultantPage() {
                               size="icon"
                               onClick={() => productFileInputRef.current?.click()}
                               className={`h-10 w-10 sm:h-12 sm:w-12 rounded-xl border-border/50 bg-background/50 hover:bg-blue-500/5 hover:border-blue-500/30 transition-all duration-300 ${
-                                !productImage ? 'animate-pulse shadow-lg shadow-blue-500/20 border-blue-500/30' : ''
+                                !productImage ? 'animate-slow-pulse shadow-lg shadow-blue-500/20 border-blue-500/30' : ''
                               }`}
                               title="Upload product image"
                               disabled={loading}
@@ -803,7 +803,7 @@ export default function BeautyConsultantPage() {
                               size="icon"
                               onClick={() => skinFileInputRef.current?.click()}
                               className={`h-10 w-10 sm:h-12 sm:w-12 rounded-xl border-border/50 bg-background/50 hover:bg-amber-500/5 hover:border-amber-500/30 transition-all duration-300 ${
-                                !skinImage ? 'animate-pulse shadow-lg shadow-amber-500/20 border-amber-500/30' : ''
+                                !skinImage ? 'animate-slow-pulse shadow-lg shadow-amber-500/20 border-amber-500/30' : ''
                               }`}
                               title="Upload skin/face image"
                               disabled={loading}
