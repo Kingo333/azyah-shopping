@@ -76,7 +76,7 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
       const base64 = btoa(String.fromCharCode(...uint8Array));
 
       // Send to speech-to-text service
-      const { data, error } = await supabase.functions.invoke('beauty-speech-to-text', {
+      const { data, error } = await supabase.functions.invoke('beauty-voice', {
         body: { audio: base64 }
       });
 
