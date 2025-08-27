@@ -30,17 +30,34 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   const getImageUrl = (item: any) => {
     // Handle different data structures for images
     if (item.image_url) return item.image_url;
+    
+    // Handle media_urls as array
     if (item.media_urls && Array.isArray(item.media_urls) && item.media_urls.length > 0) {
       return item.media_urls[0];
     }
+    
+    // Handle media_urls as JSON string (ASOS products)
+    if (item.media_urls && typeof item.media_urls === 'string') {
+      try {
+        const parsed = JSON.parse(item.media_urls);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed[0];
+        }
+      } catch (e) {
+        console.warn('Failed to parse media_urls:', item.media_urls);
+      }
+    }
+    
     // Handle product nested structure from likes
     if (item.product?.media_urls && Array.isArray(item.product.media_urls) && item.product.media_urls.length > 0) {
       return item.product.media_urls[0];
     }
+    
     // Handle products table direct access
     if (item.products?.media_urls && Array.isArray(item.products.media_urls) && item.products.media_urls.length > 0) {
       return item.products.media_urls[0];
     }
+    
     return '/placeholder.svg';
   };
 
