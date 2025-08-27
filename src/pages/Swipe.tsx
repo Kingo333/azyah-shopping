@@ -15,7 +15,10 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 const Swipe = () => {
   const navigate = useNavigate();
-  const { user, loading } = useAuth();
+  const {
+    user,
+    loading
+  } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
 
   // Initialize unified filter state from URL params
@@ -23,12 +26,9 @@ const Swipe = () => {
     const genderParam = searchParams.get('gender');
     const categoryParam = searchParams.get('category');
     const subcategoryParam = searchParams.get('subcategory');
-    
     return {
-      genders: genderParam && ['men', 'women', 'unisex', 'kids'].includes(genderParam) 
-        ? [genderParam as any] : [],
-      categories: categoryParam && !['men', 'women', 'unisex', 'kids'].includes(categoryParam) 
-        ? [categoryParam as any] : [],
+      genders: genderParam && ['men', 'women', 'unisex', 'kids'].includes(genderParam) ? [genderParam as any] : [],
+      categories: categoryParam && !['men', 'women', 'unisex', 'kids'].includes(categoryParam) ? [categoryParam as any] : [],
       subcategories: subcategoryParam ? [subcategoryParam as any] : [],
       priceRange: {
         min: parseInt(searchParams.get('minPrice') || '0'),
@@ -38,7 +38,6 @@ const Swipe = () => {
       searchQuery: searchParams.get('search') || ''
     };
   });
-
   const [viewMode, setViewMode] = useState<'swipe' | 'list'>('swipe');
   const [showTooltip, setShowTooltip] = useState(false);
 
@@ -76,7 +75,10 @@ const Swipe = () => {
   }, [showListToggle]);
 
   // Use unified products hook
-  const { products, isLoading: productsLoading } = useUnifiedProducts({
+  const {
+    products,
+    isLoading: productsLoading
+  } = useUnifiedProducts({
     category: filters.categories[0] || 'all',
     subcategory: filters.subcategories[0],
     gender: filters.genders[0],
@@ -95,7 +97,9 @@ const Swipe = () => {
     if (filters.priceRange.max < 1000) params.set('maxPrice', filters.priceRange.max.toString());
     if (filters.searchQuery) params.set('search', filters.searchQuery);
     if (filters.currency !== 'USD') params.set('currency', filters.currency);
-    setSearchParams(params, { replace: true });
+    setSearchParams(params, {
+      replace: true
+    });
   }, [filters, setSearchParams]);
   if (loading) {
     return <div className="min-h-screen bg-background flex items-center justify-center">
@@ -134,9 +138,7 @@ const Swipe = () => {
                 <span className="hidden sm:inline sm:ml-2">Back</span>
               </Button>
               <div className="hidden md:flex items-center space-x-3">
-                <div className="h-8 w-8 rounded-xl bg-gradient-accent flex items-center justify-center">
-                  <Sparkles className="h-4 w-4 text-white" />
-                </div>
+                
                 <div>
                   <h1 className="text-xl font-bold font-playfair">Discover</h1>
                   <p className="text-xs text-muted-foreground">
@@ -168,13 +170,10 @@ const Swipe = () => {
               {/* Search Bar */}
               <div className="relative flex-1 max-w-[160px] sm:max-w-[200px]">
                 <Search className="absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
-                <Input 
-                  type="text" 
-                  placeholder="Search..." 
-                  value={filters.searchQuery} 
-                  onChange={e => setFilters(prev => ({ ...prev, searchQuery: e.target.value }))} 
-                  className="pl-7 sm:pl-10 h-8 sm:h-9 text-sm bg-background/50 backdrop-blur-sm border-border/50 focus-visible:ring-ring/50 focus-visible:border-ring" 
-                />
+                <Input type="text" placeholder="Search..." value={filters.searchQuery} onChange={e => setFilters(prev => ({
+                ...prev,
+                searchQuery: e.target.value
+              }))} className="pl-7 sm:pl-10 h-8 sm:h-9 text-sm bg-background/50 backdrop-blur-sm border-border/50 focus-visible:ring-ring/50 focus-visible:border-ring" />
               </div>
 
               <Button variant="ghost" size="sm" onClick={() => navigate("/likes")} className="hover:bg-accent/50 p-2 flex-shrink-0">
@@ -183,13 +182,7 @@ const Swipe = () => {
               </Button>
               
               {/* Unified Category Filter */}
-              <UnifiedCategoryFilter 
-                filters={filters}
-                onFiltersChange={setFilters}
-                compact={true}
-                showPriceRange={true}
-                showCurrency={true}
-              />
+              <UnifiedCategoryFilter filters={filters} onFiltersChange={setFilters} compact={true} showPriceRange={true} showCurrency={true} />
             </div>
           </div>
         </div>
@@ -207,24 +200,13 @@ const Swipe = () => {
         </div>
 
         {/* Content Container */}
-        {viewMode === 'swipe' ? (
-          <div className="flex-1 flex items-center justify-center min-h-[600px] px-4">
+        {viewMode === 'swipe' ? <div className="flex-1 flex items-center justify-center min-h-[600px] px-4">
             <div className="relative w-full max-w-[380px] sm:max-w-md lg:max-w-lg h-[calc(100vh-220px)] lg:h-[calc(100vh-180px)] max-h-[700px] lg:max-h-[800px]">
-              <SwipeDeck 
-                filter={filters.categories[0] || 'all'} 
-                subcategory={filters.subcategories[0] || ''} 
-                gender={filters.genders[0] || ''} 
-                priceRange={filters.priceRange} 
-                searchQuery={filters.searchQuery} 
-                currency={filters.currency} 
-              />
+              <SwipeDeck filter={filters.categories[0] || 'all'} subcategory={filters.subcategories[0] || ''} gender={filters.genders[0] || ''} priceRange={filters.priceRange} searchQuery={filters.searchQuery} currency={filters.currency} />
             </div>
-          </div>
-        ) : (
-          <div className="flex-1">
+          </div> : <div className="flex-1">
             <ProductListView products={products} isLoading={productsLoading} />
-          </div>
-        )}
+          </div>}
       </main>
     </div>;
 };
