@@ -74,26 +74,43 @@ const ProductListView: React.FC<ProductListViewProps> = ({ products, isLoading }
   };
 
   const getImageUrl = (product: Product) => {
-    // Handle image_url first
-    if (product.image_url) return product.image_url;
+    console.log(`=== ProductListView Image Debug for Product ID: ${product.id} ===`);
+    console.log('Product title:', product.title);
+    console.log('Raw media_urls:', product.media_urls);
+    console.log('Raw image_url:', product.image_url);
     
-    // Handle media_urls as array
-    if (product.media_urls && Array.isArray(product.media_urls) && product.media_urls.length > 0) {
-      return product.media_urls[0];
-    }
-    
-    // Handle media_urls as JSON string (ASOS products)
-    if (product.media_urls && typeof product.media_urls === 'string') {
+    // Priority 1: Parse media_urls as JSON string (primary ASOS format)
+    if (product.media_urls && typeof product.media_urls === 'string' && (product.media_urls as string).trim()) {
       try {
         const parsed = JSON.parse(product.media_urls);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed[0];
+          const validImages = parsed.filter(url => url && typeof url === 'string' && url.trim());
+          if (validImages.length > 0) {
+            console.log('Using first image from parsed media_urls:', validImages[0]);
+            return validImages[0].trim();
+          }
         }
       } catch (e) {
-        console.warn('Failed to parse media_urls:', product.media_urls);
+        console.warn('Failed to parse media_urls:', product.media_urls, e);
       }
     }
     
+    // Priority 2: Use media_urls as array
+    if (Array.isArray(product.media_urls) && product.media_urls.length > 0) {
+      const validImages = product.media_urls.filter(url => url && typeof url === 'string' && url.trim());
+      if (validImages.length > 0) {
+        console.log('Using first image from media_urls array:', validImages[0]);
+        return validImages[0].trim();
+      }
+    }
+    
+    // Priority 3: Fallback to image_url  
+    if (product.image_url && product.image_url.trim()) {
+      console.log('Using image_url fallback:', product.image_url);
+      return product.image_url.trim();
+    }
+    
+    console.log('No valid images found, using placeholder');
     return '/placeholder.svg';
   };
 
