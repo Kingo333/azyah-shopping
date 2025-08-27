@@ -252,7 +252,7 @@ const ProductListView: React.FC<ProductListViewProps> = ({ products, isLoading }
                 </div>
                 
                 {/* Product Info Overlay (appears on hover) - smaller overlay */}
-                <div className="absolute bottom-4 left-4 right-4 bg-white/95 backdrop-blur-sm rounded-xl p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <div className="absolute bottom-4 left-4 right-4 bg-white/60 backdrop-blur-sm rounded-xl p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                   <div className="text-xs font-medium line-clamp-1 mb-1">
                     {product.title}
                   </div>
