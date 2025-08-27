@@ -1983,6 +1983,36 @@ export type Database = {
           },
         ]
       }
+      user_credits: {
+        Row: {
+          created_at: string
+          credits_remaining: number
+          credits_used_today: number
+          id: string
+          last_reset_date: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          credits_remaining?: number
+          credits_used_today?: number
+          id?: string
+          last_reset_date?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          credits_remaining?: number
+          credits_used_today?: number
+          id?: string
+          last_reset_date?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_sessions: {
         Row: {
           conversation_history: Json | null
@@ -1993,6 +2023,7 @@ export type Database = {
           last_activity: string | null
           preferences: Json | null
           session_data: Json | null
+          session_expires_at: string | null
           session_id: string
           user_id: string
         }
@@ -2005,6 +2036,7 @@ export type Database = {
           last_activity?: string | null
           preferences?: Json | null
           session_data?: Json | null
+          session_expires_at?: string | null
           session_id: string
           user_id: string
         }
@@ -2017,6 +2049,7 @@ export type Database = {
           last_activity?: string | null
           preferences?: Json | null
           session_data?: Json | null
+          session_expires_at?: string | null
           session_id?: string
           user_id?: string
         }
@@ -2379,6 +2412,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      cleanup_expired_sessions: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
       cleanup_old_ai_assets: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -2391,6 +2428,10 @@ export type Database = {
       create_admin_user: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      deduct_user_credit: {
+        Args: { target_user_id: string }
+        Returns: boolean
       }
       embed_query: {
         Args: { query_text: string }
@@ -2473,6 +2514,13 @@ export type Database = {
           recent_products: Json
           subcategory_slug: Database["public"]["Enums"]["subcategory_type"]
           swipe_count: number
+        }[]
+      }
+      get_user_credits: {
+        Args: { target_user_id: string }
+        Returns: {
+          credits_remaining: number
+          is_premium: boolean
         }[]
       }
       infer_gender_from_text: {

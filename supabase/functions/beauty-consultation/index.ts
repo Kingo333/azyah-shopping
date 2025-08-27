@@ -50,6 +50,34 @@ serve(async (req) => {
     const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2');
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+    // Check user credits first
+    const { data: creditsData, error: creditsError } = await supabase
+      .rpc('get_user_credits', { target_user_id: user_id });
+    
+    if (creditsError) {
+      console.error('Error checking credits:', creditsError);
+      return new Response(JSON.stringify({ 
+        success: false, 
+        message: 'Failed to check credits' 
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const credits = creditsData?.[0];
+    if (!credits || credits.credits_remaining <= 0) {
+      return new Response(JSON.stringify({ 
+        success: false,
+        message: 'No credits remaining', 
+        credits_remaining: credits?.credits_remaining || 0,
+        is_premium: credits?.is_premium || false 
+      }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     // Get or create user session
     const session = await getOrCreateSession(supabase, user_id, { region });
     console.log('Session:', session.session_id);
@@ -109,12 +137,26 @@ serve(async (req) => {
       }
     }
 
+    // Deduct credit after successful consultation
+    const { error: deductError } = await supabase
+      .rpc('deduct_user_credit', { target_user_id: user_id });
+    
+    if (deductError) {
+      console.error('Error deducting credit:', deductError);
+      // Continue anyway - don't fail the consultation for credit deduction issues
+    }
+
     // Record assistant turn
     await appendHistory(supabase, session.session_id, {
       role: 'assistant',
       content: consultation,
       timestamp: new Date().toISOString()
     });
+
+    // Get updated credits to return
+    const { data: updatedCreditsData } = await supabase
+      .rpc('get_user_credits', { target_user_id: user_id });
+    const updatedCredits = updatedCreditsData?.[0];
 
     const response = {
       success: true,
@@ -127,7 +169,9 @@ serve(async (req) => {
         text: consultation,
         voice_summary: voiceSummary,
         audio_url: audioUrl,
-        transcription: transcriptionText ? { success: true, text: transcriptionText } : undefined
+        transcription: transcriptionText ? { success: true, text: transcriptionText } : undefined,
+        credits_remaining: updatedCredits?.credits_remaining || 0,
+        is_premium: updatedCredits?.is_premium || false
       }
     };
 
@@ -186,6 +230,7 @@ async function getOrCreateSession(supabase: any, userId: string, preferences: Re
       preferences,
       conversation_history: [],
       session_data: {},
+      session_expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours
     })
     .select()
     .single();

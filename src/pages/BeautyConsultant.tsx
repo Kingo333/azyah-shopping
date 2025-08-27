@@ -11,6 +11,8 @@ import { Upload, Send, Sparkles, MapPin, Image as ImageIcon, Bot, User, Mic } fr
 import { useAuth } from "@/contexts/AuthContext";
 import { VoiceRecorder } from "@/components/VoiceRecorder";
 import { VoiceMessage } from "@/components/VoiceMessage";
+import { useUserCredits } from "@/hooks/useUserCredits";
+import { CreditsDisplay } from "@/components/CreditsDisplay";
 
 type ChatMessage = {
   id: string;
@@ -40,6 +42,7 @@ type ConsultationResult = {
 
 export default function BeautyConsultantPage() {
   const { user } = useAuth();
+  const { credits, loading: creditsLoading, updateCredits } = useUserCredits();
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: '1',
@@ -149,6 +152,14 @@ export default function BeautyConsultantPage() {
       };
       
       setMessages(prev => [...prev, assistantMessage]);
+
+      // Update credits from response
+      if (result.consultation.credits_remaining !== undefined) {
+        updateCredits({
+          credits_remaining: result.consultation.credits_remaining,
+          is_premium: result.consultation.is_premium || false
+        });
+      }
       
       // Auto-play Azyah's voice response if available
       if (result.consultation.audio_url) {
@@ -162,6 +173,13 @@ export default function BeautyConsultantPage() {
       toast.success('Beauty consultation completed!');
     } catch (error) {
       console.error('Consultation failed:', error);
+      
+      // Handle credit-related errors specifically
+      if (error instanceof Error && error.message.includes('No credits remaining')) {
+        toast.error('No credits remaining. Upgrade to premium for more credits!');
+        return;
+      }
+      
       const errorMessage: ChatMessage = {
         id: Date.now().toString(),
         type: 'assistant',
@@ -206,6 +224,16 @@ export default function BeautyConsultantPage() {
 
   const handleSendMessage = async () => {
     if (!inputMessage.trim() && !selectedImage) return;
+
+    if (!user) {
+      toast.error('Please sign in to use the beauty consultant');
+      return;
+    }
+
+    if (!credits || credits.credits_remaining <= 0) {
+      toast.error('No credits remaining. Upgrade to premium for more credits!');
+      return;
+    }
 
     // Add user message
     const userMessage: ChatMessage = {
@@ -288,7 +316,7 @@ export default function BeautyConsultantPage() {
         <main className="container mx-auto px-4 py-8">
           <div className="max-w-3xl mx-auto">
             {/* Header */}
-            <div className="text-center mb-4 md:mb-8 animate-fade-in">
+            <div className="text-center mb-4 md:mb-6 animate-fade-in">
               <div className="flex items-center justify-center gap-3 mb-4">
                 <div className="relative">
                   <div className="p-3 rounded-full bg-gradient-to-br from-primary/10 to-primary/5 backdrop-blur-sm border border-primary/10">
@@ -308,6 +336,15 @@ export default function BeautyConsultantPage() {
               <p className="text-muted-foreground text-sm max-w-md mx-auto leading-relaxed">
                 Voice conversations, selfie analysis, and personalized beauty advice
               </p>
+            </div>
+
+            {/* Credits Display */}
+            <div className="mb-4 max-w-md mx-auto">
+              <CreditsDisplay 
+                creditsRemaining={credits?.credits_remaining || 0}
+                isPremium={credits?.is_premium || false}
+                loading={creditsLoading}
+              />
             </div>
 
             {/* Chat Container */}

@@ -218,6 +218,20 @@ export default {
 						transform: 'translateY(6400%)',
 						opacity: '0'
 					}
+				},
+				'clock-tick': {
+					'0%, 100%': {
+						transform: 'rotate(0deg)'
+					},
+					'25%': {
+						transform: 'rotate(90deg)'
+					},
+					'50%': {
+						transform: 'rotate(180deg)'
+					},
+					'75%': {
+						transform: 'rotate(270deg)'
+					}
 				}
 			},
 			animation: {
