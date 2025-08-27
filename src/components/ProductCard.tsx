@@ -61,6 +61,15 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     return '/placeholder.svg';
   };
 
+  const getBrandName = (item: any) => {
+    // Handle different data structures for brand
+    if (item.brand_name) return item.brand_name;
+    if (item.brand?.name) return item.brand.name;
+    if (item.product?.brand?.name) return item.product.brand.name;
+    if (item.products?.brand?.name) return item.products.brand.name;
+    return 'Unknown Brand';
+  };
+
   const handleTouchStart = useCallback(() => {
     if (isMobile && onAddToBoard) {
       const timer = setTimeout(() => {
@@ -109,17 +118,17 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         {showPlusButton && onAddToBoard && (
           <Button
             size="sm"
-            className="absolute top-2 right-2 h-8 w-8 rounded-full bg-primary/90 hover:bg-primary backdrop-blur-sm"
+            className="absolute top-2 right-2 h-6 w-6 rounded-full bg-green-500 hover:bg-green-600 shadow-lg"
             onClick={handleAddClick}
           >
-            <Plus className="h-4 w-4" />
+            <Plus className="h-3 w-3" />
           </Button>
         )}
         
         {/* Product Info Overlay (appears on hover) */}
         <div className="absolute bottom-4 left-4 right-4 bg-white/95 backdrop-blur-sm rounded-xl p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
           <div className="text-sm font-medium line-clamp-1 mb-1">
-            {product.title}
+            {getBrandName(product)}
           </div>
           <div className="text-xs font-semibold text-primary mb-2">
             {formatPrice(product.price_cents, product.currency)}
@@ -127,14 +136,26 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           
           {/* Desktop action buttons */}
           {!isMobile && onAddToBoard && (
-            <div className="flex justify-center">
+            <div className="flex gap-2">
               <Button
                 size="sm"
                 variant="destructive"
-                className="w-full text-xs h-7"
+                className="flex-1 text-xs h-7"
                 onClick={handleAddClick}
               >
                 Add to Board
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="flex-1 text-xs h-7"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  // Handle shop action
+                }}
+              >
+                Shop
               </Button>
             </div>
           )}
