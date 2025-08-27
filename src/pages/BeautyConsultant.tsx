@@ -399,7 +399,7 @@ export default function BeautyConsultantPage() {
               </div>
 
               {/* Input Area */}
-              <div className="border-t border-border/50 bg-card/30 backdrop-blur-sm p-4 space-y-3">
+              <div className="border-t border-border/50 bg-card/30 backdrop-blur-sm p-3 md:p-4 space-y-3">
                 {/* Region Selector */}
                 {showRegionSelector && (
                   <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-xl border border-border/30 animate-slide-in-right">
@@ -464,9 +464,9 @@ export default function BeautyConsultantPage() {
                 )}
 
                 {/* Input Row */}
-                <div className="flex items-end gap-3">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-end gap-3">
                   {/* Action Buttons */}
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 order-2 sm:order-1">
                     <VoiceRecorder
                       onTranscription={handleVoiceTranscription}
                       disabled={loading}
@@ -475,7 +475,7 @@ export default function BeautyConsultantPage() {
                       variant="outline"
                       size="icon"
                       onClick={() => fileInputRef.current?.click()}
-                      className="h-12 w-12 rounded-xl border-border/50 bg-background/50 hover:bg-primary/5 hover:border-primary/30 transition-all duration-300"
+                      className="h-11 w-11 sm:h-12 sm:w-12 rounded-xl border-border/50 bg-background/50 hover:bg-primary/5 hover:border-primary/30 transition-all duration-300"
                       title="Upload selfie"
                       disabled={loading}
                     >
@@ -485,7 +485,7 @@ export default function BeautyConsultantPage() {
                       variant="outline"
                       size="icon"
                       onClick={() => setShowRegionSelector(!showRegionSelector)}
-                      className="h-12 w-12 rounded-xl border-border/50 bg-background/50 hover:bg-primary/5 hover:border-primary/30 transition-all duration-300"
+                      className="h-11 w-11 sm:h-12 sm:w-12 rounded-xl border-border/50 bg-background/50 hover:bg-primary/5 hover:border-primary/30 transition-all duration-300"
                       title="Select region"
                       disabled={loading}
                     >
@@ -494,19 +494,19 @@ export default function BeautyConsultantPage() {
                   </div>
                   
                   {/* Message Input */}
-                  <div className="flex-1 relative">
+                  <div className="flex-1 relative order-1 sm:order-2">
                     <Input
                       value={inputMessage}
                       onChange={(e) => setInputMessage(e.target.value)}
                       onKeyPress={handleKeyPress}
                       placeholder="Ask about skincare, makeup, or beauty tips..."
-                      className="h-12 pr-14 rounded-xl border-border/50 bg-background/50 backdrop-blur-sm focus:border-primary/50 focus:ring-primary/20 transition-all duration-300"
+                      className="h-11 sm:h-12 pr-14 rounded-xl border-border/50 bg-background/50 backdrop-blur-sm focus:border-primary/50 focus:ring-primary/20 transition-all duration-300"
                       disabled={loading}
                     />
                     <Button
                       onClick={handleSendMessage}
                       disabled={loading || (!inputMessage.trim() && !selectedImage)}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 p-0 rounded-lg bg-primary hover:bg-primary/90 transition-all duration-300 hover:scale-105 disabled:hover:scale-100"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 sm:h-8 sm:w-8 p-0 rounded-lg bg-primary hover:bg-primary/90 transition-all duration-300 hover:scale-105 disabled:hover:scale-100"
                     >
                       <Send className="h-3 w-3" />
                     </Button>
@@ -514,10 +514,10 @@ export default function BeautyConsultantPage() {
                 </div>
 
                 {/* Quick Actions */}
-                <div className="flex flex-wrap gap-2 pt-2">
+                <div className="flex flex-wrap gap-2 pt-1">
                   {[
                     "Analyze my skin tone",
-                    "Foundation recommendations",
+                    "Foundation recommendations", 
                     "Evening makeup look",
                     "Skincare routine"
                   ].map((suggestion, index) => (
@@ -526,7 +526,7 @@ export default function BeautyConsultantPage() {
                       variant="outline"
                       size="sm"
                       onClick={() => setInputMessage(suggestion)}
-                      className="h-8 px-3 text-xs rounded-lg border-border/30 bg-background/30 hover:bg-primary/5 hover:border-primary/30 transition-all duration-300"
+                      className="h-7 sm:h-8 px-2 sm:px-3 text-xs rounded-lg border-border/30 bg-background/30 hover:bg-primary/5 hover:border-primary/30 transition-all duration-300"
                       disabled={loading}
                     >
                       {suggestion}
