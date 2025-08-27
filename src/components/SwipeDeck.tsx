@@ -381,16 +381,8 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
     // Transform SwipeProduct to Product for ProductDetailPage
     const transformedProduct = {
       ...selectedProduct,
-      media_urls: (() => {
-        try {
-          const mediaUrls = typeof selectedProduct.media_urls === 'string' 
-            ? JSON.parse(selectedProduct.media_urls)
-            : selectedProduct.media_urls;
-          return Array.isArray(mediaUrls) ? mediaUrls : [selectedProduct.image_url].filter(Boolean);
-        } catch {
-          return [selectedProduct.image_url].filter(Boolean);
-        }
-      })(),
+      // Keep original media_urls format for ProductDetailPage compatibility
+      media_urls: selectedProduct.media_urls,
       brand: selectedProduct.brands || { name: selectedProduct.merchant_name || 'Unknown' },
       price_cents: selectedProduct.price_cents,
       currency: selectedProduct.currency || 'USD'
