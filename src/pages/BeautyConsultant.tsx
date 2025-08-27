@@ -13,6 +13,7 @@ import { VoiceRecorder } from "@/components/VoiceRecorder";
 import { VoiceMessage } from "@/components/VoiceMessage";
 import { useUserCredits } from "@/hooks/useUserCredits";
 import { CreditsDisplay } from "@/components/CreditsDisplay";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 type ChatMessage = {
   id: string;
@@ -787,47 +788,74 @@ export default function BeautyConsultantPage() {
                      />
                     
                     {analysisMode === 'chat' ? (
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => fileInputRef.current?.click()}
-                        className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl border-border/50 bg-background/50 hover:bg-primary/5 hover:border-primary/30 transition-all duration-300"
-                        title="Upload image"
-                        disabled={loading}
-                      >
-                        <ImageIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                      </Button>
+                      <TooltipProvider>
+                        <Tooltip open={!selectedImage} onOpenChange={() => {}}>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              onClick={() => fileInputRef.current?.click()}
+                              className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl border-border/50 bg-background/50 hover:bg-primary/5 hover:border-primary/30 transition-all duration-300"
+                              title="Upload image"
+                              disabled={loading}
+                            >
+                              <ImageIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="animate-fade-in">
+                            <p className="text-xs">📸 Click to insert photos</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     ) : (
                       <div className="flex flex-col gap-3">
                         <div className="flex gap-1.5 sm:gap-2">
                           <div className="flex flex-col items-center gap-1">
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              onClick={() => productFileInputRef.current?.click()}
-                              className={`h-10 w-10 sm:h-12 sm:w-12 rounded-xl border-border/50 bg-background/50 hover:bg-blue-500/5 hover:border-blue-500/30 transition-all duration-300 ${
-                                !productImage ? '!animate-slow-pulse shadow-lg shadow-blue-500/20 border-blue-500/30' : ''
-                              }`}
-                              title="Upload product image"
-                              disabled={loading}
-                            >
-                              <Package className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-blue-500" />
-                            </Button>
+                            <TooltipProvider>
+                              <Tooltip open={!productImage} onOpenChange={() => {}}>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="outline"
+                                    size="icon"
+                                    onClick={() => productFileInputRef.current?.click()}
+                                    className={`h-10 w-10 sm:h-12 sm:w-12 rounded-xl border-border/50 bg-background/50 hover:bg-blue-500/5 hover:border-blue-500/30 transition-all duration-300 ${
+                                      !productImage ? '!animate-slow-pulse shadow-lg shadow-blue-500/20 border-blue-500/30' : ''
+                                    }`}
+                                    title="Upload product image"
+                                    disabled={loading}
+                                  >
+                                    <Package className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-blue-500" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="animate-fade-in">
+                                  <p className="text-xs">📦 Click to insert product photo</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
                             <span className="text-xs text-muted-foreground text-center">Product</span>
                           </div>
                           <div className="flex flex-col items-center gap-1">
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              onClick={() => skinFileInputRef.current?.click()}
-                              className={`h-10 w-10 sm:h-12 sm:w-12 rounded-xl border-border/50 bg-background/50 hover:bg-amber-500/5 hover:border-amber-500/30 transition-all duration-300 ${
-                                !skinImage ? '!animate-slow-pulse shadow-lg shadow-amber-500/20 border-amber-500/30' : ''
-                              }`}
-                              title="Upload skin/face image"
-                              disabled={loading}
-                            >
-                              <User className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-amber-500" />
-                            </Button>
+                            <TooltipProvider>
+                              <Tooltip open={!skinImage} onOpenChange={() => {}}>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="outline"
+                                    size="icon"
+                                    onClick={() => skinFileInputRef.current?.click()}
+                                    className={`h-10 w-10 sm:h-12 sm:w-12 rounded-xl border-border/50 bg-background/50 hover:bg-amber-500/5 hover:border-amber-500/30 transition-all duration-300 ${
+                                      !skinImage ? '!animate-slow-pulse shadow-lg shadow-amber-500/20 border-amber-500/30' : ''
+                                    }`}
+                                    title="Upload skin/face image"
+                                    disabled={loading}
+                                  >
+                                    <User className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-amber-500" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="animate-fade-in">
+                                  <p className="text-xs">👤 Click to insert skin/face photo</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
                             <span className="text-xs text-muted-foreground text-center">Skin/Face</span>
                           </div>
                         </div>
