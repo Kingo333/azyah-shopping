@@ -87,20 +87,25 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   }, [onAddToBoard, product]);
 
   return (
-    <Card 
-      className="cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow relative"
+    <div 
+      className="group relative bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 cursor-grab active:cursor-grabbing"
       draggable={!isMobile}
       onDragStart={(e) => onDragStart(product, e)}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
       onMouseLeave={() => setShowPlusButton(false)}
     >
-      <div className="aspect-square bg-muted rounded-t-lg overflow-hidden relative">
+      <div className="aspect-[3/4] bg-muted rounded-2xl overflow-hidden relative">
         <img 
           src={getImageUrl(product)} 
           alt={product.title}
           className="w-full h-full object-cover"
         />
+        
+        {/* Hover gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-primary/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+        
+        {/* Mobile add button (top-right) */}
         {showPlusButton && onAddToBoard && (
           <Button
             size="sm"
@@ -110,15 +115,31 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             <Plus className="h-4 w-4" />
           </Button>
         )}
+        
+        {/* Product Info Overlay (appears on hover) */}
+        <div className="absolute bottom-4 left-4 right-4 bg-white/95 backdrop-blur-sm rounded-xl p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+          <div className="text-sm font-medium line-clamp-1 mb-1">
+            {product.title}
+          </div>
+          <div className="text-xs font-semibold text-primary mb-2">
+            {formatPrice(product.price_cents, product.currency)}
+          </div>
+          
+          {/* Desktop action buttons */}
+          {!isMobile && onAddToBoard && (
+            <div className="flex justify-center">
+              <Button
+                size="sm"
+                variant="destructive"
+                className="w-full text-xs h-7"
+                onClick={handleAddClick}
+              >
+                Add to Board
+              </Button>
+            </div>
+          )}
+        </div>
       </div>
-      <CardContent className="p-2">
-        <h4 className="font-medium text-xs line-clamp-2 mb-1">
-          {product.title}
-        </h4>
-        <p className="font-semibold text-xs">
-          {formatPrice(product.price_cents, product.currency)}
-        </p>
-      </CardContent>
-    </Card>
+    </div>
   );
 };
