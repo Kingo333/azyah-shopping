@@ -115,36 +115,62 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
 
   // Track view start times for implicit feedback - using useRef to avoid re-renders
   const viewStartTimesRef = useRef<Map<string, number>>(new Map());
+  
+  // Performance monitoring
+  const performanceMetrics = useRef({
+    swipeCount: 0,
+    averageSwipeTime: 0,
+    lastCleanup: Date.now()
+  });
 
   const currentProduct = useMemo(() => products[index] || null, [products, index]);
   const { addToWishlist, isLoading: wishlistLoading } = useWishlist(currentProduct?.id);
 
-  // Calculate image height based on aspect ratio with better mobile optimization
-  const getImageHeight = useCallback((aspectRatio: number) => {
-    const isMobile = window.innerWidth < 640;
+  // Memoized and debounced image height calculation
+  const getImageHeight = useMemo(() => {
+    let lastCalculation = { width: 0, height: 0, aspectRatio: 0 };
     
-    if (isMobile) {
-      // For mobile, slightly smaller image
-      const availableHeight = window.innerHeight * 0.85;
-      const detailsMinHeight = 130; // Slightly more space for content
-      const maxImageHeight = availableHeight - detailsMinHeight;
-      const minHeight = 300; // Reduced from 320
-      const calculatedHeight = 380 / aspectRatio; // Reduced from 400
+    return (aspectRatio: number) => {
+      const currentWidth = window.innerWidth;
+      const currentHeight = window.innerHeight;
       
-      return Math.max(minHeight, Math.min(maxImageHeight, calculatedHeight));
-    } else {
-      // Desktop: slightly smaller image
-      const maxHeight = window.innerHeight * 0.6; // Reduced from 0.65
-      const minHeight = 260; // Reduced from 280
-      const calculatedHeight = 480 / aspectRatio; // Reduced from 520
-      
-      // For very long images (tall aspect ratio), allow more height
-      if (aspectRatio < 0.6) {
-        return Math.max(minHeight, Math.min(window.innerHeight * 0.45, calculatedHeight));
+      // Return cached result if window size hasn't changed significantly
+      if (
+        Math.abs(lastCalculation.width - currentWidth) < 50 &&
+        Math.abs(lastCalculation.height - currentHeight) < 50 &&
+        Math.abs(lastCalculation.aspectRatio - aspectRatio) < 0.1
+      ) {
+        return lastCalculation.height;
       }
       
-      return Math.max(minHeight, Math.min(maxHeight, calculatedHeight));
-    }
+      const isMobile = currentWidth < 640;
+      let calculatedHeight: number;
+      
+      if (isMobile) {
+        const availableHeight = currentHeight * 0.85;
+        const detailsMinHeight = 130;
+        const maxImageHeight = availableHeight - detailsMinHeight;
+        const minHeight = 300;
+        calculatedHeight = Math.max(minHeight, Math.min(maxImageHeight, 380 / aspectRatio));
+      } else {
+        const maxHeight = currentHeight * 0.6;
+        const minHeight = 260;
+        calculatedHeight = Math.max(minHeight, Math.min(maxHeight, 480 / aspectRatio));
+        
+        if (aspectRatio < 0.6) {
+          calculatedHeight = Math.max(minHeight, Math.min(currentHeight * 0.45, 480 / aspectRatio));
+        }
+      }
+      
+      // Cache the result
+      lastCalculation = {
+        width: currentWidth,
+        height: calculatedHeight,
+        aspectRatio
+      };
+      
+      return calculatedHeight;
+    };
   }, []);
 
   const handleImageLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
@@ -167,16 +193,28 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
     viewStartTimesRef.current.clear();
   }, [products, x, y]);
 
-  // Track view start time for current product - using useLayoutEffect for sync timing
+  // Track view start time for current product with aggressive memory management
   useLayoutEffect(() => {
     if (currentProduct) {
-      viewStartTimesRef.current.set(currentProduct.id, Date.now());
+      const now = Date.now();
+      viewStartTimesRef.current.set(currentProduct.id, now);
       
-      // Cleanup old entries to prevent memory leaks
-      if (viewStartTimesRef.current.size > 100) {
+      // More aggressive cleanup to prevent memory accumulation
+      if (viewStartTimesRef.current.size > 20) { // Reduced from 100
         const entries = Array.from(viewStartTimesRef.current.entries());
-        const keepEntries = entries.slice(-50); // Keep only last 50 entries
-        viewStartTimesRef.current = new Map(keepEntries);
+        const recentEntries = entries.slice(-10); // Keep only last 10 entries
+        viewStartTimesRef.current = new Map(recentEntries);
+      }
+      
+      // Periodic cleanup based on time
+      if (now - performanceMetrics.current.lastCleanup > 30000) { // Every 30 seconds
+        const cutoff = now - 60000; // Remove entries older than 1 minute
+        for (const [key, timestamp] of viewStartTimesRef.current.entries()) {
+          if (timestamp < cutoff) {
+            viewStartTimesRef.current.delete(key);
+          }
+        }
+        performanceMetrics.current.lastCleanup = now;
       }
     }
   }, [index, currentProduct]);
@@ -210,33 +248,42 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
     // Move to next card IMMEDIATELY for instant animation
     nextCard();
 
-    // Fire-and-forget background operations
+    // Fire-and-forget background operations with performance tracking
     queueMicrotask(async () => {
+      const startTime = performance.now();
+      performanceMetrics.current.swipeCount++;
+      
       try {
         // Track view duration for implicit feedback
         const viewDuration = trackViewDuration(product.id, viewStartTimesRef.current.get(product.id) || Date.now());
         
-        // Track enhanced swipe with metadata (no await)
+        // Track enhanced swipe with metadata (fire-and-forget)
         trackSwipe({
           productId: product.id,
           action: 'right',
           product,
           viewDuration,
           confidence: 1.0
-        }).catch(error => console.error('Error tracking like:', error));
+        });
 
-        // Database operation
-        const { error } = await supabase.from('likes').insert([{
+        // Database operation with timeout
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Database timeout')), 5000)
+        );
+        
+        const dbPromise = supabase.from('likes').insert([{
           user_id: user.id,
           product_id: product.id
         }]);
+
+        const { error } = await Promise.race([dbPromise, timeoutPromise]) as any;
 
         if (error) {
           if (error.code === '23505') {
             toast({
               description: `${product.title} is already in your likes!`
             });
-          } else {
+          } else if (error.message !== 'Database timeout') {
             console.error("Error liking product:", error.message);
             toast({
               title: "Error",
@@ -249,8 +296,16 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
             description: `${product.title} added to your likes!`
           });
         }
-      } catch (error) {
-        console.error('Background like operation failed:', error);
+      } catch (error: any) {
+        // Silent fail for timeouts to avoid UI disruption
+        if (error?.message !== 'Database timeout') {
+          console.error('Background like operation failed:', error);
+        }
+      } finally {
+        // Update performance metrics
+        const duration = performance.now() - startTime;
+        performanceMetrics.current.averageSwipeTime = 
+          (performanceMetrics.current.averageSwipeTime + duration) / 2;
       }
     });
   }, [user, toast, nextCard, trackSwipe, trackViewDuration]);
@@ -270,7 +325,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
           product: currentProduct,
           viewDuration,
           confidence: 1.0
-        }).catch(error => console.error('Error tracking dislike:', error));
+        });
       });
     }
   }, [user, currentProduct, nextCard, trackSwipe, trackViewDuration]);
@@ -301,7 +356,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
           product,
           viewDuration,
           confidence: 1.0
-        }).catch(error => console.error('Error tracking wishlist:', error));
+        });
 
         // Handle wishlist operation
         await addToWishlist();
@@ -438,7 +493,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
             exit="exit"
             custom={x.get()}
           >
-            <Card className="h-full flex flex-col cursor-grab active:cursor-grabbing overflow-hidden min-h-[650px] max-w-md mx-auto" style={{ willChange: 'transform', contain: 'layout style paint' }}>
+            <Card className="h-full flex flex-col cursor-grab active:cursor-grabbing overflow-hidden min-h-[650px] max-w-md mx-auto" style={{ willChange: 'transform', contain: 'layout style paint', transform: 'translate3d(0,0,0)' }}>
               <CardContent className="p-4 sm:p-5 lg:pb-6 flex flex-col h-full bg-background/60 backdrop-blur-sm min-h-[600px]">
                  <div 
                    className="relative w-full overflow-hidden rounded-lg flex-shrink-0"

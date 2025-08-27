@@ -206,7 +206,12 @@ export const useUnifiedProducts = (filters: UnifiedProductFilters): UnifiedProdu
       }
 
       console.log('Setting products:', processedProducts.length);
-      setProducts(processedProducts);
+      
+      // Implement pagination-like loading to reduce memory usage
+      const maxProducts = 150; // Limit concurrent products in memory
+      const finalProducts = processedProducts.slice(0, maxProducts);
+      
+      setProducts(finalProducts);
     } catch (error) {
       console.error('Error in fetchProducts:', error);
       toast({
