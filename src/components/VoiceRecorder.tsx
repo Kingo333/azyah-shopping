@@ -1,6 +1,7 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { Mic, MicOff, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -106,30 +107,59 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
   };
 
   const getButtonState = () => {
-    if (isProcessing) return { icon: Loader2, variant: 'secondary' as const, label: 'Processing...' };
-    if (isRecording) return { icon: MicOff, variant: 'destructive' as const, label: 'Stop Recording' };
-    return { icon: Mic, variant: 'outline' as const, label: 'Start Recording' };
+    if (isProcessing) return { 
+      icon: Loader2, 
+      variant: 'secondary' as const, 
+      label: 'Processing your voice...',
+      tooltip: 'Converting your speech to text. Please wait...'
+    };
+    if (isRecording) return { 
+      icon: MicOff, 
+      variant: 'destructive' as const, 
+      label: 'Recording... Click to stop',
+      tooltip: 'Currently recording your voice. Click to stop and process.'
+    };
+    return { 
+      icon: Mic, 
+      variant: 'outline' as const, 
+      label: 'Click to start voice input',
+      tooltip: 'Hold and speak clearly, then click again to stop recording.'
+    };
   };
 
   const buttonState = getButtonState();
   const Icon = buttonState.icon;
 
   return (
-    <Button
-      onClick={handleClick}
-      disabled={disabled || isProcessing}
-      variant={buttonState.variant}
-      size="icon"
-      className={`transition-all duration-300 shadow-md hover:shadow-lg ${
-        isRecording 
-          ? 'animate-pulse bg-destructive hover:bg-destructive/90 scale-110' 
-          : 'hover:scale-105'
-      } ${isProcessing ? 'animate-pulse' : ''}`}
-      title={buttonState.label}
-    >
-      <Icon className={`h-4 w-4 ${isProcessing ? 'animate-spin' : ''} ${
-        isRecording ? 'text-destructive-foreground' : ''
-      }`} />
-    </Button>
+    <div className="flex flex-col items-center gap-2">
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              onClick={handleClick}
+              disabled={disabled || isProcessing}
+              variant={buttonState.variant}
+              size="icon"
+              className={`transition-all duration-300 shadow-md hover:shadow-lg ${
+                isRecording 
+                  ? 'animate-pulse bg-destructive hover:bg-destructive/90 scale-110' 
+                  : 'hover:scale-105'
+              } ${isProcessing ? 'animate-pulse' : ''}`}
+            >
+              <Icon className={`h-4 w-4 ${isProcessing ? 'animate-spin' : ''} ${
+                isRecording ? 'text-destructive-foreground' : ''
+              }`} />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p className="text-xs">{buttonState.tooltip}</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+      
+      <span className="text-xs text-muted-foreground text-center max-w-24">
+        {buttonState.label}
+      </span>
+    </div>
   );
 };
