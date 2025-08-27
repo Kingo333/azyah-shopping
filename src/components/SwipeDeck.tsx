@@ -452,7 +452,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                         "(max-width: 768px) 100vw, 50vw"
                       )}
                       alt={currentProduct.title}
-                      className="object-cover w-full h-full transition-opacity duration-300"
+                      className="object-contain w-full h-full transition-opacity duration-300"
                       onLoad={handleImageLoad}
                       onError={(e) => {
                         const img = e.target as HTMLImageElement;
