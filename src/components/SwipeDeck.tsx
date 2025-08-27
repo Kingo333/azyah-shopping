@@ -378,6 +378,12 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
 
   // Handle full-page product detail view
   if (showProductDetail && selectedProduct) {
+    // DEBUG: Log SwipeDeck transformation
+    console.log('=== SwipeDeck Transformation Debug ===');
+    console.log('Selected product for detail view:', selectedProduct);
+    console.log('Original media_urls:', selectedProduct.media_urls);
+    console.log('Original media_urls type:', typeof selectedProduct.media_urls);
+    
     // Transform SwipeProduct to Product for ProductDetailPage
     const transformedProduct = {
       ...selectedProduct,
@@ -387,6 +393,10 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
       price_cents: selectedProduct.price_cents,
       currency: selectedProduct.currency || 'USD'
     };
+    
+    console.log('Transformed product:', transformedProduct);
+    console.log('Transformed media_urls:', transformedProduct.media_urls);
+    console.log('=== End SwipeDeck Transformation Debug ===');
 
     return (
       <div className="fixed inset-0 z-50 bg-background">

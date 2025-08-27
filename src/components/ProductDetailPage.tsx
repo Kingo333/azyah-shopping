@@ -25,9 +25,21 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
   const [selectedColor, setSelectedColor] = useState('');
   const [isClosetModalOpen, setIsClosetModalOpen] = useState(false);
 
+  // DEBUG: Log product data for image debugging
+  console.log('=== ProductDetailPage Debug ===');
+  console.log('Product ID:', product?.id);
+  console.log('Product title:', product?.title);
+  console.log('Raw product.media_urls:', product?.media_urls);
+  console.log('Raw product.image_url:', product?.image_url);
+  console.log('Product merchant:', product?.merchant_name);
+  
   // Process images with proper handling of ASOS media_urls
   const images = useMemo(() => {
-    return getProductImageUrls(product);
+    const processedImages = getProductImageUrls(product);
+    console.log('Images processed by getProductImageUrls:', processedImages);
+    console.log('Number of images for gallery:', processedImages.length);
+    console.log('=== End ProductDetailPage Debug ===');
+    return processedImages;
   }, [product]);
 
   const priceCurrency = product?.currency || 'USD';
@@ -141,6 +153,10 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                   productId={product.id}
                   hasARMesh={false}
                 />
+                {/* DEBUG: Show image count in UI */}
+                <div className="text-xs text-muted-foreground mt-2 p-2 bg-yellow-100 border rounded">
+                  DEBUG: {images.length} images passed to gallery
+                </div>
               </div>
             </div>
 
