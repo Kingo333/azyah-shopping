@@ -304,7 +304,7 @@ const BrandPortal: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-purple-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
-      <div className="container mx-auto max-w-7xl p-2 sm:p-4">
+      <div className="container mx-auto max-w-7xl p-3 md:p-6">
         <BrandPortalHeader 
           brand={brand}
           onAddProduct={() => setIsAddProductModalOpen(true)}
@@ -312,31 +312,40 @@ const BrandPortal: React.FC = () => {
         />
 
         {/* Feedback Section */}
-        <div className="mb-6 flex justify-end">
+        <div className="mb-4 md:mb-6 flex justify-end">
           <FeedbackModal userType="brand" />
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid w-full grid-cols-4 rounded-xl bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border border-white/20 dark:border-slate-700/50">
-            <TabsTrigger value="products" className="rounded-lg text-xs sm:text-sm data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-sm">Products</TabsTrigger>
-            <TabsTrigger value="collabs" className="rounded-lg text-xs sm:text-sm data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-sm">Collabs</TabsTrigger>
-            <TabsTrigger value="analytics" className="rounded-lg text-xs sm:text-sm data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-sm">Analytics</TabsTrigger>
-            <TabsTrigger value="settings" className="rounded-lg text-xs sm:text-sm data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-sm">Settings</TabsTrigger>
+            <TabsTrigger value="products" className="rounded-lg text-xs md:text-sm data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-sm">Products</TabsTrigger>
+            <TabsTrigger value="collabs" className="rounded-lg text-xs md:text-sm data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-sm">Collabs</TabsTrigger>
+            <TabsTrigger value="analytics" className="rounded-lg text-xs md:text-sm data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-sm">Analytics</TabsTrigger>
+            <TabsTrigger value="settings" className="rounded-lg text-xs md:text-sm data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-sm">Settings</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="products" className="mt-4 sm:mt-6">
-            <div className="space-y-4 sm:space-y-6">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4">
-                <div className="flex flex-wrap items-center gap-2">
-                  <Button variant="outline" size="sm" className="text-xs border-border/50 hover:bg-accent/50 dark:hover:bg-accent/20"><Filter className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />Filter</Button>
-                  <Button variant="outline" size="sm" className="text-xs border-border/50 hover:bg-accent/50 dark:hover:bg-accent/20"><Upload className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />Import</Button>
-                  <Button variant="outline" size="sm" className="text-xs border-border/50 hover:bg-accent/50 dark:hover:bg-accent/20"><Download className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />Export</Button>
+          <TabsContent value="products" className="mt-3 md:mt-6">
+            <div className="space-y-3 md:space-y-6">
+              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-2 md:gap-4">
+                <div className="flex flex-wrap items-center gap-1 md:gap-2">
+                  <Button variant="outline" size="sm" className="text-xs md:text-sm border-border/50 hover:bg-accent/50 dark:hover:bg-accent/20 h-8 md:h-9">
+                    <Filter className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
+                    <span className="hidden sm:inline">Filter</span>
+                  </Button>
+                  <Button variant="outline" size="sm" className="text-xs md:text-sm border-border/50 hover:bg-accent/50 dark:hover:bg-accent/20 h-8 md:h-9">
+                    <Upload className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
+                    <span className="hidden sm:inline">Import</span>
+                  </Button>
+                  <Button variant="outline" size="sm" className="text-xs md:text-sm border-border/50 hover:bg-accent/50 dark:hover:bg-accent/20 h-8 md:h-9">
+                    <Download className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
+                    <span className="hidden sm:inline">Export</span>
+                  </Button>
                 </div>
                 {selectedProducts.size > 0 && (
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-sm text-muted-foreground">{selectedProducts.size} selected</span>
-                    <Button variant="outline" size="sm" onClick={() => handleBulkAction('Archive')} className="border-border/50 hover:bg-accent/50 dark:hover:bg-accent/20">Archive</Button>
-                    <Button variant="outline" size="sm" onClick={() => handleBulkAction('Delete')} className="border-border/50 hover:bg-destructive/10 dark:hover:bg-destructive/20 hover:text-destructive">Delete</Button>
+                    <span className="text-xs md:text-sm text-muted-foreground">{selectedProducts.size} selected</span>
+                    <Button variant="outline" size="sm" onClick={() => handleBulkAction('Archive')} className="border-border/50 hover:bg-accent/50 dark:hover:bg-accent/20 h-8 md:h-9 text-xs md:text-sm">Archive</Button>
+                    <Button variant="outline" size="sm" onClick={() => handleBulkAction('Delete')} className="border-border/50 hover:bg-destructive/10 dark:hover:bg-destructive/20 hover:text-destructive h-8 md:h-9 text-xs md:text-sm">Delete</Button>
                   </div>
                 )}
               </div>
@@ -407,11 +416,11 @@ const BrandPortal: React.FC = () => {
             </div>
           </TabsContent>
 
-          <TabsContent value="collabs" className="mt-4 sm:mt-6">
-            <div className="space-y-4">
-              <div className="bg-muted/50 dark:bg-slate-800/50 rounded-lg p-4 border border-border/50">
-                <h3 className="font-medium mb-2">What are Collaborations?</h3>
-                <p className="text-sm text-muted-foreground">
+          <TabsContent value="collabs" className="mt-3 md:mt-6">
+            <div className="space-y-3 md:space-y-4">
+              <div className="bg-muted/50 dark:bg-slate-800/50 rounded-lg p-3 md:p-4 border border-border/50">
+                <h3 className="font-medium mb-2 text-sm md:text-base">What are Collaborations?</h3>
+                <p className="text-xs md:text-sm text-muted-foreground">
                   Partner with content creators and influencers to showcase your brand. Create collaboration campaigns 
                   with specific requirements, set compensation terms, and define deliverables. Review applications from 
                   creators and manage your brand partnerships efficiently.
@@ -421,12 +430,12 @@ const BrandPortal: React.FC = () => {
             </div>
           </TabsContent>
 
-          <TabsContent value="analytics" className="mt-4 sm:mt-6">
+          <TabsContent value="analytics" className="mt-3 md:mt-6">
             <AnalyticsDashboard brandId={brand?.id} />
           </TabsContent>
 
-          <TabsContent value="settings" className="mt-4 sm:mt-6">
-            <div className="space-y-4 sm:space-y-6">
+          <TabsContent value="settings" className="mt-3 md:mt-6">
+            <div className="space-y-3 md:space-y-6">
               <Card>
                 <CardHeader><CardTitle>Brand Profile</CardTitle></CardHeader>
                 <CardContent className="space-y-4">
