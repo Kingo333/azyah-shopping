@@ -288,7 +288,7 @@ export default function BeautyConsultantPage() {
         <main className="container mx-auto px-4 py-8">
           <div className="max-w-3xl mx-auto">
             {/* Header */}
-            <div className="text-center mb-8 animate-fade-in">
+            <div className="text-center mb-4 md:mb-8 animate-fade-in">
               <div className="flex items-center justify-center gap-3 mb-4">
                 <div className="relative">
                   <div className="p-3 rounded-full bg-gradient-to-br from-primary/10 to-primary/5 backdrop-blur-sm border border-primary/10">
