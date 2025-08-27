@@ -114,31 +114,56 @@ export const useUnifiedProducts = (filters: UnifiedProductFilters): UnifiedProdu
 
       // Transform raw data to Product type with proper type handling
       let processedProducts: Product[] = (data || []).map((product: any) => {
+        console.log('🔍 Processing product:', product.id, 'Title:', product.title?.substring(0, 50));
+        console.log('📸 Raw media_urls:', typeof product.media_urls, product.media_urls);
+        
         // Safely handle image_url and media_urls
         let imageUrl = '/placeholder.svg';
         let mediaUrls: string[] = [];
         
-        if (typeof product.image_url === 'string') {
-          imageUrl = product.image_url;
-        } else if (product.media_urls) {
+        // Handle media_urls first (priority for ASOS products)
+        if (product.media_urls) {
           if (typeof product.media_urls === 'string') {
             try {
-              mediaUrls = JSON.parse(product.media_urls);
-              imageUrl = mediaUrls[0] || '/placeholder.svg';
+              const parsed = JSON.parse(product.media_urls);
+              if (Array.isArray(parsed)) {
+                mediaUrls = parsed.filter(url => url && typeof url === 'string');
+                console.log('✅ Parsed media_urls from JSON string:', mediaUrls.length, 'images');
+              }
             } catch (e) {
-              console.warn('Failed to parse media_urls:', e);
+              console.warn('❌ Failed to parse media_urls JSON:', e);
             }
           } else if (Array.isArray(product.media_urls)) {
-            mediaUrls = product.media_urls.map((url: any) => String(url));
-            imageUrl = mediaUrls[0] || '/placeholder.svg';
+            mediaUrls = product.media_urls
+              .filter(url => url && typeof url === 'string')
+              .map((url: any) => String(url));
+            console.log('✅ Direct array media_urls:', mediaUrls.length, 'images');
           }
         }
+        
+        // Set primary image URL
+        if (mediaUrls.length > 0) {
+          imageUrl = mediaUrls[0];
+        } else if (typeof product.image_url === 'string') {
+          imageUrl = product.image_url;
+          // If we have a single image_url but no media_urls, create array with that single image
+          if (product.image_url !== '/placeholder.svg') {
+            mediaUrls = [product.image_url];
+          }
+        }
+        
+        console.log('🎯 Final processing result:', {
+          productId: product.id,
+          imageUrl,
+          mediaUrlsCount: mediaUrls.length,
+          mediaUrls: mediaUrls.slice(0, 3) // Show first 3 for debugging
+        });
         
         // Transform to Product type
         return {
           ...product,
           image_url: imageUrl,
-          media_urls: mediaUrls,
+          media_urls: mediaUrls, // This should now properly contain the full array
           // Ensure proper type conversion
           gender: product.gender || null,
           attributes: (product.attributes && typeof product.attributes === 'object') 
