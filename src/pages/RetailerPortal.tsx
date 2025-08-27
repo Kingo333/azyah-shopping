@@ -329,7 +329,7 @@ const RetailerPortal = () => {
                 {loading ? (
                   <div className="text-center py-8">Loading products...</div>
                 ) : products.length > 0 ? (
-                  <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 md:gap-4">
                     {products.map((product) => (
                        <Card key={product.id} className="overflow-hidden border-border/50 hover:border-border transition-colors">
                          <div className="aspect-square relative">
@@ -342,7 +342,7 @@ const RetailerPortal = () => {
                              <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
                                <Badge 
                                  variant="secondary"
-                                 className="text-white bg-destructive/90 border-destructive px-4 py-2 text-sm font-semibold"
+                                 className="text-white bg-destructive/90 border-destructive px-1 md:px-4 py-1 md:py-2 text-xs md:text-sm font-semibold"
                                >
                                  ARCHIVED
                                </Badge>
@@ -351,54 +351,54 @@ const RetailerPortal = () => {
                            {product.status !== 'archived' && (
                              <Badge 
                                variant={product.status === 'active' ? 'default' : 'secondary'}
-                               className="absolute top-2 right-2"
+                               className="absolute top-1 right-1 md:top-2 md:right-2 text-xs"
                              >
                                {product.status}
                              </Badge>
                            )}
                          </div>
-                        <CardContent className="p-4">
-                          <div className="space-y-2">
-                            <h3 className="font-semibold line-clamp-2">{product.title}</h3>
+                        <CardContent className="p-2 md:p-4">
+                          <div className="space-y-1 md:space-y-2">
+                            <h3 className="font-semibold line-clamp-2 text-sm md:text-base">{product.title}</h3>
                             {product.brand && (
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-1 md:gap-2">
                                 {product.brand.logo_url && (
                                   <img 
                                     src={product.brand.logo_url} 
                                     alt={product.brand.name}
-                                    className="w-4 h-4 rounded"
+                                    className="w-3 h-3 md:w-4 md:h-4 rounded"
                                   />
                                 )}
-                                <span className="text-sm text-muted-foreground">
+                                <span className="text-xs md:text-sm text-muted-foreground truncate">
                                   {product.brand.name}
                                 </span>
                               </div>
                             )}
-                            <div className="flex items-center justify-between">
+                            <div className="flex items-center justify-between text-xs md:text-sm">
                               <span className="font-bold">
                                 {new Intl.NumberFormat('en-US', {
                                   style: 'currency',
                                   currency: product.currency || 'USD',
                                 }).format((product.price_cents || 0) / 100)}
                               </span>
-                              <span className="text-sm text-muted-foreground">
+                              <span className="text-xs text-muted-foreground">
                                 Stock: {product.stock_qty || 0}
                               </span>
                             </div>
-                            <div className="flex gap-2 mt-2">
+                            <div className="flex gap-1 md:gap-2 mt-1 md:mt-2">
                               <Button 
                                 variant="outline" 
                                 size="sm" 
-                                className="flex-1 border-border/50 hover:bg-accent/50 dark:hover:bg-accent/20"
+                                className="flex-1 border-border/50 hover:bg-accent/50 dark:hover:bg-accent/20 h-7 md:h-9 text-xs md:text-sm px-1 md:px-3"
                                 onClick={() => setEditingProduct(product)}
                               >
-                                <Edit className="h-3 w-3 mr-1" />
-                                Edit
+                                <Edit className="h-3 w-3 md:mr-1" />
+                                <span className="hidden md:inline">Edit</span>
                               </Button>
                               <Button 
                                 variant="destructive" 
                                 size="sm" 
-                                className="flex-shrink-0"
+                                className="flex-shrink-0 h-7 md:h-9 w-7 md:w-9 p-0"
                                 onClick={() => handleDeleteProduct(product)}
                               >
                                 <Trash2 className="h-3 w-3" />
