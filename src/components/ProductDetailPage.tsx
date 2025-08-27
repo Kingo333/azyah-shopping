@@ -25,28 +25,60 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
   const [isClosetModalOpen, setIsClosetModalOpen] = useState(false);
 
   const images = useMemo<string[]>(() => {
-    // Handle image_url first
+    console.log('Product media_urls:', product?.media_urls);
+    console.log('Product media_urls type:', typeof product?.media_urls);
+    console.log('Product image_url:', product?.image_url);
+    
+    // First try media_urls as JSON string (ASOS products) - prioritize multiple images
+    if (product?.media_urls && typeof product.media_urls === 'string') {
+      try {
+        const parsed = JSON.parse(product.media_urls);
+        console.log('Parsed media_urls:', parsed);
+        if (Array.isArray(parsed) && parsed.length > 1) { // Use media_urls if multiple images
+          const filteredImages = parsed.filter(Boolean);
+          console.log('Using parsed media_urls (multiple images):', filteredImages);
+          return filteredImages;
+        }
+      } catch (e) {
+        console.warn('Failed to parse media_urls:', product.media_urls, e);
+      }
+    }
+    
+    // Try media_urls as array
+    if (product?.media_urls && Array.isArray(product.media_urls) && product.media_urls.length > 1) {
+      const filteredImages = product.media_urls.filter(Boolean);
+      console.log('Using media_urls as array (multiple images):', filteredImages);
+      return filteredImages;
+    }
+    
+    // Fall back to image_url if no multiple images in media_urls
     if (product?.image_url) {
-      return [product.image_url];
+      const imageArray = [product.image_url];
+      console.log('Using image_url fallback:', imageArray);
+      return imageArray;
     }
     
-    // Handle media_urls as array
-    if (product?.media_urls && Array.isArray(product.media_urls) && product.media_urls.length > 0) {
-      return product.media_urls.filter(Boolean);
-    }
-    
-    // Handle media_urls as JSON string (ASOS products)
+    // Try single image from media_urls
     if (product?.media_urls && typeof product.media_urls === 'string') {
       try {
         const parsed = JSON.parse(product.media_urls);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed.filter(Boolean);
+          const filteredImages = parsed.filter(Boolean);
+          console.log('Using parsed media_urls (single image):', filteredImages);
+          return filteredImages;
         }
       } catch (e) {
-        console.warn('Failed to parse media_urls:', product.media_urls);
+        console.warn('Failed to parse media_urls:', product.media_urls, e);
       }
     }
     
+    if (product?.media_urls && Array.isArray(product.media_urls) && product.media_urls.length > 0) {
+      const filteredImages = product.media_urls.filter(Boolean);
+      console.log('Using media_urls as array (single image):', filteredImages);
+      return filteredImages;
+    }
+    
+    console.log('Falling back to placeholder');
     return ['/placeholder.svg'];
   }, [product]);
 
