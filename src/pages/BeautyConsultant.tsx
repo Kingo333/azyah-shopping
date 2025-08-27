@@ -79,6 +79,22 @@ export default function BeautyConsultantPage() {
     scrollToBottom();
   }, [messages]);
 
+  // Update greeting message when mode changes
+  useEffect(() => {
+    setMessages(prev => {
+      const newMessages = [...prev];
+      if (newMessages.length > 0 && newMessages[0].id === '1') {
+        newMessages[0] = {
+          ...newMessages[0],
+          content: analysisMode === 'product_analysis' 
+            ? "Hi! I'm Azyah, your AI Beauty Consultant. Upload a product and your skin/face photo to get a compatibility analysis with confidence scoring! 💄✨"
+            : "Hi! I'm Azyah, your AI Beauty Consultant. Upload a selfie, speak to me, or ask any beauty question for personalized recommendations! 💄✨"
+        };
+      }
+      return newMessages;
+    });
+  }, [analysisMode]);
+
   const validateImageFile = (file: File) => {
     if (!file.type.startsWith('image/')) {
       toast.error('Please select a valid image file');
@@ -758,28 +774,36 @@ export default function BeautyConsultantPage() {
                         <ImageIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                       </Button>
                     ) : (
-                      <>
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={() => productFileInputRef.current?.click()}
-                          className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl border-border/50 bg-background/50 hover:bg-blue-500/5 hover:border-blue-500/30 transition-all duration-300"
-                          title="Upload product image"
-                          disabled={loading}
-                        >
-                          <Package className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-blue-500" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={() => skinFileInputRef.current?.click()}
-                          className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl border-border/50 bg-background/50 hover:bg-amber-500/5 hover:border-amber-500/30 transition-all duration-300"
-                          title="Upload skin/face image"
-                          disabled={loading}
-                        >
-                          <User className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-amber-500" />
-                        </Button>
-                      </>
+                      <div className="flex flex-col gap-3">
+                        <div className="flex gap-1.5 sm:gap-2">
+                          <div className="flex flex-col items-center gap-1">
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              onClick={() => productFileInputRef.current?.click()}
+                              className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl border-border/50 bg-background/50 hover:bg-blue-500/5 hover:border-blue-500/30 transition-all duration-300"
+                              title="Upload product image"
+                              disabled={loading}
+                            >
+                              <Package className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-blue-500" />
+                            </Button>
+                            <span className="text-xs text-muted-foreground text-center">Product</span>
+                          </div>
+                          <div className="flex flex-col items-center gap-1">
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              onClick={() => skinFileInputRef.current?.click()}
+                              className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl border-border/50 bg-background/50 hover:bg-amber-500/5 hover:border-amber-500/30 transition-all duration-300"
+                              title="Upload skin/face image"
+                              disabled={loading}
+                            >
+                              <User className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-amber-500" />
+                            </Button>
+                            <span className="text-xs text-muted-foreground text-center">Skin/Face</span>
+                          </div>
+                        </div>
+                      </div>
                     )}
                     
                     <Button
