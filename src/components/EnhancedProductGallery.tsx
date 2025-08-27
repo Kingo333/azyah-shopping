@@ -66,7 +66,7 @@ export const EnhancedProductGallery: React.FC<EnhancedProductGalleryProps> = ({
         )}
         
         <motion.img
-          key={selectedImage}
+          key={`${selectedImage}-${images[selectedImage]}`}
           {...getResponsiveImageProps(
             images[selectedImage] || '/placeholder.svg',
             "(max-width: 768px) 90vw, 50vw"
@@ -83,8 +83,14 @@ export const EnhancedProductGallery: React.FC<EnhancedProductGalleryProps> = ({
           }}
           transition={{ duration: 0.3 }}
           onClick={handleZoom}
-          onLoad={handleImageLoad}
-          onError={handleImageError}
+          onLoad={() => {
+            console.log('Image loaded successfully:', images[selectedImage]);
+            handleImageLoad();
+          }}
+          onError={(e) => {
+            console.error('Image failed to load:', images[selectedImage], e);
+            handleImageError();
+          }}
           loading="eager"
         />
         
