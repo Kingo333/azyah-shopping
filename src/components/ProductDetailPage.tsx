@@ -8,6 +8,7 @@ import { AdvancedSizeColorSelector } from './AdvancedSizeColorSelector';
 import { AddToClosetModal } from './AddToClosetModal';
 import { useToast } from '@/hooks/use-toast';
 import { useAnalytics } from '@/hooks/useAnalytics';
+import { getProductImageUrls } from '@/utils/imageHelpers';
 
 interface ProductDetailPageProps {
   product: Product;
@@ -24,69 +25,9 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
   const [selectedColor, setSelectedColor] = useState('');
   const [isClosetModalOpen, setIsClosetModalOpen] = useState(false);
 
-  const images = useMemo<string[]>(() => {
-    if (!product) {
-      console.log('No product data available');
-      return ['/placeholder.svg'];
-    }
-
-    console.log(`=== ASOS Image Debug for Product ID: ${product.id} ===`);
-    console.log('Product title:', product.title);
-    console.log('Product media_urls raw:', product.media_urls);
-    console.log('Product media_urls type:', typeof product.media_urls);
-    console.log('Product image_url:', product.image_url);
-    
-    let finalImages: string[] = [];
-    
-    // Priority 1: Use media_urls as array (PRIMARY format from Supabase JSONB)
-    if (Array.isArray(product.media_urls) && product.media_urls.length > 0) {
-      const validImages = product.media_urls
-        .filter(url => url && typeof url === 'string' && url.trim())
-        .map(url => url.trim());
-      
-      if (validImages.length > 0) {
-        console.log(`✅ Using ${validImages.length} images from media_urls array:`, validImages);
-        finalImages = validImages;
-      }
-    }
-    
-    // Priority 2: Parse media_urls as JSON string (fallback format)
-    if (finalImages.length === 0 && product.media_urls && typeof product.media_urls === 'string' && (product.media_urls as string).trim()) {
-      try {
-        const parsed = JSON.parse(product.media_urls);
-        console.log('Successfully parsed media_urls JSON:', parsed);
-        
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          const validImages = parsed
-            .filter(url => url && typeof url === 'string' && url.trim())
-            .map(url => url.trim());
-          
-          if (validImages.length > 0) {
-            console.log(`✅ Using ${validImages.length} images from parsed media_urls:`, validImages);
-            finalImages = validImages;
-          }
-        }
-      } catch (e) {
-        console.warn('❌ Failed to parse media_urls JSON:', product.media_urls, 'Error:', e);
-      }
-    }
-    
-    // Priority 3: Fallback to image_url
-    if (finalImages.length === 0 && product.image_url && product.image_url.trim()) {
-      console.log('⚠️ Using image_url as fallback:', product.image_url);
-      finalImages = [product.image_url.trim()];
-    }
-    
-    // Final fallback to placeholder
-    if (finalImages.length === 0) {
-      console.warn('❌ No valid images found, using placeholder');
-      finalImages = ['/placeholder.svg'];
-    }
-
-    console.log(`🎯 Final image array (${finalImages.length} images):`, finalImages);
-    console.log('=== End ASOS Image Debug ===');
-    
-    return finalImages;
+  // Process images with proper handling of ASOS media_urls
+  const images = useMemo(() => {
+    return getProductImageUrls(product);
   }, [product]);
 
   const priceCurrency = product?.currency || 'USD';

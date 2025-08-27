@@ -13,6 +13,7 @@ import { EnhancedProductGallery } from '@/components/EnhancedProductGallery';
 import { AdvancedSizeColorSelector } from '@/components/AdvancedSizeColorSelector';
 import { SizeChartUpload } from '@/components/SizeChartUpload';
 import { useProductAnalytics } from '@/hooks/useAnalytics';
+import { getProductImageUrls } from '@/utils/imageHelpers';
 
 interface BrandProductDetailModalProps {
   product: Product | null;
@@ -132,7 +133,7 @@ export const BrandProductDetailModal: React.FC<BrandProductDetailModalProps> = (
   };
 
   const attributes = product.attributes as any;
-  const mediaUrls = product.media_urls as string[];
+  const mediaUrls = getProductImageUrls(product);
 
   // Static sizes and colors for preview
   const availableSizes = ['XS', 'S', 'M', 'L', 'XL'].map(size => ({
