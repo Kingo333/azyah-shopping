@@ -330,7 +330,7 @@ export default function BeautyConsultantPage() {
                         {message.type === 'user' ? (
                           <User className="h-4 w-4" />
                         ) : (
-                          <span className="text-lg">👩🏽</span>
+                          <span className="text-lg">👩🏻</span>
                         )}
                       </div>
                       
@@ -379,7 +379,7 @@ export default function BeautyConsultantPage() {
                   <div className="flex justify-start animate-fade-in">
                     <div className="flex gap-3 max-w-[85%] md:max-w-[75%]">
                       <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 flex items-center justify-center">
-                        <span className="text-lg animate-pulse">👩🏽</span>
+                        <span className="text-lg animate-pulse">👩🏻</span>
                       </div>
                       <div className="bg-card/60 backdrop-blur-sm border border-border/50 rounded-2xl px-4 py-3 shadow-sm">
                         <div className="flex items-center gap-3 text-sm text-muted-foreground">
