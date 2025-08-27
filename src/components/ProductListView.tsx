@@ -73,6 +73,30 @@ const ProductListView: React.FC<ProductListViewProps> = ({ products, isLoading }
     }).format(cents / 100);
   };
 
+  const getImageUrl = (product: Product) => {
+    // Handle image_url first
+    if (product.image_url) return product.image_url;
+    
+    // Handle media_urls as array
+    if (product.media_urls && Array.isArray(product.media_urls) && product.media_urls.length > 0) {
+      return product.media_urls[0];
+    }
+    
+    // Handle media_urls as JSON string (ASOS products)
+    if (product.media_urls && typeof product.media_urls === 'string') {
+      try {
+        const parsed = JSON.parse(product.media_urls);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed[0];
+        }
+      } catch (e) {
+        console.warn('Failed to parse media_urls:', product.media_urls);
+      }
+    }
+    
+    return '/placeholder.svg';
+  };
+
   if (isLoading) {
     return (
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-6">
@@ -159,7 +183,7 @@ const ProductListView: React.FC<ProductListViewProps> = ({ products, isLoading }
                   <div className="aspect-square relative overflow-hidden rounded-t-lg">
                      <img
                       {...getResponsiveImageProps(
-                        product.media_urls?.[0] || '/placeholder.svg',
+                        getImageUrl(product),
                         "(max-width: 768px) 50vw, 25vw"
                       )}
                       alt={product.title}
