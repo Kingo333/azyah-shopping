@@ -118,6 +118,7 @@ export function getProductImageUrls(product: any): string[] {
   console.log('Product ID:', product?.id);
   console.log('media_urls type:', typeof product?.media_urls);
   console.log('media_urls value:', product?.media_urls);
+  console.log('media_urls raw JSON:', JSON.stringify(product?.media_urls));
   
   let finalImages: string[] = [];
   
@@ -167,6 +168,7 @@ export function getProductImageUrls(product: any): string[] {
   }
 
   console.log(`🎯 Final image array (${finalImages.length} images):`, finalImages);
+  console.log('🔍 ISSUE DETECTION: If this shows 1 image for ASOS product, the media_urls is not being processed correctly');
   console.log('=== End Product Image URL Debug ===');
   
   return finalImages;
