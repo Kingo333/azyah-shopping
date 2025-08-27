@@ -101,11 +101,8 @@ const ProductListView: React.FC<ProductListViewProps> = ({ products, isLoading }
     return (
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-6">
         {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
-          <div key={i} className="animate-pulse">
-            <div className="aspect-square bg-accent rounded-lg mb-3"></div>
-            <div className="h-4 bg-accent rounded mb-2"></div>
-            <div className="h-3 bg-accent rounded w-2/3 mb-2"></div>
-            <div className="h-8 bg-accent rounded"></div>
+          <div key={i} className="animate-pulse bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl shadow-lg">
+            <div className="aspect-[3/4] bg-accent rounded-2xl"></div>
           </div>
         ))}
       </div>
@@ -168,90 +165,87 @@ const ProductListView: React.FC<ProductListViewProps> = ({ products, isLoading }
                 size="sm"
                 onClick={handleAddToWishlist}
                 disabled={wishlistLoading}
-                className="flex-1 h-7 text-[10px] md:text-xs px-2"
+                className="flex-1 text-xs h-8"
               >
-                <ShoppingBag className="h-2.5 w-2.5 mr-1" />
+                <ShoppingBag className="h-3 w-3 mr-1" />
                 Wishlist
               </Button>
             );
           };
 
           return (
-            <Card key={product.id} className="group hover:shadow-lg transition-shadow">
-              <CardContent className="p-0">
-                <div className="space-y-2 md:space-y-3">
-                  <div className="aspect-square relative overflow-hidden rounded-t-lg">
-                     <img
-                      {...getResponsiveImageProps(
-                        getImageUrl(product),
-                        "(max-width: 768px) 50vw, 25vw"
-                      )}
-                      alt={product.title}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = '/placeholder.svg';
-                      }}
-                    />
-                    {product.ar_mesh_url && (
-                      <Badge variant="outline" className="absolute top-2 right-2 gap-1 text-xs bg-background/80 backdrop-blur-sm">
-                        <Sparkles className="h-3 w-3" />
-                        AR
-                      </Badge>
-                    )}
+            <div 
+              key={product.id} 
+              className="group relative bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2"
+            >
+              <div className="aspect-[3/4] bg-muted rounded-2xl overflow-hidden relative">
+                <img
+                  {...getResponsiveImageProps(
+                    getImageUrl(product),
+                    "(max-width: 768px) 50vw, 25vw"
+                  )}
+                  alt={product.title}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = '/placeholder.svg';
+                  }}
+                />
+                
+                {/* Hover gradient overlay */}
+                <div className="absolute inset-0 bg-gradient-to-t from-primary/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                
+                {/* Top-right like button */}
+                <div className="absolute top-2 right-2 flex flex-col space-y-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-8 w-8 rounded-full bg-white/90 hover:bg-white backdrop-blur-sm"
+                    onClick={() => handleLike(product)}
+                  >
+                    <Heart className="h-4 w-4" />
+                  </Button>
+                </div>
+                
+                {/* Product Info Overlay (appears on hover) */}
+                <div className="absolute bottom-4 left-4 right-4 bg-white/95 backdrop-blur-sm rounded-xl p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <div className="text-sm font-medium line-clamp-1 mb-1">
+                    {product.title}
+                  </div>
+                  <div className="text-xs text-muted-foreground mb-1">
+                    {product.brand?.name || 'Unknown Brand'}
+                  </div>
+                  <div className="text-xs font-semibold text-primary mb-3">
+                    {formatPrice(product.price_cents, product.currency)}
                   </div>
                   
-                   <div className="p-1.5 md:p-3 space-y-1.5">
-                     <div className="flex items-start justify-between">
-                       <div className="flex-1 min-w-0">
-                         <h3 className="font-medium line-clamp-2 text-xs md:text-sm leading-tight">{product.title}</h3>
-                         {product.brand && (
-                           <p className="text-[10px] md:text-xs text-muted-foreground mt-0.5">{product.brand.name}</p>
-                         )}
-                       </div>
-                       <Button
-                         variant="ghost"
-                         size="sm"
-                         onClick={() => handleProductClick(product)}
-                         className="flex-shrink-0 h-6 w-6 p-0 hover:bg-accent"
-                       >
-                         <Info className="h-3 w-3" />
-                       </Button>
-                     </div>
-                     
-                     <div className="flex items-center justify-between">
-                       <span className="font-bold text-xs md:text-sm">
-                         {formatPrice(product.price_cents, product.currency)}
-                       </span>
-                     </div>
-
-                     <div className="flex gap-1.5">
-                       <Button
-                         variant="outline"
-                         size="sm"
-                         onClick={() => handleLike(product)}
-                         className="flex-1 h-7 text-[10px] md:text-xs px-2"
-                       >
-                         <Heart className="h-2.5 w-2.5 mr-1" />
-                         Like
-                       </Button>
-                       <WishlistButton productId={product.id} />
-                     </div>
-
-                     {product.external_url && (
-                       <Button
-                         variant="default"
-                         size="sm"
-                         onClick={() => window.open(product.external_url, '_blank', 'noopener,noreferrer')}
-                         className="w-full h-7 text-[10px] md:text-xs"
-                       >
-                         <ExternalLink className="h-2.5 w-2.5 mr-1" />
-                         Shop Now
-                       </Button>
-                     )}
+                  {/* Action buttons - Wishlist under Like conceptually, but in overlay */}
+                  <div className="flex space-x-2 mb-2">
+                    <WishlistButton productId={product.id} />
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 w-8 p-0 rounded-full bg-primary/10"
+                      onClick={() => handleProductClick(product)}
+                    >
+                      <Info className="h-3 w-3" />
+                    </Button>
                   </div>
+                  
+                  {/* Shop Now button - prominent red button */}
+                  {product.external_url && (
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => window.open(product.external_url, '_blank', 'noopener,noreferrer')}
+                      className="w-full text-xs h-8"
+                    >
+                      <ExternalLink className="h-3 w-3 mr-1" />
+                      Shop Now
+                    </Button>
+                  )}
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           );
         })}
       </div>
