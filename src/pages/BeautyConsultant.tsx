@@ -8,8 +8,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Upload, Send, Sparkles, MapPin, Image as ImageIcon, Bot, User } from "lucide-react";
+import { Upload, Send, Sparkles, MapPin, Image as ImageIcon, Bot, User, Mic } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { VoiceRecorder } from "@/components/VoiceRecorder";
+import { VoiceMessage } from "@/components/VoiceMessage";
 
 type ChatMessage = {
   id: string;
@@ -17,15 +19,23 @@ type ChatMessage = {
   content: string;
   image?: string;
   timestamp: Date;
+  audioUrl?: string;
+  transcription?: string;
+  isVoice?: boolean;
 };
 
 type ConsultationResult = {
-  message: string;
-  analysis?: {
-    skin_tone: string;
-    undertone: string;
-    skin_type: string;
-    recommendations: any[];
+  success: boolean;
+  timestamp: string;
+  consultation: {
+    text: string;
+    voice_summary: string;
+    audio_file?: string;
+    transcription?: {
+      success: boolean;
+      message: string;
+      transcription: string;
+    };
   };
 };
 
@@ -35,7 +45,7 @@ export default function BeautyConsultantPage() {
     {
       id: '1',
       type: 'assistant',
-      content: "Hi! I'm your AI Beauty Consultant. Upload a selfie and I'll analyze your skin tone and provide personalized makeup recommendations. You can also ask me beauty questions anytime! 💄✨",
+      content: "Hi! I'm Azyah, your AI Beauty Consultant. Upload a selfie, speak to me, or ask any beauty question for personalized recommendations! 💄✨",
       timestamp: new Date()
     }
   ]);
@@ -45,6 +55,7 @@ export default function BeautyConsultantPage() {
   const [region, setRegion] = useState('US');
   const [loading, setLoading] = useState(false);
   const [showRegionSelector, setShowRegionSelector] = useState(false);
+  const [isPlayingVoice, setIsPlayingVoice] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -83,16 +94,26 @@ export default function BeautyConsultantPage() {
     }
   };
 
-  const submitConsultation = async (message: string, image?: File) => {
+  const submitConsultation = async (message: string, image?: File, audioBlob?: Blob) => {
     setLoading(true);
     
     try {
       const formData = new FormData();
-      if (image) {
-        formData.append('image', image);
+      
+      if (message) {
+        formData.append('message', message);
       }
-      formData.append('message', message || 'Analyze my skin and provide beauty recommendations');
+      
+      if (image) {
+        formData.append('selfie', image);
+      }
+      
+      if (audioBlob) {
+        formData.append('audio', audioBlob);
+      }
+      
       formData.append('region', region);
+      formData.append('user_id', user?.id || 'anonymous');
 
       const response = await fetch('https://eoal3jgggfuduet.m.pipedream.net', {
         method: 'POST',
@@ -103,25 +124,35 @@ export default function BeautyConsultantPage() {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       
-      const result = await response.json();
-      console.log('Webhook response:', result); // Debug logging
+      const result: ConsultationResult = await response.json();
+      console.log('Webhook response:', result);
       
-      if (result.error) {
-        throw new Error(result.error);
+      if (!result.success) {
+        throw new Error('Consultation was not successful');
       }
       
-      // Extract consultation content - handle both old and new response formats
-      const consultationContent = result.consultation?.consultation || result.consultation || result.message || 'I apologize, but I received an incomplete response. Please try again.';
-      
-      // Add assistant response
+      // Add assistant response with voice support
       const assistantMessage: ChatMessage = {
         id: Date.now().toString(),
         type: 'assistant',
-        content: consultationContent,
-        timestamp: new Date()
+        content: result.consultation.text,
+        timestamp: new Date(),
+        audioUrl: result.consultation.audio_file,
+        transcription: result.consultation.voice_summary,
+        isVoice: !!result.consultation.audio_file,
       };
       
       setMessages(prev => [...prev, assistantMessage]);
+      
+      // Auto-play Azyah's voice response if available
+      if (result.consultation.audio_file) {
+        setIsPlayingVoice(true);
+        const audio = new Audio(result.consultation.audio_file);
+        audio.onended = () => setIsPlayingVoice(false);
+        audio.onerror = () => setIsPlayingVoice(false);
+        audio.play().catch(() => setIsPlayingVoice(false));
+      }
+      
       toast.success('Beauty consultation completed!');
     } catch (error) {
       console.error('Consultation failed:', error);
@@ -164,6 +195,32 @@ export default function BeautyConsultantPage() {
     }
   };
 
+  const handleVoiceTranscription = async (transcription: string) => {
+    // Add voice message to chat
+    const voiceMessage: ChatMessage = {
+      id: Date.now().toString(),
+      type: 'user',
+      content: transcription,
+      timestamp: new Date(),
+      image: imagePreview || undefined,
+      isVoice: true,
+      transcription,
+    };
+
+    setMessages(prev => [...prev, voiceMessage]);
+    
+    // Submit consultation with voice
+    await submitConsultation(transcription, selectedImage || undefined);
+    
+    // Clear inputs
+    setInputMessage('');
+    setSelectedImage(null);
+    setImagePreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -186,8 +243,8 @@ export default function BeautyConsultantPage() {
   return (
     <>
       <SEOHead 
-        title="AI Beauty Consultant - Personalized Makeup Recommendations" 
-        description="Get personalized makeup recommendations based on your skin tone, type, and preferences with our AI-powered beauty consultant." 
+        title="AI Beauty Consultant - Voice-Enabled Personalized Makeup Recommendations" 
+        description="Get personalized makeup recommendations with voice conversations and selfie analysis from Azyah, your AI-powered beauty consultant." 
       />
       
       <div className="min-h-screen bg-background">
@@ -202,11 +259,11 @@ export default function BeautyConsultantPage() {
                   <Sparkles className="h-6 w-6 text-pink-600 dark:text-pink-400" />
                 </div>
                 <h1 className="text-2xl font-bold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
-                  AI Beauty Consultant
+                  Azyah AI Beauty Consultant
                 </h1>
               </div>
               <p className="text-muted-foreground text-sm">
-                Upload your selfie to get personalized makeup recommendations
+                🎤 Speak, 📸 upload, or 💬 chat for personalized beauty advice
               </p>
             </div>
 
@@ -231,26 +288,37 @@ export default function BeautyConsultantPage() {
                       </div>
                       
                       {/* Message Content */}
-                      <div className={`rounded-2xl px-4 py-2 ${
-                        message.type === 'user' 
-                          ? 'bg-primary text-primary-foreground' 
-                          : 'bg-muted/80'
-                      }`}>
-                        {message.image && (
-                          <div className="mb-2 rounded-lg overflow-hidden">
-                            <img 
-                              src={message.image} 
-                              alt="Uploaded image" 
-                              className="max-w-48 h-auto object-cover"
-                            />
+                      <div className="space-y-2">
+                        {message.isVoice && (message.audioUrl || message.transcription) ? (
+                          <VoiceMessage
+                            audioUrl={message.audioUrl}
+                            transcription={message.transcription}
+                            isUser={message.type === 'user'}
+                          />
+                        ) : (
+                          <div className={`rounded-2xl px-4 py-2 ${
+                            message.type === 'user' 
+                              ? 'bg-primary text-primary-foreground' 
+                              : 'bg-muted/80'
+                          }`}>
+                            {message.image && (
+                              <div className="mb-2 rounded-lg overflow-hidden">
+                                <img 
+                                  src={message.image} 
+                                  alt="Uploaded image" 
+                                  className="max-w-48 h-auto object-cover"
+                                />
+                              </div>
+                            )}
+                            <div className="text-sm whitespace-pre-wrap leading-relaxed">
+                              <div dangerouslySetInnerHTML={{ __html: message.content }} />
+                            </div>
                           </div>
                         )}
-                        <div className="text-sm whitespace-pre-wrap leading-relaxed">
-                          <div dangerouslySetInnerHTML={{ __html: message.content }} />
-                        </div>
-                        <div className={`text-xs mt-1 opacity-70 ${
-                          message.type === 'user' ? 'text-primary-foreground/70' : 'text-muted-foreground'
-                        }`}>
+                        
+                        <div className={`text-xs opacity-70 ${
+                          message.type === 'user' ? 'text-right' : 'text-left'
+                        } ${message.type === 'user' ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
                           {formatTime(message.timestamp)}
                         </div>
                       </div>
@@ -267,7 +335,7 @@ export default function BeautyConsultantPage() {
                       <div className="bg-muted/80 rounded-2xl px-4 py-2">
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                           <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-pink-600"></div>
-                          Analyzing your beauty profile...
+                          {isPlayingVoice ? "Azyah is speaking..." : "Analyzing your beauty profile..."}
                         </div>
                       </div>
                     </div>
@@ -328,6 +396,10 @@ export default function BeautyConsultantPage() {
                 {/* Input Row */}
                 <div className="flex items-end gap-2">
                   <div className="flex gap-1">
+                    <VoiceRecorder
+                      onTranscription={handleVoiceTranscription}
+                      disabled={loading}
+                    />
                     <Button
                       variant="ghost"
                       size="sm"
@@ -353,7 +425,7 @@ export default function BeautyConsultantPage() {
                       value={inputMessage}
                       onChange={(e) => setInputMessage(e.target.value)}
                       onKeyPress={handleKeyPress}
-                      placeholder="Ask about makeup, upload a selfie, or describe your needs..."
+                      placeholder="Ask about makeup, upload a selfie, or speak for personalized advice..."
                       className="min-h-10 resize-none"
                       disabled={loading}
                     />
@@ -377,6 +449,11 @@ export default function BeautyConsultantPage() {
                   onChange={handleImageUpload}
                   className="hidden"
                 />
+
+                {/* Help text */}
+                <div className="text-xs text-muted-foreground text-center">
+                  💬 Type, 🎤 speak, or 📸 upload for personalized beauty advice
+                </div>
 
                 {/* Disclaimer */}
                 <div className="text-xs text-muted-foreground bg-muted/30 p-2 rounded text-center">
