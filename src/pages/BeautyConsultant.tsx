@@ -4,7 +4,6 @@ import { useState, useRef, useEffect } from "react";
 import { SEOHead } from "@/components/SEOHead";
 import ShopperNavigation from "@/components/ShopperNavigation";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
@@ -283,78 +282,92 @@ export default function BeautyConsultantPage() {
         description="Get personalized makeup recommendations with voice conversations and selfie analysis from Azyah, your AI-powered beauty consultant." 
       />
       
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-gradient-to-br from-background via-background/95 to-background/90">
         <ShopperNavigation />
         
-        <main className="container mx-auto px-4 py-6">
-          <div className="max-w-4xl mx-auto">
+        <main className="container mx-auto px-4 py-8">
+          <div className="max-w-3xl mx-auto">
             {/* Header */}
-            <div className="text-center mb-6">
-              <div className="flex items-center justify-center gap-3 mb-2">
-                <div className="p-2 rounded-full bg-gradient-to-br from-pink-100 to-purple-100 dark:from-pink-900/20 dark:to-purple-900/20">
-                  <Sparkles className="h-6 w-6 text-pink-600 dark:text-pink-400" />
+            <div className="text-center mb-8 animate-fade-in">
+              <div className="flex items-center justify-center gap-3 mb-4">
+                <div className="relative">
+                  <div className="p-3 rounded-full bg-gradient-to-br from-primary/10 to-primary/5 backdrop-blur-sm border border-primary/10">
+                    <Sparkles className="h-6 w-6 text-primary animate-pulse" />
+                  </div>
+                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full animate-pulse shadow-md"></div>
                 </div>
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
-                  Azyah AI Beauty Consultant
-                </h1>
+                <div className="space-y-1">
+                  <h1 className="text-3xl font-bold bg-gradient-to-r from-primary via-primary/80 to-primary bg-clip-text text-transparent">
+                    Azyah
+                  </h1>
+                  <p className="text-xs text-muted-foreground font-medium">
+                    AI Beauty Consultant
+                  </p>
+                </div>
               </div>
-              <p className="text-muted-foreground text-sm">
-                🎤 Speak, 📸 upload, or 💬 chat for personalized beauty advice
+              <p className="text-muted-foreground text-sm max-w-md mx-auto leading-relaxed">
+                Voice conversations, selfie analysis, and personalized beauty advice
               </p>
             </div>
 
             {/* Chat Container */}
-            <Card className="h-[70vh] flex flex-col">
+            <div className="bg-card/40 backdrop-blur-sm border border-border/50 rounded-2xl overflow-hidden shadow-xl animate-scale-in">
               {/* Messages Area */}
-              <CardContent className="flex-1 overflow-y-auto p-4 space-y-4">
-                {messages.map((message) => (
-                  <div key={message.id} className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`flex gap-3 max-w-[80%] ${message.type === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
+              <div className="h-[65vh] overflow-y-auto p-6 space-y-6 bg-gradient-to-b from-transparent to-muted/5">
+                {messages.map((message, index) => (
+                  <div 
+                    key={message.id} 
+                    className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in`}
+                    style={{ animationDelay: `${index * 0.1}s` }}
+                  >
+                    <div className={`flex gap-3 max-w-[85%] md:max-w-[75%] ${message.type === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
                       {/* Avatar */}
-                      <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
+                      <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center shadow-md transition-all duration-300 hover:scale-105 ${
                         message.type === 'user' 
-                          ? 'bg-primary text-primary-foreground' 
-                          : 'bg-gradient-to-br from-pink-100 to-purple-100 dark:from-pink-900/20 dark:to-purple-900/20'
+                          ? 'bg-gradient-to-br from-primary to-primary/80 text-primary-foreground' 
+                          : 'bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20'
                       }`}>
                         {message.type === 'user' ? (
                           <User className="h-4 w-4" />
                         ) : (
-                          <Bot className="h-4 w-4 text-pink-600 dark:text-pink-400" />
+                          <Bot className="h-4 w-4 text-primary" />
                         )}
                       </div>
                       
                       {/* Message Content */}
-                      <div className="space-y-2">
+                      <div className="space-y-2 flex-1">
                         {message.isVoice && (message.audioUrl || message.transcription) ? (
-                          <VoiceMessage
-                            audioUrl={message.audioUrl}
-                            transcription={message.transcription}
-                            isUser={message.type === 'user'}
-                          />
+                          <div className="transform transition-all duration-300 hover:scale-[1.02]">
+                            <VoiceMessage
+                              audioUrl={message.audioUrl}
+                              transcription={message.transcription}
+                              isUser={message.type === 'user'}
+                            />
+                          </div>
                         ) : (
-                          <div className={`rounded-2xl px-4 py-2 ${
+                          <div className={`rounded-2xl px-4 py-3 backdrop-blur-sm border shadow-sm transition-all duration-300 hover:shadow-md ${
                             message.type === 'user' 
-                              ? 'bg-primary text-primary-foreground' 
-                              : 'bg-muted/80'
+                              ? 'bg-gradient-to-br from-primary to-primary/90 text-primary-foreground border-primary/20' 
+                              : 'bg-card/60 border-border/50'
                           }`}>
                             {message.image && (
-                              <div className="mb-2 rounded-lg overflow-hidden">
+                              <div className="mb-3 rounded-xl overflow-hidden border border-border/30">
                                 <img 
                                   src={message.image} 
-                                  alt="Uploaded image" 
-                                  className="max-w-48 h-auto object-cover"
+                                  alt="Uploaded selfie" 
+                                  className="w-full max-w-56 h-auto object-cover transition-transform duration-300 hover:scale-105"
                                 />
                               </div>
                             )}
-                            <div className="text-sm whitespace-pre-wrap leading-relaxed">
+                            <div className="text-sm leading-relaxed">
                               <div dangerouslySetInnerHTML={{ __html: message.content }} />
                             </div>
                           </div>
                         )}
                         
-                        <div className={`text-xs opacity-70 ${
+                        <div className={`text-xs opacity-60 transition-opacity duration-300 hover:opacity-80 ${
                           message.type === 'user' ? 'text-right' : 'text-left'
-                        } ${message.type === 'user' ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
+                        }`}>
                           {formatTime(message.timestamp)}
                         </div>
                       </div>
@@ -363,15 +376,19 @@ export default function BeautyConsultantPage() {
                 ))}
                 
                 {loading && (
-                  <div className="flex justify-start">
-                    <div className="flex gap-3 max-w-[80%]">
-                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-pink-100 to-purple-100 dark:from-pink-900/20 dark:to-purple-900/20 flex items-center justify-center">
-                        <Bot className="h-4 w-4 text-pink-600 dark:text-pink-400" />
+                  <div className="flex justify-start animate-fade-in">
+                    <div className="flex gap-3 max-w-[85%] md:max-w-[75%]">
+                      <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 flex items-center justify-center">
+                        <Bot className="h-4 w-4 text-primary animate-pulse" />
                       </div>
-                      <div className="bg-muted/80 rounded-2xl px-4 py-2">
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-pink-600"></div>
-                          {isPlayingVoice ? "Azyah is speaking..." : "Analyzing your beauty profile..."}
+                      <div className="bg-card/60 backdrop-blur-sm border border-border/50 rounded-2xl px-4 py-3 shadow-sm">
+                        <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                          <div className="w-2 h-2 bg-primary/60 rounded-full animate-bounce"></div>
+                          <div className="w-2 h-2 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                          <div className="w-2 h-2 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                          <span className="ml-2 font-medium">
+                            {isPlayingVoice ? "Azyah is speaking..." : "Analyzing your beauty profile..."}
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -379,35 +396,39 @@ export default function BeautyConsultantPage() {
                 )}
                 
                 <div ref={messagesEndRef} />
-              </CardContent>
+              </div>
 
               {/* Input Area */}
-              <div className="border-t p-4 space-y-3">
+              <div className="border-t border-border/50 bg-card/30 backdrop-blur-sm p-4 space-y-3">
                 {/* Region Selector */}
                 {showRegionSelector && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <MapPin className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-muted-foreground">Region:</span>
+                  <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-xl border border-border/30 animate-slide-in-right">
+                    <div className="flex items-center gap-2 text-sm">
+                      <div className="p-1.5 rounded-lg bg-primary/10">
+                        <MapPin className="h-3 w-3 text-primary" />
+                      </div>
+                      <span className="text-muted-foreground font-medium">Region:</span>
+                    </div>
                     <Select value={region} onValueChange={setRegion}>
-                      <SelectTrigger className="w-auto h-8 text-sm">
+                      <SelectTrigger className="w-auto h-8 text-sm bg-background/50 border-border/50">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="US">United States</SelectItem>
-                        <SelectItem value="UK">United Kingdom</SelectItem>
-                        <SelectItem value="AU">Australia</SelectItem>
-                        <SelectItem value="CA">Canada</SelectItem>
-                        <SelectItem value="AE">United Arab Emirates</SelectItem>
-                        <SelectItem value="SA">Saudi Arabia</SelectItem>
-                        <SelectItem value="DE">Germany</SelectItem>
-                        <SelectItem value="FR">France</SelectItem>
+                        <SelectItem value="US">🇺🇸 United States</SelectItem>
+                        <SelectItem value="UK">🇬🇧 United Kingdom</SelectItem>
+                        <SelectItem value="AU">🇦🇺 Australia</SelectItem>
+                        <SelectItem value="CA">🇨🇦 Canada</SelectItem>
+                        <SelectItem value="AE">🇦🇪 UAE</SelectItem>
+                        <SelectItem value="SA">🇸🇦 Saudi Arabia</SelectItem>
+                        <SelectItem value="DE">🇩🇪 Germany</SelectItem>
+                        <SelectItem value="FR">🇫🇷 France</SelectItem>
                       </SelectContent>
                     </Select>
                     <Button 
                       variant="ghost" 
                       size="sm" 
                       onClick={() => setShowRegionSelector(false)}
-                      className="h-8 px-2 text-xs"
+                      className="h-8 px-3 text-xs hover:bg-primary/10"
                     >
                       Done
                     </Button>
@@ -416,89 +437,123 @@ export default function BeautyConsultantPage() {
 
                 {/* Image Preview */}
                 {imagePreview && (
-                  <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg">
-                    <img 
-                      src={imagePreview} 
-                      alt="Preview" 
-                      className="w-12 h-12 object-cover rounded"
-                    />
-                    <span className="text-sm text-muted-foreground flex-1">Ready to analyze your selfie</span>
-                    <Button variant="ghost" size="sm" onClick={clearImage} className="h-8 w-8 p-0">
+                  <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-xl border border-border/30 animate-scale-in">
+                    <div className="relative">
+                      <img 
+                        src={imagePreview} 
+                        alt="Preview" 
+                        className="w-14 h-14 object-cover rounded-lg border border-border/30 shadow-sm"
+                      />
+                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
+                        <ImageIcon className="h-2 w-2 text-white" />
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-foreground">Selfie ready</p>
+                      <p className="text-xs text-muted-foreground">Analyzing your skin tone and features</p>
+                    </div>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={clearImage} 
+                      className="h-8 w-8 p-0 hover:bg-destructive/10 hover:text-destructive"
+                    >
                       ×
                     </Button>
                   </div>
                 )}
 
                 {/* Input Row */}
-                <div className="flex items-end gap-2">
-                  <div className="flex gap-1">
+                <div className="flex items-end gap-3">
+                  {/* Action Buttons */}
+                  <div className="flex gap-2">
                     <VoiceRecorder
                       onTranscription={handleVoiceTranscription}
                       disabled={loading}
                     />
                     <Button
-                      variant="ghost"
-                      size="sm"
+                      variant="outline"
+                      size="icon"
                       onClick={() => fileInputRef.current?.click()}
-                      className="h-10 w-10 p-0"
-                      title="Upload image"
+                      className="h-12 w-12 rounded-xl border-border/50 bg-background/50 hover:bg-primary/5 hover:border-primary/30 transition-all duration-300"
+                      title="Upload selfie"
+                      disabled={loading}
                     >
                       <ImageIcon className="h-4 w-4" />
                     </Button>
                     <Button
-                      variant="ghost"
-                      size="sm"
+                      variant="outline"
+                      size="icon"
                       onClick={() => setShowRegionSelector(!showRegionSelector)}
-                      className="h-10 w-10 p-0"
+                      className="h-12 w-12 rounded-xl border-border/50 bg-background/50 hover:bg-primary/5 hover:border-primary/30 transition-all duration-300"
                       title="Select region"
+                      disabled={loading}
                     >
                       <MapPin className="h-4 w-4" />
                     </Button>
                   </div>
                   
-                  <div className="flex-1">
+                  {/* Message Input */}
+                  <div className="flex-1 relative">
                     <Input
                       value={inputMessage}
                       onChange={(e) => setInputMessage(e.target.value)}
                       onKeyPress={handleKeyPress}
-                      placeholder="Ask about makeup, upload a selfie, or speak for personalized advice..."
-                      className="min-h-10 resize-none"
+                      placeholder="Ask about skincare, makeup, or beauty tips..."
+                      className="h-12 pr-14 rounded-xl border-border/50 bg-background/50 backdrop-blur-sm focus:border-primary/50 focus:ring-primary/20 transition-all duration-300"
                       disabled={loading}
                     />
+                    <Button
+                      onClick={handleSendMessage}
+                      disabled={loading || (!inputMessage.trim() && !selectedImage)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 p-0 rounded-lg bg-primary hover:bg-primary/90 transition-all duration-300 hover:scale-105 disabled:hover:scale-100"
+                    >
+                      <Send className="h-3 w-3" />
+                    </Button>
                   </div>
-                  
-                  <Button 
-                    onClick={handleSendMessage}
-                    disabled={(!inputMessage.trim() && !selectedImage) || loading}
-                    size="sm"
-                    className="h-10 w-10 p-0"
-                  >
-                    <Send className="h-4 w-4" />
-                  </Button>
                 </div>
 
-                {/* Hidden file input */}
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageUpload}
-                  className="hidden"
-                />
-
-                {/* Help text */}
-                <div className="text-xs text-muted-foreground text-center">
-                  💬 Type, 🎤 speak, or 📸 upload for personalized beauty advice
-                </div>
-
-                {/* Disclaimer */}
-                <div className="text-xs text-muted-foreground bg-muted/30 p-2 rounded text-center">
-                  ⚠️ Cosmetic advice only, not medical advice. Always patch test new products.
+                {/* Quick Actions */}
+                <div className="flex flex-wrap gap-2 pt-2">
+                  {[
+                    "Analyze my skin tone",
+                    "Foundation recommendations",
+                    "Evening makeup look",
+                    "Skincare routine"
+                  ].map((suggestion, index) => (
+                    <Button
+                      key={suggestion}
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setInputMessage(suggestion)}
+                      className="h-8 px-3 text-xs rounded-lg border-border/30 bg-background/30 hover:bg-primary/5 hover:border-primary/30 transition-all duration-300"
+                      disabled={loading}
+                    >
+                      {suggestion}
+                    </Button>
+                  ))}
                 </div>
               </div>
-            </Card>
+            </div>
+
+            {/* Safety Disclaimer */}
+            <div className="mt-6 text-center">
+              <p className="text-xs text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+                💡 <strong>Beauty Tip:</strong> For best results, take selfies in natural lighting. 
+                Remember, this is cosmetic advice only and not medical guidance.
+              </p>
+            </div>
           </div>
         </main>
+
+        {/* Hidden File Input */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handleImageUpload}
+          className="hidden"
+        />
       </div>
     </>
   );
