@@ -313,7 +313,7 @@ export default function BeautyConsultantPage() {
             {/* Chat Container */}
             <div className="bg-card/40 backdrop-blur-sm border border-border/50 rounded-2xl overflow-hidden shadow-xl animate-scale-in">
               {/* Messages Area */}
-              <div className="h-[50vh] overflow-y-auto p-6 space-y-6 bg-gradient-to-b from-transparent to-muted/5">
+              <div className="h-[40vh] md:h-[50vh] overflow-y-auto p-6 space-y-6 bg-gradient-to-b from-transparent to-muted/5">
                 {messages.map((message, index) => (
                   <div 
                     key={message.id} 
