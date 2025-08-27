@@ -462,7 +462,7 @@ export default function BeautyConsultantPage() {
                     <span className="text-amber-500 font-medium">Premium:</span> Chat history and AI memory persist permanently
                   </p> : <p>
                     Chat history resets after 24 hours. 
-                    <span className="text-amber-500 font-medium ml-1">Upgrade to Premium</span> for permanent memory
+                    <span className="text-amber-500 font-medium ml-1">Upgrade to Premium</span> for permanent memory and more credits
                   </p>}
               </div>
             </div>
