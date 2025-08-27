@@ -122,12 +122,12 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
     const isMobile = window.innerWidth < 640;
     
     if (isMobile) {
-      // For mobile, leave more room for content below
-      const availableHeight = window.innerHeight * 0.75; // Reduced from 0.85
-      const detailsMinHeight = 150; // Increased space for shop button and content
+      // For mobile, maximize image space
+      const availableHeight = window.innerHeight * 0.85; // Use more of the screen
+      const detailsMinHeight = 100; // Reduced minimum space needed for details
       const maxImageHeight = availableHeight - detailsMinHeight;
-      const minHeight = 280; // Reduced minimum to make room for content
-      const calculatedHeight = 350 / aspectRatio; // Reduced from 400
+      const minHeight = 320; // Increased minimum for better visibility
+      const calculatedHeight = 400 / aspectRatio;
       
       return Math.max(minHeight, Math.min(maxImageHeight, calculatedHeight));
     } else {
@@ -438,7 +438,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
             custom={x.get()}
           >
             <Card className="h-full flex flex-col cursor-grab active:cursor-grabbing overflow-hidden" style={{ willChange: 'transform', contain: 'layout style paint' }}>
-              <CardContent className="p-2 sm:p-3 pb-6 sm:pb-8 flex flex-col h-full bg-background/60 backdrop-blur-sm">
+              <CardContent className="p-2 sm:p-3 lg:pb-4 flex flex-col h-full bg-background/60 backdrop-blur-sm">
                  <div 
                    className="relative w-full mb-1 sm:mb-2 overflow-hidden rounded-lg flex-shrink-0"
                    style={{
