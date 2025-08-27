@@ -175,7 +175,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         {/* Product Info Overlay (appears on hover) */}
         <div className="absolute bottom-4 left-4 right-4 bg-white/95 backdrop-blur-sm rounded-xl p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
           <div className="text-sm font-medium line-clamp-1 mb-1">
-            {product.brand || product.brand_name || 'Unknown Brand'}
+            {product.brands?.name || product.brand?.name || product.brand_name || product.merchant_name || 'Unknown Brand'}
           </div>
           <div className="text-xs font-semibold text-primary mb-2">
             {formatPrice(product.price_cents, product.currency)}
