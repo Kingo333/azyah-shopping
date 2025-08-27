@@ -244,7 +244,7 @@ export default {
 				'luxury-glow': 'luxury-glow 3s ease-in-out infinite',
 				'cartier-glow': 'cartier-glow 2s ease-in-out infinite',
 				'aurora-flow': 'aurora-flow 30s ease-in-out infinite',
-				'slow-pulse': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+				'slow-pulse': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
 				'clock-tick': 'clock-tick 1s ease-in-out infinite'
 			},
 			boxShadow: {
