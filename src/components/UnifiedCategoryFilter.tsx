@@ -13,6 +13,7 @@ import {
   getSubcategoryDisplayName, 
   getGenderDisplayName 
 } from '@/lib/categories';
+import { SUPPORTED_CURRENCIES } from '@/lib/currencies';
 import type { TopCategory, SubCategory, Gender } from '@/lib/categories';
 
 // Fix type issues with array casting
@@ -374,11 +375,11 @@ const FilterContent: React.FC<FilterContentProps> = ({
               onChange={(e) => onFiltersChange({ ...filters, currency: e.target.value })}
               className="w-full px-2 py-1 text-xs border rounded"
             >
-              <option value="USD">USD ($)</option>
-              <option value="EUR">EUR (€)</option>
-              <option value="GBP">GBP (£)</option>
-              <option value="AED">AED (د.إ)</option>
-              <option value="SAR">SAR (﷼)</option>
+              {SUPPORTED_CURRENCIES.map(currency => (
+                <option key={currency.code} value={currency.code}>
+                  {currency.code} ({currency.symbol})
+                </option>
+              ))}
             </select>
           </div>
         </>
