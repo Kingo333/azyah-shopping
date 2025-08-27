@@ -462,13 +462,21 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                       }}
                     />
                     
-                    {/* Multiple images indicator for ASOS products */}
-                    {hasMultipleImages(currentProduct) && (
-                      <div className="absolute top-4 left-4 bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full flex items-center gap-1 shadow-lg">
-                        <Image className="h-3 w-3" />
-                        {getImageCount(currentProduct)}
-                      </div>
-                    )}
+                     {/* Multiple images indicator and swipe instructions */}
+                     <div className="absolute top-4 left-0 right-0 flex items-center justify-between px-4">
+                       {hasMultipleImages(currentProduct) && (
+                         <div className="bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full flex items-center gap-1 shadow-lg">
+                           <Image className="h-3 w-3" />
+                           {getImageCount(currentProduct)}
+                         </div>
+                       )}
+                       <div className="flex-1" />
+                       {showInstructions && (
+                         <div className="bg-background/80 text-foreground text-xs px-2 py-1 rounded-full backdrop-blur-sm shadow-lg">
+                           ← Pass • ↑ Save • Like →
+                         </div>
+                       )}
+                     </div>
                 </div>
                 
                  <div className="flex flex-col flex-grow space-y-1 -mt-6 mx-2">
@@ -616,14 +624,6 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
 
 
 
-      {/* Swipe instructions - auto-hide after 3 seconds, show on image tap */}
-      {showInstructions && (
-        <div className="absolute top-4 left-4 right-4 text-center">
-          <div className="bg-black/20 backdrop-blur-sm rounded-lg p-2 text-white text-xs">
-            ← Pass • ↑ Save • Like →
-          </div>
-        </div>
-      )}
 
       {/* No More Products State */}
       {index >= products.length && products.length > 0 && (
