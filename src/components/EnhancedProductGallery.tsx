@@ -121,7 +121,7 @@ export const EnhancedProductGallery: React.FC<EnhancedProductGalleryProps> = ({
 
         {/* Thumbnail Navigation - Overlaid at bottom left */}
         {images.length > 1 && (
-          <div className="absolute bottom-2 left-2 md:bottom-4 md:left-4 flex gap-1 md:gap-2 max-w-[calc(100%-1rem)] md:max-w-[calc(100%-2rem)] overflow-x-auto">
+          <div className="absolute bottom-2 left-2 md:bottom-4 md:left-4 flex gap-1 md:gap-2 max-w-[calc(100%-1rem)] md:max-w-[calc(100%-2rem)] overflow-x-auto md:overflow-x-visible">
             {images.map((image, index) => (
               <motion.button
                 key={index}
