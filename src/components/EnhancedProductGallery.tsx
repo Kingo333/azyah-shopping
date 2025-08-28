@@ -121,12 +121,12 @@ export const EnhancedProductGallery: React.FC<EnhancedProductGalleryProps> = ({
 
         {/* Thumbnail Navigation - Overlaid at bottom left */}
         {images.length > 1 && (
-          <div className="absolute bottom-4 left-4 flex gap-2 max-w-[calc(100%-2rem)] overflow-x-auto">
+          <div className="absolute bottom-2 left-2 md:bottom-4 md:left-4 flex gap-1 md:gap-2 max-w-[calc(100%-1rem)] md:max-w-[calc(100%-2rem)] overflow-x-auto">
             {images.map((image, index) => (
               <motion.button
                 key={index}
                 onClick={() => handleImageChange(index)}
-                className={`flex-shrink-0 w-12 h-12 rounded border-2 overflow-hidden transition-all duration-200 bg-background/80 backdrop-blur-sm ${
+                className={`flex-shrink-0 w-10 h-10 md:w-12 md:h-12 rounded border-2 overflow-hidden transition-all duration-200 bg-background/90 backdrop-blur-sm ${
                   selectedImage === index 
                     ? 'border-primary shadow-md scale-105' 
                     : 'border-border hover:border-primary/50'
@@ -135,7 +135,7 @@ export const EnhancedProductGallery: React.FC<EnhancedProductGalleryProps> = ({
                 whileTap={{ scale: 0.95 }}
               >
                 <img
-                  {...getResponsiveImageProps(image, "48px")}
+                  {...getResponsiveImageProps(image, "40px")}
                   alt={`${productTitle} thumbnail ${index + 1}`}
                   className="w-full h-full object-cover"
                   loading="lazy"
