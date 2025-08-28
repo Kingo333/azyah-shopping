@@ -48,12 +48,12 @@ export function ZiinaPaymentTester() {
       }
       addResult('Authentication Check', 'success', `Authenticated as: ${user.email}`);
 
-      // Test 3: Create Payment Intent (Test Mode)
+      // Test 3: Create Payment Intent (Test Mode) - Updated to 30 AED
       addResult('Create Payment Intent', 'pending', 'Creating test payment intent...');
       
       const { data: paymentData, error: paymentError } = await supabase.functions.invoke('create-payment-intent', {
         body: { 
-          amountAed: 40, 
+          amountAed: 30, 
           test: true,
           message: 'Azyah Premium Test Payment'
         }

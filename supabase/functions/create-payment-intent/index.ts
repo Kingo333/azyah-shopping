@@ -58,7 +58,7 @@ serve(async (req) => {
       return jsonResponse({ error: 'Invalid authentication' }, 401);
     }
 
-    const { amountAed = 40, test = true, message = "Azyah Premium" } = await req.json();
+    const { amountAed = 30, test = true, message = "Azyah Premium" } = await req.json();
     
     // Convert AED to fils (1 AED = 100 fils) and validate minimum amount (2 AED = 200 fils)
     const amount = Math.round(Number(amountAed) * 100);

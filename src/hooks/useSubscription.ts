@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -104,7 +105,7 @@ export function useSubscription(): UseSubscriptionReturn {
       }
 
       const { data, error } = await supabase.functions.invoke('create-payment-intent', {
-        body: { amountAed: 40, test, message: "Azyah Premium" },
+        body: { amountAed: 30, test, message: "Azyah Premium" },
         headers: {
           Authorization: `Bearer ${session.access_token}`
         }
