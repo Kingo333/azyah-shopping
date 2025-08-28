@@ -37,7 +37,7 @@ export const AiStudioHeader: React.FC<AiStudioHeaderProps> = ({
               <div className="flex-1 min-w-0">
                 <h4 className="text-sm font-semibold text-foreground">Upgrade to Premium</h4>
                 <div className="text-xs text-muted-foreground">
-                  20 daily try-ons, unlimited replica generation, UGC collab access
+                  More Daily Credits for Virtual Try-On and Beauty Guide • Unlimited replica • UGC collabs
                 </div>
               </div>
               <Button size="sm" variant="default" className="h-7 text-xs px-3 flex-shrink-0" onClick={onUpgradeClick}>
