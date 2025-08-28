@@ -72,8 +72,8 @@ export const EnhancedProductGallery: React.FC<EnhancedProductGalleryProps> = ({
             "(max-width: 768px) 90vw, 50vw"
           )}
           alt={`${productTitle} view ${selectedImage + 1}`}
-          className={`w-full h-full object-cover cursor-zoom-in transition-all duration-300 ${
-            isZoomed ? 'scale-150' : 'scale-100'
+          className={`w-full h-full object-contain cursor-zoom-in transition-all duration-300 ${
+            isZoomed ? 'scale-150 object-cover' : 'scale-100'
           } ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
           style={{ rotate: `${rotation}deg` }}
           initial={{ opacity: 0, scale: 0.95 }}

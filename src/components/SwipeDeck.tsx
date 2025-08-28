@@ -441,7 +441,10 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
       ...selectedProduct,
       // Keep original media_urls format for ProductDetailPage compatibility
       media_urls: selectedProduct.media_urls,
-      brand: selectedProduct.brands || { name: selectedProduct.merchant_name || 'Unknown' },
+      // Fix brand data structure - check if brands exists and has name property
+      brand: selectedProduct.brands?.name 
+        ? { name: selectedProduct.brands.name }
+        : selectedProduct.brands || { name: selectedProduct.merchant_name || 'Unknown Brand' },
       price_cents: selectedProduct.price_cents,
       currency: selectedProduct.currency || 'USD'
     };
