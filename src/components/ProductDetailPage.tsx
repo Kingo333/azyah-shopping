@@ -134,7 +134,7 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
           <div className="flex flex-col lg:grid lg:grid-cols-2 lg:gap-12 lg:px-4">
             {/* Image Gallery - Mobile optimized */}
             <div className="order-1 px-4 py-4 lg:px-0">
-              <div className="aspect-[3/4] md:aspect-[4/5] lg:aspect-square w-full">
+              <div className="aspect-[3/4] md:aspect-[3/4] lg:aspect-[4/5] w-full min-h-[400px] md:min-h-[500px] lg:min-h-[600px]">
                 <EnhancedProductGallery images={images} productTitle={product.title} productId={product.id} hasARMesh={false} />
               </div>
             </div>
