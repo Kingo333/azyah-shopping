@@ -46,6 +46,7 @@ interface SwipeDeckProps {
   };
   searchQuery?: string;
   currency?: string;
+  onProductDetailChange?: (isOpen: boolean) => void;
 }
 
 const cardVariants = {
@@ -84,7 +85,8 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
   gender,
   priceRange,
   searchQuery,
-  currency = 'USD'
+  currency = 'USD',
+  onProductDetailChange
 }) => {
   const [index, setIndex] = useState(0);
   const [showProductDetail, setShowProductDetail] = useState(false);
@@ -403,6 +405,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
   const handleProductClick = (product: SwipeProduct) => {
     setSelectedProduct(product);
     setShowProductDetail(true);
+    onProductDetailChange?.(true);
   };
 
   if (isLoading) {
@@ -460,6 +463,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
           onBack={() => {
             setShowProductDetail(false);
             setSelectedProduct(null);
+            onProductDetailChange?.(false);
           }}
         />
       </div>
