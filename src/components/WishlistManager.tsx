@@ -74,22 +74,38 @@ export const WishlistManager: React.FC = () => {
       const { data, error } = await supabase
         .from('wishlist_items')
         .select(`
-          *,
-          product:products(
+          id,
+          wishlist_id,
+          product_id,
+          added_at,
+          sort_order,
+          products!wishlist_items_product_fkey(
             id,
             title,
             price_cents,
             currency,
             media_urls,
             external_url,
-            brand:brands(name)
+            brands!inner(name)
           )
         `)
         .eq('wishlist_id', selectedWishlist)
         .order('sort_order');
 
       if (error) throw error;
-      return data as WishlistItem[];
+      
+      // Transform the data to match our interface
+      return (data?.map(item => ({
+        id: item.id,
+        wishlist_id: item.wishlist_id,
+        product_id: item.product_id,
+        added_at: item.added_at,
+        sort_order: item.sort_order,
+        product: {
+          ...item.products,
+          brand: item.products?.brands
+        }
+      })) as WishlistItem[]) || [];
     },
     enabled: !!selectedWishlist
   });

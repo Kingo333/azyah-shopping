@@ -366,18 +366,14 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
       } catch (error: any) {
         console.error("Error adding to wishlist:", error.message);
         
-        // Handle duplicate entry error specifically
-        if (error.message.includes('duplicate key value violates unique constraint')) {
-          toast({
-            description: `${product.title} is already in your wishlist!`
-          });
-        } else {
-          toast({
-            title: "Error",
-            description: "Failed to add to wishlist. Please try again.",
-            variant: "destructive"
-          });
-        }
+        // Use the improved error message from the hook
+        const errorMessage = error instanceof Error ? error.message : "Failed to add to wishlist. Please try again.";
+        
+        toast({
+          title: "Error",
+          description: errorMessage,
+          variant: "destructive"
+        });
       }
     });
   }, [user, addToWishlist, toast, nextCard, trackSwipe, trackViewDuration]);

@@ -2226,17 +2226,10 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "fk_wishlist_items_product"
+            foreignKeyName: "wishlist_items_product_fkey"
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fk_wishlist_items_wishlist"
-            columns: ["wishlist_id"]
-            isOneToOne: false
-            referencedRelation: "wishlists"
             referencedColumns: ["id"]
           },
           {
@@ -2244,6 +2237,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wishlist_items_wishlist_fkey"
+            columns: ["wishlist_id"]
+            isOneToOne: false
+            referencedRelation: "wishlists"
             referencedColumns: ["id"]
           },
           {

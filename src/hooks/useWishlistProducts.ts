@@ -56,7 +56,7 @@ export const useWishlistProducts = () => {
           wishlist_id,
           product_id,
           added_at,
-          product:products(
+          products!wishlist_items_product_fkey(
             id,
             title,
             price_cents,
@@ -70,7 +70,15 @@ export const useWishlistProducts = () => {
         .order('added_at', { ascending: false });
 
       if (error) throw error;
-      return (data as WishlistItem[]) || [];
+      
+      // Transform the data to match our interface
+      return (data?.map(item => ({
+        id: item.id,
+        wishlist_id: item.wishlist_id,
+        product_id: item.product_id,
+        added_at: item.added_at,
+        product: item.products
+      })) as WishlistItem[]) || [];
     },
     enabled: !!defaultWishlistId
   });
