@@ -16,6 +16,7 @@ import { CreditsDisplay } from "@/components/CreditsDisplay";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { sanitizeHtml } from "@/utils/sanitizeHtml";
 import { useImageOptimization } from "@/hooks/useImageOptimization";
+import { supabase } from "@/integrations/supabase/client";
 
 type ChatMessage = {
   id: string;
@@ -101,10 +102,9 @@ export default function BeautyConsultantPage() {
       if (!user?.id) return;
       
       try {
-        // Get session history from backend for current mode
-        const { createClient } = await import('@supabase/supabase-js');
-        const supabase = createClient('https://klwolsopucgswhtdlsps.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtsd29sc29wdWNnc3dodGRsc3BzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQyNTQ4NTIsImV4cCI6MjA2OTgzMDg1Mn0.t1GFgR9xiIh7PBmoYs_xKLi1fF1iLTF6pqMlLMHowHQ');
+        console.log(`Switched to ${analysisMode} mode - loading ${analysisMode} conversation history`);
         
+        // Use the existing supabase client to avoid multiple instances
         const sessionPrefix = analysisMode === 'product_analysis' ? 'product_score' : 'chat_mode';
         
         const { data: sessionData } = await supabase
@@ -172,12 +172,16 @@ export default function BeautyConsultantPage() {
 
     loadModeHistory();
 
-    // Clear any uploaded images when switching modes (but keep conversation history)
+    // Clear any uploaded images when switching modes and reset state
     if (analysisMode === 'chat') {
       clearProductAnalysisImages();
+      setHasInitialProductResponse(false); // Reset product response state
     } else {
       clearImage();
     }
+    
+    // Clear input message when switching modes
+    setInputMessage('');
 
     // Show tooltips when switching to product analysis mode (one-time per session)
     if (analysisMode === 'product_analysis' && !hasShownTooltips) {
@@ -344,10 +348,7 @@ export default function BeautyConsultantPage() {
         mode: analysisMode,
         user_id: user.id
       });
-      const {
-        createClient
-      } = await import('@supabase/supabase-js');
-      const supabase = createClient('https://klwolsopucgswhtdlsps.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtsd29sc29wdWNnc3dodGRsc3BzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQyNTQ4NTIsImV4cCI6MjA2OTgzMDg1Mn0.t1GFgR9xiIh7PBmoYs_xKLi1fF1iLTF6pqMlLMHowHQ');
+      // Use the existing supabase client instead of creating a new one
       const response = await supabase.functions.invoke('beauty-consultation', {
         body: payload
       });
