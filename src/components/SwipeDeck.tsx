@@ -447,7 +447,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
       // Fix brand data structure - check if brands exists and has name property
       brand: selectedProduct.brands?.name 
         ? { name: selectedProduct.brands.name }
-        : selectedProduct.brands || { name: selectedProduct.merchant_name || 'Unknown Brand' },
+        : selectedProduct.brands || { name: selectedProduct.merchant_name || 'ASOS' },
       price_cents: selectedProduct.price_cents,
       currency: selectedProduct.currency || 'USD'
     };

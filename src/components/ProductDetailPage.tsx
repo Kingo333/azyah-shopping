@@ -144,14 +144,18 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
               {/* Product Header - Mobile */}
               <div className="md:hidden space-y-2 pt-2">
                 <h1 className="text-xl font-bold leading-tight">{product.title}</h1>
-                <p className="text-sm text-muted-foreground">{product.brand?.name}</p>
+                <p className="text-sm text-muted-foreground">
+                  {product.brand?.name || product.merchant_name || 'Unknown Brand'}
+                </p>
               </div>
 
               {/* Product Header - Desktop */}
               <div className="hidden md:block space-y-4 pt-4">
                 <div className="space-y-2">
-                  
-                  <p className="text-lg text-muted-foreground">{product.brand?.name}</p>
+                  <h1 className="text-2xl lg:text-3xl font-bold leading-tight">{product.title}</h1>
+                  <p className="text-lg text-muted-foreground">
+                    {product.brand?.name || product.merchant_name || 'Unknown Brand'}
+                  </p>
                 </div>
               </div>
 
