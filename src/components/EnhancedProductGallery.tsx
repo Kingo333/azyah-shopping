@@ -122,7 +122,7 @@ export const EnhancedProductGallery: React.FC<EnhancedProductGalleryProps> = ({
 
       {/* Thumbnail Navigation */}
       {images.length > 1 && (
-        <div className="flex gap-2 overflow-x-auto pb-2">
+        <div className="flex gap-2 overflow-x-auto pb-2 mb-4">
           {images.map((image, index) => (
             <motion.button
               key={index}
