@@ -470,7 +470,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
           <motion.div
             key={currentProduct.id}
             ref={cardRef}
-            className="absolute -top-12 sm:top-0 left-0 w-full h-full"
+            className="absolute -top-8 sm:top-0 left-0 w-full h-full"
             style={{
               x,
               y,
@@ -490,12 +490,12 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
             custom={x.get()}
           >
             <Card className="h-full flex flex-col cursor-grab active:cursor-grabbing overflow-hidden min-h-[650px] max-w-md mx-auto" style={{ willChange: 'transform', contain: 'layout style paint', transform: 'translate3d(0,0,0)' }}>
-              <CardContent className="p-4 sm:p-5 lg:pb-6 flex flex-col h-full bg-background/60 backdrop-blur-sm min-h-[600px]">
+              <CardContent className="p-3 sm:p-4 lg:pb-5 flex flex-col h-full bg-background/60 backdrop-blur-sm min-h-[600px]">
                  <div 
                    className="relative w-full overflow-hidden rounded-lg flex-shrink-0"
                    style={{
-                     height: `${getImageHeight(imageAspectRatio) - (window.innerWidth <= 768 ? 30 : 0)}px`,
-                     maxHeight: `${getImageHeight(imageAspectRatio) - (window.innerWidth <= 768 ? 30 : 0)}px`,
+                      height: `${getImageHeight(imageAspectRatio) - (window.innerWidth <= 768 ? 15 : 0)}px`,
+                      maxHeight: `${getImageHeight(imageAspectRatio) - (window.innerWidth <= 768 ? 15 : 0)}px`,
                      overflow: 'hidden'
                    }}
                    onClick={() => setShowInstructions(true)}
@@ -543,7 +543,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                      </div>
                  </div>
                  
-                  <div className="flex flex-col flex-grow space-y-1 mt-2 mx-2">
+                  <div className="flex flex-col flex-grow space-y-1 mt-1 mx-2">
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
                         <h3 className="text-sm sm:text-base font-semibold line-clamp-1">{currentProduct.title}</h3>
