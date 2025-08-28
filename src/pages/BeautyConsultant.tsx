@@ -15,6 +15,7 @@ import { useUserCredits } from "@/hooks/useUserCredits";
 import { CreditsDisplay } from "@/components/CreditsDisplay";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { sanitizeHtml } from "@/utils/sanitizeHtml";
+
 type ChatMessage = {
   id: string;
   type: 'user' | 'assistant' | 'system';
@@ -25,6 +26,7 @@ type ChatMessage = {
   transcription?: string;
   isVoice?: boolean;
 };
+
 type ConsultationResult = {
   success: boolean;
   timestamp: string;
@@ -39,6 +41,7 @@ type ConsultationResult = {
     };
   };
 };
+
 export default function BeautyConsultantPage() {
   const {
     user
@@ -437,7 +440,7 @@ export default function BeautyConsultantPage() {
                 </div>
               </div>
               <p className="text-muted-foreground text-sm max-w-md mx-auto leading-relaxed">
-                Voice conversations, selfie analysis, and personalized beauty advice
+                Voice conversations, selfie analysis, shopping partner product score, and personalized beauty advice
               </p>
             </div>
 
@@ -592,9 +595,6 @@ export default function BeautyConsultantPage() {
                       {loading && <div className="absolute inset-0 rounded-lg overflow-hidden">
                           <div className="absolute inset-0 bg-primary/20 backdrop-blur-[1px]"></div>
                           <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-primary to-transparent animate-[scan_2s_ease-in-out_infinite]"></div>
-                          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-primary animate-pulse">
-                            <div className="w-2 h-2 rounded-full bg-primary animate-ping"></div>
-                          </div>
                         </div>}
                       <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
                         <ImageIcon className="h-2 w-2 text-white" />
