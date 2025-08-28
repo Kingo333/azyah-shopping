@@ -118,33 +118,33 @@ export const EnhancedProductGallery: React.FC<EnhancedProductGalleryProps> = ({
             )}
           </div>
         </div>
-      </div>
 
-      {/* Thumbnail Navigation */}
-      {images.length > 1 && (
-        <div className="flex gap-2 overflow-x-auto pb-2 mb-4">
-          {images.map((image, index) => (
-            <motion.button
-              key={index}
-              onClick={() => handleImageChange(index)}
-              className={`flex-shrink-0 w-16 h-16 rounded border-2 overflow-hidden transition-all duration-200 ${
-                selectedImage === index 
-                  ? 'border-primary shadow-md scale-105' 
-                  : 'border-border hover:border-primary/50'
-              }`}
-              whileHover={{ scale: selectedImage === index ? 1.05 : 1.1 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <img
-                {...getResponsiveImageProps(image, "64px")}
-                alt={`${productTitle} thumbnail ${index + 1}`}
-                className="w-full h-full object-cover"
-                loading="lazy"
-              />
-            </motion.button>
-          ))}
-        </div>
-      )}
+        {/* Thumbnail Navigation - Overlaid at bottom left */}
+        {images.length > 1 && (
+          <div className="absolute bottom-4 left-4 flex gap-2 max-w-[calc(100%-2rem)] overflow-x-auto">
+            {images.map((image, index) => (
+              <motion.button
+                key={index}
+                onClick={() => handleImageChange(index)}
+                className={`flex-shrink-0 w-12 h-12 rounded border-2 overflow-hidden transition-all duration-200 bg-background/80 backdrop-blur-sm ${
+                  selectedImage === index 
+                    ? 'border-primary shadow-md scale-105' 
+                    : 'border-border hover:border-primary/50'
+                }`}
+                whileHover={{ scale: selectedImage === index ? 1.05 : 1.1 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <img
+                  {...getResponsiveImageProps(image, "48px")}
+                  alt={`${productTitle} thumbnail ${index + 1}`}
+                  className="w-full h-full object-cover"
+                  loading="lazy"
+                />
+              </motion.button>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* Image Counter */}
       <div className="flex items-center justify-between text-sm text-muted-foreground">
