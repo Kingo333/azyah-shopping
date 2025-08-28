@@ -126,7 +126,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
   });
 
   const currentProduct = useMemo(() => products[index] || null, [products, index]);
-  const { addToWishlist, isLoading: wishlistLoading } = useWishlist(currentProduct?.id);
+  const { addToWishlist, isLoading: wishlistLoading } = useWishlist();
 
   // Memoized and debounced image height calculation
   const getImageHeight = useMemo(() => {
@@ -342,6 +342,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
       return;
     }
 
+
     // Move to next card immediately for smooth animation
     nextCard();
 
@@ -361,7 +362,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
         });
 
         // Handle wishlist operation
-        await addToWishlist();
+        await addToWishlist(product.id);
         toast({
           description: `${product.title} added to your wishlist!`
         });
@@ -378,7 +379,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
         });
       }
     });
-  }, [user, addToWishlist, toast, nextCard, trackSwipe, trackViewDuration]);
+  }, [user, addToWishlist, toast, nextCard, trackSwipe, trackViewDuration, index, products]);
 
   const handleSwipeEnd = useCallback((event: any, info: PanInfo) => {
     const currentProduct = products[index];

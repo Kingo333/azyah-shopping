@@ -39,7 +39,7 @@ const ProductCard: React.FC<{
     }
 
     try {
-      await addToWishlist();
+      await addToWishlist(product.id);
       toast({
         description: `${product.title} added to your wishlist!`
       });

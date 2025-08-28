@@ -85,12 +85,14 @@ export const useWishlist = (productId?: string) => {
   }, [wishlistItem]);
 
   const addToWishlistMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (targetProductId?: string) => {
+      const actualProductId = targetProductId || productId;
+      
       if (!user?.id) {
         throw new Error('Please log in to add items to your wishlist');
       }
       
-      if (!productId) {
+      if (!actualProductId) {
         throw new Error('Invalid product selected');
       }
 
@@ -106,7 +108,7 @@ export const useWishlist = (productId?: string) => {
         .from('wishlist_items')
         .select('id')
         .eq('wishlist_id', wishlistId)
-        .eq('product_id', productId)
+        .eq('product_id', actualProductId)
         .single();
 
       if (existingItem) {
@@ -117,7 +119,7 @@ export const useWishlist = (productId?: string) => {
         .from('wishlist_items')
         .insert({
           wishlist_id: wishlistId,
-          product_id: productId,
+          product_id: actualProductId,
           sort_order: 0
         })
         .select()
