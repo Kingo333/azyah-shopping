@@ -10,8 +10,31 @@ export const useWishlist = (productId?: string) => {
   const queryClient = useQueryClient();
   const [wishlist, setWishlist] = useState<WishlistItem | null>(null);
 
-  // Get user's default wishlist
-  const { data: userWishlists } = useQuery({
+  // Create default wishlist mutation
+  const createDefaultWishlistMutation = useMutation({
+    mutationFn: async () => {
+      if (!user?.id) throw new Error('User not authenticated');
+      
+      const { data, error } = await supabase
+        .from('wishlists')
+        .insert({
+          user_id: user.id,
+          title: 'My Wishlist',
+          description: 'My default wishlist'
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data as Wishlist;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['wishlists'] });
+    }
+  });
+
+  // Get user's wishlists with auto-creation
+  const { data: userWishlists, isLoading: wishlistsLoading } = useQuery({
     queryKey: ['wishlists', user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
@@ -23,9 +46,17 @@ export const useWishlist = (productId?: string) => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
+      
+      // Auto-create default wishlist if none exists
+      if (!data || data.length === 0) {
+        const newWishlist = await createDefaultWishlistMutation.mutateAsync();
+        return [newWishlist];
+      }
+      
       return data as Wishlist[];
     },
-    enabled: !!user?.id
+    enabled: !!user?.id,
+    retry: 1
   });
 
   const defaultWishlistId = userWishlists?.[0]?.id;
@@ -55,21 +86,51 @@ export const useWishlist = (productId?: string) => {
 
   const addToWishlistMutation = useMutation({
     mutationFn: async () => {
-      if (!user?.id || !productId || !defaultWishlistId) {
-        throw new Error('Missing required data');
+      if (!user?.id) {
+        throw new Error('Please log in to add items to your wishlist');
+      }
+      
+      if (!productId) {
+        throw new Error('Invalid product selected');
+      }
+
+      // Ensure we have a wishlist
+      let wishlistId = defaultWishlistId;
+      if (!wishlistId) {
+        const newWishlist = await createDefaultWishlistMutation.mutateAsync();
+        wishlistId = newWishlist.id;
+      }
+
+      // Check if item already exists to provide better error message
+      const { data: existingItem } = await supabase
+        .from('wishlist_items')
+        .select('id')
+        .eq('wishlist_id', wishlistId)
+        .eq('product_id', productId)
+        .single();
+
+      if (existingItem) {
+        throw new Error('Item is already in your wishlist');
       }
 
       const { data, error } = await supabase
         .from('wishlist_items')
         .insert({
-          wishlist_id: defaultWishlistId,
+          wishlist_id: wishlistId,
           product_id: productId,
           sort_order: 0
         })
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Wishlist error details:', error);
+        if (error.code === '23505') {
+          throw new Error('Item is already in your wishlist');
+        }
+        throw new Error(`Failed to add to wishlist: ${error.message}`);
+      }
+      
       return data;
     },
     onSuccess: (data) => {
@@ -100,6 +161,7 @@ export const useWishlist = (productId?: string) => {
     isInWishlist: !!wishlist,
     addToWishlist: addToWishlistMutation.mutateAsync,
     removeFromWishlist: removeFromWishlistMutation.mutateAsync,
-    isLoading: addToWishlistMutation.isPending || removeFromWishlistMutation.isPending
+    isLoading: addToWishlistMutation.isPending || removeFromWishlistMutation.isPending || wishlistsLoading,
+    hasWishlist: !!defaultWishlistId
   };
 };

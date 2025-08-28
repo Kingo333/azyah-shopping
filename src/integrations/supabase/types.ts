@@ -2206,25 +2206,39 @@ export type Database = {
         Row: {
           added_at: string
           id: string
-          product_id: string | null
+          product_id: string
           sort_order: number | null
-          wishlist_id: string | null
+          wishlist_id: string
         }
         Insert: {
           added_at?: string
           id?: string
-          product_id?: string | null
+          product_id: string
           sort_order?: number | null
-          wishlist_id?: string | null
+          wishlist_id: string
         }
         Update: {
           added_at?: string
           id?: string
-          product_id?: string | null
+          product_id?: string
           sort_order?: number | null
-          wishlist_id?: string | null
+          wishlist_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_wishlist_items_product"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_wishlist_items_wishlist"
+            columns: ["wishlist_id"]
+            isOneToOne: false
+            referencedRelation: "wishlists"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "wishlist_items_product_id_fkey"
             columns: ["product_id"]
