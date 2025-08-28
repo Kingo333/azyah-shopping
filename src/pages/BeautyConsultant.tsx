@@ -14,6 +14,7 @@ import { VoiceMessage } from "@/components/VoiceMessage";
 import { useUserCredits } from "@/hooks/useUserCredits";
 import { CreditsDisplay } from "@/components/CreditsDisplay";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { sanitizeHtml } from "@/utils/sanitizeHtml";
 type ChatMessage = {
   id: string;
   type: 'user' | 'assistant' | 'system';
@@ -517,7 +518,7 @@ export default function BeautyConsultantPage() {
                               </div>}
                             <div className="text-sm leading-relaxed">
                               <div dangerouslySetInnerHTML={{
-                          __html: message.content
+                          __html: sanitizeHtml(message.content)
                         }} />
                             </div>
                           </div>}

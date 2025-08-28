@@ -2451,6 +2451,13 @@ export type Database = {
         Args: { query_text: string }
         Returns: number[]
       }
+      get_brand_contact_info: {
+        Args: { brand_id_param: string }
+        Returns: {
+          contact_email: string
+          owner_user_id: string
+        }[]
+      }
       get_cleanup_stats: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -2517,6 +2524,13 @@ export type Database = {
           display_name: string
           user_id: string
           website: string
+        }[]
+      }
+      get_retailer_contact_info: {
+        Args: { retailer_id_param: string }
+        Returns: {
+          contact_email: string
+          owner_user_id: string
         }[]
       }
       get_trending_categories: {
