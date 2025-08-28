@@ -11,7 +11,6 @@ import { useSmartSwipeProducts } from "@/hooks/useSmartSwipeProducts";
 import { getResponsiveImageProps } from "@/utils/asosImageUtils";
 import { InvestorContactModal } from "@/components/InvestorContactModal";
 import modernFashionHero from "@/assets/modern-fashion-hero.jpg";
-
 export default function Landing() {
   const [isVisible, setIsVisible] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'swipe'>('grid');
@@ -178,7 +177,7 @@ export default function Landing() {
           <div className="flex items-center gap-2 lg:gap-3">
             <Crown className="w-3 h-3 sm:w-4 sm:h-4 lg:w-5 lg:h-5 flex-shrink-0" />
             <span className="font-medium text-xs sm:text-xs lg:text-sm">
-              <span className="hidden sm:inline">Premium 30 AED/month: Unlimited AI Try-On • AI Beauty Consultant • Toy Replicas • Priority Support</span>
+              <span className="hidden sm:inline">Premium 30 AED/month: Daily AI Try-On • AI Beauty Consultant • AI Mood Board • Priority Support</span>
               <span className="sm:hidden">Premium features available</span>
             </span>
           </div>
@@ -443,14 +442,10 @@ export default function Landing() {
             </div>) : (/* Swipe Interface */
         <div className="mb-12">
               <div className="relative w-full max-w-sm mx-auto h-[600px]">
-                <LandingSwipeDeck 
-                  filter="all" 
-                  subcategory="" 
-                  gender=""
-                  priceRange={{ min: 0, max: 1000 }} 
-                  searchQuery="" 
-                  currency="USD" 
-                />
+                <LandingSwipeDeck filter="all" subcategory="" gender="" priceRange={{
+              min: 0,
+              max: 1000
+            }} searchQuery="" currency="USD" />
               </div>
               <div className="text-center mt-8">
                 <p className="text-sm text-gray-600 mb-4">
@@ -565,11 +560,7 @@ export default function Landing() {
             <div className="relative">
               <div className="aspect-[4/5] bg-gradient-to-br from-primary/20 to-primary/10 rounded-2xl overflow-hidden shadow-2xl border border-white/20">
                 <div className="w-full h-full bg-gradient-to-br from-primary/30 to-primary/20 flex items-center justify-center relative overflow-hidden">
-                  <img 
-                    src={modernFashionHero} 
-                    alt="Modern fashion model showcasing contemporary design"
-                    className="absolute inset-0 w-full h-full object-cover"
-                  />
+                  <img src={modernFashionHero} alt="Modern fashion model showcasing contemporary design" className="absolute inset-0 w-full h-full object-cover" />
                   <div className="absolute inset-0 bg-gradient-to-t from-primary/40 to-transparent"></div>
                   <div className="relative z-10 text-center space-y-4">
                     <p className="text-white font-medium text-lg drop-shadow-lg">Modern Fashion</p>
