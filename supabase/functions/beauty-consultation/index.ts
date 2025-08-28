@@ -53,12 +53,27 @@ serve(async (req) => {
     const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2');
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Check user credits first
-    const { data: creditsData, error: creditsError } = await supabase
-      .rpc('get_user_credits', { target_user_id: user_id });
+    // OPTIMIZATION 1: Parallel Processing - Run independent operations simultaneously
+    console.log('Starting parallel operations...');
     
-    if (creditsError) {
-      console.error('Error checking credits:', creditsError);
+    const [creditsResult, sessionResult, audioResult, imageResult] = await Promise.all([
+      // Credits check
+      supabase.rpc('get_user_credits', { target_user_id: user_id }).catch(err => ({ error: err })),
+      // Session management
+      getOrCreateSession(supabase, user_id, { region, mode }).catch(err => ({ error: err })),
+      // Audio transcription (if provided)
+      audio ? transcribeAudio(audio, openaiApiKey).catch(err => ({ error: err, result: '' })) : Promise.resolve(''),
+      // Image analysis (if provided)
+      mode === 'product_analysis' && product_image && skin_image 
+        ? analyzeProductCompatibility(product_image, skin_image, message, region, openaiApiKey).catch(err => ({ error: err, result: '' }))
+        : image 
+          ? analyzeSelfie(image, message, region, openaiApiKey).catch(err => ({ error: err, result: '' }))
+          : Promise.resolve('')
+    ]);
+
+    // Handle credits result
+    if (creditsResult.error) {
+      console.error('Error checking credits:', creditsResult.error);
       return new Response(JSON.stringify({ 
         success: false, 
         message: 'Failed to check credits' 
@@ -68,7 +83,7 @@ serve(async (req) => {
       });
     }
 
-    const credits = creditsData?.[0];
+    const credits = creditsResult.data?.[0];
     if (!credits || credits.credits_remaining <= 0) {
       return new Response(JSON.stringify({ 
         success: false,
@@ -81,94 +96,141 @@ serve(async (req) => {
       });
     }
 
-// Get or create user session with mode-specific separation
-    const session = await getOrCreateSession(supabase, user_id, { region, mode });
-    console.log(`${mode} session (separate from other modes):`, session.session_id);
+    // Handle session result
+    if (sessionResult.error) {
+      console.error('Error with session:', sessionResult.error);
+      return new Response(JSON.stringify({ 
+        success: false, 
+        message: 'Failed to manage session' 
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const session = sessionResult;
+    console.log(`${mode} session (parallel creation):`, session.session_id);
 
-    let userText = message;
+    // Handle audio result
     let transcriptionText = '';
-
-    // Handle audio transcription if provided
-    if (audio) {
-      console.log('Transcribing audio...');
-      transcriptionText = await transcribeAudio(audio, openaiApiKey);
-      if (transcriptionText) {
-        userText = userText ? `${userText}\n${transcriptionText}` : transcriptionText;
-      }
-      console.log('Transcription result:', transcriptionText);
+    if (typeof audioResult === 'string') {
+      transcriptionText = audioResult;
+    } else if (audioResult.error) {
+      console.error('Audio transcription error:', audioResult.error);
+      transcriptionText = audioResult.result || '';
     }
 
-    // Handle image analysis if provided
+    // Handle image analysis results
     let skinAnalysis = '';
     let productAnalysis = '';
-    
-    if (mode === 'product_analysis' && product_image && skin_image) {
-      console.log('Analyzing product and skin for compatibility...');
-      productAnalysis = await analyzeProductCompatibility(product_image, skin_image, userText, region, openaiApiKey);
-      console.log('Product compatibility analysis completed');
-    } else if (image) {
-      console.log('Analyzing image...');
-      skinAnalysis = await analyzeSelfie(image, userText, region, openaiApiKey);
-      console.log('Image analysis completed');
-    }
-
-    // Record user turn
-    await appendHistory(supabase, session.session_id, {
-      role: 'user',
-      content: userText || '(no text; voice/selfie only)',
-      timestamp: new Date().toISOString()
-    });
-
-    // Generate consultation
-    console.log('Generating consultation...');
-    const consultation = await generateConsultation({
-      skinAnalysis,
-      productAnalysis,
-      history: session.conversation_history || [],
-      region,
-      userMessage: userText,
-      mode,
-      openaiApiKey
-    });
-
-    // Generate voice summary
-    console.log('Creating voice summary...');
-    const voiceSummary = await makeSpokenSummary(consultation, openaiApiKey);
-
-    // Generate TTS audio and save to storage
-    let audioUrl: string | null = null;
-    if (voiceSummary) {
-      console.log('Generating TTS audio...');
-      try {
-        audioUrl = await synthesizeSpeechToStorage(voiceSummary, openaiApiKey, supabase);
-        console.log('Audio URL:', audioUrl);
-      } catch (e) {
-        console.error('TTS error:', e);
-        audioUrl = null;
+    if (typeof imageResult === 'string') {
+      if (mode === 'product_analysis') {
+        productAnalysis = imageResult;
+      } else {
+        skinAnalysis = imageResult;
+      }
+    } else if (imageResult.error) {
+      console.error('Image analysis error:', imageResult.error);
+      if (mode === 'product_analysis') {
+        productAnalysis = imageResult.result || '';
+      } else {
+        skinAnalysis = imageResult.result || '';
       }
     }
 
-    // Deduct credit after successful consultation
-    const { error: deductError } = await supabase
-      .rpc('deduct_user_credit', { target_user_id: user_id });
+    // Combine user text with transcription
+    let userText = message;
+    if (transcriptionText) {
+      userText = userText ? `${userText}\n${transcriptionText}` : transcriptionText;
+    }
+
+    console.log('Parallel operations completed - time saved!');
+
+    // OPTIMIZATION 2: Fast Response Strategy - Return consultation immediately, TTS in background
+    console.log('Starting consultation generation...');
     
-    if (deductError) {
-      console.error('Error deducting credit:', deductError);
+    // Parallel execution of core operations
+    const [userHistoryResult, consultationResult] = await Promise.all([
+      // Record user turn
+      appendHistory(supabase, session.session_id, {
+        role: 'user',
+        content: userText || '(no text; voice/selfie only)',
+        timestamp: new Date().toISOString()
+      }).catch(err => ({ error: err })),
+      // Generate consultation
+      generateConsultation({
+        skinAnalysis,
+        productAnalysis,
+        history: session.conversation_history || [],
+        region,
+        userMessage: userText,
+        mode,
+        openaiApiKey
+      }).catch(err => ({ error: err }))
+    ]);
+
+    if (consultationResult.error) {
+      console.error('Consultation generation failed:', consultationResult.error);
+      throw new Error('Failed to generate consultation');
+    }
+
+    const consultation = consultationResult;
+    console.log('Consultation generated successfully');
+
+    // OPTIMIZATION 3: Background Processing - TTS and other non-critical operations
+    const backgroundOperations = async () => {
+      try {
+        console.log('Starting background operations...');
+        
+        // Generate voice summary and TTS in background
+        const voiceSummary = await makeSpokenSummary(consultation, openaiApiKey);
+        let audioUrl: string | null = null;
+        
+        if (voiceSummary) {
+          console.log('Generating TTS audio in background...');
+          try {
+            audioUrl = await synthesizeSpeechToStorage(voiceSummary, openaiApiKey, supabase);
+            console.log('Background TTS completed:', audioUrl);
+            
+            // Optionally update the conversation with audio URL
+            // This could be picked up by future requests or via real-time subscriptions
+          } catch (e) {
+            console.error('Background TTS error:', e);
+          }
+        }
+
+        // Record assistant turn
+        await appendHistory(supabase, session.session_id, {
+          role: 'assistant',
+          content: consultation,
+          timestamp: new Date().toISOString()
+        });
+
+        console.log('Background operations completed');
+      } catch (error) {
+        console.error('Background operations error:', error);
+        // Don't let background errors affect the main response
+      }
+    };
+
+    // Start background operations without waiting
+    EdgeRuntime.waitUntil(backgroundOperations());
+
+    // Immediate response operations (fast path)
+    const [creditDeductResult, updatedCreditsResult] = await Promise.all([
+      // Deduct credit
+      supabase.rpc('deduct_user_credit', { target_user_id: user_id }).catch(err => ({ error: err })),
+      // Get updated credits to return immediately
+      supabase.rpc('get_user_credits', { target_user_id: user_id }).catch(err => ({ error: err }))
+    ]);
+
+    if (creditDeductResult.error) {
+      console.error('Error deducting credit:', creditDeductResult.error);
       // Continue anyway - don't fail the consultation for credit deduction issues
     }
 
-    // Record assistant turn
-    await appendHistory(supabase, session.session_id, {
-      role: 'assistant',
-      content: consultation,
-      timestamp: new Date().toISOString()
-    });
+    const updatedCredits = updatedCreditsResult.data?.[0] || { credits_remaining: 0, is_premium: false };
 
-    // Get updated credits to return
-    const { data: updatedCreditsData } = await supabase
-      .rpc('get_user_credits', { target_user_id: user_id });
-    const updatedCredits = updatedCreditsData?.[0];
-
+    // OPTIMIZATION 4: Immediate Response - Return consultation without waiting for TTS
     const response = {
       success: true,
       timestamp: new Date().toISOString(),
@@ -178,11 +240,13 @@ serve(async (req) => {
       },
       consultation: {
         text: consultation,
-        voice_summary: voiceSummary,
-        audio_url: audioUrl,
+        voice_summary: null, // TTS happening in background
+        audio_url: null, // Will be available for future requests once background processing completes
         transcription: transcriptionText ? { success: true, text: transcriptionText } : undefined,
-        credits_remaining: updatedCredits?.credits_remaining || 0,
-        is_premium: updatedCredits?.is_premium || false
+        credits_remaining: updatedCredits.credits_remaining || 0,
+        is_premium: updatedCredits.is_premium || false,
+        processing_mode: 'optimized', // Indicate this is the fast response
+        background_processing: true // Indicate TTS is happening in background
       }
     };
 

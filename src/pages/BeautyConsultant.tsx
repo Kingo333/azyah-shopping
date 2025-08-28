@@ -15,6 +15,7 @@ import { useUserCredits } from "@/hooks/useUserCredits";
 import { CreditsDisplay } from "@/components/CreditsDisplay";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { sanitizeHtml } from "@/utils/sanitizeHtml";
+import { useImageOptimization } from "@/hooks/useImageOptimization";
 
 type ChatMessage = {
   id: string;
@@ -51,6 +52,7 @@ export default function BeautyConsultantPage() {
     loading: creditsLoading,
     updateCredits
   } = useUserCredits();
+  const { getOptimizedBase64 } = useImageOptimization();
   const [messages, setMessages] = useState<ChatMessage[]>([{
     id: '1',
     type: 'assistant',
@@ -257,15 +259,31 @@ export default function BeautyConsultantPage() {
     console.log(`Starting ${analysisMode} consultation...`);
     
     try {
-      // Convert files to base64 for the API
+      // OPTIMIZATION 5: Image Optimization - Compress images before upload
       let imageBase64 = '';
       let audioBase64 = '';
+      
+      const compressionTasks = [];
+      
       if (image) {
-        imageBase64 = await fileToBase64(image);
+        compressionTasks.push(
+          getOptimizedBase64(image, { maxWidth: 1024, maxHeight: 1024, quality: 0.8 })
+            .then(result => { imageBase64 = result; })
+            .catch(err => { 
+              console.warn('Image optimization failed, using original:', err);
+              return fileToBase64(image).then(result => { imageBase64 = result; });
+            })
+        );
       }
+      
       if (audioBlob) {
-        audioBase64 = await blobToBase64(audioBlob);
+        compressionTasks.push(
+          blobToBase64(audioBlob).then(result => { audioBase64 = result; })
+        );
       }
+      
+      // Wait for all compression tasks to complete
+      await Promise.all(compressionTasks);
 
       // Create request payload with enhanced logging
       const payload: any = {
@@ -275,21 +293,40 @@ export default function BeautyConsultantPage() {
         mode: analysisMode
       };
       
+      // OPTIMIZATION 6: Parallel Image Processing for Product Analysis
       if (analysisMode === 'product_analysis') {
+        const imageCompressionTasks = [];
+        
         if (productImage) {
-          const productBase64 = await fileToBase64(productImage);
-          payload.product_image = productBase64;
+          imageCompressionTasks.push(
+            getOptimizedBase64(productImage, { maxWidth: 1024, maxHeight: 1024, quality: 0.8 })
+              .then(result => { payload.product_image = result; })
+              .catch(err => {
+                console.warn('Product image optimization failed, using original:', err);
+                return fileToBase64(productImage).then(result => { payload.product_image = result; });
+              })
+          );
         }
+        
         if (skinImage) {
-          const skinBase64 = await fileToBase64(skinImage);
-          payload.skin_image = skinBase64;
+          imageCompressionTasks.push(
+            getOptimizedBase64(skinImage, { maxWidth: 1024, maxHeight: 1024, quality: 0.8 })
+              .then(result => { payload.skin_image = result; })
+              .catch(err => {
+                console.warn('Skin image optimization failed, using original:', err);
+                return fileToBase64(skinImage).then(result => { payload.skin_image = result; });
+              })
+          );
         }
-        console.log('Product analysis payload prepared with images');
+        
+        // Wait for all product analysis image processing to complete
+        await Promise.all(imageCompressionTasks);
+        console.log('Product analysis payload prepared with optimized images');
       } else {
         if (imageBase64) {
           payload.image = imageBase64;
         }
-        console.log('Chat mode payload prepared');
+        console.log('Chat mode payload prepared with optimized image');
       }
       
       if (audioBase64) {
