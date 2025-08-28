@@ -1,10 +1,9 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useRetailerBrands } from '@/hooks/useRetailerBrands';
-import { Eye, ShoppingBag } from 'lucide-react';
+import { Eye, ShoppingBag, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface RetailerBrandsListProps {
@@ -38,6 +37,10 @@ const RetailerBrandsList: React.FC<RetailerBrandsListProps> = ({ retailerId }) =
       </div>
     );
   }
+
+  const handleViewBrand = (brandId: string) => {
+    navigate(`/retailer-portal/brands/${brandId}`);
+  };
 
   if (brands.length === 0) {
     // Show ASOS as an official available brand even if no products are imported yet
@@ -105,51 +108,68 @@ const RetailerBrandsList: React.FC<RetailerBrandsListProps> = ({ retailerId }) =
     );
   }
 
-  const handleViewBrand = (brandId: string) => {
-    navigate(`/retailer-portal/brands/${brandId}`);
-  };
-
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-      {brands.map((brand) => (
-        <Card key={brand.id} className="hover:shadow-md transition-shadow">
-          <CardContent className="p-6">
-            <div className="flex items-start gap-4 mb-4">
-              <div className="w-16 h-16 bg-muted rounded-lg overflow-hidden flex-shrink-0">
-                {brand.logo_url ? (
-                  <img
-                    src={brand.logo_url}
-                    alt={brand.name}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-muted-foreground font-semibold">
-                    {brand.name.charAt(0).toUpperCase()}
-                  </div>
-                )}
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold">Connected Brands</h2>
+          <p className="text-muted-foreground">
+            Manage your brand partnerships and inventory
+          </p>
+        </div>
+        <Button
+          onClick={() => {
+            // Navigate to ASOS brand page for product import
+            handleViewBrand('4201d7f8-7632-4d4d-8baa-fb48cfade0ce');
+          }}
+          className="gap-2"
+        >
+          <Plus className="h-4 w-4" />
+          Add Brand Partnership
+        </Button>
+      </div>
+      
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {brands.map((brand) => (
+          <Card key={brand.id} className="hover:shadow-md transition-shadow">
+            <CardContent className="p-6">
+              <div className="flex items-start gap-4 mb-4">
+                <div className="w-16 h-16 bg-muted rounded-lg overflow-hidden flex-shrink-0">
+                  {brand.logo_url ? (
+                    <img
+                      src={brand.logo_url}
+                      alt={brand.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-muted-foreground font-semibold">
+                      {brand.name.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold truncate">{brand.name}</h3>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    {brand.bio || 'No description available'}
+                  </p>
+                  <Badge variant="secondary" className="text-xs">
+                    {brand.product_count} Products
+                  </Badge>
+                </div>
               </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="font-semibold truncate">{brand.name}</h3>
-                <p className="text-sm text-muted-foreground mb-2">
-                  {brand.bio || 'No description available'}
-                </p>
-                <Badge variant="secondary" className="text-xs">
-                  {brand.product_count} Products
-                </Badge>
-              </div>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handleViewBrand(brand.id)}
-              className="w-full"
-            >
-              <Eye className="h-4 w-4 mr-2" />
-              View Brand
-            </Button>
-          </CardContent>
-        </Card>
-      ))}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleViewBrand(brand.id)}
+                className="w-full"
+              >
+                <Eye className="h-4 w-4 mr-2" />
+                View Brand
+              </Button>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
     </div>
   );
 };

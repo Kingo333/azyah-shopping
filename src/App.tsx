@@ -39,6 +39,7 @@ import Privacy from './pages/Privacy';
 
 import BrandPortal from './pages/BrandPortal';
 import RetailerPortal from './pages/RetailerPortal';
+import RetailerBrandDetail from './pages/RetailerBrandDetail';
 import NotFound from './pages/NotFound';
 
 const queryClient = new QueryClient({
@@ -164,6 +165,11 @@ function App() {
                   <Route path="/retailer-portal" element={
                     <ProtectedRoute roles={['retailer', 'admin']}>
                       <RetailerPortal />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/retailer-portal/brands/:brandId" element={
+                    <ProtectedRoute roles={['retailer', 'admin']}>
+                      <RetailerBrandDetail />
                     </ProtectedRoute>
                   } />
                   <Route path="/terms" element={<Terms />} />
