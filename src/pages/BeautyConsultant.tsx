@@ -91,18 +91,24 @@ export default function BeautyConsultantPage() {
     scrollToBottom();
   }, [messages]);
 
-  // Update greeting message when mode changes
+  // Update greeting message when mode changes and clear conversation history
   useEffect(() => {
-    setMessages(prev => {
-      const newMessages = [...prev];
-      if (newMessages.length > 0 && newMessages[0].id === '1') {
-        newMessages[0] = {
-          ...newMessages[0],
-          content: analysisMode === 'product_analysis' ? "Hi! I'm Azyah, your AI Beauty Consultant. Upload a product and your skin/face photo to get a compatibility score with confidence rating! Use me in stores while shopping. Available in English & (متوفر باللغة العربية) 💄✨" : "Hi! I'm Azyah, your AI Beauty Consultant. Upload a selfie, speak to me, or ask any beauty question for personalized recommendations! Available in English & (متوفر باللغة العربية) 💄✨"
-        };
-      }
-      return newMessages;
-    });
+    // Clear all messages except greeting when switching modes
+    setMessages([{
+      id: '1',
+      type: 'assistant',
+      content: analysisMode === 'product_analysis' 
+        ? "Hi! I'm Azyah, your AI Beauty Consultant. Upload a product and your skin/face photo to get a detailed compatibility score (0-100%) with breakdown! Perfect for shopping decisions. Available in English & (متوفر باللغة العربية) 💄✨" 
+        : "Hi! I'm Azyah, your AI Beauty Consultant. Upload a selfie, speak to me, or ask any beauty question for personalized recommendations! Available in English & (متوفر باللغة العربية) 💄✨",
+      timestamp: new Date()
+    }]);
+
+    // Clear any uploaded images when switching modes
+    if (analysisMode === 'chat') {
+      clearProductAnalysisImages();
+    } else {
+      clearImage();
+    }
 
     // Show tooltips when switching to product analysis mode (one-time per session)
     if (analysisMode === 'product_analysis' && !hasShownTooltips) {
@@ -115,6 +121,8 @@ export default function BeautyConsultantPage() {
         setShowImageTooltips(false);
       }, 1000);
     }
+
+    console.log(`Switched to ${analysisMode} mode - conversation history cleared`);
   }, [analysisMode, hasShownTooltips]);
   const validateImageFile = (file: File) => {
     if (!file.type.startsWith('image/')) {
@@ -163,11 +171,14 @@ export default function BeautyConsultantPage() {
   const submitConsultation = async (message: string, image?: File, audioBlob?: Blob) => {
     setLoading(true);
 
-    // Validate product analysis mode requirements
-    if (analysisMode === 'product_analysis' && (!productImage || !skinImage)) {
-      toast.error('Please upload both product and skin images for analysis');
-      setLoading(false);
-      return;
+    // Enhanced validation for product analysis mode
+    if (analysisMode === 'product_analysis') {
+      if (!productImage || !skinImage) {
+        toast.error('Both product and skin/face images are required for compatibility scoring');
+        setLoading(false);
+        return;
+      }
+      console.log('Product Score mode: Both images validated ✓');
     }
     
     // Enhanced validation

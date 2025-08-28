@@ -81,9 +81,9 @@ serve(async (req) => {
       });
     }
 
-    // Get or create user session with mode-specific separation
+// Get or create user session with mode-specific separation
     const session = await getOrCreateSession(supabase, user_id, { region, mode });
-    console.log(`${mode} session:`, session.session_id);
+    console.log(`${mode} session (separate from other modes):`, session.session_id);
 
     let userText = message;
     let transcriptionText = '';
@@ -209,9 +209,24 @@ serve(async (req) => {
 
 // Session management functions
 async function getOrCreateSession(supabase: any, userId: string, preferences: Record<string, any> = {}): Promise<SessionData> {
-  // Include mode in session identification for separate conversations
+  // Include mode in session identification for COMPLETE separation
   const mode = preferences.mode || 'chat';
-  const sessionPrefix = mode === 'product_analysis' ? 'product_session' : 'chat_session';
+  const sessionPrefix = mode === 'product_analysis' ? 'product_score' : 'chat_mode';
+  
+  // Ensure complete separation: deactivate other mode sessions
+  if (mode === 'product_analysis') {
+    await supabase
+      .from('user_sessions')
+      .update({ is_active: false })
+      .eq('user_id', userId)
+      .like('session_id', `chat_mode_${userId}_%`);
+  } else {
+    await supabase
+      .from('user_sessions')
+      .update({ is_active: false })
+      .eq('user_id', userId)
+      .like('session_id', `product_score_${userId}_%`);
+  }
   
   // Try to get existing active session for this specific mode
   const { data: existingSession, error } = await supabase
@@ -226,7 +241,7 @@ async function getOrCreateSession(supabase: any, userId: string, preferences: Re
     .maybeSingle();
 
   if (!error && existingSession) {
-    console.log(`Found existing ${mode} session:`, existingSession.session_id);
+    console.log(`Found existing ${mode} session (isolated):`, existingSession.session_id);
     // Update last activity and extend expiration
     const { data: updated } = await supabase
       .from('user_sessions')
@@ -242,7 +257,7 @@ async function getOrCreateSession(supabase: any, userId: string, preferences: Re
 
   // Create new session with mode-specific ID
   const sessionId = `${sessionPrefix}_${userId}_${Date.now()}`;
-  console.log(`Creating new ${mode} session:`, sessionId);
+  console.log(`Creating new isolated ${mode} session:`, sessionId);
   
   const { data: created, error: createError } = await supabase
     .from('user_sessions')
@@ -251,7 +266,7 @@ async function getOrCreateSession(supabase: any, userId: string, preferences: Re
       session_id: sessionId,
       preferences: { ...preferences, mode },
       conversation_history: [],
-      session_data: { mode },
+      session_data: { mode, isolated: true },
       session_expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours
     })
     .select()
@@ -373,28 +388,42 @@ async function analyzeProductCompatibility(productImage: string, skinImage: stri
   const systemPrompt = `
 You are Azyah, a professional beauty consultant specializing in product compatibility analysis.
 
+CRITICAL: You MUST provide a numerical compatibility score in your response.
+
 TASK: Analyze the compatibility between the beauty product and the person's skin tone/type.
 
-ANALYSIS STEPS:
+ANALYSIS METHODOLOGY:
 1. PRODUCT IDENTIFICATION: Identify the product type, shade, finish, and undertones
 2. SKIN ANALYSIS: Analyze skin tone depth, undertones, and type from the skin/face image
-3. COMPATIBILITY SCORE: Rate compatibility 0-100% based on:
-   - Undertone matching (warm/cool/neutral)
-   - Shade depth compatibility
-   - Skin type suitability
-   - Product formulation match
+3. COMPATIBILITY SCORING (0-100%):
+   - Undertone matching: 30 points (warm/cool/neutral compatibility)
+   - Shade depth compatibility: 25 points (light/medium/deep match)
+   - Skin type suitability: 20 points (oily/dry/sensitive/combination)
+   - Product formulation match: 15 points (texture, coverage, finish)
+   - Overall harmony: 10 points (how well it complements overall features)
 
-RESPONSE FORMAT:
-- Start with: "PRODUCT: [product description]"
-- Then: "SKIN: [skin analysis]" 
-- Then: "COMPATIBILITY SCORE: [0-100]%"
-- Explain the reasoning
-- Give application tips
-- Suggest alternatives if score is below 70%
+MANDATORY RESPONSE FORMAT:
+**COMPATIBILITY SCORE: [X]%** (This MUST be the first line)
 
-Keep under 400 words. Be specific and helpful.
-Region context: ${region || 'Not specified'}
-User says: ${userMessage || 'Analyze if this product works for my skin.'}
+PRODUCT ANALYSIS: [Detailed product description including type, shade, undertones, finish]
+
+SKIN ANALYSIS: [Skin tone depth, undertones, type, and specific characteristics]
+
+COMPATIBILITY BREAKDOWN:
+- Undertone Match: [score]/30 points - [explanation]
+- Shade Depth: [score]/25 points - [explanation] 
+- Skin Type Fit: [score]/20 points - [explanation]
+- Formula Match: [score]/15 points - [explanation]
+- Overall Harmony: [score]/10 points - [explanation]
+
+RECOMMENDATION: [Clear verdict - Perfect Match/Good Match/Acceptable/Not Recommended]
+
+APPLICATION TIPS: [Specific advice for best results]
+
+${userMessage ? `SPECIAL REQUEST: ${userMessage}` : ''}
+
+Keep analysis under 350 words. Be precise with scoring.
+Region context: ${region || 'Global'}
   `.trim();
 
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
