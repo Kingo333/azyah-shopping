@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Heart, ShoppingBag, ExternalLink, ArrowLeft, Share, X } from 'lucide-react';
+import { Heart, ShoppingBag, ExternalLink, ArrowLeft, Share } from 'lucide-react';
 import { Product } from '@/types';
 import { EnhancedProductGallery } from './EnhancedProductGallery';
 import { AdvancedSizeColorSelector } from './AdvancedSizeColorSelector';
@@ -121,14 +121,9 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                 <p className="text-sm text-muted-foreground">{product.brand?.name}</p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <Button variant="ghost" size="sm" onClick={handleShare} className="hover:bg-accent/50 p-2">
-                <Share className="h-4 w-4" />
-              </Button>
-              <Button variant="ghost" size="sm" onClick={onBack} className="hover:bg-accent/50 p-2">
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
+            <Button variant="ghost" size="sm" onClick={handleShare} className="hover:bg-accent/50 p-2">
+              <Share className="h-4 w-4" />
+            </Button>
           </div>
         </div>
       </header>
