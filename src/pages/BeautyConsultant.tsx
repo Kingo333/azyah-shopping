@@ -91,19 +91,85 @@ export default function BeautyConsultantPage() {
     scrollToBottom();
   }, [messages]);
 
-  // Update greeting message when mode changes and clear conversation history
+  // Load conversation history when mode changes (maintain 24h history per mode)
   useEffect(() => {
-    // Clear all messages except greeting when switching modes
-    setMessages([{
-      id: '1',
-      type: 'assistant',
-      content: analysisMode === 'product_analysis' 
-        ? "Hi! I'm Azyah, your AI Beauty Consultant. Upload a product and your skin/face photo to get a detailed compatibility score (0-100%) with breakdown! Perfect for shopping decisions. Available in English & (متوفر باللغة العربية) 💄✨" 
-        : "Hi! I'm Azyah, your AI Beauty Consultant. Upload a selfie, speak to me, or ask any beauty question for personalized recommendations! Available in English & (متوفر باللغة العربية) 💄✨",
-      timestamp: new Date()
-    }]);
+    // Load existing conversation history for the current mode
+    const loadModeHistory = async () => {
+      if (!user?.id) return;
+      
+      try {
+        // Get session history from backend for current mode
+        const { createClient } = await import('@supabase/supabase-js');
+        const supabase = createClient('https://klwolsopucgswhtdlsps.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtsd29sc29wdWNnc3dodGRsc3BzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQyNTQ4NTIsImV4cCI6MjA2OTgzMDg1Mn0.t1GFgR9xiIh7PBmoYs_xKLi1fF1iLTF6pqMlLMHowHQ');
+        
+        const sessionPrefix = analysisMode === 'product_analysis' ? 'product_score' : 'chat_mode';
+        
+        const { data: sessionData } = await supabase
+          .from('user_sessions')
+          .select('conversation_history')
+          .eq('user_id', user.id)
+          .eq('is_active', true)
+          .like('session_id', `${sessionPrefix}_${user.id}_%`)
+          .gt('expires_at', new Date().toISOString())
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
 
-    // Clear any uploaded images when switching modes
+        if (sessionData?.conversation_history && Array.isArray(sessionData.conversation_history)) {
+          // Convert backend history to frontend message format
+          const historyMessages: ChatMessage[] = [
+            {
+              id: '1',
+              type: 'assistant',
+              content: analysisMode === 'product_analysis' 
+                ? "Hi! I'm Azyah, your AI Beauty Consultant. Upload a product and your skin/face photo to get a detailed compatibility score (0-100%) with breakdown! Perfect for shopping decisions. Available in English & (متوفر باللغة العربية) 💄✨" 
+                : "Hi! I'm Azyah, your AI Beauty Consultant. Upload a selfie, speak to me, or ask any beauty question for personalized recommendations! Available in English & (متوفر باللغة العربية) 💄✨",
+              timestamp: new Date()
+            }
+          ];
+
+          // Add conversation history
+          sessionData.conversation_history.forEach((msg: any, index: number) => {
+            historyMessages.push({
+              id: `history_${analysisMode}_${index}`,
+              type: msg.role === 'user' ? 'user' : 'assistant',
+              content: msg.content,
+              timestamp: new Date(msg.timestamp || Date.now()),
+              isVoice: msg.role === 'user' && msg.content.includes('🎤')
+            });
+          });
+
+          setMessages(historyMessages);
+          console.log(`Loaded ${sessionData.conversation_history.length} messages for ${analysisMode} mode`);
+        } else {
+          // No history found, show fresh greeting
+          setMessages([{
+            id: '1',
+            type: 'assistant',
+            content: analysisMode === 'product_analysis' 
+              ? "Hi! I'm Azyah, your AI Beauty Consultant. Upload a product and your skin/face photo to get a detailed compatibility score (0-100%) with breakdown! Perfect for shopping decisions. Available in English & (متوفر باللغة العربية) 💄✨" 
+              : "Hi! I'm Azyah, your AI Beauty Consultant. Upload a selfie, speak to me, or ask any beauty question for personalized recommendations! Available in English & (متوفر باللغة العربية) 💄✨",
+            timestamp: new Date()
+          }]);
+          console.log(`No existing history for ${analysisMode} mode - showing fresh greeting`);
+        }
+      } catch (error) {
+        console.error('Error loading conversation history:', error);
+        // Fallback to fresh greeting on error
+        setMessages([{
+          id: '1',
+          type: 'assistant',
+          content: analysisMode === 'product_analysis' 
+            ? "Hi! I'm Azyah, your AI Beauty Consultant. Upload a product and your skin/face photo to get a detailed compatibility score (0-100%) with breakdown! Perfect for shopping decisions. Available in English & (متوفر باللغة العربية) 💄✨" 
+            : "Hi! I'm Azyah, your AI Beauty Consultant. Upload a selfie, speak to me, or ask any beauty question for personalized recommendations! Available in English & (متوفر باللغة العربية) 💄✨",
+          timestamp: new Date()
+        }]);
+      }
+    };
+
+    loadModeHistory();
+
+    // Clear any uploaded images when switching modes (but keep conversation history)
     if (analysisMode === 'chat') {
       clearProductAnalysisImages();
     } else {
@@ -122,8 +188,8 @@ export default function BeautyConsultantPage() {
       }, 1000);
     }
 
-    console.log(`Switched to ${analysisMode} mode - conversation history cleared`);
-  }, [analysisMode, hasShownTooltips]);
+    console.log(`Switched to ${analysisMode} mode - loading 24h conversation history`);
+  }, [analysisMode, hasShownTooltips, user?.id]);
   const validateImageFile = (file: File) => {
     if (!file.type.startsWith('image/')) {
       toast.error('Please select a valid image file');
