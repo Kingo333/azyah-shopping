@@ -35,6 +35,7 @@ interface WishlistItem {
     price_cents: number;
     currency: string;
     media_urls: string[];
+    image_url?: string;
     external_url?: string;
     brand?: { name: string };
   };
@@ -85,6 +86,7 @@ export const WishlistManager: React.FC = () => {
             price_cents,
             currency,
             media_urls,
+            image_url,
             external_url,
             brands!inner(name)
           )
@@ -378,8 +380,30 @@ export const WishlistManager: React.FC = () => {
                     <div className={viewMode === 'grid' ? 'space-y-2 md:space-y-3' : 'flex gap-4'}>
                       <div className={viewMode === 'grid' ? 'aspect-square' : 'w-24 h-24 flex-shrink-0'}>
                         {(() => {
-                          const imageUrl = item.product.media_urls[0] || '/placeholder.svg';
-                          const imageProps = imageUrl.includes('asos-media.com') 
+                          // Get the first image URL using proper logic for JSONB array handling
+                          let imageUrl = '/placeholder.svg';
+                          
+                          if (item.product?.media_urls) {
+                            if (Array.isArray(item.product.media_urls) && item.product.media_urls.length > 0) {
+                              imageUrl = item.product.media_urls[0];
+                            } else if (typeof item.product.media_urls === 'string') {
+                              try {
+                                const parsed = JSON.parse(item.product.media_urls);
+                                if (Array.isArray(parsed) && parsed.length > 0) {
+                                  imageUrl = parsed[0];
+                                }
+                              } catch (e) {
+                                console.warn('Failed to parse media_urls:', item.product.media_urls);
+                              }
+                            }
+                          }
+                          
+                          // Fallback to image_url if media_urls didn't work
+                          if (imageUrl === '/placeholder.svg' && item.product?.image_url) {
+                            imageUrl = item.product.image_url;
+                          }
+                          
+                          const imageProps = imageUrl && imageUrl.includes('asos-media.com') 
                             ? getResponsiveImageProps(imageUrl, viewMode === 'grid' ? "(max-width: 768px) 50vw, 25vw" : "96px")
                             : { src: imageUrl };
                           
@@ -388,6 +412,10 @@ export const WishlistManager: React.FC = () => {
                               {...imageProps}
                               alt={item.product.title}
                               className="w-full h-full object-cover rounded-t-lg"
+                              onError={(e) => {
+                                console.warn('Image failed to load:', imageUrl);
+                                e.currentTarget.src = '/placeholder.svg';
+                              }}
                             />
                           );
                         })()}

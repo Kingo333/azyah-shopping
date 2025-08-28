@@ -173,13 +173,31 @@ export const CreateLookSection: React.FC<CreateLookSectionProps> = ({ closetId }
   };
 
   const getImageUrl = (item: any) => {
-    if (item.image_url) return item.image_url;
-    if (item.media_urls && Array.isArray(item.media_urls) && item.media_urls.length > 0) {
-      return item.media_urls[0];
+    // Handle media_urls as JSONB array properly
+    if (item.media_urls) {
+      if (Array.isArray(item.media_urls) && item.media_urls.length > 0) {
+        return item.media_urls[0];
+      } else if (typeof item.media_urls === 'string') {
+        try {
+          const parsed = JSON.parse(item.media_urls);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            return parsed[0];
+          }
+        } catch (e) {
+          console.warn('Failed to parse media_urls:', item.media_urls);
+        }
+      }
     }
+    
+    // Check nested product structure  
     if (item.product?.media_urls && Array.isArray(item.product.media_urls) && item.product.media_urls.length > 0) {
       return item.product.media_urls[0];
     }
+    
+    // Fallback to image_url
+    if (item.image_url) return item.image_url;
+    if (item.product?.image_url) return item.product.image_url;
+    
     return '/placeholder.svg';
   };
 
