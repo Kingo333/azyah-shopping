@@ -468,7 +468,18 @@ export const CreateLookSection: React.FC<CreateLookSectionProps> = ({ closetId }
                         {item.product?.title || 'Untitled'}
                       </h4>
                        <p className="text-xs text-muted-foreground mb-2">
-                         {item.product?.brands?.name || 'Unknown Brand'}
+                         {(() => {
+                           // Debug log to see the data structure
+                           console.log('Wishlist item product data:', item.product);
+                           
+                           // Try multiple possible brand name paths
+                           const brandName = item.product?.brands?.name || 
+                                           (item.product?.brands && Array.isArray(item.product.brands) ? item.product.brands[0]?.name : null) ||
+                                           'Unknown Brand';
+                           
+                           console.log('Resolved brand name:', brandName);
+                           return brandName;
+                         })()}
                        </p>
                       <p className="font-semibold text-sm">
                         {formatPrice(item.product?.price_cents || 0, item.product?.currency || 'USD')}
