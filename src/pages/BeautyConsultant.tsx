@@ -54,7 +54,7 @@ export default function BeautyConsultantPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([{
     id: '1',
     type: 'assistant',
-    content: "Hi! I'm Azyah, your AI Beauty Consultant. Upload a selfie, speak to me, or ask any beauty question for personalized recommendations! 💄✨",
+    content: "Hi! I'm Azyah, your AI Beauty Consultant. Upload a selfie, speak to me, or ask any beauty question for personalized recommendations! Available in English & Arabic 💄✨",
     timestamp: new Date()
   }]);
   const [inputMessage, setInputMessage] = useState('');
@@ -98,7 +98,7 @@ export default function BeautyConsultantPage() {
       if (newMessages.length > 0 && newMessages[0].id === '1') {
         newMessages[0] = {
           ...newMessages[0],
-          content: analysisMode === 'product_analysis' ? "Hi! I'm Azyah, your AI Beauty Consultant. Upload a product and your skin/face photo to get a compatibility score with confidence rating! Use me in stores while shopping 💄✨" : "Hi! I'm Azyah, your AI Beauty Consultant. Upload a selfie, speak to me, or ask any beauty question for personalized recommendations! 💄✨"
+          content: analysisMode === 'product_analysis' ? "Hi! I'm Azyah, your AI Beauty Consultant. Upload a product and your skin/face photo to get a compatibility score with confidence rating! Use me in stores while shopping. Available in English & Arabic 💄✨" : "Hi! I'm Azyah, your AI Beauty Consultant. Upload a selfie, speak to me, or ask any beauty question for personalized recommendations! Available in English & Arabic 💄✨"
         };
       }
       return newMessages;
