@@ -109,11 +109,11 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
   }];
   return <div className="fixed inset-0 z-50 bg-background overflow-y-auto">
       {/* Header - Mobile optimized */}
-      <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-md border-b border-border">
+      <header className="sticky top-0 z-50 bg-background border-b border-border shadow-sm">
         <div className="px-4 py-3 md:py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Button variant="ghost" size="sm" onClick={onBack} className="hover:bg-accent/50 p-2">
+              <Button variant="outline" size="sm" onClick={onBack} className="bg-background hover:bg-accent border-border shadow-sm">
                 <ArrowLeft className="h-4 w-4" />
               </Button>
               <div className="hidden md:block">
@@ -121,7 +121,7 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                 <p className="text-sm text-muted-foreground">{product.brand?.name}</p>
               </div>
             </div>
-            <Button variant="ghost" size="sm" onClick={handleShare} className="hover:bg-accent/50 p-2">
+            <Button variant="outline" size="sm" onClick={handleShare} className="bg-background hover:bg-accent border-border shadow-sm">
               <Share className="h-4 w-4" />
             </Button>
           </div>
