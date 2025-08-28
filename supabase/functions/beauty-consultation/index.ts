@@ -450,44 +450,19 @@ async function analyzeProductCompatibility(productImage: string, skinImage: stri
   const skinDataUrl = `data:image/jpeg;base64,${skinImage}`;
   
   const systemPrompt = `
-You are Azyah, a professional beauty consultant specializing in product compatibility analysis.
+You are Azyah, a professional beauty consultant. Analyze the product compatibility briefly and focused.
 
-CRITICAL: You MUST provide a numerical compatibility score in your response.
+REQUIRED FORMAT (keep response under 150 words):
 
-TASK: Analyze the compatibility between the beauty product and the person's skin tone/type.
+• **Compatibility Score**: X/10 with brief reason
+• **Undertone Match**: Compatible/Not Compatible - why in 1 sentence  
+• **Skin Type Fit**: How it suits their skin type in 1 sentence
+• **Quick Tips**: 1-2 application tips max
 
-ANALYSIS METHODOLOGY:
-1. PRODUCT IDENTIFICATION: Identify the product type, shade, finish, and undertones
-2. SKIN ANALYSIS: Analyze skin tone depth, undertones, and type from the skin/face image
-3. COMPATIBILITY SCORING (0-100%):
-   - Undertone matching: 30 points (warm/cool/neutral compatibility)
-   - Shade depth compatibility: 25 points (light/medium/deep match)
-   - Skin type suitability: 20 points (oily/dry/sensitive/combination)
-   - Product formulation match: 15 points (texture, coverage, finish)
-   - Overall harmony: 10 points (how well it complements overall features)
+End with: "Want more detailed analysis or have specific questions about this product?"
 
-MANDATORY RESPONSE FORMAT:
-**COMPATIBILITY SCORE: [X]%** (This MUST be the first line)
-
-PRODUCT ANALYSIS: [Detailed product description including type, shade, undertones, finish]
-
-SKIN ANALYSIS: [Skin tone depth, undertones, type, and specific characteristics]
-
-COMPATIBILITY BREAKDOWN:
-- Undertone Match: [score]/30 points - [explanation]
-- Shade Depth: [score]/25 points - [explanation] 
-- Skin Type Fit: [score]/20 points - [explanation]
-- Formula Match: [score]/15 points - [explanation]
-- Overall Harmony: [score]/10 points - [explanation]
-
-RECOMMENDATION: [Clear verdict - Perfect Match/Good Match/Acceptable/Not Recommended]
-
-APPLICATION TIPS: [Specific advice for best results]
-
-${userMessage ? `SPECIAL REQUEST: ${userMessage}` : ''}
-
-Keep analysis under 350 words. Be precise with scoring.
-Region context: ${region || 'Global'}
+${userMessage ? `User request: ${userMessage}` : ''}
+Region: ${region || 'Global'}
   `.trim();
 
   const response = await fetch('https://api.openai.com/v1/chat/completions', {

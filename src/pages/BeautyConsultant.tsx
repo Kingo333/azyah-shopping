@@ -73,6 +73,7 @@ export default function BeautyConsultantPage() {
   const [skinImage, setSkinImage] = useState<File | null>(null);
   const [productImagePreview, setProductImagePreview] = useState<string | null>(null);
   const [skinImagePreview, setSkinImagePreview] = useState<string | null>(null);
+  const [hasInitialProductResponse, setHasInitialProductResponse] = useState(false);
   
   // Tooltip tracking for insert image buttons
   const [showImageTooltips, setShowImageTooltips] = useState(false);
@@ -384,6 +385,11 @@ export default function BeautyConsultantPage() {
       
       console.log(`Adding ${analysisMode} assistant message:`, assistantMessage);
       setMessages(prev => [...prev, assistantMessage]);
+      
+      // Unlock text input after first product analysis response
+      if (analysisMode === 'product_analysis') {
+        setHasInitialProductResponse(true);
+      }
 
       // Update credits from response
       if (result.consultation.credits_remaining !== undefined) {
@@ -892,8 +898,8 @@ export default function BeautyConsultantPage() {
                   
                   {/* Message Input */}
                   <div className="flex-1 relative order-1 sm:order-2">
-                    <Input value={inputMessage} onChange={e => setInputMessage(e.target.value)} onKeyPress={handleKeyPress} placeholder={analysisMode === 'product_analysis' ? (productImage && skinImage ? "Ask questions about product compatibility..." : "Upload product & skin images for compatibility analysis...") : "Ask about skincare, makeup, or beauty tips..."} className="h-11 sm:h-12 pr-14 rounded-xl border-border/50 bg-background/50 backdrop-blur-sm focus:border-primary/50 focus:ring-primary/20 transition-all duration-300" disabled={loading || (analysisMode === 'product_analysis' && (!productImage || !skinImage))} />
-                    <Button onClick={handleSendMessage} disabled={loading || (analysisMode === 'product_analysis' ? !productImage || !skinImage : !inputMessage.trim() && !selectedImage)} className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 sm:h-8 sm:w-8 p-0 rounded-lg bg-primary hover:bg-primary/90 transition-all duration-300 hover:scale-105 disabled:hover:scale-100">
+                    <Input value={inputMessage} onChange={e => setInputMessage(e.target.value)} onKeyPress={handleKeyPress} placeholder={analysisMode === 'product_analysis' ? (hasInitialProductResponse ? "Ask follow-up questions: 'Is this foundation a good match?', 'Will this lipstick suit me?', etc." : (productImage && skinImage ? "Ask questions about product compatibility..." : "Upload product & skin images for compatibility analysis...")) : "Ask about skincare, makeup, or beauty tips..."} className="h-11 sm:h-12 pr-14 rounded-xl border-border/50 bg-background/50 backdrop-blur-sm focus:border-primary/50 focus:ring-primary/20 transition-all duration-300" disabled={loading || (analysisMode === 'product_analysis' && !hasInitialProductResponse && (!productImage || !skinImage))} />
+                    <Button onClick={handleSendMessage} disabled={loading || (analysisMode === 'product_analysis' ? (!hasInitialProductResponse && (!productImage || !skinImage)) : (!inputMessage.trim() && !selectedImage))} className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 sm:h-8 sm:w-8 p-0 rounded-lg bg-primary hover:bg-primary/90 transition-all duration-300 hover:scale-105 disabled:hover:scale-100">
                       <Send className="h-3 w-3" />
                     </Button>
                   </div>
@@ -901,7 +907,7 @@ export default function BeautyConsultantPage() {
 
                 {/* Quick Actions */}
                 <div className="flex flex-wrap gap-2 pt-1">
-                  {(analysisMode === 'chat' ? ["Analyze my skin tone", "Foundation recommendations", "Evening makeup look", "Skincare routine"] : ["Is this foundation a good match?", "Will this lipstick suit me?", "Rate this product compatibility", "How should I apply this?"]).map((suggestion, index) => <Button key={suggestion} variant="outline" size="sm" onClick={() => setInputMessage(suggestion)} className="h-7 sm:h-8 px-2 sm:px-3 text-xs rounded-lg border-border/30 bg-background/30 hover:bg-primary/5 hover:border-primary/30 transition-all duration-300" disabled={loading || (analysisMode === 'product_analysis' && (!productImage || !skinImage))}>
+                  {(analysisMode === 'chat' ? ["Analyze my skin tone", "Foundation recommendations", "Evening makeup look", "Skincare routine"] : ["Is this foundation a good match?", "Will this lipstick suit me?", "Rate this product compatibility", "How should I apply this?"]).map((suggestion, index) => <Button key={suggestion} variant="outline" size="sm" onClick={() => setInputMessage(suggestion)} className="h-7 sm:h-8 px-2 sm:px-3 text-xs rounded-lg border-border/30 bg-background/30 hover:bg-primary/5 hover:border-primary/30 transition-all duration-300" disabled={loading || (analysisMode === 'product_analysis' && !hasInitialProductResponse && (!productImage || !skinImage))}>
                       {suggestion}
                     </Button>)}
                 </div>
