@@ -169,6 +169,16 @@ export default function BeautyConsultantPage() {
       setLoading(false);
       return;
     }
+    
+    // Enhanced validation
+    if (!user?.id) {
+      toast.error('Please sign in to use the beauty consultant');
+      setLoading(false);
+      return;
+    }
+
+    console.log(`Starting ${analysisMode} consultation...`);
+    
     try {
       // Convert files to base64 for the API
       let imageBase64 = '';
@@ -180,13 +190,14 @@ export default function BeautyConsultantPage() {
         audioBase64 = await blobToBase64(audioBlob);
       }
 
-      // Create request payload
+      // Create request payload with enhanced logging
       const payload: any = {
-        user_id: user?.id || 'anonymous_' + Date.now(),
+        user_id: user.id,
         message: message || '',
         region: region,
         mode: analysisMode
       };
+      
       if (analysisMode === 'product_analysis') {
         if (productImage) {
           const productBase64 = await fileToBase64(productImage);
@@ -196,18 +207,27 @@ export default function BeautyConsultantPage() {
           const skinBase64 = await fileToBase64(skinImage);
           payload.skin_image = skinBase64;
         }
+        console.log('Product analysis payload prepared with images');
       } else {
         if (imageBase64) {
           payload.image = imageBase64;
         }
+        console.log('Chat mode payload prepared');
       }
+      
       if (audioBase64) {
         payload.audio = audioBase64;
+        console.log('Audio data included in payload');
       }
+      
       console.log('Sending consultation request:', {
         ...payload,
-        image: imageBase64 ? '[image data]' : '',
-        audio: audioBase64 ? '[audio data]' : ''
+        image: imageBase64 ? '[image data present]' : 'no image',
+        product_image: payload.product_image ? '[product image data present]' : 'no product image',
+        skin_image: payload.skin_image ? '[skin image data present]' : 'no skin image',
+        audio: audioBase64 ? '[audio data present]' : 'no audio',
+        mode: analysisMode,
+        user_id: user.id
       });
       const {
         createClient
@@ -216,15 +236,30 @@ export default function BeautyConsultantPage() {
       const response = await supabase.functions.invoke('beauty-consultation', {
         body: payload
       });
+      
+      console.log('Raw response:', response);
+      
       if (response.error) {
+        console.error('Supabase function error:', response.error);
         throw new Error(response.error.message || 'Consultation failed');
       }
+      
+      if (!response.data) {
+        console.error('No data in response');
+        throw new Error('No response data received');
+      }
+      
       const result = response.data;
-      console.log('Consultation result:', result);
+      console.log(`${analysisMode} consultation result:`, result);
+      
+      if (!result.success) {
+        console.error('Consultation not successful:', result);
+        throw new Error(result.message || 'Consultation failed');
+      }
 
-      // Add assistant response with voice support
+      // Add assistant response with voice support and mode awareness
       const assistantMessage: ChatMessage = {
-        id: Date.now().toString(),
+        id: `${analysisMode}_${Date.now()}`,
         type: 'assistant',
         content: result.consultation.text,
         timestamp: new Date(),
@@ -232,6 +267,8 @@ export default function BeautyConsultantPage() {
         transcription: result.consultation.voice_summary,
         isVoice: !!result.consultation.audio_url
       };
+      
+      console.log(`Adding ${analysisMode} assistant message:`, assistantMessage);
       setMessages(prev => [...prev, assistantMessage]);
 
       // Update credits from response
@@ -252,21 +289,35 @@ export default function BeautyConsultantPage() {
       }
       toast.success('Beauty consultation completed!');
     } catch (error) {
-      console.error('Consultation failed:', error);
+      console.error(`${analysisMode} consultation failed:`, error);
 
-      // Handle credit-related errors specifically
-      if (error instanceof Error && error.message.includes('No credits remaining')) {
-        toast.error('No credits remaining. Upgrade to premium for more credits!');
-        return;
+      // Enhanced error handling with mode awareness
+      let errorMessage = 'I apologize, but I encountered an error. Please try again.';
+      
+      if (error instanceof Error) {
+        console.error('Error details:', error.message);
+        
+        if (error.message.includes('No credits remaining')) {
+          toast.error('No credits remaining. Upgrade to premium for more credits!');
+          return;
+        } else if (error.message.includes('Failed to check credits')) {
+          errorMessage = 'Unable to verify credits. Please try again in a moment.';
+        } else if (error.message.includes('No response data')) {
+          errorMessage = 'The consultation service is temporarily unavailable. Please try again.';
+        } else {
+          errorMessage = `I encountered an issue: ${error.message}`;
+        }
       }
-      const errorMessage: ChatMessage = {
-        id: Date.now().toString(),
+      
+      const errorResponse: ChatMessage = {
+        id: `error_${analysisMode}_${Date.now()}`,
         type: 'assistant',
-        content: `I apologize, but I encountered an error: ${error instanceof Error ? error.message : 'Consultation failed. Please try again.'}`,
+        content: errorMessage,
         timestamp: new Date()
       };
-      setMessages(prev => [...prev, errorMessage]);
-      toast.error(error instanceof Error ? error.message : 'Consultation failed. Please try again.');
+      
+      setMessages(prev => [...prev, errorResponse]);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -314,14 +365,17 @@ export default function BeautyConsultantPage() {
         return;
       }
 
-      // Add user message with both images
+      // Add user message for product analysis with visual indicators
       const userMessage: ChatMessage = {
-        id: Date.now().toString(),
+        id: `user_product_${Date.now()}`,
         type: 'user',
         content: inputMessage.trim() || "Analyze product compatibility",
         timestamp: new Date()
       };
+      
+      console.log('Adding product analysis user message:', userMessage);
       setMessages(prev => [...prev, userMessage]);
+      
       await submitConsultation(inputMessage.trim() || "Analyze product compatibility", undefined);
       setInputMessage('');
       clearProductAnalysisImages();
@@ -336,15 +390,18 @@ export default function BeautyConsultantPage() {
         return;
       }
 
-      // Add user message
+      // Add user message for chat mode
       const userMessage: ChatMessage = {
-        id: Date.now().toString(),
+        id: `user_chat_${Date.now()}`,
         type: 'user',
         content: inputMessage || (selectedImage ? "Here's my image for analysis" : ""),
         image: imagePreview || undefined,
         timestamp: new Date()
       };
+      
+      console.log('Adding chat user message:', userMessage);
       setMessages(prev => [...prev, userMessage]);
+      
       await submitConsultation(inputMessage, selectedImage || undefined);
 
       // Clear inputs
@@ -359,9 +416,9 @@ export default function BeautyConsultantPage() {
       return;
     }
 
-    // Add voice message to chat
+    // Add voice message to chat with mode awareness
     const voiceMessage: ChatMessage = {
-      id: Date.now().toString(),
+      id: `voice_${analysisMode}_${Date.now()}`,
       type: 'user',
       content: transcription,
       timestamp: new Date(),
@@ -369,6 +426,8 @@ export default function BeautyConsultantPage() {
       isVoice: true,
       transcription
     };
+    
+    console.log(`Adding ${analysisMode} voice message:`, voiceMessage);
     setMessages(prev => [...prev, voiceMessage]);
 
     // Submit consultation with voice

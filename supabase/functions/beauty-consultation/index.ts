@@ -81,9 +81,9 @@ serve(async (req) => {
       });
     }
 
-    // Get or create user session
-    const session = await getOrCreateSession(supabase, user_id, { region });
-    console.log('Session:', session.session_id);
+    // Get or create user session with mode-specific separation
+    const session = await getOrCreateSession(supabase, user_id, { region, mode });
+    console.log(`${mode} session:`, session.session_id);
 
     let userText = message;
     let transcriptionText = '';
@@ -209,16 +209,24 @@ serve(async (req) => {
 
 // Session management functions
 async function getOrCreateSession(supabase: any, userId: string, preferences: Record<string, any> = {}): Promise<SessionData> {
-  // Try to get existing active session
+  // Include mode in session identification for separate conversations
+  const mode = preferences.mode || 'chat';
+  const sessionPrefix = mode === 'product_analysis' ? 'product_session' : 'chat_session';
+  
+  // Try to get existing active session for this specific mode
   const { data: existingSession, error } = await supabase
     .from('user_sessions')
     .select('*')
     .eq('user_id', userId)
     .eq('is_active', true)
+    .like('session_id', `${sessionPrefix}_${userId}_%`)
     .gt('expires_at', new Date().toISOString())
+    .order('created_at', { ascending: false })
+    .limit(1)
     .maybeSingle();
 
   if (!error && existingSession) {
+    console.log(`Found existing ${mode} session:`, existingSession.session_id);
     // Update last activity and extend expiration
     const { data: updated } = await supabase
       .from('user_sessions')
@@ -232,19 +240,27 @@ async function getOrCreateSession(supabase: any, userId: string, preferences: Re
     return updated;
   }
 
-  // Create new session
-  const { data: created } = await supabase
+  // Create new session with mode-specific ID
+  const sessionId = `${sessionPrefix}_${userId}_${Date.now()}`;
+  console.log(`Creating new ${mode} session:`, sessionId);
+  
+  const { data: created, error: createError } = await supabase
     .from('user_sessions')
     .insert({
       user_id: userId,
-      session_id: `session_${userId}_${Date.now()}`,
-      preferences,
+      session_id: sessionId,
+      preferences: { ...preferences, mode },
       conversation_history: [],
-      session_data: {},
+      session_data: { mode },
       session_expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours
     })
     .select()
     .single();
+
+  if (createError) {
+    console.error('Error creating session:', createError);
+    throw new Error('Failed to create session');
+  }
 
   return created;
 }
