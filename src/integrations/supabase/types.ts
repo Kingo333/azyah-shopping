@@ -2458,6 +2458,22 @@ export type Database = {
           owner_user_id: string
         }[]
       }
+      get_brand_safe_data: {
+        Args: { brand_id_param: string }
+        Returns: {
+          bio: string
+          cover_image_url: string
+          created_at: string
+          id: string
+          logo_url: string
+          name: string
+          shipping_regions: string[]
+          slug: string
+          socials: Json
+          updated_at: string
+          website: string
+        }[]
+      }
       get_cleanup_stats: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -2531,6 +2547,22 @@ export type Database = {
         Returns: {
           contact_email: string
           owner_user_id: string
+        }[]
+      }
+      get_retailer_safe_data: {
+        Args: { retailer_id_param: string }
+        Returns: {
+          bio: string
+          cover_image_url: string
+          created_at: string
+          id: string
+          logo_url: string
+          name: string
+          shipping_regions: string[]
+          slug: string
+          socials: Json
+          updated_at: string
+          website: string
         }[]
       }
       get_trending_categories: {
