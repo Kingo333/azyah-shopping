@@ -467,9 +467,9 @@ export const CreateLookSection: React.FC<CreateLookSectionProps> = ({ closetId }
                       <h4 className="font-medium text-sm line-clamp-2 mb-1">
                         {item.product?.title || 'Untitled'}
                       </h4>
-                      <p className="text-xs text-muted-foreground mb-2">
-                        {item.product?.brand_id || 'Unknown Brand'}
-                      </p>
+                       <p className="text-xs text-muted-foreground mb-2">
+                         {item.product?.brands?.name || 'Unknown Brand'}
+                       </p>
                       <p className="font-semibold text-sm">
                         {formatPrice(item.product?.price_cents || 0, item.product?.currency || 'USD')}
                       </p>

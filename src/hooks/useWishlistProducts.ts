@@ -10,6 +10,7 @@ interface WishlistProduct {
   media_urls: any;
   brand_id: string;
   status: string;
+  brands?: { name: string };
 }
 
 interface WishlistItem {
@@ -63,7 +64,8 @@ export const useWishlistProducts = () => {
             currency,
             media_urls,
             brand_id,
-            status
+            status,
+            brands(name)
           )
         `)
         .eq('wishlist_id', defaultWishlistId)
