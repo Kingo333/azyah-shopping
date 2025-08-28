@@ -57,7 +57,7 @@ export const EnhancedProductGallery: React.FC<EnhancedProductGalleryProps> = ({
   return (
     <div className="space-y-4">
       {/* Main Image Display */}
-      <div className="relative aspect-[3/4] md:aspect-[3/4] lg:aspect-[4/5] min-h-[400px] md:min-h-[500px] lg:min-h-[600px] overflow-hidden rounded-lg bg-background group">
+      <div className="relative aspect-[3/4] md:aspect-[3/4] lg:aspect-[4/5] min-h-[400px] md:min-h-[500px] lg:min-h-[600px] overflow-hidden rounded-lg bg-accent group">
         {/* Loading Skeleton */}
         {!imageLoaded && (
           <div className="absolute inset-0 bg-muted animate-pulse flex items-center justify-center">
