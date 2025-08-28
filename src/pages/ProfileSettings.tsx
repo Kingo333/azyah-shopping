@@ -598,15 +598,19 @@ const ProfileSettings: React.FC = () => {
                       <ul className="space-y-1 text-sm text-muted-foreground">
                         <li className="flex items-center gap-2">
                           <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
+                          Unlimited AI Try-On generations
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
                           Unlimited Toy Replica generations
                         </li>
                         <li className="flex items-center gap-2">
                           <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
-                          Priority customer support
+                          Full AI Beauty Consultant access
                         </li>
                         <li className="flex items-center gap-2">
                           <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
-                          Full access to premium features
+                          Priority customer support
                         </li>
                       </ul>
                     </div>
@@ -673,11 +677,15 @@ const ProfileSettings: React.FC = () => {
                       <ul className="space-y-1 text-sm text-muted-foreground">
                         <li className="flex items-center gap-2">
                           <div className="w-1.5 h-1.5 bg-orange-500 rounded-full"></div>
+                          4 AI Try-On generations per day
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <div className="w-1.5 h-1.5 bg-orange-500 rounded-full"></div>
                           4 Toy Replica generations maximum
                         </li>
                         <li className="flex items-center gap-2">
                           <div className="w-1.5 h-1.5 bg-orange-500 rounded-full"></div>
-                          Limited access to premium features
+                          Limited AI Beauty Consultant access
                         </li>
                         <li className="flex items-center gap-2">
                           <div className="w-1.5 h-1.5 bg-orange-500 rounded-full"></div>
@@ -693,7 +701,7 @@ const ProfileSettings: React.FC = () => {
                     size="lg"
                   >
                     <Crown className="h-4 w-4 mr-2" />
-                    Upgrade to Premium - 40 AED/month
+                    Upgrade to Premium - 30 AED/month
                   </Button>
                 </div>
               )}
