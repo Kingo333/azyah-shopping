@@ -47,7 +47,16 @@ serve(async (req) => {
       throw new Error('user_id is required');
     }
 
-    console.log('Beauty consultation request:', { user_id, region, hasImage: !!image, hasAudio: !!audio });
+    console.log('Beauty consultation request:', { 
+      user_id, 
+      region, 
+      mode, 
+      hasImage: !!image, 
+      hasAudio: !!audio,
+      hasProductImage: !!product_image,
+      hasSkinImage: !!skin_image,
+      messageLength: message.length
+    });
 
     // Initialize Supabase client with service role key
     const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2');
@@ -63,12 +72,27 @@ serve(async (req) => {
       getOrCreateSession(supabase, user_id, { region, mode }).catch(err => ({ error: err })),
       // Audio transcription (if provided)
       audio ? transcribeAudio(audio, openaiApiKey).catch(err => ({ error: err, result: '' })) : Promise.resolve(''),
-      // Image analysis (if provided)
-      mode === 'product_analysis' && product_image && skin_image 
-        ? analyzeProductCompatibility(product_image, skin_image, message, region, openaiApiKey).catch(err => ({ error: err, result: '' }))
-        : image 
-          ? analyzeSelfie(image, message, region, openaiApiKey).catch(err => ({ error: err, result: '' }))
-          : Promise.resolve('')
+      // Image analysis (mode-specific logic)
+      (() => {
+        if (mode === 'product_analysis') {
+          if (product_image && skin_image) {
+            console.log('Product analysis mode: analyzing product compatibility');
+            return analyzeProductCompatibility(product_image, skin_image, message, region, openaiApiKey).catch(err => ({ error: err, result: '' }));
+          } else {
+            console.log('Product analysis mode: missing images', { hasProduct: !!product_image, hasSkin: !!skin_image });
+            return Promise.resolve('');
+          }
+        } else {
+          // Chat mode
+          if (image) {
+            console.log('Chat mode: analyzing selfie/image');
+            return analyzeSelfie(image, message, region, openaiApiKey).catch(err => ({ error: err, result: '' }));
+          } else {
+            console.log('Chat mode: no image provided');
+            return Promise.resolve('');
+          }
+        }
+      })()
     ]);
 
     // Handle credits result
@@ -119,22 +143,29 @@ serve(async (req) => {
       transcriptionText = audioResult.result || '';
     }
 
-    // Handle image analysis results
+    // Handle image analysis results with improved logging
     let skinAnalysis = '';
     let productAnalysis = '';
+    
     if (typeof imageResult === 'string') {
       if (mode === 'product_analysis') {
         productAnalysis = imageResult;
+        console.log('Product analysis completed successfully');
       } else {
         skinAnalysis = imageResult;
+        console.log('Selfie analysis completed successfully');
       }
-    } else if (imageResult.error) {
-      console.error('Image analysis error:', imageResult.error);
+    } else if (imageResult && imageResult.error) {
+      console.error(`${mode} image analysis error:`, imageResult.error);
       if (mode === 'product_analysis') {
         productAnalysis = imageResult.result || '';
+        console.log('Using fallback product analysis result');
       } else {
         skinAnalysis = imageResult.result || '';
+        console.log('Using fallback selfie analysis result');
       }
+    } else {
+      console.log(`No image analysis for ${mode} mode`);
     }
 
     // Combine user text with transcription
