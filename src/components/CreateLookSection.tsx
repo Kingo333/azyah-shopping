@@ -473,10 +473,13 @@ export const CreateLookSection: React.FC<CreateLookSectionProps> = ({ closetId }
 
       {/* Liked Products Grid */}
       <div className="space-y-4">
-        <div className="flex items-center gap-2">
-          <Heart className="h-5 w-5" />
-          <h3 className="text-lg font-semibold">My Liked Products</h3>
-          <Badge variant="secondary">{likedProducts?.length || 0}</Badge>
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <Heart className="h-5 w-5" />
+            <h3 className="text-lg font-semibold">My Liked Products</h3>
+            <Badge variant="secondary">{likedProducts?.length || 0}</Badge>
+          </div>
+          <p className="text-sm text-muted-foreground">Press & hold when adding item to template</p>
         </div>
         
         {likedLoading ? (
