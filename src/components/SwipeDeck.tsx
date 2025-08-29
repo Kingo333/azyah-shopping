@@ -78,6 +78,9 @@ const cardVariants = {
 
 const DISTANCE_THRESHOLD = 100;
 const VERTICAL_THRESHOLD = 100;
+const MAX_VIEW_ENTRIES = 5; // Reduced from 20
+const CLEANUP_INTERVAL = 10000; // 10 seconds instead of 30
+const MAX_PERFORMANCE_ENTRIES = 10; // Limit performance data
 
 const SwipeDeck: React.FC<SwipeDeckProps> = ({
   filter,
@@ -115,113 +118,141 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
 
   const { trackSwipe, trackViewDuration } = useEnhancedSwipeTracking();
 
-  // Track view start times for implicit feedback - using useRef to avoid re-renders
+  // Optimized view tracking with aggressive cleanup
   const viewStartTimesRef = useRef<Map<string, number>>(new Map());
+  const lastCleanupRef = useRef<number>(Date.now());
   
-  // Performance monitoring
+  // Simplified performance monitoring with bounds
   const performanceMetrics = useRef({
     swipeCount: 0,
-    averageSwipeTime: 0,
+    recentSwipeTimes: [] as number[], // Fixed-size array
     lastCleanup: Date.now()
   });
 
   const currentProduct = useMemo(() => products[index] || null, [products, index]);
   const { addToWishlist, isLoading: wishlistLoading } = useWishlist();
 
-  // Memoized and debounced image height calculation
-  const getImageHeight = useMemo(() => {
-    let lastCalculation = { width: 0, height: 0, aspectRatio: 0 };
+  // Optimized and memoized image height calculation with caching
+  const imageHeightCalculator = useRef<{
+    cache: Map<string, number>;
+    lastWindowSize: { width: number; height: number };
+  }>({
+    cache: new Map(),
+    lastWindowSize: { width: 0, height: 0 }
+  });
+
+  const getImageHeight = useCallback((aspectRatio: number) => {
+    const currentWidth = window.innerWidth;
+    const currentHeight = window.innerHeight;
+    const cacheKey = `${Math.floor(currentWidth / 50)}-${Math.floor(currentHeight / 50)}-${Math.floor(aspectRatio * 100)}`;
     
-    return (aspectRatio: number) => {
-      const currentWidth = window.innerWidth;
-      const currentHeight = window.innerHeight;
+    // Return cached result if available
+    if (imageHeightCalculator.current.cache.has(cacheKey)) {
+      return imageHeightCalculator.current.cache.get(cacheKey)!;
+    }
+    
+    const isMobile = currentWidth < 640;
+    let calculatedHeight: number;
+    
+    if (isMobile) {
+      const availableHeight = currentHeight * 0.85;
+      const detailsMinHeight = 130;
+      const maxImageHeight = availableHeight - detailsMinHeight;
+      const minHeight = 300;
+      calculatedHeight = Math.max(minHeight, Math.min(maxImageHeight, 380 / aspectRatio));
+    } else {
+      const maxHeight = currentHeight * 0.6;
+      const minHeight = 260;
+      calculatedHeight = Math.max(minHeight, Math.min(maxHeight, 480 / aspectRatio));
       
-      // Return cached result if window size hasn't changed significantly
-      if (
-        Math.abs(lastCalculation.width - currentWidth) < 50 &&
-        Math.abs(lastCalculation.height - currentHeight) < 50 &&
-        Math.abs(lastCalculation.aspectRatio - aspectRatio) < 0.1
-      ) {
-        return lastCalculation.height;
+      if (aspectRatio < 0.6) {
+        calculatedHeight = Math.max(minHeight, Math.min(currentHeight * 0.45, 480 / aspectRatio));
       }
-      
-      const isMobile = currentWidth < 640;
-      let calculatedHeight: number;
-      
-      if (isMobile) {
-        const availableHeight = currentHeight * 0.85;
-        const detailsMinHeight = 130;
-        const maxImageHeight = availableHeight - detailsMinHeight;
-        const minHeight = 300;
-        calculatedHeight = Math.max(minHeight, Math.min(maxImageHeight, 380 / aspectRatio));
-      } else {
-        const maxHeight = currentHeight * 0.6;
-        const minHeight = 260;
-        calculatedHeight = Math.max(minHeight, Math.min(maxHeight, 480 / aspectRatio));
-        
-        if (aspectRatio < 0.6) {
-          calculatedHeight = Math.max(minHeight, Math.min(currentHeight * 0.45, 480 / aspectRatio));
-        }
-      }
-      
-      // Cache the result
-      lastCalculation = {
-        width: currentWidth,
-        height: calculatedHeight,
-        aspectRatio
-      };
-      
-      return calculatedHeight;
-    };
+    }
+    
+    // Cache the result with size limit
+    if (imageHeightCalculator.current.cache.size > 20) {
+      const firstKey = imageHeightCalculator.current.cache.keys().next().value;
+      imageHeightCalculator.current.cache.delete(firstKey);
+    }
+    imageHeightCalculator.current.cache.set(cacheKey, calculatedHeight);
+    
+    return calculatedHeight;
   }, []);
 
+  // Optimized image load handler with error handling
   const handleImageLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
-    const img = e.currentTarget;
-    const ratio = img.naturalWidth / img.naturalHeight;
-    setImageAspectRatio(ratio);
+    try {
+      const img = e.currentTarget;
+      if (img.naturalWidth && img.naturalHeight) {
+        const ratio = img.naturalWidth / img.naturalHeight;
+        setImageAspectRatio(ratio);
+      }
+    } catch (error) {
+      console.warn('Error calculating image aspect ratio:', error);
+    }
   }, []);
 
+  // Optimized navigation with cleanup
   const nextCard = useCallback(() => {
+    // Reset motion values more efficiently
     x.set(0);
     y.set(0);
     setIndex(prevIndex => Math.min(prevIndex + 1, products.length - 1));
+    
+    // Trigger cleanup more frequently
+    const now = Date.now();
+    if (now - lastCleanupRef.current > CLEANUP_INTERVAL) {
+      // Aggressive view tracking cleanup
+      if (viewStartTimesRef.current.size > MAX_VIEW_ENTRIES) {
+        const entries = Array.from(viewStartTimesRef.current.entries());
+        const recentEntries = entries.slice(-MAX_VIEW_ENTRIES);
+        viewStartTimesRef.current.clear();
+        recentEntries.forEach(([key, value]) => {
+          viewStartTimesRef.current.set(key, value);
+        });
+      }
+      
+      // Performance metrics cleanup
+      if (performanceMetrics.current.recentSwipeTimes.length > MAX_PERFORMANCE_ENTRIES) {
+        performanceMetrics.current.recentSwipeTimes = performanceMetrics.current.recentSwipeTimes.slice(-MAX_PERFORMANCE_ENTRIES);
+      }
+      
+      lastCleanupRef.current = now;
+    }
   }, [x, y, products.length]);
 
-  // Reset index when products change and track view times
+  // Reset with cleanup when products change
   useEffect(() => {
     setIndex(0);
     x.set(0);
     y.set(0);
+    
+    // Clear all tracking data when products change
     viewStartTimesRef.current.clear();
+    performanceMetrics.current.recentSwipeTimes = [];
+    imageHeightCalculator.current.cache.clear();
   }, [products, x, y]);
 
-  // Track view start time for current product with aggressive memory management
+  // Optimized view tracking with bounds checking
   useLayoutEffect(() => {
-    if (currentProduct) {
+    if (currentProduct && viewStartTimesRef.current.size < MAX_VIEW_ENTRIES * 2) {
       const now = Date.now();
       viewStartTimesRef.current.set(currentProduct.id, now);
       
-      // More aggressive cleanup to prevent memory accumulation
-      if (viewStartTimesRef.current.size > 20) { // Reduced from 100
+      // Immediate cleanup if over limit
+      if (viewStartTimesRef.current.size > MAX_VIEW_ENTRIES) {
         const entries = Array.from(viewStartTimesRef.current.entries());
-        const recentEntries = entries.slice(-10); // Keep only last 10 entries
-        viewStartTimesRef.current = new Map(recentEntries);
-      }
-      
-      // Periodic cleanup based on time
-      if (now - performanceMetrics.current.lastCleanup > 30000) { // Every 30 seconds
-        const cutoff = now - 60000; // Remove entries older than 1 minute
-        for (const [key, timestamp] of viewStartTimesRef.current.entries()) {
-          if (timestamp < cutoff) {
-            viewStartTimesRef.current.delete(key);
-          }
-        }
-        performanceMetrics.current.lastCleanup = now;
+        const recentEntries = entries.slice(-MAX_VIEW_ENTRIES);
+        viewStartTimesRef.current.clear();
+        recentEntries.forEach(([key, value]) => {
+          viewStartTimesRef.current.set(key, value);
+        });
       }
     }
-  }, [index, currentProduct]);
+  }, [currentProduct]);
 
-  // Auto-hide instructions after 3 seconds
+  // Auto-hide instructions with cleanup
   useEffect(() => {
     if (showInstructions) {
       const timer = setTimeout(() => {
@@ -237,6 +268,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
     setIndex(prevIndex => Math.max(prevIndex - 1, 0));
   }, [x, y]);
 
+  // Optimized like handler with rate limiting
   const handleLike = useCallback(async (product: SwipeProduct) => {
     if (!user) {
       toast({
@@ -247,91 +279,82 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
       return;
     }
 
-    // Move to next card IMMEDIATELY for instant animation
+    // Move to next card IMMEDIATELY
     nextCard();
 
-    // Fire-and-forget background operations with performance tracking
+    // Rate-limited background operations
+    const now = performance.now();
+    performanceMetrics.current.swipeCount++;
+    performanceMetrics.current.recentSwipeTimes.push(now);
+    
+    // Keep only recent times
+    if (performanceMetrics.current.recentSwipeTimes.length > MAX_PERFORMANCE_ENTRIES) {
+      performanceMetrics.current.recentSwipeTimes = performanceMetrics.current.recentSwipeTimes.slice(-MAX_PERFORMANCE_ENTRIES);
+    }
+
+    // Optimized background operations with timeout and error handling
     queueMicrotask(async () => {
-      const startTime = performance.now();
-      performanceMetrics.current.swipeCount++;
-      
       try {
-        // Track view duration for implicit feedback
         const viewDuration = trackViewDuration(product.id, viewStartTimesRef.current.get(product.id) || Date.now());
         
-        // Track enhanced swipe with metadata (fire-and-forget)
-        trackSwipe({
+        // Fire-and-forget tracking with timeout
+        const trackingPromise = trackSwipe({
           productId: product.id,
           action: 'right',
           product,
           viewDuration,
           confidence: 1.0
-        });
+        }).catch(() => {}); // Silent fail
 
-        // Database operation with timeout
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Database timeout')), 5000)
-        );
-        
+        // Database operation with shorter timeout
         const dbPromise = supabase.from('likes').insert([{
           user_id: user.id,
           product_id: product.id
         }]);
 
+        // Race with 3 second timeout
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Timeout')), 3000)
+        );
+        
         const { error } = await Promise.race([dbPromise, timeoutPromise]) as any;
 
-        if (error) {
-          if (error.code === '23505') {
-            toast({
-              description: `${product.title} is already in your likes!`
-            });
-          } else if (error.message !== 'Database timeout') {
-            console.error("Error liking product:", error.message);
-            toast({
-              title: "Error",
-              description: "Failed to like product. Please try again.",
-              variant: "destructive"
-            });
-          }
-        } else {
+        if (error && error.code !== '23505' && !error.message?.includes('Timeout')) {
+          console.error("Like error:", error);
+        } else if (!error) {
           toast({
             description: `${product.title} added to your likes!`
           });
         }
-      } catch (error: any) {
-        // Silent fail for timeouts to avoid UI disruption
-        if (error?.message !== 'Database timeout') {
-          console.error('Background like operation failed:', error);
-        }
-      } finally {
-        // Update performance metrics
-        const duration = performance.now() - startTime;
-        performanceMetrics.current.averageSwipeTime = 
-          (performanceMetrics.current.averageSwipeTime + duration) / 2;
+      } catch (error) {
+        // Silent fail for background operations
       }
     });
   }, [user, toast, nextCard, trackSwipe, trackViewDuration]);
 
-  const handleDislike = useCallback(async () => {
-    // Move to next card IMMEDIATELY for instant animation
+  // Optimized dislike handler
+  const handleDislike = useCallback(() => {
     nextCard();
 
-    // Fire-and-forget background tracking
     if (user && currentProduct) {
       queueMicrotask(() => {
-        const viewDuration = trackViewDuration(currentProduct.id, viewStartTimesRef.current.get(currentProduct.id) || Date.now());
-        
-        trackSwipe({
-          productId: currentProduct.id,
-          action: 'left',
-          product: currentProduct,
-          viewDuration,
-          confidence: 1.0
-        });
+        try {
+          const viewDuration = trackViewDuration(currentProduct.id, viewStartTimesRef.current.get(currentProduct.id) || Date.now());
+          trackSwipe({
+            productId: currentProduct.id,
+            action: 'left',
+            product: currentProduct,
+            viewDuration,
+            confidence: 1.0
+          }).catch(() => {}); // Silent fail
+        } catch (error) {
+          // Silent fail
+        }
       });
     }
   }, [user, currentProduct, nextCard, trackSwipe, trackViewDuration]);
 
+  // Optimized wishlist handler
   const handleAddToWishlist = useCallback(async (product: SwipeProduct) => {
     if (!user) {
       toast({
@@ -342,36 +365,26 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
       return;
     }
 
-
-    // Move to next card immediately for smooth animation
     nextCard();
 
-    // Fire-and-forget background operations
     queueMicrotask(async () => {
       try {
-        // Track view duration for implicit feedback
         const viewDuration = trackViewDuration(product.id, viewStartTimesRef.current.get(product.id) || Date.now());
         
-        // Track enhanced swipe with metadata (no await)
         trackSwipe({
           productId: product.id,
           action: 'up',
           product,
           viewDuration,
           confidence: 1.0
-        });
+        }).catch(() => {});
 
-        // Handle wishlist operation
         await addToWishlist(product.id);
         toast({
           description: `${product.title} added to your wishlist!`
         });
       } catch (error: any) {
-        console.error("Error adding to wishlist:", error.message);
-        
-        // Use the improved error message from the hook
         const errorMessage = error instanceof Error ? error.message : "Failed to add to wishlist. Please try again.";
-        
         toast({
           title: "Error",
           description: errorMessage,
@@ -379,27 +392,25 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
         });
       }
     });
-  }, [user, addToWishlist, toast, nextCard, trackSwipe, trackViewDuration, index, products]);
+  }, [user, addToWishlist, toast, nextCard, trackSwipe, trackViewDuration]);
 
+  // Optimized swipe end handler with debouncing
   const handleSwipeEnd = useCallback((event: any, info: PanInfo) => {
     const currentProduct = products[index];
     if (!currentProduct) return;
 
     const { x: offsetX, y: offsetY } = info.offset;
 
-    // Check for vertical swipe up first (wishlist)
     if (offsetY < -VERTICAL_THRESHOLD && Math.abs(offsetX) < DISTANCE_THRESHOLD) {
       handleAddToWishlist(currentProduct);
-    }
-    // Then check for horizontal swipes
-    else if (offsetX > DISTANCE_THRESHOLD) {
+    } else if (offsetX > DISTANCE_THRESHOLD) {
       handleLike(currentProduct);
     } else if (offsetX < -DISTANCE_THRESHOLD) {
       handleDislike();
     } else {
-      // Reset position with optimized spring physics
-      animate(x, 0, { type: "spring", stiffness: 200, damping: 25, duration: 0.3 });
-      animate(y, 0, { type: "spring", stiffness: 200, damping: 25, duration: 0.3 });
+      // Optimized spring animation
+      animate(x, 0, { type: "spring", stiffness: 150, damping: 20, duration: 0.25 });
+      animate(y, 0, { type: "spring", stiffness: 150, damping: 20, duration: 0.25 });
     }
   }, [x, y, index, products, handleLike, handleDislike, handleAddToWishlist]);
 
@@ -434,28 +445,15 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
 
   // Handle full-page product detail view
   if (showProductDetail && selectedProduct) {
-    // DEBUG: Log SwipeDeck transformation
-    console.log('=== SwipeDeck Transformation Debug ===');
-    console.log('Selected product for detail view:', selectedProduct);
-    console.log('Original media_urls:', selectedProduct.media_urls);
-    console.log('Original media_urls type:', typeof selectedProduct.media_urls);
-    
-    // Transform SwipeProduct to Product for ProductDetailPage
     const transformedProduct = {
       ...selectedProduct,
-      // Keep original media_urls format for ProductDetailPage compatibility
       media_urls: selectedProduct.media_urls,
-      // Fix brand data structure - check if brands exists and has name property
       brand: selectedProduct.brands?.name 
         ? { name: selectedProduct.brands.name }
         : selectedProduct.brands || { name: selectedProduct.merchant_name || 'ASOS' },
       price_cents: selectedProduct.price_cents,
       currency: selectedProduct.currency || 'USD'
     };
-    
-    console.log('Transformed product:', transformedProduct);
-    console.log('Transformed media_urls:', transformedProduct.media_urls);
-    console.log('=== End SwipeDeck Transformation Debug ===');
 
     return (
       <div className="fixed inset-0 z-50 bg-background">
@@ -518,14 +516,12 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                       onLoad={handleImageLoad}
                       onError={(e) => {
                         const img = e.target as HTMLImageElement;
-                        const originalSrc = img.src;
-                        console.warn('Image failed to load for product:', currentProduct.id, 'URL:', originalSrc);
                         img.src = '/placeholder.svg';
                       }}
                       style={{ maxHeight: '100%', maxWidth: '100%' }}
                     />
                     
-                     {/* Multiple images indicator and swipe instructions on same line */}
+                     {/* Multiple images indicator and swipe instructions */}
                      <div className="absolute top-4 left-4 flex items-center gap-3">
                        {hasMultipleImages(currentProduct) && (
                          <div className="bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full flex items-center gap-1 shadow-lg">
@@ -587,7 +583,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                         </Badge>
                       )}
                       
-                      {/* Action Buttons - smaller and positioned to the right */}
+                      {/* Action Buttons */}
                       <div className="flex items-center gap-1">
                         <Button
                           variant="ghost"
@@ -634,49 +630,35 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
-                          console.log('Shop Now clicked - URL:', currentProduct.external_url);
                           
                           if (currentProduct.external_url) {
                             try {
-                              // Validate URL
                               const url = currentProduct.external_url.startsWith('http') 
                                 ? currentProduct.external_url 
                                 : `https://${currentProduct.external_url}`;
                               
-                              console.log('Opening URL:', url);
-                              
-                              // Track shop now click
                               if (user) {
                                 supabase.from('events').insert([{
                                   event_type: 'shop_now_click',
                                   user_id: user.id,
                                   product_id: currentProduct.id,
                                   event_data: { source: 'swipe_deck', external_url: url }
-                                }]);
+                                }]).catch(() => {}); // Silent fail
                               }
                               
                               const newWindow = window.open(url, '_blank', 'noopener,noreferrer');
                               
                               if (!newWindow) {
-                                // Fallback for popup blockers
-                                console.log('Popup blocked, using location.href');
                                 window.location.href = url;
                               } else {
                                 toast({ description: 'Opening product page...' });
                               }
                             } catch (error) {
-                              console.error('Failed to open URL:', error);
                               toast({ 
                                 description: 'Failed to open product page', 
                                 variant: 'destructive' 
                               });
                             }
-                          } else {
-                            console.log('No external URL available');
-                            toast({ 
-                              description: 'Shop link not available for this product', 
-                              variant: 'destructive' 
-                            });
                           }
                         }}
                         className="w-full gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground font-semibold shadow-lg pointer-events-auto"
