@@ -35,8 +35,26 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
-    if (!openaiApiKey || !supabaseUrl || !supabaseServiceKey) {
-      throw new Error('Missing required environment variables');
+    console.log('Environment check:', {
+      hasOpenAI: !!openaiApiKey,
+      hasSupabaseUrl: !!supabaseUrl,
+      hasServiceKey: !!supabaseServiceKey,
+      openaiLength: openaiApiKey?.length || 0,
+      supabaseUrlLength: supabaseUrl?.length || 0,
+      serviceKeyLength: supabaseServiceKey?.length || 0
+    });
+
+    if (!openaiApiKey) {
+      console.error('Missing OPENAI_API_KEY environment variable');
+      throw new Error('OpenAI API key not configured');
+    }
+    if (!supabaseUrl) {
+      console.error('Missing SUPABASE_URL environment variable');
+      throw new Error('Supabase URL not configured');
+    }
+    if (!supabaseServiceKey) {
+      console.error('Missing SUPABASE_SERVICE_ROLE_KEY environment variable');
+      throw new Error('Supabase service key not configured');
     }
 
     // Parse request body
