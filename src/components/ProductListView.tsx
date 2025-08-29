@@ -11,7 +11,6 @@ import { supabase } from '@/integrations/supabase/client';
 import ProductDetailPage from '@/components/ProductDetailPage';
 import { getResponsiveImageProps } from '@/utils/asosImageUtils';
 import { getPrimaryImageUrl, hasMultipleImages, getImageCount } from '@/utils/imageHelpers';
-import { useIsMobile } from '@/hooks/use-mobile';
 
 interface ProductListViewProps {
   products: Product[];
@@ -29,7 +28,6 @@ const ProductCard: React.FC<{
   height: number;
 }> = ({ product, handleLike, handleProductClick, formatPrice, user, toast, height }) => {
   const { addToWishlist, isLoading: wishlistLoading } = useWishlist(product.id);
-  const isMobile = useIsMobile();
 
   const handleAddToWishlist = async () => {
     if (!user) {
@@ -70,38 +68,24 @@ const ProductCard: React.FC<{
           )}
           alt={product.title}
           className="w-full h-full object-cover"
-          style={{
-            // Prevent image flickering on mobile
-            WebkitBackfaceVisibility: 'hidden',
-            backfaceVisibility: 'hidden',
-            WebkitTransform: 'translateZ(0)',
-            transform: 'translateZ(0)',
-            // Ensure image stays visible
-            opacity: 1,
-            zIndex: 1
-          }}
           onError={(e) => {
             (e.target as HTMLImageElement).src = '/placeholder.svg';
           }}
-          loading="lazy"
-          decoding="async"
         />
         
         {/* Multiple images indicator for ASOS products */}
         {hasMultipleImages(product) && (
-          <div className="absolute top-2 left-2 bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full flex items-center gap-1 opacity-90 z-10">
+          <div className="absolute top-2 left-2 bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full flex items-center gap-1 opacity-90">
             <Image className="h-3 w-3" />
             {getImageCount(product)}
           </div>
         )}
         
-        {/* Hover gradient overlay - disabled on mobile to prevent image issues */}
-        {!isMobile && (
-          <div className="absolute inset-0 bg-gradient-to-t from-primary/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-2 pointer-events-none" />
-        )}
+        {/* Hover gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-primary/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
         
         {/* Top-right action buttons */}
-        <div className={`absolute top-2 right-2 flex flex-col space-y-1 z-20 ${isMobile ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-opacity duration-300`}>
+        <div className="absolute top-2 right-2 flex flex-col space-y-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
           <Button
             size="sm"
             variant="ghost"
@@ -122,7 +106,7 @@ const ProductCard: React.FC<{
         </div>
         
         {/* Product Info Overlay (appears on hover) */}
-        <div className={`absolute bottom-4 left-4 right-4 bg-white/60 backdrop-blur-sm rounded-xl p-3 z-10 ${isMobile ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-opacity duration-300`}>
+        <div className="absolute bottom-4 left-4 right-4 bg-white/60 backdrop-blur-sm rounded-xl p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
           <div className="text-xs font-medium line-clamp-1 mb-1">
             {product.title}
           </div>
