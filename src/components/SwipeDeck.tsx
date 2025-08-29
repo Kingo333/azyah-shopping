@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef, useCallback, useMemo, useLayoutEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -308,17 +307,17 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
         }).catch(() => {}); // Silent fail
 
         // Database operation with shorter timeout - Fix: properly handle the Promise
-        const dbOperation = supabase.from('likes').insert([{
+        const dbOperationPromise = supabase.from('likes').insert([{
           user_id: user.id,
           product_id: product.id
-        }]);
+        }]).then(result => result);
 
         // Race with 3 second timeout
         const timeoutPromise = new Promise((_, reject) => 
           setTimeout(() => reject(new Error('Timeout')), 3000)
         );
         
-        const { error } = await Promise.race([dbOperation, timeoutPromise]) as any;
+        const { error } = await Promise.race([dbOperationPromise, timeoutPromise]) as any;
 
         if (error && error.code !== '23505' && !error.message?.includes('Timeout')) {
           console.error("Like error:", error);
@@ -628,7 +627,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                   {currentProduct.external_url && (
                     <div className="pt-2 border-t border-border">
                       <Button
-                        onClick={(e) => {
+                        onClick={async (e) => {
                           e.preventDefault();
                           e.stopPropagation();
                           
@@ -640,12 +639,16 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                               
                               if (user) {
                                 // Fix: Properly handle the Promise from supabase insert
-                                supabase.from('events').insert([{
-                                  event_type: 'shop_now_click',
-                                  user_id: user.id,
-                                  product_id: currentProduct.id,
-                                  event_data: { source: 'swipe_deck', external_url: url }
-                                }]).then().catch(() => {}); // Silent fail
+                                try {
+                                  await supabase.from('events').insert([{
+                                    event_type: 'shop_now_click',
+                                    user_id: user.id,
+                                    product_id: currentProduct.id,
+                                    event_data: { source: 'swipe_deck', external_url: url }
+                                  }]);
+                                } catch (error) {
+                                  // Silent fail for analytics
+                                }
                               }
                               
                               const newWindow = window.open(url, '_blank', 'noopener,noreferrer');
