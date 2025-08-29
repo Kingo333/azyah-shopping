@@ -2565,6 +2565,19 @@ export type Database = {
           website: string
         }[]
       }
+      get_safe_user_profile: {
+        Args: { target_user_id?: string }
+        Returns: {
+          user_avatar_url: string
+          user_bio: string
+          user_country: string
+          user_created_at: string
+          user_id: string
+          user_name: string
+          user_role: Database["public"]["Enums"]["user_role"]
+          user_website: string
+        }[]
+      }
       get_trending_categories: {
         Args: { days_back?: number; limit_count?: number }
         Returns: {
@@ -2612,6 +2625,10 @@ export type Database = {
           gend?: Database["public"]["Enums"]["gender_type"]
           subcat: Database["public"]["Enums"]["subcategory_type"]
         }
+        Returns: boolean
+      }
+      validate_user_data_access: {
+        Args: { target_user_id: string }
         Returns: boolean
       }
     }
