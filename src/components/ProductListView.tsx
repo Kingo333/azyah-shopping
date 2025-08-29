@@ -54,28 +54,9 @@ const ProductCard: React.FC<{
     }
   };
 
-  // Generate stable card dimensions based on product ID for consistent layout
-  const getCardDimensions = (productId: string) => {
-    const hash = productId.split('').reduce((a, b) => {
-      a = ((a << 5) - a) + b.charCodeAt(0);
-      return a & a;
-    }, 0);
-    
-    const variants = [
-      { span: 'col-span-1 row-span-2', aspect: 'aspect-[3/4]' }, // tall
-      { span: 'col-span-1 row-span-1', aspect: 'aspect-square' }, // square
-      { span: 'col-span-2 row-span-1', aspect: 'aspect-[2/1]' }, // wide
-      { span: 'col-span-1 row-span-3', aspect: 'aspect-[3/5]' }, // extra tall
-    ];
-    
-    return variants[Math.abs(hash) % variants.length];
-  };
-
-  const cardDimensions = getCardDimensions(product.id);
-
   return (
-    <div className={`group relative bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 ${cardDimensions.span}`}>
-      <div className={`${cardDimensions.aspect} bg-muted rounded-2xl overflow-hidden relative w-full`}>
+    <div className="group relative bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2">
+      <div className="aspect-[3/4] bg-muted rounded-2xl overflow-hidden relative">
         <img
           {...getResponsiveImageProps(
             getPrimaryImageUrl(product),
@@ -220,9 +201,9 @@ const ProductListView: React.FC<ProductListViewProps> = ({ products, isLoading }
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 md:gap-4 auto-rows-max">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-6">
         {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
-          <div key={i} className="animate-pulse bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl shadow-lg col-span-1 row-span-2">
+          <div key={i} className="animate-pulse bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl shadow-lg">
             <div className="aspect-[3/4] bg-accent rounded-2xl"></div>
           </div>
         ))}
@@ -245,7 +226,7 @@ const ProductListView: React.FC<ProductListViewProps> = ({ products, isLoading }
 
   return (
     <>
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 md:gap-4 auto-rows-max">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-6">
         {products.map(product => (
           <ProductCard 
             key={product.id} 
