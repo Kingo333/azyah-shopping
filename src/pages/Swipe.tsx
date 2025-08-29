@@ -190,19 +190,19 @@ const Swipe = () => {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col container max-w-screen-xl mx-auto px-4 py-2 sm:py-6 lg:py-8">
-        <div className="text-center space-y-2 mb-4 sm:mb-6 lg:mb-2">
-          <h2 className="text-lg sm:text-2xl md:text-3xl lg:text-4xl font-bold font-playfair bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+      <main className="flex-1 flex flex-col container max-w-screen-lg mx-auto px-4 py-2 sm:py-8">
+        <div className="text-center space-y-1 mb-1 sm:mb-8">
+          <h2 className="text-sm sm:text-2xl md:text-3xl font-bold font-playfair bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
             Your Fashion Feed
           </h2>
-          <p className="text-sm sm:text-base lg:text-lg text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-xs sm:text-base text-muted-foreground">
             {filters.searchQuery ? `Searching for "${filters.searchQuery}"` : "Swipe through curated collections tailored just for you"}
           </p>
         </div>
 
         {/* Content Container */}
-        {viewMode === 'swipe' ? <div className="flex-1 flex items-center justify-center min-h-[500px] lg:min-h-[600px]">
-            <div className="relative w-full max-w-[380px] sm:max-w-md lg:max-w-[560px] xl:max-w-[600px] h-[calc(100vh-280px)] sm:h-[calc(100vh-240px)] lg:h-[calc(100vh-200px)] max-h-[650px] lg:max-h-[750px]">
+        {viewMode === 'swipe' ? <div className="flex-1 flex items-center justify-center min-h-[600px] px-4">
+            <div className="relative w-full max-w-[380px] sm:max-w-md lg:max-w-lg h-[calc(100vh-220px)] lg:h-[calc(100vh-180px)] max-h-[700px] lg:max-h-[800px]">
               <SwipeDeck 
                 filter={filters.categories[0] || 'all'} 
                 subcategory={filters.subcategories[0] || ''} 
