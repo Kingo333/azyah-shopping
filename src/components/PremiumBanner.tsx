@@ -20,12 +20,12 @@ const PremiumBanner: React.FC = () => {
   return (
     <GlassPanel className="relative overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-r from-accent/10 to-accent-cartier/10" />
-      <div className="relative flex flex-col sm:flex-row items-center justify-between gap-3 p-4 sm:p-6">
+      <div className="relative flex flex-col sm:flex-row items-center justify-between gap-2 p-2 sm:p-3">
         <div className="text-center sm:text-left w-full sm:w-auto">
-          <h3 className="text-base sm:text-lg font-semibold bg-gradient-to-r from-accent to-accent-cartier bg-clip-text text-transparent mb-1">
+          <h3 className="text-sm sm:text-base font-semibold bg-gradient-to-r from-accent to-accent-cartier bg-clip-text text-transparent mb-0.5">
             Unlock Premium Access
           </h3>
-          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-xs sm:text-sm text-muted-foreground">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-1 text-xs text-muted-foreground">
             <span className="font-medium">30 AED/month</span>
             <span className="hidden sm:inline">•</span>
             <span className="leading-tight">More Daily Credits for Virtual Try-On and Beauty Guide • Unlimited replica • UGC collabs</span>
@@ -39,10 +39,10 @@ const PremiumBanner: React.FC = () => {
           size="sm"
         >
           {loading ? (
-            <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
+            <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin mr-1.5" />
           ) : null}
           Upgrade Now
-          <ArrowRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform duration-200" />
+          <ArrowRight className="h-3 w-3 ml-1.5 group-hover:translate-x-1 transition-transform duration-200" />
         </Button>
       </div>
     </GlassPanel>
