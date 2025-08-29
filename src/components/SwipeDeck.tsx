@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef, useCallback, useMemo, useLayoutEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -298,7 +299,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
         const viewDuration = trackViewDuration(product.id, viewStartTimesRef.current.get(product.id) || Date.now());
         
         // Fire-and-forget tracking with timeout
-        const trackingPromise = trackSwipe({
+        trackSwipe({
           productId: product.id,
           action: 'right',
           product,
@@ -306,8 +307,8 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
           confidence: 1.0
         }).catch(() => {}); // Silent fail
 
-        // Database operation with shorter timeout
-        const dbPromise = supabase.from('likes').insert([{
+        // Database operation with shorter timeout - Fix: properly handle the Promise
+        const dbOperation = supabase.from('likes').insert([{
           user_id: user.id,
           product_id: product.id
         }]);
@@ -317,7 +318,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
           setTimeout(() => reject(new Error('Timeout')), 3000)
         );
         
-        const { error } = await Promise.race([dbPromise, timeoutPromise]) as any;
+        const { error } = await Promise.race([dbOperation, timeoutPromise]) as any;
 
         if (error && error.code !== '23505' && !error.message?.includes('Timeout')) {
           console.error("Like error:", error);
@@ -638,12 +639,13 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                                 : `https://${currentProduct.external_url}`;
                               
                               if (user) {
+                                // Fix: Properly handle the Promise from supabase insert
                                 supabase.from('events').insert([{
                                   event_type: 'shop_now_click',
                                   user_id: user.id,
                                   product_id: currentProduct.id,
                                   event_data: { source: 'swipe_deck', external_url: url }
-                                }]).catch(() => {}); // Silent fail
+                                }]).then().catch(() => {}); // Silent fail
                               }
                               
                               const newWindow = window.open(url, '_blank', 'noopener,noreferrer');
