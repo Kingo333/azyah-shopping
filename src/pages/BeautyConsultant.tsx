@@ -17,6 +17,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { sanitizeHtml } from "@/utils/sanitizeHtml";
 import { useImageOptimization } from "@/hooks/useImageOptimization";
 import { supabase } from "@/integrations/supabase/client";
+import { TextToVoiceConverter } from "@/components/TextToVoiceConverter";
 
 type ChatMessage = {
   id: string;
@@ -687,23 +688,32 @@ export default function BeautyConsultantPage() {
                       <div className="space-y-2 flex-1">
                         {message.isVoice && (message.audioUrl || message.transcription) ? <div className="transform transition-all duration-300 hover:scale-[1.02]">
                             <VoiceMessage audioUrl={message.audioUrl} transcription={message.transcription} isUser={message.type === 'user'} />
-                          </div> : <div className={`rounded-2xl px-4 py-3 backdrop-blur-sm border shadow-sm transition-all duration-300 hover:shadow-md ${message.type === 'user' ? 'bg-gradient-to-br from-primary to-primary/90 text-primary-foreground border-primary/20' : 'bg-card/60 border-border/50'}`}>
-                            {message.image && <div className="mb-3 rounded-xl overflow-hidden border border-border/30 relative">
-                                <img src={message.image} alt="Uploaded selfie" className="w-full max-w-56 h-auto object-cover transition-transform duration-300 hover:scale-105" />
-                                {loading && index === messages.length - 1 && <div className="absolute inset-0 rounded-xl overflow-hidden">
-                                    <div className="absolute inset-0 bg-primary/20 backdrop-blur-[1px]"></div>
-                                    <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-primary to-transparent animate-[scan_2s_ease-in-out_infinite]"></div>
-                                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-2 px-3 py-1.5 bg-black/50 rounded-full backdrop-blur-sm">
-                                      <div className="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
-                                      <span className="text-xs text-white font-medium">Scanning...</span>
-                                    </div>
-                                  </div>}
-                              </div>}
-                            <div className="text-sm leading-relaxed">
-                              <div dangerouslySetInnerHTML={{
-                          __html: sanitizeHtml(message.content)
-                        }} />
+                          </div> : <div className="space-y-2">
+                            <div className={`rounded-2xl px-4 py-3 backdrop-blur-sm border shadow-sm transition-all duration-300 hover:shadow-md ${message.type === 'user' ? 'bg-gradient-to-br from-primary to-primary/90 text-primary-foreground border-primary/20' : 'bg-card/60 border-border/50'}`}>
+                              {message.image && <div className="mb-3 rounded-xl overflow-hidden border border-border/30 relative">
+                                  <img src={message.image} alt="Uploaded selfie" className="w-full max-w-56 h-auto object-cover transition-transform duration-300 hover:scale-105" />
+                                  {loading && index === messages.length - 1 && <div className="absolute inset-0 rounded-xl overflow-hidden">
+                                      <div className="absolute inset-0 bg-primary/20 backdrop-blur-[1px]"></div>
+                                      <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-primary to-transparent animate-[scan_2s_ease-in-out_infinite]"></div>
+                                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-2 px-3 py-1.5 bg-black/50 rounded-full backdrop-blur-sm">
+                                        <div className="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
+                                        <span className="text-xs text-white font-medium">Scanning...</span>
+                                      </div>
+                                    </div>}
+                                </div>}
+                              <div className="text-sm leading-relaxed">
+                                <div dangerouslySetInnerHTML={{
+                            __html: sanitizeHtml(message.content)
+                          }} />
+                              </div>
                             </div>
+                            
+                            {/* Voice Converter for Assistant Messages */}
+                            {message.type === 'assistant' && !message.isVoice && message.content.trim() && (
+                              <div className="flex justify-start">
+                                <TextToVoiceConverter text={message.content} className="ml-1" />
+                              </div>
+                            )}
                           </div>}
                         
                         <div className={`text-xs opacity-60 transition-opacity duration-300 hover:opacity-80 ${message.type === 'user' ? 'text-right' : 'text-left'}`}>

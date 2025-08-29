@@ -1,0 +1,1 @@
+UPDATE user_credits SET credits_remaining = 4, credits_used_today = 0, last_reset_date = CURRENT_DATE, updated_at = NOW() WHERE user_id = auth.uid();
