@@ -19,13 +19,13 @@ const PremiumBanner: React.FC = () => {
   };
   return <GlassPanel className="relative overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-r from-accent/10 to-accent-cartier/10" />
-      <div className="relative flex flex-col sm:flex-row items-center justify-between gap-1.5 p-1.5 sm:p-2">
+      <div className="relative flex flex-col sm:flex-row items-center justify-between gap-1 p-1.5 sm:p-2">
         <div className="text-center sm:text-left w-full sm:w-auto">
           <h3 className="text-xs sm:text-sm font-semibold bg-gradient-to-r from-accent to-accent-cartier bg-clip-text text-transparent mb-0">Premium Access</h3>
           <div className="flex flex-col sm:flex-row sm:items-center gap-0.5 text-xs text-muted-foreground">
             <span className="font-medium">30 AED/month</span>
             <span className="hidden sm:inline">•</span>
-            <span className="leading-tight text-xs">More Daily Credits for Virtual Try-On and Beauty Guide • Unlimited replica • UGC collabs</span>
+            <span className="leading-tight text-xs">More Daily Credits for Virtual Try-On and Beauty Guide • UGC collabs</span>
           </div>
         </div>
         
