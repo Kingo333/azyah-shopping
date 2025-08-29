@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -25,8 +26,7 @@ const ProductCard: React.FC<{
   formatPrice: (cents: number, currency?: string) => string;
   user: any;
   toast: any;
-  height: number;
-}> = ({ product, handleLike, handleProductClick, formatPrice, user, toast, height }) => {
+}> = ({ product, handleLike, handleProductClick, formatPrice, user, toast }) => {
   const { addToWishlist, isLoading: wishlistLoading } = useWishlist(product.id);
 
   const handleAddToWishlist = async () => {
@@ -56,11 +56,8 @@ const ProductCard: React.FC<{
   };
 
   return (
-    <div 
-      className="group relative bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 mb-4 break-inside-avoid"
-      style={{ height: `${height}px` }}
-    >
-      <div className="w-full h-full bg-muted rounded-2xl overflow-hidden relative">
+    <div className="group relative bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2">
+      <div className="w-full aspect-[3/4] bg-muted rounded-2xl overflow-hidden relative">
         <img
           {...getResponsiveImageProps(
             getPrimaryImageUrl(product),
@@ -146,16 +143,6 @@ const ProductCard: React.FC<{
   );
 };
 
-// Function to generate varying heights for Pinterest-style layout
-const getCardHeight = (productId: string): number => {
-  const heights = [280, 320, 360, 400, 440, 480];
-  const hash = productId.split('').reduce((a, b) => {
-    a = ((a << 5) - a) + b.charCodeAt(0);
-    return a & a;
-  }, 0);
-  return heights[Math.abs(hash) % heights.length];
-};
-
 const ProductListView: React.FC<ProductListViewProps> = ({ products, isLoading }) => {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [showProductDetail, setShowProductDetail] = useState(false);
@@ -215,9 +202,9 @@ const ProductListView: React.FC<ProductListViewProps> = ({ products, isLoading }
 
   if (isLoading) {
     return (
-      <div className="columns-2 md:columns-3 lg:columns-4 gap-3 md:gap-6 space-y-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-6">
         {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
-          <div key={i} className="animate-pulse bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl shadow-lg mb-4 break-inside-avoid" style={{ height: `${320 + (i % 3) * 80}px` }}>
+          <div key={i} className="animate-pulse bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl shadow-lg aspect-[3/4]">
             <div className="w-full h-full bg-accent rounded-2xl"></div>
           </div>
         ))}
@@ -240,7 +227,7 @@ const ProductListView: React.FC<ProductListViewProps> = ({ products, isLoading }
 
   return (
     <>
-      <div className="columns-2 md:columns-3 lg:columns-4 gap-3 md:gap-6 space-y-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-6">
         {products.map(product => (
           <ProductCard 
             key={product.id} 
@@ -250,7 +237,6 @@ const ProductListView: React.FC<ProductListViewProps> = ({ products, isLoading }
             formatPrice={formatPrice}
             user={user}
             toast={toast}
-            height={getCardHeight(product.id)}
           />
         ))}
       </div>
