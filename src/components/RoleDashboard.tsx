@@ -226,43 +226,43 @@ const RoleDashboard: React.FC = () => {
       <PremiumBanner />
       
       {/* Quick Actions with Premium Glass Panel */}
-      <GlassPanel variant="premium" className="p-3 sm:p-6">
-        <div className="space-y-3 sm:space-y-6">
-          <h2 className="text-xl sm:text-2xl font-cormorant font-semibold flex items-center gap-2 sm:gap-3 text-foreground/90">
+      <GlassPanel variant="premium" className="p-2 sm:p-4">
+        <div className="space-y-2 sm:space-y-4">
+          <h2 className="text-lg sm:text-xl font-cormorant font-semibold flex items-center gap-2 text-foreground/90">
             Quick Actions
           </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-2 sm:gap-4">
-            <Button onClick={() => navigate('/swipe')} className="btn-luxury h-12 sm:h-16 flex-col gap-1 sm:gap-2">
-              <Heart className="h-4 w-4 sm:h-6 sm:w-6" />
-              <span className="text-xs sm:text-sm">Swipe</span>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-1.5 sm:gap-3">
+            <Button onClick={() => navigate('/swipe')} className="btn-luxury h-10 sm:h-14 flex-col gap-0.5 sm:gap-1.5">
+              <Heart className="h-3 w-3 sm:h-5 sm:w-5" />
+              <span className="text-xs">Swipe</span>
             </Button>
-            <Button onClick={() => setAiStudioModalOpen(true)} variant="outline" className="h-12 sm:h-16 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300 relative bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 border-purple-200 dark:border-purple-800">
-              <Sparkles className="h-4 w-4 sm:h-6 sm:w-6 text-purple-600" />
-              <span className="text-xs sm:text-sm text-purple-600">AI Studio</span>
+            <Button onClick={() => setAiStudioModalOpen(true)} variant="outline" className="h-10 sm:h-14 flex-col gap-0.5 sm:gap-1.5 hover:bg-primary/10 hover:scale-105 transition-all duration-300 relative bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 border-purple-200 dark:border-purple-800">
+              <Sparkles className="h-3 w-3 sm:h-5 sm:w-5 text-purple-600" />
+              <span className="text-xs text-purple-600">AI Studio</span>
               <Badge variant="secondary" className="absolute -top-1 -right-1 text-xs px-1 py-0 h-4">
                 New
               </Badge>
             </Button>
-            <Button onClick={() => navigate('/wishlist')} variant="outline" className="h-12 sm:h-16 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300">
-              <ShoppingBag className="h-4 w-4 sm:h-6 sm:w-6" />
-              <span className="text-xs sm:text-sm">Wishlist</span>
+            <Button onClick={() => navigate('/wishlist')} variant="outline" className="h-10 sm:h-14 flex-col gap-0.5 sm:gap-1.5 hover:bg-primary/10 hover:scale-105 transition-all duration-300">
+              <ShoppingBag className="h-3 w-3 sm:h-5 sm:w-5" />
+              <span className="text-xs">Wishlist</span>
             </Button>
-            <Button onClick={() => navigate('/explore')} variant="outline" className="h-12 sm:h-16 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300">
-              <Search className="h-4 w-4 sm:h-6 sm:w-6" />
-              <span className="text-xs sm:text-sm">Explore</span>
+            <Button onClick={() => navigate('/explore')} variant="outline" className="h-10 sm:h-14 flex-col gap-0.5 sm:gap-1.5 hover:bg-primary/10 hover:scale-105 transition-all duration-300">
+              <Search className="h-3 w-3 sm:h-5 sm:w-5" />
+              <span className="text-xs">Explore</span>
             </Button>
-            {isEnabled('ai_beauty_consultant') ? <Button onClick={() => navigate('/beauty-consultant')} variant="outline" className="h-12 sm:h-16 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300 relative bg-gradient-to-br from-pink-50 to-rose-50 dark:from-pink-950/20 dark:to-rose-950/20 border-pink-200 dark:border-pink-800" data-qa="qa-beauty">
-                <WandSparkles className="h-4 w-4 sm:h-6 sm:w-6 text-pink-600" />
-                <span className="text-xs sm:text-sm text-pink-600">Beauty Guide</span>
+            {isEnabled('ai_beauty_consultant') ? <Button onClick={() => navigate('/beauty-consultant')} variant="outline" className="h-10 sm:h-14 flex-col gap-0.5 sm:gap-1.5 hover:bg-primary/10 hover:scale-105 transition-all duration-300 relative bg-gradient-to-br from-pink-50 to-rose-50 dark:from-pink-950/20 dark:to-rose-950/20 border-pink-200 dark:border-pink-800 px-1.5 sm:px-3" data-qa="qa-beauty">
+                <WandSparkles className="h-3 w-3 sm:h-5 sm:w-5 text-pink-600" />
+                <span className="text-xs text-pink-600">Beauty Guide</span>
                 <Badge variant="secondary" className="absolute -top-1 -right-1 text-xs px-1 py-0 h-4 bg-pink-100 text-pink-700 dark:bg-pink-900 dark:text-pink-300"> Voice</Badge>
-              </Button> : <Button onClick={() => navigate('/fashion-feed')} variant="outline" className="h-12 sm:h-16 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300">
-                <Users className="h-4 w-4 sm:h-6 sm:w-6" />
-                <span className="text-xs sm:text-sm">Feed</span>
+              </Button> : <Button onClick={() => navigate('/fashion-feed')} variant="outline" className="h-10 sm:h-14 flex-col gap-0.5 sm:gap-1.5 hover:bg-primary/10 hover:scale-105 transition-all duration-300">
+                <Users className="h-3 w-3 sm:h-5 sm:w-5" />
+                <span className="text-xs">Feed</span>
               </Button>}
             <UGCCollabButton />
-            <Button onClick={handleToyReplicaClick} variant="outline" className="h-12 sm:h-16 flex-col gap-1 sm:gap-2 hover:bg-primary/10 hover:scale-105 transition-all duration-300 relative bg-gradient-to-br from-green-50 to-blue-50 dark:from-green-950/20 dark:to-blue-950/20 border-green-200 dark:border-green-800">
-              <Blocks className="h-4 w-4 sm:h-6 sm:w-6 text-green-600" />
-              <span className="text-xs sm:text-sm text-green-600">Toy Replica</span>
+            <Button onClick={handleToyReplicaClick} variant="outline" className="h-10 sm:h-14 flex-col gap-0.5 sm:gap-1.5 hover:bg-primary/10 hover:scale-105 transition-all duration-300 relative bg-gradient-to-br from-green-50 to-blue-50 dark:from-green-950/20 dark:to-blue-950/20 border-green-200 dark:border-green-800">
+              <Blocks className="h-3 w-3 sm:h-5 sm:w-5 text-green-600" />
+              <span className="text-xs text-green-600">Toy Replica</span>
               <Badge variant="secondary" className="absolute -top-1 -right-1 text-xs px-1 py-0 h-4">
                 AI
               </Badge>
