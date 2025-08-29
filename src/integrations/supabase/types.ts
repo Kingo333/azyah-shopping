@@ -2384,6 +2384,51 @@ export type Database = {
       }
     }
     Functions: {
+      admin_access_payment_data: {
+        Args: { payment_id: string }
+        Returns: {
+          amount_fils: number
+          cancel_url: string | null
+          created_at: string | null
+          currency: string | null
+          failure_url: string | null
+          fee_amount_fils: number | null
+          id: string
+          latest_error_code: string | null
+          latest_error_message: string | null
+          operation_id: string
+          payment_intent_id: string
+          product: string
+          provider: string | null
+          redirect_url: string | null
+          status: string
+          success_url: string | null
+          tip_amount_fils: number | null
+          updated_at: string | null
+          user_id: string | null
+        }[]
+      }
+      admin_access_user_data: {
+        Args: { target_user_id: string }
+        Returns: {
+          avatar_url: string | null
+          bio: string | null
+          country: string | null
+          created_at: string
+          email: string
+          id: string
+          last_sign_in_at: string | null
+          name: string | null
+          preferences: Json | null
+          provider: string | null
+          provider_id: string | null
+          role: Database["public"]["Enums"]["user_role"]
+          social_links: Json | null
+          socials: Json | null
+          updated_at: string
+          website: string | null
+        }[]
+      }
       admin_get_subscription_details: {
         Args: { target_user_id: string }
         Returns: {
@@ -2425,6 +2470,10 @@ export type Database = {
           target_user_id: string
         }
         Returns: boolean
+      }
+      check_payment_encryption: {
+        Args: Record<PropertyKey, never>
+        Returns: string
       }
       cleanup_expired_sessions: {
         Args: Record<PropertyKey, never>
@@ -2596,9 +2645,22 @@ export type Database = {
           is_premium: boolean
         }[]
       }
+      get_user_email_secure: {
+        Args: { target_user_id: string }
+        Returns: string
+      }
       infer_gender_from_text: {
         Args: { text_input: string }
         Returns: Database["public"]["Enums"]["gender_type"]
+      }
+      log_admin_access_with_justification: {
+        Args: {
+          action_type: string
+          justification: string
+          target_table: string
+          target_user_id: string
+        }
+        Returns: undefined
       }
       log_user_data_access: {
         Args: {
