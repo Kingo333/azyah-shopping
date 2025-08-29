@@ -85,7 +85,14 @@ serve(async (req) => {
     
     const [creditsResult, sessionResult, audioResult, imageResult] = await Promise.all([
       // Credits check
-      supabase.rpc('get_user_credits', { target_user_id: user_id }).catch(err => ({ error: err })),
+      (async () => {
+        try {
+          const { data, error } = await supabase.rpc('get_user_credits', { target_user_id: user_id });
+          return error ? { error } : { data };
+        } catch (err) {
+          return { error: err };
+        }
+      })(),
       // Session management
       getOrCreateSession(supabase, user_id, { region, mode }).catch(err => ({ error: err })),
       // Audio transcription (if provided)
@@ -267,9 +274,23 @@ serve(async (req) => {
     // Immediate response operations (fast path)
     const [creditDeductResult, updatedCreditsResult] = await Promise.all([
       // Deduct credit
-      supabase.rpc('deduct_user_credit', { target_user_id: user_id }).catch(err => ({ error: err })),
+      (async () => {
+        try {
+          const { data, error } = await supabase.rpc('deduct_user_credit', { target_user_id: user_id });
+          return error ? { error } : { data };
+        } catch (err) {
+          return { error: err };
+        }
+      })(),
       // Get updated credits to return immediately
-      supabase.rpc('get_user_credits', { target_user_id: user_id }).catch(err => ({ error: err }))
+      (async () => {
+        try {
+          const { data, error } = await supabase.rpc('get_user_credits', { target_user_id: user_id });
+          return error ? { error } : { data };
+        } catch (err) {
+          return { error: err };
+        }
+      })()
     ]);
 
     if (creditDeductResult.error) {
