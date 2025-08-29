@@ -22,7 +22,6 @@ import { UGCCollabButton } from '@/components/ugc/UGCCollabButton';
 import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
 import { FeedbackModal } from '@/components/FeedbackModal';
 import { PaymentIntegrationTest } from '@/components/PaymentIntegrationTest';
-
 interface UserProfile {
   id: string;
   name: string;
@@ -30,7 +29,6 @@ interface UserProfile {
   avatar_url?: string;
   email: string;
 }
-
 interface DashboardStats {
   totalProducts?: number;
   totalViews?: number;
@@ -39,7 +37,6 @@ interface DashboardStats {
   totalWishlistItems?: number;
   totalCartItems?: number;
 }
-
 const RoleDashboard: React.FC = () => {
   const {
     user,
@@ -61,7 +58,6 @@ const RoleDashboard: React.FC = () => {
   const [aiStudioModalOpen, setAiStudioModalOpen] = useState(false);
   const [isClosetsMinimized, setIsClosetsMinimized] = useState(true);
   const [isAffiliateMinimized, setIsAffiliateMinimized] = useState(true);
-
   useEffect(() => {
     // Set correct page title
     document.title = 'Azyah - Fashion Discovery Platform';
@@ -83,7 +79,6 @@ const RoleDashboard: React.FC = () => {
     };
     initializeDashboard();
   }, [user]);
-
   const fetchUserProfile = async () => {
     if (!user) return;
     console.log('Fetching user profile for:', user.id);
@@ -136,7 +131,6 @@ const RoleDashboard: React.FC = () => {
       setUserProfile(fallbackProfile);
     }
   };
-
   const fetchDashboardStats = async () => {
     if (!user) return;
     console.log('Fetching dashboard stats for:', user.id);
@@ -172,14 +166,12 @@ const RoleDashboard: React.FC = () => {
       });
     }
   };
-
   const formatPrice = (cents: number): string => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD'
     }).format(cents / 100);
   };
-
   const handleToyReplicaClick = async () => {
     // Navigate to the toy replica page
     navigate('/toy-replica');
@@ -209,7 +201,6 @@ const RoleDashboard: React.FC = () => {
         </div>
       </div>;
   }
-
   if (!userProfile) {
     console.log('No user profile, showing error');
     return <div className="min-h-screen bg-background flex items-center justify-center">
@@ -218,9 +209,7 @@ const RoleDashboard: React.FC = () => {
         </div>
       </div>;
   }
-
   console.log('Rendering dashboard for user:', userProfile);
-
   const renderShopperDashboard = () => <div className="space-y-4">
       {/* Premium Banner */}
       <PremiumBanner />
@@ -282,9 +271,7 @@ const RoleDashboard: React.FC = () => {
               </div>
               Trending Styles
             </h3>
-            <p className="text-muted-foreground leading-relaxed">
-              Discover what's trending now and shop the latest styles everyone's talking about.
-            </p>
+            <p className="text-muted-foreground leading-relaxed">Discover the latest styles everyone's talking about.</p>
             <TrendingStylesCarousel limit={8} />
           </div>
         </GlassPanel>
@@ -399,7 +386,6 @@ const RoleDashboard: React.FC = () => {
         <FeedbackModal userType="shopper" />
       </div>
     </div>;
-
   const renderBrandDashboard = () => <div className="space-y-4">
 
       {/* Quick Actions */}
@@ -423,7 +409,6 @@ const RoleDashboard: React.FC = () => {
         </div>
       </GlassPanel>
     </div>;
-
   const renderRetailerDashboard = () => <div className="space-y-4">
 
       {/* Quick Actions */}
@@ -447,7 +432,6 @@ const RoleDashboard: React.FC = () => {
         </div>
       </GlassPanel>
     </div>;
-
   return <ErrorBoundary>
       <SEOHead title="Azyah - Fashion Discovery Platform" description="Discover, shop and create your perfect style with AI-powered fashion recommendations" key="dashboard-seo" // Force re-render to override payment cancel title
     />
@@ -507,5 +491,4 @@ const RoleDashboard: React.FC = () => {
       </div>
     </ErrorBoundary>;
 };
-
 export default RoleDashboard;
