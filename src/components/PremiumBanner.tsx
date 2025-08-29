@@ -29,10 +29,10 @@ const PremiumBanner: React.FC = () => {
           </div>
         </div>
         
-        <Button onClick={handleUpgrade} disabled={loading} className="bg-gradient-to-r from-accent to-accent-cartier hover:from-accent/90 hover:to-accent-cartier/90 text-white shadow-lg hover:shadow-xl transition-all duration-200 group w-full sm:w-auto" size="sm">
-          {loading ? <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin mr-1.5" /> : null}
-          Upgrade Now
-          <ArrowRight className="h-3 w-3 ml-1.5 group-hover:translate-x-1 transition-transform duration-200" />
+        <Button onClick={handleUpgrade} disabled={loading} className="bg-gradient-to-r from-accent to-accent-cartier hover:from-accent/90 hover:to-accent-cartier/90 text-white shadow-lg hover:shadow-xl transition-all duration-200 group w-full sm:w-auto text-xs" size="sm">
+          {loading ? <div className="w-2.5 h-2.5 border-2 border-current border-t-transparent rounded-full animate-spin mr-1" /> : null}
+          Upgrade
+          <ArrowRight className="h-2.5 w-2.5 ml-1 group-hover:translate-x-1 transition-transform duration-200" />
         </Button>
       </div>
     </GlassPanel>;
