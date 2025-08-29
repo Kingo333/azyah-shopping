@@ -18,10 +18,11 @@ export const VoiceMessage: React.FC<VoiceMessageProps> = ({
 }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [showTranscription, setShowTranscription] = useState(false);
+  const [isAudioReady, setIsAudioReady] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const togglePlayback = () => {
-    if (!audioRef.current || !audioUrl) return;
+    if (!audioRef.current || !audioUrl || !isAudioReady) return;
 
     if (isPlaying) {
       audioRef.current.pause();
@@ -35,8 +36,15 @@ export const VoiceMessage: React.FC<VoiceMessageProps> = ({
       audioRef.current.onplay = () => setIsPlaying(true);
       audioRef.current.onpause = () => setIsPlaying(false);
       audioRef.current.onended = () => setIsPlaying(false);
+      audioRef.current.oncanplaythrough = () => setIsAudioReady(true);
+      audioRef.current.onerror = () => setIsAudioReady(false);
     }
   };
+
+  // Only show the component when audio is ready or if there's transcription
+  if (!isAudioReady && !transcription) {
+    return null;
+  }
 
   return (
     <div className={cn(
@@ -46,7 +54,7 @@ export const VoiceMessage: React.FC<VoiceMessageProps> = ({
         : "bg-muted text-muted-foreground",
       className
     )}>
-      {audioUrl && (
+      {audioUrl && isAudioReady && (
         <>
           <Button
             variant="ghost"
