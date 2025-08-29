@@ -54,15 +54,9 @@ const ProductCard: React.FC<{
     }
   };
 
-  // Generate random height for masonry effect
-  const getRandomHeight = () => {
-    const heights = ['h-64', 'h-72', 'h-80', 'h-56', 'h-68', 'h-76'];
-    return heights[Math.floor(Math.random() * heights.length)];
-  };
-
   return (
-    <div className="group relative bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 break-inside-avoid mb-4">
-      <div className={`${getRandomHeight()} bg-muted rounded-2xl overflow-hidden relative`}>
+    <div className="group relative bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2">
+      <div className="aspect-[3/4] bg-muted rounded-2xl overflow-hidden relative">
         <img
           {...getResponsiveImageProps(
             getPrimaryImageUrl(product),
@@ -207,10 +201,10 @@ const ProductListView: React.FC<ProductListViewProps> = ({ products, isLoading }
 
   if (isLoading) {
     return (
-      <div className="columns-2 md:columns-3 lg:columns-4 gap-3 md:gap-6 space-y-3 md:space-y-6">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-6">
         {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
-          <div key={i} className="animate-pulse bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl shadow-lg break-inside-avoid mb-4">
-            <div className={`${['h-64', 'h-72', 'h-80', 'h-56'][i % 4]} bg-accent rounded-2xl`}></div>
+          <div key={i} className="animate-pulse bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl shadow-lg">
+            <div className="aspect-[3/4] bg-accent rounded-2xl"></div>
           </div>
         ))}
       </div>
@@ -232,7 +226,7 @@ const ProductListView: React.FC<ProductListViewProps> = ({ products, isLoading }
 
   return (
     <>
-      <div className="columns-2 md:columns-3 lg:columns-4 gap-3 md:gap-6 space-y-3 md:space-y-6">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-6">
         {products.map(product => (
           <ProductCard 
             key={product.id} 
