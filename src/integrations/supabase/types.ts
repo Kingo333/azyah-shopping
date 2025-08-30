@@ -2492,6 +2492,16 @@ export type Database = {
           website: string | null
         }[]
       }
+      admin_access_user_profile: {
+        Args: { justification: string; target_user_id: string }
+        Returns: {
+          user_created_at: string
+          user_email: string
+          user_id: string
+          user_name: string
+          user_role: Database["public"]["Enums"]["user_role"]
+        }[]
+      }
       admin_get_subscription_details: {
         Args: { target_user_id: string }
         Returns: {
@@ -2525,6 +2535,10 @@ export type Database = {
           updated_at: string
           website: string | null
         }[]
+      }
+      admin_get_user_email: {
+        Args: { justification: string; target_user_id: string }
+        Returns: string
       }
       admin_update_user_role: {
         Args: {
@@ -2780,6 +2794,10 @@ export type Database = {
         Returns: boolean
       }
       validate_user_data_access: {
+        Args: { target_user_id: string }
+        Returns: boolean
+      }
+      validate_user_profile_access: {
         Args: { target_user_id: string }
         Returns: boolean
       }
