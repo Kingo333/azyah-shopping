@@ -2,6 +2,7 @@ import React, { forwardRef, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Move, RotateCw, X, Copy } from 'lucide-react';
+import { getPrimaryImageUrl } from '@/utils/imageHelpers';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 interface Slot {
@@ -387,7 +388,7 @@ const SlotComponent: React.FC<SlotComponentProps> = ({
         {slot.item ? (
           <div className="relative w-full h-full">
             <img
-              src={slot.item.image_bg_removed_url || slot.item.image_url || '/placeholder.svg'}
+              src={getPrimaryImageUrl(slot.item)}
               alt={slot.item.title || 'Item'}
               className="w-full h-full object-contain p-2 pointer-events-none select-none"
               style={{
