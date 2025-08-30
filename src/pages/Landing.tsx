@@ -177,7 +177,7 @@ export default function Landing() {
           <div className="flex items-center gap-2 lg:gap-3">
             <Crown className="w-3 h-3 sm:w-4 sm:h-4 lg:w-5 lg:h-5 flex-shrink-0" />
             <span className="font-medium text-xs sm:text-xs lg:text-sm">
-              <span className="hidden sm:inline">Premium 30 AED/month: Daily AI Try-On • AI Beauty Consultant • AI Mood Board • Priority Support</span>
+              <span className="hidden sm:inline">Premium : Daily AI Try-On • AI Beauty Consultant • AI Mood Board • Priority Support</span>
               <span className="sm:hidden">Premium features available</span>
             </span>
           </div>
