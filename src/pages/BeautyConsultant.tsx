@@ -16,6 +16,7 @@ import { CreditsDisplay } from "@/components/CreditsDisplay";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { sanitizeHtml } from "@/utils/sanitizeHtml";
 import { useImageOptimization } from "@/hooks/useImageOptimization";
+import { useUserBeautyProfile } from "@/hooks/useUserBeautyProfile";
 import { supabase } from "@/integrations/supabase/client";
 import { TextToVoiceConverter } from "@/components/TextToVoiceConverter";
 
@@ -46,14 +47,15 @@ type ConsultationResult = {
 };
 
 export default function BeautyConsultantPage() {
-  const {
-    user
-  } = useAuth();
-  const {
-    credits,
-    loading: creditsLoading,
-    updateCredits
-  } = useUserCredits();
+  const { user } = useAuth();
+  const { credits, loading: creditsLoading, updateCredits } = useUserCredits();
+  const { 
+    profile: beautyProfile, 
+    hasValidProfile, 
+    updateProfile: updateBeautyProfile,
+    getProfileSummary,
+    fetchProfile
+  } = useUserBeautyProfile();
   const { getOptimizedBase64 } = useImageOptimization();
   const [messages, setMessages] = useState<ChatMessage[]>([{
     id: '1',
@@ -95,6 +97,13 @@ export default function BeautyConsultantPage() {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Load beauty profile on component mount
+  useEffect(() => {
+    if (user?.id) {
+      fetchProfile();
+    }
+  }, [user?.id, fetchProfile]);
 
   // Load conversation history when mode changes (maintain 24h history per mode)
   useEffect(() => {

@@ -467,6 +467,79 @@ async function transcribeAudio(base64Audio: string, openaiApiKey: string): Promi
   return result.text?.trim() || '';
 }
 
+/**
+ * Analyzes selfie for beauty profile creation (one-time comprehensive analysis)
+ */
+async function analyzeSelfieForProfile(
+  base64Image: string, 
+  userMessage: string, 
+  region: string, 
+  openaiApiKey: string
+): Promise<{
+  skinTone: string;
+  undertone: string;
+  faceShape: string;
+  colorPalette: string[];
+  summary: string;
+}> {
+  const dataUrl = `data:image/jpeg;base64,${base64Image}`;
+  
+  const systemPrompt = `You are an expert beauty consultant analyzing a selfie for profile creation.
+  
+  Extract these attributes:
+  1. Skin tone: light, medium, medium-light, medium-deep, deep
+  2. Undertone: cool, warm, neutral, olive  
+  3. Face shape: oval, round, square, heart, diamond, oblong
+  4. Color palette: 2-3 complementary shades
+  
+  Respond ONLY in JSON format:
+  {
+    "skinTone": "medium",
+    "undertone": "warm",
+    "faceShape": "oval", 
+    "colorPalette": ["peach", "golden brown"],
+    "summary": "Medium warm skin, oval face. Peach tones enhance warmth."
+  }`;
+
+  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${openaiApiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'gpt-4o',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        {
+          role: 'user',
+          content: [
+            { type: 'text', text: `Profile analysis for ${region}. ${userMessage || 'Analyze my features.'}` },
+            { type: 'image_url', image_url: { url: dataUrl, detail: 'high' } },
+          ],
+        },
+      ],
+      max_completion_tokens: 300,
+      response_format: { type: 'json_object' }
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Profile analysis failed: ${await response.text()}`);
+  }
+
+  const result = await response.json();
+  const analysis = JSON.parse(result.choices[0].message.content);
+  
+  return {
+    skinTone: analysis.skinTone,
+    undertone: analysis.undertone,
+    faceShape: analysis.faceShape || null,
+    colorPalette: analysis.colorPalette || [],
+    summary: analysis.summary || 'Beauty profile created successfully.'
+  };
+}
+
 async function analyzeSelfie(base64Image: string, userMessage: string, region: string, openaiApiKey: string): Promise<string> {
   const dataUrl = `data:image/jpeg;base64,${base64Image}`;
   const systemPrompt = `
@@ -649,13 +722,15 @@ PRODUCT ANALYSIS MODE:
 - One quick application tip
 - Keep under 80 words total
 ` : `
-CHAT MODE:
-- ONE short paragraph (1-2 sentences max)
-- Max 1 clarifying question if needed  
-- Recommend only 1 specific product with brief reason
-- Add 1 quick tip
-- Keep under 60 words total
-- End with short question for next step
+CHAT MODE - VOICE-FIRST OPTIMIZATION:
+- EXTREMELY SHORT: Max 15-20 words TOTAL
+- Sound natural when spoken aloud
+- Give ONE specific recommendation only
+- Use warm, friendly stylist tone
+- No questions unless user asks for next steps
+- Examples: "Try coral blush—perfect for your warm undertone." 
+- Examples: "Golden bronzer would enhance your medium tone beautifully."
+- End with gentle encouragement like "You'll love this!"
 `}
   `.trim();
 
@@ -678,10 +753,10 @@ CHAT MODE:
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'gpt-4o',
+      model: 'gpt-4o-mini', // Faster model for chat
       messages,
-      temperature: 0.7,
-      max_completion_tokens: 700,
+      temperature: 0.8,
+      max_completion_tokens: mode === 'chat' ? 50 : 200, // Much shorter for chat
     }),
   });
 

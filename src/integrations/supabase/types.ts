@@ -2539,6 +2539,21 @@ export type Database = {
         Args: { query_text: string }
         Returns: number[]
       }
+      get_beauty_profile: {
+        Args: { target_user_id: string }
+        Returns: {
+          analysis_summary: string
+          color_palette: string[]
+          created_at: string
+          face_shape: string
+          id: string
+          selfie_url: string
+          skin_tone: string
+          undertone: string
+          updated_at: string
+          user_id: string
+        }[]
+      }
       get_brand_contact_info: {
         Args: { brand_id_param: string }
         Returns: {
@@ -2711,6 +2726,10 @@ export type Database = {
       }
       tier_from_price_aed: {
         Args: { aed_price: number }
+        Returns: string
+      }
+      upsert_beauty_profile: {
+        Args: { profile_updates: Json; target_user_id: string }
         Returns: string
       }
       validate_category_subcategory: {

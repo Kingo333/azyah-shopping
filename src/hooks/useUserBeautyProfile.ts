@@ -1,7 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 interface BeautyProfile {
   id: string;
@@ -18,48 +17,59 @@ interface BeautyProfile {
 
 export const useUserBeautyProfile = () => {
   const { user } = useAuth();
-  const queryClient = useQueryClient();
+  const [profile, setProfile] = useState<BeautyProfile | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Use direct API call since table not in types yet
-  const { data: profile, isLoading, error } = useQuery({
-    queryKey: ['beauty-profile', user?.id],
-    queryFn: async () => {
-      if (!user?.id) return null;
-
+  const fetchProfile = useCallback(async () => {
+    if (!user?.id) return;
+    
+    setIsLoading(true);
+    setError(null);
+    
+    try {
       const { data, error } = await supabase
         .rpc('get_beauty_profile', { target_user_id: user.id });
 
-      if (error) {
-        console.error('Error fetching beauty profile:', error);
-        return null;
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        setProfile(data[0] as BeautyProfile);
+      } else {
+        setProfile(null);
       }
+    } catch (err) {
+      console.error('Error fetching beauty profile:', err);
+      setError(err instanceof Error ? err.message : 'Failed to fetch profile');
+      setProfile(null);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [user?.id]);
 
-      return data && data.length > 0 ? data[0] as BeautyProfile : null;
-    },
-    enabled: !!user?.id
-  });
+  const updateProfile = useCallback(async (updates: Partial<BeautyProfile>) => {
+    if (!user?.id) throw new Error('User not authenticated');
 
-  const updateProfileMutation = useMutation({
-    mutationFn: async (updates: Partial<BeautyProfile>) => {
-      if (!user?.id) throw new Error('User not authenticated');
-
-      const { data, error } = await supabase
+    try {
+      const { error } = await supabase
         .rpc('upsert_beauty_profile', {
           target_user_id: user.id,
           profile_updates: updates
         });
 
       if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['beauty-profile', user?.id] });
+      
+      // Refetch profile after update
+      await fetchProfile();
+    } catch (err) {
+      console.error('Error updating beauty profile:', err);
+      throw err;
     }
-  });
+  }, [user?.id, fetchProfile]);
 
   const hasValidProfile = profile && profile.skin_tone && profile.undertone;
 
-  const getProfileSummary = () => {
+  const getProfileSummary = useCallback(() => {
     if (!hasValidProfile) return null;
     
     return {
@@ -69,15 +79,15 @@ export const useUserBeautyProfile = () => {
       colorPalette: profile.color_palette || [],
       summary: profile.analysis_summary
     };
-  };
+  }, [profile, hasValidProfile]);
 
   return {
     profile,
     isLoading,
     error,
     hasValidProfile,
-    updateProfile: updateProfileMutation.mutate,
-    isUpdating: updateProfileMutation.isPending,
+    updateProfile,
+    fetchProfile,
     getProfileSummary
   };
 };
