@@ -271,7 +271,7 @@ const RoleDashboard: React.FC = () => {
               </div>
               Trending Styles
             </h3>
-            <p className="text-muted-foreground leading-relaxed">Discover the latest styles everyone's talking about.</p>
+            <p className="text-muted-foreground leading-relaxed text-sm">Discover the latest styles everyone's talking about.</p>
             <TrendingStylesCarousel limit={8} />
           </div>
         </GlassPanel>
