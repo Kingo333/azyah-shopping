@@ -23,7 +23,16 @@ export const AiStudioHelpPanel: React.FC<AiStudioHelpPanelProps> = ({
         <AlertTitle className="text-xs">Pro Tips</AlertTitle>
         <AlertDescription className="text-xs">
           <ul className="space-y-0.5 mt-1">
-            <li>• Front-facing, full-body photos</li>
+            <li className="flex items-center gap-2">
+              • Front-facing, full-body photos
+              <img 
+                src="/lovable-uploads/5fe53348-b875-4bf3-a608-f6b536718c8b.png" 
+                alt="Example of front-facing, full-body photo"
+                className="w-4 h-6 cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={() => window.open('/lovable-uploads/5fe53348-b875-4bf3-a608-f6b536718c8b.png', '_blank')}
+                title="Click to view example"
+              />
+            </li>
             <li>• Plain backgrounds work best</li>
             <li>• High resolution </li>
             <li>• Clear outfit visibility</li>
