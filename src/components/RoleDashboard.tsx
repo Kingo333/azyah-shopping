@@ -15,7 +15,8 @@ import DashboardHeader from '@/components/DashboardHeader';
 import AffiliateHub from '@/components/AffiliateHub';
 import AiStudioModal from '@/components/AiStudioModal';
 import PremiumBanner from '@/components/PremiumBanner';
-import { Heart, ShoppingBag, Search, Sparkles, Package, BarChart3, Users, Settings, Store, TrendingUp, Plus, Eye, DollarSign, Globe, Bell, LogOut, User, Archive, Trophy, MapPin, Blocks, WandSparkles, ChevronDown, ChevronUp, Gift } from 'lucide-react';
+import { Heart, ShoppingBag, Search, Sparkles, Package, BarChart3, Users, Settings, Store, TrendingUp, Plus, Eye, DollarSign, Globe, Bell, LogOut, User, Archive, Trophy, MapPin, Blocks, WandSparkles, ChevronDown, ChevronUp, Gift, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import Leaderboard from '@/components/Leaderboard';
 import TrendingStylesCarousel from '@/components/TrendingStylesCarousel';
 import { UGCCollabButton } from '@/components/ugc/UGCCollabButton';
@@ -220,42 +221,114 @@ const RoleDashboard: React.FC = () => {
           <h2 className="text-lg sm:text-xl font-cormorant font-semibold flex items-center gap-2 text-foreground/90">
             Quick Actions
           </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-1.5 sm:gap-3">
-            <Button onClick={() => navigate('/swipe')} className="btn-luxury h-10 sm:h-14 flex-col gap-0.5 sm:gap-1.5">
-              <Heart className="h-3 w-3 sm:h-5 sm:w-5" />
-              <span className="text-xs">Swipe</span>
-            </Button>
-            <Button onClick={() => setAiStudioModalOpen(true)} variant="outline" className="h-10 sm:h-14 flex-col gap-0.5 sm:gap-1.5 hover:bg-primary/10 hover:scale-105 transition-all duration-300 relative bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 border-purple-200 dark:border-purple-800">
-              <Sparkles className="h-3 w-3 sm:h-5 sm:w-5 text-purple-600" />
-              <span className="text-xs text-purple-600">AI Studio</span>
-              <Badge variant="secondary" className="absolute -top-1 -right-1 text-xs px-1 py-0 h-4">
-                New
-              </Badge>
-            </Button>
-            <Button onClick={() => navigate('/wishlist')} variant="outline" className="h-10 sm:h-14 flex-col gap-0.5 sm:gap-1.5 hover:bg-primary/10 hover:scale-105 transition-all duration-300">
-              <ShoppingBag className="h-3 w-3 sm:h-5 sm:w-5" />
-              <span className="text-xs">Wishlist</span>
-            </Button>
-            <Button onClick={() => navigate('/explore')} variant="outline" className="h-10 sm:h-14 flex-col gap-0.5 sm:gap-1.5 hover:bg-primary/10 hover:scale-105 transition-all duration-300">
-              <Search className="h-3 w-3 sm:h-5 sm:w-5" />
-              <span className="text-xs">Explore</span>
-            </Button>
-            {isEnabled('ai_beauty_consultant') ? <Button onClick={() => navigate('/beauty-consultant')} variant="outline" className="h-10 sm:h-14 flex-col gap-0.5 sm:gap-1.5 hover:bg-primary/10 hover:scale-105 transition-all duration-300 relative bg-gradient-to-br from-pink-50 to-rose-50 dark:from-pink-950/20 dark:to-rose-950/20 border-pink-200 dark:border-pink-800 px-1.5 sm:px-3" data-qa="qa-beauty">
-                <WandSparkles className="h-3 w-3 sm:h-5 sm:w-5 text-pink-600" />
-                <span className="text-xs text-pink-600">Beauty Guide</span>
-                
-              </Button> : <Button onClick={() => navigate('/fashion-feed')} variant="outline" className="h-10 sm:h-14 flex-col gap-0.5 sm:gap-1.5 hover:bg-primary/10 hover:scale-105 transition-all duration-300">
-                <Users className="h-3 w-3 sm:h-5 sm:w-5" />
-                <span className="text-xs">Feed</span>
-              </Button>}
-            <UGCCollabButton />
-            <Button onClick={handleToyReplicaClick} variant="outline" className="h-10 sm:h-14 flex-col gap-0.5 sm:gap-1.5 hover:bg-primary/10 hover:scale-105 transition-all duration-300 relative bg-gradient-to-br from-green-50 to-blue-50 dark:from-green-950/20 dark:to-blue-950/20 border-green-200 dark:border-green-800">
-              <Blocks className="h-3 w-3 sm:h-5 sm:w-5 text-green-600" />
-              <span className="text-xs text-green-600">Toy Replica</span>
-              <Badge variant="secondary" className="absolute -top-1 -right-1 text-xs px-1 py-0 h-4">
-                AI
-              </Badge>
-            </Button>
+          
+          {/* Mobile Layout with Carousel */}
+          <div className="block sm:hidden">
+            <div className="flex gap-2">
+              {/* Fixed Swipe Button */}
+              <Button onClick={() => navigate('/swipe')} className="btn-luxury h-12 flex-col gap-1 min-w-[70px]">
+                <Heart className="h-4 w-4" />
+                <span className="text-xs">Swipe</span>
+              </Button>
+              
+              {/* Carousel for Other Buttons */}
+              <div className="flex-1">
+                <Carousel className="w-full">
+                  <CarouselContent className="-ml-2">
+                    <CarouselItem className="pl-2 basis-[70px]">
+                      <Button onClick={() => setAiStudioModalOpen(true)} variant="outline" className="h-12 flex-col gap-1 w-full hover:bg-primary/10 hover:scale-105 transition-all duration-300 relative bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 border-purple-200 dark:border-purple-800">
+                        <Sparkles className="h-4 w-4 text-purple-600" />
+                        <span className="text-xs text-purple-600">AI Studio</span>
+                        <Badge variant="secondary" className="absolute -top-1 -right-1 text-xs px-1 py-0 h-4">
+                          New
+                        </Badge>
+                      </Button>
+                    </CarouselItem>
+                    <CarouselItem className="pl-2 basis-[70px]">
+                      <Button onClick={() => navigate('/wishlist')} variant="outline" className="h-12 flex-col gap-1 w-full hover:bg-primary/10 hover:scale-105 transition-all duration-300">
+                        <ShoppingBag className="h-4 w-4" />
+                        <span className="text-xs">Wishlist</span>
+                      </Button>
+                    </CarouselItem>
+                    <CarouselItem className="pl-2 basis-[70px]">
+                      <Button onClick={() => navigate('/explore')} variant="outline" className="h-12 flex-col gap-1 w-full hover:bg-primary/10 hover:scale-105 transition-all duration-300">
+                        <Search className="h-4 w-4" />
+                        <span className="text-xs">Explore</span>
+                      </Button>
+                    </CarouselItem>
+                    <CarouselItem className="pl-2 basis-[70px]">
+                      {isEnabled('ai_beauty_consultant') ? (
+                        <Button onClick={() => navigate('/beauty-consultant')} variant="outline" className="h-12 flex-col gap-1 w-full hover:bg-primary/10 hover:scale-105 transition-all duration-300 relative bg-gradient-to-br from-pink-50 to-rose-50 dark:from-pink-950/20 dark:to-rose-950/20 border-pink-200 dark:border-pink-800" data-qa="qa-beauty">
+                          <WandSparkles className="h-4 w-4 text-pink-600" />
+                          <span className="text-xs text-pink-600">Beauty</span>
+                        </Button>
+                      ) : (
+                        <Button onClick={() => navigate('/fashion-feed')} variant="outline" className="h-12 flex-col gap-1 w-full hover:bg-primary/10 hover:scale-105 transition-all duration-300">
+                          <Users className="h-4 w-4" />
+                          <span className="text-xs">Feed</span>
+                        </Button>
+                      )}
+                    </CarouselItem>
+                    <CarouselItem className="pl-2 basis-[70px]">
+                      <div className="h-12 w-full">
+                        <UGCCollabButton />
+                      </div>
+                    </CarouselItem>
+                    <CarouselItem className="pl-2 basis-[70px]">
+                      <Button onClick={handleToyReplicaClick} variant="outline" className="h-12 flex-col gap-1 w-full hover:bg-primary/10 hover:scale-105 transition-all duration-300 relative bg-gradient-to-br from-green-50 to-blue-50 dark:from-green-950/20 dark:to-blue-950/20 border-green-200 dark:border-green-800">
+                        <Blocks className="h-4 w-4 text-green-600" />
+                        <span className="text-xs text-green-600">Toy AI</span>
+                        <Badge variant="secondary" className="absolute -top-1 -right-1 text-xs px-1 py-0 h-4">
+                          AI
+                        </Badge>
+                      </Button>
+                    </CarouselItem>
+                  </CarouselContent>
+                  <CarouselPrevious className="h-8 w-8 -left-2" />
+                  <CarouselNext className="h-8 w-8 -right-2" />
+                </Carousel>
+              </div>
+            </div>
+          </div>
+          
+          {/* Desktop Layout - Unchanged */}
+          <div className="hidden sm:block">
+            <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
+              <Button onClick={() => navigate('/swipe')} className="btn-luxury h-14 flex-col gap-1.5">
+                <Heart className="h-5 w-5" />
+                <span className="text-xs">Swipe</span>
+              </Button>
+              <Button onClick={() => setAiStudioModalOpen(true)} variant="outline" className="h-14 flex-col gap-1.5 hover:bg-primary/10 hover:scale-105 transition-all duration-300 relative bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 border-purple-200 dark:border-purple-800">
+                <Sparkles className="h-5 w-5 text-purple-600" />
+                <span className="text-xs text-purple-600">AI Studio</span>
+                <Badge variant="secondary" className="absolute -top-1 -right-1 text-xs px-1 py-0 h-4">
+                  New
+                </Badge>
+              </Button>
+              <Button onClick={() => navigate('/wishlist')} variant="outline" className="h-14 flex-col gap-1.5 hover:bg-primary/10 hover:scale-105 transition-all duration-300">
+                <ShoppingBag className="h-5 w-5" />
+                <span className="text-xs">Wishlist</span>
+              </Button>
+              <Button onClick={() => navigate('/explore')} variant="outline" className="h-14 flex-col gap-1.5 hover:bg-primary/10 hover:scale-105 transition-all duration-300">
+                <Search className="h-5 w-5" />
+                <span className="text-xs">Explore</span>
+              </Button>
+              {isEnabled('ai_beauty_consultant') ? <Button onClick={() => navigate('/beauty-consultant')} variant="outline" className="h-14 flex-col gap-1.5 hover:bg-primary/10 hover:scale-105 transition-all duration-300 relative bg-gradient-to-br from-pink-50 to-rose-50 dark:from-pink-950/20 dark:to-rose-950/20 border-pink-200 dark:border-pink-800 px-1.5 sm:px-3" data-qa="qa-beauty">
+                  <WandSparkles className="h-5 w-5 text-pink-600" />
+                  <span className="text-xs text-pink-600">Beauty Guide</span>
+                </Button> : <Button onClick={() => navigate('/fashion-feed')} variant="outline" className="h-14 flex-col gap-1.5 hover:bg-primary/10 hover:scale-105 transition-all duration-300">
+                  <Users className="h-5 w-5" />
+                  <span className="text-xs">Feed</span>
+                </Button>}
+              <UGCCollabButton />
+              <Button onClick={handleToyReplicaClick} variant="outline" className="h-14 flex-col gap-1.5 hover:bg-primary/10 hover:scale-105 transition-all duration-300 relative bg-gradient-to-br from-green-50 to-blue-50 dark:from-green-950/20 dark:to-blue-950/20 border-green-200 dark:border-green-800">
+                <Blocks className="h-5 w-5 text-green-600" />
+                <span className="text-xs text-green-600">Toy Replica</span>
+                <Badge variant="secondary" className="absolute -top-1 -right-1 text-xs px-1 py-0 h-4">
+                  AI
+                </Badge>
+              </Button>
+            </div>
           </div>
         </div>
       </GlassPanel>
