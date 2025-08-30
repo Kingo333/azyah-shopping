@@ -447,51 +447,31 @@ export const CreateLookSection: React.FC<CreateLookSectionProps> = ({ closetId }
             ))}
           </div>
         ) : wishlistProducts.length > 0 ? (
-          <Carousel className="w-full">
-            <CarouselContent className="-ml-2">
-              {wishlistProducts.map((item) => (
-                <CarouselItem key={item.id} className="pl-2 basis-48">
-                  <Card 
-                    className="cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow"
-                    draggable
-                    onDragStart={(e) => handleDragStart(item.product, e)}
-                  >
-                    <div className="aspect-square bg-muted rounded-t-lg overflow-hidden">
-                      <img 
-                        src={getImageUrl(item.product)} 
-                        alt={item.product?.title || 'Product'}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <CardContent className="p-3">
-                      <h4 className="font-medium text-sm line-clamp-2 mb-1">
-                        {item.product?.title || 'Untitled'}
-                      </h4>
-                       <p className="text-xs text-muted-foreground mb-2">
-                         {(() => {
-                           // Debug log to see the data structure
-                           console.log('Wishlist item product data:', item.product);
-                           
-                           // Try multiple possible brand name paths
-                           const brandName = item.product?.brands?.name || 
-                                           (item.product?.brands && Array.isArray(item.product.brands) ? item.product.brands[0]?.name : null) ||
-                                           'Unknown Brand';
-                           
-                           console.log('Resolved brand name:', brandName);
-                           return brandName;
-                         })()}
-                       </p>
-                      <p className="font-semibold text-sm">
-                        {formatPrice(item.product?.price_cents || 0, item.product?.currency || 'USD')}
-                      </p>
-                    </CardContent>
-                  </Card>
-                </CarouselItem>
-              ))}
-            </CarouselContent>
-            <CarouselPrevious />
-            <CarouselNext />
-          </Carousel>
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            {wishlistProducts.map((item) => (
+              <ProductCard
+                key={item.id}
+                product={item.product}
+                onDragStart={handleDragStart}
+                onAddToBoard={isMobile ? (prod) => {
+                  const fakeEvent = {
+                    dataTransfer: { setData: () => {} },
+                    clientX: 200,
+                    clientY: 200
+                  } as any;
+                  handleDragStart(prod, fakeEvent);
+                  handleDrop({
+                    preventDefault: () => {},
+                    stopPropagation: () => {},
+                    clientX: 200,
+                    clientY: 200,
+                    dataTransfer: { getData: () => JSON.stringify(prod) },
+                    currentTarget: canvasRef.current || document.body
+                  } as any);
+                } : undefined}
+              />
+            ))}
+          </div>
         ) : (
           <div className="text-center py-8 bg-muted/30 rounded-lg">
             <Heart className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
