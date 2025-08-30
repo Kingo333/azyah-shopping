@@ -2747,6 +2747,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      validate_session_security: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
       validate_user_data_access: {
         Args: { target_user_id: string }
         Returns: boolean
