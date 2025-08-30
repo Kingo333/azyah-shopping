@@ -230,6 +230,45 @@ export type Database = {
           },
         ]
       }
+      beauty_profiles: {
+        Row: {
+          analysis_summary: string | null
+          color_palette: string[] | null
+          created_at: string
+          face_shape: string | null
+          id: string
+          selfie_url: string | null
+          skin_tone: string | null
+          undertone: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          analysis_summary?: string | null
+          color_palette?: string[] | null
+          created_at?: string
+          face_shape?: string | null
+          id?: string
+          selfie_url?: string | null
+          skin_tone?: string | null
+          undertone?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          analysis_summary?: string | null
+          color_palette?: string[] | null
+          created_at?: string
+          face_shape?: string | null
+          id?: string
+          selfie_url?: string | null
+          skin_tone?: string | null
+          undertone?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       brands: {
         Row: {
           bio: string | null

@@ -20,22 +20,21 @@ export const useUserBeautyProfile = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
+  // Use direct API call since table not in types yet
   const { data: profile, isLoading, error } = useQuery({
     queryKey: ['beauty-profile', user?.id],
     queryFn: async () => {
       if (!user?.id) return null;
 
       const { data, error } = await supabase
-        .from('beauty_profiles')
-        .select('*')
-        .eq('user_id', user.id)
-        .maybeSingle();
+        .rpc('get_beauty_profile', { target_user_id: user.id });
 
-      if (error && error.code !== 'PGRST116') {
-        throw error;
+      if (error) {
+        console.error('Error fetching beauty profile:', error);
+        return null;
       }
 
-      return data as BeautyProfile | null;
+      return data && data.length > 0 ? data[0] as BeautyProfile : null;
     },
     enabled: !!user?.id
   });
@@ -45,16 +44,10 @@ export const useUserBeautyProfile = () => {
       if (!user?.id) throw new Error('User not authenticated');
 
       const { data, error } = await supabase
-        .from('beauty_profiles')
-        .upsert({
-          user_id: user.id,
-          ...updates,
-          updated_at: new Date().toISOString()
-        }, {
-          onConflict: 'user_id'
-        })
-        .select()
-        .single();
+        .rpc('upsert_beauty_profile', {
+          target_user_id: user.id,
+          profile_updates: updates
+        });
 
       if (error) throw error;
       return data;
