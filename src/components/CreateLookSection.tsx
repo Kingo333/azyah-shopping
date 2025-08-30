@@ -148,6 +148,37 @@ export const CreateLookSection: React.FC<CreateLookSectionProps> = ({ closetId }
     }
   }, [boardState, saveToHistory]);
 
+  // Function to add items directly to the board (for mobile tap/hold)
+  const addToBoard = useCallback((item: any) => {
+    if (!canvasRef.current) return;
+
+    // Create a new slot at a default position
+    const newSlot = {
+      id: `slot_${Date.now()}`,
+      x: 50 + (boardState.slots.length * 20), // Offset each new item slightly
+      y: 50 + (boardState.slots.length * 20),
+      w: 200,
+      h: 200,
+      type: 'square' as const,
+      size: 'M' as const,
+      mask: 'rect' as const,
+      padding: 12,
+      itemId: item.id,
+      item: item
+    };
+
+    const newState = {
+      ...boardState,
+      slots: [...boardState.slots, newSlot]
+    };
+
+    saveToHistory(newState);
+    toast({
+      title: "Item added",
+      description: "Item has been added to your mood board."
+    });
+  }, [boardState, saveToHistory]);
+
   const handleSave = async () => {
     try {
       await createLookMutation.mutateAsync({
@@ -453,22 +484,7 @@ export const CreateLookSection: React.FC<CreateLookSectionProps> = ({ closetId }
                 key={item.id}
                 product={item.product}
                 onDragStart={handleDragStart}
-                onAddToBoard={isMobile ? (prod) => {
-                  const fakeEvent = {
-                    dataTransfer: { setData: () => {} },
-                    clientX: 200,
-                    clientY: 200
-                  } as any;
-                  handleDragStart(prod, fakeEvent);
-                  handleDrop({
-                    preventDefault: () => {},
-                    stopPropagation: () => {},
-                    clientX: 200,
-                    clientY: 200,
-                    dataTransfer: { getData: () => JSON.stringify(prod) },
-                    currentTarget: canvasRef.current || document.body
-                  } as any);
-                } : undefined}
+                onAddToBoard={addToBoard}
               />
             ))}
           </div>
@@ -504,21 +520,7 @@ export const CreateLookSection: React.FC<CreateLookSectionProps> = ({ closetId }
                 key={product.id}
                 product={product}
                 onDragStart={handleDragStart}
-                onAddToBoard={isMobile ? (prod) => {
-                  const fakeEvent = {
-                    dataTransfer: { setData: () => {} },
-                    clientX: 200,
-                    clientY: 200
-                  } as any;
-                  handleDragStart(prod, fakeEvent);
-                  handleDrop({
-                    preventDefault: () => {},
-                    stopPropagation: () => {},
-                    clientX: 200,
-                    clientY: 200,
-                    currentTarget: document.querySelector('.board-canvas') || document.body
-                  } as any);
-                } : undefined}
+                onAddToBoard={addToBoard}
               />
             ))}
           </div>
