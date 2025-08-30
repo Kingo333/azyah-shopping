@@ -19,7 +19,6 @@ import { useImageOptimization } from "@/hooks/useImageOptimization";
 import { useUserBeautyProfile } from "@/hooks/useUserBeautyProfile";
 import { supabase } from "@/integrations/supabase/client";
 import { TextToVoiceConverter } from "@/components/TextToVoiceConverter";
-
 type ChatMessage = {
   id: string;
   type: 'user' | 'assistant' | 'system';
@@ -30,7 +29,6 @@ type ChatMessage = {
   transcription?: string;
   isVoice?: boolean;
 };
-
 type ConsultationResult = {
   success: boolean;
   timestamp: string;
@@ -45,18 +43,25 @@ type ConsultationResult = {
     };
   };
 };
-
 export default function BeautyConsultantPage() {
-  const { user } = useAuth();
-  const { credits, loading: creditsLoading, updateCredits } = useUserCredits();
-  const { 
-    profile: beautyProfile, 
-    hasValidProfile, 
+  const {
+    user
+  } = useAuth();
+  const {
+    credits,
+    loading: creditsLoading,
+    updateCredits
+  } = useUserCredits();
+  const {
+    profile: beautyProfile,
+    hasValidProfile,
     updateProfile: updateBeautyProfile,
     getProfileSummary,
     fetchProfile
   } = useUserBeautyProfile();
-  const { getOptimizedBase64 } = useImageOptimization();
+  const {
+    getOptimizedBase64
+  } = useImageOptimization();
   const [messages, setMessages] = useState<ChatMessage[]>([{
     id: '1',
     type: 'assistant',
@@ -78,7 +83,7 @@ export default function BeautyConsultantPage() {
   const [productImagePreview, setProductImagePreview] = useState<string | null>(null);
   const [skinImagePreview, setSkinImagePreview] = useState<string | null>(null);
   const [hasInitialProductResponse, setHasInitialProductResponse] = useState(false);
-  
+
   // Tooltip tracking for insert image buttons
   const [showImageTooltips, setShowImageTooltips] = useState(false);
   const [hasShownTooltips, setHasShownTooltips] = useState(() => {
@@ -110,36 +115,24 @@ export default function BeautyConsultantPage() {
     // Load existing conversation history for the current mode
     const loadModeHistory = async () => {
       if (!user?.id) return;
-      
       try {
         console.log(`Switched to ${analysisMode} mode - loading ${analysisMode} conversation history`);
-        
+
         // Use the existing supabase client to avoid multiple instances
         const sessionPrefix = analysisMode === 'product_analysis' ? 'product_score' : 'chat_mode';
-        
-        const { data: sessionData } = await supabase
-          .from('user_sessions')
-          .select('conversation_history')
-          .eq('user_id', user.id)
-          .eq('is_active', true)
-          .like('session_id', `${sessionPrefix}_${user.id}_%`)
-          .gt('expires_at', new Date().toISOString())
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-
+        const {
+          data: sessionData
+        } = await supabase.from('user_sessions').select('conversation_history').eq('user_id', user.id).eq('is_active', true).like('session_id', `${sessionPrefix}_${user.id}_%`).gt('expires_at', new Date().toISOString()).order('created_at', {
+          ascending: false
+        }).limit(1).maybeSingle();
         if (sessionData?.conversation_history && Array.isArray(sessionData.conversation_history)) {
           // Convert backend history to frontend message format
-          const historyMessages: ChatMessage[] = [
-            {
-              id: '1',
-              type: 'assistant',
-              content: analysisMode === 'product_analysis' 
-                ? "Hi! I'm Azyah, your AI Beauty Consultant. Upload a product and your skin/face photo to get a detailed compatibility score (0-100%) with breakdown! Perfect for shopping decisions. Available in English & (متوفر باللغة العربية) 💄✨" 
-                : "Hi! I'm Azyah, your AI Beauty Consultant. Upload a selfie, speak to me, or ask any beauty question for personalized recommendations! Available in English & (متوفر باللغة العربية) 💄✨",
-              timestamp: new Date()
-            }
-          ];
+          const historyMessages: ChatMessage[] = [{
+            id: '1',
+            type: 'assistant',
+            content: analysisMode === 'product_analysis' ? "Hi! I'm Azyah, your AI Beauty Consultant. Upload a product and your skin/face photo to get a detailed compatibility score (0-100%) with breakdown! Perfect for shopping decisions. Available in English & (متوفر باللغة العربية) 💄✨" : "Hi! I'm Azyah, your AI Beauty Consultant. Upload a selfie, speak to me, or ask any beauty question for personalized recommendations! Available in English & (متوفر باللغة العربية) 💄✨",
+            timestamp: new Date()
+          }];
 
           // Add conversation history
           sessionData.conversation_history.forEach((msg: any, index: number) => {
@@ -151,7 +144,6 @@ export default function BeautyConsultantPage() {
               isVoice: msg.role === 'user' && msg.content.includes('🎤')
             });
           });
-
           setMessages(historyMessages);
           console.log(`Loaded ${sessionData.conversation_history.length} messages for ${analysisMode} mode`);
         } else {
@@ -159,9 +151,7 @@ export default function BeautyConsultantPage() {
           setMessages([{
             id: '1',
             type: 'assistant',
-            content: analysisMode === 'product_analysis' 
-              ? "Hi! I'm Azyah, your AI Beauty Consultant. Upload a product and your skin/face photo to get a detailed compatibility score (0-100%) with breakdown! Perfect for shopping decisions. Available in English & (متوفر باللغة العربية) 💄✨" 
-              : "Hi! I'm Azyah, your AI Beauty Consultant. Upload a selfie, speak to me, or ask any beauty question for personalized recommendations! Available in English & (متوفر باللغة العربية) 💄✨",
+            content: analysisMode === 'product_analysis' ? "Hi! I'm Azyah, your AI Beauty Consultant. Upload a product and your skin/face photo to get a detailed compatibility score (0-100%) with breakdown! Perfect for shopping decisions. Available in English & (متوفر باللغة العربية) 💄✨" : "Hi! I'm Azyah, your AI Beauty Consultant. Upload a selfie, speak to me, or ask any beauty question for personalized recommendations! Available in English & (متوفر باللغة العربية) 💄✨",
             timestamp: new Date()
           }]);
           console.log(`No existing history for ${analysisMode} mode - showing fresh greeting`);
@@ -172,14 +162,11 @@ export default function BeautyConsultantPage() {
         setMessages([{
           id: '1',
           type: 'assistant',
-          content: analysisMode === 'product_analysis' 
-            ? "Hi! I'm Azyah, your AI Beauty Consultant. Upload a product and your skin/face photo to get a detailed compatibility score (0-100%) with breakdown! Perfect for shopping decisions. Available in English & (متوفر باللغة العربية) 💄✨" 
-            : "Hi! I'm Azyah, your AI Beauty Consultant. Upload a selfie, speak to me, or ask any beauty question for personalized recommendations! Available in English & (متوفر باللغة العربية) 💄✨",
+          content: analysisMode === 'product_analysis' ? "Hi! I'm Azyah, your AI Beauty Consultant. Upload a product and your skin/face photo to get a detailed compatibility score (0-100%) with breakdown! Perfect for shopping decisions. Available in English & (متوفر باللغة العربية) 💄✨" : "Hi! I'm Azyah, your AI Beauty Consultant. Upload a selfie, speak to me, or ask any beauty question for personalized recommendations! Available in English & (متوفر باللغة العربية) 💄✨",
           timestamp: new Date()
         }]);
       }
     };
-
     loadModeHistory();
 
     // Clear any uploaded images when switching modes and reset state
@@ -189,7 +176,7 @@ export default function BeautyConsultantPage() {
     } else {
       clearImage();
     }
-    
+
     // Clear input message when switching modes
     setInputMessage('');
 
@@ -198,13 +185,12 @@ export default function BeautyConsultantPage() {
       setShowImageTooltips(true);
       setHasShownTooltips(true);
       sessionStorage.setItem('beautyConsultant_tooltips_shown', 'true');
-      
+
       // Hide tooltips after 1 second
       setTimeout(() => {
         setShowImageTooltips(false);
       }, 1000);
     }
-
     console.log(`Switched to ${analysisMode} mode - loading 24h conversation history`);
   }, [analysisMode, hasShownTooltips, user?.id]);
   const validateImageFile = (file: File) => {
@@ -263,40 +249,39 @@ export default function BeautyConsultantPage() {
       }
       console.log('Product Score mode: Both images validated ✓');
     }
-    
+
     // Enhanced validation
     if (!user?.id) {
       toast.error('Please sign in to use the beauty consultant');
       setLoading(false);
       return;
     }
-
     console.log(`Starting ${analysisMode} consultation...`);
-    
     try {
       // OPTIMIZATION 5: Image Optimization - Compress images before upload
       let imageBase64 = '';
       let audioBase64 = '';
-      
       const compressionTasks = [];
-      
       if (image) {
-        compressionTasks.push(
-          getOptimizedBase64(image, { maxWidth: 1024, maxHeight: 1024, quality: 0.8 })
-            .then(result => { imageBase64 = result; })
-            .catch(err => { 
-              console.warn('Image optimization failed, using original:', err);
-              return fileToBase64(image).then(result => { imageBase64 = result; });
-            })
-        );
+        compressionTasks.push(getOptimizedBase64(image, {
+          maxWidth: 1024,
+          maxHeight: 1024,
+          quality: 0.8
+        }).then(result => {
+          imageBase64 = result;
+        }).catch(err => {
+          console.warn('Image optimization failed, using original:', err);
+          return fileToBase64(image).then(result => {
+            imageBase64 = result;
+          });
+        }));
       }
-      
       if (audioBlob) {
-        compressionTasks.push(
-          blobToBase64(audioBlob).then(result => { audioBase64 = result; })
-        );
+        compressionTasks.push(blobToBase64(audioBlob).then(result => {
+          audioBase64 = result;
+        }));
       }
-      
+
       // Wait for all compression tasks to complete
       await Promise.all(compressionTasks);
 
@@ -307,33 +292,39 @@ export default function BeautyConsultantPage() {
         region: region,
         mode: analysisMode
       };
-      
+
       // OPTIMIZATION 6: Parallel Image Processing for Product Analysis
       if (analysisMode === 'product_analysis') {
         const imageCompressionTasks = [];
-        
         if (productImage) {
-          imageCompressionTasks.push(
-            getOptimizedBase64(productImage, { maxWidth: 1024, maxHeight: 1024, quality: 0.8 })
-              .then(result => { payload.product_image = result; })
-              .catch(err => {
-                console.warn('Product image optimization failed, using original:', err);
-                return fileToBase64(productImage).then(result => { payload.product_image = result; });
-              })
-          );
+          imageCompressionTasks.push(getOptimizedBase64(productImage, {
+            maxWidth: 1024,
+            maxHeight: 1024,
+            quality: 0.8
+          }).then(result => {
+            payload.product_image = result;
+          }).catch(err => {
+            console.warn('Product image optimization failed, using original:', err);
+            return fileToBase64(productImage).then(result => {
+              payload.product_image = result;
+            });
+          }));
         }
-        
         if (skinImage) {
-          imageCompressionTasks.push(
-            getOptimizedBase64(skinImage, { maxWidth: 1024, maxHeight: 1024, quality: 0.8 })
-              .then(result => { payload.skin_image = result; })
-              .catch(err => {
-                console.warn('Skin image optimization failed, using original:', err);
-                return fileToBase64(skinImage).then(result => { payload.skin_image = result; });
-              })
-          );
+          imageCompressionTasks.push(getOptimizedBase64(skinImage, {
+            maxWidth: 1024,
+            maxHeight: 1024,
+            quality: 0.8
+          }).then(result => {
+            payload.skin_image = result;
+          }).catch(err => {
+            console.warn('Skin image optimization failed, using original:', err);
+            return fileToBase64(skinImage).then(result => {
+              payload.skin_image = result;
+            });
+          }));
         }
-        
+
         // Wait for all product analysis image processing to complete
         await Promise.all(imageCompressionTasks);
         console.log('Product analysis payload prepared with optimized images');
@@ -343,12 +334,10 @@ export default function BeautyConsultantPage() {
         }
         console.log('Chat mode payload prepared with optimized image');
       }
-      
       if (audioBase64) {
         payload.audio = audioBase64;
         console.log('Audio data included in payload');
       }
-      
       console.log('Sending consultation request:', {
         ...payload,
         image: imageBase64 ? '[image data present]' : 'no image',
@@ -362,22 +351,17 @@ export default function BeautyConsultantPage() {
       const response = await supabase.functions.invoke('beauty-consultation', {
         body: payload
       });
-      
       console.log('Raw response:', response);
-      
       if (response.error) {
         console.error('Supabase function error:', response.error);
         throw new Error(response.error.message || 'Consultation failed');
       }
-      
       if (!response.data) {
         console.error('No data in response');
         throw new Error('No response data received');
       }
-      
       const result = response.data;
       console.log(`${analysisMode} consultation result:`, result);
-      
       if (!result.success) {
         console.error('Consultation not successful:', result);
         throw new Error(result.message || 'Consultation failed');
@@ -393,10 +377,9 @@ export default function BeautyConsultantPage() {
         transcription: result.consultation.voice_summary,
         isVoice: !!result.consultation.audio_url
       };
-      
       console.log(`Adding ${analysisMode} assistant message:`, assistantMessage);
       setMessages(prev => [...prev, assistantMessage]);
-      
+
       // Unlock text input after first product analysis response
       if (analysisMode === 'product_analysis') {
         setHasInitialProductResponse(true);
@@ -424,10 +407,8 @@ export default function BeautyConsultantPage() {
 
       // Enhanced error handling with mode awareness
       let errorMessage = 'I apologize, but I encountered an error. Please try again.';
-      
       if (error instanceof Error) {
         console.error('Error details:', error.message);
-        
         if (error.message.includes('No credits remaining')) {
           toast.error('No credits remaining. Upgrade to premium for more credits!');
           return;
@@ -439,14 +420,12 @@ export default function BeautyConsultantPage() {
           errorMessage = `I encountered an issue: ${error.message}`;
         }
       }
-      
       const errorResponse: ChatMessage = {
         id: `error_${analysisMode}_${Date.now()}`,
         type: 'assistant',
         content: errorMessage,
         timestamp: new Date()
       };
-      
       setMessages(prev => [...prev, errorResponse]);
       toast.error(errorMessage);
     } finally {
@@ -503,10 +482,8 @@ export default function BeautyConsultantPage() {
         content: inputMessage.trim() || "Analyze product compatibility",
         timestamp: new Date()
       };
-      
       console.log('Adding product analysis user message:', userMessage);
       setMessages(prev => [...prev, userMessage]);
-      
       await submitConsultation(inputMessage.trim() || "Analyze product compatibility", undefined);
       setInputMessage('');
       clearProductAnalysisImages();
@@ -529,10 +506,8 @@ export default function BeautyConsultantPage() {
         image: imagePreview || undefined,
         timestamp: new Date()
       };
-      
       console.log('Adding chat user message:', userMessage);
       setMessages(prev => [...prev, userMessage]);
-      
       await submitConsultation(inputMessage, selectedImage || undefined);
 
       // Clear inputs
@@ -557,7 +532,6 @@ export default function BeautyConsultantPage() {
       isVoice: true,
       transcription
     };
-    
     console.log(`Adding ${analysisMode} voice message:`, voiceMessage);
     setMessages(prev => [...prev, voiceMessage]);
 
@@ -718,11 +692,7 @@ export default function BeautyConsultantPage() {
                             </div>
                             
                             {/* Voice Converter for Assistant Messages */}
-                            {message.type === 'assistant' && !message.isVoice && message.content.trim() && (
-                              <div className="flex justify-start">
-                                <TextToVoiceConverter text={message.content} className="ml-1" />
-                              </div>
-                            )}
+                            {message.type === 'assistant' && !message.isVoice && message.content.trim()}
                           </div>}
                         
                         <div className={`text-xs opacity-60 transition-opacity duration-300 hover:opacity-80 ${message.type === 'user' ? 'text-right' : 'text-left'}`}>
@@ -865,7 +835,7 @@ export default function BeautyConsultantPage() {
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-end gap-3">
                   {/* Action Buttons */}
                    <div className="flex gap-1.5 sm:gap-2 order-2 sm:order-1">
-                     <VoiceRecorder onTranscription={handleVoiceTranscription} disabled={loading || (analysisMode === 'product_analysis' && (!productImage || !skinImage))} />
+                     <VoiceRecorder onTranscription={handleVoiceTranscription} disabled={loading || analysisMode === 'product_analysis' && (!productImage || !skinImage)} />
                     
                     {analysisMode === 'chat' ? <TooltipProvider>
                         <Tooltip open={!selectedImage} onOpenChange={() => {}}>
@@ -918,8 +888,8 @@ export default function BeautyConsultantPage() {
                   
                   {/* Message Input */}
                   <div className="flex-1 relative order-1 sm:order-2">
-                    <Input value={inputMessage} onChange={e => setInputMessage(e.target.value)} onKeyPress={handleKeyPress} placeholder={analysisMode === 'product_analysis' ? (hasInitialProductResponse ? "Ask follow-up questions: 'Is this foundation a good match?', 'Will this lipstick suit me?', etc." : (productImage && skinImage ? "Ask questions about product compatibility..." : "Upload product & skin images for compatibility analysis...")) : "Ask about skincare, makeup, or beauty tips..."} className="h-11 sm:h-12 pr-14 rounded-xl border-border/50 bg-background/50 backdrop-blur-sm focus:border-primary/50 focus:ring-primary/20 transition-all duration-300" disabled={loading || (analysisMode === 'product_analysis' && !hasInitialProductResponse && (!productImage || !skinImage))} />
-                    <Button onClick={handleSendMessage} disabled={loading || (analysisMode === 'product_analysis' ? (!hasInitialProductResponse && (!productImage || !skinImage)) : (!inputMessage.trim() && !selectedImage))} className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 sm:h-8 sm:w-8 p-0 rounded-lg bg-primary hover:bg-primary/90 transition-all duration-300 hover:scale-105 disabled:hover:scale-100">
+                    <Input value={inputMessage} onChange={e => setInputMessage(e.target.value)} onKeyPress={handleKeyPress} placeholder={analysisMode === 'product_analysis' ? hasInitialProductResponse ? "Ask follow-up questions: 'Is this foundation a good match?', 'Will this lipstick suit me?', etc." : productImage && skinImage ? "Ask questions about product compatibility..." : "Upload product & skin images for compatibility analysis..." : "Ask about skincare, makeup, or beauty tips..."} className="h-11 sm:h-12 pr-14 rounded-xl border-border/50 bg-background/50 backdrop-blur-sm focus:border-primary/50 focus:ring-primary/20 transition-all duration-300" disabled={loading || analysisMode === 'product_analysis' && !hasInitialProductResponse && (!productImage || !skinImage)} />
+                    <Button onClick={handleSendMessage} disabled={loading || (analysisMode === 'product_analysis' ? !hasInitialProductResponse && (!productImage || !skinImage) : !inputMessage.trim() && !selectedImage)} className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 sm:h-8 sm:w-8 p-0 rounded-lg bg-primary hover:bg-primary/90 transition-all duration-300 hover:scale-105 disabled:hover:scale-100">
                       <Send className="h-3 w-3" />
                     </Button>
                   </div>
@@ -927,7 +897,7 @@ export default function BeautyConsultantPage() {
 
                 {/* Quick Actions */}
                 <div className="flex flex-wrap gap-2 pt-1">
-                  {(analysisMode === 'chat' ? ["Analyze my skin tone", "Foundation recommendations", "Evening makeup look", "Skincare routine"] : ["Is this foundation a good match?", "Will this lipstick suit me?", "Rate this product compatibility", "How should I apply this?"]).map((suggestion, index) => <Button key={suggestion} variant="outline" size="sm" onClick={() => setInputMessage(suggestion)} className="h-7 sm:h-8 px-2 sm:px-3 text-xs rounded-lg border-border/30 bg-background/30 hover:bg-primary/5 hover:border-primary/30 transition-all duration-300" disabled={loading || (analysisMode === 'product_analysis' && !hasInitialProductResponse && (!productImage || !skinImage))}>
+                  {(analysisMode === 'chat' ? ["Analyze my skin tone", "Foundation recommendations", "Evening makeup look", "Skincare routine"] : ["Is this foundation a good match?", "Will this lipstick suit me?", "Rate this product compatibility", "How should I apply this?"]).map((suggestion, index) => <Button key={suggestion} variant="outline" size="sm" onClick={() => setInputMessage(suggestion)} className="h-7 sm:h-8 px-2 sm:px-3 text-xs rounded-lg border-border/30 bg-background/30 hover:bg-primary/5 hover:border-primary/30 transition-all duration-300" disabled={loading || analysisMode === 'product_analysis' && !hasInitialProductResponse && (!productImage || !skinImage)}>
                       {suggestion}
                     </Button>)}
                 </div>
