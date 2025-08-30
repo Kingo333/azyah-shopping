@@ -18,7 +18,7 @@ import { sanitizeHtml } from "@/utils/sanitizeHtml";
 import { useImageOptimization } from "@/hooks/useImageOptimization";
 import { useUserBeautyProfile } from "@/hooks/useUserBeautyProfile";
 import { supabase } from "@/integrations/supabase/client";
-import { TextToVoiceConverter } from "@/components/TextToVoiceConverter";
+
 type ChatMessage = {
   id: string;
   type: 'user' | 'assistant' | 'system';
@@ -690,9 +690,6 @@ export default function BeautyConsultantPage() {
                           }} />
                               </div>
                             </div>
-                            
-                            {/* Voice Converter for Assistant Messages */}
-                            {message.type === 'assistant' && !message.isVoice && message.content.trim()}
                           </div>}
                         
                         <div className={`text-xs opacity-60 transition-opacity duration-300 hover:opacity-80 ${message.type === 'user' ? 'text-right' : 'text-left'}`}>
