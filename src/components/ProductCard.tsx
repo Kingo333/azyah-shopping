@@ -63,10 +63,19 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   const handleShopNow = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (product.external_url) {
-      window.open(product.external_url, '_blank', 'noopener,noreferrer');
+    
+    // Check multiple possible external URL properties for different product sources
+    const externalUrl = product.external_url || 
+                       product.product?.external_url || 
+                       product.external_link ||
+                       product.product?.external_link;
+    
+    if (externalUrl) {
+      window.open(externalUrl, '_blank', 'noopener,noreferrer');
+    } else {
+      console.warn('No external URL found for product:', product);
     }
-  }, [product.external_url]);
+  }, [product]);
 
   const handleLike = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -175,7 +184,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               variant="destructive"
               className="flex-1 text-xs h-7"
               onClick={handleShopNow}
-              disabled={!product.external_url}
+              disabled={!(product.external_url || product.product?.external_url || product.external_link || product.product?.external_link)}
             >
               Shop
             </Button>
