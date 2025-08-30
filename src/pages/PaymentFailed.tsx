@@ -29,12 +29,16 @@ export default function PaymentFailed() {
         const backup = getPaymentSessionBackup();
         if (backup) {
           try {
+            console.log('PaymentFailed: Restoring session from backup');
             await supabase.auth.setSession({
               access_token: backup.session.access_token,
               refresh_token: backup.session.refresh_token
             });
+            // Don't clear backup immediately - let the auth state change handle it
           } catch (error) {
             console.error('Failed to restore session from backup:', error);
+            // If restore fails, clear the backup to prevent infinite loops
+            clearPaymentSessionBackup();
           }
         }
       }
@@ -42,10 +46,10 @@ export default function PaymentFailed() {
 
     restoreSession();
 
-    // Clear payment session backup after a delay
+    // Clear payment session backup after a longer delay to ensure session is restored
     const clearTimer = setTimeout(() => {
       clearPaymentSessionBackup();
-    }, 2000);
+    }, 5000);
 
     // Auto-redirect timer
     const redirectTimer = setInterval(() => {

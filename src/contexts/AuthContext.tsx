@@ -75,10 +75,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       (event, session) => {
         console.log('AuthContext: Auth state changed:', { event, user: session?.user?.email });
         
-        // Prevent logout during payment flow unless explicitly signed out
-        if (event === 'SIGNED_OUT' && isPaymentFlowActive() && !isPaymentReturnPage()) {
-          console.log('Preventing logout during payment flow');
-          return;
+        // Handle payment flow session restoration
+        if (event === 'SIGNED_OUT' && isPaymentFlowActive()) {
+          const paymentBackup = getPaymentSessionBackup();
+          if (paymentBackup && isPaymentReturnPage()) {
+            console.log('Restoring session on payment return page');
+            setSession(paymentBackup.session);
+            setUser(paymentBackup.user);
+            setStableAuthState(paymentBackup.user, paymentBackup.session);
+            setLoading(false);
+            return;
+          } else if (!isPaymentReturnPage()) {
+            console.log('Preventing logout during active payment flow');
+            return;
+          }
         }
         
         // Store stable auth state for Visual Edits compatibility
@@ -86,7 +96,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setStableAuthState(session.user, session);
         } else if (event === 'SIGNED_OUT') {
           clearStableAuthState();
-          clearPaymentSessionBackup(); // Clear payment backup on explicit logout
+          // Only clear payment backup on explicit logout, not during payment flow
+          if (!isPaymentFlowActive()) {
+            clearPaymentSessionBackup();
+          }
         }
         
         // Clear role cache on sign out only if not in Visual Edits mode
