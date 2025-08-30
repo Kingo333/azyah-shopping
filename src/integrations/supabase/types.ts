@@ -2565,6 +2565,13 @@ export type Database = {
           deleted_jobs_count: number
         }[]
       }
+      cleanup_old_events: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          cleanup_summary: string
+          deleted_count: number
+        }[]
+      }
       create_admin_user: {
         Args: Record<PropertyKey, never>
         Returns: undefined
@@ -2783,6 +2790,10 @@ export type Database = {
           gend?: Database["public"]["Enums"]["gender_type"]
           subcat: Database["public"]["Enums"]["subcategory_type"]
         }
+        Returns: boolean
+      }
+      validate_event_access: {
+        Args: { target_user_id: string }
         Returns: boolean
       }
       validate_payment_access: {
