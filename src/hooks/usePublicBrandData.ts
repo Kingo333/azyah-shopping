@@ -21,14 +21,15 @@ export const usePublicBrandData = (brandId?: string) => {
     queryFn: async (): Promise<PublicBrandData | null> => {
       if (!brandId) return null;
       
+      // Use secure accessor function that requires authentication
       const { data, error } = await supabase
-        .from('brands_public')
-        .select('*')
-        .eq('id', brandId)
-        .single();
+        .rpc('get_public_brands', { limit_param: 1000 });
 
       if (error) throw error;
-      return data;
+      
+      // Find the specific brand from the returned data
+      const brandData = data?.find((b: any) => b.id === brandId);
+      return brandData || null;
     },
     enabled: !!brandId,
   });
@@ -40,14 +41,15 @@ export const usePublicRetailerData = (retailerId?: string) => {
     queryFn: async (): Promise<PublicBrandData | null> => {
       if (!retailerId) return null;
       
+      // Use secure accessor function that requires authentication
       const { data, error } = await supabase
-        .from('retailers_public')
-        .select('*')
-        .eq('id', retailerId)
-        .single();
+        .rpc('get_public_retailers', { limit_param: 1000 });
 
       if (error) throw error;
-      return data;
+      
+      // Find the specific retailer from the returned data
+      const retailerData = data?.find((r: any) => r.id === retailerId);
+      return retailerData || null;
     },
     enabled: !!retailerId,
   });
@@ -57,10 +59,9 @@ export const usePublicBrandsList = () => {
   return useQuery({
     queryKey: ['public-brands-list'],
     queryFn: async (): Promise<PublicBrandData[]> => {
+      // Use secure accessor function that requires authentication
       const { data, error } = await supabase
-        .from('brands_public')
-        .select('*')
-        .order('name');
+        .rpc('get_public_brands', { limit_param: 1000 });
 
       if (error) throw error;
       return data || [];
@@ -72,10 +73,9 @@ export const usePublicRetailersList = () => {
   return useQuery({
     queryKey: ['public-retailers-list'],
     queryFn: async (): Promise<PublicBrandData[]> => {
+      // Use secure accessor function that requires authentication
       const { data, error } = await supabase
-        .from('retailers_public')
-        .select('*')
-        .order('name');
+        .rpc('get_public_retailers', { limit_param: 1000 });
 
       if (error) throw error;
       return data || [];
