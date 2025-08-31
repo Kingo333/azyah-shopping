@@ -270,9 +270,7 @@ const RoleDashboard: React.FC = () => {
                       )}
                     </CarouselItem>
                     <CarouselItem className="pl-2 basis-[80px]">
-                      <div className="h-14 w-full">
-                        <UGCCollabButton />
-                      </div>
+                      <UGCCollabButton />
                     </CarouselItem>
                     <CarouselItem className="pl-2 basis-[80px]">
                       <Button onClick={handleToyReplicaClick} variant="outline" className="h-14 flex-col gap-1 w-full hover:bg-primary/10 hover:scale-105 transition-all duration-300 relative bg-gradient-to-br from-green-50 to-blue-50 dark:from-green-950/20 dark:to-blue-950/20 border-green-200 dark:border-green-800">
