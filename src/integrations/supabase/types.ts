@@ -2340,84 +2340,60 @@ export type Database = {
       brands_public: {
         Row: {
           bio: string | null
-          cover_image_url: string | null
           created_at: string | null
           id: string | null
           logo_url: string | null
           name: string | null
-          shipping_regions: string[] | null
           slug: string | null
-          socials: Json | null
           updated_at: string | null
-          website: string | null
         }
         Insert: {
           bio?: string | null
-          cover_image_url?: string | null
           created_at?: string | null
           id?: string | null
           logo_url?: string | null
           name?: string | null
-          shipping_regions?: string[] | null
           slug?: string | null
-          socials?: Json | null
           updated_at?: string | null
-          website?: string | null
         }
         Update: {
           bio?: string | null
-          cover_image_url?: string | null
           created_at?: string | null
           id?: string | null
           logo_url?: string | null
           name?: string | null
-          shipping_regions?: string[] | null
           slug?: string | null
-          socials?: Json | null
           updated_at?: string | null
-          website?: string | null
         }
         Relationships: []
       }
       retailers_public: {
         Row: {
           bio: string | null
-          cover_image_url: string | null
           created_at: string | null
           id: string | null
           logo_url: string | null
           name: string | null
-          shipping_regions: string[] | null
           slug: string | null
-          socials: Json | null
           updated_at: string | null
-          website: string | null
         }
         Insert: {
           bio?: string | null
-          cover_image_url?: string | null
           created_at?: string | null
           id?: string | null
           logo_url?: string | null
           name?: string | null
-          shipping_regions?: string[] | null
           slug?: string | null
-          socials?: Json | null
           updated_at?: string | null
-          website?: string | null
         }
         Update: {
           bio?: string | null
-          cover_image_url?: string | null
           created_at?: string | null
           id?: string | null
           logo_url?: string | null
           name?: string | null
-          shipping_regions?: string[] | null
           slug?: string | null
-          socials?: Json | null
           updated_at?: string | null
-          website?: string | null
         }
         Relationships: []
       }
@@ -2678,6 +2654,18 @@ export type Database = {
           product_id: string
         }[]
       }
+      get_public_brands: {
+        Args: { limit_param?: number }
+        Returns: {
+          bio: string
+          created_at: string
+          id: string
+          logo_url: string
+          name: string
+          slug: string
+          updated_at: string
+        }[]
+      }
       get_public_profile: {
         Args: { profile_user_id: string }
         Returns: {
@@ -2688,6 +2676,18 @@ export type Database = {
           display_name: string
           user_id: string
           website: string
+        }[]
+      }
+      get_public_retailers: {
+        Args: { limit_param?: number }
+        Returns: {
+          bio: string
+          created_at: string
+          id: string
+          logo_url: string
+          name: string
+          slug: string
+          updated_at: string
         }[]
       }
       get_retailer_contact_info: {
