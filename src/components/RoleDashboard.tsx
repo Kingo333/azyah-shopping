@@ -22,6 +22,7 @@ import TrendingStylesCarousel from '@/components/TrendingStylesCarousel';
 import { UGCCollabButton } from '@/components/ugc/UGCCollabButton';
 import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
 import { FeedbackModal } from '@/components/FeedbackModal';
+import { TutorialTooltip } from '@/components/ui/tutorial-tooltip';
 import { PaymentIntegrationTest } from '@/components/PaymentIntegrationTest';
 interface UserProfile {
   id: string;
@@ -226,60 +227,100 @@ const RoleDashboard: React.FC = () => {
           <div className="block sm:hidden">
             <div className="flex gap-2 w-full overflow-hidden">
               {/* Fixed Swipe Button */}
-              <Button onClick={() => navigate('/swipe')} className="btn-luxury h-14 flex-col gap-1 min-w-[80px] flex-shrink-0">
-                <Heart className="h-5 w-5" />
-                <span className="text-xs">Swipe</span>
-              </Button>
+              <TutorialTooltip 
+                content="Swipe through fashion items to discover your style. Swipe right to like items and build your personal taste profile."
+                feature="swipe"
+              >
+                <Button onClick={() => navigate('/swipe')} className="btn-luxury h-14 flex-col gap-1 min-w-[80px] flex-shrink-0">
+                  <Heart className="h-5 w-5" />
+                  <span className="text-xs">Swipe</span>
+                </Button>
+              </TutorialTooltip>
               
               {/* Carousel for Other Buttons */}
               <div className="flex-1 overflow-hidden">
                 <Carousel className="w-full" opts={{ dragFree: true, containScroll: "trimSnaps" }}>
                   <CarouselContent className="-ml-2">
                     <CarouselItem className="pl-2 basis-[80px]">
-                      <Button onClick={() => setAiStudioModalOpen(true)} variant="outline" className="h-14 flex-col gap-1 w-full hover:bg-primary/10 hover:scale-105 transition-all duration-300 relative bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 border-purple-200 dark:border-purple-800">
-                        <Sparkles className="h-5 w-5 text-purple-600" />
-                        <span className="text-xs text-purple-600">AI Studio</span>
-                        <Badge variant="secondary" className="absolute -top-1 -right-1 text-xs px-1 py-0 h-4">
-                          New
-                        </Badge>
-                      </Button>
+                      <TutorialTooltip 
+                        content="Create AI-generated fashion content and try-on experiences. Upload photos and use AI to enhance your style."
+                        feature="ai-studio"
+                      >
+                        <Button onClick={() => setAiStudioModalOpen(true)} variant="outline" className="h-14 flex-col gap-1 w-full hover:bg-primary/10 hover:scale-105 transition-all duration-300 relative bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 border-purple-200 dark:border-purple-800">
+                          <Sparkles className="h-5 w-5 text-purple-600" />
+                          <span className="text-xs text-purple-600">AI Studio</span>
+                          <Badge variant="secondary" className="absolute -top-1 -right-1 text-xs px-1 py-0 h-4">
+                            New
+                          </Badge>
+                        </Button>
+                      </TutorialTooltip>
                     </CarouselItem>
                     <CarouselItem className="pl-2 basis-[80px]">
-                      <Button onClick={() => navigate('/wishlist')} variant="outline" className="h-14 flex-col gap-1 w-full hover:bg-primary/10 hover:scale-105 transition-all duration-300">
-                        <ShoppingBag className="h-5 w-5" />
-                        <span className="text-xs">Wishlist</span>
-                      </Button>
+                      <TutorialTooltip 
+                        content="Save items you love to your wishlist. Keep track of favorites and shop them later when you're ready."
+                        feature="wishlist"
+                      >
+                        <Button onClick={() => navigate('/wishlist')} variant="outline" className="h-14 flex-col gap-1 w-full hover:bg-primary/10 hover:scale-105 transition-all duration-300">
+                          <ShoppingBag className="h-5 w-5" />
+                          <span className="text-xs">Wishlist</span>
+                        </Button>
+                      </TutorialTooltip>
                     </CarouselItem>
                     <CarouselItem className="pl-2 basis-[80px]">
-                      <Button onClick={() => navigate('/explore')} variant="outline" className="h-14 flex-col gap-1 w-full hover:bg-primary/10 hover:scale-105 transition-all duration-300">
-                        <Search className="h-5 w-5" />
-                        <span className="text-xs">Explore</span>
-                      </Button>
+                      <TutorialTooltip 
+                        content="Search and discover products from top brands. Use filters to find exactly what you're looking for."
+                        feature="explore"
+                      >
+                        <Button onClick={() => navigate('/explore')} variant="outline" className="h-14 flex-col gap-1 w-full hover:bg-primary/10 hover:scale-105 transition-all duration-300">
+                          <Search className="h-5 w-5" />
+                          <span className="text-xs">Explore</span>
+                        </Button>
+                      </TutorialTooltip>
                     </CarouselItem>
                     <CarouselItem className="pl-2 basis-[80px]">
                       {isEnabled('ai_beauty_consultant') ? (
-                        <Button onClick={() => navigate('/beauty-consultant')} variant="outline" className="h-14 flex-col gap-1 w-full hover:bg-primary/10 hover:scale-105 transition-all duration-300 relative bg-gradient-to-br from-pink-50 to-rose-50 dark:from-pink-950/20 dark:to-rose-950/20 border-pink-200 dark:border-pink-800" data-qa="qa-beauty">
-                          <WandSparkles className="h-5 w-5 text-pink-600" />
-                          <span className="text-xs text-pink-600">Beauty</span>
-                        </Button>
+                        <TutorialTooltip 
+                          content="Get personalized beauty advice from our AI consultant. Upload photos and receive tailored recommendations."
+                          feature="beauty-consultant"
+                        >
+                          <Button onClick={() => navigate('/beauty-consultant')} variant="outline" className="h-14 flex-col gap-1 w-full hover:bg-primary/10 hover:scale-105 transition-all duration-300 relative bg-gradient-to-br from-pink-50 to-rose-50 dark:from-pink-950/20 dark:to-rose-950/20 border-pink-200 dark:border-pink-800" data-qa="qa-beauty">
+                            <WandSparkles className="h-5 w-5 text-pink-600" />
+                            <span className="text-xs text-pink-600">Beauty</span>
+                          </Button>
+                        </TutorialTooltip>
                       ) : (
-                        <Button onClick={() => navigate('/fashion-feed')} variant="outline" className="h-14 flex-col gap-1 w-full hover:bg-primary/10 hover:scale-105 transition-all duration-300">
-                          <Users className="h-5 w-5" />
-                          <span className="text-xs">Feed</span>
-                        </Button>
+                        <TutorialTooltip 
+                          content="Connect with the fashion community. Share your style and discover what others are wearing."
+                          feature="fashion-feed"
+                        >
+                          <Button onClick={() => navigate('/fashion-feed')} variant="outline" className="h-14 flex-col gap-1 w-full hover:bg-primary/10 hover:scale-105 transition-all duration-300">
+                            <Users className="h-5 w-5" />
+                            <span className="text-xs">Feed</span>
+                          </Button>
+                        </TutorialTooltip>
                       )}
                     </CarouselItem>
                     <CarouselItem className="pl-2 basis-[80px]">
-                      <UGCCollabButton />
+                      <TutorialTooltip 
+                        content="Collaborate with brands on user-generated content. Apply for brand partnerships and create sponsored content."
+                        feature="ugc-collab"
+                      >
+                        <UGCCollabButton />
+                      </TutorialTooltip>
                     </CarouselItem>
                     <CarouselItem className="pl-2 basis-[80px]">
-                      <Button onClick={handleToyReplicaClick} variant="outline" className="h-14 flex-col gap-1 w-full hover:bg-primary/10 hover:scale-105 transition-all duration-300 relative bg-gradient-to-br from-green-50 to-blue-50 dark:from-green-950/20 dark:to-blue-950/20 border-green-200 dark:border-green-800">
-                        <Blocks className="h-5 w-5 text-green-600" />
-                        <span className="text-xs text-green-600">Toy AI</span>
-                        <Badge variant="secondary" className="absolute -top-1 -right-1 text-xs px-1 py-0 h-4">
-                          AI
-                        </Badge>
-                      </Button>
+                      <TutorialTooltip 
+                        content="Create AI-generated toy replicas of fashion items. Upload photos and get miniature versions for play or display."
+                        feature="toy-replica"
+                      >
+                        <Button onClick={handleToyReplicaClick} variant="outline" className="h-14 flex-col gap-1 w-full hover:bg-primary/10 hover:scale-105 transition-all duration-300 relative bg-gradient-to-br from-green-50 to-blue-50 dark:from-green-950/20 dark:to-blue-950/20 border-green-200 dark:border-green-800">
+                          <Blocks className="h-5 w-5 text-green-600" />
+                          <span className="text-xs text-green-600">Toy AI</span>
+                          <Badge variant="secondary" className="absolute -top-1 -right-1 text-xs px-1 py-0 h-4">
+                            AI
+                          </Badge>
+                        </Button>
+                      </TutorialTooltip>
                     </CarouselItem>
                   </CarouselContent>
                   <CarouselPrevious className="h-8 w-8 -left-2" />
@@ -289,43 +330,85 @@ const RoleDashboard: React.FC = () => {
             </div>
           </div>
           
-          {/* Desktop Layout - Unchanged */}
+          {/* Desktop Layout */}
           <div className="hidden sm:block">
             <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
-              <Button onClick={() => navigate('/swipe')} className="btn-luxury h-14 flex-col gap-1.5">
-                <Heart className="h-5 w-5" />
-                <span className="text-xs">Swipe</span>
-              </Button>
-              <Button onClick={() => setAiStudioModalOpen(true)} variant="outline" className="h-14 flex-col gap-1.5 hover:bg-primary/10 hover:scale-105 transition-all duration-300 relative bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 border-purple-200 dark:border-purple-800">
-                <Sparkles className="h-5 w-5 text-purple-600" />
-                <span className="text-xs text-purple-600">AI Studio</span>
-                <Badge variant="secondary" className="absolute -top-1 -right-1 text-xs px-1 py-0 h-4">
-                  New
-                </Badge>
-              </Button>
-              <Button onClick={() => navigate('/wishlist')} variant="outline" className="h-14 flex-col gap-1.5 hover:bg-primary/10 hover:scale-105 transition-all duration-300">
-                <ShoppingBag className="h-5 w-5" />
-                <span className="text-xs">Wishlist</span>
-              </Button>
-              <Button onClick={() => navigate('/explore')} variant="outline" className="h-14 flex-col gap-1.5 hover:bg-primary/10 hover:scale-105 transition-all duration-300">
-                <Search className="h-5 w-5" />
-                <span className="text-xs">Explore</span>
-              </Button>
-              {isEnabled('ai_beauty_consultant') ? <Button onClick={() => navigate('/beauty-consultant')} variant="outline" className="h-14 flex-col gap-1.5 hover:bg-primary/10 hover:scale-105 transition-all duration-300 relative bg-gradient-to-br from-pink-50 to-rose-50 dark:from-pink-950/20 dark:to-rose-950/20 border-pink-200 dark:border-pink-800 px-1.5 sm:px-3" data-qa="qa-beauty">
-                  <WandSparkles className="h-5 w-5 text-pink-600" />
-                  <span className="text-xs text-pink-600">Beauty Guide</span>
-                </Button> : <Button onClick={() => navigate('/fashion-feed')} variant="outline" className="h-14 flex-col gap-1.5 hover:bg-primary/10 hover:scale-105 transition-all duration-300">
-                  <Users className="h-5 w-5" />
-                  <span className="text-xs">Feed</span>
-                </Button>}
-              <UGCCollabButton />
-              <Button onClick={handleToyReplicaClick} variant="outline" className="h-14 flex-col gap-1.5 hover:bg-primary/10 hover:scale-105 transition-all duration-300 relative bg-gradient-to-br from-green-50 to-blue-50 dark:from-green-950/20 dark:to-blue-950/20 border-green-200 dark:border-green-800">
-                <Blocks className="h-5 w-5 text-green-600" />
-                <span className="text-xs text-green-600">Toy Replica</span>
-                <Badge variant="secondary" className="absolute -top-1 -right-1 text-xs px-1 py-0 h-4">
-                  AI
-                </Badge>
-              </Button>
+              <TutorialTooltip 
+                content="Swipe through fashion items to discover your style. Swipe right to like items and build your personal taste profile."
+                feature="swipe"
+              >
+                <Button onClick={() => navigate('/swipe')} className="btn-luxury h-14 flex-col gap-1.5">
+                  <Heart className="h-5 w-5" />
+                  <span className="text-xs">Swipe</span>
+                </Button>
+              </TutorialTooltip>
+              <TutorialTooltip 
+                content="Create AI-generated fashion content and try-on experiences. Upload photos and use AI to enhance your style."
+                feature="ai-studio"
+              >
+                <Button onClick={() => setAiStudioModalOpen(true)} variant="outline" className="h-14 flex-col gap-1.5 hover:bg-primary/10 hover:scale-105 transition-all duration-300 relative bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 border-purple-200 dark:border-purple-800">
+                  <Sparkles className="h-5 w-5 text-purple-600" />
+                  <span className="text-xs text-purple-600">AI Studio</span>
+                  <Badge variant="secondary" className="absolute -top-1 -right-1 text-xs px-1 py-0 h-4">
+                    New
+                  </Badge>
+                </Button>
+              </TutorialTooltip>
+              <TutorialTooltip 
+                content="Save items you love to your wishlist. Keep track of favorites and shop them later when you're ready."
+                feature="wishlist"
+              >
+                <Button onClick={() => navigate('/wishlist')} variant="outline" className="h-14 flex-col gap-1.5 hover:bg-primary/10 hover:scale-105 transition-all duration-300">
+                  <ShoppingBag className="h-5 w-5" />
+                  <span className="text-xs">Wishlist</span>
+                </Button>
+              </TutorialTooltip>
+              <TutorialTooltip 
+                content="Search and discover products from top brands. Use filters to find exactly what you're looking for."
+                feature="explore"
+              >
+                <Button onClick={() => navigate('/explore')} variant="outline" className="h-14 flex-col gap-1.5 hover:bg-primary/10 hover:scale-105 transition-all duration-300">
+                  <Search className="h-5 w-5" />
+                  <span className="text-xs">Explore</span>
+                </Button>
+              </TutorialTooltip>
+              {isEnabled('ai_beauty_consultant') ? 
+                <TutorialTooltip 
+                  content="Get personalized beauty advice from our AI consultant. Upload photos and receive tailored recommendations."
+                  feature="beauty-consultant"
+                >
+                  <Button onClick={() => navigate('/beauty-consultant')} variant="outline" className="h-14 flex-col gap-1.5 hover:bg-primary/10 hover:scale-105 transition-all duration-300 relative bg-gradient-to-br from-pink-50 to-rose-50 dark:from-pink-950/20 dark:to-rose-950/20 border-pink-200 dark:border-pink-800 px-1.5 sm:px-3" data-qa="qa-beauty">
+                    <WandSparkles className="h-5 w-5 text-pink-600" />
+                    <span className="text-xs text-pink-600">Beauty Guide</span>
+                  </Button>
+                </TutorialTooltip> : 
+                <TutorialTooltip 
+                  content="Connect with the fashion community. Share your style and discover what others are wearing."
+                  feature="fashion-feed"
+                >
+                  <Button onClick={() => navigate('/fashion-feed')} variant="outline" className="h-14 flex-col gap-1.5 hover:bg-primary/10 hover:scale-105 transition-all duration-300">
+                    <Users className="h-5 w-5" />
+                    <span className="text-xs">Feed</span>
+                  </Button>
+                </TutorialTooltip>}
+              <TutorialTooltip 
+                content="Collaborate with brands on user-generated content. Apply for brand partnerships and create sponsored content."
+                feature="ugc-collab"
+              >
+                <UGCCollabButton />
+              </TutorialTooltip>
+              <TutorialTooltip 
+                content="Create AI-generated toy replicas of fashion items. Upload photos and get miniature versions for play or display."
+                feature="toy-replica"
+              >
+                <Button onClick={handleToyReplicaClick} variant="outline" className="h-14 flex-col gap-1.5 hover:bg-primary/10 hover:scale-105 transition-all duration-300 relative bg-gradient-to-br from-green-50 to-blue-50 dark:from-green-950/20 dark:to-blue-950/20 border-green-200 dark:border-green-800">
+                  <Blocks className="h-5 w-5 text-green-600" />
+                  <span className="text-xs text-green-600">Toy Replica</span>
+                  <Badge variant="secondary" className="absolute -top-1 -right-1 text-xs px-1 py-0 h-4">
+                    AI
+                  </Badge>
+                </Button>
+              </TutorialTooltip>
             </div>
           </div>
         </div>
