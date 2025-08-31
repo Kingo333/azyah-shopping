@@ -224,59 +224,59 @@ const RoleDashboard: React.FC = () => {
           
           {/* Mobile Layout with Carousel */}
           <div className="block sm:hidden">
-            <div className="flex gap-2">
+            <div className="flex gap-2 w-full overflow-hidden">
               {/* Fixed Swipe Button */}
-              <Button onClick={() => navigate('/swipe')} className="btn-luxury h-12 flex-col gap-1 min-w-[70px]">
-                <Heart className="h-4 w-4" />
+              <Button onClick={() => navigate('/swipe')} className="btn-luxury h-14 flex-col gap-1 min-w-[80px] flex-shrink-0">
+                <Heart className="h-5 w-5" />
                 <span className="text-xs">Swipe</span>
               </Button>
               
               {/* Carousel for Other Buttons */}
-              <div className="flex-1">
-                <Carousel className="w-full">
+              <div className="flex-1 overflow-hidden">
+                <Carousel className="w-full" opts={{ dragFree: true, containScroll: "trimSnaps" }}>
                   <CarouselContent className="-ml-2">
-                    <CarouselItem className="pl-2 basis-[70px]">
-                      <Button onClick={() => setAiStudioModalOpen(true)} variant="outline" className="h-12 flex-col gap-1 w-full hover:bg-primary/10 hover:scale-105 transition-all duration-300 relative bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 border-purple-200 dark:border-purple-800">
-                        <Sparkles className="h-4 w-4 text-purple-600" />
+                    <CarouselItem className="pl-2 basis-[80px]">
+                      <Button onClick={() => setAiStudioModalOpen(true)} variant="outline" className="h-14 flex-col gap-1 w-full hover:bg-primary/10 hover:scale-105 transition-all duration-300 relative bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 border-purple-200 dark:border-purple-800">
+                        <Sparkles className="h-5 w-5 text-purple-600" />
                         <span className="text-xs text-purple-600">AI Studio</span>
                         <Badge variant="secondary" className="absolute -top-1 -right-1 text-xs px-1 py-0 h-4">
                           New
                         </Badge>
                       </Button>
                     </CarouselItem>
-                    <CarouselItem className="pl-2 basis-[70px]">
-                      <Button onClick={() => navigate('/wishlist')} variant="outline" className="h-12 flex-col gap-1 w-full hover:bg-primary/10 hover:scale-105 transition-all duration-300">
-                        <ShoppingBag className="h-4 w-4" />
+                    <CarouselItem className="pl-2 basis-[80px]">
+                      <Button onClick={() => navigate('/wishlist')} variant="outline" className="h-14 flex-col gap-1 w-full hover:bg-primary/10 hover:scale-105 transition-all duration-300">
+                        <ShoppingBag className="h-5 w-5" />
                         <span className="text-xs">Wishlist</span>
                       </Button>
                     </CarouselItem>
-                    <CarouselItem className="pl-2 basis-[70px]">
-                      <Button onClick={() => navigate('/explore')} variant="outline" className="h-12 flex-col gap-1 w-full hover:bg-primary/10 hover:scale-105 transition-all duration-300">
-                        <Search className="h-4 w-4" />
+                    <CarouselItem className="pl-2 basis-[80px]">
+                      <Button onClick={() => navigate('/explore')} variant="outline" className="h-14 flex-col gap-1 w-full hover:bg-primary/10 hover:scale-105 transition-all duration-300">
+                        <Search className="h-5 w-5" />
                         <span className="text-xs">Explore</span>
                       </Button>
                     </CarouselItem>
-                    <CarouselItem className="pl-2 basis-[70px]">
+                    <CarouselItem className="pl-2 basis-[80px]">
                       {isEnabled('ai_beauty_consultant') ? (
-                        <Button onClick={() => navigate('/beauty-consultant')} variant="outline" className="h-12 flex-col gap-1 w-full hover:bg-primary/10 hover:scale-105 transition-all duration-300 relative bg-gradient-to-br from-pink-50 to-rose-50 dark:from-pink-950/20 dark:to-rose-950/20 border-pink-200 dark:border-pink-800" data-qa="qa-beauty">
-                          <WandSparkles className="h-4 w-4 text-pink-600" />
+                        <Button onClick={() => navigate('/beauty-consultant')} variant="outline" className="h-14 flex-col gap-1 w-full hover:bg-primary/10 hover:scale-105 transition-all duration-300 relative bg-gradient-to-br from-pink-50 to-rose-50 dark:from-pink-950/20 dark:to-rose-950/20 border-pink-200 dark:border-pink-800" data-qa="qa-beauty">
+                          <WandSparkles className="h-5 w-5 text-pink-600" />
                           <span className="text-xs text-pink-600">Beauty</span>
                         </Button>
                       ) : (
-                        <Button onClick={() => navigate('/fashion-feed')} variant="outline" className="h-12 flex-col gap-1 w-full hover:bg-primary/10 hover:scale-105 transition-all duration-300">
-                          <Users className="h-4 w-4" />
+                        <Button onClick={() => navigate('/fashion-feed')} variant="outline" className="h-14 flex-col gap-1 w-full hover:bg-primary/10 hover:scale-105 transition-all duration-300">
+                          <Users className="h-5 w-5" />
                           <span className="text-xs">Feed</span>
                         </Button>
                       )}
                     </CarouselItem>
-                    <CarouselItem className="pl-2 basis-[70px]">
-                      <div className="h-12 w-full">
+                    <CarouselItem className="pl-2 basis-[80px]">
+                      <div className="h-14 w-full">
                         <UGCCollabButton />
                       </div>
                     </CarouselItem>
-                    <CarouselItem className="pl-2 basis-[70px]">
-                      <Button onClick={handleToyReplicaClick} variant="outline" className="h-12 flex-col gap-1 w-full hover:bg-primary/10 hover:scale-105 transition-all duration-300 relative bg-gradient-to-br from-green-50 to-blue-50 dark:from-green-950/20 dark:to-blue-950/20 border-green-200 dark:border-green-800">
-                        <Blocks className="h-4 w-4 text-green-600" />
+                    <CarouselItem className="pl-2 basis-[80px]">
+                      <Button onClick={handleToyReplicaClick} variant="outline" className="h-14 flex-col gap-1 w-full hover:bg-primary/10 hover:scale-105 transition-all duration-300 relative bg-gradient-to-br from-green-50 to-blue-50 dark:from-green-950/20 dark:to-blue-950/20 border-green-200 dark:border-green-800">
+                        <Blocks className="h-5 w-5 text-green-600" />
                         <span className="text-xs text-green-600">Toy AI</span>
                         <Badge variant="secondary" className="absolute -top-1 -right-1 text-xs px-1 py-0 h-4">
                           AI
