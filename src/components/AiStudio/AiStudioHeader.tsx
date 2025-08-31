@@ -19,9 +19,7 @@ export const AiStudioHeader: React.FC<AiStudioHeaderProps> = ({
           <DialogTitle className="flex items-center gap-2 text-lg md:text-xl">
             
             AI Studio
-            <Badge variant="secondary" className="text-xs">
-              AI try-on
-            </Badge>
+            <Badge variant="secondary" className="text-xs">AI Outfit try-on</Badge>
           </DialogTitle>
           
           {/* Close Button */}
