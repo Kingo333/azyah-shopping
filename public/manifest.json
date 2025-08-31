@@ -1,11 +1,11 @@
 {
-  "name": "Azyah - Fashion Discovery",
+  "name": "Azyah Style",
   "short_name": "Azyah",
-  "description": "Discover, swipe, try on, and curate fashion with AR try-on, community features, and affiliate earnings",
-  "start_url": "/",
+  "description": "Mood-based fashion picks, UGC collabs, and salon rewards.",
+  "start_url": "/?source=pwa",
   "display": "standalone",
-  "background_color": "#0f0f0f",
-  "theme_color": "#ffffff",
+  "background_color": "#0B0B0C",
+  "theme_color": "#0B0B0C",
   "orientation": "portrait",
   "scope": "/",
   "icons": [
