@@ -11,11 +11,12 @@ import { supabase } from '@/integrations/supabase/client';
 
 interface SimilarItemCardProps {
   item: Product;
-  onItemClick: (product: Product) => void;
+  onItemClick: (product: Product) => void; // For main click (PhotoCloseup)
+  onItemDetail?: (product: Product) => void; // For info button (ProductDetailPage)
   formatPrice: (cents: number, currency?: string) => string;
 }
 
-const SimilarItemCard: React.FC<SimilarItemCardProps> = ({ item, onItemClick, formatPrice }) => {
+const SimilarItemCard: React.FC<SimilarItemCardProps> = ({ item, onItemClick, onItemDetail, formatPrice }) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const { addToWishlist, isLoading: wishlistLoading } = useWishlist(item.id);
@@ -154,7 +155,12 @@ const SimilarItemCard: React.FC<SimilarItemCardProps> = ({ item, onItemClick, fo
               className="h-8 w-8 p-0 rounded-full bg-primary/10"
               onClick={(e) => {
                 e.stopPropagation();
-                onItemClick(item);
+                // Use onItemDetail for info button if provided, otherwise use onItemClick
+                if (onItemDetail) {
+                  onItemDetail(item);
+                } else {
+                  onItemClick(item);
+                }
               }}
               title="View product details"
             >

@@ -8,7 +8,8 @@ import SimilarItemCard from './SimilarItemCard';
 
 interface SimilarItemsGridProps {
   productId: string;
-  onItemClick: (product: Product) => void;
+  onItemClick: (product: Product) => void; // For main click (PhotoCloseup)
+  onItemDetail?: (product: Product) => void; // For info button (ProductDetailPage)
 }
 
 interface SimilarResponse {
@@ -16,7 +17,7 @@ interface SimilarResponse {
   nextCursor?: number;
 }
 
-const SimilarItemsGrid: React.FC<SimilarItemsGridProps> = ({ productId, onItemClick }) => {
+const SimilarItemsGrid: React.FC<SimilarItemsGridProps> = ({ productId, onItemClick, onItemDetail }) => {
   const { user } = useAuth();
   const { ref, inView } = useInView();
 
@@ -138,6 +139,7 @@ const SimilarItemsGrid: React.FC<SimilarItemsGridProps> = ({ productId, onItemCl
             key={item.id}
             item={item}
             onItemClick={onItemClick}
+            onItemDetail={onItemDetail}
             formatPrice={formatPrice}
           />
         ))}

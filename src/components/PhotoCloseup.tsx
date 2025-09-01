@@ -9,6 +9,7 @@ import { useWishlist } from '@/hooks/useWishlist';
 import { supabase } from '@/integrations/supabase/client';
 import { Product } from '@/types';
 import SimilarItemsGrid from './SimilarItemsGrid';
+import ProductDetailPage from './ProductDetailPage';
 import { getPrimaryImageUrl } from '@/utils/imageHelpers';
 import { getResponsiveImageProps } from '@/utils/asosImageUtils';
 
@@ -25,6 +26,8 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
   const { toast } = useToast();
   const [browsingStack, setBrowsingStack] = useState<string[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [selectedDetailProduct, setSelectedDetailProduct] = useState<Product | null>(null);
+  const [showProductDetail, setShowProductDetail] = useState(false);
   
   const isOverlay = searchParams.get('from') === 'list';
   const productId = id || initialProduct?.id;
@@ -102,6 +105,11 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
     setBrowsingStack(prev => [...prev.slice(0, currentIndex + 1), similarProduct.id]);
     setCurrentIndex(prev => prev + 1);
     navigate(`/p/${similarProduct.id}${isOverlay ? '?from=list' : ''}`, { replace: true });
+  };
+
+  const handleSimilarItemDetail = (similarProduct: Product) => {
+    setSelectedDetailProduct(similarProduct);
+    setShowProductDetail(true);
   };
 
   const handleAddToWishlist = async () => {
@@ -384,6 +392,7 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
               <SimilarItemsGrid 
                 productId={product.id} 
                 onItemClick={handleSimilarItemClick}
+                onItemDetail={handleSimilarItemDetail}
               />
             </div>
           </div>
@@ -504,6 +513,7 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
                 <SimilarItemsGrid 
                   productId={product.id} 
                   onItemClick={handleSimilarItemClick}
+                  onItemDetail={handleSimilarItemDetail}
                 />
               </div>
             </div>
@@ -524,6 +534,19 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
           </div>
         </div>
       </div>
+
+      {/* Product Detail Modal */}
+      {showProductDetail && selectedDetailProduct && (
+        <div className="fixed inset-0 z-60 bg-background">
+          <ProductDetailPage
+            product={selectedDetailProduct}
+            onBack={() => {
+              setShowProductDetail(false);
+              setSelectedDetailProduct(null);
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 };
