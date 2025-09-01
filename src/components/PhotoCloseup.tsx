@@ -288,6 +288,28 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
     }).format(cents / 100);
   };
 
+  // Helper function to safely get media URLs as array
+  const getMediaUrls = (product: Product): string[] => {
+    if (!product.media_urls) return [];
+    
+    // If it's already an array, return it
+    if (Array.isArray(product.media_urls)) {
+      return product.media_urls;
+    }
+    
+    // If it's a string, try to parse as JSON
+    if (typeof product.media_urls === 'string') {
+      try {
+        const parsed = JSON.parse(product.media_urls);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch {
+        return [];
+      }
+    }
+    
+    return [];
+  };
+
   return (
     <div 
       role="dialog" 
@@ -460,9 +482,12 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
           <div className="bg-muted rounded-xl overflow-hidden flex items-start justify-center h-full pt-8 relative">
             <img
               {...getResponsiveImageProps(
-                product.media_urls && product.media_urls.length > 0 
-                  ? product.media_urls[currentImageIndex] 
-                  : getPrimaryImageUrl(product),
+                (() => {
+                  const mediaUrls = getMediaUrls(product);
+                  return mediaUrls.length > 0 
+                    ? mediaUrls[currentImageIndex] 
+                    : getPrimaryImageUrl(product);
+                })(),
                 "50vw"
               )}
               alt={product.title}
@@ -473,35 +498,38 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
             />
             
             {/* Thumbnails */}
-            {product.media_urls && product.media_urls.length > 1 && (
-              <div className="absolute top-4 left-4 flex flex-col gap-2 max-h-[calc(100%-2rem)] overflow-y-auto">
-                {product.media_urls.slice(0, 6).map((imageUrl, index) => (
-                  <button
-                    key={index}
-                    onClick={() => setCurrentImageIndex(index)}
-                    className={`w-12 h-12 rounded-lg overflow-hidden border-2 transition-all hover:scale-105 ${
-                      currentImageIndex === index 
-                        ? 'border-primary shadow-md' 
-                        : 'border-border/30 hover:border-border'
-                    }`}
-                  >
-                    <img
-                      src={imageUrl}
-                      alt={`${product.title} view ${index + 1}`}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = '/placeholder.svg';
-                      }}
-                    />
-                  </button>
-                ))}
-                {product.media_urls.length > 6 && (
-                  <div className="w-12 h-12 rounded-lg bg-muted border-2 border-border/30 flex items-center justify-center text-xs text-muted-foreground">
-                    +{product.media_urls.length - 6}
-                  </div>
-                )}
-              </div>
-            )}
+            {(() => {
+              const mediaUrls = getMediaUrls(product);
+              return mediaUrls.length > 1 && (
+                <div className="absolute top-4 left-4 flex flex-col gap-2 max-h-[calc(100%-2rem)] overflow-y-auto">
+                  {mediaUrls.slice(0, 6).map((imageUrl, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setCurrentImageIndex(index)}
+                      className={`w-12 h-12 rounded-lg overflow-hidden border-2 transition-all hover:scale-105 ${
+                        currentImageIndex === index 
+                          ? 'border-primary shadow-md' 
+                          : 'border-border/30 hover:border-border'
+                      }`}
+                    >
+                      <img
+                        src={imageUrl}
+                        alt={`${product.title} view ${index + 1}`}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = '/placeholder.svg';
+                        }}
+                      />
+                    </button>
+                  ))}
+                  {mediaUrls.length > 6 && (
+                    <div className="w-12 h-12 rounded-lg bg-muted border-2 border-border/30 flex items-center justify-center text-xs text-muted-foreground">
+                      +{mediaUrls.length - 6}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
           </div>
 
           {/* Right: Product Details */}
