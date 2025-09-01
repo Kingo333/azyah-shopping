@@ -363,7 +363,12 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
           <div className="relative aspect-[3/4] bg-muted">
             <img
               {...getResponsiveImageProps(
-                getPrimaryImageUrl(product),
+                (() => {
+                  const mediaUrls = getMediaUrls(product);
+                  return mediaUrls.length > 0 
+                    ? mediaUrls[currentImageIndex] 
+                    : getPrimaryImageUrl(product);
+                })(),
                 "(max-width: 768px) 100vw, 50vw"
               )}
               alt={product.title}
@@ -372,6 +377,40 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
                 (e.target as HTMLImageElement).src = '/placeholder.svg';
               }}
             />
+            
+            {/* Mobile Thumbnails - Bottom Right */}
+            {(() => {
+              const mediaUrls = getMediaUrls(product);
+              return mediaUrls.length > 1 && (
+                <div className="absolute bottom-4 right-4 flex gap-2 max-w-[calc(100%-2rem)] overflow-x-auto">
+                  {mediaUrls.slice(0, 4).map((imageUrl, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setCurrentImageIndex(index)}
+                      className={`w-12 h-12 rounded-lg overflow-hidden border-2 transition-all hover:scale-105 flex-shrink-0 ${
+                        currentImageIndex === index 
+                          ? 'border-white shadow-lg' 
+                          : 'border-white/50 hover:border-white/80'
+                      }`}
+                    >
+                      <img
+                        src={imageUrl}
+                        alt={`${product.title} view ${index + 1}`}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = '/placeholder.svg';
+                        }}
+                      />
+                    </button>
+                  ))}
+                  {mediaUrls.length > 4 && (
+                    <div className="w-12 h-12 rounded-lg bg-black/50 border-2 border-white/50 flex items-center justify-center text-xs text-white flex-shrink-0">
+                      +{mediaUrls.length - 4}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
           </div>
 
           {/* Product Info */}
