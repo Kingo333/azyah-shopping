@@ -445,7 +445,7 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
         </div>
 
         {/* Main Content Grid */}
-        <div className="grid grid-cols-2 gap-6 p-6 min-h-[calc(100vh-12rem)] overflow-y-auto">
+        <div className="grid grid-cols-2 gap-6 p-6 h-[calc(100vh-10rem)]">
           {/* Left: Product Image */}
           <div className="bg-muted rounded-xl overflow-hidden flex items-start justify-center h-full pt-8">
             <img
@@ -463,8 +463,8 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
 
           {/* Right: Product Details */}
           <div className="flex flex-col h-full">
-            {/* Product Info */}
-            <div className="space-y-4 flex-1 overflow-y-auto">
+            {/* Fixed Product Info */}
+            <div className="space-y-4 flex-shrink-0">
               <div>
                 <h1 className="text-2xl font-semibold mb-2">{product.title}</h1>
                 <p className="text-muted-foreground mb-3">
@@ -495,10 +495,12 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
                   Save
                 </Button>
               </div>
+            </div>
 
-              {/* Similar Items */}
-              <div className="space-y-4">
-                <h3 className="text-xl font-semibold">Similar Items</h3>
+            {/* Scrollable Similar Items */}
+            <div className="flex-1 flex flex-col min-h-0 mt-6">
+              <h3 className="text-xl font-semibold mb-4 flex-shrink-0">Similar Items</h3>
+              <div className="flex-1 overflow-y-auto">
                 <SimilarItemsGrid 
                   productId={product.id} 
                   onItemClick={handleSimilarItemClick}
@@ -506,7 +508,7 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
               </div>
             </div>
 
-            {/* Bottom CTA - Always Visible */}
+            {/* Fixed Bottom CTA */}
             {product.external_url && (
               <div className="mt-4 pt-4 border-t border-border/50 flex-shrink-0">
                 <Button 
