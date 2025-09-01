@@ -2789,6 +2789,15 @@ export type Database = {
         }
         Returns: undefined
       }
+      log_user_data_access_enhanced: {
+        Args: {
+          accessed_user_id: string
+          action_type: string
+          additional_context?: Json
+          table_name: string
+        }
+        Returns: undefined
+      }
       tier_from_price_aed: {
         Args: { aed_price: number }
         Returns: string
