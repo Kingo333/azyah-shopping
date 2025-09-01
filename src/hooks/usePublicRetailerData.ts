@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Json } from '@/integrations/supabase/types';
 
-interface PublicBrandData {
+interface PublicRetailerData {
   id: string;
   name: string;
   slug: string;
@@ -17,49 +17,49 @@ interface PublicBrandData {
 }
 
 /**
- * Hook for fetching public brand data (safe fields only)
+ * Hook for fetching public retailer data (safe fields only)
  * Available to all users including anonymous
  * Does NOT expose contact_email or owner_user_id
  */
-export const usePublicBrandData = (brandId?: string) => {
+export const usePublicRetailerData = (retailerId?: string) => {
   return useQuery({
-    queryKey: ['public-brand-data', brandId],
-    queryFn: async (): Promise<PublicBrandData | null> => {
-      if (!brandId) return null;
+    queryKey: ['public-retailer-data', retailerId],
+    queryFn: async (): Promise<PublicRetailerData | null> => {
+      if (!retailerId) return null;
       
       const { data, error } = await supabase
-        .from('brands_public')
+        .from('retailers_public')
         .select('*')
-        .eq('id', brandId)
+        .eq('id', retailerId)
         .single();
 
       if (error) {
-        console.error('Failed to fetch public brand data:', error);
+        console.error('Failed to fetch public retailer data:', error);
         throw error;
       }
       
       return data;
     },
-    enabled: !!brandId,
+    enabled: !!retailerId,
   });
 };
 
 /**
- * Hook for fetching public brands list (safe fields only)
+ * Hook for fetching public retailers list (safe fields only)
  * Available to all users including anonymous
  */
-export const usePublicBrandsList = (limit = 50) => {
+export const usePublicRetailersList = (limit = 50) => {
   return useQuery({
-    queryKey: ['public-brands-list', limit],
-    queryFn: async (): Promise<PublicBrandData[]> => {
+    queryKey: ['public-retailers-list', limit],
+    queryFn: async (): Promise<PublicRetailerData[]> => {
       const { data, error } = await supabase
-        .from('brands_public')
+        .from('retailers_public')
         .select('*')
         .order('name')
         .limit(limit);
 
       if (error) {
-        console.error('Failed to fetch public brands list:', error);
+        console.error('Failed to fetch public retailers list:', error);
         throw error;
       }
       
