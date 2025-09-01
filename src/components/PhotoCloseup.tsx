@@ -9,7 +9,7 @@ import { useWishlist } from '@/hooks/useWishlist';
 import { supabase } from '@/integrations/supabase/client';
 import { Product } from '@/types';
 import SimilarItemsGrid from './SimilarItemsGrid';
-import { getPrimaryImageUrl } from '@/utils/imageHelpers';
+import { getAllProductImages, getPrimaryImageUrl } from '@/utils/imageHelpers';
 import { getResponsiveImageProps } from '@/utils/asosImageUtils';
 
 interface PhotoCloseupProps {
@@ -25,6 +25,7 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
   const { toast } = useToast();
   const [browsingStack, setBrowsingStack] = useState<string[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   
   const isOverlay = searchParams.get('from') === 'list';
   const productId = id || initialProduct?.id;
@@ -279,6 +280,10 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
     }).format(cents / 100);
   };
 
+  // Get all product images
+  const productImages = getAllProductImages(product);
+  const currentImage = productImages[selectedImageIndex] || { url: getPrimaryImageUrl(product), index: 0, isAsos: false };
+
   return (
     <div 
       role="dialog" 
@@ -286,7 +291,8 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
       className="fixed inset-0 bg-black/60 z-50"
       onClick={(e) => e.target === e.currentTarget && handleClose()}
     >
-      <div className="absolute inset-x-0 bottom-0 top-[env(safe-area-inset-top)] md:top-8 md:bottom-8 md:left-8 md:right-8 md:max-w-4xl md:mx-auto rounded-t-2xl md:rounded-2xl bg-background overflow-hidden">
+      {/* Desktop: Two column layout, Mobile: Single column */}
+      <div className="absolute inset-x-0 bottom-0 top-[env(safe-area-inset-top)] md:top-8 md:bottom-8 md:left-8 md:right-8 md:max-w-7xl md:mx-auto rounded-t-2xl md:rounded-2xl bg-background overflow-hidden">
         {/* Header */}
         <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border/50 px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -325,65 +331,102 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
           </div>
         </div>
 
-        {/* Scrollable Content */}
-        <div className="overflow-y-auto h-full pb-20">
-          {/* Hero Image */}
-          <div className="relative aspect-[3/4] bg-muted">
-            <img
-              {...getResponsiveImageProps(
-                getPrimaryImageUrl(product),
-                "(max-width: 768px) 100vw, 50vw"
+        {/* Content */}
+        <div className="h-full overflow-hidden md:flex">
+          {/* Left Column - Image */}
+          <div className="md:w-1/2 md:h-full">
+            <div className="relative h-[60vh] md:h-full bg-muted">
+              {/* Main Image */}
+              <img
+                {...getResponsiveImageProps(
+                  currentImage.url,
+                  "(max-width: 768px) 100vw, 50vw"
+                )}
+                alt={product.title}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = '/placeholder.svg';
+                }}
+              />
+              
+              {/* Image Gallery Thumbnails - Bottom Right */}
+              {productImages.length > 1 && (
+                <div className="absolute bottom-4 right-4 flex flex-wrap gap-2 max-w-[120px] md:max-w-[160px]">
+                  {productImages.slice(0, 6).map((image, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setSelectedImageIndex(index)}
+                      className={`w-12 h-12 md:w-16 md:h-16 rounded-lg overflow-hidden border-2 transition-all ${
+                        selectedImageIndex === index
+                          ? 'border-primary ring-2 ring-primary/20'
+                          : 'border-white/50 hover:border-white'
+                      }`}
+                    >
+                      <img
+                        src={image.url}
+                        alt={`${product.title} ${index + 1}`}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = '/placeholder.svg';
+                        }}
+                      />
+                    </button>
+                  ))}
+                  {productImages.length > 6 && (
+                    <div className="w-12 h-12 md:w-16 md:h-16 rounded-lg bg-black/60 border-2 border-white/50 flex items-center justify-center">
+                      <span className="text-white text-xs font-medium">+{productImages.length - 6}</span>
+                    </div>
+                  )}
+                </div>
               )}
-              alt={product.title}
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                (e.target as HTMLImageElement).src = '/placeholder.svg';
-              }}
-            />
+            </div>
           </div>
 
-          {/* Product Info */}
-          <div className="p-4 space-y-4">
-            <div>
-              <h1 className="text-xl font-semibold mb-1">{product.title}</h1>
-              <p className="text-muted-foreground text-sm mb-2">
-                {product.brand?.name || 'Unknown Brand'}
-              </p>
-              <div className="text-lg font-bold text-primary">
-                {formatPrice(product.price_cents, product.currency)}
+          {/* Right Column - Details and Similar Items */}
+          <div className="md:w-1/2 md:h-full overflow-y-auto pb-20">
+            {/* Product Info */}
+            <div className="p-4 space-y-4">
+              <div>
+                <h1 className="text-lg md:text-xl font-semibold mb-1">{product.title}</h1>
+                <p className="text-muted-foreground text-sm mb-2">
+                  {product.brand?.name || 'Unknown Brand'}
+                </p>
+                <div className="text-lg font-bold text-primary">
+                  {formatPrice(product.price_cents, product.currency)}
+                </div>
               </div>
-            </div>
 
-            {/* Action Buttons */}
-            <div className="flex gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleLike}
-                className="flex-1"
-              >
-                <Heart className="h-4 w-4 mr-2" />
-                Like
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleAddToWishlist}
-                disabled={wishlistLoading}
-                className="flex-1"
-              >
-                <ShoppingBag className="h-4 w-4 mr-2" />
-                Save
-              </Button>
-            </div>
+              {/* Action Buttons */}
+              <div className="flex gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleLike}
+                  className="flex-1"
+                >
+                  <Heart className="h-4 w-4 mr-2" />
+                  Like
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleAddToWishlist}
+                  disabled={wishlistLoading}
+                  className="flex-1"
+                >
+                  <ShoppingBag className="h-4 w-4 mr-2" />
+                  Save
+                </Button>
+              </div>
 
-            {/* Similar Items */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Similar Items</h3>
-              <SimilarItemsGrid 
-                productId={product.id} 
-                onItemClick={handleSimilarItemClick}
-              />
+              {/* Similar Items */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Similar Items</h3>
+                <SimilarItemsGrid 
+                  productId={product.id} 
+                  onItemClick={handleSimilarItemClick}
+                />
+              </div>
             </div>
           </div>
         </div>
