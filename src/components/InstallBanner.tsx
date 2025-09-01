@@ -37,7 +37,6 @@ export default function InstallBanner({ className = '' }: Props) {
             On iPhone: <span className="font-medium">Share</span> → <span className="font-medium">Add to Home Screen</span>
           </span>
         </div>
-        <div className="text-xs opacity-70">No App Store needed</div>
       </div>
     );
   }

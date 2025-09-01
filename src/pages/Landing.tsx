@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { ArrowRight, Heart, Users, Star, Sparkles, Play, Menu, X, CheckCircle, ShoppingBag, Globe, Crown, ChevronRight, LayoutGrid, ExternalLink, Shuffle } from "lucide-react";
+import InstallBanner from "@/components/InstallBanner";
 import { Button } from "@/components/ui/button";
 import { SEOHead } from "@/components/SEOHead";
 import SwipeDeck from '@/components/SwipeDeck';
@@ -186,6 +187,11 @@ export default function Landing() {
             <span className="sm:hidden">Learn</span>
           </Button>
         </div>
+      </div>
+
+      {/* Install Banner - positioned after premium banner */}
+      <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 py-3">
+        <InstallBanner />
       </div>
 
       {/* HERO */}
