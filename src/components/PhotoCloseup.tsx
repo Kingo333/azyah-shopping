@@ -28,6 +28,7 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedDetailProduct, setSelectedDetailProduct] = useState<Product | null>(null);
   const [showProductDetail, setShowProductDetail] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   
   const isOverlay = searchParams.get('from') === 'list';
   const productId = id || initialProduct?.id;
@@ -456,10 +457,12 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
         {/* Main Content Grid */}
         <div className="grid grid-cols-2 gap-6 p-6 h-[calc(100vh-10rem)] max-h-screen">{/* Force update */}
           {/* Left: Product Image */}
-          <div className="bg-muted rounded-xl overflow-hidden flex items-start justify-center h-full pt-8">
+          <div className="bg-muted rounded-xl overflow-hidden flex items-start justify-center h-full pt-8 relative">
             <img
               {...getResponsiveImageProps(
-                getPrimaryImageUrl(product),
+                product.media_urls && product.media_urls.length > 0 
+                  ? product.media_urls[currentImageIndex] 
+                  : getPrimaryImageUrl(product),
                 "50vw"
               )}
               alt={product.title}
@@ -468,6 +471,37 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
                 (e.target as HTMLImageElement).src = '/placeholder.svg';
               }}
             />
+            
+            {/* Thumbnails */}
+            {product.media_urls && product.media_urls.length > 1 && (
+              <div className="absolute top-4 left-4 flex flex-col gap-2 max-h-[calc(100%-2rem)] overflow-y-auto">
+                {product.media_urls.slice(0, 6).map((imageUrl, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setCurrentImageIndex(index)}
+                    className={`w-12 h-12 rounded-lg overflow-hidden border-2 transition-all hover:scale-105 ${
+                      currentImageIndex === index 
+                        ? 'border-primary shadow-md' 
+                        : 'border-border/30 hover:border-border'
+                    }`}
+                  >
+                    <img
+                      src={imageUrl}
+                      alt={`${product.title} view ${index + 1}`}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = '/placeholder.svg';
+                      }}
+                    />
+                  </button>
+                ))}
+                {product.media_urls.length > 6 && (
+                  <div className="w-12 h-12 rounded-lg bg-muted border-2 border-border/30 flex items-center justify-center text-xs text-muted-foreground">
+                    +{product.media_urls.length - 6}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Right: Product Details */}
@@ -503,6 +537,16 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
                   <ShoppingBag className="h-4 w-4 mr-2" />
                   Save
                 </Button>
+                {product.external_url && (
+                  <Button
+                    onClick={handleVisitBrand}
+                    variant="default"
+                    className="flex-1"
+                  >
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    Shop Now
+                  </Button>
+                )}
               </div>
             </div>
 
