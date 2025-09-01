@@ -335,7 +335,7 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
         <div className="h-full overflow-hidden md:flex">
           {/* Left Column - Image */}
           <div className="md:w-1/2 md:h-full">
-            <div className="relative h-[60vh] md:h-full bg-muted">
+            <div className="relative h-[45vh] md:h-full bg-muted">
               {/* Main Image */}
               <img
                 {...getResponsiveImageProps(
@@ -382,8 +382,8 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
             </div>
           </div>
 
-          {/* Right Column - Details and Similar Items */}
-          <div className="md:w-1/2 md:h-full overflow-y-auto pb-20">
+          {/* Right Column - Details and Similar Items (Desktop) / Content Below Image (Mobile) */}
+          <div className="md:w-1/2 md:h-full overflow-y-auto pb-24 md:pb-20">
             {/* Product Info */}
             <div className="p-4 space-y-4">
               <div>
