@@ -11,6 +11,7 @@ import { useInView } from 'react-intersection-observer';
 interface SimilarItemsGridProps {
   productId: string;
   onItemClick: (product: Product) => void;
+  layout?: 'grid' | 'list';
 }
 
 interface SimilarResponse {
@@ -18,7 +19,7 @@ interface SimilarResponse {
   nextCursor?: number;
 }
 
-const SimilarItemsGrid: React.FC<SimilarItemsGridProps> = ({ productId, onItemClick }) => {
+const SimilarItemsGrid: React.FC<SimilarItemsGridProps> = ({ productId, onItemClick, layout = 'grid' }) => {
   const { user } = useAuth();
   const { ref, inView } = useInView();
 
@@ -102,12 +103,23 @@ const SimilarItemsGrid: React.FC<SimilarItemsGridProps> = ({ productId, onItemCl
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {Array.from({ length: 8 }).map((_, i) => (
-          <div key={i} className="animate-pulse">
-            <div className="aspect-[3/4] bg-muted rounded-lg mb-2"></div>
-            <div className="h-4 bg-muted rounded mb-1"></div>
-            <div className="h-3 bg-muted rounded w-2/3"></div>
+      <div className={layout === 'list' ? "space-y-2" : "grid grid-cols-2 md:grid-cols-4 gap-3"}>
+        {Array.from({ length: layout === 'list' ? 4 : 8 }).map((_, i) => (
+          <div key={i} className={`animate-pulse ${layout === 'list' ? 'flex gap-3' : ''}`}>
+            <div className={layout === 'list' ? "w-16 h-20 bg-muted rounded" : "aspect-[3/4] bg-muted rounded-lg mb-2"}></div>
+            {layout === 'list' && (
+              <div className="flex-1">
+                <div className="h-4 bg-muted rounded mb-1"></div>
+                <div className="h-3 bg-muted rounded w-2/3 mb-1"></div>
+                <div className="h-3 bg-muted rounded w-1/3"></div>
+              </div>
+            )}
+            {layout === 'grid' && (
+              <>
+                <div className="h-4 bg-muted rounded mb-1"></div>
+                <div className="h-3 bg-muted rounded w-2/3"></div>
+              </>
+            )}
           </div>
         ))}
       </div>
@@ -134,28 +146,29 @@ const SimilarItemsGrid: React.FC<SimilarItemsGridProps> = ({ productId, onItemCl
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className={layout === 'list' ? "space-y-2" : "grid grid-cols-2 md:grid-cols-4 gap-3"}>
         {items.map((item, index) => (
-          <Card 
-            key={item.id} 
-            className="group cursor-pointer hover:shadow-lg transition-all duration-200 overflow-hidden"
-            onClick={() => onItemClick(item)}
-          >
-            <CardContent className="p-0">
-              <div className="aspect-[3/4] bg-muted overflow-hidden">
+          layout === 'list' ? (
+            // List Layout
+            <div
+              key={item.id}
+              className="flex gap-3 p-2 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
+              onClick={() => onItemClick(item)}
+            >
+              <div className="w-16 h-20 bg-muted rounded overflow-hidden flex-shrink-0">
                 <img
                   {...getResponsiveImageProps(
                     getPrimaryImageUrl(item),
-                    "(max-width: 768px) 50vw, 25vw"
+                    "64px"
                   )}
                   alt={item.title}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                  className="w-full h-full object-cover"
                   onError={(e) => {
                     (e.target as HTMLImageElement).src = '/placeholder.svg';
                   }}
                 />
               </div>
-              <div className="p-3">
+              <div className="flex-1 min-w-0">
                 <h4 className="text-sm font-medium line-clamp-2 mb-1">
                   {item.title}
                 </h4>
@@ -166,8 +179,42 @@ const SimilarItemsGrid: React.FC<SimilarItemsGridProps> = ({ productId, onItemCl
                   {formatPrice(item.price_cents, item.currency)}
                 </p>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          ) : (
+            // Grid Layout
+            <Card 
+              key={item.id} 
+              className="group cursor-pointer hover:shadow-lg transition-all duration-200 overflow-hidden"
+              onClick={() => onItemClick(item)}
+            >
+              <CardContent className="p-0">
+                <div className="aspect-[3/4] bg-muted overflow-hidden">
+                  <img
+                    {...getResponsiveImageProps(
+                      getPrimaryImageUrl(item),
+                      "(max-width: 768px) 50vw, 25vw"
+                    )}
+                    alt={item.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = '/placeholder.svg';
+                    }}
+                  />
+                </div>
+                <div className="p-3">
+                  <h4 className="text-sm font-medium line-clamp-2 mb-1">
+                    {item.title}
+                  </h4>
+                  <p className="text-xs text-muted-foreground mb-1">
+                    {(item.brand as any)?.name || 'Unknown Brand'}
+                  </p>
+                  <p className="text-sm font-semibold text-primary">
+                    {formatPrice(item.price_cents, item.currency)}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          )
         ))}
       </div>
 
