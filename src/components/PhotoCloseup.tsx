@@ -25,6 +25,7 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
   const { toast } = useToast();
   const [browsingStack, setBrowsingStack] = useState<string[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   
   const isOverlay = searchParams.get('from') === 'list';
   const productId = id || initialProduct?.id;
@@ -279,6 +280,14 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
     }).format(cents / 100);
   };
 
+  // Get all available images
+  const allImages = [
+    getPrimaryImageUrl(product),
+    ...(product.media_urls || [])
+  ].filter(Boolean);
+
+  const currentImage = allImages[selectedImageIndex] || getPrimaryImageUrl(product);
+
   return (
     <div 
       role="dialog" 
@@ -328,11 +337,11 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
 
         {/* Scrollable Content */}
         <div className="overflow-y-auto h-full pb-20">
-          {/* Hero Image */}
+          {/* Hero Image with Thumbnails */}
           <div className="relative aspect-[3/4] bg-muted">
             <img
               {...getResponsiveImageProps(
-                getPrimaryImageUrl(product),
+                currentImage,
                 "(max-width: 768px) 100vw, 50vw"
               )}
               alt={product.title}
@@ -341,6 +350,32 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
                 (e.target as HTMLImageElement).src = '/placeholder.svg';
               }}
             />
+            
+            {/* Image Thumbnails - Bottom Right */}
+            {allImages.length > 1 && (
+              <div className="absolute bottom-4 right-4 flex flex-col gap-2 max-h-32 overflow-y-auto">
+                {allImages.map((imageUrl, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setSelectedImageIndex(index)}
+                    className={`w-12 h-12 rounded-lg overflow-hidden border-2 transition-all ${
+                      selectedImageIndex === index 
+                        ? 'border-primary ring-2 ring-primary/20' 
+                        : 'border-white/50 hover:border-white'
+                    }`}
+                  >
+                    <img
+                      src={imageUrl}
+                      alt={`${product.title} view ${index + 1}`}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = '/placeholder.svg';
+                      }}
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Product Info */}
@@ -445,13 +480,13 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
         </div>
 
         {/* Main Content Grid */}
-        <div className="grid grid-cols-3 gap-6 h-full p-6 overflow-hidden">
+        <div className="grid grid-cols-5 gap-6 h-full p-6 overflow-hidden">
           {/* Left: Product Image */}
-          <div className="col-span-2 bg-muted rounded-xl overflow-hidden flex items-center justify-center">
+          <div className="col-span-3 bg-muted rounded-xl overflow-hidden relative flex items-center justify-center">
             <img
               {...getResponsiveImageProps(
-                getPrimaryImageUrl(product),
-                "66vw"
+                currentImage,
+                "60vw"
               )}
               alt={product.title}
               className="max-w-full max-h-full object-contain"
@@ -459,10 +494,36 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
                 (e.target as HTMLImageElement).src = '/placeholder.svg';
               }}
             />
+            
+            {/* Image Thumbnails - Bottom Right */}
+            {allImages.length > 1 && (
+              <div className="absolute bottom-6 right-6 flex flex-row gap-3 max-w-48 overflow-x-auto">
+                {allImages.map((imageUrl, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setSelectedImageIndex(index)}
+                    className={`w-16 h-16 rounded-lg overflow-hidden border-2 transition-all flex-shrink-0 ${
+                      selectedImageIndex === index 
+                        ? 'border-primary ring-2 ring-primary/20' 
+                        : 'border-white/50 hover:border-white'
+                    }`}
+                  >
+                    <img
+                      src={imageUrl}
+                      alt={`${product.title} view ${index + 1}`}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = '/placeholder.svg';
+                      }}
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Right: Product Details */}
-          <div className="flex flex-col h-full">
+          <div className="col-span-2 flex flex-col h-full">
             {/* Product Info */}
             <div className="space-y-4 flex-1 overflow-y-auto">
               <div>
