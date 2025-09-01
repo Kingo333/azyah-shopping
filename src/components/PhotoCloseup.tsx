@@ -343,7 +343,7 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
                   "(max-width: 768px) 100vw, 50vw"
                 )}
                 alt={product.title}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover md:object-contain"
                 onError={(e) => {
                   (e.target as HTMLImageElement).src = '/placeholder.svg';
                 }}
