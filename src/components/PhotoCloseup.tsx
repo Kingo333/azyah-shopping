@@ -286,7 +286,8 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
       className="fixed inset-0 bg-black/60 z-50"
       onClick={(e) => e.target === e.currentTarget && handleClose()}
     >
-      <div className="absolute inset-x-0 bottom-0 top-[env(safe-area-inset-top)] md:top-8 md:bottom-8 md:left-8 md:right-8 md:max-w-4xl md:mx-auto rounded-t-2xl md:rounded-2xl bg-background overflow-hidden">
+      {/* Mobile Layout */}
+      <div className="md:hidden absolute inset-x-0 bottom-0 top-[env(safe-area-inset-top)] rounded-t-2xl bg-background overflow-hidden">
         {/* Header */}
         <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border/50 px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -388,7 +389,7 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
           </div>
         </div>
 
-        {/* Sticky Bottom CTA */}
+        {/* Sticky Bottom CTA for Mobile */}
         {product.external_url && (
           <div className="absolute bottom-0 left-0 right-0 p-4 bg-background/95 backdrop-blur-sm border-t border-border/50">
             <Button 
@@ -401,6 +402,125 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
             </Button>
           </div>
         )}
+      </div>
+
+      {/* Desktop Layout */}
+      <div className="hidden md:block absolute inset-8 max-w-7xl mx-auto rounded-2xl bg-background overflow-hidden">
+        {/* Header */}
+        <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border/50 px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            {currentIndex > 0 && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={handleBack}
+                className="p-2"
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+            )}
+            <h2 className="text-lg font-semibold truncate">
+              {product.brand?.name || 'Product Details'}
+            </h2>
+          </div>
+          
+          <div className="flex items-center gap-3">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={handleShare}
+              className="p-2"
+            >
+              <Share2 className="h-5 w-5" />
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={handleClose}
+              className="p-2"
+            >
+              <X className="h-5 w-5" />
+            </Button>
+          </div>
+        </div>
+
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-3 gap-6 h-full p-6 overflow-hidden">
+          {/* Left: Product Image */}
+          <div className="col-span-2 bg-muted rounded-xl overflow-hidden flex items-center justify-center">
+            <img
+              {...getResponsiveImageProps(
+                getPrimaryImageUrl(product),
+                "66vw"
+              )}
+              alt={product.title}
+              className="max-w-full max-h-full object-contain"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = '/placeholder.svg';
+              }}
+            />
+          </div>
+
+          {/* Right: Product Details */}
+          <div className="flex flex-col h-full">
+            {/* Product Info */}
+            <div className="space-y-4 flex-1 overflow-y-auto">
+              <div>
+                <h1 className="text-2xl font-semibold mb-2">{product.title}</h1>
+                <p className="text-muted-foreground mb-3">
+                  {product.brand?.name || 'Unknown Brand'}
+                </p>
+                <div className="text-2xl font-bold text-primary">
+                  {formatPrice(product.price_cents, product.currency)}
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3">
+                <Button
+                  variant="ghost"
+                  onClick={handleLike}
+                  className="flex-1"
+                >
+                  <Heart className="h-4 w-4 mr-2" />
+                  Like
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={handleAddToWishlist}
+                  disabled={wishlistLoading}
+                  className="flex-1"
+                >
+                  <ShoppingBag className="h-4 w-4 mr-2" />
+                  Save
+                </Button>
+              </div>
+
+              {/* Similar Items */}
+              <div className="space-y-4">
+                <h3 className="text-xl font-semibold">Similar Items</h3>
+                <SimilarItemsGrid 
+                  productId={product.id} 
+                  onItemClick={handleSimilarItemClick}
+                />
+              </div>
+            </div>
+
+            {/* Bottom CTA */}
+            {product.external_url && (
+              <div className="mt-4 pt-4 border-t border-border/50">
+                <Button 
+                  onClick={handleVisitBrand}
+                  className="w-full"
+                  size="lg"
+                >
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  Visit Brand Site
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
