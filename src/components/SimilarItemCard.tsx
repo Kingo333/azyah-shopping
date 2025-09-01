@@ -156,6 +156,7 @@ const SimilarItemCard: React.FC<SimilarItemCardProps> = ({ item, onItemClick, fo
                 e.stopPropagation();
                 onItemClick(item);
               }}
+              title="View product details"
             >
               <Info className="h-3 w-3" />
             </Button>
