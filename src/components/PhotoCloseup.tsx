@@ -445,9 +445,9 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
         </div>
 
         {/* Main Content Grid */}
-        <div className="grid grid-cols-2 gap-6 h-full p-6 overflow-hidden">
+        <div className="grid grid-cols-2 gap-6 h-[calc(100vh-12rem)] p-6">
           {/* Left: Product Image */}
-          <div className="bg-muted rounded-xl overflow-hidden flex items-center justify-center max-h-[70vh]">
+          <div className="bg-muted rounded-xl overflow-hidden flex items-center justify-center h-full">
             <img
               {...getResponsiveImageProps(
                 getPrimaryImageUrl(product),
@@ -506,9 +506,9 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
               </div>
             </div>
 
-            {/* Bottom CTA */}
+            {/* Bottom CTA - Always Visible */}
             {product.external_url && (
-              <div className="mt-4 pt-4 border-t border-border/50">
+              <div className="mt-4 pt-4 border-t border-border/50 flex-shrink-0">
                 <Button 
                   onClick={handleVisitBrand}
                   className="w-full"
