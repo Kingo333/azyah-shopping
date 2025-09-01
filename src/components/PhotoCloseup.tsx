@@ -416,7 +416,7 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
           {/* Product Info */}
           <div className="p-4 space-y-4">
             <div>
-              <h1 className="text-xl font-semibold mb-1">{product.title}</h1>
+              <h1 className="text-lg font-semibold mb-1">{product.title}</h1>
               <p className="text-muted-foreground text-sm mb-2">
                 {product.brand?.name || 'Unknown Brand'}
               </p>
