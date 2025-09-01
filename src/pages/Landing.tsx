@@ -135,7 +135,7 @@ export default function Landing() {
           {/* Mobile actions: Install Banner + Hamburger Menu */}
           <div className="flex lg:hidden items-center gap-2">
             {/* Install Banner - Compact for mobile nav */}
-            <div className="hidden sm:block">
+            <div className="block">
               <InstallBanner className="!rounded-lg !px-2 !py-1 !bg-primary/10 !border-primary/20 text-xs" />
             </div>
             
