@@ -137,7 +137,7 @@ const SimilarItemsGrid: React.FC<SimilarItemsGridProps> = ({ productId, onItemCl
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4 max-h-[400px] md:max-h-[500px] overflow-y-auto">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4 max-h-[400px] md:max-h-[500px] overflow-y-auto">
         {items.map((item, index) => (
           <SimilarItemCard
             key={item.id}
