@@ -41,6 +41,7 @@ import BrandPortal from './pages/BrandPortal';
 import RetailerPortal from './pages/RetailerPortal';
 import RetailerBrandDetail from './pages/RetailerBrandDetail';
 import NotFound from './pages/NotFound';
+import PhotoCloseup from './components/PhotoCloseup';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -170,6 +171,11 @@ function App() {
                   <Route path="/retailer-portal/brands/:brandId" element={
                     <ProtectedRoute roles={['retailer', 'admin']}>
                       <RetailerBrandDetail />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/p/:id" element={
+                    <ProtectedRoute roles={['shopper', 'admin']}>
+                      <PhotoCloseup />
                     </ProtectedRoute>
                   } />
                   <Route path="/terms" element={<Terms />} />

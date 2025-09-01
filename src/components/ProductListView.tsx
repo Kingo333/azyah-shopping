@@ -1,5 +1,6 @@
 
 import React, { useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -10,6 +11,7 @@ import { useWishlist } from '@/hooks/useWishlist';
 import { Product } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import ProductDetailPage from '@/components/ProductDetailPage';
+import PhotoCloseup from '@/components/PhotoCloseup';
 import { getResponsiveImageProps } from '@/utils/asosImageUtils';
 import { getPrimaryImageUrl, hasMultipleImages, getImageCount } from '@/utils/imageHelpers';
 
@@ -57,7 +59,10 @@ const ProductCard: React.FC<{
 
   return (
     <div className="group relative bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2">
-      <div className="w-full aspect-[3/4] bg-muted rounded-2xl overflow-hidden relative">
+      <div 
+        className="w-full aspect-[3/4] bg-muted rounded-2xl overflow-hidden relative cursor-pointer"
+        onClick={() => handleProductClick(product)}
+      >
         <img
           {...getResponsiveImageProps(
             getPrimaryImageUrl(product),
@@ -145,7 +150,8 @@ const ProductCard: React.FC<{
 
 const ProductListView: React.FC<ProductListViewProps> = ({ products, isLoading }) => {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [showProductDetail, setShowProductDetail] = useState(false);
+  const [showCloseup, setShowCloseup] = useState(false);
+  const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -189,8 +195,7 @@ const ProductListView: React.FC<ProductListViewProps> = ({ products, isLoading }
   }, [user, toast]);
 
   const handleProductClick = (product: Product) => {
-    setSelectedProduct(product);
-    setShowProductDetail(true);
+    navigate(`/p/${product.id}?from=list`);
   };
 
   const formatPrice = (cents: number, currency: string = 'USD') => {
@@ -241,17 +246,6 @@ const ProductListView: React.FC<ProductListViewProps> = ({ products, isLoading }
         ))}
       </div>
 
-      {selectedProduct && showProductDetail && (
-        <div className="fixed inset-0 z-50 bg-background">
-          <ProductDetailPage
-            product={selectedProduct}
-            onBack={() => {
-              setShowProductDetail(false);
-              setSelectedProduct(null);
-            }}
-          />
-        </div>
-      )}
     </>
   );
 };

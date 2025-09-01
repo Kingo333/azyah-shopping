@@ -2726,6 +2726,26 @@ export type Database = {
           user_website: string
         }[]
       }
+      get_similar_products: {
+        Args: {
+          limit_count?: number
+          offset_count?: number
+          target_product_id: string
+        }
+        Returns: {
+          brand: Json
+          brand_id: string
+          category_slug: Database["public"]["Enums"]["category_type"]
+          currency: string
+          external_url: string
+          id: string
+          image_url: string
+          media_urls: Json
+          price_cents: number
+          subcategory_slug: Database["public"]["Enums"]["subcategory_type"]
+          title: string
+        }[]
+      }
       get_trending_categories: {
         Args: { days_back?: number; limit_count?: number }
         Returns: {

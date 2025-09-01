@@ -1,5 +1,5 @@
-import React from 'react';
-import { useInfiniteQuery } from '@tanstack/react-query';
+import React, { useEffect } from 'react';
+import { useInfiniteQuery, InfiniteData } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Product } from '@/types';
 import { Card, CardContent } from '@/components/ui/card';
@@ -7,7 +7,6 @@ import { getPrimaryImageUrl } from '@/utils/imageHelpers';
 import { getResponsiveImageProps } from '@/utils/asosImageUtils';
 import { useAuth } from '@/contexts/AuthContext';
 import { useInView } from 'react-intersection-observer';
-import { useEffect } from 'react';
 
 interface SimilarItemsGridProps {
   productId: string;
@@ -16,7 +15,7 @@ interface SimilarItemsGridProps {
 
 interface SimilarResponse {
   items: Product[];
-  nextCursor?: string;
+  nextCursor?: number;
 }
 
 const SimilarItemsGrid: React.FC<SimilarItemsGridProps> = ({ productId, onItemClick }) => {
@@ -30,22 +29,41 @@ const SimilarItemsGrid: React.FC<SimilarItemsGridProps> = ({ productId, onItemCl
     isFetchingNextPage,
     isLoading,
     error
-  } = useInfiniteQuery({
+  } = useInfiniteQuery<SimilarResponse, Error, InfiniteData<SimilarResponse>, string[], number>({
     queryKey: ['similar-items', productId],
     queryFn: async ({ pageParam = 0 }): Promise<SimilarResponse> => {
-      const { data: result, error } = await supabase.rpc('get_similar_products', {
-        target_product_id: productId,
-        limit_count: 12,
-        offset_count: pageParam
-      });
+      const { data: result, error } = await supabase
+        .from('products')
+        .select(`
+          id,
+          title,
+          price_cents,
+          currency,
+          brand_id,
+          category_slug,
+          subcategory_slug,
+          media_urls,
+          image_url,
+          external_url,
+          brand:brands(*)
+        `)
+        .eq('status', 'active')
+        .neq('id', productId)
+        .range(pageParam as number, (pageParam as number) + 11);
 
       if (error) throw error;
 
+      const products = result?.map(item => ({
+        ...item,
+        brand: item.brand ? { name: (item.brand as any).name } : null
+      })) || [];
+
       return {
-        items: result || [],
-        nextCursor: result && result.length === 12 ? pageParam + 12 : undefined
+        items: products as Product[],
+        nextCursor: products.length === 12 ? (pageParam as number) + 12 : undefined
       };
     },
+    initialPageParam: 0,
     getNextPageParam: (lastPage) => lastPage.nextCursor,
     enabled: !!productId,
   });
@@ -142,7 +160,7 @@ const SimilarItemsGrid: React.FC<SimilarItemsGridProps> = ({ productId, onItemCl
                   {item.title}
                 </h4>
                 <p className="text-xs text-muted-foreground mb-1">
-                  {item.brand?.name || 'Unknown Brand'}
+                  {(item.brand as any)?.name || 'Unknown Brand'}
                 </p>
                 <p className="text-sm font-semibold text-primary">
                   {formatPrice(item.price_cents, item.currency)}
