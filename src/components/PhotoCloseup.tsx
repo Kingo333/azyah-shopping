@@ -405,7 +405,7 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
       </div>
 
       {/* Desktop Layout */}
-      <div className="hidden md:block absolute inset-4 max-w-6xl mx-auto rounded-2xl bg-background overflow-hidden">
+      <div className="hidden md:block absolute inset-4 max-w-6xl mx-auto rounded-2xl bg-background overflow-hidden max-h-[calc(100vh-2rem)]">
         {/* Header */}
         <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border/50 px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
