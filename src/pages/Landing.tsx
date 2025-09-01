@@ -132,12 +132,17 @@ export default function Landing() {
               </Button>}
           </div>
 
-          {/* Mobile actions: Install Banner + Hamburger Menu */}
+          {/* Mobile actions: Install Button + Hamburger Menu */}
           <div className="flex lg:hidden items-center gap-2">
-            {/* Install Banner - Compact for mobile nav */}
-            <div className="block">
-              <InstallBanner className="!rounded-lg !px-2 !py-1 !bg-primary/10 !border-primary/20 text-xs" />
-            </div>
+            {/* Install Button - Compact for mobile nav */}
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => navigate("/install")}
+              className="text-xs px-2 py-1 h-8 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20"
+            >
+              Install
+            </Button>
             
             {/* Mobile burger - Cleaner Design */}
             <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} aria-label="Toggle menu" className="p-2 rounded-lg hover:bg-primary/10 transition-colors">
