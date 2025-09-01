@@ -2340,60 +2340,84 @@ export type Database = {
       brands_public: {
         Row: {
           bio: string | null
+          cover_image_url: string | null
           created_at: string | null
           id: string | null
           logo_url: string | null
           name: string | null
+          shipping_regions: string[] | null
           slug: string | null
+          socials: Json | null
           updated_at: string | null
+          website: string | null
         }
         Insert: {
           bio?: string | null
+          cover_image_url?: string | null
           created_at?: string | null
           id?: string | null
           logo_url?: string | null
           name?: string | null
+          shipping_regions?: string[] | null
           slug?: string | null
+          socials?: Json | null
           updated_at?: string | null
+          website?: string | null
         }
         Update: {
           bio?: string | null
+          cover_image_url?: string | null
           created_at?: string | null
           id?: string | null
           logo_url?: string | null
           name?: string | null
+          shipping_regions?: string[] | null
           slug?: string | null
+          socials?: Json | null
           updated_at?: string | null
+          website?: string | null
         }
         Relationships: []
       }
       retailers_public: {
         Row: {
           bio: string | null
+          cover_image_url: string | null
           created_at: string | null
           id: string | null
           logo_url: string | null
           name: string | null
+          shipping_regions: string[] | null
           slug: string | null
+          socials: Json | null
           updated_at: string | null
+          website: string | null
         }
         Insert: {
           bio?: string | null
+          cover_image_url?: string | null
           created_at?: string | null
           id?: string | null
           logo_url?: string | null
           name?: string | null
+          shipping_regions?: string[] | null
           slug?: string | null
+          socials?: Json | null
           updated_at?: string | null
+          website?: string | null
         }
         Update: {
           bio?: string | null
+          cover_image_url?: string | null
           created_at?: string | null
           id?: string | null
           logo_url?: string | null
           name?: string | null
+          shipping_regions?: string[] | null
           slug?: string | null
+          socials?: Json | null
           updated_at?: string | null
+          website?: string | null
         }
         Relationships: []
       }
