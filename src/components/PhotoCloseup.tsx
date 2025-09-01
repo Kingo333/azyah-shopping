@@ -445,7 +445,7 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
         </div>
 
         {/* Main Content Grid */}
-        <div className="grid grid-cols-2 gap-6 h-[calc(100vh-12rem)] p-6">
+        <div className="grid grid-cols-2 gap-6 p-6 min-h-[calc(100vh-12rem)] overflow-y-auto">
           {/* Left: Product Image */}
           <div className="bg-muted rounded-xl overflow-hidden flex items-start justify-center h-full pt-8">
             <img
