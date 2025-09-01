@@ -36,6 +36,7 @@ const SimilarItemsGrid: React.FC<SimilarItemsGridProps> = ({ productId, onItemCl
         .select(`
           id,
           title,
+          description,
           price_cents,
           currency,
           brand_id,
@@ -44,6 +45,9 @@ const SimilarItemsGrid: React.FC<SimilarItemsGridProps> = ({ productId, onItemCl
           media_urls,
           image_url,
           external_url,
+          sku,
+          merchant_name,
+          compare_at_price_cents,
           brand:brands(*)
         `)
         .eq('status', 'active')
