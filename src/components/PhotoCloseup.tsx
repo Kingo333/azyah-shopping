@@ -445,13 +445,13 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
         </div>
 
         {/* Main Content Grid */}
-        <div className="grid grid-cols-3 gap-6 h-full p-6 overflow-hidden">
+        <div className="grid grid-cols-2 gap-6 h-full p-6 overflow-hidden">
           {/* Left: Product Image */}
-          <div className="col-span-2 bg-muted rounded-xl overflow-hidden flex items-center justify-center">
+          <div className="bg-muted rounded-xl overflow-hidden flex items-center justify-center max-h-[70vh]">
             <img
               {...getResponsiveImageProps(
                 getPrimaryImageUrl(product),
-                "66vw"
+                "50vw"
               )}
               alt={product.title}
               className="max-w-full max-h-full object-contain"
