@@ -134,15 +134,15 @@ const SimilarItemsGrid: React.FC<SimilarItemsGridProps> = ({ productId, onItemCl
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-2 gap-4">
         {items.map((item, index) => (
           <Card 
             key={item.id} 
-            className="group cursor-pointer hover:shadow-lg transition-all duration-200 overflow-hidden"
+            className="group cursor-pointer hover:shadow-md transition-all duration-200 overflow-hidden border-0 bg-background rounded-2xl"
             onClick={() => onItemClick(item)}
           >
             <CardContent className="p-0">
-              <div className="aspect-[3/4] bg-muted overflow-hidden">
+              <div className="relative aspect-[3/4] bg-muted overflow-hidden rounded-2xl">
                 <img
                   {...getResponsiveImageProps(
                     getPrimaryImageUrl(item),
@@ -154,15 +154,21 @@ const SimilarItemsGrid: React.FC<SimilarItemsGridProps> = ({ productId, onItemCl
                     (e.target as HTMLImageElement).src = '/placeholder.svg';
                   }}
                 />
+                {/* Badge overlay like in the reference image */}
+                {item.media_urls && Array.isArray(item.media_urls) && item.media_urls.length > 1 && (
+                  <div className="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full font-medium">
+                    {item.media_urls.length}
+                  </div>
+                )}
               </div>
-              <div className="p-3">
-                <h4 className="text-sm font-medium line-clamp-2 mb-1">
+              <div className="p-3 space-y-1">
+                <h4 className="text-sm font-medium line-clamp-2 leading-tight">
                   {item.title}
                 </h4>
-                <p className="text-xs text-muted-foreground mb-1">
+                <p className="text-xs text-muted-foreground">
                   {(item.brand as any)?.name || 'Unknown Brand'}
                 </p>
-                <p className="text-sm font-semibold text-primary">
+                <p className="text-sm font-semibold text-foreground">
                   {formatPrice(item.price_cents, item.currency)}
                 </p>
               </div>
