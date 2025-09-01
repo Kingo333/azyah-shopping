@@ -132,10 +132,18 @@ export default function Landing() {
               </Button>}
           </div>
 
-          {/* Mobile burger - Cleaner Design */}
-          <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} aria-label="Toggle menu" className="lg:hidden p-2 rounded-lg hover:bg-primary/10 transition-colors">
-            {mobileMenuOpen ? <X className="w-5 h-5 sm:w-6 sm:h-6 text-primary" /> : <Menu className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />}
-          </button>
+          {/* Mobile actions: Install Banner + Hamburger Menu */}
+          <div className="flex lg:hidden items-center gap-2">
+            {/* Install Banner - Compact for mobile nav */}
+            <div className="hidden sm:block">
+              <InstallBanner className="!rounded-lg !px-2 !py-1 !bg-primary/10 !border-primary/20 text-xs" />
+            </div>
+            
+            {/* Mobile burger - Cleaner Design */}
+            <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} aria-label="Toggle menu" className="p-2 rounded-lg hover:bg-primary/10 transition-colors">
+              {mobileMenuOpen ? <X className="w-5 h-5 sm:w-6 sm:h-6 text-primary" /> : <Menu className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />}
+            </button>
+          </div>
         </div>
 
         {/* Mobile drawer - Fashion-focused */}
@@ -189,10 +197,6 @@ export default function Landing() {
         </div>
       </div>
 
-      {/* Install Banner - positioned after premium banner */}
-      <div className="container max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-2 sm:py-2 lg:py-3">
-        <InstallBanner />
-      </div>
 
       {/* HERO */}
       <section id="discover" className="relative overflow-hidden min-h-[60vh] sm:min-h-[75vh] lg:min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-background">
