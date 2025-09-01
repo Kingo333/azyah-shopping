@@ -279,23 +279,6 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
     }).format(cents / 100);
   };
 
-  // Get additional images from media_urls
-  const getAdditionalImages = () => {
-    if (!product?.media_urls) return [];
-    
-    try {
-      const mediaUrls = Array.isArray(product.media_urls) 
-        ? product.media_urls 
-        : JSON.parse(product.media_urls);
-      
-      return mediaUrls.slice(1, 5); // Get up to 4 additional images
-    } catch {
-      return [];
-    }
-  };
-
-  const additionalImages = getAdditionalImages();
-
   return (
     <div 
       role="dialog" 
@@ -358,24 +341,6 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
                 (e.target as HTMLImageElement).src = '/placeholder.svg';
               }}
             />
-            
-            {/* Thumbnail Images - Mobile */}
-            {additionalImages.length > 0 && (
-              <div className="absolute bottom-2 right-2 flex gap-1">
-                {additionalImages.slice(0, 4).map((imageUrl, index) => (
-                  <div key={index} className="w-8 h-8 rounded bg-background/80 backdrop-blur-sm overflow-hidden">
-                    <img
-                      src={imageUrl}
-                      alt={`${product.title} ${index + 2}`}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = '/placeholder.svg';
-                      }}
-                    />
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
 
           {/* Product Info */}
@@ -419,7 +384,6 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
               <SimilarItemsGrid 
                 productId={product.id} 
                 onItemClick={handleSimilarItemClick}
-                layout="list"
               />
             </div>
           </div>
@@ -483,14 +447,14 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
         {/* Main Content Grid */}
         <div className="grid grid-cols-2 gap-6 h-[calc(100vh-12rem)] p-6">
           {/* Left: Product Image */}
-          <div className="bg-muted rounded-xl overflow-hidden flex items-center justify-center h-full p-4">
+          <div className="bg-muted rounded-xl overflow-hidden flex items-center justify-center h-full">
             <img
               {...getResponsiveImageProps(
                 getPrimaryImageUrl(product),
                 "50vw"
               )}
               alt={product.title}
-              className="w-full h-full object-contain"
+              className="max-w-full max-h-full object-contain"
               onError={(e) => {
                 (e.target as HTMLImageElement).src = '/placeholder.svg';
               }}
@@ -538,7 +502,6 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
                 <SimilarItemsGrid 
                   productId={product.id} 
                   onItemClick={handleSimilarItemClick}
-                  layout="list"
                 />
               </div>
             </div>
