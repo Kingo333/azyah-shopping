@@ -38,7 +38,7 @@ const Swipe = () => {
       searchQuery: searchParams.get('search') || ''
     };
   });
-  const [viewMode, setViewMode] = useState<'swipe' | 'list'>('swipe');
+  const [viewMode, setViewMode] = useState<'swipe' | 'list'>('list');
   const [showTooltip, setShowTooltip] = useState(false);
   const [isProductDetailOpen, setIsProductDetailOpen] = useState(false);
 
