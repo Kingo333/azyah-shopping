@@ -51,26 +51,29 @@ const TrendingStyles: React.FC<TrendingStylesProps> = ({ limit = 6, showMore = t
         }));
       }
 
-      // Only fallback to trending categories if absolutely necessary
-      const { data: trendingData, error: trendingError } = await supabase
-        .rpc('get_trending_categories', {
-          days_back: 7,
-          limit_count: limit
-        });
+      // If fallback fails and user is authenticated, try trending categories
+      if (user) {
+        const { data: trendingData, error: trendingError } = await supabase
+          .rpc('get_trending_categories', {
+            days_back: 7,
+            limit_count: limit
+          });
 
-      if (trendingError) {
-        console.error('Error fetching trending data:', trendingError);
-        return [];
+        if (!trendingError && trendingData) {
+          // Convert trending data to expected format
+          return (trendingData || []).map((item: any) => ({
+            category: item.category_slug,
+            subcategory: item.subcategory_slug,
+            count: item.swipe_count,
+            growth: item.growth_percentage,
+            recent_products: item.recent_products || []
+          }));
+        }
       }
 
-      // Convert trending data to expected format
-      return (trendingData || []).map((item: any) => ({
-        category: item.category_slug,
-        subcategory: item.subcategory_slug,
-        count: item.swipe_count,
-        growth: item.growth_percentage,
-        recent_products: item.recent_products || []
-      }));
+      // Final fallback - return empty array if no authentication or data
+      console.log('No trending data available - user may need to authenticate');
+      return [];
     },
     staleTime: 1000 * 60 * 15, // 15 minutes
   });
@@ -159,18 +162,27 @@ const TrendingStyles: React.FC<TrendingStylesProps> = ({ limit = 6, showMore = t
 
   const handleShopNow = async (productId: string) => {
     try {
-      const { data: product } = await supabase
-        .from('products')
-        .select('external_url')
-        .eq('id', productId)
-        .single();
+      // For authenticated users, get full product data
+      if (user) {
+        const { data: product } = await supabase
+          .from('products')
+          .select('external_url')
+          .eq('id', productId)
+          .single();
 
-      if (product?.external_url) {
-        window.open(product.external_url, '_blank', 'noopener,noreferrer');
+        if (product?.external_url) {
+          window.open(product.external_url, '_blank', 'noopener,noreferrer');
+        } else {
+          toast({
+            title: "Shop link not available",
+            description: "This product doesn't have a shop link available.",
+            variant: "destructive"
+          });
+        }
       } else {
         toast({
-          title: "Shop link not available",
-          description: "This product doesn't have a shop link available.",
+          title: "Authentication required",
+          description: "Please sign in to access shop links.",
           variant: "destructive"
         });
       }

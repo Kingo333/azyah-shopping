@@ -39,18 +39,131 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
   const { data: trendingProducts, isLoading } = useQuery({
     queryKey: ['trending-products-carousel', limit],
     queryFn: async () => {
-      // First try to get products with actual likes
-      const { data: likedProducts, error: likesError } = await supabase
-        .from('likes')
-        .select('product_id')
-        .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()); // Last 30 days
+      // For authenticated users, try to get products with actual likes
+      if (user) {
+        const { data: likedProducts, error: likesError } = await supabase
+          .from('likes')
+          .select('product_id')
+          .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()); // Last 30 days
 
-      if (!likesError && likedProducts && likedProducts.length > 0) {
-        // Get unique product IDs
-        const productIds = [...new Set(likedProducts.map(like => like.product_id))];
-        
-        // Fetch product details for liked products
-        const { data: products, error: productsError } = await supabase
+        if (!likesError && likedProducts && likedProducts.length > 0) {
+          // Get unique product IDs
+          const productIds = [...new Set(likedProducts.map(like => like.product_id))];
+          
+          // Fetch product details for liked products
+          const { data: products, error: productsError } = await supabase
+            .from('products')
+            .select(`
+              id,
+              title,
+              image_url,
+              media_urls,
+              price_cents,
+              currency,
+              external_url,
+              brands!inner(name)
+            `)
+            .in('id', productIds)
+            .eq('status', 'active')
+            .not('brand_id', 'is', null);
+
+          if (!productsError && products && products.length > 0) {
+            // Count likes for each product
+            const productLikes = new Map();
+            likedProducts.forEach((like: any) => {
+              const productId = like.product_id;
+              if (productLikes.has(productId)) {
+                productLikes.get(productId).count += 1;
+              } else {
+                productLikes.set(productId, { count: 1 });
+              }
+            });
+
+            // Sort by like count
+            const sortedByLikes = products
+              .map(product => ({
+                id: product.id,
+                title: product.title,
+                image_url: getProductImage(product),
+                price_cents: product.price_cents,
+                currency: product.currency || 'USD',
+                brand_name: product.brands?.name || 'Unknown Brand',
+                external_url: product.external_url,
+                like_count: productLikes.get(product.id)?.count || 0
+              }))
+              .sort((a, b) => b.like_count - a.like_count)
+              .slice(0, limit);
+
+            if (sortedByLikes.length > 0) {
+              console.log('Found trending products by likes:', sortedByLikes);
+              return sortedByLikes;
+            }
+          }
+        }
+
+        // Fallback to swipes if no likes data for authenticated users
+        const { data: swipeData, error: swipeError } = await supabase
+          .from('swipes')
+          .select('product_id')
+          .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()) // Last 7 days
+          .eq('action', 'right'); // Only right swipes (likes)
+
+        if (!swipeError && swipeData && swipeData.length > 0) {
+          // Get unique product IDs from swipes
+          const swipeProductIds = [...new Set(swipeData.map(swipe => swipe.product_id))];
+          
+          // Fetch product details for swiped products
+          const { data: swipeProducts, error: swipeProductsError } = await supabase
+            .from('products')
+            .select(`
+              id,
+              title,
+              image_url,
+              media_urls,
+              price_cents,
+              currency,
+              external_url,
+              brands!inner(name)
+            `)
+            .in('id', swipeProductIds)
+            .eq('status', 'active')
+            .not('brand_id', 'is', null);
+
+          if (!swipeProductsError && swipeProducts && swipeProducts.length > 0) {
+            // Count swipes for each product
+            const productSwipes = new Map();
+            swipeData.forEach((swipe: any) => {
+              const productId = swipe.product_id;
+              if (productSwipes.has(productId)) {
+                productSwipes.get(productId).count += 1;
+              } else {
+                productSwipes.set(productId, { count: 1 });
+              }
+            });
+
+            const sortedBySwipes = swipeProducts
+              .map(product => ({
+                id: product.id,
+                title: product.title,
+                image_url: getProductImage(product),
+                price_cents: product.price_cents,
+                currency: product.currency || 'USD',
+                brand_name: product.brands?.name || 'Unknown Brand',
+                external_url: product.external_url,
+                swipe_count: productSwipes.get(product.id)?.count || 0
+              }))
+              .sort((a, b) => b.swipe_count - a.swipe_count)
+              .slice(0, limit);
+
+            if (sortedBySwipes.length > 0) {
+              console.log('Found trending products by swipes:', sortedBySwipes);
+              return sortedBySwipes;
+            }
+          }
+        }
+
+        // Final fallback to recent products for authenticated users
+        const { data: fallbackData, error: fallbackError } = await supabase
           .from('products')
           .select(`
             id,
@@ -62,137 +175,46 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
             external_url,
             brands!inner(name)
           `)
-          .in('id', productIds)
           .eq('status', 'active')
-          .not('brand_id', 'is', null);
+          .not('brand_id', 'is', null)
+          .order('created_at', { ascending: false })
+          .limit(limit);
 
-        if (!productsError && products && products.length > 0) {
-          // Count likes for each product
-          const productLikes = new Map();
-          likedProducts.forEach((like: any) => {
-            const productId = like.product_id;
-            if (productLikes.has(productId)) {
-              productLikes.get(productId).count += 1;
-            } else {
-              productLikes.set(productId, { count: 1 });
-            }
-          });
-
-          // Sort by like count
-          const sortedByLikes = products
-            .map(product => ({
-              id: product.id,
-              title: product.title,
-              image_url: getProductImage(product),
-              price_cents: product.price_cents,
-              currency: product.currency || 'USD',
-              brand_name: product.brands?.name || 'Unknown Brand',
-              external_url: product.external_url,
-              like_count: productLikes.get(product.id)?.count || 0
-            }))
-            .sort((a, b) => b.like_count - a.like_count)
-            .slice(0, limit);
-
-          if (sortedByLikes.length > 0) {
-            console.log('Found trending products by likes:', sortedByLikes);
-            return sortedByLikes;
-          }
+        if (!fallbackError && fallbackData) {
+          console.log('Using fallback products for authenticated user:', fallbackData.slice(0, 3));
+          return fallbackData.map((product: any) => ({
+            id: product.id,
+            title: product.title,
+            image_url: getProductImage(product),
+            price_cents: product.price_cents,
+            currency: product.currency || 'USD',
+            brand_name: product.brands?.name || 'Unknown Brand',
+            external_url: product.external_url
+          }));
         }
       }
 
-      // Fallback to swipes if no likes data
-      const { data: swipeData, error: swipeError } = await supabase
-        .from('swipes')
-        .select('product_id')
-        .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()) // Last 7 days
-        .eq('action', 'right'); // Only right swipes (likes)
+      // For anonymous users, use minimal product catalog
+      const { data: minimalProducts, error: minimalError } = await supabase
+        .rpc('get_minimal_product_catalog', {
+          limit_param: limit,
+          offset_param: 0
+        });
 
-      if (!swipeError && swipeData && swipeData.length > 0) {
-        // Get unique product IDs from swipes
-        const swipeProductIds = [...new Set(swipeData.map(swipe => swipe.product_id))];
-        
-        // Fetch product details for swiped products
-        const { data: swipeProducts, error: swipeProductsError } = await supabase
-          .from('products')
-          .select(`
-            id,
-            title,
-            image_url,
-            media_urls,
-            price_cents,
-            currency,
-            external_url,
-            brands!inner(name)
-          `)
-          .in('id', swipeProductIds)
-          .eq('status', 'active')
-          .not('brand_id', 'is', null);
-
-        if (!swipeProductsError && swipeProducts && swipeProducts.length > 0) {
-          // Count swipes for each product
-          const productSwipes = new Map();
-          swipeData.forEach((swipe: any) => {
-            const productId = swipe.product_id;
-            if (productSwipes.has(productId)) {
-              productSwipes.get(productId).count += 1;
-            } else {
-              productSwipes.set(productId, { count: 1 });
-            }
-          });
-
-          const sortedBySwipes = swipeProducts
-            .map(product => ({
-              id: product.id,
-              title: product.title,
-              image_url: getProductImage(product),
-              price_cents: product.price_cents,
-              currency: product.currency || 'USD',
-              brand_name: product.brands?.name || 'Unknown Brand',
-              external_url: product.external_url,
-              swipe_count: productSwipes.get(product.id)?.count || 0
-            }))
-            .sort((a, b) => b.swipe_count - a.swipe_count)
-            .slice(0, limit);
-
-          if (sortedBySwipes.length > 0) {
-            console.log('Found trending products by swipes:', sortedBySwipes);
-            return sortedBySwipes;
-          }
-        }
-      }
-
-      // Final fallback to recent products if no trending data found
-      const { data: fallbackData, error: fallbackError } = await supabase
-        .from('products')
-        .select(`
-          id,
-          title,
-          image_url,
-          media_urls,
-          price_cents,
-          currency,
-          external_url,
-          brands!inner(name)
-        `)
-        .eq('status', 'active')
-        .not('brand_id', 'is', null)
-        .order('created_at', { ascending: false })
-        .limit(limit);
-
-      if (fallbackError || !fallbackData) {
-        console.error('Error fetching fallback products:', fallbackError);
+      if (minimalError) {
+        console.error('Error fetching minimal products:', minimalError);
         return [];
       }
-      
-      console.log('Using fallback products:', fallbackData.slice(0, 3));
-      return fallbackData.map((product: any) => ({
+
+      console.log('Using minimal product catalog for anonymous user:', minimalProducts?.slice(0, 3));
+      return (minimalProducts || []).map((product: any) => ({
         id: product.id,
         title: product.title,
-        image_url: getProductImage(product),
+        image_url: product.image_url || '/placeholder.svg',
         price_cents: product.price_cents,
         currency: product.currency || 'USD',
-        brand_name: product.brands?.name || 'Unknown Brand',
-        external_url: product.external_url
+        brand_name: product.brand_name || 'Unknown Brand',
+        external_url: null // Not available for anonymous users
       }));
     },
     staleTime: 1000 * 60 * 15, // 15 minutes
