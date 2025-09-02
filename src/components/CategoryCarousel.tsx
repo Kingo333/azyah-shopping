@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious, CarouselApi } from '@/components/ui/carousel';
 import { usePublicProducts } from '@/hooks/usePublicProducts';
 import { getPrimaryImageUrl } from '@/utils/imageHelpers';
 import { cn } from '@/lib/utils';
@@ -42,6 +42,44 @@ const CategoryCarousel: React.FC<CategoryCarouselProps> = ({
   selectedCategories,
   onCategoryToggle
 }) => {
+  const [api, setApi] = React.useState<CarouselApi>();
+  const intervalRef = useRef<NodeJS.Timeout>();
+
+  useEffect(() => {
+    if (!api) return;
+
+    const startAutoplay = () => {
+      intervalRef.current = setInterval(() => {
+        if (api.canScrollNext()) {
+          api.scrollNext();
+        } else {
+          api.scrollTo(0);
+        }
+      }, 3000);
+    };
+
+    const stopAutoplay = () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+
+    // Start autoplay
+    startAutoplay();
+
+    // Stop on user interaction
+    api.on('pointerDown', stopAutoplay);
+    
+    // Restart after interaction ends
+    api.on('settle', () => {
+      setTimeout(startAutoplay, 2000);
+    });
+
+    return () => {
+      stopAutoplay();
+    };
+  }, [api]);
+
   return <div className="mb-8">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-xl font-bold font-playfair">Our Best Categories</h2>
@@ -50,10 +88,16 @@ const CategoryCarousel: React.FC<CategoryCarouselProps> = ({
           </Badge>}
       </div>
       
-      <Carousel className="w-full relative" opts={{
-      align: "start",
-      loop: false
-    }}>
+      <Carousel 
+        className="w-full relative" 
+        setApi={setApi}
+        opts={{
+          align: "start",
+          loop: true,
+          dragFree: true,
+          skipSnaps: false
+        }}
+      >
         <CarouselContent className="-ml-2 md:-ml-4">
           {CATEGORIES.map(category => <CarouselItem key={category.slug} className="pl-2 md:pl-4 basis-1/2 md:basis-1/3 lg:basis-1/4">
               <CategoryCard category={category} isSelected={selectedCategories.includes(category.slug)} onToggle={() => onCategoryToggle(category.slug)} />
