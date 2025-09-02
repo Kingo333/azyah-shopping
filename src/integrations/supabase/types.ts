@@ -2774,6 +2774,22 @@ export type Database = {
           website: string
         }[]
       }
+      get_brand_safe_fields: {
+        Args: { brand_id_param: string }
+        Returns: {
+          bio: string
+          cover_image_url: string
+          created_at: string
+          id: string
+          logo_url: string
+          name: string
+          shipping_regions: string[]
+          slug: string
+          socials: Json
+          updated_at: string
+          website: string
+        }[]
+      }
       get_cleanup_stats: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -2904,6 +2920,22 @@ export type Database = {
         }[]
       }
       get_retailer_safe_data: {
+        Args: { retailer_id_param: string }
+        Returns: {
+          bio: string
+          cover_image_url: string
+          created_at: string
+          id: string
+          logo_url: string
+          name: string
+          shipping_regions: string[]
+          slug: string
+          socials: Json
+          updated_at: string
+          website: string
+        }[]
+      }
+      get_retailer_safe_fields: {
         Args: { retailer_id_param: string }
         Returns: {
           bio: string
