@@ -52,6 +52,11 @@ const CategoryCarousel: React.FC<CategoryCarouselProps> = ({
     if (!api) return;
 
     const startAutoplay = () => {
+      // Clear any existing interval first
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+      
       intervalRef.current = setInterval(() => {
         if (api.canScrollNext()) {
           api.scrollNext();
@@ -64,22 +69,23 @@ const CategoryCarousel: React.FC<CategoryCarouselProps> = ({
     const stopAutoplay = () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
+        intervalRef.current = undefined;
       }
     };
 
-    // Start autoplay
+    // Start autoplay immediately
     startAutoplay();
 
-    // Stop on user interaction
+    // Stop on user interaction (mouse down or touch)
     api.on('pointerDown', stopAutoplay);
     
-    // Restart after interaction ends
-    api.on('settle', () => {
-      setTimeout(startAutoplay, 5000); // Increased pause time after interaction to 5 seconds
-    });
+    // Also stop on manual scroll attempts
+    api.on('scroll', stopAutoplay);
 
     return () => {
       stopAutoplay();
+      api.off('pointerDown', stopAutoplay);
+      api.off('scroll', stopAutoplay);
     };
   }, [api]);
 
