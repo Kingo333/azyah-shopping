@@ -2354,6 +2354,19 @@ export type Database = {
           user_id: string | null
         }[]
       }
+      admin_access_payment_secure: {
+        Args: { justification: string; target_payment_id: string }
+        Returns: {
+          amount_fils: number
+          created_at: string
+          currency: string
+          id: string
+          product: string
+          provider: string
+          status: string
+          user_id: string
+        }[]
+      }
       admin_access_payment_with_justification: {
         Args: { justification: string; payment_id_param: string }
         Returns: {
@@ -2612,6 +2625,17 @@ export type Database = {
           slug: string
         }[]
       }
+      get_my_payment_summary: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          amount_fils: number
+          created_at: string
+          currency: string
+          id: string
+          product: string
+          status: string
+        }[]
+      }
       get_my_profile: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -2816,12 +2840,12 @@ export type Database = {
         Args: { text_input: string }
         Returns: Database["public"]["Enums"]["gender_type"]
       }
-      log_admin_access_with_justification: {
+      log_admin_payment_access: {
         Args: {
+          accessed_user_id: string
           action_type: string
-          justification: string
+          business_justification: string
           target_table: string
-          target_user_id: string
         }
         Returns: undefined
       }
@@ -2875,6 +2899,10 @@ export type Database = {
       }
       validate_payment_access: {
         Args: { payment_id_param: string }
+        Returns: boolean
+      }
+      validate_payment_owner_access: {
+        Args: { payment_user_id: string }
         Returns: boolean
       }
       validate_session_security: {
