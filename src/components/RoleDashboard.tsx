@@ -323,8 +323,8 @@ const RoleDashboard: React.FC = () => {
                       </TutorialTooltip>
                     </CarouselItem>
                   </CarouselContent>
-                  <CarouselPrevious className="h-8 w-8 -left-2" />
-                  <CarouselNext className="h-8 w-8 -right-2" />
+                  <CarouselPrevious className="h-6 w-6 sm:h-8 sm:w-8 -left-2" />
+                  <CarouselNext className="h-6 w-6 sm:h-8 sm:w-8 -right-2" />
                 </Carousel>
               </div>
             </div>
