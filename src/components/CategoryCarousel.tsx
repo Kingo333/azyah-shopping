@@ -50,17 +50,17 @@ const CategoryCarousel: React.FC<CategoryCarouselProps> = ({
           </Badge>}
       </div>
       
-      <Carousel className="w-full" opts={{
+      <Carousel className="w-full relative" opts={{
       align: "start",
       loop: false
     }}>
-        <CarouselContent>
-          {CATEGORIES.map(category => <CarouselItem key={category.slug} className="basis-1/2 md:basis-1/4 lg:basis-1/5">
+        <CarouselContent className="-ml-2 md:-ml-4">
+          {CATEGORIES.map(category => <CarouselItem key={category.slug} className="pl-2 md:pl-4 basis-1/2 md:basis-1/3 lg:basis-1/4">
               <CategoryCard category={category} isSelected={selectedCategories.includes(category.slug)} onToggle={() => onCategoryToggle(category.slug)} />
             </CarouselItem>)}
         </CarouselContent>
-        <CarouselPrevious />
-        <CarouselNext />
+        <CarouselPrevious className="absolute -left-2 top-1/2 -translate-y-1/2 h-8 w-8 border-0 bg-background/80 backdrop-blur-sm shadow-md hover:bg-background/90" />
+        <CarouselNext className="absolute -right-2 top-1/2 -translate-y-1/2 h-8 w-8 border-0 bg-background/80 backdrop-blur-sm shadow-md hover:bg-background/90" />
       </Carousel>
     </div>;
 };
@@ -81,42 +81,49 @@ const CategoryCard: React.FC<{
   const {
     data: products = []
   } = usePublicProducts(4, 0, category.slug);
-  return <Card className={cn("cursor-pointer transition-all duration-300 hover:shadow-lg", isSelected ? "ring-2 ring-primary shadow-lg" : "hover:shadow-md")}>
-      <CardContent className="p-0">
+  return <Card className={cn(
+      "group cursor-pointer transition-all duration-300 hover:shadow-lg border-0 bg-gradient-to-br from-card to-card/50 backdrop-blur-sm overflow-hidden",
+      isSelected ? "ring-2 ring-primary shadow-lg scale-[1.02]" : "hover:shadow-md hover:scale-[1.01]"
+    )}>
+      <CardContent className="p-0 relative">
         <Button variant="ghost" className="w-full h-full p-0 hover:bg-transparent" onClick={onToggle}>
-          <div className={cn("w-full rounded-lg overflow-hidden", category.color)}>
-            {/* Header */}
-            <div className="p-4 pb-2">
-              <h3 className="font-bold text-lg text-foreground">{category.name}</h3>
-              
+          <div className="w-full h-full relative overflow-hidden">
+            {/* Background Thumbnail */}
+            <div className="absolute inset-0">
+              {products.length > 0 ? (
+                <img 
+                  src={getPrimaryImageUrl(products[0])} 
+                  alt={products[0].title} 
+                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" 
+                  onError={e => {
+                    (e.target as HTMLImageElement).src = category.defaultImage;
+                  }} 
+                />
+              ) : (
+                <img 
+                  src={category.defaultImage} 
+                  alt={`${category.name} category`} 
+                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" 
+                />
+              )}
+              {/* Overlay gradient */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
             </div>
             
-            {/* Single Thumbnail */}
-            <div className="p-4 pt-2">
-              <div className="aspect-square bg-white rounded-lg overflow-hidden shadow-sm">
-                {products.length > 0 ? (
-                  <img 
-                    src={getPrimaryImageUrl(products[0])} 
-                    alt={products[0].title} 
-                    className="w-full h-full object-cover" 
-                    onError={e => {
-                      (e.target as HTMLImageElement).src = category.defaultImage;
-                    }} 
-                  />
-                ) : (
-                  <img 
-                    src={category.defaultImage} 
-                    alt={`${category.name} category`} 
-                    className="w-full h-full object-cover" 
-                  />
-                )}
-              </div>
+            {/* Content */}
+            <div className="relative z-10 h-full flex flex-col justify-end p-4">
+              <h3 className="font-bold text-sm md:text-base text-white drop-shadow-lg">
+                {category.name}
+              </h3>
+              <div className="w-8 h-0.5 bg-white/60 mt-1 transition-all duration-300 group-hover:w-12 group-hover:bg-white" />
             </div>
             
             {/* Selection indicator */}
-            {isSelected && <div className="absolute top-2 right-2 w-6 h-6 bg-primary rounded-full flex items-center justify-center">
-                <div className="w-3 h-3 bg-primary-foreground rounded-full" />
-              </div>}
+            {isSelected && (
+              <div className="absolute top-3 right-3 w-6 h-6 bg-primary rounded-full flex items-center justify-center shadow-lg animate-scale-in">
+                <div className="w-2.5 h-2.5 bg-primary-foreground rounded-full" />
+              </div>
+            )}
           </div>
         </Button>
       </CardContent>
