@@ -44,8 +44,9 @@ const DashboardHeader: React.FC = () => {
       <div className="flex items-center gap-3">
         {/* Feedback Support Button */}
         <FeedbackModal userType={getUserType()}>
-          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-primary/10 hover:scale-105 transition-all">
-            <Info className="h-4 w-4" />
+          <Button variant="ghost" size="sm" className="h-8 px-3 hover:bg-primary/10 hover:scale-105 transition-all">
+            <Info className="h-4 w-4 mr-1" />
+            <span className="text-sm">Help</span>
           </Button>
         </FeedbackModal>
 
