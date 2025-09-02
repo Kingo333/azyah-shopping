@@ -84,46 +84,26 @@ const CategoryCard: React.FC<{
               </p>
             </div>
             
-            {/* Product Grid */}
-            <div className="grid grid-cols-2 gap-1 p-4 pt-2">
-              {products.length > 0 ? (
-                products.slice(0, 4).map((product, index) => (
-                  <div key={product.id} className="aspect-square bg-white rounded-lg overflow-hidden shadow-sm">
-                    <img
-                      src={getPrimaryImageUrl(product)}
-                      alt={product.title}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = '/placeholder.svg';
-                      }}
-                    />
-                  </div>
-                ))
-              ) : (
-                // Use default category image when no products are available
-                Array.from({ length: 4 }).map((_, index) => (
-                  <div key={`default-${index}`} className="aspect-square bg-white rounded-lg overflow-hidden shadow-sm">
-                    <img
-                      src={category.defaultImage}
-                      alt={`${category.name} category`}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                ))
-              )}
-              
-              {/* Fill remaining slots with default images if needed */}
-              {products.length > 0 && products.length < 4 && 
-                Array.from({ length: 4 - products.length }).map((_, index) => (
-                  <div key={`default-fill-${index}`} className="aspect-square bg-white rounded-lg overflow-hidden shadow-sm">
-                    <img
-                      src={category.defaultImage}
-                      alt={`${category.name} category`}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                ))
-              }
+            {/* Single Product Thumbnail */}
+            <div className="p-4 pt-2">
+              <div className="aspect-square bg-white rounded-lg overflow-hidden shadow-sm">
+                {products.length > 0 ? (
+                  <img
+                    src={getPrimaryImageUrl(products[0])}
+                    alt={products[0].title}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = category.defaultImage;
+                    }}
+                  />
+                ) : (
+                  <img
+                    src={category.defaultImage}
+                    alt={`${category.name} category`}
+                    className="w-full h-full object-cover"
+                  />
+                )}
+              </div>
             </div>
             
             {/* Selection indicator */}
