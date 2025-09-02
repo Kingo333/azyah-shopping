@@ -36,9 +36,10 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
   const queryClient = useQueryClient();
   const [api, setApi] = React.useState<any>();
 
-  const { data: trendingProducts, isLoading } = useQuery({
-    queryKey: ['trending-products-carousel', limit],
+  const { data: trendingProducts, isLoading, error } = useQuery({
+    queryKey: ['trending-products-carousel', limit, user?.id],
     queryFn: async () => {
+      console.log('TrendingProductsCarousel: Starting data fetch, user:', user ? 'authenticated' : 'anonymous');
       // For authenticated users, try to get products with actual likes
       if (user) {
         const { data: likedProducts, error: likesError } = await supabase
@@ -195,19 +196,26 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
       }
 
       // For anonymous users, use minimal product catalog
+      console.log('TrendingProductsCarousel: Fetching minimal product catalog for anonymous user');
       const { data: minimalProducts, error: minimalError } = await supabase
         .rpc('get_minimal_product_catalog', {
           limit_param: limit,
           offset_param: 0
         });
 
+      console.log('TrendingProductsCarousel: Minimal products result:', { 
+        data: minimalProducts?.slice(0, 2), 
+        error: minimalError,
+        count: minimalProducts?.length 
+      });
+
       if (minimalError) {
         console.error('Error fetching minimal products:', minimalError);
-        return [];
+        throw minimalError; // Throw error to trigger React Query error state
       }
 
-      console.log('Using minimal product catalog for anonymous user:', minimalProducts?.slice(0, 3));
-      return (minimalProducts || []).map((product: any) => ({
+      console.log('TrendingProductsCarousel: Using minimal product catalog for anonymous user:', minimalProducts?.slice(0, 3));
+      const formattedProducts = (minimalProducts || []).map((product: any) => ({
         id: product.id,
         title: product.title,
         image_url: product.image_url || '/placeholder.svg',
@@ -216,6 +224,9 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
         brand_name: product.brand_name || 'Unknown Brand',
         external_url: null // Not available for anonymous users
       }));
+      
+      console.log('TrendingProductsCarousel: Final formatted products:', formattedProducts.length);
+      return formattedProducts;
     },
     staleTime: 1000 * 60 * 15, // 15 minutes
   });
@@ -482,6 +493,13 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
     }
   };
 
+  console.log('TrendingProductsCarousel render:', { 
+    isLoading, 
+    error, 
+    productsCount: trendingProducts?.length,
+    user: user ? 'authenticated' : 'anonymous'
+  });
+
   if (isLoading) {
     return (
       <Carousel className="w-full">
@@ -503,6 +521,16 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
           ))}
         </CarouselContent>
       </Carousel>
+    );
+  }
+
+  if (error) {
+    console.error('TrendingProductsCarousel error:', error);
+    return (
+      <div className="text-center py-8">
+        <p className="text-muted-foreground">Error loading products. Please try again.</p>
+        <p className="text-sm text-red-500">{error.message}</p>
+      </div>
     );
   }
 
