@@ -292,7 +292,7 @@ const Auth = () => {
                     </GlassPanel>
 
                     {/* Retailer Role */}
-                    <GlassPanel variant={selectedRole === "retailer" ? "premium" : "default"} className={`p-3 cursor-pointer transition-all duration-200 ${selectedRole === "retailer" ? "border-primary/60 shadow-md scale-[1.02]" : "hover:scale-[1.01] hover:border-primary/40"}`} onClick={() => setSelectedRole(selectedRole === "retailer" ? "" : "retailer")}>
+                    <GlassPanel variant={selectedRole === "retailer" ? "premium" : "default"} className={`p-3 opacity-50 cursor-not-allowed transition-all duration-200 ${selectedRole === "retailer" ? "border-primary/60 shadow-md scale-[1.02]" : ""}`}>
                       <div className="text-center space-y-2">
                         <div className={`p-2 rounded-lg mx-auto w-fit ${selectedRole === "retailer" ? "bg-gradient-to-br from-primary/30 to-primary/20" : "bg-muted/50"}`}>
                           <Building2 className="h-5 w-5 text-primary" />
