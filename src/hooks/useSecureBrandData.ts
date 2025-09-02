@@ -26,28 +26,31 @@ export const useSecureBrandData = (brandId?: string) => {
     queryFn: async (): Promise<SecureBrandData | null> => {
       if (!brandId) return null;
       
-      const { data, error } = await supabase
-        .from('brands')
-        .select(`
-          id,
-          name,
-          slug,
-          logo_url,
-          bio,
-          website,
-          contact_email,
-          owner_user_id,
-          socials,
-          shipping_regions,
-          cover_image_url,
-          created_at,
-          updated_at
-        `)
+      // Use secure function that requires authentication for contact data
+      const { data, error } = await supabase.rpc('get_brand_contact_secure', {
+        brand_id_param: brandId
+      });
+
+      if (error) {
+        console.error('Failed to fetch secure brand data:', error);
+        throw error;
+      }
+      
+      // Get safe public data
+      const { data: publicData, error: publicError } = await supabase
+        .from('brands_public')
+        .select('*')
         .eq('id', brandId)
         .single();
 
-      if (error) throw error;
-      return data;
+      if (publicError) throw publicError;
+      
+      // Combine public data with contact info for authenticated users
+      return {
+        ...publicData,
+        contact_email: data?.[0]?.contact_email || null,
+        owner_user_id: data?.[0]?.owner_user_id || null,
+      };
     },
     enabled: !!brandId && !!user,
   });
@@ -61,28 +64,31 @@ export const useSecureRetailerData = (retailerId?: string) => {
     queryFn: async (): Promise<SecureBrandData | null> => {
       if (!retailerId) return null;
       
-      const { data, error } = await supabase
-        .from('retailers')
-        .select(`
-          id,
-          name,
-          slug,
-          logo_url,
-          bio,
-          website,
-          contact_email,
-          owner_user_id,
-          socials,
-          shipping_regions,
-          cover_image_url,
-          created_at,
-          updated_at
-        `)
+      // Use secure function that requires authentication for contact data
+      const { data, error } = await supabase.rpc('get_retailer_contact_secure', {
+        retailer_id_param: retailerId
+      });
+
+      if (error) {
+        console.error('Failed to fetch secure retailer data:', error);
+        throw error;
+      }
+      
+      // Get safe public data
+      const { data: publicData, error: publicError } = await supabase
+        .from('retailers_public')
+        .select('*')
         .eq('id', retailerId)
         .single();
 
-      if (error) throw error;
-      return data;
+      if (publicError) throw publicError;
+      
+      // Combine public data with contact info for authenticated users
+      return {
+        ...publicData,
+        contact_email: data?.[0]?.contact_email || null,
+        owner_user_id: data?.[0]?.owner_user_id || null,
+      };
     },
     enabled: !!retailerId && !!user,
   });

@@ -2758,6 +2758,13 @@ export type Database = {
           owner_user_id: string
         }[]
       }
+      get_brand_contact_secure: {
+        Args: { brand_id_param: string }
+        Returns: {
+          contact_email: string
+          owner_user_id: string
+        }[]
+      }
       get_brand_safe_data: {
         Args: { brand_id_param: string }
         Returns: {
@@ -2913,6 +2920,13 @@ export type Database = {
         }[]
       }
       get_retailer_contact_info: {
+        Args: { retailer_id_param: string }
+        Returns: {
+          contact_email: string
+          owner_user_id: string
+        }[]
+      }
+      get_retailer_contact_secure: {
         Args: { retailer_id_param: string }
         Returns: {
           contact_email: string
