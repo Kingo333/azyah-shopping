@@ -144,10 +144,10 @@ const CategoryCard: React.FC<{
     data: products = []
   } = usePublicProducts(4, 0, category.slug);
   return <Card className={cn(
-      "group cursor-pointer transition-all duration-300 hover:shadow-lg border-0 bg-gradient-to-br from-card to-card/50 backdrop-blur-sm overflow-hidden",
+      "group cursor-pointer transition-all duration-300 hover:shadow-lg border-0 bg-gradient-to-br from-card to-card/50 backdrop-blur-sm overflow-hidden h-40 md:h-48",
       isSelected ? "ring-2 ring-primary shadow-lg scale-[1.02]" : "hover:shadow-md hover:scale-[1.01]"
     )}>
-      <CardContent className="p-0 relative">
+      <CardContent className="p-0 relative h-full">
         <Button variant="ghost" className="w-full h-full p-0 hover:bg-transparent" onClick={onToggle}>
           <div className="w-full h-full relative overflow-hidden">
             {/* Background Thumbnail */}
@@ -169,15 +169,15 @@ const CategoryCard: React.FC<{
                 />
               )}
               {/* Overlay gradient */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
             </div>
             
-            {/* Content */}
-            <div className="relative z-10 h-full flex flex-col justify-end p-4">
-              <h3 className="font-bold text-sm md:text-base text-white drop-shadow-lg">
+            {/* Content positioned at bottom */}
+            <div className="absolute bottom-0 left-0 right-0 z-10 p-4">
+              <h3 className="font-bold text-sm md:text-base text-white drop-shadow-lg text-center">
                 {category.name}
               </h3>
-              <div className="w-8 h-0.5 bg-white/60 mt-1 transition-all duration-300 group-hover:w-12 group-hover:bg-white" />
+              <div className="w-8 h-0.5 bg-white/60 mt-1 mx-auto transition-all duration-300 group-hover:w-12 group-hover:bg-white" />
             </div>
             
             {/* Selection indicator */}
