@@ -85,20 +85,20 @@ const CategoryCarousel: React.FC<CategoryCarouselProps> = ({
 
   return <div className="mb-8">
       <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl font-bold font-playfair">Our Best Categories</h2>
         <div className="flex items-center gap-3">
-          <h2 className="text-xl font-bold font-playfair">Our Best Categories</h2>
+          {selectedCategories.length > 0 && <Badge variant="secondary" className="text-xs">
+              {selectedCategories.length} selected
+            </Badge>}
           <Button 
             variant="ghost" 
             size="sm" 
             onClick={() => navigate('/')}
-            className="h-8 w-8 p-0 hover:bg-primary/10 hover:scale-105 transition-all"
+            className="h-8 w-8 p-0 hover:bg-primary/10 hover:scale-110 transition-all duration-200 shadow-md hover:shadow-lg bg-background/80 backdrop-blur-sm border border-border/50"
           >
             <Home className="h-4 w-4" />
           </Button>
         </div>
-        {selectedCategories.length > 0 && <Badge variant="secondary" className="text-xs">
-            {selectedCategories.length} selected
-          </Badge>}
       </div>
       
       <Carousel 
