@@ -821,6 +821,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "events_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "events_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
@@ -846,6 +853,13 @@ export type Database = {
             columns: ["retailer_id"]
             isOneToOne: false
             referencedRelation: "retailers_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "retailers_public_safe"
             referencedColumns: ["id"]
           },
           {
@@ -1659,6 +1673,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "products_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "products_retailer_id_fkey"
             columns: ["retailer_id"]
             isOneToOne: false
@@ -1670,6 +1691,13 @@ export type Database = {
             columns: ["retailer_id"]
             isOneToOne: false
             referencedRelation: "retailers_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "retailers_public_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -2428,11 +2456,36 @@ export type Database = {
         }
         Relationships: []
       }
+      brands_public_safe: {
+        Row: {
+          id: string | null
+          logo_url: string | null
+          name: string | null
+        }
+        Insert: {
+          id?: string | null
+          logo_url?: string | null
+          name?: string | null
+        }
+        Update: {
+          id?: string | null
+          logo_url?: string | null
+          name?: string | null
+        }
+        Relationships: []
+      }
       categories_public: {
         Row: {
           name: Database["public"]["Enums"]["category_type"] | null
           product_count: number | null
           slug: Database["public"]["Enums"]["category_type"] | null
+        }
+        Relationships: []
+      }
+      product_like_counts: {
+        Row: {
+          like_count: number | null
+          product_id: string | null
         }
         Relationships: []
       }
@@ -2498,8 +2551,30 @@ export type Database = {
         }
         Relationships: []
       }
+      retailers_public_safe: {
+        Row: {
+          id: string | null
+          logo_url: string | null
+          name: string | null
+        }
+        Insert: {
+          id?: string | null
+          logo_url?: string | null
+          name?: string | null
+        }
+        Update: {
+          id?: string | null
+          logo_url?: string | null
+          name?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
+      __is_read_only_tx: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
       admin_access_payment_data: {
         Args: { payment_id: string }
         Returns: {
@@ -2928,6 +3003,10 @@ export type Database = {
           table_name: string
         }
         Returns: undefined
+      }
+      policy_exists: {
+        Args: { _name: string; _table: unknown }
+        Returns: boolean
       }
       tier_from_price_aed: {
         Args: { aed_price: number }
