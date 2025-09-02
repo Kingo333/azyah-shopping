@@ -58,7 +58,7 @@ const CategoryCarousel: React.FC<CategoryCarouselProps> = ({
         } else {
           api.scrollTo(0);
         }
-      }, 5000); // Slowed down from 3000ms to 5000ms (5 seconds)
+      }, 8000); // Slowed down from 5000ms to 8000ms (8 seconds) for more steady movement
     };
 
     const stopAutoplay = () => {
@@ -75,7 +75,7 @@ const CategoryCarousel: React.FC<CategoryCarouselProps> = ({
     
     // Restart after interaction ends
     api.on('settle', () => {
-      setTimeout(startAutoplay, 3000); // Increased pause time after interaction
+      setTimeout(startAutoplay, 5000); // Increased pause time after interaction to 5 seconds
     });
 
     return () => {
