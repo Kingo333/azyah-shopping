@@ -76,16 +76,15 @@ const CategoryCarousel: React.FC<CategoryCarouselProps> = ({
     // Start autoplay immediately
     startAutoplay();
 
-    // Stop on user interaction (mouse down or touch)
-    api.on('pointerDown', stopAutoplay);
-    
-    // Also stop on manual scroll attempts
-    api.on('scroll', stopAutoplay);
+    // Only stop on actual user interactions (not programmatic scrolling)
+    api.on('pointerDown', () => {
+      stopAutoplay();
+      // Restart after 3 seconds of no interaction
+      setTimeout(startAutoplay, 3000);
+    });
 
     return () => {
       stopAutoplay();
-      api.off('pointerDown', stopAutoplay);
-      api.off('scroll', stopAutoplay);
     };
   }, [api]);
 
