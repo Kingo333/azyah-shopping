@@ -58,7 +58,7 @@ const CategoryCarousel: React.FC<CategoryCarouselProps> = ({
         } else {
           api.scrollTo(0);
         }
-      }, 8000); // Slowed down from 5000ms to 8000ms (8 seconds) for more steady movement
+      }, 5000); // Auto-scroll every 5 seconds
     };
 
     const stopAutoplay = () => {
