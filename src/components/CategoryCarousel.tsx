@@ -8,16 +8,22 @@ import { getPrimaryImageUrl } from '@/utils/imageHelpers';
 import { cn } from '@/lib/utils';
 import type { TopCategory } from '@/lib/categories';
 
+// Import default category images
+import modestWearImage from '@/assets/category-modestwear.jpg';
+import clothingImage from '@/assets/category-clothing.jpg';
+import bagsImage from '@/assets/category-bags.jpg';
+import footwearImage from '@/assets/category-footwear.jpg';
+
 interface CategoryCarouselProps {
   selectedCategories: TopCategory[];
   onCategoryToggle: (category: TopCategory) => void;
 }
 
 const CATEGORIES = [
-  { slug: 'modestwear' as TopCategory, name: 'Modest Wear', color: 'bg-gradient-to-br from-violet-500/20 to-purple-600/20' },
-  { slug: 'clothing' as TopCategory, name: 'Clothing', color: 'bg-gradient-to-br from-blue-500/20 to-cyan-600/20' },
-  { slug: 'bags' as TopCategory, name: 'Bags', color: 'bg-gradient-to-br from-pink-500/20 to-rose-600/20' },
-  { slug: 'footwear' as TopCategory, name: 'Footwear', color: 'bg-gradient-to-br from-emerald-500/20 to-green-600/20' }
+  { slug: 'modestwear' as TopCategory, name: 'Modest Wear', color: 'bg-gradient-to-br from-violet-500/20 to-purple-600/20', defaultImage: modestWearImage },
+  { slug: 'clothing' as TopCategory, name: 'Clothing', color: 'bg-gradient-to-br from-blue-500/20 to-cyan-600/20', defaultImage: clothingImage },
+  { slug: 'bags' as TopCategory, name: 'Bags', color: 'bg-gradient-to-br from-pink-500/20 to-rose-600/20', defaultImage: bagsImage },
+  { slug: 'footwear' as TopCategory, name: 'Footwear', color: 'bg-gradient-to-br from-emerald-500/20 to-green-600/20', defaultImage: footwearImage }
 ];
 
 const CategoryCarousel: React.FC<CategoryCarouselProps> = ({ selectedCategories, onCategoryToggle }) => {
@@ -35,7 +41,7 @@ const CategoryCarousel: React.FC<CategoryCarouselProps> = ({ selectedCategories,
       <Carousel className="w-full" opts={{ align: "start", loop: false }}>
         <CarouselContent>
           {CATEGORIES.map((category) => (
-            <CarouselItem key={category.slug} className="md:basis-1/2 lg:basis-1/3">
+            <CarouselItem key={category.slug} className="basis-1/2 md:basis-1/4 lg:basis-1/5">
               <CategoryCard 
                 category={category}
                 isSelected={selectedCategories.includes(category.slug)}
@@ -52,7 +58,7 @@ const CategoryCarousel: React.FC<CategoryCarouselProps> = ({ selectedCategories,
 };
 
 const CategoryCard: React.FC<{
-  category: { slug: TopCategory; name: string; color: string };
+  category: { slug: TopCategory; name: string; color: string; defaultImage: string };
   isSelected: boolean;
   onToggle: () => void;
 }> = ({ category, isSelected, onToggle }) => {
@@ -80,25 +86,44 @@ const CategoryCard: React.FC<{
             
             {/* Product Grid */}
             <div className="grid grid-cols-2 gap-1 p-4 pt-2">
-              {products.slice(0, 4).map((product, index) => (
-                <div key={product.id} className="aspect-square bg-white rounded-lg overflow-hidden shadow-sm">
-                  <img
-                    src={getPrimaryImageUrl(product)}
-                    alt={product.title}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = '/placeholder.svg';
-                    }}
-                  />
-                </div>
-              ))}
+              {products.length > 0 ? (
+                products.slice(0, 4).map((product, index) => (
+                  <div key={product.id} className="aspect-square bg-white rounded-lg overflow-hidden shadow-sm">
+                    <img
+                      src={getPrimaryImageUrl(product)}
+                      alt={product.title}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = '/placeholder.svg';
+                      }}
+                    />
+                  </div>
+                ))
+              ) : (
+                // Use default category image when no products are available
+                Array.from({ length: 4 }).map((_, index) => (
+                  <div key={`default-${index}`} className="aspect-square bg-white rounded-lg overflow-hidden shadow-sm">
+                    <img
+                      src={category.defaultImage}
+                      alt={`${category.name} category`}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                ))
+              )}
               
-              {/* Placeholder for missing products */}
-              {Array.from({ length: Math.max(0, 4 - products.length) }).map((_, index) => (
-                <div key={`placeholder-${index}`} className="aspect-square bg-muted rounded-lg flex items-center justify-center">
-                  <div className="w-6 h-6 bg-muted-foreground/20 rounded-full" />
-                </div>
-              ))}
+              {/* Fill remaining slots with default images if needed */}
+              {products.length > 0 && products.length < 4 && 
+                Array.from({ length: 4 - products.length }).map((_, index) => (
+                  <div key={`default-fill-${index}`} className="aspect-square bg-white rounded-lg overflow-hidden shadow-sm">
+                    <img
+                      src={category.defaultImage}
+                      alt={`${category.name} category`}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                ))
+              }
             </div>
             
             {/* Selection indicator */}
