@@ -13,6 +13,7 @@ export interface UnifiedProductFilters {
   currency?: string;
   limit?: number;
   offset?: number;
+  categories?: string[];
 }
 
 export interface UnifiedProductsResult {
@@ -43,8 +44,20 @@ export const useUnifiedProducts = (filters: UnifiedProductFilters): UnifiedProdu
         .order('created_at', { ascending: false });
 
       // Apply filters with sophisticated logic
-      if (filters.category && filters.category !== 'all') {
-        // Handle category filtering with fallbacks for miscategorized items
+      if (filters.categories && filters.categories.length > 0) {
+        // Handle multiple categories for list view
+        const categoryConditions = filters.categories.map(cat => {
+          if (cat === 'bags') {
+            return `category_slug.eq.bags,and(category_slug.eq.clothing,subcategory_slug.in.(handbags,clutches,totes,backpacks,wallets))`;
+          } else if (cat === 'footwear') {
+            return `category_slug.eq.footwear,and(category_slug.eq.clothing,subcategory_slug.in.(heels,flats,sandals,sneakers,boots,loafers,slippers))`;
+          } else {
+            return `category_slug.eq.${cat}`;
+          }
+        }).join(',');
+        query = query.or(categoryConditions);
+      } else if (filters.category && filters.category !== 'all' && filters.category !== 'multi') {
+        // Handle single category filtering with fallbacks for miscategorized items
         if (filters.category === 'bags') {
           // Bags can be in clothing category too
           query = query.or(`category_slug.eq.bags,and(category_slug.eq.clothing,subcategory_slug.in.(handbags,clutches,totes,backpacks,wallets))`);
@@ -224,6 +237,7 @@ export const useUnifiedProducts = (filters: UnifiedProductFilters): UnifiedProdu
     }
   }, [
     filters.category,
+    filters.categories,
     filters.subcategory, 
     filters.gender,
     filters.priceRange.min,

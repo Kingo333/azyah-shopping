@@ -75,17 +75,18 @@ const Swipe = () => {
     }
   }, [showListToggle]);
 
-  // Use unified products hook
+  // Use unified products hook - handle multiple categories for list view
   const {
     products,
     isLoading: productsLoading
   } = useUnifiedProducts({
-    category: filters.categories[0] || 'all',
+    category: viewMode === 'list' && filters.categories.length > 0 ? 'multi' : filters.categories[0] || 'all',
     subcategory: filters.subcategories[0],
     gender: filters.genders[0],
     priceRange: filters.priceRange,
     searchQuery: filters.searchQuery,
-    currency: filters.currency
+    currency: filters.currency,
+    categories: viewMode === 'list' ? filters.categories : undefined
   });
 
   // Update URL when filters change
@@ -214,7 +215,20 @@ const Swipe = () => {
               />
             </div>
           </div> : <div className="flex-1">
-            <ProductListView products={products} isLoading={productsLoading} />
+            <ProductListView 
+              products={products} 
+              isLoading={productsLoading}
+              selectedCategories={filters.categories}
+              onCategoryToggle={(category) => {
+                setFilters(prev => ({
+                  ...prev,
+                  categories: prev.categories.includes(category as any)
+                    ? prev.categories.filter(c => c !== category)
+                    : [...prev.categories, category as any]
+                }));
+              }}
+              showCategoryCarousel={true}
+            />
           </div>}
       </main>
     </div>;

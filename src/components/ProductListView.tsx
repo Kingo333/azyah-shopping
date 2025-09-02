@@ -14,10 +14,14 @@ import ProductDetailPage from '@/components/ProductDetailPage';
 import PhotoCloseup from '@/components/PhotoCloseup';
 import { getResponsiveImageProps } from '@/utils/asosImageUtils';
 import { getPrimaryImageUrl, hasMultipleImages, getImageCount } from '@/utils/imageHelpers';
+import CategoryCarousel from '@/components/CategoryCarousel';
 
 interface ProductListViewProps {
   products: Product[];
   isLoading: boolean;
+  selectedCategories?: string[];
+  onCategoryToggle?: (category: string) => void;
+  showCategoryCarousel?: boolean;
 }
 
 /* ProductCard component */
@@ -148,7 +152,13 @@ const ProductCard: React.FC<{
   );
 };
 
-const ProductListView: React.FC<ProductListViewProps> = ({ products, isLoading }) => {
+const ProductListView: React.FC<ProductListViewProps> = ({ 
+  products, 
+  isLoading, 
+  selectedCategories = [], 
+  onCategoryToggle = () => {}, 
+  showCategoryCarousel = false 
+}) => {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [showCloseup, setShowCloseup] = useState(false);
   const navigate = useNavigate();
@@ -232,6 +242,13 @@ const ProductListView: React.FC<ProductListViewProps> = ({ products, isLoading }
 
   return (
     <>
+      {showCategoryCarousel && (
+        <CategoryCarousel 
+          selectedCategories={selectedCategories as any}
+          onCategoryToggle={onCategoryToggle}
+        />
+      )}
+      
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-6">
         {products.map(product => (
           <ProductCard 
