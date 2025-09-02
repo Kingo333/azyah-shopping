@@ -58,7 +58,7 @@ const CategoryCarousel: React.FC<CategoryCarouselProps> = ({
         } else {
           api.scrollTo(0);
         }
-      }, 5000); // Auto-scroll every 5 seconds
+      }, 4000); // Auto-scroll every 4 seconds consistently
     };
 
     const stopAutoplay = () => {
