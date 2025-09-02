@@ -36,14 +36,14 @@ export const useSecureBrandData = (brandId?: string) => {
         throw error;
       }
       
-      // Get safe public data
-      const { data: publicData, error: publicError } = await supabase
-        .from('brands_public')
-        .select('*')
-        .eq('id', brandId)
-        .single();
-
+      // Get public data using secure function
+      const { data: publicList, error: publicError } = await supabase.rpc('get_public_brands', {
+        limit_param: 1000
+      });
       if (publicError) throw publicError;
+      
+      const publicData = publicList?.find((b: any) => b.id === brandId);
+      if (!publicData) return null;
       
       // Combine public data with contact info for authenticated users
       return {
@@ -74,14 +74,14 @@ export const useSecureRetailerData = (retailerId?: string) => {
         throw error;
       }
       
-      // Get safe public data
-      const { data: publicData, error: publicError } = await supabase
-        .from('retailers_public')
-        .select('*')
-        .eq('id', retailerId)
-        .single();
-
+      // Get public data using secure function
+      const { data: publicList, error: publicError } = await supabase.rpc('get_public_retailers', {
+        limit_param: 1000
+      });
       if (publicError) throw publicError;
+      
+      const publicData = publicList?.find((r: any) => r.id === retailerId);
+      if (!publicData) return null;
       
       // Combine public data with contact info for authenticated users
       return {

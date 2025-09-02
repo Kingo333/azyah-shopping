@@ -365,13 +365,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "cart_items_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products_public"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "cart_items_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
@@ -814,20 +807,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "events_brand_id_fkey"
-            columns: ["brand_id"]
-            isOneToOne: false
-            referencedRelation: "brands_public"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "events_brand_id_fkey"
-            columns: ["brand_id"]
-            isOneToOne: false
-            referencedRelation: "brands_public_safe"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "events_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
@@ -835,31 +814,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "events_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products_public"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "events_retailer_id_fkey"
             columns: ["retailer_id"]
             isOneToOne: false
             referencedRelation: "retailers"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "events_retailer_id_fkey"
-            columns: ["retailer_id"]
-            isOneToOne: false
-            referencedRelation: "retailers_public"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "events_retailer_id_fkey"
-            columns: ["retailer_id"]
-            isOneToOne: false
-            referencedRelation: "retailers_public_safe"
             referencedColumns: ["id"]
           },
           {
@@ -1504,13 +1462,6 @@ export type Database = {
             referencedRelation: "products"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "post_products_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products_public"
-            referencedColumns: ["id"]
-          },
         ]
       }
       posts: {
@@ -1666,38 +1617,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "products_brand_id_fkey"
-            columns: ["brand_id"]
-            isOneToOne: false
-            referencedRelation: "brands_public"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "products_brand_id_fkey"
-            columns: ["brand_id"]
-            isOneToOne: false
-            referencedRelation: "brands_public_safe"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "products_retailer_id_fkey"
             columns: ["retailer_id"]
             isOneToOne: false
             referencedRelation: "retailers"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "products_retailer_id_fkey"
-            columns: ["retailer_id"]
-            isOneToOne: false
-            referencedRelation: "retailers_public"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "products_retailer_id_fkey"
-            columns: ["retailer_id"]
-            isOneToOne: false
-            referencedRelation: "retailers_public_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -1980,13 +1903,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "swipes_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products_public"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "swipes_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
@@ -2074,13 +1990,6 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "tryon_jobs_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products_public"
             referencedColumns: ["id"]
           },
         ]
@@ -2335,24 +2244,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "wishlist_items_product_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products_public"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "wishlist_items_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "wishlist_items_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products_public"
             referencedColumns: ["id"]
           },
           {
@@ -2414,66 +2309,6 @@ export type Database = {
       }
     }
     Views: {
-      brands_public: {
-        Row: {
-          bio: string | null
-          cover_image_url: string | null
-          created_at: string | null
-          id: string | null
-          logo_url: string | null
-          name: string | null
-          shipping_regions: string[] | null
-          slug: string | null
-          socials: Json | null
-          updated_at: string | null
-          website: string | null
-        }
-        Insert: {
-          bio?: string | null
-          cover_image_url?: string | null
-          created_at?: string | null
-          id?: string | null
-          logo_url?: string | null
-          name?: string | null
-          shipping_regions?: string[] | null
-          slug?: string | null
-          socials?: Json | null
-          updated_at?: string | null
-          website?: string | null
-        }
-        Update: {
-          bio?: string | null
-          cover_image_url?: string | null
-          created_at?: string | null
-          id?: string | null
-          logo_url?: string | null
-          name?: string | null
-          shipping_regions?: string[] | null
-          slug?: string | null
-          socials?: Json | null
-          updated_at?: string | null
-          website?: string | null
-        }
-        Relationships: []
-      }
-      brands_public_safe: {
-        Row: {
-          id: string | null
-          logo_url: string | null
-          name: string | null
-        }
-        Insert: {
-          id?: string | null
-          logo_url?: string | null
-          name?: string | null
-        }
-        Update: {
-          id?: string | null
-          logo_url?: string | null
-          name?: string | null
-        }
-        Relationships: []
-      }
       categories_public: {
         Row: {
           name: Database["public"]["Enums"]["category_type"] | null
@@ -2486,86 +2321,6 @@ export type Database = {
         Row: {
           like_count: number | null
           product_id: string | null
-        }
-        Relationships: []
-      }
-      products_public: {
-        Row: {
-          brand_logo_url: string | null
-          brand_name: string | null
-          brand_slug: string | null
-          category_slug: Database["public"]["Enums"]["category_type"] | null
-          created_at: string | null
-          currency: string | null
-          gender: Database["public"]["Enums"]["gender_type"] | null
-          id: string | null
-          image_url: string | null
-          preview_media: Json | null
-          price_cents: number | null
-          subcategory_slug:
-            | Database["public"]["Enums"]["subcategory_type"]
-            | null
-          title: string | null
-        }
-        Relationships: []
-      }
-      retailers_public: {
-        Row: {
-          bio: string | null
-          cover_image_url: string | null
-          created_at: string | null
-          id: string | null
-          logo_url: string | null
-          name: string | null
-          shipping_regions: string[] | null
-          slug: string | null
-          socials: Json | null
-          updated_at: string | null
-          website: string | null
-        }
-        Insert: {
-          bio?: string | null
-          cover_image_url?: string | null
-          created_at?: string | null
-          id?: string | null
-          logo_url?: string | null
-          name?: string | null
-          shipping_regions?: string[] | null
-          slug?: string | null
-          socials?: Json | null
-          updated_at?: string | null
-          website?: string | null
-        }
-        Update: {
-          bio?: string | null
-          cover_image_url?: string | null
-          created_at?: string | null
-          id?: string | null
-          logo_url?: string | null
-          name?: string | null
-          shipping_regions?: string[] | null
-          slug?: string | null
-          socials?: Json | null
-          updated_at?: string | null
-          website?: string | null
-        }
-        Relationships: []
-      }
-      retailers_public_safe: {
-        Row: {
-          id: string | null
-          logo_url: string | null
-          name: string | null
-        }
-        Insert: {
-          id?: string | null
-          logo_url?: string | null
-          name?: string | null
-        }
-        Update: {
-          id?: string | null
-          logo_url?: string | null
-          name?: string | null
         }
         Relationships: []
       }
@@ -2818,6 +2573,43 @@ export type Database = {
           product_count: number
           recent_products: Json
           subcategory_slug: Database["public"]["Enums"]["subcategory_type"]
+        }[]
+      }
+      get_minimal_brand_directory: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          id: string
+          logo_url: string
+          name: string
+          slug: string
+        }[]
+      }
+      get_minimal_category_list: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          name: string
+          slug: string
+        }[]
+      }
+      get_minimal_product_catalog: {
+        Args: { limit_param?: number; offset_param?: number }
+        Returns: {
+          brand_name: string
+          category_slug: Database["public"]["Enums"]["category_type"]
+          currency: string
+          id: string
+          image_url: string
+          price_cents: number
+          title: string
+        }[]
+      }
+      get_minimal_retailer_directory: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          id: string
+          logo_url: string
+          name: string
+          slug: string
         }[]
       }
       get_my_profile: {

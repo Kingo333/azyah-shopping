@@ -8,10 +8,6 @@ interface PublicBrandData {
   slug: string;
   logo_url: string | null;
   bio: string | null;
-  website: string | null;
-  socials: Json | null;
-  shipping_regions: string[] | null;
-  cover_image_url: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -27,18 +23,19 @@ export const usePublicBrandData = (brandId?: string) => {
     queryFn: async (): Promise<PublicBrandData | null> => {
       if (!brandId) return null;
       
-      const { data, error } = await supabase
-        .from('brands_public')
-        .select('*')
-        .eq('id', brandId)
-        .single();
+      // Use secure function that requires authentication
+      const { data, error } = await supabase.rpc('get_public_brands', {
+        limit_param: 1000 // Get all brands, then filter client-side
+      });
 
       if (error) {
         console.error('Failed to fetch public brand data:', error);
         throw error;
       }
       
-      return data;
+      // Find the specific brand by ID
+      const brand = data?.find((b: any) => b.id === brandId);
+      return brand || null;
     },
     enabled: !!brandId,
   });
@@ -52,11 +49,10 @@ export const usePublicBrandsList = (limit = 50) => {
   return useQuery({
     queryKey: ['public-brands-list', limit],
     queryFn: async (): Promise<PublicBrandData[]> => {
-      const { data, error } = await supabase
-        .from('brands_public')
-        .select('*')
-        .order('name')
-        .limit(limit);
+      // Use secure function that requires authentication
+      const { data, error } = await supabase.rpc('get_public_brands', {
+        limit_param: limit
+      });
 
       if (error) {
         console.error('Failed to fetch public brands list:', error);

@@ -8,10 +8,6 @@ interface PublicRetailerData {
   slug: string;
   logo_url: string | null;
   bio: string | null;
-  website: string | null;
-  socials: Json | null;
-  shipping_regions: string[] | null;
-  cover_image_url: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -27,18 +23,19 @@ export const usePublicRetailerData = (retailerId?: string) => {
     queryFn: async (): Promise<PublicRetailerData | null> => {
       if (!retailerId) return null;
       
-      const { data, error } = await supabase
-        .from('retailers_public')
-        .select('*')
-        .eq('id', retailerId)
-        .single();
+      // Use secure function that requires authentication
+      const { data, error } = await supabase.rpc('get_public_retailers', {
+        limit_param: 1000 // Get all retailers, then filter client-side
+      });
 
       if (error) {
         console.error('Failed to fetch public retailer data:', error);
         throw error;
       }
       
-      return data;
+      // Find the specific retailer by ID
+      const retailer = data?.find((r: any) => r.id === retailerId);
+      return retailer || null;
     },
     enabled: !!retailerId,
   });
@@ -52,11 +49,10 @@ export const usePublicRetailersList = (limit = 50) => {
   return useQuery({
     queryKey: ['public-retailers-list', limit],
     queryFn: async (): Promise<PublicRetailerData[]> => {
-      const { data, error } = await supabase
-        .from('retailers_public')
-        .select('*')
-        .order('name')
-        .limit(limit);
+      // Use secure function that requires authentication
+      const { data, error } = await supabase.rpc('get_public_retailers', {
+        limit_param: limit
+      });
 
       if (error) {
         console.error('Failed to fetch public retailers list:', error);
