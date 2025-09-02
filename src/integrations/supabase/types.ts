@@ -2504,6 +2504,10 @@ export type Database = {
         Args: { query_text: string }
         Returns: number[]
       }
+      ensure_payment_security: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       get_beauty_profile: {
         Args: { target_user_id: string }
         Returns: {
