@@ -29,6 +29,46 @@ export const AiStudioResultsPanel: React.FC<AiStudioResultsPanelProps> = ({
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedAssets, setSelectedAssets] = useState<string[]>([]);
 
+  const downloadImage = async (url: string, filename: string = 'ai-studio-result.png') => {
+    try {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error('Failed to fetch image');
+      
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error('Download failed:', error);
+      // Fallback: open in new tab
+      window.open(url, '_blank');
+    }
+  };
+
+  const openFullSizeImage = (imageUrl: string) => {
+    try {
+      const newWindow = window.open('', '_blank');
+      if (newWindow) {
+        newWindow.document.write(`
+          <html>
+            <head><title>AI Studio Result</title></head>
+            <body style="margin: 0; padding: 20px; background: black; display: flex; justify-content: center; align-items: center; min-height: 100vh;">
+              <img src="${imageUrl}" style="max-width: 100%; max-height: 100%; object-fit: contain;" />
+            </body>
+          </html>
+        `);
+      }
+    } catch (error) {
+      console.error('Failed to open full size image:', error);
+    }
+  };
+
   const handleAssetClick = (asset: AiAsset) => {
     if (isSelectionMode) {
       setSelectedAssets(prev => 
@@ -62,7 +102,12 @@ export const AiStudioResultsPanel: React.FC<AiStudioResultsPanelProps> = ({
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-base font-semibold">Generated Result</h3>
             {currentResult?.path && (
-              <Button onClick={onDownload} size="sm" variant="outline" className="h-8 text-xs">
+              <Button 
+                onClick={() => downloadImage(currentResult.path)} 
+                size="sm" 
+                variant="outline" 
+                className="h-8 text-xs"
+              >
                 <Download className="h-3 w-3 mr-1" />
                 Download
               </Button>
@@ -74,7 +119,12 @@ export const AiStudioResultsPanel: React.FC<AiStudioResultsPanelProps> = ({
       {/* Desktop Download Button */}
       {currentResult?.path && (
         <div className="hidden lg:flex justify-end mb-3 flex-shrink-0">
-          <Button onClick={onDownload} size="sm" variant="outline" className="h-8 text-xs">
+          <Button 
+            onClick={() => downloadImage(currentResult.path)} 
+            size="sm" 
+            variant="outline" 
+            className="h-8 text-xs"
+          >
             <Download className="h-3 w-3 mr-1" />
             Download
           </Button>
@@ -186,51 +236,48 @@ export const AiStudioResultsPanel: React.FC<AiStudioResultsPanelProps> = ({
                         onClick={() => handleAssetClick(asset)}
                         onContextMenu={(e) => {
                           e.preventDefault();
+                          e.stopPropagation();
                           if (asset.asset_url) {
-                            const img = new Image();
-                            img.src = asset.asset_url;
-                            const newWindow = window.open('', '_blank');
-                            if (newWindow) {
-                              newWindow.document.write(`
-                                <html>
-                                  <head><title>AI Studio Result</title></head>
-                                  <body style="margin: 0; padding: 20px; background: black; display: flex; justify-content: center; align-items: center; min-height: 100vh;">
-                                    <img src="${asset.asset_url}" style="max-width: 100%; max-height: 100%; object-fit: contain;" />
-                                  </body>
-                                </html>
-                              `);
-                            }
+                            openFullSizeImage(asset.asset_url);
                           }
                         }}
                         onTouchStart={(e) => {
-                          const longPressTimer = setTimeout(() => {
-                            if (asset.asset_url) {
-                              const img = new Image();
-                              img.src = asset.asset_url;
-                              const newWindow = window.open('', '_blank');
-                              if (newWindow) {
-                                newWindow.document.write(`
-                                  <html>
-                                    <head><title>AI Studio Result</title></head>
-                                    <body style="margin: 0; padding: 20px; background: black; display: flex; justify-content: center; align-items: center; min-height: 100vh;">
-                                      <img src="${asset.asset_url}" style="max-width: 100%; max-height: 100%; object-fit: contain;" />
-                                    </body>
-                                  </html>
-                                `);
-                              }
+                          let longPressTimer: NodeJS.Timeout;
+                          let hasMoved = false;
+                          
+                          const startTouch = e.touches[0];
+                          const startX = startTouch.clientX;
+                          const startY = startTouch.clientY;
+                          
+                          longPressTimer = setTimeout(() => {
+                            if (!hasMoved && asset.asset_url) {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              openFullSizeImage(asset.asset_url);
                             }
                           }, 800);
                           
-                          const cleanup = () => {
-                            clearTimeout(longPressTimer);
-                            e.target.removeEventListener('touchend', cleanup);
-                            e.target.removeEventListener('touchcancel', cleanup);
-                            e.target.removeEventListener('touchmove', cleanup);
+                          const handleTouchMove = (moveEvent: TouchEvent) => {
+                            const moveTouch = moveEvent.touches[0];
+                            const deltaX = Math.abs(moveTouch.clientX - startX);
+                            const deltaY = Math.abs(moveTouch.clientY - startY);
+                            
+                            if (deltaX > 10 || deltaY > 10) {
+                              hasMoved = true;
+                              clearTimeout(longPressTimer);
+                            }
                           };
                           
-                          e.target.addEventListener('touchend', cleanup);
-                          e.target.addEventListener('touchcancel', cleanup);
-                          e.target.addEventListener('touchmove', cleanup);
+                          const cleanup = () => {
+                            clearTimeout(longPressTimer);
+                            document.removeEventListener('touchend', cleanup);
+                            document.removeEventListener('touchcancel', cleanup);
+                            document.removeEventListener('touchmove', handleTouchMove);
+                          };
+                          
+                          document.addEventListener('touchend', cleanup);
+                          document.addEventListener('touchcancel', cleanup);
+                          document.addEventListener('touchmove', handleTouchMove);
                         }}
                       >
                         {asset.asset_url ? (

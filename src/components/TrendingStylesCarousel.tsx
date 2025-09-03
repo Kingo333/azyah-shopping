@@ -328,9 +328,19 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
     }
   });
 
-  const handleShopNow = (externalUrl: string | null) => {
-    if (externalUrl) {
-      window.open(externalUrl, '_blank', 'noopener,noreferrer');
+  const handleShopNow = (product: TrendingProduct) => {
+    if (product.external_url?.trim()) {
+      window.open(product.external_url, '_blank', 'noopener,noreferrer');
+      
+      // Track analytics if user is logged in
+      if (user) {
+        supabase.from('events').insert({
+          user_id: user.id,
+          event_type: 'trending_carousel_shop_now',
+          event_data: { source: 'trending_carousel' },
+          product_id: product.id
+        });
+      }
     } else {
       toast({
         title: "Shop link not available",
@@ -463,9 +473,15 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
                       size="sm"
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleShopNow(product.external_url);
+                        handleShopNow(product);
                       }}
-                      className="flex-1 text-xs h-8"
+                      disabled={!product.external_url?.trim()}
+                      className={`flex-1 text-xs h-8 ${
+                        !product.external_url?.trim() 
+                          ? 'opacity-50 cursor-not-allowed' 
+                          : ''
+                      }`}
+                      title={product.external_url?.trim() ? 'Shop now' : 'Shop link not available'}
                     >
                       Shop Now
                     </Button>
