@@ -31,9 +31,8 @@ export const AiStudioResultsPanel: React.FC<AiStudioResultsPanelProps> = ({
 
   const downloadImage = async (url: string, filename: string = 'ai-studio-result.png') => {
     try {
-      // First try direct download with fetch
-      const response = await fetch(url, { mode: 'cors' });
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const response = await fetch(url);
+      if (!response.ok) throw new Error('Failed to fetch image');
       
       const blob = await response.blob();
       const blobUrl = URL.createObjectURL(blob);
@@ -41,33 +40,14 @@ export const AiStudioResultsPanel: React.FC<AiStudioResultsPanelProps> = ({
       const link = document.createElement('a');
       link.href = blobUrl;
       link.download = filename;
-      link.style.display = 'none';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
-      // Clean up blob URL after a short delay
-      setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
-      
+      URL.revokeObjectURL(blobUrl);
     } catch (error) {
-      console.log('Direct download failed, trying fallback:', error);
-      
-      // Fallback: try anchor tag with direct URL
-      try {
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = filename;
-        link.target = '_blank';
-        link.rel = 'noopener noreferrer';
-        link.style.display = 'none';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      } catch (fallbackError) {
-        console.log('Fallback download failed, opening in new tab:', fallbackError);
-        // Final fallback: open in new tab
-        window.open(url, '_blank', 'noopener,noreferrer');
-      }
+      console.error('Download failed:', error);
+      // Fallback: open in new tab
+      window.open(url, '_blank');
     }
   };
 
@@ -262,8 +242,6 @@ export const AiStudioResultsPanel: React.FC<AiStudioResultsPanelProps> = ({
                           }
                         }}
                         onTouchStart={(e) => {
-                          if (!asset.asset_url) return;
-                          
                           let longPressTimer: NodeJS.Timeout;
                           let hasMoved = false;
                           
@@ -271,47 +249,35 @@ export const AiStudioResultsPanel: React.FC<AiStudioResultsPanelProps> = ({
                           const startX = startTouch.clientX;
                           const startY = startTouch.clientY;
                           
-                          const handleTouchMove = (moveEvent: TouchEvent) => {
-                            if (moveEvent.touches.length > 0) {
-                              const moveTouch = moveEvent.touches[0];
-                              const deltaX = Math.abs(moveTouch.clientX - startX);
-                              const deltaY = Math.abs(moveTouch.clientY - startY);
-                              
-                              if (deltaX > 15 || deltaY > 15) {
-                                hasMoved = true;
-                                clearTimeout(longPressTimer);
-                              }
+                          longPressTimer = setTimeout(() => {
+                            if (!hasMoved && asset.asset_url) {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              openFullSizeImage(asset.asset_url);
                             }
-                          };
+                          }, 800);
                           
-                          const handleTouchEnd = (endEvent: TouchEvent) => {
-                            clearTimeout(longPressTimer);
-                            cleanup();
+                          const handleTouchMove = (moveEvent: TouchEvent) => {
+                            const moveTouch = moveEvent.touches[0];
+                            const deltaX = Math.abs(moveTouch.clientX - startX);
+                            const deltaY = Math.abs(moveTouch.clientY - startY);
                             
-                            // If no movement and quick tap, handle normal click
-                            if (!hasMoved && endEvent.timeStamp - e.timeStamp < 300) {
-                              handleAssetClick(asset);
+                            if (deltaX > 10 || deltaY > 10) {
+                              hasMoved = true;
+                              clearTimeout(longPressTimer);
                             }
                           };
                           
                           const cleanup = () => {
                             clearTimeout(longPressTimer);
-                            document.removeEventListener('touchend', handleTouchEnd);
+                            document.removeEventListener('touchend', cleanup);
                             document.removeEventListener('touchcancel', cleanup);
                             document.removeEventListener('touchmove', handleTouchMove);
                           };
                           
-                          // Set up long press timer
-                          longPressTimer = setTimeout(() => {
-                            if (!hasMoved && asset.asset_url) {
-                              openFullSizeImage(asset.asset_url);
-                              cleanup();
-                            }
-                          }, 600);
-                          
-                          document.addEventListener('touchmove', handleTouchMove, { passive: false });
-                          document.addEventListener('touchend', handleTouchEnd);
+                          document.addEventListener('touchend', cleanup);
                           document.addEventListener('touchcancel', cleanup);
+                          document.addEventListener('touchmove', handleTouchMove);
                         }}
                       >
                         {asset.asset_url ? (
