@@ -396,83 +396,86 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
       <CarouselContent className="-ml-4 md:-ml-8">
         {trendingProducts.map((product, index) => (
           <CarouselItem key={product.id} className="pl-4 md:pl-8 basis-1/2 md:basis-1/2">
-            <Card className="group hover:shadow-xl transition-all duration-300 h-full glass-premium">
-              <CardContent className="p-4 md:p-6 h-full flex flex-col">
-                {/* Header */}
-                <div className="flex items-center justify-between mb-3">
-                  <Badge variant={index < 3 ? "default" : "secondary"} className="text-[10px] px-1.5 py-0.5">
-                    #{index + 1} Trending
-                  </Badge>
-                  <div className="text-[10px] text-muted-foreground font-medium">
-                    {product.brand_name}
-                  </div>
-                </div>
+            <div className="group relative bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2">
+              {/* Trending Badge */}
+              <div className="absolute top-2 left-2 z-10">
+                <Badge variant={index < 3 ? "default" : "secondary"} className="text-[10px] px-1.5 py-0.5">
+                  #{index + 1} Trending
+                </Badge>
+              </div>
 
-                {/* Product Image */}
-                <div className="relative aspect-[3/4] mb-3 rounded-xl overflow-hidden bg-gray-50">
-                  <img
-                    src={product.image_url}
-                    alt={product.title}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      e.currentTarget.src = '/placeholder.svg';
+              <div 
+                className="w-full aspect-[3/4] bg-muted rounded-2xl overflow-hidden relative cursor-pointer"
+              >
+                <img
+                  src={product.image_url}
+                  alt={product.title}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.currentTarget.src = '/placeholder.svg';
+                  }}
+                />
+                
+                {/* Hover gradient overlay */}
+                <div className="absolute inset-0 bg-gradient-to-t from-primary/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                
+                {/* Top-right action buttons */}
+                <div className="absolute top-2 right-2 flex flex-col space-y-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-8 w-8 rounded-full bg-white/90 hover:bg-white backdrop-blur-sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      addToLikesMutation.mutate(product.id);
                     }}
-                  />
-                  
-                  {/* Action Buttons Overlay */}
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-200">
-                    <div className="absolute top-3 right-3 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        className="h-9 w-9 p-0 bg-white/95 hover:bg-white hover:text-red-500 rounded-full shadow-lg border-0"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          addToLikesMutation.mutate(product.id);
-                        }}
-                      >
-                        <Heart className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        className="h-9 w-9 p-0 bg-white/95 hover:bg-white hover:text-blue-500 rounded-full shadow-lg border-0"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          addToWishlistMutation.mutate(product.id);
-                        }}
-                      >
-                        <ShoppingBag className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
+                  >
+                    <Heart className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-8 w-8 rounded-full bg-white/90 hover:bg-white backdrop-blur-sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      addToWishlistMutation.mutate(product.id);
+                    }}
+                  >
+                    <ShoppingBag className="h-4 w-4" />
+                  </Button>
                 </div>
-
-                {/* Product Info */}
-                <div className="flex-1 flex flex-col">
-                  <h4 className="font-medium text-[11px] mb-1 group-hover:text-primary transition-colors line-clamp-2 leading-tight">
+                
+                {/* Product Info Overlay (appears on hover) */}
+                <div className="absolute bottom-4 left-4 right-4 bg-white/60 backdrop-blur-sm rounded-xl p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <div className="text-xs font-medium line-clamp-1 mb-1">
                     {formatProductTitle(product.title)}
-                  </h4>
+                  </div>
+                  <div className="text-xs text-muted-foreground mb-1">
+                    {product.brand_name || 'Unknown Brand'}
+                  </div>
+                  <div className="text-xs font-semibold text-primary mb-3">
+                    {formatPrice(product.price_cents, product.currency)}
+                  </div>
                   
-                  <div className="flex items-center justify-between mt-auto">
-                    <span className="font-bold text-xs text-primary">
-                      {formatPrice(product.price_cents, product.currency)}
-                    </span>
-                    
-                    <Button
-                      size="sm"
-                      className="h-6 px-2 text-[10px] font-medium"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleShopNow(product.external_url);
-                      }}
-                    >
-                      Shop
-                    </Button>
+                  {/* Action button */}
+                  <div className="flex">
+                    {product.external_url && (
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleShopNow(product.external_url);
+                        }}
+                        className="flex-1 text-xs h-8"
+                      >
+                        Shop Now
+                      </Button>
+                    )}
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           </CarouselItem>
         ))}
       </CarouselContent>
