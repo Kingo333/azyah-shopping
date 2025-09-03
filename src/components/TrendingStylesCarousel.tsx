@@ -455,21 +455,19 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
                     {formatPrice(product.price_cents, product.currency)}
                   </div>
                   
-                  {/* Action button */}
-                  <div className="flex">
-                    {product.external_url && (
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleShopNow(product.external_url);
-                        }}
-                        className="flex-1 text-xs h-8"
-                      >
-                        Shop Now
-                      </Button>
-                    )}
+                  {/* Action buttons */}
+                  <div className="flex space-x-2">
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleShopNow(product.external_url);
+                      }}
+                      className="flex-1 text-xs h-8"
+                    >
+                      Shop Now
+                    </Button>
                   </div>
                 </div>
               </div>
