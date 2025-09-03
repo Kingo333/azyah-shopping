@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils';
 import type { TopCategory } from '@/lib/categories';
 
 // Import default category images
-import modestWearImage from '@/assets/category-modestwear-new.jpg';
+const modestWearImage = '/lovable-uploads/553f6cd6-f082-43bf-bba2-79e8d824e681.png';
 import clothingImage from '@/assets/category-clothing.jpg';
 import bagsImage from '@/assets/category-bags.jpg';
 import footwearImage from '@/assets/category-footwear.jpg';
