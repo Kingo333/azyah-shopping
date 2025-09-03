@@ -2901,10 +2901,6 @@ export type Database = {
         Args: { target_user_id: string }
         Returns: boolean
       }
-      validate_payment_access: {
-        Args: { payment_id_param: string }
-        Returns: boolean
-      }
       validate_payment_owner_access: {
         Args: { payment_user_id: string }
         Returns: boolean
