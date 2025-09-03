@@ -2844,15 +2844,6 @@ export type Database = {
         Args: { text_input: string }
         Returns: Database["public"]["Enums"]["gender_type"]
       }
-      log_admin_access_with_justification: {
-        Args: {
-          accessed_user_id: string
-          action_type: string
-          justification: string
-          table_name: string
-        }
-        Returns: undefined
-      }
       log_admin_payment_access: {
         Args: {
           accessed_user_id: string
