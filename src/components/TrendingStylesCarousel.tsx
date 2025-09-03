@@ -50,6 +50,7 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
           image_url,
           price_cents,
           currency,
+          external_url,
           brands:brand_id(name),
           retailers:retailer_id(name)
         `)
@@ -71,7 +72,7 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
         price_cents: product.price_cents,
         currency: product.currency || 'USD',
         brand_name: product.brands?.name || product.retailers?.name || 'ASOS',
-        external_url: null
+        external_url: product.external_url
       }));
     },
     staleTime: 1000 * 60 * 15, // 15 minutes
