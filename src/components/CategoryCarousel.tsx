@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils';
 import type { TopCategory } from '@/lib/categories';
 
 // Import default category images
-import modestWearImage from '@/assets/category-modestwear.jpg';
+import modestWearImage from '@/assets/category-modestwear-new.jpg';
 import clothingImage from '@/assets/category-clothing.jpg';
 import bagsImage from '@/assets/category-bags.jpg';
 import footwearImage from '@/assets/category-footwear.jpg';
@@ -144,7 +144,7 @@ const CategoryCard: React.FC<{
     data: products = []
   } = usePublicProducts(4, 0, category.slug);
   return <Card className={cn(
-      "group cursor-pointer transition-all duration-300 hover:shadow-lg border-0 bg-gradient-to-br from-card to-card/50 backdrop-blur-sm overflow-hidden h-40 md:h-48",
+      "group cursor-pointer transition-all duration-300 hover:shadow-lg border-0 bg-gradient-to-br from-card to-card/50 backdrop-blur-sm overflow-hidden h-32 md:h-36",
       isSelected ? "ring-2 ring-primary shadow-lg scale-[1.02]" : "hover:shadow-md hover:scale-[1.01]"
     )}>
       <CardContent className="p-0 relative h-full">
