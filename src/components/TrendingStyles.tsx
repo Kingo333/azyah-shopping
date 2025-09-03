@@ -162,31 +162,34 @@ const TrendingStyles: React.FC<TrendingStylesProps> = ({ limit = 6, showMore = t
 
   const handleShopNow = async (productId: string) => {
     try {
-      // For authenticated users, get full product data
-      if (user) {
-        const { data: product } = await supabase
-          .from('products')
-          .select('external_url')
-          .eq('id', productId)
-          .single();
+      // Get full product data
+      const { data: product } = await supabase
+        .from('products')
+        .select('external_url')
+        .eq('id', productId)
+        .single();
 
-        if (product?.external_url) {
-          window.open(product.external_url, '_blank', 'noopener,noreferrer');
-        } else {
-          toast({
-            title: "Shop link not available",
-            description: "This product doesn't have a shop link available.",
-            variant: "destructive"
+      if (product?.external_url) {
+        window.open(product.external_url, '_blank', 'noopener,noreferrer');
+        
+        // Track analytics if user is logged in
+        if (user) {
+          supabase.from('events').insert({
+            user_id: user.id,
+            event_type: 'trending_styles_shop_now',
+            event_data: { source: 'trending_styles' },
+            product_id: productId
           });
         }
       } else {
         toast({
-          title: "Authentication required",
-          description: "Please sign in to access shop links.",
+          title: "Shop link not available",
+          description: "This product doesn't have a shop link available.",
           variant: "destructive"
         });
       }
     } catch (error) {
+      console.error('Error opening shop link:', error);
       toast({
         title: "Error",
         description: "Failed to open shop link.",

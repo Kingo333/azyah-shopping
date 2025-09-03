@@ -184,6 +184,54 @@ export const AiStudioResultsPanel: React.FC<AiStudioResultsPanelProps> = ({
                             : ''
                         }`}
                         onClick={() => handleAssetClick(asset)}
+                        onContextMenu={(e) => {
+                          e.preventDefault();
+                          if (asset.asset_url) {
+                            const img = new Image();
+                            img.src = asset.asset_url;
+                            const newWindow = window.open('', '_blank');
+                            if (newWindow) {
+                              newWindow.document.write(`
+                                <html>
+                                  <head><title>AI Studio Result</title></head>
+                                  <body style="margin: 0; padding: 20px; background: black; display: flex; justify-content: center; align-items: center; min-height: 100vh;">
+                                    <img src="${asset.asset_url}" style="max-width: 100%; max-height: 100%; object-fit: contain;" />
+                                  </body>
+                                </html>
+                              `);
+                            }
+                          }
+                        }}
+                        onTouchStart={(e) => {
+                          const longPressTimer = setTimeout(() => {
+                            if (asset.asset_url) {
+                              const img = new Image();
+                              img.src = asset.asset_url;
+                              const newWindow = window.open('', '_blank');
+                              if (newWindow) {
+                                newWindow.document.write(`
+                                  <html>
+                                    <head><title>AI Studio Result</title></head>
+                                    <body style="margin: 0; padding: 20px; background: black; display: flex; justify-content: center; align-items: center; min-height: 100vh;">
+                                      <img src="${asset.asset_url}" style="max-width: 100%; max-height: 100%; object-fit: contain;" />
+                                    </body>
+                                  </html>
+                                `);
+                              }
+                            }
+                          }, 800);
+                          
+                          const cleanup = () => {
+                            clearTimeout(longPressTimer);
+                            e.target.removeEventListener('touchend', cleanup);
+                            e.target.removeEventListener('touchcancel', cleanup);
+                            e.target.removeEventListener('touchmove', cleanup);
+                          };
+                          
+                          e.target.addEventListener('touchend', cleanup);
+                          e.target.addEventListener('touchcancel', cleanup);
+                          e.target.addEventListener('touchmove', cleanup);
+                        }}
                       >
                         {asset.asset_url ? (
                           <img 
@@ -206,7 +254,7 @@ export const AiStudioResultsPanel: React.FC<AiStudioResultsPanelProps> = ({
                   ))}
                 </div>
                 <p className="text-xs text-muted-foreground mt-2 text-center">
-                  Tap and hold image to view full image
+                  Tap and hold image to view full size version
                 </p>
               </>
             ) : (
