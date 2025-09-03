@@ -216,4 +216,14 @@
   .premium-hover {
     @apply hover:scale-[1.02] transition-all duration-300 ease-out;
   }
+
+  /* Hide scrollbars */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
 }
