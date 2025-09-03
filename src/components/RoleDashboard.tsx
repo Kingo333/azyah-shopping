@@ -424,18 +424,6 @@ const RoleDashboard: React.FC = () => {
             </button>
           </div>
 
-          {/* Pills for Time Period */}
-          <div className="flex gap-1">
-            <button className="px-3 py-1.5 text-xs font-medium bg-primary text-primary-foreground rounded-full">
-              This Week
-            </button>
-            <button className="px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground rounded-full">
-              This Month
-            </button>
-            <button className="px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground rounded-full">
-              All Time
-            </button>
-          </div>
         </div>
 
         <Leaderboard type={activeLeaderboard} country={user?.user_metadata?.country} />
