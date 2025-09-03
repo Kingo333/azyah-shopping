@@ -272,14 +272,9 @@ const TrendingStyles: React.FC<TrendingStylesProps> = ({ limit = 6, showMore = t
                         <Button
                           size="sm"
                           variant="ghost"
-                          className={`h-8 w-8 p-0 text-white ${
-                            product.external_url 
-                              ? 'hover:text-green-400 hover:bg-green-400/20' 
-                              : 'opacity-50 cursor-not-allowed'
-                          }`}
-                          onClick={() => product.external_url && handleShopNow(product.id)}
+                          className="h-8 w-8 p-0 text-white hover:text-green-400 hover:bg-green-400/20"
+                          onClick={() => handleShopNow(product.id)}
                           disabled={!product.external_url}
-                          title={product.external_url ? 'Shop now' : 'Shop link not available'}
                         >
                           <ExternalLink className="h-4 w-4" />
                         </Button>
