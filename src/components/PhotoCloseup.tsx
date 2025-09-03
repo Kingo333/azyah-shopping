@@ -418,7 +418,7 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
             <div>
               <h1 className="text-base font-semibold mb-1">{product.title}</h1>
               <p className="text-muted-foreground text-sm mb-2">
-                {product.brand?.name || 'Unknown Brand'}
+                {product.brand?.name || product.retailer?.name || 'ASOS'}
               </p>
               <div className="text-lg font-bold text-primary">
                 {formatPrice(product.price_cents, product.currency)}
@@ -578,7 +578,7 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
               <div>
                 <h1 className="text-2xl font-semibold mb-2">{product.title}</h1>
                 <p className="text-muted-foreground mb-3">
-                  {product.brand?.name || 'Unknown Brand'}
+                  {product.brand?.name || product.retailer?.name || 'ASOS'}
                 </p>
                 <div className="text-2xl font-bold text-primary">
                   {formatPrice(product.price_cents, product.currency)}

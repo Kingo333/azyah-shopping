@@ -130,7 +130,7 @@ const SwipeCard = memo(({
             <div className="flex items-start justify-between gap-2">
               <div className="flex-1 min-w-0">
                 <h3 className="text-sm sm:text-base font-semibold line-clamp-1">{product.title}</h3>
-                <p className="text-xs text-muted-foreground line-clamp-1">{product.brands?.name || product.merchant_name}</p>
+                <p className="text-xs text-muted-foreground line-clamp-1">{product.brands?.name || product.merchant_name || 'ASOS'}</p>
               </div>
               <Button
                 variant="ghost"

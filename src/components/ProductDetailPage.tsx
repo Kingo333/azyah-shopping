@@ -145,7 +145,7 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
               <div className="md:hidden space-y-2 pt-2">
                 <h1 className="text-xl font-bold leading-tight">{product.title}</h1>
                 <p className="text-sm text-muted-foreground">
-                  {product.brand?.name || product.merchant_name || 'Unknown Brand'}
+                  {product.brand?.name || product.merchant_name || product.retailer?.name || 'ASOS'}
                 </p>
               </div>
 
@@ -154,7 +154,7 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                 <div className="space-y-2">
                   <h1 className="text-2xl lg:text-3xl font-bold leading-tight">{product.title}</h1>
                   <p className="text-lg text-muted-foreground">
-                    {product.brand?.name || product.merchant_name || 'Unknown Brand'}
+                    {product.brand?.name || product.merchant_name || product.retailer?.name || 'ASOS'}
                   </p>
                 </div>
               </div>

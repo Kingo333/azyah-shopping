@@ -50,7 +50,8 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
           image_url,
           price_cents,
           currency,
-          brands:brand_id(name)
+          brands:brand_id(name),
+          retailers:retailer_id(name)
         `)
         .eq('status', 'active')
         .not('title', 'is', null)
@@ -69,7 +70,7 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
         image_url: product.image_url || '/placeholder.svg',
         price_cents: product.price_cents,
         currency: product.currency || 'USD',
-        brand_name: product.brands?.name || '',
+        brand_name: product.brands?.name || product.retailers?.name || 'ASOS',
         external_url: null
       }));
     },
@@ -447,11 +448,8 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
                 
                 {/* Product Info Overlay (appears on hover) */}
                 <div className="absolute bottom-4 left-4 right-4 bg-white/60 backdrop-blur-sm rounded-xl p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                  <div className="text-xs font-medium line-clamp-1 mb-1">
-                    {formatProductTitle(product.title)}
-                  </div>
                   <div className="text-xs text-muted-foreground mb-1">
-                    {product.brand_name || 'Unknown Brand'}
+                    {product.brand_name || 'ASOS'}
                   </div>
                   <div className="text-xs font-semibold text-primary mb-3">
                     {formatPrice(product.price_cents, product.currency)}
