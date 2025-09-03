@@ -481,7 +481,7 @@ const RoleDashboard: React.FC = () => {
     />
       <div className="min-h-screen bg-background pb-32">
         {/* Header with hairline divider */}
-        <header className="px-4 pt-3 pb-2 border-b border-border/20">
+        <header className="px-4 pt-4 pb-4 border-b border-border/20 bg-background/80 backdrop-blur-sm sticky top-0 z-40">
           <DashboardHeader />
         </header>
 

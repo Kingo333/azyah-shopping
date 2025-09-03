@@ -44,22 +44,22 @@ const DashboardHeader: React.FC = () => {
       <div className="flex items-center gap-3">
         {/* Feedback Support Button */}
         <FeedbackModal userType={getUserType()}>
-          <Button variant="ghost" size="sm" className="h-8 px-3 hover:bg-primary/10 hover:scale-105 transition-all">
+          <Button variant="ghost" size="sm" className="h-8 px-3 hover:bg-primary/10 hover:scale-105 transition-all shadow-sm hover:shadow-md">
             <Info className="h-4 w-4 mr-1" />
             <span className="text-sm">Help</span>
           </Button>
         </FeedbackModal>
 
         {/* Theme Toggle */}
-        <Button variant="ghost" size="sm" onClick={handleThemeToggle} className="hover:bg-primary/10 hover:scale-105 transition-all">
+        <Button variant="ghost" size="sm" onClick={handleThemeToggle} className="hover:bg-primary/10 hover:scale-105 transition-all shadow-sm hover:shadow-md">
           {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
         </Button>
 
         {/* User Menu */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" className="flex items-center gap-3 hover:bg-primary/10 hover:scale-105 transition-all">
-              <Avatar className="h-8 w-8 border-2 border-white/20">
+            <Button variant="ghost" size="sm" className="flex items-center gap-3 hover:bg-primary/10 hover:scale-105 transition-all shadow-sm hover:shadow-md">
+              <Avatar className="h-8 w-8 border-2 border-white/20 shadow-sm">
                 <AvatarFallback className="text-sm bg-gradient-to-br from-primary/10 to-accent/10">
                   {getUserName().charAt(0).toUpperCase()}
                 </AvatarFallback>
