@@ -15,10 +15,11 @@ interface TrendingStyle {
   growth: number;
   recent_products: Array<{
     id: string;
-  title: string;
-  image_url: string;
-  price_cents: number;
-  currency: string;
+    title: string;
+    image_url: string;
+    price_cents: number;
+    currency: string;
+    external_url?: string;
   }>;
 }
 
@@ -273,6 +274,7 @@ const TrendingStyles: React.FC<TrendingStylesProps> = ({ limit = 6, showMore = t
                           variant="ghost"
                           className="h-8 w-8 p-0 text-white hover:text-green-400 hover:bg-green-400/20"
                           onClick={() => handleShopNow(product.id)}
+                          disabled={!product.external_url}
                         >
                           <ExternalLink className="h-4 w-4" />
                         </Button>
