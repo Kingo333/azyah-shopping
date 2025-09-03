@@ -238,7 +238,7 @@ const RoleDashboard: React.FC = () => {
             >
               <Sparkles className="h-4 w-4" />
               AI Studio
-              <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs px-1.5 py-0.5 rounded-full leading-none">
+              <span className="absolute -top-1 -right-1 bg-muted text-muted-foreground text-xs px-1.5 py-0.5 rounded-full leading-none">
                 New
               </span>
             </button>
@@ -249,10 +249,13 @@ const RoleDashboard: React.FC = () => {
             <TutorialTooltip content="Get personalized beauty advice from our AI consultant. Upload photos and receive tailored recommendations." feature="beauty-consultant">
               <button
                 onClick={() => navigate('/beauty-consultant')}
-                className="flex items-center gap-2 px-4 py-2 h-10 rounded-xl bg-background border border-border hover:bg-accent transition-colors font-medium text-sm whitespace-nowrap flex-shrink-0 min-w-fit"
+                className="relative flex items-center gap-2 px-4 py-2 h-10 rounded-xl bg-background border border-border hover:bg-accent transition-colors font-medium text-sm whitespace-nowrap flex-shrink-0 min-w-fit"
               >
                 <WandSparkles className="h-4 w-4" />
                 Beauty
+                <span className="absolute -top-1 -right-1 bg-muted text-muted-foreground text-xs px-1.5 py-0.5 rounded-full leading-none">
+                  New
+                </span>
               </button>
             </TutorialTooltip>
           )}
