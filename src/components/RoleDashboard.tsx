@@ -213,9 +213,6 @@ const RoleDashboard: React.FC = () => {
   }
   console.log('Rendering dashboard for user:', userProfile);
   const renderShopperDashboard = () => <div className="space-y-6">
-      {/* Premium Banner */}
-      <PremiumBanner />
-      
       {/* Quick Actions - Horizontal Pills */}
       <section className="px-4 pt-3">
         <div className="flex gap-2 overflow-x-auto pb-1 [-webkit-overflow-scrolling:touch] scrollbar-hide">
@@ -317,6 +314,14 @@ const RoleDashboard: React.FC = () => {
             </button>
           </TutorialTooltip>
 
+          {/* Upgrade Chip */}
+          <button
+            onClick={() => navigate('/upgrade')}
+            className="flex items-center gap-2 px-4 py-2 h-10 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-colors font-medium text-sm whitespace-nowrap flex-shrink-0 min-w-fit"
+          >
+            <Gift className="h-4 w-4" />
+            Upgrade
+          </button>
         </div>
       </section>
 
@@ -329,6 +334,8 @@ const RoleDashboard: React.FC = () => {
         <TrendingStylesCarousel limit={8} />
       </section>
 
+      {/* Compact Premium Access */}
+      <PremiumBanner />
 
       {/* Affiliate Hub Section */}
       <section className="px-4">
