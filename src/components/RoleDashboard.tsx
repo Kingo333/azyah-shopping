@@ -254,6 +254,19 @@ const RoleDashboard: React.FC = () => {
             </TutorialTooltip>
           )}
 
+          {/* Fashion Feed Chip - when beauty is not enabled */}
+          {!isEnabled('ai_beauty_consultant') && (
+            <TutorialTooltip content="Connect with the fashion community. Share your style and discover what others are wearing." feature="fashion-feed">
+              <button
+                onClick={() => navigate('/fashion-feed')}
+                className="flex items-center gap-2 px-4 py-2 h-10 rounded-xl bg-background border border-border hover:bg-accent transition-colors font-medium text-sm whitespace-nowrap flex-shrink-0"
+              >
+                <Users className="h-4 w-4" />
+                Feed
+              </button>
+            </TutorialTooltip>
+          )}
+
           {/* Wishlist Chip */}
           <TutorialTooltip content="Save items you love to your wishlist. Keep track of favorites and shop them later when you're ready." feature="wishlist">
             <button
@@ -273,6 +286,27 @@ const RoleDashboard: React.FC = () => {
             >
               <Search className="h-4 w-4" />
               Explore
+            </button>
+          </TutorialTooltip>
+
+          {/* UGC Collab Chip */}
+          <TutorialTooltip content="Collaborate with brands on user-generated content. Apply for brand partnerships and create sponsored content." feature="ugc-collab">
+            <div className="flex-shrink-0">
+              <UGCCollabButton />
+            </div>
+          </TutorialTooltip>
+
+          {/* Toy Replica Chip */}
+          <TutorialTooltip content="Create AI-generated toy replicas of fashion items. Upload photos and get miniature versions for play or display." feature="toy-replica">
+            <button
+              onClick={handleToyReplicaClick}
+              className="relative flex items-center gap-2 px-4 py-2 h-10 rounded-xl bg-background border border-border hover:bg-accent transition-colors font-medium text-sm whitespace-nowrap flex-shrink-0"
+            >
+              <Blocks className="h-4 w-4" />
+              Toy AI
+              <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs px-1.5 py-0.5 rounded-full leading-none">
+                AI
+              </span>
             </button>
           </TutorialTooltip>
 
