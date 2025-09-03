@@ -72,8 +72,14 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ type = 'global', country }) =
 
       // Calculate scores for each user
       const scoredUsers: LeaderboardUser[] = [];
+      const processedUserIds = new Set<string>();
 
       for (const user of users || []) {
+        // Skip if we've already processed this user (prevent duplicates)
+        if (processedUserIds.has(user.id)) {
+          continue;
+        }
+        processedUserIds.add(user.id);
         // Get post likes given by this user
         const { data: postLikes } = await supabase
           .from('post_likes')

@@ -220,7 +220,7 @@ const RoleDashboard: React.FC = () => {
           <TutorialTooltip content="Swipe through fashion items to discover your style. Swipe right to like items and build your personal taste profile." feature="swipe">
             <button
               onClick={() => navigate('/swipe')}
-              className="flex items-center gap-2 px-4 py-2 h-10 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-colors font-medium text-sm whitespace-nowrap flex-shrink-0"
+              className="flex items-center gap-2 px-4 py-2 h-10 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-colors font-medium text-sm whitespace-nowrap flex-shrink-0 min-w-fit"
             >
               <Heart className="h-4 w-4" />
               Swipe
@@ -231,7 +231,7 @@ const RoleDashboard: React.FC = () => {
           <TutorialTooltip content="Create AI-generated fashion content and try-on experiences. Upload photos and use AI to enhance your style." feature="ai-studio">
             <button
               onClick={() => setAiStudioModalOpen(true)}
-              className="relative flex items-center gap-2 px-4 py-2 h-10 rounded-xl bg-background border border-border hover:bg-accent transition-colors font-medium text-sm whitespace-nowrap flex-shrink-0"
+              className="relative flex items-center gap-2 px-4 py-2 h-10 rounded-xl bg-background border border-border hover:bg-accent transition-colors font-medium text-sm whitespace-nowrap flex-shrink-0 min-w-fit"
             >
               <Sparkles className="h-4 w-4" />
               AI Studio
@@ -246,7 +246,7 @@ const RoleDashboard: React.FC = () => {
             <TutorialTooltip content="Get personalized beauty advice from our AI consultant. Upload photos and receive tailored recommendations." feature="beauty-consultant">
               <button
                 onClick={() => navigate('/beauty-consultant')}
-                className="flex items-center gap-2 px-4 py-2 h-10 rounded-xl bg-background border border-border hover:bg-accent transition-colors font-medium text-sm whitespace-nowrap flex-shrink-0"
+                className="flex items-center gap-2 px-4 py-2 h-10 rounded-xl bg-background border border-border hover:bg-accent transition-colors font-medium text-sm whitespace-nowrap flex-shrink-0 min-w-fit"
               >
                 <WandSparkles className="h-4 w-4" />
                 Beauty
@@ -259,7 +259,7 @@ const RoleDashboard: React.FC = () => {
             <TutorialTooltip content="Connect with the fashion community. Share your style and discover what others are wearing." feature="fashion-feed">
               <button
                 onClick={() => navigate('/fashion-feed')}
-                className="flex items-center gap-2 px-4 py-2 h-10 rounded-xl bg-background border border-border hover:bg-accent transition-colors font-medium text-sm whitespace-nowrap flex-shrink-0"
+                className="flex items-center gap-2 px-4 py-2 h-10 rounded-xl bg-background border border-border hover:bg-accent transition-colors font-medium text-sm whitespace-nowrap flex-shrink-0 min-w-fit"
               >
                 <Users className="h-4 w-4" />
                 Feed
@@ -271,7 +271,7 @@ const RoleDashboard: React.FC = () => {
           <TutorialTooltip content="Save items you love to your wishlist. Keep track of favorites and shop them later when you're ready." feature="wishlist">
             <button
               onClick={() => navigate('/wishlist')}
-              className="flex items-center gap-2 px-4 py-2 h-10 rounded-xl bg-background border border-border hover:bg-accent transition-colors font-medium text-sm whitespace-nowrap flex-shrink-0"
+              className="flex items-center gap-2 px-4 py-2 h-10 rounded-xl bg-background border border-border hover:bg-accent transition-colors font-medium text-sm whitespace-nowrap flex-shrink-0 min-w-fit"
             >
               <ShoppingBag className="h-4 w-4" />
               Wishlist
@@ -282,7 +282,7 @@ const RoleDashboard: React.FC = () => {
           <TutorialTooltip content="Search and discover products from top brands. Use filters to find exactly what you're looking for." feature="explore">
             <button
               onClick={() => navigate('/explore')}
-              className="flex items-center gap-2 px-4 py-2 h-10 rounded-xl bg-background border border-border hover:bg-accent transition-colors font-medium text-sm whitespace-nowrap flex-shrink-0"
+              className="flex items-center gap-2 px-4 py-2 h-10 rounded-xl bg-background border border-border hover:bg-accent transition-colors font-medium text-sm whitespace-nowrap flex-shrink-0 min-w-fit"
             >
               <Search className="h-4 w-4" />
               Explore
@@ -291,16 +291,20 @@ const RoleDashboard: React.FC = () => {
 
           {/* UGC Collab Chip */}
           <TutorialTooltip content="Collaborate with brands on user-generated content. Apply for brand partnerships and create sponsored content." feature="ugc-collab">
-            <div className="flex-shrink-0">
-              <UGCCollabButton />
-            </div>
+            <button
+              onClick={() => {/* Handle UGC Collab */}}
+              className="flex items-center gap-2 px-4 py-2 h-10 rounded-xl bg-background border border-border hover:bg-accent transition-colors font-medium text-sm whitespace-nowrap flex-shrink-0 min-w-fit"
+            >
+              <Users className="h-4 w-4" />
+              UGC Collab
+            </button>
           </TutorialTooltip>
 
           {/* Toy Replica Chip */}
           <TutorialTooltip content="Create AI-generated toy replicas of fashion items. Upload photos and get miniature versions for play or display." feature="toy-replica">
             <button
               onClick={handleToyReplicaClick}
-              className="relative flex items-center gap-2 px-4 py-2 h-10 rounded-xl bg-background border border-border hover:bg-accent transition-colors font-medium text-sm whitespace-nowrap flex-shrink-0"
+              className="relative flex items-center gap-2 px-4 py-2 h-10 rounded-xl bg-background border border-border hover:bg-accent transition-colors font-medium text-sm whitespace-nowrap flex-shrink-0 min-w-fit"
             >
               <Blocks className="h-4 w-4" />
               Toy AI
@@ -313,7 +317,7 @@ const RoleDashboard: React.FC = () => {
           {/* Upgrade Chip */}
           <button
             onClick={() => navigate('/upgrade')}
-            className="flex items-center gap-2 px-4 py-2 h-10 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-colors font-medium text-sm whitespace-nowrap flex-shrink-0"
+            className="flex items-center gap-2 px-4 py-2 h-10 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-colors font-medium text-sm whitespace-nowrap flex-shrink-0 min-w-fit"
           >
             <Gift className="h-4 w-4" />
             Upgrade
@@ -328,6 +332,29 @@ const RoleDashboard: React.FC = () => {
           <Button variant="ghost" size="sm">View All</Button>
         </div>
         <TrendingStylesCarousel limit={8} />
+      </section>
+
+      {/* Compact Premium Access */}
+      <PremiumBanner />
+
+      {/* Affiliate Hub Section */}
+      <section className="px-4">
+        <div className="rounded-2xl border bg-card shadow-sm">
+          <Collapsible open={!isAffiliateMinimized} onOpenChange={open => setIsAffiliateMinimized(!open)}>
+            <CollapsibleTrigger asChild>
+              <button className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors">
+                <div className="flex items-center gap-3">
+                  <Gift className="h-5 w-5" />
+                  <h3 className="font-semibold text-left">Affiliate Hub</h3>
+                </div>
+                {isAffiliateMinimized ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+              </button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="px-4 pb-4">
+              <AffiliateHub showTitle={false} />
+            </CollapsibleContent>
+          </Collapsible>
+        </div>
       </section>
 
       {/* My Closets Section */}
@@ -414,28 +441,6 @@ const RoleDashboard: React.FC = () => {
         <Leaderboard type={activeLeaderboard} country={user?.user_metadata?.country} />
       </section>
 
-      {/* Affiliate Hub Section */}
-      <section className="px-4">
-        <div className="rounded-2xl border bg-card shadow-sm">
-          <Collapsible open={!isAffiliateMinimized} onOpenChange={open => setIsAffiliateMinimized(!open)}>
-            <CollapsibleTrigger asChild>
-              <button className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors">
-                <div className="flex items-center gap-3">
-                  <Gift className="h-5 w-5" />
-                  <h3 className="font-semibold text-left">Affiliate Hub</h3>
-                </div>
-                {isAffiliateMinimized ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
-              </button>
-            </CollapsibleTrigger>
-            <CollapsibleContent className="px-4 pb-4">
-              <AffiliateHub showTitle={false} />
-            </CollapsibleContent>
-          </Collapsible>
-        </div>
-      </section>
-
-      {/* Compact Premium Access */}
-      <PremiumBanner />
     </div>;
   const renderBrandDashboard = () => <div className="space-y-4">
 
