@@ -53,6 +53,19 @@ self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
+  // CRITICAL FIX: Never intercept Supabase requests
+  // All *.supabase.co requests must go directly to network
+  if (url.hostname.includes('supabase.co')) {
+    event.respondWith(fetch(request));
+    return;
+  }
+
+  // Never intercept auth-related requests
+  if (url.pathname.includes('/auth/') || url.pathname.includes('auth/v1')) {
+    event.respondWith(fetch(request));
+    return;
+  }
+
   // Handle navigation requests
   if (request.mode === 'navigate') {
     event.respondWith(

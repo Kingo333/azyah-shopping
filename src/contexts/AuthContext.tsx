@@ -107,20 +107,60 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password
-    });
+    try {
+      setLoading(true);
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
 
-    if (error) {
+      if (error) {
+        let errorMessage = error.message;
+        let errorTitle = "Login Failed";
+        
+        // Handle specific authentication errors
+        if (error.message.includes('Failed to fetch') || error.message.includes('AuthRetryableFetchError')) {
+          errorTitle = "Connection Error";
+          errorMessage = "Unable to connect to authentication service. Please check your internet connection and try again.";
+        } else if (error.message.includes('Invalid login credentials')) {
+          errorTitle = "Invalid Credentials";
+          errorMessage = "Incorrect email or password. Please check your credentials and try again.";
+        } else if (error.message.includes('Email not confirmed')) {
+          errorTitle = "Email Not Verified";
+          errorMessage = "Please check your email and click the verification link before signing in.";
+        } else if (error.message.includes('network') || error.message.includes('fetch')) {
+          errorTitle = "Network Error";
+          errorMessage = "Connection failed. Please check your internet connection and try again.";
+        }
+        
+        toast({
+          title: errorTitle,
+          description: errorMessage,
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Welcome back!",
+          description: "You have been successfully logged in."
+        });
+      }
+
+      return { error };
+    } catch (err) {
+      const networkError = {
+        message: "Network connection failed. Please check your internet connection and try again."
+      };
+      
       toast({
-        title: "Login Failed",
-        description: error.message,
+        title: "Connection Error",
+        description: networkError.message,
         variant: "destructive"
       });
+      
+      return { error: networkError };
+    } finally {
+      setLoading(false);
     }
-
-    return { error };
   };
 
   const signOut = async () => {
