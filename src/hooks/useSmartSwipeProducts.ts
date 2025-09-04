@@ -470,18 +470,35 @@ export const useSmartSwipeProducts = ({
           setProducts(randomProducts);
         }
       } else {
-        console.log('🔒 No user or no products - showing random selection');
+        console.log('🔒 No user or no products - showing random selection for anonymous user');
         const randomProducts = shuffleArray(transformedProducts).slice(0, 50);
+        console.log('✅ Anonymous user products:', {
+          total: randomProducts.length,
+          internal: randomProducts.filter(p => !p.brand?.name?.includes('ASOS')).length,
+          asos: randomProducts.filter(p => p.brand?.name?.includes('ASOS')).length
+        });
         setProducts(randomProducts);
       }
 
     } catch (error: any) {
-      console.error("Error fetching smart swipe products:", error.message);
-      toast({
-        title: "Error",
-        description: "Failed to fetch products. Please try again.",
-        variant: "destructive"
-      });
+      console.error("Error fetching smart swipe products:", error);
+      
+      // More specific error handling for anonymous users
+      if (error.message?.includes('Failed to fetch') || error.code === 'PGRST301') {
+        console.log('Network/RLS error - may be anonymous access issue');
+        toast({
+          title: "Connection Error",
+          description: "Unable to load products. Please check your connection or try signing in.",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to fetch products. Please try again.",
+          variant: "destructive"
+        });
+      }
+      setProducts([]);
     } finally {
       setIsLoading(false);
     }

@@ -365,6 +365,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "cart_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_landing_public"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "cart_items_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
@@ -811,6 +818,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_landing_public"
             referencedColumns: ["id"]
           },
           {
@@ -1462,6 +1476,13 @@ export type Database = {
             referencedRelation: "products"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "post_products_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_landing_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       posts: {
@@ -1903,6 +1924,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "swipes_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_landing_public"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "swipes_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
@@ -1990,6 +2018,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tryon_jobs_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_landing_public"
             referencedColumns: ["id"]
           },
         ]
@@ -2244,10 +2279,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "wishlist_items_product_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_landing_public"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "wishlist_items_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wishlist_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_landing_public"
             referencedColumns: ["id"]
           },
           {
@@ -2323,6 +2372,37 @@ export type Database = {
           product_id: string | null
         }
         Relationships: []
+      }
+      products_landing_public: {
+        Row: {
+          brand_id: string | null
+          brand_logo: string | null
+          brand_name: string | null
+          brand_slug: string | null
+          category_name: string | null
+          category_slug: Database["public"]["Enums"]["category_type"] | null
+          created_at: string | null
+          id: string | null
+          retailer_id: string | null
+          status: Database["public"]["Enums"]["product_status"] | null
+          title: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "products_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "retailers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Functions: {

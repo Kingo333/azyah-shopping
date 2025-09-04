@@ -53,40 +53,76 @@ const Auth = () => {
   const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
-    const formData = new FormData(e.currentTarget);
-    const email = formData.get('email') as string;
-    const password = formData.get('password') as string;
-    const {
-      error
-    } = await signIn(email, password);
-    if (!error) {
-      // Let the auth state change handler redirect to appropriate dashboard
-      // The user role will be available in the session after sign in
+    
+    try {
+      const formData = new FormData(e.currentTarget);
+      const email = formData.get('email') as string;
+      const password = formData.get('password') as string;
+      
+      const { error } = await signIn(email, password);
+      
+      if (error) {
+        console.error('Sign in error:', error);
+        toast({
+          title: "Login Failed",
+          description: error.message || "Failed to sign in. Please try again.",
+          variant: "destructive"
+        });
+      }
+    } catch (err: any) {
+      console.error('Sign in exception:', err);
+      toast({
+        title: "Login Failed",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
   const handleSignUp = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
-    const formData = new FormData(e.currentTarget);
-    const email = formData.get('email') as string;
-    const password = formData.get('password') as string;
-    const name = formData.get('name') as string;
-    if (!selectedRole) {
+    
+    try {
+      const formData = new FormData(e.currentTarget);
+      const email = formData.get('email') as string;
+      const password = formData.get('password') as string;
+      const name = formData.get('name') as string;
+      
+      if (!selectedRole) {
+        toast({
+          title: "Role Required",
+          description: "Please select your role to continue.",
+          variant: "destructive"
+        });
+        setIsLoading(false);
+        return;
+      }
+      
+      const { error } = await signUp(email, password, {
+        name,
+        role: selectedRole
+      });
+      
+      if (error) {
+        console.error('Sign up error:', error);
+        toast({
+          title: "Registration Failed",
+          description: error.message || "Failed to create account. Please try again.",
+          variant: "destructive"
+        });
+      }
+    } catch (err: any) {
+      console.error('Sign up exception:', err);
+      toast({
+        title: "Registration Failed", 
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
       setIsLoading(false);
-      return;
     }
-    const {
-      error
-    } = await signUp(email, password, {
-      name,
-      role: selectedRole
-    });
-    if (!error) {
-      // Let the auth state change handler redirect to appropriate dashboard
-      // The user role is set in metadata during signup
-    }
-    setIsLoading(false);
   };
   const handleSignupFormChange = (field: string, value: string) => {
     setSignupForm(prev => ({
