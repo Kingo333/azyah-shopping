@@ -1,5 +1,14 @@
-const CACHE_NAME = 'azyah-v2';
-const OFFLINE_CACHE = 'azyah-offline-v2';
+// ⬆⬆⬆ INCREMENT THIS ON EVERY SW CHANGE
+const CACHE_VERSION = 'v6';
+const CACHE_NAME = 'azyah-' + CACHE_VERSION;
+const OFFLINE_CACHE = 'azyah-offline-' + CACHE_VERSION;
+
+// Hosts to never intercept (bypass caching & respondWith)
+const SUPABASE_HOSTS = [
+  'api.azyahstyle.com', // our custom domain
+  'supabase.co',        // safety, in case any URL still uses the default
+  'supabase.in'
+];
 
 // Static assets to cache
 const STATIC_ASSETS = [
@@ -9,32 +18,28 @@ const STATIC_ASSETS = [
   '/marketing/azyah-logo.png'
 ];
 
-// API endpoints to cache
-const API_CACHE_PATTERNS = [
-  /\/api\/products/,
-  /\/api\/categories/,
-  /\/api\/brands/
-];
-
 // Install event - cache static assets
 self.addEventListener('install', (event) => {
   console.log('Service Worker installing...');
+  // Make the new SW take control ASAP on next load
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
         console.log('Caching static assets');
         return cache.addAll(STATIC_ASSETS);
       })
-      .then(() => self.skipWaiting())
   );
 });
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
   console.log('Service Worker activating...');
+  // Claim clients so the new SW is active immediately
   event.waitUntil(
-    caches.keys()
-      .then((cacheNames) => {
+    Promise.all([
+      self.clients.claim(),
+      caches.keys().then((cacheNames) => {
         return Promise.all(
           cacheNames.map((cacheName) => {
             if (cacheName !== CACHE_NAME && cacheName !== OFFLINE_CACHE) {
@@ -44,90 +49,49 @@ self.addEventListener('activate', (event) => {
           })
         );
       })
-      .then(() => self.clients.claim())
+    ])
   );
 });
 
 // Fetch event - handle requests with cache strategies
 self.addEventListener('fetch', (event) => {
-  const { request } = event;
-  const url = new URL(request.url);
+  const url = new URL(event.request.url);
 
-  // CRITICAL FIX: Never intercept Supabase requests
-  // All *.supabase.co requests must go directly to network
-  if (url.hostname.includes('supabase.co')) {
-    event.respondWith(fetch(request));
-    return;
+  // 1) BYPASS Supabase (and any other API hosts we listed)
+  if (SUPABASE_HOSTS.some(h => url.hostname.endsWith(h))) {
+    return; // Do NOT call event.respondWith – let the network handle it
   }
 
-  // Never intercept auth-related requests
-  if (url.pathname.includes('/auth/') || url.pathname.includes('auth/v1')) {
-    event.respondWith(fetch(request));
-    return;
+  // 2) Only cache GET requests for our own origin (HTML/CSS/JS/images)
+  const isGET = event.request.method === 'GET';
+  const isSameOrigin = url.origin === self.location.origin;
+
+  if (!isGET || !isSameOrigin) {
+    return; // don't cache cross-origin or non-GET
   }
 
-  // Handle navigation requests
-  if (request.mode === 'navigate') {
+  // 3) Network-first for HTML; cache-first for static assets (simple example)
+  if (event.request.mode === 'navigate') {
     event.respondWith(
-      fetch(request)
-        .catch(() => {
-          return caches.match('/') || caches.match('/index.html');
-        })
+      fetch(event.request).then((res) => {
+        const resClone = res.clone();
+        caches.open('html-' + CACHE_VERSION).then(cache => cache.put(event.request, resClone));
+        return res;
+      }).catch(() => caches.match(event.request))
     );
     return;
   }
 
-  // Handle API requests with network-first strategy
-  if (API_CACHE_PATTERNS.some(pattern => pattern.test(url.pathname))) {
-    event.respondWith(
-      fetch(request)
-        .then((response) => {
-          if (response.ok) {
-            const responseClone = response.clone();
-            caches.open(CACHE_NAME)
-              .then((cache) => {
-                cache.put(request, responseClone);
-              });
-          }
-          return response;
-        })
-        .catch(() => {
-          return caches.match(request);
-        })
-    );
-    return;
-  }
-
-  // Handle image requests with cache-first strategy
-  if (request.destination === 'image') {
-    event.respondWith(
-      caches.match(request)
-        .then((cachedResponse) => {
-          if (cachedResponse) {
-            return cachedResponse;
-          }
-          return fetch(request)
-            .then((response) => {
-              if (response.ok) {
-                const responseClone = response.clone();
-                caches.open(CACHE_NAME)
-                  .then((cache) => {
-                    cache.put(request, responseClone);
-                  });
-              }
-              return response;
-            });
-        })
-    );
-    return;
-  }
-
-  // Handle other requests with cache-first strategy
+  // Static assets (css/js/img) cache-first
   event.respondWith(
-    caches.match(request)
-      .then((cachedResponse) => {
-        return cachedResponse || fetch(request);
-      })
+    caches.match(event.request).then((cached) => {
+      if (cached) return cached;
+      return fetch(event.request).then((res) => {
+        const resClone = res.clone();
+        caches.open('static-' + CACHE_VERSION).then(cache => cache.put(event.request, resClone));
+        return res;
+      });
+    })
   );
 });
 
