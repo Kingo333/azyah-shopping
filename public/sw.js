@@ -1,5 +1,5 @@
 // Bump this any time you change the SW so all devices get the update.
-const CACHE_VERSION = 'v7';
+const CACHE_VERSION = 'v8';
 
 // Hosts we NEVER intercept (let the browser hit the network directly).
 const BYPASS_HOSTS = [

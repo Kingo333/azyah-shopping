@@ -43,6 +43,7 @@ import RetailerPortal from './pages/RetailerPortal';
 import RetailerBrandDetail from './pages/RetailerBrandDetail';
 import NotFound from './pages/NotFound';
 import PhotoCloseup from './components/PhotoCloseup';
+import { DebugHealthPage } from './components/DebugHealthPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -182,6 +183,7 @@ function App() {
                   <Route path="/terms" element={<Terms />} />
                   <Route path="/privacy" element={<Privacy />} />
                   <Route path="/install" element={<Install />} />
+                  <Route path="/debug/health" element={<DebugHealthPage />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </Router>

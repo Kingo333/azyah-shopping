@@ -11,7 +11,7 @@ const corsHeaders = {
 // Enhanced security headers
 const securityHeaders = {
   ...corsHeaders,
-  'Content-Security-Policy': "default-src 'self'; connect-src 'self' https://klwolsopucgswhtdlsps.supabase.co https://api.ziina.com;",
+  'Content-Security-Policy': "default-src 'self'; connect-src 'self' https://api.azyahstyle.com https://api.ziina.com;",
   'X-Frame-Options': 'DENY',
   'X-Content-Type-Options': 'nosniff',
   'Referrer-Policy': 'strict-origin-when-cross-origin',

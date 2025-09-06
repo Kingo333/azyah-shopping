@@ -38,8 +38,8 @@ serve(async (req) => {
       throw new Error('Could not extract project ID from Supabase URL');
     }
 
-    // Construct webhook URL
-    const webhookUrl = `https://${projectId}.supabase.co/functions/v1/payment-webhook`;
+    // Construct webhook URL using the proxy domain
+    const webhookUrl = `https://api.azyahstyle.com/functions/v1/payment-webhook`;
     
     console.log('Webhook URL:', webhookUrl);
     console.log('Using webhook secret:', webhookSecret ? 'Set' : 'Not set');

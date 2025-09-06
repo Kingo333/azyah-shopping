@@ -4,8 +4,9 @@ export const clearInvalidSession = async () => {
   try {
     console.log('Clearing invalid session...');
     
-    // Clear localStorage
-    localStorage.removeItem('sb-klwolsopucgswhtdlsps-auth-token');
+    // Clear localStorage - use dynamic project ID from env
+    const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID || 'klwolsopucgswhtdlsps';
+    localStorage.removeItem(`sb-${projectId}-auth-token`);
     
     // Force sign out
     await supabase.auth.signOut();
