@@ -209,6 +209,23 @@ export const AiStudioResultsPanel: React.FC<AiStudioResultsPanelProps> = ({
                       {selectedAssets.length} selected
                     </span>
                     <Button 
+                      onClick={() => {
+                        selectedAssets.forEach(assetId => {
+                          const asset = assets.find(a => a.id === assetId);
+                          if (asset?.asset_url) {
+                            downloadImage(asset.asset_url, `ai-result-${asset.id}.png`);
+                          }
+                        });
+                      }} 
+                      size="sm" 
+                      variant="outline" 
+                      className="h-6 text-xs"
+                      disabled={selectedAssets.length === 0}
+                    >
+                      <Download className="h-3 w-3 mr-1" />
+                      Download
+                    </Button>
+                    <Button 
                       onClick={handleDeleteSelected} 
                       size="sm" 
                       variant="destructive" 
@@ -254,65 +271,6 @@ export const AiStudioResultsPanel: React.FC<AiStudioResultsPanelProps> = ({
                             : ''
                         }`}
                         onClick={() => handleAssetClick(asset)}
-                        onContextMenu={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          if (asset.asset_url) {
-                            openFullSizeImage(asset.asset_url);
-                          }
-                        }}
-                        onTouchStart={(e) => {
-                          if (!asset.asset_url) return;
-                          
-                          let longPressTimer: NodeJS.Timeout;
-                          let hasMoved = false;
-                          
-                          const startTouch = e.touches[0];
-                          const startX = startTouch.clientX;
-                          const startY = startTouch.clientY;
-                          
-                          const handleTouchMove = (moveEvent: TouchEvent) => {
-                            if (moveEvent.touches.length > 0) {
-                              const moveTouch = moveEvent.touches[0];
-                              const deltaX = Math.abs(moveTouch.clientX - startX);
-                              const deltaY = Math.abs(moveTouch.clientY - startY);
-                              
-                              if (deltaX > 15 || deltaY > 15) {
-                                hasMoved = true;
-                                clearTimeout(longPressTimer);
-                              }
-                            }
-                          };
-                          
-                          const handleTouchEnd = (endEvent: TouchEvent) => {
-                            clearTimeout(longPressTimer);
-                            cleanup();
-                            
-                            // If no movement and quick tap, handle normal click
-                            if (!hasMoved && endEvent.timeStamp - e.timeStamp < 300) {
-                              handleAssetClick(asset);
-                            }
-                          };
-                          
-                          const cleanup = () => {
-                            clearTimeout(longPressTimer);
-                            document.removeEventListener('touchend', handleTouchEnd);
-                            document.removeEventListener('touchcancel', cleanup);
-                            document.removeEventListener('touchmove', handleTouchMove);
-                          };
-                          
-                          // Set up long press timer
-                          longPressTimer = setTimeout(() => {
-                            if (!hasMoved && asset.asset_url) {
-                              openFullSizeImage(asset.asset_url);
-                              cleanup();
-                            }
-                          }, 600);
-                          
-                          document.addEventListener('touchmove', handleTouchMove, { passive: false });
-                          document.addEventListener('touchend', handleTouchEnd);
-                          document.addEventListener('touchcancel', cleanup);
-                        }}
                       >
                         {asset.asset_url ? (
                           <img 
@@ -335,7 +293,7 @@ export const AiStudioResultsPanel: React.FC<AiStudioResultsPanelProps> = ({
                   ))}
                 </div>
                 <p className="text-xs text-muted-foreground mt-2 text-center">
-                  Tap and hold image to view full size version
+                  Tap "Select" to download or delete images
                 </p>
               </>
             ) : (
