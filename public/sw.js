@@ -1,11 +1,9 @@
 // Bump this any time you change the SW so all devices get the update.
-const CACHE_VERSION = 'v8';
+const CACHE_VERSION = 'v9';
 
 // Hosts we NEVER intercept (let the browser hit the network directly).
 const BYPASS_HOSTS = [
   'api.azyahstyle.com', // our Supabase custom domain
-  'supabase.co',        // safeguard in case any old URLs remain
-  'supabase.in'
 ];
 
 self.addEventListener('install', (event) => {
