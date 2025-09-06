@@ -115,7 +115,7 @@ const BulkAsosImportManager: React.FC = () => {
     try {
       // Use GET request by making a direct fetch call to the edge function
       const session = await supabase.auth.getSession();
-      const response = await fetch(`https://klwolsopucgswhtdlsps.supabase.co/functions/v1/import-asos-async?jobId=${jobId}`, {
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/import-asos-async?jobId=${jobId}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${session.data.session?.access_token}`,

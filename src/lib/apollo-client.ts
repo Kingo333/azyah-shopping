@@ -2,7 +2,7 @@ import { ApolloClient, InMemoryCache, createHttpLink } from '@apollo/client';
 
 // Simplified Apollo client for REST-like GraphQL queries
 const httpLink = createHttpLink({
-  uri: `https://klwolsopucgswhtdlsps.supabase.co/graphql/v1`,
+  uri: `${import.meta.env.VITE_SUPABASE_URL}/graphql/v1`,
   headers: {
     apikey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtsd29sc29wdWNnc3dodGRsc3BzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQyNTQ4NTIsImV4cCI6MjA2OTgzMDg1Mn0.t1GFgR9xiIh7PBmoYs_xKLi1fF1iLTF6pqMlLMHowHQ",
   }

@@ -57,7 +57,7 @@ export function PaymentStatus() {
     },
     {
       label: "Webhook URL",
-      url: `https://klwolsopucgswhtdlsps.supabase.co/functions/v1/payment-webhook`,
+      url: `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/payment-webhook`,
       status: "configured"
     }
   ];

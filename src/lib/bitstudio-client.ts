@@ -49,7 +49,7 @@ export class BitStudioClient {
       console.log('[BitStudioClient] FormData prepared for upload');
 
       // Use the Supabase Functions URL for upload
-      const uploadUrl = `https://klwolsopucgswhtdlsps.supabase.co/functions/v1/bitstudio-upload`;
+      const uploadUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/bitstudio-upload`;
       console.log('[BitStudioClient] Upload URL:', uploadUrl);
 
       const response = await fetch(uploadUrl, {
@@ -98,7 +98,7 @@ export class BitStudioClient {
     }
 
     // Call status function with image ID in URL path (BitStudio expects GET /images/{id})
-    const statusUrl = `https://klwolsopucgswhtdlsps.supabase.co/functions/v1/bitstudio-status/${id}`;
+    const statusUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/bitstudio-status/${id}`;
     console.log('[BitStudioClient] Status URL:', statusUrl);
 
     const response = await fetch(statusUrl, {
