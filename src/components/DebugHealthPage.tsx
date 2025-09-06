@@ -31,12 +31,12 @@ export const DebugHealthPage: React.FC = () => {
     },
     {
       name: 'Storage Health',
-      endpoint: '/storage/v1/bucket',
+      endpoint: '/storage/v1/buckets',
       icon: <Database className="h-4 w-4" />
     },
     {
       name: 'Functions Health',
-      endpoint: '/functions/v1/health',
+      endpoint: '/functions/v1/',
       icon: <Wifi className="h-4 w-4" />
     }
   ];
