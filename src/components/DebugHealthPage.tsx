@@ -4,8 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { RefreshCw, Wifi, Database, Key, Trash2 } from 'lucide-react';
-import { NetworkVerification } from './NetworkVerification';
-import { supabase } from '@/integrations/supabase/client';
 
 interface HealthCheckResult {
   endpoint: string;
@@ -45,7 +43,7 @@ export const DebugHealthPage: React.FC = () => {
 
   const runHealthCheck = async () => {
     setIsRunning(true);
-    const baseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const baseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://api.azyahstyle.com';
     const apiKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
     
     console.log('Health check using base URL:', baseUrl);
@@ -100,18 +98,11 @@ export const DebugHealthPage: React.FC = () => {
   };
 
   const resetApp = async () => {
-    if (!confirm('This will clear all app data and reload the page. Continue?')) {
-      return;
-    }
-    
     try {
-      console.log('🔄 Resetting app...');
-      
-      // Unregister all service workers
+      // Unregister service worker
       if ('serviceWorker' in navigator) {
         const registrations = await navigator.serviceWorker.getRegistrations();
         for (const registration of registrations) {
-          console.log('Unregistering SW:', registration.scope);
           await registration.unregister();
         }
       }
@@ -119,22 +110,20 @@ export const DebugHealthPage: React.FC = () => {
       // Clear all storage
       localStorage.clear();
       sessionStorage.clear();
-      console.log('Cleared localStorage and sessionStorage');
       
-      // Clear all caches
+      // Clear caches
       if ('caches' in window) {
         const cacheNames = await caches.keys();
-        console.log('Clearing caches:', cacheNames);
         await Promise.all(
           cacheNames.map(cacheName => caches.delete(cacheName))
         );
       }
       
-      // Force hard reload
+      // Reload the page
       window.location.reload();
     } catch (error) {
       console.error('Error resetting app:', error);
-      alert(`Error resetting app: ${error}. Try manually clearing browser data in Settings.`);
+      alert('Error resetting app. Try manually clearing browser data.');
     }
   };
 
@@ -175,16 +164,14 @@ export const DebugHealthPage: React.FC = () => {
         </div>
       </div>
 
-        <Alert>
+      <Alert>
         <Wifi className="h-4 w-4" />
         <AlertDescription>
-          <strong>Base URL:</strong> {import.meta.env.VITE_SUPABASE_URL}
+          <strong>Base URL:</strong> {import.meta.env.VITE_SUPABASE_URL || 'https://api.azyahstyle.com'}
           <br />
-          <strong>Using Proxy:</strong> {import.meta.env.VITE_SUPABASE_URL?.includes('api.azyahstyle.com') ? '✅ Yes' : '❌ No'}
+          <strong>Using Proxy:</strong> {(import.meta.env.VITE_SUPABASE_URL || '').includes('api.azyahstyle.com') ? '✅ Yes' : '❌ No'}
         </AlertDescription>
       </Alert>
-
-      <NetworkVerification />
 
       <div className="grid gap-4">
         {endpoints.map((endpoint, index) => {
@@ -215,7 +202,7 @@ export const DebugHealthPage: React.FC = () => {
                   )}
                 </div>
                 <CardDescription>
-                  {import.meta.env.VITE_SUPABASE_URL}{endpoint.endpoint}
+                  {import.meta.env.VITE_SUPABASE_URL || 'https://api.azyahstyle.com'}{endpoint.endpoint}
                 </CardDescription>
               </CardHeader>
               {result && (
