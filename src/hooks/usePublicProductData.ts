@@ -4,16 +4,14 @@ import { supabase } from '@/integrations/supabase/client';
 interface PublicProductData {
   id: string;
   title: string;
-  price_cents: number;
-  currency: string;
+  brand_id: string;
+  brand_logo: string;
+  brand_name: string;
+  brand_slug: string;
+  category_name: string;
   category_slug: string;
-  subcategory_slug: string;
-  gender: string | null;
-  image_url: string | null;
-  preview_media: any;
-  brand_name: string | null;
-  brand_slug: string | null;
-  brand_logo_url: string | null;
+  retailer_id: string;
+  status: string;
   created_at: string;
 }
 
