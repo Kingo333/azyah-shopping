@@ -221,29 +221,29 @@ const TrendingStyles: React.FC<TrendingStylesProps> = ({ limit = 6, showMore = t
 
   return (
     <div className="space-y-8">
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {trendingStyles?.map((style, index) => (
           <Card 
             key={`${style.category}-${style.subcategory}`}
-            className="group hover:shadow-lg transition-all duration-300 min-h-[320px]"
+            className="group hover:shadow-lg transition-all duration-300 min-h-[280px]"
           >
-            <CardHeader className="pb-4">
-              <div className="flex items-center justify-between mb-3">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between mb-2">
                 <Badge variant={index < 3 ? "default" : "secondary"} className="text-xs px-2 py-1">
                   #{index + 1}
                 </Badge>
                 <div className="flex items-center gap-1 text-sm text-green-600 font-medium">
-                  <TrendingUp className="h-4 w-4" />
+                  <TrendingUp className="h-3 w-3" />
                   +{style.growth}%
                 </div>
               </div>
-              <CardTitle className="text-xl font-semibold group-hover:text-primary transition-colors leading-tight">
+              <CardTitle className="text-lg font-semibold group-hover:text-primary transition-colors leading-tight">
                 {formatCategoryName(style.category, style.subcategory)}
               </CardTitle>
             </CardHeader>
             
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-3 gap-3">
+            <CardContent className="space-y-3">
+              <div className="grid grid-cols-3 gap-2">
                 {style.recent_products.slice(0, 3).map((product) => (
                   <div key={product.id} className="relative group/product">
                     <img
@@ -292,14 +292,14 @@ const TrendingStyles: React.FC<TrendingStylesProps> = ({ limit = 6, showMore = t
                 ))}
               </div>
               
-              <div className="space-y-3 pt-2">
-                <div className="text-center text-sm text-muted-foreground font-medium">
+              <div className="space-y-2 pt-1">
+                <div className="text-center text-xs text-muted-foreground font-medium">
                   {style.count} products trending
                 </div>
                 
                 {style.recent_products.length > 0 && (
                   <div className="text-center">
-                    <span className="text-sm text-muted-foreground bg-muted/50 px-3 py-1 rounded-full">
+                    <span className="text-xs text-muted-foreground bg-muted/50 px-2 py-1 rounded-full">
                       From {formatPrice(Math.min(...style.recent_products.map(p => p.price_cents)))}
                     </span>
                   </div>
