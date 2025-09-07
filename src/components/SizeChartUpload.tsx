@@ -103,67 +103,64 @@ export const SizeChartUpload: React.FC<SizeChartUploadProps> = ({
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <ImageIcon className="h-5 w-5" />
-          Size Chart
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {previewUrl ? (
-          <div className="relative">
-            <img
-              src={previewUrl}
-              alt="Size chart"
-              className="w-full max-h-64 object-contain rounded-lg border"
-            />
+    <div className="space-y-2">
+      <div className="flex items-center gap-2">
+        <ImageIcon className="h-4 w-4 text-primary" />
+        <Label className="text-sm font-medium">Size Chart</Label>
+      </div>
+      
+      {previewUrl ? (
+        <div className="border rounded-lg p-3 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium">Chart uploaded</span>
             <Button
-              variant="destructive"
+              type="button"
+              variant="outline"
               size="sm"
-              className="absolute top-2 right-2"
               onClick={handleRemove}
+              className="text-destructive hover:text-destructive h-6 px-2 text-xs"
             >
-              <X className="h-4 w-4" />
+              <X className="h-3 w-3 mr-1" />
+              Remove
             </Button>
           </div>
-        ) : (
-          <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+          <img 
+            src={previewUrl} 
+            alt="Size chart preview" 
+            className="w-full h-20 object-cover rounded border"
+          />
+        </div>
+      ) : (
+        <div className="border rounded-lg p-3 space-y-2">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/jpg,image/png,image/gif"
+            onChange={handleFileUpload}
+            className="hidden"
+            id="size-chart-upload"
+          />
+          <label 
+            htmlFor="size-chart-upload" 
+            className="flex flex-col items-center justify-center h-20 border-2 border-dashed border-muted-foreground/25 rounded cursor-pointer hover:border-muted-foreground/50 transition-colors"
+          >
             {uploading ? (
               <>
-                <Loader2 className="mx-auto h-12 w-12 text-gray-400 mb-4 animate-spin" />
-                <div className="text-sm text-gray-600 mb-4">
-                  Uploading size chart...
-                </div>
+                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                <span className="text-xs text-muted-foreground mt-1">Uploading...</span>
               </>
             ) : (
               <>
-                <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                <div className="text-sm text-gray-600 mb-4">
-                  Upload a size chart image to help customers choose the right size
-                </div>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/jpeg,image/jpg,image/png,image/gif"
-                  onChange={handleFileUpload}
-                  className="hidden"
-                />
-                <Button 
-                  variant="outline" 
-                  disabled={uploading} 
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  Choose Image
-                </Button>
-                <div className="text-xs text-gray-500 mt-2">
-                  Supports JPG, PNG, GIF up to 8MB
-                </div>
+                <Upload className="h-4 w-4 text-muted-foreground" />
+                <span className="text-xs text-muted-foreground mt-1">Upload chart</span>
               </>
             )}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+          </label>
+          <p className="text-xs text-muted-foreground text-center">
+            Size guide image (JPG, PNG, GIF up to 8MB)
+          </p>
+        </div>
+      )}
+    </div>
   );
 };

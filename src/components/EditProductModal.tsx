@@ -430,15 +430,12 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
                   </div>
                   <img 
                     src={productOutfit.outfit_image_url} 
-                    alt="Try-on outfit" 
-                    className="w-20 h-20 object-cover rounded border mx-auto"
+                    alt="Outfit preview" 
+                    className="w-full h-20 object-cover rounded border"
                   />
-                  <p className="text-xs text-muted-foreground text-center">
-                    Try-on enabled
-                  </p>
                 </div>
               ) : (
-                <div className="border-2 border-dashed rounded-lg p-4">
+                <div className="border rounded-lg p-3 space-y-2">
                   {remainingSlots > 0 ? (
                     <>
                       <input
@@ -459,31 +456,28 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
                       />
                       <label 
                         htmlFor="outfit-upload" 
-                        className="cursor-pointer flex flex-col items-center space-y-1"
+                        className="flex flex-col items-center justify-center h-20 border-2 border-dashed border-muted-foreground/25 rounded cursor-pointer hover:border-muted-foreground/50 transition-colors"
                       >
                         {isUploadingOutfit ? (
                           <>
-                            <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                            <p className="text-xs text-muted-foreground">Uploading...</p>
+                            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                            <span className="text-xs text-muted-foreground mt-1">Uploading...</span>
                           </>
                         ) : (
                           <>
-                            <Upload className="h-6 w-6 text-muted-foreground" />
-                            <div className="text-center">
-                              <p className="text-xs font-medium">Upload outfit</p>
-                              <p className="text-xs text-muted-foreground">
-                                Front-facing view
-                              </p>
-                            </div>
+                            <Upload className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-xs text-muted-foreground mt-1">Upload outfit</span>
                           </>
                         )}
                       </label>
+                      <p className="text-xs text-muted-foreground text-center">
+                        Front-facing outfit photo for virtual try-on
+                      </p>
                     </>
                   ) : (
-                    <div className="text-center text-muted-foreground">
-                      <User className="h-6 w-6 mx-auto mb-1 opacity-50" />
-                      <p className="text-xs">Limit reached</p>
-                      <p className="text-xs">Max 5 per brand</p>
+                    <div className="flex flex-col items-center justify-center h-20 text-muted-foreground">
+                      <User className="h-4 w-4 mb-1 opacity-50" />
+                      <span className="text-xs">Try-on limit reached (5/5 products)</span>
                     </div>
                   )}
                 </div>
