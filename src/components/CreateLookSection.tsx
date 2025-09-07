@@ -16,6 +16,7 @@ import { Palette, Heart, ShoppingBag, Plus, Grid3X3, Save, Share2, Square, Undo,
 import { BoardCanvas } from '@/components/BoardCanvas';
 import { TemplateSelector } from '@/components/TemplateSelector';
 import { ProductCard } from '@/components/ProductCard';
+import ProductTryOnModal from '@/components/ProductTryOnModal';
 import { toast } from '@/hooks/use-toast';
 
 interface CreateLookSectionProps {
@@ -41,6 +42,10 @@ export const CreateLookSection: React.FC<CreateLookSectionProps> = ({ closetId }
   const [dragPreview, setDragPreview] = useState(null);
   const [inspectorCollapsed, setInspectorCollapsed] = useState(false);
   const [closetCollapsed, setClosetCollapsed] = useState(false);
+  
+  // Try-on modal state
+  const [showTryOnModal, setShowTryOnModal] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<any>(null);
 
   const canvasRef = useRef<HTMLDivElement>(null);
   const createLookMutation = useCreateLook();
@@ -178,6 +183,12 @@ export const CreateLookSection: React.FC<CreateLookSectionProps> = ({ closetId }
       description: "Item has been added to your mood board."
     });
   }, [boardState, saveToHistory]);
+
+  // Try-on handler
+  const handleTryOn = useCallback((product: any) => {
+    setSelectedProduct(product);
+    setShowTryOnModal(true);
+  }, []);
 
   const handleSave = async () => {
     try {
@@ -485,6 +496,7 @@ export const CreateLookSection: React.FC<CreateLookSectionProps> = ({ closetId }
                 product={item.product}
                 onDragStart={handleDragStart}
                 onAddToBoard={addToBoard}
+                onTryOn={handleTryOn}
               />
             ))}
           </div>
@@ -521,6 +533,7 @@ export const CreateLookSection: React.FC<CreateLookSectionProps> = ({ closetId }
                 product={product}
                 onDragStart={handleDragStart}
                 onAddToBoard={addToBoard}
+                onTryOn={handleTryOn}
               />
             ))}
           </div>
@@ -546,6 +559,18 @@ export const CreateLookSection: React.FC<CreateLookSectionProps> = ({ closetId }
           setShowTemplates(false);
         }}
       />
+
+      {/* Try-On Modal */}
+      {selectedProduct && (
+        <ProductTryOnModal
+          isOpen={showTryOnModal}
+          onClose={() => {
+            setShowTryOnModal(false);
+            setSelectedProduct(null);
+          }}
+          product={selectedProduct}
+        />
+      )}
     </div>
   );
 };

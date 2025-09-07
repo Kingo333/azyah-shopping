@@ -365,13 +365,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "cart_items_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products_with_tryon"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "cart_items_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
@@ -818,13 +811,6 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "events_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products_with_tryon"
             referencedColumns: ["id"]
           },
           {
@@ -1476,13 +1462,6 @@ export type Database = {
             referencedRelation: "products"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "post_products_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products_with_tryon"
-            referencedColumns: ["id"]
-          },
         ]
       }
       posts: {
@@ -1558,13 +1537,6 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: true
             referencedRelation: "products"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "product_outfit_assets_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: true
-            referencedRelation: "products_with_tryon"
             referencedColumns: ["id"]
           },
         ]
@@ -1976,13 +1948,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "swipes_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products_with_tryon"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "swipes_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
@@ -2070,13 +2035,6 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "tryon_jobs_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products_with_tryon"
             referencedColumns: ["id"]
           },
         ]
@@ -2331,24 +2289,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "wishlist_items_product_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products_with_tryon"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "wishlist_items_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "wishlist_items_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products_with_tryon"
             referencedColumns: ["id"]
           },
           {
@@ -2410,138 +2354,7 @@ export type Database = {
       }
     }
     Views: {
-      products_with_tryon: {
-        Row: {
-          ar_mesh_url: string | null
-          attributes: Json | null
-          brand_id: string | null
-          category_slug: Database["public"]["Enums"]["category_type"] | null
-          compare_at_price_cents: number | null
-          created_at: string | null
-          currency: string | null
-          description: string | null
-          dimensions: Json | null
-          external_url: string | null
-          gender: Database["public"]["Enums"]["gender_type"] | null
-          has_outfit: boolean | null
-          id: string | null
-          image_url: string | null
-          is_external: boolean | null
-          media_urls: Json | null
-          merchant_name: string | null
-          min_stock_alert: number | null
-          price_cents: number | null
-          price_raw: string | null
-          retailer_id: string | null
-          seo_description: string | null
-          seo_title: string | null
-          sku: string | null
-          source: string | null
-          source_imported_at: string | null
-          source_vendor: string | null
-          status: Database["public"]["Enums"]["product_status"] | null
-          stock_qty: number | null
-          subcategory_slug:
-            | Database["public"]["Enums"]["subcategory_type"]
-            | null
-          tags: string[] | null
-          title: string | null
-          updated_at: string | null
-          weight_grams: number | null
-        }
-        Insert: {
-          ar_mesh_url?: string | null
-          attributes?: Json | null
-          brand_id?: string | null
-          category_slug?: Database["public"]["Enums"]["category_type"] | null
-          compare_at_price_cents?: number | null
-          created_at?: string | null
-          currency?: string | null
-          description?: string | null
-          dimensions?: Json | null
-          external_url?: string | null
-          gender?: Database["public"]["Enums"]["gender_type"] | null
-          has_outfit?: never
-          id?: string | null
-          image_url?: string | null
-          is_external?: boolean | null
-          media_urls?: Json | null
-          merchant_name?: string | null
-          min_stock_alert?: number | null
-          price_cents?: number | null
-          price_raw?: string | null
-          retailer_id?: string | null
-          seo_description?: string | null
-          seo_title?: string | null
-          sku?: string | null
-          source?: string | null
-          source_imported_at?: string | null
-          source_vendor?: string | null
-          status?: Database["public"]["Enums"]["product_status"] | null
-          stock_qty?: number | null
-          subcategory_slug?:
-            | Database["public"]["Enums"]["subcategory_type"]
-            | null
-          tags?: string[] | null
-          title?: string | null
-          updated_at?: string | null
-          weight_grams?: number | null
-        }
-        Update: {
-          ar_mesh_url?: string | null
-          attributes?: Json | null
-          brand_id?: string | null
-          category_slug?: Database["public"]["Enums"]["category_type"] | null
-          compare_at_price_cents?: number | null
-          created_at?: string | null
-          currency?: string | null
-          description?: string | null
-          dimensions?: Json | null
-          external_url?: string | null
-          gender?: Database["public"]["Enums"]["gender_type"] | null
-          has_outfit?: never
-          id?: string | null
-          image_url?: string | null
-          is_external?: boolean | null
-          media_urls?: Json | null
-          merchant_name?: string | null
-          min_stock_alert?: number | null
-          price_cents?: number | null
-          price_raw?: string | null
-          retailer_id?: string | null
-          seo_description?: string | null
-          seo_title?: string | null
-          sku?: string | null
-          source?: string | null
-          source_imported_at?: string | null
-          source_vendor?: string | null
-          status?: Database["public"]["Enums"]["product_status"] | null
-          stock_qty?: number | null
-          subcategory_slug?:
-            | Database["public"]["Enums"]["subcategory_type"]
-            | null
-          tags?: string[] | null
-          title?: string | null
-          updated_at?: string | null
-          weight_grams?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "products_brand_id_fkey"
-            columns: ["brand_id"]
-            isOneToOne: false
-            referencedRelation: "brands"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "products_retailer_id_fkey"
-            columns: ["retailer_id"]
-            isOneToOne: false
-            referencedRelation: "retailers"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
+      [_ in never]: never
     }
     Functions: {
       __is_read_only_tx: {
@@ -2896,6 +2709,43 @@ export type Database = {
         Returns: {
           like_count: number
           product_id: string
+        }[]
+      }
+      get_products_with_tryon: {
+        Args: { limit_count?: number }
+        Returns: {
+          ar_mesh_url: string
+          attributes: Json
+          brand_id: string
+          category_slug: Database["public"]["Enums"]["category_type"]
+          compare_at_price_cents: number
+          created_at: string
+          currency: string
+          description: string
+          dimensions: Json
+          external_url: string
+          gender: Database["public"]["Enums"]["gender_type"]
+          has_outfit: boolean
+          id: string
+          image_url: string
+          is_external: boolean
+          media_urls: Json
+          min_stock_alert: number
+          price_cents: number
+          retailer_id: string
+          seo_description: string
+          seo_title: string
+          sku: string
+          source: string
+          source_imported_at: string
+          source_vendor: string
+          status: string
+          stock_qty: number
+          subcategory_slug: Database["public"]["Enums"]["subcategory_type"]
+          tags: string[]
+          title: string
+          updated_at: string
+          weight_grams: number
         }[]
       }
       get_public_brands: {

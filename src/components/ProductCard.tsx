@@ -1,9 +1,10 @@
 import React, { useState, useCallback } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, Heart, ShoppingBag, ExternalLink, Info, Image } from 'lucide-react';
+import { Plus, Heart, ShoppingBag, ExternalLink, Info, Image, User } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { getPrimaryImageUrl, hasMultipleImages, getImageCount } from '@/utils/imageHelpers';
+import { useProductHasOutfit } from '@/hooks/useProductOutfits';
 
 interface ProductCardProps {
   product: any;
@@ -12,6 +13,7 @@ interface ProductCardProps {
   onLike?: (product: any) => void;
   onWishlist?: (product: any) => void;
   onInfo?: (product: any) => void;
+  onTryOn?: (product: any) => void;
 }
 
 export const ProductCard: React.FC<ProductCardProps> = ({
@@ -20,11 +22,15 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   onAddToBoard,
   onLike,
   onWishlist,
-  onInfo
+  onInfo,
+  onTryOn
 }) => {
   const [showPlusButton, setShowPlusButton] = useState(false);
   const [pressTimer, setPressTimer] = useState<NodeJS.Timeout | null>(null);
   const isMobile = useIsMobile();
+  
+  // Check if product has outfit for try-on
+  const { data: hasOutfit } = useProductHasOutfit(product.id);
 
   const formatPrice = (priceCents: number, currency: string) => {
     const price = priceCents / 100;
@@ -95,6 +101,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     if (onInfo) onInfo(product);
   }, [onInfo, product]);
 
+  const handleTryOn = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (onTryOn) onTryOn(product);
+  }, [onTryOn, product]);
+
   return (
     <div 
       className="group relative bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 cursor-grab active:cursor-grabbing"
@@ -142,6 +154,18 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               onClick={handleWishlist}
             >
               <ShoppingBag className="h-4 w-4" />
+            </Button>
+          )}
+          {/* Try-on button - only show if product has outfit */}
+          {hasOutfit && onTryOn && (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-8 w-8 rounded-full bg-white/90 hover:bg-white backdrop-blur-sm"
+              onClick={handleTryOn}
+              title="Try it on"
+            >
+              <User className="h-4 w-4" />
             </Button>
           )}
         </div>
