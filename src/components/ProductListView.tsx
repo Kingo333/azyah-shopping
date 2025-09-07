@@ -39,15 +39,7 @@ const ProductCard: React.FC<{
   const { data: hasOutfit, isLoading: outfitLoading, error: outfitError } = useProductHasOutfit(product.id);
   const [tryOnModalOpen, setTryOnModalOpen] = useState(false);
 
-  // Debug logging
-  console.log(`Product ${product.id}:`, {
-    hasOutfit,
-    outfitLoading,
-    outfitError,
-    productTitle: product.title
-  });
-
-  // Show head icon when outfit exists and not loading
+  // Show head icon when outfit exists
   const shouldShowHeadIcon = hasOutfit === true;
 
   const handleAddToWishlist = async () => {
