@@ -156,18 +156,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               <ShoppingBag className="h-4 w-4" />
             </Button>
           )}
-          {/* Try-on button - only show if product has outfit */}
-          {hasOutfit && onTryOn && (
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-8 w-8 rounded-full bg-white/90 hover:bg-white backdrop-blur-sm"
-              onClick={handleTryOn}
-              title="Try it on"
-            >
-              <User className="h-4 w-4" />
-            </Button>
-          )}
+          {/* Remove try-on button from here - only in list view */}
         </div>
         
         {/* Mobile add button (shows on long press) */}

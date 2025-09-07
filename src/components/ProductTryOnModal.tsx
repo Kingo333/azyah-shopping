@@ -102,56 +102,24 @@ const ProductTryOnModal: React.FC<ProductTryOnModalProps> = ({
       setStatus('uploading');
       setError(null);
       
-      // Upload person image to temporary bucket
-      const personImagePath = `${Date.now()}-${file.name}`;
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('tryon-persons')
-        .upload(personImagePath, file);
-      
-      if (uploadError) throw uploadError;
+      // Create FormData for the edge function
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('productId', product.id);
 
-      // Get the outfit image URL for this product
-      const { data: outfitData, error: outfitError } = await supabase
-        .from('product_outfit_assets')
-        .select('outfit_image_url')
-        .eq('product_id', product.id)
-        .single();
-      
-      if (outfitError) throw new Error('Product outfit not found');
-
-      // Create try-on job
-      const jobData = {
-        user_id: (await supabase.auth.getUser()).data.user?.id,
-        person_image_id: uploadData.path,
-        outfit_image_url: outfitData.outfit_image_url,
-        status: 'pending'
-      };
-
-      const { data: jobResult, error: jobError } = await supabase
-        .from('ai_tryon_jobs')
-        .insert(jobData)
-        .select()
-        .single();
-      
-      if (jobError) throw jobError;
-
-      setJobId(jobResult.id);
-      setStatus('queued');
-      
-      // Start the try-on process via edge function
+      // Call the try-on start edge function
       const { data: tryonData, error: tryonError } = await supabase.functions
-        .invoke('bitstudio-tryon', {
-          body: {
-            person_image_url: await getSignedUrl('tryon-persons', uploadData.path),
-            outfit_image_url: outfitData.outfit_image_url,
-            job_id: jobResult.id
-          }
+        .invoke('tryon-start', {
+          body: formData
         });
       
       if (tryonError) throw tryonError;
+
+      setJobId(tryonData.jobId);
+      setStatus('queued');
       
       // Start polling for completion
-      pollForCompletion(jobResult.id);
+      pollForCompletion(tryonData.jobId);
       
     } catch (err: any) {
       console.error('Try-on error:', err);
@@ -173,22 +141,22 @@ const ProductTryOnModal: React.FC<ProductTryOnModalProps> = ({
     
     const poll = async () => {
       try {
-        const { data, error } = await supabase
-          .from('ai_tryon_jobs')
-          .select('status, result_url, error')
-          .eq('id', jobId)
-          .single();
+        // Use the status edge function
+        const { data, error } = await supabase.functions
+          .invoke('tryon-status', {
+            body: { id: jobId }
+          });
         
         if (error) throw error;
         
-        if (data.status === 'completed' && data.result_url) {
-          setResultUrl(data.result_url);
+        if (data.status === 'completed' && data.resultUrl) {
+          setResultUrl(data.resultUrl);
           setStatus('done');
           return;
         }
         
         if (data.status === 'failed') {
-          setError(typeof data.error === 'string' ? data.error : 'Try-on failed. Please try again.');
+          setError(data.error || 'Try-on failed. Please try again.');
           setStatus('failed');
           return;
         }

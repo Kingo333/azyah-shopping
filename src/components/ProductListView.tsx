@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Heart, X, ShoppingBag, Sparkles, Info, ExternalLink, Image } from 'lucide-react';
+import { Heart, X, ShoppingBag, Sparkles, Info, ExternalLink, Image, User } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useWishlist } from '@/hooks/useWishlist';
@@ -12,8 +12,10 @@ import { Product } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import ProductDetailPage from '@/components/ProductDetailPage';
 import PhotoCloseup from '@/components/PhotoCloseup';
+import ProductTryOnModal from '@/components/ProductTryOnModal';
 import { getResponsiveImageProps } from '@/utils/asosImageUtils';
 import { getPrimaryImageUrl, hasMultipleImages, getImageCount } from '@/utils/imageHelpers';
+import { useProductHasOutfit } from '@/hooks/useProductOutfits';
 import CategoryCarousel from '@/components/CategoryCarousel';
 
 interface ProductListViewProps {
@@ -34,6 +36,8 @@ const ProductCard: React.FC<{
   toast: any;
 }> = ({ product, handleLike, handleProductClick, formatPrice, user, toast }) => {
   const { addToWishlist, isLoading: wishlistLoading } = useWishlist(product.id);
+  const { data: hasOutfit } = useProductHasOutfit(product.id);
+  const [tryOnModalOpen, setTryOnModalOpen] = useState(false);
 
   const handleAddToWishlist = async () => {
     if (!user) {
@@ -109,6 +113,21 @@ const ProductCard: React.FC<{
           >
             <ShoppingBag className="h-4 w-4" />
           </Button>
+          {/* Try-on button - only show if product has outfit */}
+          {hasOutfit && (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-8 w-8 rounded-full bg-white/90 hover:bg-white backdrop-blur-sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                setTryOnModalOpen(true);
+              }}
+              title="Try it on"
+            >
+              <User className="h-4 w-4" />
+            </Button>
+          )}
         </div>
         
         {/* Product Info Overlay (appears on hover) */}
@@ -148,6 +167,13 @@ const ProductCard: React.FC<{
           </div>
         </div>
       </div>
+      
+      {/* Try-On Modal */}
+      <ProductTryOnModal
+        isOpen={tryOnModalOpen}
+        onClose={() => setTryOnModalOpen(false)}
+        product={product}
+      />
     </div>
   );
 };

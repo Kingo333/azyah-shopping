@@ -16,7 +16,7 @@ import { Palette, Heart, ShoppingBag, Plus, Grid3X3, Save, Share2, Square, Undo,
 import { BoardCanvas } from '@/components/BoardCanvas';
 import { TemplateSelector } from '@/components/TemplateSelector';
 import { ProductCard } from '@/components/ProductCard';
-import ProductTryOnModal from '@/components/ProductTryOnModal';
+// Removed ProductTryOnModal import - not used in this component
 import { toast } from '@/hooks/use-toast';
 
 interface CreateLookSectionProps {
@@ -560,17 +560,7 @@ export const CreateLookSection: React.FC<CreateLookSectionProps> = ({ closetId }
         }}
       />
 
-      {/* Try-On Modal */}
-      {selectedProduct && (
-        <ProductTryOnModal
-          isOpen={showTryOnModal}
-          onClose={() => {
-            setShowTryOnModal(false);
-            setSelectedProduct(null);
-          }}
-          product={selectedProduct}
-        />
-      )}
+      {/* Try-On Modal removed - only available in list view */}
     </div>
   );
 };
