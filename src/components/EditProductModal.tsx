@@ -396,93 +396,99 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
               </div>}
           </div>
 
-          <SizeChartUpload currentSizeChart={sizeChartUrl} onSizeChartUpdate={setSizeChartUrl} productId={product.id} />
-
-          {/* Virtual Try-On Section */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-2">
-              <User className="h-5 w-5 text-primary" />
-              <Label className="text-base font-semibold">Virtual Try-On</Label>
-              <span className="text-xs text-muted-foreground">
-                ({5 - (outfitAssets?.length || 0)}/5 products remaining)
-              </span>
+          {/* Size Chart & Virtual Try-On Row */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Size Chart Section */}
+            <div className="space-y-2">
+              <SizeChartUpload currentSizeChart={sizeChartUrl} onSizeChartUpdate={setSizeChartUrl} productId={product.id} />
             </div>
-            
-            {productOutfit ? (
-              <div className="border rounded-lg p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Try-on outfit configured</span>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => deleteOutfit(product.id)}
-                    className="text-destructive hover:text-destructive"
-                  >
-                    <Trash2 className="h-4 w-4 mr-1" />
-                    Remove
-                  </Button>
-                </div>
-                <img 
-                  src={productOutfit.outfit_image_url} 
-                  alt="Try-on outfit" 
-                  className="w-32 h-32 object-cover rounded-lg border"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Shoppers can now try on this product virtually
-                </p>
+
+            {/* Virtual Try-On Section */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <User className="h-4 w-4 text-primary" />
+                <Label className="text-sm font-medium">Virtual Try-On</Label>
+                <span className="text-xs text-muted-foreground">
+                  ({5 - (outfitAssets?.length || 0)}/5)
+                </span>
               </div>
-            ) : (
-              <div className="border-2 border-dashed rounded-lg p-6">
-                {remainingSlots > 0 ? (
-                  <>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file && product) {
-                          uploadOutfit({ 
-                            productId: product.id, 
-                            brandId: product.brand_id!, 
-                            file 
-                          });
-                        }
-                      }}
-                      className="hidden"
-                      id="outfit-upload"
-                    />
-                    <label 
-                      htmlFor="outfit-upload" 
-                      className="cursor-pointer flex flex-col items-center space-y-2"
+              
+              {productOutfit ? (
+                <div className="border rounded-lg p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium">Outfit configured</span>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => deleteOutfit(product.id)}
+                      className="text-destructive hover:text-destructive h-6 px-2 text-xs"
                     >
-                      {isUploadingOutfit ? (
-                        <>
-                          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                          <p className="text-sm text-muted-foreground">Uploading outfit...</p>
-                        </>
-                      ) : (
-                        <>
-                          <Upload className="h-8 w-8 text-muted-foreground" />
-                          <div className="text-center">
-                            <p className="text-sm font-medium">Upload try-on outfit</p>
-                            <p className="text-xs text-muted-foreground">
-                              Front-facing, full outfit view works best
-                            </p>
-                          </div>
-                        </>
-                      )}
-                    </label>
-                  </>
-                ) : (
-                  <div className="text-center text-muted-foreground">
-                    <User className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                    <p className="text-sm">Try-on limit reached</p>
-                    <p className="text-xs">Maximum 5 products per brand</p>
+                      <Trash2 className="h-3 w-3 mr-1" />
+                      Remove
+                    </Button>
                   </div>
-                )}
-              </div>
-            )}
+                  <img 
+                    src={productOutfit.outfit_image_url} 
+                    alt="Try-on outfit" 
+                    className="w-20 h-20 object-cover rounded border mx-auto"
+                  />
+                  <p className="text-xs text-muted-foreground text-center">
+                    Try-on enabled
+                  </p>
+                </div>
+              ) : (
+                <div className="border-2 border-dashed rounded-lg p-4">
+                  {remainingSlots > 0 ? (
+                    <>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file && product) {
+                            uploadOutfit({ 
+                              productId: product.id, 
+                              brandId: product.brand_id!, 
+                              file 
+                            });
+                          }
+                        }}
+                        className="hidden"
+                        id="outfit-upload"
+                      />
+                      <label 
+                        htmlFor="outfit-upload" 
+                        className="cursor-pointer flex flex-col items-center space-y-1"
+                      >
+                        {isUploadingOutfit ? (
+                          <>
+                            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                            <p className="text-xs text-muted-foreground">Uploading...</p>
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="h-6 w-6 text-muted-foreground" />
+                            <div className="text-center">
+                              <p className="text-xs font-medium">Upload outfit</p>
+                              <p className="text-xs text-muted-foreground">
+                                Front-facing view
+                              </p>
+                            </div>
+                          </>
+                        )}
+                      </label>
+                    </>
+                  ) : (
+                    <div className="text-center text-muted-foreground">
+                      <User className="h-6 w-6 mx-auto mb-1 opacity-50" />
+                      <p className="text-xs">Limit reached</p>
+                      <p className="text-xs">Max 5 per brand</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="flex justify-between space-x-2 pt-4 border-t">
