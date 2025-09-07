@@ -47,6 +47,9 @@ const ProductCard: React.FC<{
     productTitle: product.title
   });
 
+  // Show head icon when outfit exists and not loading
+  const shouldShowHeadIcon = hasOutfit === true;
+
   const handleAddToWishlist = async () => {
     if (!user) {
       toast({
@@ -122,7 +125,7 @@ const ProductCard: React.FC<{
             <ShoppingBag className="h-4 w-4" />
           </Button>
           {/* Try-on button - only show if product has outfit */}
-          {hasOutfit && (
+          {shouldShowHeadIcon && (
             <Button
               size="sm"
               variant="ghost"
