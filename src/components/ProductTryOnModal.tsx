@@ -8,6 +8,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Link } from 'react-router-dom';
 import { BITSTUDIO_IMAGE_TYPES } from '@/lib/bitstudio-types';
+import { useAiAssets } from '@/hooks/useAiAssets';
+import { GlassPanel } from '@/components/ui/glass-panel';
 
 interface Product {
   id: string;
@@ -44,9 +46,11 @@ const ProductTryOnModal: React.FC<ProductTryOnModalProps> = ({
   const [status, setStatus] = useState<'idle' | 'uploading' | 'generating' | 'done' | 'failed'>('idle');
   const [resultUrl, setResultUrl] = useState<string | null>(null);
   const [dragActive, setDragActive] = useState(false);
+  const [selectedThumbnail, setSelectedThumbnail] = useState<string | null>(null);
   
   const { toast } = useToast();
   const { loading, uploadImage, virtualTryOn, error } = useBitStudio();
+  const { assets, saveAsset } = useAiAssets();
 
   const validateFile = (file: File): boolean => {
     if (!file.type.startsWith('image/')) {
@@ -179,6 +183,9 @@ const ProductTryOnModal: React.FC<ProductTryOnModalProps> = ({
         setResultUrl(result.path);
         setStatus('done');
         
+        // Save the result to persistent storage
+        await saveAsset(result.path, undefined, `Try-On: ${product.title}`);
+        
         toast({
           title: 'Try-on complete!',
           description: 'Your virtual try-on is ready'
@@ -230,8 +237,40 @@ const ProductTryOnModal: React.FC<ProductTryOnModalProps> = ({
     }
   };
 
+  const openFullSizeImage = (imageUrl: string) => {
+    try {
+      const newWindow = window.open('', '_blank');
+      if (newWindow) {
+        newWindow.document.write(`
+          <html>
+            <head><title>Try-On Result</title></head>
+            <body style="margin: 0; padding: 20px; background: black; display: flex; justify-content: center; align-items: center; min-height: 100vh;">
+              <img src="${imageUrl}" style="max-width: 100%; max-height: 100%; object-fit: contain;" />
+            </body>
+          </html>
+        `);
+      }
+    } catch (error) {
+      console.error('Failed to open full size image:', error);
+    }
+  };
+
+  const handleThumbnailLongPress = (imageUrl: string) => {
+    openFullSizeImage(imageUrl);
+  };
+
+  const handleViewProduct = () => {
+    onClose(); // Close the try-on modal first
+    // Navigate to product detail like clicking in list mode
+    if (product?.external_url) {
+      const url = product.external_url.startsWith('http') ? product.external_url : `https://${product.external_url}`;
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <>
+      <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -356,11 +395,9 @@ const ProductTryOnModal: React.FC<ProductTryOnModalProps> = ({
                   <Download className="h-4 w-4 mr-2" />
                   Save
                 </Button>
-                <Button variant="outline" asChild>
-                  <Link to={`/product/${product.id}`}>
-                    <Eye className="h-4 w-4 mr-2" />
-                    View Product
-                  </Link>
+                <Button variant="outline" onClick={handleViewProduct}>
+                  <Eye className="h-4 w-4 mr-2" />
+                  View Product
                 </Button>
               </div>
               
@@ -386,9 +423,89 @@ const ProductTryOnModal: React.FC<ProductTryOnModalProps> = ({
               </Button>
             </div>
           )}
+
+          {/* Previous Results Section */}
+          {assets.length > 0 && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h4 className="text-sm font-medium">Previous Try-Ons</h4>
+                <span className="text-xs text-muted-foreground">{assets.length} result{assets.length > 1 ? 's' : ''}</span>
+              </div>
+              
+              <div className="grid grid-cols-4 gap-2">
+                {assets.slice(0, 8).map((asset) => (
+                  <GlassPanel 
+                    key={asset.id}
+                    variant="custom" 
+                    className="aspect-square p-0.5 cursor-pointer hover:scale-105 transition-transform"
+                    onClick={() => setSelectedThumbnail(asset.asset_url)}
+                    onTouchStart={() => {
+                      // Handle long press for mobile
+                      const timer = setTimeout(() => {
+                        handleThumbnailLongPress(asset.asset_url);
+                      }, 500);
+                      return () => clearTimeout(timer);
+                    }}
+                  >
+                    <img 
+                      src={asset.asset_url} 
+                      alt="Previous try-on result" 
+                      className="w-full h-full object-cover rounded-sm"
+                    />
+                  </GlassPanel>
+                ))}
+              </div>
+              
+              <p className="text-xs text-muted-foreground text-center">
+                Tap to view • Long press to enlarge
+              </p>
+            </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>
+
+    {/* Selected Thumbnail Modal */}
+    {selectedThumbnail && (
+      <Dialog open={!!selectedThumbnail} onOpenChange={() => setSelectedThumbnail(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Try-On Result</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <img
+              src={selectedThumbnail}
+              alt="Try-on result"
+              className="w-full rounded-lg shadow-lg"
+            />
+            
+            <div className="grid grid-cols-2 gap-2">
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  const link = document.createElement('a');
+                  link.href = selectedThumbnail;
+                  link.download = `tryon-${product.title}-${Date.now()}.png`;
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+                }}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Save
+              </Button>
+              <Button variant="outline" onClick={handleViewProduct}>
+                <Eye className="h-4 w-4 mr-2" />
+                View Product
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    )}
+
+    </>
   );
 };
 
