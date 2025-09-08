@@ -91,7 +91,7 @@ serve(async (req) => {
       .insert({
         user_id: user.id,
         person_image_id: uploadData.path,
-        outfit_image_url: productOutfit.outfit_image_url,
+        outfit_image_id: productOutfit.outfit_image_url, // Use outfit_image_id to store the URL
         status: 'pending'
       })
       .select()
