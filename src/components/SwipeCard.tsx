@@ -1,12 +1,11 @@
 
-import React, { memo, useCallback, useMemo } from 'react';
+import React, { memo, useCallback } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { motion } from 'framer-motion';
 import { Heart, X, ShoppingBag, Sparkles, Info, Image } from 'lucide-react';
-import LazyImage from '@/components/LazyImage';
-import { upgradeAsosImageUrl } from '@/utils/asosImageUtils';
+import { getResponsiveImageProps } from '@/utils/asosImageUtils';
 import { getPrimaryImageUrl, hasMultipleImages, getImageCount } from '@/utils/imageHelpers';
 
 interface SwipeProduct {
@@ -55,18 +54,6 @@ const SwipeCard = memo(({
   wishlistLoading,
   motionProps
 }: SwipeCardProps) => {
-  // Optimize image URL for better loading
-  const optimizedImageUrl = useMemo(() => {
-    const primaryUrl = getPrimaryImageUrl(product);
-    
-    // For ASOS images, apply optimization
-    if (primaryUrl.includes('asos-media.com')) {
-      return upgradeAsosImageUrl(primaryUrl, 800);
-    }
-    
-    return primaryUrl;
-  }, [product]);
-
   const handleShopNow = useCallback(async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -102,15 +89,19 @@ const SwipeCard = memo(({
             }}
             onClick={onInstructionsClick}
           >
-            <LazyImage
-              src={optimizedImageUrl}
+            <img
+              {...getResponsiveImageProps(
+                getPrimaryImageUrl(product),
+                "(max-width: 768px) 100vw, 50vw"
+              )}
               alt={product.title}
-              className="object-contain w-full h-full max-h-full"
-              priority={false}
-              quality={85}
-              sizes="(max-width: 768px) 100vw, 50vw"
-              onLoad={() => onImageLoad({} as React.SyntheticEvent<HTMLImageElement>)}
-              onError={() => console.warn('Failed to load image for product:', product.id)}
+              className="object-contain w-full h-full transition-opacity duration-300 max-h-full"
+              onLoad={onImageLoad}
+              onError={(e) => {
+                const img = e.target as HTMLImageElement;
+                img.src = '/placeholder.svg';
+              }}
+              style={{ maxHeight: '100%', maxWidth: '100%' }}
             />
             
             <div className="absolute top-4 left-4 flex items-center gap-3">
