@@ -297,13 +297,7 @@ const RoleDashboard: React.FC = () => {
 
           {/* UGC Collab Chip */}
           <TutorialTooltip content="Collaborate with brands on user-generated content. Apply for brand partnerships and create sponsored content." feature="ugc-collab">
-            <button
-              onClick={() => {/* Handle UGC Collab */}}
-              className="flex items-center gap-2 px-4 py-2 h-10 rounded-xl bg-background border border-border hover:bg-accent transition-colors font-medium text-sm whitespace-nowrap flex-shrink-0 min-w-fit"
-            >
-              <Users className="h-4 w-4" />
-              UGC Collab
-            </button>
+            <UGCCollabButton className="flex items-center gap-2 px-4 py-2 h-10 rounded-xl bg-background border border-border hover:bg-accent transition-colors font-medium text-sm whitespace-nowrap flex-shrink-0 min-w-fit" />
           </TutorialTooltip>
 
           {/* Toy Replica Chip */}
