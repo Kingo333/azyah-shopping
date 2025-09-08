@@ -121,8 +121,7 @@ serve(async (req) => {
     const { data: tryonResult, error: tryonError } = await supabase.functions.invoke('bitstudio-tryon', {
       body: {
         person_image_url: personSignedUrl.signedUrl,
-        outfit_image_url: productOutfit.outfit_image_url,
-        job_id: jobData.id
+        outfit_image_url: productOutfit.outfit_image_url
       }
     })
 
