@@ -87,11 +87,34 @@ export function getAllProductImages(product: any): ImageData[] {
 }
 
 /**
- * Get the primary image URL (first image)
+ * Get the primary image URL (first image) - optimized for performance
  */
 export function getPrimaryImageUrl(product: any): string {
-  const images = getAllProductImages(product);
-  return images[0]?.url || '/placeholder.svg';
+  // Fast path for array format (most common)
+  if (Array.isArray(product.media_urls) && product.media_urls.length > 0) {
+    const url = product.media_urls[0];
+    return (url && typeof url === 'string' && url.trim()) ? url.trim() : '/placeholder.svg';
+  }
+  
+  // Fast path for direct image_url
+  if (product.image_url && typeof product.image_url === 'string' && product.image_url.trim()) {
+    return product.image_url.trim();
+  }
+  
+  // Slower path for JSON parsing (fallback)
+  if (product.media_urls && typeof product.media_urls === 'string') {
+    try {
+      const parsed = JSON.parse(product.media_urls);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        const url = parsed[0];
+        return (url && typeof url === 'string' && url.trim()) ? url.trim() : '/placeholder.svg';
+      }
+    } catch (e) {
+      console.warn('Failed to parse media_urls for primary image:', product.id);
+    }
+  }
+  
+  return '/placeholder.svg';
 }
 
 /**
