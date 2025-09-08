@@ -143,6 +143,7 @@ const ProductTryOnModal: React.FC<ProductTryOnModalProps> = ({
       
       if (result?.id) {
         setPersonImageId(result.id);
+        setStatus('idle'); // Reset to idle so user can proceed
         toast({
           title: 'Photo uploaded successfully!',
           description: 'Ready to generate your try-on'
