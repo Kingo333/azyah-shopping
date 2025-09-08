@@ -7,6 +7,7 @@ import { useBitStudio } from '@/hooks/useBitStudio';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Link } from 'react-router-dom';
+import { BITSTUDIO_IMAGE_TYPES } from '@/lib/bitstudio-types';
 
 interface Product {
   id: string;
@@ -38,13 +39,14 @@ const ProductTryOnModal: React.FC<ProductTryOnModalProps> = ({
   product
 }) => {
   const [file, setFile] = useState<File | null>(null);
-  const [jobId, setJobId] = useState<string | null>(null);
-  const [status, setStatus] = useState<'idle' | 'uploading' | 'queued' | 'running' | 'done' | 'failed'>('idle');
+  const [personImageId, setPersonImageId] = useState<string | null>(null);
+  const [outfitImageUrl, setOutfitImageUrl] = useState<string | null>(null);
+  const [status, setStatus] = useState<'idle' | 'uploading' | 'generating' | 'done' | 'failed'>('idle');
   const [resultUrl, setResultUrl] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const [dragActive, setDragActive] = useState(false);
   
   const { toast } = useToast();
+  const { loading, uploadImage, virtualTryOn, error } = useBitStudio();
 
   const validateFile = (file: File): boolean => {
     if (!file.type.startsWith('image/')) {
@@ -68,10 +70,11 @@ const ProductTryOnModal: React.FC<ProductTryOnModalProps> = ({
     return true;
   };
 
-  const handleFileSelect = (selectedFile: File) => {
+  const handleFileSelect = async (selectedFile: File) => {
     if (validateFile(selectedFile)) {
       setFile(selectedFile);
-      setError(null);
+      // Upload person image and get outfit URL when file is selected
+      await uploadPersonImage(selectedFile);
     }
   };
 
@@ -95,99 +98,106 @@ const ProductTryOnModal: React.FC<ProductTryOnModalProps> = ({
     }
   };
 
-  const startTryOn = async () => {
-    if (!file) return;
-    
+  // Get product outfit URL when component opens
+  useEffect(() => {
+    const getProductOutfit = async () => {
+      try {
+        const { data: productOutfit, error: productError } = await supabase
+          .from('product_outfit_assets')
+          .select('outfit_image_url')
+          .eq('product_id', product.id)
+          .single();
+
+        if (productError || !productOutfit) {
+          toast({
+            title: "Product not available for try-on",
+            description: "This product doesn't have try-on capabilities yet.",
+            variant: "destructive"
+          });
+          onClose();
+          return;
+        }
+
+        setOutfitImageUrl(productOutfit.outfit_image_url);
+      } catch (err: any) {
+        console.error('Error fetching product outfit:', err);
+        toast({
+          title: "Error",
+          description: "Failed to load product try-on data",
+          variant: "destructive"
+        });
+        onClose();
+      }
+    };
+
+    if (isOpen && product.id) {
+      getProductOutfit();
+    }
+  }, [isOpen, product.id, toast, onClose]);
+
+  const uploadPersonImage = async (file: File) => {
     try {
       setStatus('uploading');
-      setError(null);
       
-      // Create FormData for the edge function
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('productId', product.id);
-
-      // Call the try-on start edge function
-      const { data: tryonData, error: tryonError } = await supabase.functions
-        .invoke('tryon-start', {
-          body: formData
+      const result = await uploadImage(file, BITSTUDIO_IMAGE_TYPES.PERSON);
+      
+      if (result?.id) {
+        setPersonImageId(result.id);
+        toast({
+          title: 'Photo uploaded successfully!',
+          description: 'Ready to generate your try-on'
         });
-      
-      if (tryonError) throw tryonError;
-
-      setJobId(tryonData.jobId);
-      setStatus('queued');
-      
-      // Start polling for completion
-      pollForCompletion(tryonData.jobId);
-      
+      }
     } catch (err: any) {
-      console.error('Try-on error:', err);
-      setError(err.message || 'Failed to start try-on. Please try again.');
+      console.error('Person image upload error:', err);
       setStatus('failed');
     }
   };
 
-  const getSignedUrl = async (bucket: string, path: string): Promise<string> => {
-    const { data } = await supabase.storage
-      .from(bucket)
-      .createSignedUrl(path, 3600); // 1 hour expiry
-    return data?.signedUrl || '';
+  const startTryOn = async () => {
+    if (!personImageId || !outfitImageUrl) {
+      toast({
+        title: "Missing data",
+        description: "Please wait for the photo to upload and product to load",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    try {
+      setStatus('generating');
+      
+      const result = await virtualTryOn({
+        person_image_id: personImageId,
+        outfit_image_url: outfitImageUrl,
+        resolution: 'standard',
+        num_images: 1
+      });
+
+      if (result?.path) {
+        setResultUrl(result.path);
+        setStatus('done');
+        
+        toast({
+          title: 'Try-on complete!',
+          description: 'Your virtual try-on is ready'
+        });
+      } else {
+        throw new Error('No result returned from try-on');
+      }
+      
+    } catch (err: any) {
+      console.error('Try-on error:', err);
+      setStatus('failed');
+    }
   };
 
-  const pollForCompletion = async (jobId: string) => {
-    const maxAttempts = 60; // 5 minutes at 5-second intervals
-    let attempts = 0;
-    
-    const poll = async () => {
-      try {
-        // Use the status edge function
-        const { data, error } = await supabase.functions
-          .invoke('tryon-status', {
-            body: { id: jobId }
-          });
-        
-        if (error) throw error;
-        
-        if (data.status === 'completed' && data.resultUrl) {
-          setResultUrl(data.resultUrl);
-          setStatus('done');
-          return;
-        }
-        
-        if (data.status === 'failed') {
-          setError(data.error || 'Try-on failed. Please try again.');
-          setStatus('failed');
-          return;
-        }
-        
-        if (data.status === 'generating') {
-          setStatus('running');
-        }
-        
-        attempts++;
-        if (attempts < maxAttempts) {
-          setTimeout(poll, 5000); // Poll every 5 seconds
-        } else {
-          setError('Try-on is taking longer than expected. Please try again.');
-          setStatus('failed');
-        }
-      } catch (err: any) {
-        console.error('Polling error:', err);
-        setError('Failed to check try-on status');
-        setStatus('failed');
-      }
-    };
-    
-    poll();
-  };
 
   const resetFlow = () => {
     setFile(null);
-    setJobId(null);
+    setPersonImageId(null);
     setStatus('idle');
     setResultUrl(null);
-    setError(null);
   };
 
   const handleDownload = () => {
@@ -212,9 +222,7 @@ const ProductTryOnModal: React.FC<ProductTryOnModalProps> = ({
     switch (status) {
       case 'uploading':
         return 'Uploading your photo...';
-      case 'queued':
-        return 'Your try-on is queued...';
-      case 'running':
+      case 'generating':
         return 'Generating your try-on...';
       default:
         return '';
@@ -309,15 +317,22 @@ const ProductTryOnModal: React.FC<ProductTryOnModalProps> = ({
 
               <Button
                 onClick={startTryOn}
-                disabled={!file}
+                disabled={!file || !personImageId || !outfitImageUrl || loading}
                 className="w-full"
               >
-                Try It On
+                {loading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    Generating...
+                  </>
+                ) : (
+                  'Try It On'
+                )}
               </Button>
             </>
           )}
 
-          {(status === 'uploading' || status === 'queued' || status === 'running') && (
+          {(status === 'uploading' || status === 'generating') && (
             <div className="text-center space-y-4">
               <Loader2 className="h-8 w-8 animate-spin mx-auto" />
               <p className="text-sm">{getStatusText()}</p>
