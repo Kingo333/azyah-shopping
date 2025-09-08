@@ -51,6 +51,11 @@ const ProductTryOnModal: React.FC<ProductTryOnModalProps> = ({
   const { toast } = useToast();
   const { loading, uploadImage, virtualTryOn, error } = useBitStudio();
   const { assets, saveAsset } = useAiAssets();
+  
+  // Filter assets to only show try-on results for this specific product
+  const productAssets = assets.filter(asset => 
+    asset.title?.includes(product.title) || asset.title?.includes(product.id)
+  );
 
   const validateFile = (file: File): boolean => {
     if (!file.type.startsWith('image/')) {
@@ -183,8 +188,8 @@ const ProductTryOnModal: React.FC<ProductTryOnModalProps> = ({
         setResultUrl(result.path);
         setStatus('done');
         
-        // Save the result to persistent storage
-        await saveAsset(result.path, undefined, `Try-On: ${product.title}`);
+        // Save the result to persistent storage with product-specific title
+        await saveAsset(result.path, undefined, `${product.title} - Try-On Result`);
         
         toast({
           title: 'Try-on complete!',
@@ -262,8 +267,9 @@ const ProductTryOnModal: React.FC<ProductTryOnModalProps> = ({
   const handleViewProduct = () => {
     onClose(); // Close the try-on modal first
     // Navigate to product detail like clicking in list mode
-    if (product?.external_url) {
-      const url = product.external_url.startsWith('http') ? product.external_url : `https://${product.external_url}`;
+    const externalUrl = (product as any)?.external_url;
+    if (externalUrl) {
+      const url = externalUrl.startsWith('http') ? externalUrl : `https://${externalUrl}`;
       window.open(url, '_blank', 'noopener,noreferrer');
     }
   };
@@ -424,16 +430,16 @@ const ProductTryOnModal: React.FC<ProductTryOnModalProps> = ({
             </div>
           )}
 
-          {/* Previous Results Section */}
-          {assets.length > 0 && (
+          {/* Previous Results Section - Only show results for this product */}
+          {productAssets.length > 0 && (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <h4 className="text-sm font-medium">Previous Try-Ons</h4>
-                <span className="text-xs text-muted-foreground">{assets.length} result{assets.length > 1 ? 's' : ''}</span>
+                <span className="text-xs text-muted-foreground">{productAssets.length} result{productAssets.length > 1 ? 's' : ''}</span>
               </div>
               
               <div className="grid grid-cols-4 gap-2">
-                {assets.slice(0, 8).map((asset) => (
+                {productAssets.slice(0, 8).map((asset) => (
                   <GlassPanel 
                     key={asset.id}
                     variant="custom" 
