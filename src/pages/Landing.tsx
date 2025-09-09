@@ -12,6 +12,34 @@ import { useSmartSwipeProducts } from "@/hooks/useSmartSwipeProducts";
 import { getResponsiveImageProps } from "@/utils/asosImageUtils";
 import { InvestorContactModal } from "@/components/InvestorContactModal";
 import modernFashionHero from "@/assets/modern-fashion-hero.jpg";
+
+function FeatureCarousel() {
+  const [currentFeature, setCurrentFeature] = useState(0);
+  const features = [
+    "Virtual Try Ons",
+    "UGC Collab", 
+    "Beauty AI Assistance",
+    "Mood Boards",
+    "Rewarded for Shopping"
+  ];
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentFeature((prev) => (prev + 1) % features.length);
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [features.length]);
+
+  return (
+    <div className="flex items-center gap-2 lg:gap-3">
+      <Crown className="w-3 h-3 sm:w-4 sm:h-4 lg:w-5 lg:h-5 flex-shrink-0" />
+      <span className="font-medium text-xs sm:text-xs lg:text-sm transition-all duration-500">
+        {features[currentFeature]}
+      </span>
+    </div>
+  );
+}
+
 export default function Landing() {
   const [isVisible, setIsVisible] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'swipe'>('grid');
@@ -187,18 +215,8 @@ export default function Landing() {
 
       {/* PREMIUM BANNER - More Minimal on Mobile */}
       <div className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground py-2 sm:py-2 lg:py-3 px-3 sm:px-4 lg:px-6">
-        <div className="container max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-2 lg:gap-3">
-            <Crown className="w-3 h-3 sm:w-4 sm:h-4 lg:w-5 lg:h-5 flex-shrink-0" />
-            <span className="font-medium text-xs sm:text-xs lg:text-sm">
-              <span className="hidden sm:inline">Premium : Daily AI Try-On • AI Beauty Consultant • AI Mood Board • Priority Support</span>
-              <span className="sm:hidden">Premium features available</span>
-            </span>
-          </div>
-          <Button variant="secondary" size="sm" className="text-xs px-2 sm:px-3 lg:px-4 py-1 h-6 lg:h-7 font-medium" onClick={() => navigate("/auth")}>
-            <span className="hidden sm:inline">Learn More</span>
-            <span className="sm:hidden">Learn</span>
-          </Button>
+        <div className="container max-w-7xl mx-auto flex items-center justify-center">
+          <FeatureCarousel />
         </div>
       </div>
 
@@ -703,5 +721,5 @@ export default function Landing() {
       </footer>
       
       <InvestorContactModal isOpen={investorModalOpen} onOpenChange={setInvestorModalOpen} />
-    </div>;
+    </div>
 }
