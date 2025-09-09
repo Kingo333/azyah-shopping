@@ -243,21 +243,8 @@ const ProductTryOnModal: React.FC<ProductTryOnModalProps> = ({
   };
 
   const openFullSizeImage = (imageUrl: string) => {
-    try {
-      const newWindow = window.open('', '_blank');
-      if (newWindow) {
-        newWindow.document.write(`
-          <html>
-            <head><title>Try-On Result</title></head>
-            <body style="margin: 0; padding: 20px; background: black; display: flex; justify-content: center; align-items: center; min-height: 100vh;">
-              <img src="${imageUrl}" style="max-width: 100%; max-height: 100%; object-fit: contain;" />
-            </body>
-          </html>
-        `);
-      }
-    } catch (error) {
-      console.error('Failed to open full size image:', error);
-    }
+    // Use the same thumbnail modal instead of opening a new window
+    setSelectedThumbnail(imageUrl);
   };
 
   const handleThumbnailLongPress = (imageUrl: string) => {

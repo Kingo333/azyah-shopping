@@ -4,8 +4,8 @@
   "description": "Mood-based fashion picks, UGC collabs, and salon rewards.",
   "start_url": "/?source=pwa",
   "display": "standalone",
-  "background_color": "#B91C1C",
-  "theme_color": "#B91C1C",
+  "background_color": "#FFFFFF",
+  "theme_color": "#FFFFFF",
   "orientation": "portrait",
   "scope": "/",
   "icons": [
