@@ -477,34 +477,49 @@ export default function BeautyConsultantPage() {
       />
       <ShopperNavigation />
       
-      <main className="container mx-auto px-4 py-6">
-        {/* Header Card with Avatar and Title */}
+      <main className="container mx-auto px-4 py-4 pt-20 max-w-4xl">
+        {/* Header Card with Avatar, Title and Back Button */}
         <Card className="glass-premium mb-6 border-0 overflow-hidden">
           <CardHeader className="pb-4">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div className="flex items-center gap-4">
-                <div className="relative">
-                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary/20 via-accent/10 to-primary-glow/30 p-1">
-                    <div className="w-full h-full rounded-full bg-gradient-to-br from-primary/90 to-accent flex items-center justify-center shadow-lg">
-                      <Bot className="w-8 h-8 text-white" />
+              <div className="flex items-center gap-4 w-full sm:w-auto">
+                {/* Back Button */}
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  onClick={() => window.history.back()}
+                  className="h-10 w-10 rounded-full hover:bg-primary/10 transition-all duration-300"
+                  title="Back to Dashboard"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                </Button>
+                
+                <div className="flex items-center gap-4">
+                  <div className="relative">
+                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary/20 via-accent/10 to-primary-glow/30 p-1">
+                      <div className="w-full h-full rounded-full bg-gradient-to-br from-primary/90 to-accent flex items-center justify-center shadow-lg">
+                        <Bot className="w-8 h-8 text-white" />
+                      </div>
+                    </div>
+                    <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-2 border-white flex items-center justify-center">
+                      <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
                     </div>
                   </div>
-                  <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-2 border-white flex items-center justify-center">
-                    <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+                  <div className="text-left">
+                    <h1 className="text-2xl font-playfair font-semibold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                      Azyah – AI Beauty Consultant
+                    </h1>
+                    <p className="text-muted-foreground text-sm flex items-center gap-2">
+                      <span>Your personal beauty expert</span>
+                      <span>•</span>
+                      <span className="flex items-center gap-1">
+                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                        Available 24/7
+                      </span>
+                    </p>
                   </div>
-                </div>
-                <div className="text-left">
-                  <h1 className="text-2xl font-playfair font-semibold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                    Azyah – AI Beauty Consultant
-                  </h1>
-                  <p className="text-muted-foreground text-sm flex items-center gap-2">
-                    <span>Your personal beauty expert</span>
-                    <span>•</span>
-                    <span className="flex items-center gap-1">
-                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                      Available 24/7
-                    </span>
-                  </p>
                 </div>
               </div>
               
@@ -719,7 +734,7 @@ export default function BeautyConsultantPage() {
         )}
 
         {/* Input Panel - Floating Style */}
-        <Card className="glass-premium border-0 sticky bottom-6">
+        <Card className="glass-premium border-0 mt-6">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
               {/* Action Buttons */}
@@ -846,11 +861,27 @@ export default function BeautyConsultantPage() {
           </CardContent>
         </Card>
 
+        {/* Mobile Back Button - Fixed Position */}
+        <div className="fixed top-20 left-4 md:hidden z-50">
+          <Button 
+            variant="outline"
+            size="icon"
+            onClick={() => window.history.back()}
+            className="w-12 h-12 rounded-full bg-white/90 dark:bg-card/90 backdrop-blur-sm border-2 shadow-lg hover:shadow-xl transition-all duration-300"
+            title="Back to Dashboard"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </Button>
+        </div>
+
         {/* Sticky "Ask Azyah" Button for Mobile */}
         <div className="fixed bottom-6 right-6 md:hidden z-50">
           <Button 
             onClick={() => document.querySelector('input')?.focus()}
-            className="w-14 h-14 rounded-full bg-gradient-to-r from-primary to-accent shadow-lg hover:shadow-xl transition-all duration-300 animate-pulse"
+            className="w-14 h-14 rounded-full bg-gradient-to-r from-primary to-accent shadow-lg hover:shadow-xl transition-all duration-300"
+            title="Ask Azyah"
           >
             <Sparkles className="w-6 h-6 text-white" />
           </Button>
