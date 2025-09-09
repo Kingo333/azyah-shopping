@@ -477,7 +477,7 @@ export default function BeautyConsultantPage() {
       />
       <ShopperNavigation />
       
-      <main className="container mx-auto px-4 py-8 pt-24 max-w-4xl pb-4">
+      <main className="container mx-auto px-4 pt-24 max-w-4xl">
         {/* Header Card with Avatar, Title and Back Button */}
         <Card className="glass-premium mb-6 border-0 overflow-hidden">
           <CardHeader className="pb-4">
@@ -849,8 +849,8 @@ export default function BeautyConsultantPage() {
         </Card>
 
         {/* Beauty Tips Carousel */}
-        <Card className="glass-panel mt-6 border-0">
-          <CardContent className="p-4">
+        <Card className="glass-panel mt-4 mb-4 border-0">
+          <CardContent className="p-3">
             <div className="text-center">
               <p className="text-sm text-muted-foreground mb-2">💡 Beauty Tip</p>
               <div className="flex items-center justify-center gap-3 animate-fade-in" key={currentTipIndex}>
