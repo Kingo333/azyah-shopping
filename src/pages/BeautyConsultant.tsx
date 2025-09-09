@@ -477,7 +477,7 @@ export default function BeautyConsultantPage() {
       />
       <ShopperNavigation />
       
-      <main className="container mx-auto px-4 py-8 pt-24 max-w-4xl min-h-screen">
+      <main className="container mx-auto px-4 py-8 pt-24 max-w-4xl pb-4">
         {/* Header Card with Avatar, Title and Back Button */}
         <Card className="glass-premium mb-6 border-0 overflow-hidden">
           <CardHeader className="pb-4">
