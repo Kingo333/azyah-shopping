@@ -469,7 +469,7 @@ export default function BeautyConsultantPage() {
   };
 
   return (
-    <div className="min-h-screen dashboard-bg">
+    <div className="dashboard-bg">
       <SEOHead 
         title="AI Beauty Consultant - Azyah | Get Personalized Beauty Advice"
         description="Get AI-powered beauty advice, product recommendations, and skin analysis from Azyah. Upload photos for personalized beauty consultations and tips."
@@ -477,7 +477,7 @@ export default function BeautyConsultantPage() {
       />
       <ShopperNavigation />
       
-      <main className="container mx-auto px-4 py-4 pt-20 max-w-4xl">
+      <main className="container mx-auto px-4 py-8 pt-24 max-w-4xl min-h-screen">
         {/* Header Card with Avatar, Title and Back Button */}
         <Card className="glass-premium mb-6 border-0 overflow-hidden">
           <CardHeader className="pb-4">

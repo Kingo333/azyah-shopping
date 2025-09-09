@@ -187,7 +187,7 @@
   .dashboard-bg {
     background: var(--gradient-dashboard);
     position: relative;
-    overflow: hidden;
+    min-height: 100vh;
   }
 
   .dashboard-bg::before {
