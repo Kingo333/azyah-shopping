@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Settings, LogOut, Sun, Moon, User, Plus, Globe } from 'lucide-react';
 import { cn } from '@/lib/utils';
+
 interface Brand {
   id: string;
   name: string;
@@ -15,43 +16,47 @@ interface Brand {
   bio: string | null;
   website: string | null;
 }
+
 interface BrandPortalHeaderProps {
   brand: Brand | null;
   onAddProduct?: () => void;
   onImportFromWebsite?: () => void;
   className?: string;
 }
+
 export const BrandPortalHeader: React.FC<BrandPortalHeaderProps> = ({
   brand,
   onAddProduct,
   onImportFromWebsite,
   className
 }) => {
-  const {
-    user,
-    signOut
-  } = useAuth();
-  const {
-    theme,
-    setTheme
-  } = useTheme();
+  const { user, signOut } = useAuth();
+  const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
+
   const handleThemeToggle = () => {
     setTheme(theme === 'dark' ? 'light' : 'dark');
   };
+
   const handleSignOut = async () => {
     await signOut();
   };
+
   const getUserName = () => {
     return user?.user_metadata?.name || user?.email?.split('@')[0] || 'User';
   };
-  return <div className={cn("flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 sm:mb-6 gap-4 p-4 rounded-lg bg-card border border-border", className)}>
+
+  return (
+    <div className={cn("flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 sm:mb-6 gap-4 p-4 rounded-lg bg-card border border-border", className)}>
       <div className="flex items-center gap-2 sm:gap-4">
         <div className="flex items-center gap-2 sm:gap-4">
           <div className="w-12 h-12 sm:w-16 sm:h-16 bg-muted/50 dark:bg-muted rounded-xl overflow-hidden border border-border">
-            {brand?.logo_url ? <img src={brand.logo_url} alt={brand.name} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-muted-foreground font-playfair bg-muted/30 dark:bg-muted/50">
+            {brand?.logo_url ? 
+              <img src={brand.logo_url} alt={brand.name} className="w-full h-full object-cover" /> :
+              <div className="w-full h-full flex items-center justify-center text-muted-foreground font-playfair bg-muted/30 dark:bg-muted/50">
                 {brand?.name.charAt(0).toUpperCase() || 'B'}
-              </div>}
+              </div>
+            }
           </div>
           <div>
             <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
@@ -69,12 +74,26 @@ export const BrandPortalHeader: React.FC<BrandPortalHeaderProps> = ({
           {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
         </Button>
 
-        {onImportFromWebsite}
+        {onImportFromWebsite && (
+          <Button 
+            variant="outline"
+            className="rounded-xl flex-1 sm:flex-none border-border hover:bg-accent/50 dark:hover:bg-accent/20"
+            onClick={onImportFromWebsite}
+          >
+            <Globe className="h-4 w-4 mr-2" />
+            Import from Website
+          </Button>
+        )}
 
-        {onAddProduct && <Button className="rounded-xl bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 dark:from-pink-600 dark:to-purple-600 dark:hover:from-pink-700 dark:hover:to-purple-700 flex-1 sm:flex-none text-white" onClick={onAddProduct}>
+        {onAddProduct && (
+          <Button 
+            className="rounded-xl bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 dark:from-pink-600 dark:to-purple-600 dark:hover:from-pink-700 dark:hover:to-purple-700 flex-1 sm:flex-none text-white"
+            onClick={onAddProduct}
+          >
             <Plus className="h-4 w-4 mr-2" />
             Add Product
-          </Button>}
+          </Button>
+        )}
 
         {/* User Menu */}
         <DropdownMenu>
@@ -98,5 +117,6 @@ export const BrandPortalHeader: React.FC<BrandPortalHeaderProps> = ({
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-    </div>;
+    </div>
+  );
 };
