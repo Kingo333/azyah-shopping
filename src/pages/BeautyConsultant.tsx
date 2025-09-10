@@ -21,6 +21,8 @@ import { sanitizeHtml } from "@/utils/sanitizeHtml";
 import { useImageOptimization } from "@/hooks/useImageOptimization";
 import { useUserBeautyProfile } from "@/hooks/useUserBeautyProfile";
 import { supabase } from "@/integrations/supabase/client";
+import { VoiceFab } from "@/components/voice/VoiceFab";
+import { VoiceOverlay } from "@/components/voice/VoiceOverlay";
 type ChatMessage = {
   id: string;
   type: 'user' | 'assistant' | 'system';
@@ -93,6 +95,7 @@ export default function BeautyConsultantPage() {
   const [loading, setLoading] = useState(false);
   const [isPlayingVoice, setIsPlayingVoice] = useState(false);
   const [currentTipIndex, setCurrentTipIndex] = useState(0);
+  const [voiceOverlayOpen, setVoiceOverlayOpen] = useState(false);
 
   // Product Analysis Mode
   const [analysisMode, setAnalysisMode] = useState<'chat' | 'product_analysis'>('chat');
@@ -714,6 +717,15 @@ export default function BeautyConsultantPage() {
           </Button>
         </div>
       </main>
+
+      {/* Floating Voice Button */}
+      <VoiceFab onOpen={() => setVoiceOverlayOpen(true)} />
+      
+      {/* Voice Overlay */}
+      <VoiceOverlay 
+        open={voiceOverlayOpen} 
+        onClose={() => setVoiceOverlayOpen(false)} 
+      />
 
       {/* Hidden file inputs */}
       <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
