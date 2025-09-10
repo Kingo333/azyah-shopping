@@ -712,9 +712,7 @@ export default function BeautyConsultantPage() {
 
         {/* Sticky "Ask Azyah" Button for Mobile */}
         <div className="fixed bottom-6 right-6 md:hidden z-50">
-          <Button onClick={() => document.querySelector('input')?.focus()} className="w-14 h-14 rounded-full bg-gradient-to-r from-primary to-accent shadow-lg hover:shadow-xl transition-all duration-300" title="Ask Azyah">
-            <Sparkles className="w-6 h-6 text-white" />
-          </Button>
+          
         </div>
       </main>
 
@@ -722,10 +720,7 @@ export default function BeautyConsultantPage() {
       <VoiceFab onOpen={() => setVoiceOverlayOpen(true)} />
       
       {/* Voice Overlay */}
-      <VoiceOverlay 
-        open={voiceOverlayOpen} 
-        onClose={() => setVoiceOverlayOpen(false)} 
-      />
+      <VoiceOverlay open={voiceOverlayOpen} onClose={() => setVoiceOverlayOpen(false)} />
 
       {/* Hidden file inputs */}
       <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
