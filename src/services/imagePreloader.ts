@@ -28,8 +28,8 @@ interface PreloadProgress {
 
 class ImagePreloaderService {
   private config: PreloadConfig = {
-    maxConcurrent: 6,
-    batchSize: 12,
+    maxConcurrent: 25,
+    batchSize: 30,
     retryAttempts: 2,
     retryDelay: 1000,
     priorityThreshold: 100
