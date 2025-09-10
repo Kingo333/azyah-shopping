@@ -2441,9 +2441,6 @@ export type Database = {
           name: string | null
           shipping_regions: string[] | null
           slug: string | null
-          socials: Json | null
-          updated_at: string | null
-          website: string | null
         }
         Insert: {
           bio?: string | null
@@ -2454,9 +2451,6 @@ export type Database = {
           name?: string | null
           shipping_regions?: string[] | null
           slug?: string | null
-          socials?: Json | null
-          updated_at?: string | null
-          website?: string | null
         }
         Update: {
           bio?: string | null
@@ -2467,9 +2461,6 @@ export type Database = {
           name?: string | null
           shipping_regions?: string[] | null
           slug?: string | null
-          socials?: Json | null
-          updated_at?: string | null
-          website?: string | null
         }
         Relationships: []
       }
@@ -2669,6 +2660,10 @@ export type Database = {
       check_payment_encryption: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      check_retailer_data_security: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
       }
       cleanup_expired_sessions: {
         Args: Record<PropertyKey, never>
