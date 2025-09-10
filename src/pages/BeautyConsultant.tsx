@@ -486,7 +486,7 @@ export default function BeautyConsultantPage() {
                     Daily reset at midnight
                   </span>
                 </div>
-                {!credits?.is_premium && <div className="text-xs text-muted-foreground">Upgrade for more daily credits</div>}
+                {!credits?.is_premium && <div className="text-xs text-muted-foreground">Upgrade: More daily credits </div>}
               </div>
             </div>
           </CardHeader>
