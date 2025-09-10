@@ -469,32 +469,14 @@ const RoleDashboard: React.FC = () => {
           {userProfile?.role === 'shopper' && renderShopperDashboard()}
           {userProfile?.role === 'brand' && renderBrandDashboard()}
           {userProfile?.role === 'retailer' && renderRetailerDashboard()}
-          {userProfile?.role === 'admin' && <div className="space-y-4">
-              <GlassPanel variant="premium" className="p-8">
-                <div className="text-center space-y-4">
-                  <h2 className="text-2xl font-cormorant font-semibold">Admin Dashboard</h2>
-                  <p className="text-muted-foreground">
-                    As an admin, you have access to all portals. Choose which portal to access:
-                  </p>
-                  <div className="flex flex-wrap gap-4 justify-center">
-                    <Button onClick={() => navigate('/brand-portal')} variant="premium">
-                      <Package className="h-4 w-4 mr-2" />
-                      Brand Portal
-                    </Button>
-                    <Button onClick={() => navigate('/retailer-portal')} variant="outline">
-                      <Store className="h-4 w-4 mr-2" />
-                      Retailer Portal
-                    </Button>
-                  </div>
-                </div>
-              </GlassPanel>
-              
-              {/* Payment Integration Test */}
-              <PaymentIntegrationTest />
-            </div>}
+          {userProfile?.role === 'admin' && (() => {
+            // Admin role is system-only, redirect to auth
+            navigate('/auth');
+            return null;
+          })()}
           
           {/* Show error if no valid role */}
-          {userProfile && !['shopper', 'brand', 'retailer', 'admin'].includes(userProfile.role) && <div className="space-y-4">
+          {userProfile && !['shopper', 'brand', 'retailer'].includes(userProfile.role) && <div className="space-y-4">
               <GlassPanel variant="premium" className="p-8">
                 <div className="text-center space-y-4">
                   <h2 className="text-xl font-semibold text-destructive">Invalid Role</h2>

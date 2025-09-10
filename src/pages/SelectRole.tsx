@@ -8,7 +8,7 @@ import { GlassPanel } from '@/components/ui/glass-panel';
 import { Label } from '@/components/ui/label';
 import { ShoppingBag, Star, Building2, Loader2 } from 'lucide-react';
 
-const ROLES = ['shopper', 'brand', 'retailer'] as const;
+const ROLES = ['shopper', 'brand', 'retailer'] as const; // Admin role excluded from user selection
 
 const SelectRole = () => {
   const navigate = useNavigate();

@@ -82,7 +82,7 @@ export const getUserRole = async (user: any): Promise<UserRole> => {
   // In Visual Edits mode, prioritize metadata for stability
   if (isVisualEditsMode()) {
     const metadataRole = user.user_metadata?.role;
-    if (metadataRole && ['shopper', 'brand', 'retailer', 'admin'].includes(metadataRole)) {
+    if (metadataRole && ['shopper', 'brand', 'retailer'].includes(metadataRole)) { // Admin excluded
       setCachedRole(userId, metadataRole as UserRole);
       return metadataRole as UserRole;
     }
@@ -96,7 +96,7 @@ export const getUserRole = async (user: any): Promise<UserRole> => {
   
   // 2. STRICT: Use user_metadata.role as SINGLE source of truth (set during signup)
   const metadataRole = user.user_metadata?.role;
-  if (metadataRole && ['shopper', 'brand', 'retailer', 'admin'].includes(metadataRole)) {
+  if (metadataRole && ['shopper', 'brand', 'retailer'].includes(metadataRole)) { // Admin excluded
     setCachedRole(userId, metadataRole as UserRole);
     
     // Sync with database in background (don't wait)
