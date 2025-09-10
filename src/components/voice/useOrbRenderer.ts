@@ -54,11 +54,11 @@ export function useOrbRenderer(
         centerX, centerY, radius
       );
       
-      // Beautiful gradient using app's maroon and beige theme
-      gradient.addColorStop(0, 'hsl(var(--primary-foreground))');
-      gradient.addColorStop(0.3, 'hsl(var(--primary-glow))');
-      gradient.addColorStop(0.6, 'hsl(var(--accent-cartier) / 0.7)');
-      gradient.addColorStop(0.9, 'hsl(var(--accent-cartier))');
+      // Beautiful gradient from white to blue
+      gradient.addColorStop(0, '#ffffff');
+      gradient.addColorStop(0.3, '#e0f2fe');
+      gradient.addColorStop(0.6, '#7dd3fc');
+      gradient.addColorStop(0.9, '#0ea5e9');
       gradient.addColorStop(1, 'transparent');
 
       // Draw main orb
@@ -73,7 +73,7 @@ export function useOrbRenderer(
           centerX, centerY, radius * 0.8,
           centerX, centerY, radius * 1.4
         );
-        glowGradient.addColorStop(0, 'hsl(var(--accent-cartier) / 0.3)');
+        glowGradient.addColorStop(0, 'rgba(14, 165, 233, 0.3)');
         glowGradient.addColorStop(1, 'transparent');
         
         ctx.fillStyle = glowGradient;
@@ -84,7 +84,7 @@ export function useOrbRenderer(
 
       // Add sparkle effects for high activity
       if (level > 0.3) {
-        ctx.fillStyle = 'hsl(var(--primary-foreground))';
+        ctx.fillStyle = '#ffffff';
         for (let i = 0; i < 6; i++) {
           const angle = (time * 0.05 + i * Math.PI / 3) % (Math.PI * 2);
           const sparkleRadius = radius * 1.2;
