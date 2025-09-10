@@ -513,8 +513,8 @@ export default function BeautyConsultantPage() {
         {/* Chat Messages */}
         <Card className="glass-premium mb-1 border-0 overflow-hidden">
           <CardContent className="p-0">
-            <div className="h-[500px] overflow-y-auto scrollbar-hide p-6">
-              <div className="space-y-6">
+            <div className="h-[400px] overflow-y-auto scrollbar-hide p-3">
+              <div className="space-y-3">
                 {messages.map((message, index) => <div key={message.id} className={`flex items-start gap-4 animate-fade-in ${message.type === 'user' ? 'flex-row-reverse' : 'flex-row'}`} style={{
                 animationDelay: `${index * 0.1}s`
               }}>
@@ -627,7 +627,7 @@ export default function BeautyConsultantPage() {
 
         {/* Input Panel - Floating Style */}
         <Card className="glass-premium border-0 mt-1">
-          <CardContent className="p-4">
+          <CardContent className="p-2">
             <div className="flex items-center gap-3">
               {/* Action Buttons */}
               <div className="flex items-center gap-2">
@@ -694,7 +694,7 @@ export default function BeautyConsultantPage() {
 
         {/* Beauty Tips Carousel */}
         <Card className="glass-panel mt-1 mb-1 border-0">
-          <CardContent className="p-3">
+          <CardContent className="p-2">
             <div className="text-center">
               <p className="text-sm text-muted-foreground mb-2">💡 Beauty Tip</p>
               <div className="flex items-center justify-center gap-3 animate-fade-in" key={currentTipIndex}>
