@@ -2398,6 +2398,34 @@ export type Database = {
           user_id: string
         }[]
       }
+      admin_access_payment_with_enhanced_security: {
+        Args: {
+          justification: string
+          operation_type?: string
+          payment_id_param: string
+        }
+        Returns: {
+          amount_fils: number
+          cancel_url: string | null
+          created_at: string | null
+          currency: string | null
+          failure_url: string | null
+          fee_amount_fils: number | null
+          id: string
+          latest_error_code: string | null
+          latest_error_message: string | null
+          operation_id: string
+          payment_intent_id: string
+          product: string
+          provider: string | null
+          redirect_url: string | null
+          status: string
+          success_url: string | null
+          tip_amount_fils: number | null
+          updated_at: string | null
+          user_id: string | null
+        }[]
+      }
       admin_access_payment_with_justification: {
         Args: { justification: string; payment_id_param: string }
         Returns: {
@@ -2915,6 +2943,20 @@ export type Database = {
         Args: { target_user_id: string }
         Returns: string
       }
+      get_user_payment_summary: {
+        Args: { target_user_id?: string }
+        Returns: {
+          amount_fils: number
+          created_at: string
+          currency: string
+          id: string
+          product: string
+          provider: string
+          status: string
+          updated_at: string
+          user_id: string
+        }[]
+      }
       infer_gender_from_text: {
         Args: { text_input: string }
         Returns: Database["public"]["Enums"]["gender_type"]
@@ -2937,6 +2979,14 @@ export type Database = {
         }
         Returns: undefined
       }
+      log_payment_access: {
+        Args: {
+          access_context?: string
+          action_type: string
+          payment_id: string
+        }
+        Returns: undefined
+      }
       log_user_data_access: {
         Args: {
           accessed_user_id: string
@@ -2956,6 +3006,14 @@ export type Database = {
       }
       policy_exists: {
         Args: { _name: string; _table: unknown }
+        Returns: boolean
+      }
+      secure_update_payment_status: {
+        Args: {
+          new_status: string
+          operation_context?: string
+          payment_intent_id_param: string
+        }
         Returns: boolean
       }
       tier_from_price_aed: {
@@ -2989,6 +3047,10 @@ export type Database = {
         Args: { payment_user_id: string }
         Returns: boolean
       }
+      validate_payment_security_compliance: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       validate_session_security: {
         Args: Record<PropertyKey, never>
         Returns: boolean
@@ -2999,6 +3061,10 @@ export type Database = {
       }
       validate_user_profile_access: {
         Args: { target_user_id: string }
+        Returns: boolean
+      }
+      verify_payment_ownership: {
+        Args: { payment_id_param: string; user_id_param?: string }
         Returns: boolean
       }
     }
