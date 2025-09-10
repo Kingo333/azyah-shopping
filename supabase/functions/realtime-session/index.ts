@@ -27,7 +27,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: 'gpt-4o-realtime-preview-2024-12-17',
-        voice: 'verse',
+        voice: 'shimmer',
         modalities: ['audio', 'text'],
         instructions: `You are Azyah, a warm and knowledgeable UAE beauty consultant. 
         You help users with beauty advice, product recommendations, shade matching, and styling tips.

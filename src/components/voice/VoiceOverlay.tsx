@@ -58,8 +58,6 @@ export function VoiceOverlay({ open, onClose }: VoiceOverlayProps) {
     switch (state) {
       case 'connecting':
         return 'Connecting to Azyah...';
-      case 'idle':
-        return 'Tap the orb and start speaking to Azyah';
       case 'listening':
         return 'Listening... speak naturally';
       case 'thinking':
@@ -178,11 +176,22 @@ export function VoiceOverlay({ open, onClose }: VoiceOverlayProps) {
         </div>
       )}
 
-      {/* Hint text */}
+      {/* Hint text as button */}
       <div className="absolute bottom-[10vh] left-0 right-0 text-center px-6">
-        <p className="text-white/80 text-sm tracking-wide">
-          {error ? `Error: ${error}` : getHintText()}
-        </p>
+        {error ? (
+          <p className="text-red-400 text-sm tracking-wide">Error: {error}</p>
+        ) : state === 'idle' ? (
+          <button
+            onClick={pttDown}
+            className="text-white/80 text-sm tracking-wide hover:text-white hover:bg-white/10 px-4 py-2 rounded-lg transition-all duration-200 border border-white/20 hover:border-white/40"
+          >
+            Tap here to start speaking to Azyah
+          </button>
+        ) : (
+          <p className="text-white/80 text-sm tracking-wide">
+            {getHintText()}
+          </p>
+        )}
       </div>
 
       {/* Audio element */}
