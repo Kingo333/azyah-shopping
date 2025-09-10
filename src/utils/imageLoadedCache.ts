@@ -126,12 +126,12 @@ class ImageLoadedCache {
 // Export singleton instance
 export const imageLoadedCache = new ImageLoadedCache();
 
-// Export convenience functions
-export const {
-  isLoaded: isImageLoaded,
-  markLoaded: markImageLoaded,
-  getDimensions: getImageDimensions,
-  getStats: getImageCacheStats,
-  clear: clearImageCache,
-  evict: evictImageFromCache
-} = imageLoadedCache;
+// Export convenience functions with proper this binding
+export const isImageLoaded = (url: string): boolean => imageLoadedCache.isLoaded(url);
+export const markImageLoaded = (url: string, width?: number, height?: number): void => 
+  imageLoadedCache.markLoaded(url, width, height);
+export const getImageDimensions = (url: string): { width?: number; height?: number } | null => 
+  imageLoadedCache.getDimensions(url);
+export const getImageCacheStats = () => imageLoadedCache.getStats();
+export const clearImageCache = (): void => imageLoadedCache.clear();
+export const evictImageFromCache = (url: string): void => imageLoadedCache.evict(url);
