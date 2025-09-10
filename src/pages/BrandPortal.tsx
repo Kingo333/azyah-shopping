@@ -22,6 +22,7 @@ import { CollabDashboard } from '@/components/ugc/CollabDashboard';
 import { Plus, Edit, Trash2, Upload, BarChart3, TrendingUp, Eye, Heart, ShoppingBag, DollarSign, Download, Filter, Globe } from 'lucide-react';
 import { InfoTooltip } from '@/components/ui/info-tooltip';
 import { FeedbackModal } from '@/components/FeedbackModal';
+import { useNavigate } from 'react-router-dom';
 import type { Product } from '@/types';
 interface Brand {
   id: string;
@@ -48,6 +49,7 @@ const BrandPortal: React.FC = () => {
   const {
     user
   } = useAuth();
+  const navigate = useNavigate();
   const {
     categories
   } = useCategories();
@@ -272,6 +274,23 @@ const BrandPortal: React.FC = () => {
         <p className="text-muted-foreground">Please log in to access the brand portal.</p>
       </div>
     </div>;
+
+  // Check user role - only brand users and admins can access brand portal
+  const userRole = user.user_metadata?.role;
+  if (userRole && userRole !== 'brand' && userRole !== 'admin') {
+    return <div className="min-h-screen flex items-center justify-center p-4">
+      <div className="text-center space-y-4">
+        <h2 className="text-xl font-semibold mb-2">Access Denied</h2>
+        <p className="text-muted-foreground">Only brand users can access the brand portal.</p>
+        <Button 
+          onClick={() => navigate('/')} 
+          variant="outline"
+        >
+          Go to Dashboard
+        </Button>
+      </div>
+    </div>;
+  }
   if (brandLoading) return <div className="min-h-screen flex items-center justify-center p-4">
       <div className="text-center">
         <h2 className="text-xl font-semibold mb-2">Loading Brand Portal...</h2>

@@ -249,6 +249,36 @@ const RetailerPortal = () => {
     }
   };
 
+  // Check user role - only retailer users and admins can access retailer portal
+  const userRole = user?.user_metadata?.role;
+  if (user && userRole && userRole !== 'retailer' && userRole !== 'admin') {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="text-center space-y-4">
+          <h2 className="text-xl font-semibold mb-2">Access Denied</h2>
+          <p className="text-muted-foreground">Only retailer users can access the retailer portal.</p>
+          <Button 
+            onClick={() => navigate('/')} 
+            variant="outline"
+          >
+            Go to Dashboard
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold mb-2">Access Restricted</h2>
+          <p className="text-muted-foreground">Please log in to access the retailer portal.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background dark:bg-slate-950">
       <div className="container max-w-7xl mx-auto p-3 md:p-6">

@@ -420,52 +420,42 @@ const RoleDashboard: React.FC = () => {
       </section>
 
     </div>;
-  const renderBrandDashboard = () => <div className="space-y-4">
+  const renderBrandDashboard = () => {
+    // Auto-redirect brand users to their portal
+    React.useEffect(() => {
+      if (userProfile?.role === 'brand') {
+        navigate('/brand-portal');
+      }
+    }, [userProfile?.role]);
 
-      {/* Quick Actions */}
+    return <div className="space-y-4">
       <GlassPanel variant="premium" className="p-8">
-        <div className="space-y-6">
-          <h3 className="text-xl font-cormorant font-semibold">Brand Management</h3>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            <Button onClick={() => navigate('/brand-portal')} variant="premium" className="h-24 flex-col gap-3">
-              <Package className="h-7 w-7" />
-              <span className="font-medium">Products</span>
-            </Button>
-            <Button onClick={() => navigate('/brand-portal')} variant="outline" className="h-24 flex-col gap-3 hover:scale-105 transition-transform">
-              <BarChart3 className="h-7 w-7" />
-              <span className="font-medium">Analytics</span>
-            </Button>
-            <Button onClick={() => navigate('/brand-portal')} variant="outline" className="h-24 flex-col gap-3 hover:scale-105 transition-transform">
-              <Settings className="h-7 w-7" />
-              <span className="font-medium">Settings</span>
-            </Button>
-          </div>
+        <div className="text-center space-y-4">
+          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <h3 className="text-xl font-cormorant font-semibold">Redirecting to Brand Portal...</h3>
+          <p className="text-muted-foreground">Taking you to your brand management dashboard</p>
         </div>
       </GlassPanel>
     </div>;
-  const renderRetailerDashboard = () => <div className="space-y-4">
+  };
+  const renderRetailerDashboard = () => {
+    // Auto-redirect retailer users to their portal
+    React.useEffect(() => {
+      if (userProfile?.role === 'retailer') {
+        navigate('/retailer-portal');
+      }
+    }, [userProfile?.role]);
 
-      {/* Quick Actions */}
+    return <div className="space-y-4">
       <GlassPanel variant="premium" className="p-8">
-        <div className="space-y-6">
-          <h3 className="text-xl font-cormorant font-semibold">Retailer Management</h3>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            <Button onClick={() => navigate('/retailer-portal')} variant="premium" className="h-24 flex-col gap-3">
-              <Package className="h-7 w-7" />
-              <span className="font-medium">Inventory</span>
-            </Button>
-            <Button onClick={() => navigate('/retailer-portal')} variant="outline" className="h-24 flex-col gap-3 hover:scale-105 transition-transform">
-              <Store className="h-7 w-7" />
-              <span className="font-medium">Brands</span>
-            </Button>
-            <Button onClick={() => navigate('/retailer-portal')} variant="outline" className="h-24 flex-col gap-3 hover:scale-105 transition-transform">
-              <BarChart3 className="h-7 w-7" />
-              <span className="font-medium">Analytics</span>
-            </Button>
-          </div>
+        <div className="text-center space-y-4">
+          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <h3 className="text-xl font-cormorant font-semibold">Redirecting to Retailer Portal...</h3>
+          <p className="text-muted-foreground">Taking you to your retailer management dashboard</p>
         </div>
       </GlassPanel>
     </div>;
+  };
   return <ErrorBoundary>
       <SEOHead title="Azyah - Fashion Discovery Platform" description="Discover, shop and create your perfect style with AI-powered fashion recommendations" key="dashboard-seo" // Force re-render to override payment cancel title
     />
