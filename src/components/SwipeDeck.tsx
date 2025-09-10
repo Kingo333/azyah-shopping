@@ -24,7 +24,9 @@ interface SwipeProduct {
   image_url?: string;
   media_urls?: any;
   brand_id?: string;
+  brand?: { name: string };
   brands?: { name: string };
+  retailer?: { name: string };
   tags?: string[];
   attributes?: any;
   is_external?: boolean;
@@ -352,9 +354,12 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
     const transformedProduct = {
       ...selectedProduct,
       media_urls: selectedProduct.media_urls,
-      brand: selectedProduct.brands?.name 
+      brand: selectedProduct.brand?.name 
+        ? { name: selectedProduct.brand.name }
+        : selectedProduct.brands?.name 
         ? { name: selectedProduct.brands.name }
         : selectedProduct.brands || { name: selectedProduct.merchant_name || 'ASOS' },
+      retailer: selectedProduct.retailer,
       price_cents: selectedProduct.price_cents,
       currency: selectedProduct.currency || 'USD'
     };
