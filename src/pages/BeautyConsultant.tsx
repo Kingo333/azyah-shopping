@@ -438,39 +438,32 @@ export default function BeautyConsultantPage() {
       <main className="container mx-auto px-4 pt-24 max-w-4xl">
         {/* Header Card with Avatar, Title and Back Button */}
         <Card className="glass-premium mb-6 border-0 overflow-hidden">
-          <CardHeader className="pb-6 bg-gradient-to-br from-background/50 via-background/80 to-background/50 backdrop-blur-sm">
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
-              <div className="flex items-center gap-6 w-full sm:w-auto">
+          <CardHeader className="pb-4 bg-gradient-to-r from-background/30 to-background/50 backdrop-blur-sm">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-4 w-full sm:w-auto">
                 {/* Back Button */}
-                <Button variant="ghost" size="icon" onClick={() => window.history.back()} className="h-12 w-12 rounded-full hover:bg-primary/10 hover:shadow-lg hover:shadow-primary/20 transition-all duration-300 border border-border/20" title="Back to Dashboard">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <Button variant="ghost" size="icon" onClick={() => window.history.back()} className="h-9 w-9 rounded-full hover:bg-primary/10 transition-colors" title="Back to Dashboard">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                   </svg>
                 </Button>
                 
-                <div className="flex items-center gap-5">
+                <div className="flex items-center gap-3">
                   <div className="relative">
-                    <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary/30 via-accent/20 to-primary-glow/40 p-1 shadow-lg shadow-primary/20">
-                      <div className="w-full h-full rounded-full bg-gradient-to-br from-primary via-primary-glow to-accent flex items-center justify-center shadow-inner">
-                        <Bot className="w-10 h-10 text-white drop-shadow-sm" />
-                      </div>
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-sm">
+                      <Bot className="w-6 h-6 text-white" />
                     </div>
-                    <div className="absolute -bottom-1 -right-1 w-7 h-7 bg-gradient-to-br from-green-400 to-green-500 rounded-full border-3 border-background flex items-center justify-center shadow-lg">
-                      <div className="w-2.5 h-2.5 bg-white rounded-full animate-pulse shadow-sm"></div>
+                    <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-green-500 rounded-full border-2 border-background flex items-center justify-center">
+                      <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></div>
                     </div>
                   </div>
-                  <div className="text-left space-y-2">
-                    <h1 className="text-3xl font-playfair font-bold bg-gradient-to-r from-primary via-primary-glow to-accent bg-clip-text text-transparent leading-tight">
-                      Azyah – AI Beauty Consultant
+                  <div className="text-left">
+                    <h1 className="text-xl font-playfair font-semibold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                      AI Beauty Consultant
                     </h1>
-                    <div className="flex items-center gap-3 text-muted-foreground">
-                      <span className="text-sm font-medium">Your personal beauty expert</span>
-                      <div className="w-1 h-1 bg-muted-foreground/50 rounded-full"></div>
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 bg-gradient-to-r from-green-400 to-green-500 rounded-full shadow-sm"></div>
-                        <span className="text-sm font-medium">Available 24/7</span>
-                      </div>
-                    </div>
+                    <p className="text-muted-foreground text-xs flex items-center gap-2">
+                      <span>Available 24/7</span>
+                    </p>
                   </div>
                 </div>
               </div>
