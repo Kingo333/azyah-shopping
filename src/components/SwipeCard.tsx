@@ -1,5 +1,5 @@
 
-import React, { memo, useCallback } from 'react';
+import React, { memo, useCallback, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -7,6 +7,8 @@ import { motion } from 'framer-motion';
 import { Heart, X, ShoppingBag, Sparkles, Info, Image } from 'lucide-react';
 import { getResponsiveImageProps } from '@/utils/asosImageUtils';
 import { getPrimaryImageUrl, hasMultipleImages, getImageCount } from '@/utils/imageHelpers';
+import { isImageLoaded, markImageLoaded } from '@/utils/imageLoadedCache';
+import { normalizeImageUrl } from '@/utils/imageUrlHelpers';
 
 interface SwipeProduct {
   id: string;
@@ -56,6 +58,19 @@ const SwipeCard = memo(({
   wishlistLoading,
   motionProps
 }: SwipeCardProps) => {
+  // Get normalized image URL and check cache
+  const primaryImageUrl = getPrimaryImageUrl(product);
+  const normalizedImageUrl = normalizeImageUrl(primaryImageUrl);
+  const [imageLoading, setImageLoading] = useState(() => !isImageLoaded(normalizedImageUrl));
+  const handleImageLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
+    const img = e.currentTarget;
+    setImageLoading(false);
+    // Cache the loaded image
+    markImageLoaded(normalizedImageUrl, img.naturalWidth, img.naturalHeight);
+    // Call original onLoad if provided
+    onImageLoad(e);
+  }, [normalizedImageUrl, onImageLoad]);
+
   const handleShopNow = useCallback(async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -93,18 +108,28 @@ const SwipeCard = memo(({
           >
             <img
               {...getResponsiveImageProps(
-                getPrimaryImageUrl(product),
+                normalizedImageUrl,
                 "(max-width: 768px) 100vw, 50vw"
               )}
               alt={product.title}
-              className="object-contain w-full h-full transition-opacity duration-300 max-h-full"
-              onLoad={onImageLoad}
+              className={`object-contain w-full h-full transition-opacity duration-300 max-h-full ${
+                imageLoading ? 'opacity-0' : 'opacity-100'
+              }`}
+              onLoad={handleImageLoad}
               onError={(e) => {
                 const img = e.target as HTMLImageElement;
                 img.src = '/placeholder.svg';
+                setImageLoading(false);
               }}
               style={{ maxHeight: '100%', maxWidth: '100%' }}
             />
+            
+            {/* Loading indicator */}
+            {imageLoading && (
+              <div className="absolute inset-0 flex items-center justify-center bg-muted animate-pulse">
+                <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+              </div>
+            )}
             
             <div className="absolute top-4 left-4 flex items-center gap-3">
               {hasMultipleImages(product) && (
@@ -218,6 +243,18 @@ const SwipeCard = memo(({
         </CardContent>
       </Card>
     </motion.div>
+  );
+}, (prevProps, nextProps) => {
+  // Custom comparison for memo optimization
+  const prevImageUrl = normalizeImageUrl(getPrimaryImageUrl(prevProps.product));
+  const nextImageUrl = normalizeImageUrl(getPrimaryImageUrl(nextProps.product));
+  
+  return (
+    prevProps.product.id === nextProps.product.id &&
+    prevImageUrl === nextImageUrl &&
+    prevProps.imageHeight === nextProps.imageHeight &&
+    prevProps.showInstructions === nextProps.showInstructions &&
+    prevProps.wishlistLoading === nextProps.wishlistLoading
   );
 });
 

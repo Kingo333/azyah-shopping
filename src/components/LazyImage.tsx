@@ -1,5 +1,7 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, memo } from 'react';
 import { cn } from '@/lib/utils';
+import { isImageLoaded, markImageLoaded, getImageDimensions } from '@/utils/imageLoadedCache';
+import { normalizeImageUrl } from '@/utils/imageUrlHelpers';
 
 interface LazyImageProps {
   src: string;
@@ -15,7 +17,7 @@ interface LazyImageProps {
   srcSet?: string;
 }
 
-const LazyImage = ({
+const LazyImage = memo(({
   src,
   alt,
   className,
@@ -28,9 +30,17 @@ const LazyImage = ({
   sizes,
   srcSet
 }: LazyImageProps) => {
-  const [isLoaded, setIsLoaded] = useState(false);
+  // Normalize the src URL for consistent caching
+  const normalizedSrc = normalizeImageUrl(src);
+  
+  // Check cache for initial loading state and dimensions
+  const cachedDimensions = getImageDimensions(normalizedSrc);
+  const [isLoaded, setIsLoaded] = useState(() => isImageLoaded(normalizedSrc));
   const [isError, setIsError] = useState(false);
   const [isInView, setIsInView] = useState(priority);
+  const [imageDimensions, setImageDimensions] = useState<{width?: number; height?: number}>(
+    cachedDimensions || {}
+  );
   const imgRef = useRef<HTMLImageElement>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
 
@@ -122,6 +132,12 @@ const LazyImage = ({
   };
 
   const handleLoad = () => {
+    const img = imgRef.current;
+    if (img) {
+      // Store dimensions and mark as loaded in cache
+      setImageDimensions({ width: img.naturalWidth, height: img.naturalHeight });
+      markImageLoaded(normalizedSrc, img.naturalWidth, img.naturalHeight);
+    }
     setIsLoaded(true);
     onLoad?.();
   };
@@ -131,10 +147,17 @@ const LazyImage = ({
     onError?.();
   };
 
-  const optimizedSrc = getOptimizedSrc(src);
+  const optimizedSrc = getOptimizedSrc(normalizedSrc);
 
   return (
-    <div className="relative overflow-hidden">
+    <div 
+      className="relative overflow-hidden"
+      style={{
+        aspectRatio: imageDimensions.width && imageDimensions.height 
+          ? `${imageDimensions.width} / ${imageDimensions.height}` 
+          : undefined
+      }}
+    >
       {/* Placeholder while loading */}
       {!isLoaded && !isError && (
         <div className={cn(
@@ -187,7 +210,7 @@ const LazyImage = ({
         <img
           ref={imgRef}
           src={optimizedSrc}
-          srcSet={generateSrcSet(src)}
+          srcSet={generateSrcSet(normalizedSrc)}
           sizes={sizes || "(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"}
           alt={alt}
           className={cn(
@@ -210,6 +233,16 @@ const LazyImage = ({
       )}
     </div>
   );
-};
+}, (prevProps, nextProps) => {
+  // Custom comparison for memo optimization
+  return (
+    normalizeImageUrl(prevProps.src) === normalizeImageUrl(nextProps.src) &&
+    prevProps.alt === nextProps.alt &&
+    prevProps.className === nextProps.className &&
+    prevProps.priority === nextProps.priority
+  );
+});
+
+LazyImage.displayName = 'LazyImage';
 
 export default LazyImage;
