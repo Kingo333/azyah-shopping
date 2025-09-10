@@ -2544,6 +2544,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      batch_track_analytics: {
+        Args: { events_data: Json; target_user_id: string }
+        Returns: Json
+      }
       check_payment_encryption: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -2560,6 +2564,10 @@ export type Database = {
           deleted_files_count: number
           deleted_jobs_count: number
         }[]
+      }
+      cleanup_old_analytics: {
+        Args: { days_to_keep?: number }
+        Returns: Json
       }
       cleanup_old_events: {
         Args: Record<PropertyKey, never>
@@ -2947,6 +2955,19 @@ export type Database = {
           recent_products: Json
           subcategory_slug: Database["public"]["Enums"]["subcategory_type"]
           swipe_count: number
+        }[]
+      }
+      get_user_analytics_summary: {
+        Args: { target_user_id: string }
+        Returns: {
+          negative_swipes: number
+          positive_swipes: number
+          preference_confidence: number
+          recent_activity: Json
+          top_brands: Json
+          top_categories: Json
+          total_swipes: number
+          wishlist_actions: number
         }[]
       }
       get_user_credits: {
