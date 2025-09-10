@@ -65,10 +65,14 @@ export function useAzyahVoice() {
               console.log('Session updated');
               break;
             case 'input_audio_buffer.speech_started':
+              console.log('Speech started detected by server');
               setState('listening');
               break;
             case 'input_audio_buffer.speech_stopped':
+              console.log('Speech stopped detected by server');
               setState('thinking');
+              // Now create the response since speech was detected
+              clientRef.current?.createResponse();
               break;
             case 'response.created':
               setState('thinking');
@@ -134,18 +138,19 @@ export function useAzyahVoice() {
     if (state === 'speaking') {
       // Interrupt if speaking
       clientRef.current?.interrupt();
-      setState('listening');
+      setState('idle');
     } else if (state === 'idle') {
-      setState('listening');
+      // Just indicate we're ready - server VAD will detect speech
+      setState('idle'); // Stay idle until server detects speech
+      console.log('Microphone active, waiting for speech...');
     }
   }, [connected, state, connectOnce]);
 
   const pttUp = useCallback(() => {
-    if (state === 'listening') {
-      setState('thinking');
-      clientRef.current?.endTurn();
-    }
-  }, [state]);
+    // With server VAD, we don't need to do anything on PTT release
+    // The server will automatically detect when speech stops
+    console.log('PTT released, server will detect speech end...');
+  }, []);
 
   const interrupt = useCallback(() => {
     if (state === 'speaking') {

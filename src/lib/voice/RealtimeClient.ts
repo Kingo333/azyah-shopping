@@ -87,6 +87,11 @@ export class RealtimeClient {
           if (message.type === 'response.function_call_arguments.done') {
             this.handleToolCall(message);
           }
+
+          // Log important events for debugging
+          if (message.type.includes('input_audio_buffer') || message.type.includes('response')) {
+            console.log('Audio/Response event:', message.type, message);
+          }
         } catch (error) {
           console.error('Error parsing message:', error);
         }
@@ -223,15 +228,21 @@ export class RealtimeClient {
   }
 
   startTurn() {
-    if (this.isConnected) {
-      this.dc.send(JSON.stringify({ type: 'input_audio_buffer.commit' }));
-      this.dc.send(JSON.stringify({ type: 'response.create' }));
-    }
+    // With server VAD, we don't manually control audio buffers
+    // Just indicate we're ready to listen
+    console.log('Ready to listen...');
   }
 
   endTurn() {
+    // With server VAD, the server detects when speech stops
+    // We'll create a response when we get the speech_stopped event
+    console.log('Waiting for speech detection...');
+  }
+
+  createResponse() {
+    // Only create response when speech is actually detected
     if (this.isConnected) {
-      this.dc.send(JSON.stringify({ type: 'input_audio_buffer.commit' }));
+      console.log('Creating response...');
       this.dc.send(JSON.stringify({ type: 'response.create' }));
     }
   }

@@ -59,9 +59,9 @@ export function VoiceOverlay({ open, onClose }: VoiceOverlayProps) {
       case 'connecting':
         return 'Connecting to Azyah...';
       case 'idle':
-        return 'Tap & hold the orb to talk with Azyah';
+        return 'Tap the orb and start speaking to Azyah';
       case 'listening':
-        return 'Listening... release to send';
+        return 'Listening... speak naturally';
       case 'thinking':
         return 'Azyah is thinking...';
       case 'speaking':
