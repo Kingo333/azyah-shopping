@@ -197,71 +197,92 @@ const Likes: React.FC = () => {
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-6">
             {likes.map((like) => (
-              <Card key={like.id} className="group glass-premium hover:shadow-elegant transition-all duration-300 premium-hover">
-                <CardContent className="p-0">
-                  <div className="relative aspect-square overflow-hidden rounded-t-lg">
-                    <img
-                      src={
-                        Array.isArray(like.products.media_urls) 
-                          ? like.products.media_urls[0] 
-                          : typeof like.products.media_urls === 'string' 
-                            ? JSON.parse(like.products.media_urls)[0] 
-                            : '/placeholder.svg'
-                      }
-                      alt={like.products.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                    <div className="absolute top-2 right-2 bg-background/80 backdrop-blur-sm rounded-md px-2 py-1">
-                      <span className="text-xs font-medium">
-                        {like.products.brands?.name || 'Unbranded'}
-                      </span>
-                    </div>
+              <div key={like.id} className="group relative bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2">
+                <div 
+                  className="w-full aspect-[3/4] bg-muted rounded-2xl overflow-hidden relative cursor-pointer"
+                  onClick={() => handleShopNow(like.products)}
+                >
+                  <img
+                    src={
+                      Array.isArray(like.products.media_urls) 
+                        ? like.products.media_urls[0] 
+                        : typeof like.products.media_urls === 'string' 
+                          ? JSON.parse(like.products.media_urls)[0] 
+                          : '/placeholder.svg'
+                    }
+                    alt={like.products.title}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = '/placeholder.svg';
+                    }}
+                  />
+                  
+                  {/* Hover gradient overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-primary/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  
+                  {/* Top-right action buttons */}
+                  <div className="absolute top-2 right-2 flex flex-col space-y-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 w-8 rounded-full bg-white/90 hover:bg-white backdrop-blur-sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        addToWishlistMutation.mutate(like.products.id);
+                      }}
+                      disabled={addToWishlistMutation.isPending}
+                    >
+                      <ShoppingBag className="h-4 w-4" />
+                    </Button>
                   </div>
                   
-                  <div className="p-2 md:p-4 space-y-2 md:space-y-3">
-                    <h3 className="font-semibold line-clamp-2 text-sm md:text-base">
+                  {/* Product Info Overlay (appears on hover) */}
+                  <div className="absolute bottom-4 left-4 right-4 bg-white/60 backdrop-blur-sm rounded-xl p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <div className="text-xs font-medium line-clamp-1 mb-1">
                       {like.products.title}
-                    </h3>
-                    <p className="text-base md:text-lg font-bold text-primary">
+                    </div>
+                    <div className="text-xs text-muted-foreground mb-1">
+                      {like.products.brands?.name || 'Unbranded'}
+                    </div>
+                    <div className="text-xs font-semibold text-primary mb-3">
                       {formatPrice(like.products.price_cents, like.products.currency)}
-                    </p>
+                    </div>
                     
-                    <div className="space-y-2">
-                      <div className="flex gap-1 md:gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => addToWishlistMutation.mutate(like.products.id)}
-                          disabled={addToWishlistMutation.isPending}
-                          className="flex-1 text-xs md:text-sm px-2 md:px-3 h-8 md:h-9"
-                        >
-                          <ShoppingBag className="h-3 w-3 md:h-4 md:w-4 mr-1" />
-                          Wishlist
-                        </Button>
+                    {/* Action buttons */}
+                    <div className="flex space-x-2">
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeLikeMutation.mutate(like.products.id);
+                        }}
+                        disabled={removeLikeMutation.isPending}
+                        className="flex-1 text-xs h-8"
+                      >
+                        <Trash2 className="h-3 w-3 mr-1" />
+                        Remove
+                      </Button>
+                      
+                      {/* Shop Now button */}
+                      {like.products.external_url && (
                         <Button
                           variant="default"
                           size="sm"
-                          onClick={() => handleShopNow(like.products)}
-                          className="flex-1 text-xs md:text-sm px-2 md:px-3 h-8 md:h-9"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleShopNow(like.products);
+                          }}
+                          className="flex-1 text-xs h-8"
                         >
-                          <ExternalLink className="h-3 w-3 md:h-4 md:w-4 mr-1" />
+                          <ExternalLink className="h-3 w-3 mr-1" />
                           Shop
                         </Button>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeLikeMutation.mutate(like.products.id)}
-                        disabled={removeLikeMutation.isPending}
-                        className="w-full text-muted-foreground hover:text-destructive text-xs md:text-sm h-8 md:h-9"
-                      >
-                        <Trash2 className="h-3 w-3 md:h-4 md:w-4 mr-1" />
-                        Remove
-                      </Button>
+                      )}
                     </div>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             ))}
           </div>
         )}
