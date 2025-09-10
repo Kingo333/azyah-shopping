@@ -140,7 +140,7 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
             </div>
 
             {/* Product Information */}
-            <div className="order-2 px-4 pb-20 lg:px-0 lg:pb-4 space-y-4 md:space-y-6">
+            <div className="order-2 px-4 pb-4 lg:px-0 lg:pb-4 space-y-4 md:space-y-6">
               {/* Product Header - Mobile */}
               <div className="md:hidden space-y-2 pt-2">
                 <h1 className="text-xl font-bold leading-tight">{product.title}</h1>
