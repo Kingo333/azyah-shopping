@@ -5,6 +5,7 @@ import { Plus, Heart, ShoppingBag, ExternalLink, Info, Image, User } from 'lucid
 import { useIsMobile } from '@/hooks/use-mobile';
 import { getPrimaryImageUrl, hasMultipleImages, getImageCount } from '@/utils/imageHelpers';
 import { useProductHasOutfit } from '@/hooks/useProductOutfits';
+import { isImageLoaded, markImageLoaded } from '@/utils/imageLoadedCache';
 
 interface ProductCardProps {
   product: any;
@@ -27,10 +28,15 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 }) => {
   const [showPlusButton, setShowPlusButton] = useState(false);
   const [pressTimer, setPressTimer] = useState<NodeJS.Timeout | null>(null);
+  const [imageLoadError, setImageLoadError] = useState(false);
   const isMobile = useIsMobile();
   
   // Check if product has outfit for try-on
   const { data: hasOutfit } = useProductHasOutfit(product.id);
+  
+  // Get image URL and check cache
+  const imageUrl = getPrimaryImageUrl(product);
+  const isImageCached = isImageLoaded(imageUrl);
 
   const formatPrice = (priceCents: number, currency: string) => {
     const price = priceCents / 100;
@@ -107,6 +113,15 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     if (onTryOn) onTryOn(product);
   }, [onTryOn, product]);
 
+  const handleImageLoad = useCallback(() => {
+    markImageLoaded(imageUrl);
+    setImageLoadError(false);
+  }, [imageUrl]);
+
+  const handleImageError = useCallback(() => {
+    setImageLoadError(true);
+  }, []);
+
   return (
     <div 
       className="group relative bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 cursor-grab active:cursor-grabbing"
@@ -117,10 +132,18 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       onMouseLeave={() => setShowPlusButton(false)}
     >
       <div className="aspect-[3/4] bg-muted rounded-2xl overflow-hidden relative">
+        {!isImageCached && !imageLoadError && (
+          <div className="absolute inset-0 bg-muted animate-pulse flex items-center justify-center z-10">
+            <div className="text-muted-foreground text-xs">Loading...</div>
+          </div>
+        )}
         <img 
-          src={getPrimaryImageUrl(product)} 
+          src={imageLoadError ? '/placeholder.svg' : imageUrl} 
           alt={product.title}
           className="w-full h-full object-cover"
+          onLoad={handleImageLoad}
+          onError={handleImageError}
+          loading={isImageCached ? "eager" : "lazy"}
         />
         
         {/* Multiple images indicator for ASOS products */}

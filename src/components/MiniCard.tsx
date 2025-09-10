@@ -1,9 +1,10 @@
 
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Heart, X, Bookmark } from 'lucide-react';
 import { Product } from '@/types';
+import { isImageLoaded, markImageLoaded } from '@/utils/imageLoadedCache';
 
 interface MiniCardProps {
   product: Product;
@@ -12,8 +13,23 @@ interface MiniCardProps {
 }
 
 const MiniCard: React.FC<MiniCardProps> = ({ product, swipeAction, onClick }) => {
+  const [imageLoadError, setImageLoadError] = useState(false);
+  
   const formatPrice = (cents: number, currency: string = 'USD') =>
     new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(cents / 100);
+
+  // Get image URL and check cache
+  const imageUrl = product.media_urls[0] || '/placeholder.svg';
+  const isImageCached = isImageLoaded(imageUrl);
+
+  const handleImageLoad = useCallback(() => {
+    markImageLoaded(imageUrl);
+    setImageLoadError(false);
+  }, [imageUrl]);
+
+  const handleImageError = useCallback(() => {
+    setImageLoadError(true);
+  }, []);
 
   const getSwipeIcon = () => {
     switch (swipeAction) {
@@ -47,10 +63,18 @@ const MiniCard: React.FC<MiniCardProps> = ({ product, swipeAction, onClick }) =>
       onClick={onClick}
     >
       <div className="relative h-16 w-full">
+        {!isImageCached && !imageLoadError && (
+          <div className="absolute inset-0 bg-muted animate-pulse flex items-center justify-center z-10">
+            <div className="text-muted-foreground text-xs">Loading...</div>
+          </div>
+        )}
         <img 
-          src={product.media_urls[0] || '/placeholder.svg'} 
+          src={imageLoadError ? '/placeholder.svg' : imageUrl} 
           alt={product.title}
           className="w-full h-full object-cover"
+          onLoad={handleImageLoad}
+          onError={handleImageError}
+          loading={isImageCached ? "eager" : "lazy"}
         />
         <div className="absolute top-1 right-1">
           <Badge variant="secondary" className="h-5 px-1 text-xs flex items-center gap-1">
