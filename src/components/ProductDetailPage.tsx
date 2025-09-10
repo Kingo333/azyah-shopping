@@ -133,14 +133,14 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
         <div className="max-w-md mx-auto md:max-w-7xl lg:mx-auto">
           <div className="flex flex-col lg:grid lg:grid-cols-2 lg:gap-12 lg:px-4">
             {/* Image Gallery - Mobile optimized */}
-            <div className="order-1 px-2 py-2 pb-4 lg:px-0">
+            <div className="order-1 px-4 py-4 pb-8 lg:px-0">
               <div className="aspect-[3/4] md:aspect-[3/4] lg:aspect-[4/5] w-full min-h-[400px] md:min-h-[500px] lg:min-h-[600px]">
                 <EnhancedProductGallery images={images} productTitle={product.title} productId={product.id} hasARMesh={false} />
               </div>
             </div>
 
             {/* Product Information */}
-            <div className="order-2 px-2 pb-2 lg:px-0 lg:pb-2 space-y-2 md:space-y-3">
+            <div className="order-2 px-4 pb-4 lg:px-0 lg:pb-4 space-y-4 md:space-y-6">
               {/* Product Header - Mobile */}
               <div className="md:hidden space-y-2 pt-2">
                 <h1 className="text-xl font-bold leading-tight">{product.title}</h1>
