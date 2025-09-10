@@ -7,7 +7,6 @@ import { Badge } from '@/components/ui/badge';
 import { ZoomIn, RotateCw } from 'lucide-react';
 import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
 import { getResponsiveImageProps } from '@/utils/asosImageUtils';
-import { isImageLoaded, markImageLoaded } from '@/utils/imageLoadedCache';
 
 interface EnhancedProductGalleryProps {
   images: string[];
@@ -47,8 +46,6 @@ export const EnhancedProductGallery: React.FC<EnhancedProductGalleryProps> = ({
   };
 
   const handleImageLoad = () => {
-    const currentImageUrl = images[selectedImage];
-    markImageLoaded(currentImageUrl);
     setImageLoaded(true);
   };
 
@@ -57,16 +54,12 @@ export const EnhancedProductGallery: React.FC<EnhancedProductGalleryProps> = ({
     setImageLoaded(true);
   };
 
-  // Check if current image is cached
-  const currentImageUrl = images[selectedImage] || '/placeholder.svg';
-  const isCurrentImageCached = isImageLoaded(currentImageUrl);
-
   return (
     <div className="space-y-4">
       {/* Main Image Display */}
       <div className="relative aspect-[3/4] md:aspect-[3/4] lg:aspect-[4/5] min-h-[400px] md:min-h-[500px] lg:min-h-[600px] overflow-hidden rounded-lg bg-card group">
         {/* Loading Skeleton */}
-        {!isCurrentImageCached && !imageLoaded && !imageError && (
+        {!imageLoaded && (
           <div className="absolute inset-0 bg-muted animate-pulse flex items-center justify-center">
             <div className="text-muted-foreground text-sm">Loading...</div>
           </div>
@@ -98,7 +91,7 @@ export const EnhancedProductGallery: React.FC<EnhancedProductGalleryProps> = ({
             console.error('Image failed to load:', images[selectedImage], e);
             handleImageError();
           }}
-          loading={isCurrentImageCached ? "eager" : "lazy"}
+          loading="eager"
         />
         
         {/* Overlay Controls */}

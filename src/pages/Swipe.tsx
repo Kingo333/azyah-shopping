@@ -207,7 +207,7 @@ const Swipe = () => {
               />
             </div>
           </div> : <div className="flex-1">
-            <ProductListView
+            <ProductListView 
               products={products} 
               isLoading={productsLoading}
               selectedCategories={filters.categories}

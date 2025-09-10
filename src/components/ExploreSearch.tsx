@@ -180,9 +180,9 @@ const ExploreSearch: React.FC<ExploreSearchProps> = ({
           }
         }
 
-        // Search retailers (using secure public view for authenticated users)
+        // Search retailers
         const { data: retailers } = await supabase
-          .from('retailers_public')
+          .from('retailers')
           .select('id, name, slug, logo_url, bio')
           .or(`name.ilike.%${debouncedQuery}%,bio.ilike.%${debouncedQuery}%`)
           .limit(10);

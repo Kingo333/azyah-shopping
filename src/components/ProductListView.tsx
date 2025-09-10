@@ -17,7 +17,6 @@ import { getResponsiveImageProps } from '@/utils/asosImageUtils';
 import { getPrimaryImageUrl, hasMultipleImages, getImageCount } from '@/utils/imageHelpers';
 import { useProductHasOutfit } from '@/hooks/useProductOutfits';
 import CategoryCarousel from '@/components/CategoryCarousel';
-import { isImageLoaded, markImageLoaded } from '@/utils/imageLoadedCache';
 
 interface ProductListViewProps {
   products: Product[];
@@ -39,23 +38,9 @@ const ProductCard: React.FC<{
   const { addToWishlist, isLoading: wishlistLoading } = useWishlist(product.id);
   const { data: hasOutfit, isLoading: outfitLoading, error: outfitError } = useProductHasOutfit(product.id);
   const [tryOnModalOpen, setTryOnModalOpen] = useState(false);
-  const [imageLoadError, setImageLoadError] = useState(false);
 
   // Show head icon when outfit exists
   const shouldShowHeadIcon = hasOutfit === true;
-  
-  // Get image URL and check cache
-  const imageUrl = getPrimaryImageUrl(product);
-  const isImageCached = isImageLoaded(imageUrl);
-
-  const handleImageLoad = () => {
-    markImageLoaded(imageUrl);
-    setImageLoadError(false);
-  };
-
-  const handleImageError = () => {
-    setImageLoadError(true);
-  };
 
   const handleAddToWishlist = async () => {
     if (!user) {
@@ -89,21 +74,16 @@ const ProductCard: React.FC<{
         className="w-full aspect-[3/4] bg-muted rounded-2xl overflow-hidden relative cursor-pointer"
         onClick={() => handleProductClick(product)}
       >
-        {!isImageCached && !imageLoadError && (
-          <div className="absolute inset-0 bg-muted animate-pulse flex items-center justify-center z-10">
-            <div className="text-muted-foreground text-xs">Loading...</div>
-          </div>
-        )}
         <img
           {...getResponsiveImageProps(
-            imageLoadError ? '/placeholder.svg' : imageUrl,
+            getPrimaryImageUrl(product),
             "(max-width: 768px) 50vw, 25vw"
           )}
           alt={product.title}
           className="w-full h-full object-cover"
-          onLoad={handleImageLoad}
-          onError={handleImageError}
-          loading={isImageCached ? "eager" : "lazy"}
+          onError={(e) => {
+            (e.target as HTMLImageElement).src = '/placeholder.svg';
+          }}
         />
         
         {/* Multiple images indicator for ASOS products */}

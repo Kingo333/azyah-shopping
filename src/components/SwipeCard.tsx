@@ -1,12 +1,12 @@
 
-import React, { memo, useCallback, useState } from 'react';
+import React, { memo, useCallback } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { motion } from 'framer-motion';
 import { Heart, X, ShoppingBag, Sparkles, Info, Image } from 'lucide-react';
+import { getResponsiveImageProps } from '@/utils/asosImageUtils';
 import { getPrimaryImageUrl, hasMultipleImages, getImageCount } from '@/utils/imageHelpers';
-import LazyImage from '@/components/LazyImage';
 
 interface SwipeProduct {
   id: string;
@@ -56,9 +56,6 @@ const SwipeCard = memo(({
   wishlistLoading,
   motionProps
 }: SwipeCardProps) => {
-  // Get image URL
-  const primaryImageUrl = getPrimaryImageUrl(product);
-
   const handleShopNow = useCallback(async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -94,13 +91,19 @@ const SwipeCard = memo(({
             }}
             onClick={onInstructionsClick}
           >
-            <LazyImage
-              src={primaryImageUrl}
+            <img
+              {...getResponsiveImageProps(
+                getPrimaryImageUrl(product),
+                "(max-width: 768px) 100vw, 50vw"
+              )}
               alt={product.title}
-              className="object-contain w-full h-full max-h-full"
-              sizes="(max-width: 768px) 100vw, 50vw"
-              priority={true}
-              onLoad={() => onImageLoad({ currentTarget: { naturalWidth: 0, naturalHeight: 0 } } as any)}
+              className="object-contain w-full h-full transition-opacity duration-300 max-h-full"
+              onLoad={onImageLoad}
+              onError={(e) => {
+                const img = e.target as HTMLImageElement;
+                img.src = '/placeholder.svg';
+              }}
+              style={{ maxHeight: '100%', maxWidth: '100%' }}
             />
             
             <div className="absolute top-4 left-4 flex items-center gap-3">
@@ -215,13 +218,6 @@ const SwipeCard = memo(({
         </CardContent>
       </Card>
     </motion.div>
-  );
-}, (prevProps, nextProps) => {
-  return (
-    prevProps.product.id === nextProps.product.id &&
-    prevProps.imageHeight === nextProps.imageHeight &&
-    prevProps.showInstructions === nextProps.showInstructions &&
-    prevProps.wishlistLoading === nextProps.wishlistLoading
   );
 });
 

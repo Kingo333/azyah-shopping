@@ -1,11 +1,10 @@
-import React, { useState, useCallback, memo } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Plus, Heart, ShoppingBag, ExternalLink, Info, Image, User } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { getPrimaryImageUrl, hasMultipleImages, getImageCount } from '@/utils/imageHelpers';
 import { useProductHasOutfit } from '@/hooks/useProductOutfits';
-import LazyImage from '@/components/LazyImage';
 
 interface ProductCardProps {
   product: any;
@@ -17,7 +16,7 @@ interface ProductCardProps {
   onTryOn?: (product: any) => void;
 }
 
-const ProductCard: React.FC<ProductCardProps> = memo(({
+export const ProductCard: React.FC<ProductCardProps> = ({
   product,
   onDragStart,
   onAddToBoard,
@@ -32,9 +31,6 @@ const ProductCard: React.FC<ProductCardProps> = memo(({
   
   // Check if product has outfit for try-on
   const { data: hasOutfit } = useProductHasOutfit(product.id);
-  
-  // Get image URL
-  const imageUrl = getPrimaryImageUrl(product);
 
   const formatPrice = (priceCents: number, currency: string) => {
     const price = priceCents / 100;
@@ -111,7 +107,6 @@ const ProductCard: React.FC<ProductCardProps> = memo(({
     if (onTryOn) onTryOn(product);
   }, [onTryOn, product]);
 
-
   return (
     <div 
       className="group relative bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 cursor-grab active:cursor-grabbing"
@@ -122,11 +117,10 @@ const ProductCard: React.FC<ProductCardProps> = memo(({
       onMouseLeave={() => setShowPlusButton(false)}
     >
       <div className="aspect-[3/4] bg-muted rounded-2xl overflow-hidden relative">
-        <LazyImage
-          src={imageUrl}
+        <img 
+          src={getPrimaryImageUrl(product)} 
           alt={product.title}
           className="w-full h-full object-cover"
-          priority={false}
         />
         
         {/* Multiple images indicator for ASOS products */}
@@ -222,14 +216,4 @@ const ProductCard: React.FC<ProductCardProps> = memo(({
       </div>
     </div>
   );
-}, (prevProps, nextProps) => {
-  return (
-    prevProps.product.id === nextProps.product.id &&
-    prevProps.product.title === nextProps.product.title &&
-    prevProps.product.price_cents === nextProps.product.price_cents
-  );
-});
-
-ProductCard.displayName = 'ProductCard';
-
-export { ProductCard };
+};
