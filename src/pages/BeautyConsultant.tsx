@@ -712,6 +712,10 @@ export default function BeautyConsultantPage() {
           </CardContent>
         </Card>
 
+        {/* Mobile Back Button - Fixed Position */}
+        <div className="fixed top-20 left-4 md:hidden z-50">
+          
+        </div>
 
         {/* Sticky "Ask Azyah" Button for Mobile */}
         <div className="fixed bottom-6 right-6 md:hidden z-50">

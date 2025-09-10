@@ -12,6 +12,7 @@ import ExploreSearch from '@/components/ExploreSearch';
 import { useAuth } from '@/contexts/AuthContext';
 import { TrendingUp, Trophy, Search, Globe, MapPin, Star, Users, Sparkles, Crown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { BackButton } from '@/components/ui/back-button';
 const Explore: React.FC = () => {
   const {
     user
@@ -26,8 +27,8 @@ const Explore: React.FC = () => {
         
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
+          <BackButton />
           <h1 className="text-3xl font-cormorant font-bold">Explore</h1>
-          
         </div>
 
         {/* Main Navigation */}
