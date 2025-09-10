@@ -132,7 +132,7 @@ const Swipe = () => {
   return <div className="min-h-screen dashboard-bg flex flex-col">
       {/* Header */}
       <header className={`sticky top-0 z-50 w-full border-b border-white/20 glass-premium shrink-0 transition-opacity duration-300 ${isProductDetailOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
-        <div className="container max-w-screen-2xl mx-auto px-2 sm:px-4 py-2 sm:py-3">
+        <div className="container max-w-screen-2xl mx-auto px-2 sm:px-4 py-1 sm:py-1">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center space-x-2 sm:space-x-4 flex-shrink-0">
               <Button variant="ghost" size="sm" onClick={() => navigate("/dashboard")} className="hover:bg-accent/50 p-2">
@@ -191,11 +191,11 @@ const Swipe = () => {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col container max-w-screen-lg mx-auto px-4 py-1 sm:py-4">
+      <main className="flex-1 flex flex-col container max-w-screen-lg mx-auto px-4 py-0 sm:py-1">
 
         {/* Content Container */}
         {viewMode === 'swipe' ? <div className="flex-1 flex items-center justify-center min-h-[600px] px-4">
-            <div className="relative w-full max-w-[380px] sm:max-w-md lg:max-w-lg h-[calc(100vh-180px)] lg:h-[calc(100vh-140px)] max-h-[700px] lg:max-h-[800px]">
+            <div className="relative w-full max-w-[380px] sm:max-w-md lg:max-w-lg h-[calc(100vh-120px)] lg:h-[calc(100vh-100px)] max-h-[700px] lg:max-h-[800px]">
               <SwipeDeck 
                 filter={filters.categories[0] || 'all'} 
                 subcategory={filters.subcategories[0] || ''} 
