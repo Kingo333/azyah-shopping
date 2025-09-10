@@ -483,10 +483,9 @@ export default function BeautyConsultantPage() {
                     Daily reset at midnight
                   </span>
                 </div>
-                {!credits?.is_premium && <Button size="sm" className="bg-gradient-to-r from-accent to-primary text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300">
-                    <Crown className="w-3 h-3 mr-1" />
-                    Upgrade
-                  </Button>}
+                {!credits?.is_premium && <div className="text-xs text-muted-foreground">
+                  Upgrade for daily credits
+                </div>}
               </div>
             </div>
           </CardHeader>
