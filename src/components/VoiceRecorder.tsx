@@ -120,29 +120,14 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
   };
   const buttonState = getButtonState();
   const Icon = buttonState.icon;
-  
-  return (
-    <TooltipProvider>
+  return <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
-          <Button
-            onClick={handleClick}
-            disabled={disabled || isProcessing}
-            variant={buttonState.variant}
-            size="sm"
-            className="gap-2"
-          >
-            <Icon 
-              size={16} 
-              className={isProcessing ? 'animate-spin' : ''}
-            />
-            {buttonState.label}
-          </Button>
+          
         </TooltipTrigger>
         <TooltipContent>
           <p>{buttonState.tooltip}</p>
         </TooltipContent>
       </Tooltip>
-    </TooltipProvider>
-  );
+    </TooltipProvider>;
 };
