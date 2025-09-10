@@ -513,7 +513,7 @@ export default function BeautyConsultantPage() {
         {/* Chat Messages */}
         <Card className="glass-premium mb-6 border-0 overflow-hidden">
           <CardContent className="p-0">
-            <div className="min-h-[200px] max-h-[500px] overflow-y-auto scrollbar-hide p-6">
+            <div className="h-[500px] overflow-y-auto scrollbar-hide p-6">
               <div className="space-y-6">
                 {messages.map((message, index) => <div key={message.id} className={`flex items-start gap-4 animate-fade-in ${message.type === 'user' ? 'flex-row-reverse' : 'flex-row'}`} style={{
                 animationDelay: `${index * 0.1}s`
