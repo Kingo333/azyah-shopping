@@ -9,6 +9,7 @@ import { getResponsiveImageProps } from '@/utils/asosImageUtils';
 import { getPrimaryImageUrl, hasMultipleImages, getImageCount } from '@/utils/imageHelpers';
 import { isImageLoaded, markImageLoaded } from '@/utils/imageLoadedCache';
 import { normalizeImageUrl } from '@/utils/imageUrlHelpers';
+import { useImagePreloader } from '@/hooks/useImagePreloader';
 
 interface SwipeProduct {
   id: string;
@@ -58,10 +59,13 @@ const SwipeCard = memo(({
   wishlistLoading,
   motionProps
 }: SwipeCardProps) => {
-  // Get normalized image URL and check cache
+  const { isImagePreloaded } = useImagePreloader();
+  
+  // Get normalized image URL and check cache/preload status
   const primaryImageUrl = getPrimaryImageUrl(product);
   const normalizedImageUrl = normalizeImageUrl(primaryImageUrl);
-  const [imageLoading, setImageLoading] = useState(() => !isImageLoaded(normalizedImageUrl));
+  const isImageReady = isImageLoaded(normalizedImageUrl) || isImagePreloaded(normalizedImageUrl);
+  const [imageLoading, setImageLoading] = useState(() => !isImageReady);
   const handleImageLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
     const img = e.currentTarget;
     setImageLoading(false);
@@ -121,6 +125,7 @@ const SwipeCard = memo(({
                 img.src = '/placeholder.svg';
                 setImageLoading(false);
               }}
+              loading={isImageReady ? "eager" : "lazy"}
               style={{ maxHeight: '100%', maxWidth: '100%' }}
             />
             

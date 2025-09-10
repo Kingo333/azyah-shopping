@@ -6,6 +6,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { getPrimaryImageUrl, hasMultipleImages, getImageCount } from '@/utils/imageHelpers';
 import { useProductHasOutfit } from '@/hooks/useProductOutfits';
 import { isImageLoaded, markImageLoaded } from '@/utils/imageLoadedCache';
+import { useImagePreloader } from '@/hooks/useImagePreloader';
 
 interface ProductCardProps {
   product: any;
@@ -30,13 +31,14 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   const [pressTimer, setPressTimer] = useState<NodeJS.Timeout | null>(null);
   const [imageLoadError, setImageLoadError] = useState(false);
   const isMobile = useIsMobile();
+  const { isImagePreloaded } = useImagePreloader();
   
   // Check if product has outfit for try-on
   const { data: hasOutfit } = useProductHasOutfit(product.id);
   
-  // Get image URL and check cache
+  // Get image URL and check cache/preload status
   const imageUrl = getPrimaryImageUrl(product);
-  const isImageCached = isImageLoaded(imageUrl);
+  const isImageCached = isImageLoaded(imageUrl) || isImagePreloaded(imageUrl);
 
   const formatPrice = (priceCents: number, currency: string) => {
     const price = priceCents / 100;
