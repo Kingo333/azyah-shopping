@@ -2665,6 +2665,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: Json
       }
+      check_security_definer_views: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       cleanup_expired_sessions: {
         Args: Record<PropertyKey, never>
         Returns: number
