@@ -43,58 +43,80 @@ export function useOrbRenderer(
         return;
       }
 
-      // Breathing animation based on mic level
+      // Sound wave motion effects
+      const soundWave1 = Math.sin(time * 0.03 + level * 10) * 0.05;
+      const soundWave2 = Math.cos(time * 0.02 + level * 8) * 0.03;
       const breathe = 1 + Math.sin(time * 0.02) * 0.1;
       const pulse = 1 + Math.min(level * 3, 0.4);
       const radius = baseRadius * breathe * pulse;
 
-      // Create dynamic gradient
+      // Sound wave-affected center position
+      const waveX = centerX + soundWave1 * baseRadius * level;
+      const waveY = centerY + soundWave2 * baseRadius * level;
+
+      // Create dynamic gradient with maroon and beige
       const gradient = ctx.createRadialGradient(
-        centerX, centerY, radius * 0.1,
-        centerX, centerY, radius
+        waveX, waveY, radius * 0.1,
+        waveX, waveY, radius
       );
       
-      // Beautiful gradient from white to blue
-      gradient.addColorStop(0, '#ffffff');
-      gradient.addColorStop(0.3, '#e0f2fe');
-      gradient.addColorStop(0.6, '#7dd3fc');
-      gradient.addColorStop(0.9, '#0ea5e9');
+      // Beautiful gradient using app's maroon and beige colors
+      gradient.addColorStop(0, 'hsl(343, 75%, 95%)'); // Light beige/cream
+      gradient.addColorStop(0.2, 'hsl(30, 40%, 85%)'); // Warm beige
+      gradient.addColorStop(0.5, 'hsl(15, 35%, 75%)'); // Soft taupe
+      gradient.addColorStop(0.7, 'hsl(343, 45%, 65%)'); // Muted maroon
+      gradient.addColorStop(0.9, 'hsl(343, 75%, 32%)'); // Deep maroon
       gradient.addColorStop(1, 'transparent');
 
-      // Draw main orb
+      // Draw main orb with wave motion
       ctx.fillStyle = gradient;
       ctx.beginPath();
-      ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+      ctx.arc(waveX, waveY, radius, 0, Math.PI * 2);
       ctx.fill();
 
-      // Add subtle outer glow when speaking
+      // Add subtle outer glow when speaking with maroon tones
       if (level > 0.1) {
         const glowGradient = ctx.createRadialGradient(
-          centerX, centerY, radius * 0.8,
-          centerX, centerY, radius * 1.4
+          waveX, waveY, radius * 0.8,
+          waveX, waveY, radius * 1.4
         );
-        glowGradient.addColorStop(0, 'rgba(14, 165, 233, 0.3)');
+        glowGradient.addColorStop(0, 'hsla(343, 75%, 42%, 0.3)');
         glowGradient.addColorStop(1, 'transparent');
         
         ctx.fillStyle = glowGradient;
         ctx.beginPath();
-        ctx.arc(centerX, centerY, radius * 1.4, 0, Math.PI * 2);
+        ctx.arc(waveX, waveY, radius * 1.4, 0, Math.PI * 2);
         ctx.fill();
       }
 
-      // Add sparkle effects for high activity
+      // Add sparkle effects for high activity with warm tones
       if (level > 0.3) {
-        ctx.fillStyle = '#ffffff';
         for (let i = 0; i < 6; i++) {
           const angle = (time * 0.05 + i * Math.PI / 3) % (Math.PI * 2);
           const sparkleRadius = radius * 1.2;
-          const x = centerX + Math.cos(angle) * sparkleRadius;
-          const y = centerY + Math.sin(angle) * sparkleRadius;
+          const sparkleX = waveX + Math.cos(angle) * sparkleRadius;
+          const sparkleY = waveY + Math.sin(angle) * sparkleRadius;
           const size = 2 + Math.sin(time * 0.1 + i) * 1;
           
+          // Alternate between cream and light maroon sparkles
+          ctx.fillStyle = i % 2 === 0 ? 'hsl(343, 75%, 85%)' : 'hsl(30, 60%, 90%)';
           ctx.beginPath();
-          ctx.arc(x, y, size, 0, Math.PI * 2);
+          ctx.arc(sparkleX, sparkleY, size, 0, Math.PI * 2);
           ctx.fill();
+        }
+      }
+
+      // Add sound wave ripples for enhanced wave effect
+      if (level > 0.2) {
+        for (let i = 0; i < 3; i++) {
+          const rippleRadius = radius * (1.5 + i * 0.3) * (1 + level);
+          const opacity = (0.1 - i * 0.03) * level;
+          
+          ctx.strokeStyle = `hsla(343, 65%, 50%, ${opacity})`;
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(waveX, waveY, rippleRadius, 0, Math.PI * 2);
+          ctx.stroke();
         }
       }
 
