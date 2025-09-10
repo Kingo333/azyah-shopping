@@ -438,7 +438,7 @@ export default function BeautyConsultantPage() {
       <SEOHead title="AI Beauty Consultant - Azyah | Get Personalized Beauty Advice" description="Get AI-powered beauty advice, product recommendations, and skin analysis from Azyah. Upload photos for personalized beauty consultations and tips." keywords="AI beauty consultant, beauty advice, skin analysis, product recommendations, makeup tips, skincare" />
       <ShopperNavigation />
       
-      <main className="container mx-auto px-4 pt-4 max-w-4xl">
+      <main className="container mx-auto px-4 pt-0 max-w-4xl">
         {/* Header Card with Avatar, Title and Back Button */}
         <Card className="glass-premium mb-1 border-0 overflow-hidden">
           <CardHeader className="pb-4 bg-gradient-to-r from-background/30 to-background/50 backdrop-blur-sm">
@@ -513,8 +513,8 @@ export default function BeautyConsultantPage() {
         {/* Chat Messages */}
         <Card className="glass-premium mb-1 border-0 overflow-hidden">
           <CardContent className="p-0">
-            <div className="h-[300px] overflow-y-auto scrollbar-hide p-2">
-              <div className="space-y-2">
+            <div className="h-[200px] overflow-y-auto scrollbar-hide p-1">
+              <div className="space-y-1">
                 {messages.map((message, index) => <div key={message.id} className={`flex items-start gap-4 animate-fade-in ${message.type === 'user' ? 'flex-row-reverse' : 'flex-row'}`} style={{
                 animationDelay: `${index * 0.1}s`
               }}>
@@ -627,7 +627,7 @@ export default function BeautyConsultantPage() {
 
         {/* Input Panel - Floating Style */}
         <Card className="glass-premium border-0 mt-1">
-          <CardContent className="p-1">
+          <CardContent className="p-0.5">
             <div className="flex items-center gap-3">
               {/* Action Buttons */}
               <div className="flex items-center gap-2">
@@ -694,7 +694,7 @@ export default function BeautyConsultantPage() {
 
         {/* Beauty Tips Carousel */}
         <Card className="glass-panel mt-1 mb-1 border-0">
-          <CardContent className="p-1">
+          <CardContent className="p-0.5">
             <div className="text-center">
               <p className="text-sm text-muted-foreground mb-2">💡 Beauty Tip</p>
               <div className="flex items-center justify-center gap-3 animate-fade-in" key={currentTipIndex}>
