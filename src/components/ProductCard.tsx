@@ -1,12 +1,11 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, memo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Plus, Heart, ShoppingBag, ExternalLink, Info, Image, User } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { getPrimaryImageUrl, hasMultipleImages, getImageCount } from '@/utils/imageHelpers';
 import { useProductHasOutfit } from '@/hooks/useProductOutfits';
-import { isImageLoaded, markImageLoaded } from '@/utils/imageLoadedCache';
-import { useImagePreloader } from '@/hooks/useImagePreloader';
+import LazyImage from '@/components/LazyImage';
 
 interface ProductCardProps {
   product: any;
@@ -18,7 +17,7 @@ interface ProductCardProps {
   onTryOn?: (product: any) => void;
 }
 
-export const ProductCard: React.FC<ProductCardProps> = ({
+const ProductCard: React.FC<ProductCardProps> = memo(({
   product,
   onDragStart,
   onAddToBoard,
@@ -29,16 +28,13 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 }) => {
   const [showPlusButton, setShowPlusButton] = useState(false);
   const [pressTimer, setPressTimer] = useState<NodeJS.Timeout | null>(null);
-  const [imageLoadError, setImageLoadError] = useState(false);
   const isMobile = useIsMobile();
-  const { isImagePreloaded } = useImagePreloader();
   
   // Check if product has outfit for try-on
   const { data: hasOutfit } = useProductHasOutfit(product.id);
   
-  // Get image URL and check cache/preload status
+  // Get image URL
   const imageUrl = getPrimaryImageUrl(product);
-  const isImageCached = isImageLoaded(imageUrl) || isImagePreloaded(imageUrl);
 
   const formatPrice = (priceCents: number, currency: string) => {
     const price = priceCents / 100;
@@ -115,14 +111,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     if (onTryOn) onTryOn(product);
   }, [onTryOn, product]);
 
-  const handleImageLoad = useCallback(() => {
-    markImageLoaded(imageUrl);
-    setImageLoadError(false);
-  }, [imageUrl]);
-
-  const handleImageError = useCallback(() => {
-    setImageLoadError(true);
-  }, []);
 
   return (
     <div 
@@ -134,18 +122,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       onMouseLeave={() => setShowPlusButton(false)}
     >
       <div className="aspect-[3/4] bg-muted rounded-2xl overflow-hidden relative">
-        {!isImageCached && !imageLoadError && (
-          <div className="absolute inset-0 bg-muted animate-pulse flex items-center justify-center z-10">
-            <div className="text-muted-foreground text-xs">Loading...</div>
-          </div>
-        )}
-        <img 
-          src={imageLoadError ? '/placeholder.svg' : imageUrl} 
+        <LazyImage
+          src={imageUrl}
           alt={product.title}
           className="w-full h-full object-cover"
-          onLoad={handleImageLoad}
-          onError={handleImageError}
-          loading={isImageCached ? "eager" : "lazy"}
+          priority={false}
         />
         
         {/* Multiple images indicator for ASOS products */}
@@ -241,4 +222,14 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       </div>
     </div>
   );
-};
+}, (prevProps, nextProps) => {
+  return (
+    prevProps.product.id === nextProps.product.id &&
+    prevProps.product.title === nextProps.product.title &&
+    prevProps.product.price_cents === nextProps.product.price_cents
+  );
+});
+
+ProductCard.displayName = 'ProductCard';
+
+export { ProductCard };

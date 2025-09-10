@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
-import { useImagePreloader } from '@/hooks/useImagePreloader';
 import type { Product } from '@/types';
 
 export interface UnifiedProductFilters {
@@ -27,7 +26,6 @@ export const useUnifiedProducts = (filters: UnifiedProductFilters): UnifiedProdu
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
-  const { preloadImages } = useImagePreloader();
 
   const fetchProducts = useCallback(async () => {
     setIsLoading(true);
@@ -227,13 +225,6 @@ export const useUnifiedProducts = (filters: UnifiedProductFilters): UnifiedProdu
       const finalProducts = processedProducts.slice(0, maxProducts);
       
       setProducts(finalProducts);
-
-      // Start preloading images in background
-      if (finalProducts.length > 0) {
-        preloadImages(finalProducts).catch(error => {
-          console.warn('Image preloading failed:', error);
-        });
-      }
     } catch (error) {
       console.error('Error in fetchProducts:', error);
       toast({

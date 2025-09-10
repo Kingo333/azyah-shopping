@@ -7,7 +7,6 @@ import { ArrowLeft, Heart, Search, Sparkles, List, LayoutGrid } from "lucide-rea
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAuth } from "@/contexts/AuthContext";
 import SwipeDeck from '@/components/SwipeDeck';
-import { ImagePreloadIndicator } from '@/components/ImagePreloadIndicator';
 import ProductListView from '@/components/ProductListView';
 import { useUnifiedProducts } from '@/hooks/useUnifiedProducts';
 import UnifiedCategoryFilter from '@/components/UnifiedCategoryFilter';
@@ -208,10 +207,7 @@ const Swipe = () => {
               />
             </div>
           </div> : <div className="flex-1">
-            <ImagePreloadIndicator 
-              className="mb-4"
-            />
-            <ProductListView 
+            <ProductListView
               products={products} 
               isLoading={productsLoading}
               selectedCategories={filters.categories}
