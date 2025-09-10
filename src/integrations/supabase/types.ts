@@ -2386,16 +2386,33 @@ export type Database = {
         }[]
       }
       admin_access_payment_secure: {
-        Args: { justification: string; target_payment_id: string }
+        Args:
+          | {
+              justification: string
+              operation_type?: string
+              payment_id_param: string
+            }
+          | { justification: string; target_payment_id: string }
         Returns: {
           amount_fils: number
-          created_at: string
-          currency: string
+          cancel_url: string | null
+          created_at: string | null
+          currency: string | null
+          failure_url: string | null
+          fee_amount_fils: number | null
           id: string
+          latest_error_code: string | null
+          latest_error_message: string | null
+          operation_id: string
+          payment_intent_id: string
           product: string
-          provider: string
+          provider: string | null
+          redirect_url: string | null
           status: string
-          user_id: string
+          success_url: string | null
+          tip_amount_fils: number | null
+          updated_at: string | null
+          user_id: string | null
         }[]
       }
       admin_access_payment_with_enhanced_security: {
@@ -3048,6 +3065,10 @@ export type Database = {
         Returns: boolean
       }
       validate_payment_security_compliance: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      validate_payment_security_status: {
         Args: Record<PropertyKey, never>
         Returns: string
       }
