@@ -1,15 +1,13 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import ShopperNavigation from '@/components/ShopperNavigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Heart, ShoppingBag, Trash2, ExternalLink, User } from 'lucide-react';
+import { Heart, ShoppingBag, Trash2, ExternalLink } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { useProductHasOutfit } from '@/hooks/useProductOutfits';
-import ProductTryOnModal from '@/components/ProductTryOnModal';
 
 interface LikedProduct {
   id: string;
@@ -31,8 +29,6 @@ interface LikedProduct {
 const Likes: React.FC = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const [tryOnModalOpen, setTryOnModalOpen] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState<LikedProduct['products'] | null>(null);
 
   const { data: likes, isLoading } = useQuery({
     queryKey: ['likes', user?.id],
@@ -158,125 +154,6 @@ const Likes: React.FC = () => {
     }).format(cents / 100);
   };
 
-const LikeCard: React.FC<{
-  like: LikedProduct;
-  onRemove: (productId: string) => void;
-  onAddToWishlist: (productId: string) => void;
-  addToWishlistLoading: boolean;
-  removeLoading: boolean;
-  formatPrice: (cents: number, currency: string) => string;
-  handleShopNow: (product: LikedProduct['products']) => void;
-  setTryOnModalOpen: (open: boolean) => void;
-  setSelectedProduct: (product: LikedProduct['products']) => void;
-}> = ({ like, onRemove, onAddToWishlist, addToWishlistLoading, removeLoading, formatPrice, handleShopNow, setTryOnModalOpen, setSelectedProduct }) => {
-  const { data: hasOutfit } = useProductHasOutfit(like.products.id);
-  const shouldShowTryOnButton = hasOutfit === true;
-
-  return (
-    <div className="group relative bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2">
-      <div 
-        className="w-full aspect-[3/4] bg-muted rounded-2xl overflow-hidden relative cursor-pointer"
-        onClick={() => handleShopNow(like.products)}
-      >
-        <img
-          src={
-            Array.isArray(like.products.media_urls) 
-              ? like.products.media_urls[0] 
-              : typeof like.products.media_urls === 'string' 
-                ? JSON.parse(like.products.media_urls)[0] 
-                : '/placeholder.svg'
-          }
-          alt={like.products.title}
-          className="w-full h-full object-cover"
-          onError={(e) => {
-            (e.target as HTMLImageElement).src = '/placeholder.svg';
-          }}
-        />
-        
-        {/* Hover gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-primary/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-        
-        {/* Top-right action buttons */}
-        <div className="absolute top-2 right-2 flex flex-col space-y-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-          <Button
-            size="sm"
-            variant="ghost"
-            className="h-8 w-8 rounded-full bg-white/90 hover:bg-white backdrop-blur-sm"
-            onClick={(e) => {
-              e.stopPropagation();
-              onAddToWishlist(like.products.id);
-            }}
-            disabled={addToWishlistLoading}
-          >
-            <ShoppingBag className="h-4 w-4" />
-          </Button>
-          {shouldShowTryOnButton && (
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-8 w-8 rounded-full bg-white/90 hover:bg-white backdrop-blur-sm"
-              onClick={(e) => {
-                e.stopPropagation();
-                setSelectedProduct(like.products);
-                setTryOnModalOpen(true);
-              }}
-              title="Try it on"
-            >
-              <User className="h-4 w-4" />
-            </Button>
-          )}
-        </div>
-        
-        {/* Product Info Overlay (appears on hover) */}
-        <div className="absolute bottom-4 left-4 right-4 bg-white/60 backdrop-blur-sm rounded-xl p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-          <div className="text-xs font-medium line-clamp-1 mb-1">
-            {like.products.title}
-          </div>
-          <div className="text-xs text-muted-foreground mb-1">
-            {like.products.brands?.name || 'Unbranded'}
-          </div>
-          <div className="text-xs font-semibold text-primary mb-3">
-            {formatPrice(like.products.price_cents, like.products.currency)}
-          </div>
-          
-          {/* Action buttons */}
-          <div className="flex space-x-2">
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={(e) => {
-                e.stopPropagation();
-                onRemove(like.products.id);
-              }}
-              disabled={removeLoading}
-              className="flex-1 text-xs h-8"
-            >
-              <Trash2 className="h-3 w-3 mr-1" />
-              Remove
-            </Button>
-            
-            {/* Shop Now button */}
-            {like.products.external_url && (
-              <Button
-                variant="default"
-                size="sm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleShopNow(like.products);
-                }}
-                className="flex-1 text-xs h-8"
-              >
-                <ExternalLink className="h-3 w-3 mr-1" />
-                Shop
-              </Button>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
@@ -319,17 +196,97 @@ const LikeCard: React.FC<{
           </div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-6">
-            {likes.map((like) => <LikeCard key={like.id} like={like} onRemove={removeLikeMutation.mutate} onAddToWishlist={addToWishlistMutation.mutate} addToWishlistLoading={addToWishlistMutation.isPending} removeLoading={removeLikeMutation.isPending} formatPrice={formatPrice} handleShopNow={handleShopNow} setTryOnModalOpen={setTryOnModalOpen} setSelectedProduct={setSelectedProduct} />)}
+            {likes.map((like) => (
+              <div key={like.id} className="group relative bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2">
+                <div 
+                  className="w-full aspect-[3/4] bg-muted rounded-2xl overflow-hidden relative cursor-pointer"
+                  onClick={() => handleShopNow(like.products)}
+                >
+                  <img
+                    src={
+                      Array.isArray(like.products.media_urls) 
+                        ? like.products.media_urls[0] 
+                        : typeof like.products.media_urls === 'string' 
+                          ? JSON.parse(like.products.media_urls)[0] 
+                          : '/placeholder.svg'
+                    }
+                    alt={like.products.title}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = '/placeholder.svg';
+                    }}
+                  />
+                  
+                  {/* Hover gradient overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-primary/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  
+                  {/* Top-right action buttons */}
+                  <div className="absolute top-2 right-2 flex flex-col space-y-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 w-8 rounded-full bg-white/90 hover:bg-white backdrop-blur-sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        addToWishlistMutation.mutate(like.products.id);
+                      }}
+                      disabled={addToWishlistMutation.isPending}
+                    >
+                      <ShoppingBag className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  
+                  {/* Product Info Overlay (appears on hover) */}
+                  <div className="absolute bottom-4 left-4 right-4 bg-white/60 backdrop-blur-sm rounded-xl p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <div className="text-xs font-medium line-clamp-1 mb-1">
+                      {like.products.title}
+                    </div>
+                    <div className="text-xs text-muted-foreground mb-1">
+                      {like.products.brands?.name || 'Unbranded'}
+                    </div>
+                    <div className="text-xs font-semibold text-primary mb-3">
+                      {formatPrice(like.products.price_cents, like.products.currency)}
+                    </div>
+                    
+                    {/* Action buttons */}
+                    <div className="flex space-x-2">
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeLikeMutation.mutate(like.products.id);
+                        }}
+                        disabled={removeLikeMutation.isPending}
+                        className="flex-1 text-xs h-8"
+                      >
+                        <Trash2 className="h-3 w-3 mr-1" />
+                        Remove
+                      </Button>
+                      
+                      {/* Shop Now button */}
+                      {like.products.external_url && (
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleShopNow(like.products);
+                          }}
+                          className="flex-1 text-xs h-8"
+                        >
+                          <ExternalLink className="h-3 w-3 mr-1" />
+                          Shop
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>
-      
-      {/* Try-On Modal */}
-      <ProductTryOnModal
-        isOpen={tryOnModalOpen}
-        onClose={() => setTryOnModalOpen(false)}
-        product={selectedProduct}
-      />
     </div>
   );
 };
