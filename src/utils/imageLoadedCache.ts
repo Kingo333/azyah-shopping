@@ -10,8 +10,8 @@ interface ImageCacheEntry {
 
 class ImageLoadedCache {
   private cache = new Map<string, ImageCacheEntry>();
-  private readonly maxItems = 250;
-  private readonly maxSizeBytes = 48 * 1024 * 1024; // 48MB
+  private readonly maxItems = 300;
+  private readonly maxSizeBytes = 58 * 1024 * 1024; // 58MB
   private currentSize = 0;
 
   // Normalize URL by removing transient parameters
