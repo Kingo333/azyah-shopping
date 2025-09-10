@@ -9,6 +9,7 @@ import { Heart, ShoppingBag, Trash2, ExternalLink, User } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { useProductHasOutfit } from '@/hooks/useProductOutfits';
 import ProductTryOnModal from '@/components/ProductTryOnModal';
+import { BackButton } from '@/components/ui/back-button';
 
 interface LikedProduct {
   id: string;
@@ -307,6 +308,7 @@ const Likes: React.FC = () => {
         <ShopperNavigation />
         
         <div className="flex items-center gap-3 mb-6">
+          <BackButton />
           <Heart className="h-6 w-6 text-primary" />
           <h1 className="text-2xl font-bold font-playfair">My Likes</h1>
           <span className="text-sm text-muted-foreground">
