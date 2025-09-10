@@ -807,6 +807,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "events_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands_public"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "events_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
@@ -818,6 +825,13 @@ export type Database = {
             columns: ["retailer_id"]
             isOneToOne: false
             referencedRelation: "retailers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "retailers_public"
             referencedColumns: ["id"]
           },
           {
@@ -1533,6 +1547,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "product_outfit_assets_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands_public"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "product_outfit_assets_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: true
@@ -1662,10 +1683,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "products_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands_public"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "products_retailer_id_fkey"
             columns: ["retailer_id"]
             isOneToOne: false
             referencedRelation: "retailers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "retailers_public"
             referencedColumns: ["id"]
           },
         ]
@@ -2354,7 +2389,90 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      brands_public: {
+        Row: {
+          bio: string | null
+          cover_image_url: string | null
+          created_at: string | null
+          id: string | null
+          logo_url: string | null
+          name: string | null
+          shipping_regions: string[] | null
+          slug: string | null
+          socials: Json | null
+          updated_at: string | null
+          website: string | null
+        }
+        Insert: {
+          bio?: string | null
+          cover_image_url?: string | null
+          created_at?: string | null
+          id?: string | null
+          logo_url?: string | null
+          name?: string | null
+          shipping_regions?: string[] | null
+          slug?: string | null
+          socials?: Json | null
+          updated_at?: string | null
+          website?: string | null
+        }
+        Update: {
+          bio?: string | null
+          cover_image_url?: string | null
+          created_at?: string | null
+          id?: string | null
+          logo_url?: string | null
+          name?: string | null
+          shipping_regions?: string[] | null
+          slug?: string | null
+          socials?: Json | null
+          updated_at?: string | null
+          website?: string | null
+        }
+        Relationships: []
+      }
+      retailers_public: {
+        Row: {
+          bio: string | null
+          cover_image_url: string | null
+          created_at: string | null
+          id: string | null
+          logo_url: string | null
+          name: string | null
+          shipping_regions: string[] | null
+          slug: string | null
+          socials: Json | null
+          updated_at: string | null
+          website: string | null
+        }
+        Insert: {
+          bio?: string | null
+          cover_image_url?: string | null
+          created_at?: string | null
+          id?: string | null
+          logo_url?: string | null
+          name?: string | null
+          shipping_regions?: string[] | null
+          slug?: string | null
+          socials?: Json | null
+          updated_at?: string | null
+          website?: string | null
+        }
+        Update: {
+          bio?: string | null
+          cover_image_url?: string | null
+          created_at?: string | null
+          id?: string | null
+          logo_url?: string | null
+          name?: string | null
+          shipping_regions?: string[] | null
+          slug?: string | null
+          socials?: Json | null
+          updated_at?: string | null
+          website?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       __is_read_only_tx: {
@@ -2587,6 +2705,10 @@ export type Database = {
       embed_query: {
         Args: { query_text: string }
         Returns: number[]
+      }
+      ensure_payment_data_encryption: {
+        Args: Record<PropertyKey, never>
+        Returns: string
       }
       ensure_payment_security: {
         Args: Record<PropertyKey, never>
@@ -2926,6 +3048,10 @@ export type Database = {
           user_website: string
         }[]
       }
+      get_security_status_summary: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       get_similar_products: {
         Args: {
           limit_count?: number
@@ -3093,6 +3219,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      validate_secure_user_access: {
+        Args: { operation_type: string; target_user_id: string }
+        Returns: boolean
+      }
       validate_session_security: {
         Args: Record<PropertyKey, never>
         Returns: boolean
@@ -3106,6 +3236,10 @@ export type Database = {
         Returns: boolean
       }
       verify_payment_ownership: {
+        Args: { payment_id_param: string; user_id_param?: string }
+        Returns: boolean
+      }
+      verify_payment_ownership_strict: {
         Args: { payment_id_param: string; user_id_param?: string }
         Returns: boolean
       }
