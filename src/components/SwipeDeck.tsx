@@ -10,6 +10,7 @@ import { useNavigate } from 'react-router-dom';
 import { useUnifiedProducts } from '@/hooks/useUnifiedProducts';
 import { useEnhancedSwipeTracking } from '@/hooks/useEnhancedSwipeTracking';
 import { useSwipePerformance } from '@/hooks/useSwipePerformance';
+import { useSwipeMemory } from '@/hooks/useSwipeMemory';
 import { supabase } from '@/integrations/supabase/client';
 import SwipeCard from '@/components/SwipeCard';
 import ProductDetailPage from '@/components/ProductDetailPage';
@@ -101,6 +102,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
 
   const { trackSwipe } = useEnhancedSwipeTracking();
   const { trackViewStart, getViewDuration, clearAll, performCleanup } = useSwipePerformance();
+  const { addSeenProduct, optimizeMemory } = useSwipeMemory();
 
   const currentProduct = useMemo(() => products[index] || null, [products, index]);
 
@@ -157,13 +159,21 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
     }
   }, []);
 
-  // Navigation with cleanup
+  // Navigation with cleanup and memory optimization
   const nextCard = useCallback(() => {
+    if (currentProduct) {
+      addSeenProduct(currentProduct.id);
+    }
     x.set(0);
     y.set(0);
     setIndex(prevIndex => Math.min(prevIndex + 1, products.length - 1));
     performCleanup(); // Trigger cleanup on each swipe
-  }, [x, y, products.length, performCleanup]);
+    
+    // Optimize memory every 50 swipes to prevent accumulation
+    if (index % 50 === 0) {
+      optimizeMemory();
+    }
+  }, [x, y, products.length, performCleanup, currentProduct, addSeenProduct, optimizeMemory, index]);
 
   const prevCard = useCallback(() => {
     x.set(0);

@@ -59,8 +59,7 @@ const LikeCard: React.FC<{ like: LikedProduct; onRemove: (productId: string) => 
     <>
       <div className="group relative bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2">
         <div 
-          className="w-full aspect-[3/4] bg-muted rounded-2xl overflow-hidden relative cursor-pointer"
-          onClick={() => handleShopNow(like.products!)}
+          className="w-full aspect-[3/4] bg-muted rounded-2xl overflow-hidden relative"
         >
           <img
             src={
