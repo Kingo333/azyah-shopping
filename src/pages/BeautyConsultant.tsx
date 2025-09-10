@@ -438,59 +438,52 @@ export default function BeautyConsultantPage() {
       <main className="container mx-auto px-4 pt-24 max-w-4xl">
         {/* Header Card with Avatar, Title and Back Button */}
         <Card className="glass-premium mb-6 border-0 overflow-hidden">
-          <CardHeader className="pb-5 bg-gradient-to-r from-background/40 via-primary/5 to-background/40 backdrop-blur-sm border-b border-border/10">
+          <CardHeader className="pb-4 bg-gradient-to-r from-background/30 to-background/50 backdrop-blur-sm">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="flex items-center gap-4 w-full sm:w-auto">
                 {/* Back Button */}
-                <Button variant="ghost" size="icon" onClick={() => window.history.back()} className="h-9 w-9 rounded-full hover:bg-primary/10 hover:scale-105 transition-all duration-200 shadow-sm border border-border/20" title="Back to Dashboard">
+                <Button variant="ghost" size="icon" onClick={() => window.history.back()} className="h-9 w-9 rounded-full hover:bg-primary/10 transition-colors" title="Back to Dashboard">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                   </svg>
                 </Button>
                 
                 <div className="flex items-center gap-3">
-                  <div className="relative group">
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary via-primary-glow to-accent flex items-center justify-center shadow-lg shadow-primary/20 group-hover:shadow-xl group-hover:shadow-primary/30 transition-all duration-300">
-                      <Bot className="w-6 h-6 text-white drop-shadow-sm" />
+                  <div className="relative">
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-sm">
+                      <Bot className="w-6 h-6 text-white" />
                     </div>
-                    <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-gradient-to-br from-green-400 to-green-500 rounded-full border-2 border-background flex items-center justify-center shadow-sm">
+                    <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-green-500 rounded-full border-2 border-background flex items-center justify-center">
                       <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></div>
                     </div>
-                    {/* Subtle glow effect */}
-                    <div className="absolute inset-0 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 blur-md opacity-30 group-hover:opacity-50 transition-opacity duration-300"></div>
                   </div>
                   <div className="text-left">
-                    <h1 className="text-xl font-playfair font-semibold bg-gradient-to-r from-primary via-primary-glow to-accent bg-clip-text text-transparent drop-shadow-sm">
+                    <h1 className="text-xl font-playfair font-semibold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
                       AI Beauty Consultant
                     </h1>
-                    <div className="flex items-center gap-2 text-muted-foreground text-xs">
-                      <div className="flex items-center gap-1.5">
-                        <div className="w-1.5 h-1.5 bg-gradient-to-r from-green-400 to-green-500 rounded-full shadow-sm"></div>
-                        <span className="font-medium">Online</span>
-                      </div>
-                      <div className="w-1 h-1 bg-muted-foreground/30 rounded-full"></div>
+                    <p className="text-muted-foreground text-xs flex items-center gap-2">
                       <span>Available 24/7</span>
-                    </div>
+                    </p>
                   </div>
                 </div>
               </div>
               
-              {/* Credits Display - Enhanced elegant style */}
+              {/* Credits Display - Elegant pill style */}
               <div className="flex items-center gap-3">
-                <div className="glass-panel rounded-full px-4 py-2.5 flex items-center gap-2 shadow-sm hover:shadow-md transition-shadow duration-200">
+                <div className="glass-panel rounded-full px-4 py-2 flex items-center gap-2">
                   <div className="flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-primary animate-pulse" />
-                    <span className="text-sm font-semibold">{credits?.credits_remaining || 0}</span>
+                    <Sparkles className="w-4 h-4 text-primary" />
+                    <span className="text-sm font-medium">{credits?.credits_remaining || 0}</span>
                   </div>
                   <Progress value={(credits?.credits_remaining || 0) / (credits?.is_premium ? 50 : 10) * 100} className="w-16 h-2" />
                 </div>
-                <div className="glass-panel rounded-full px-3 py-1.5 flex items-center gap-1.5 shadow-sm">
+                <div className="glass-panel rounded-full px-3 py-1 flex items-center gap-1">
                   <Clock className="w-3 h-3 text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground font-medium">
-                    Reset at midnight
+                  <span className="text-xs text-muted-foreground">
+                    Daily reset at midnight
                   </span>
                 </div>
-                {!credits?.is_premium && <Button size="sm" className="bg-gradient-to-r from-accent to-primary text-white border-0 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 font-medium">
+                {!credits?.is_premium && <Button size="sm" className="bg-gradient-to-r from-accent to-primary text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300">
                     <Crown className="w-3 h-3 mr-1" />
                     Upgrade
                   </Button>}
