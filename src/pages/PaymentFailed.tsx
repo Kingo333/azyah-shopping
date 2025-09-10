@@ -182,9 +182,8 @@ export default function PaymentFailed() {
               </Button>
             </div>
 
-            <div className="flex justify-center space-x-4 text-xs">
-              <a href="/support" className="text-primary hover:underline">Contact Support</a>
-              <a href="/settings" className="text-primary hover:underline">Payment Settings</a>
+            <div className="flex justify-center">
+              <a href="/support" className="text-xs text-primary hover:underline">Contact Support</a>
             </div>
           </CardContent>
         </Card>
