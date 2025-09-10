@@ -438,9 +438,9 @@ export default function BeautyConsultantPage() {
       <SEOHead title="AI Beauty Consultant - Azyah | Get Personalized Beauty Advice" description="Get AI-powered beauty advice, product recommendations, and skin analysis from Azyah. Upload photos for personalized beauty consultations and tips." keywords="AI beauty consultant, beauty advice, skin analysis, product recommendations, makeup tips, skincare" />
       <ShopperNavigation />
       
-      <main className="container mx-auto px-4 pt-20 max-w-4xl">
+      <main className="container mx-auto px-4 pt-16 max-w-4xl">
         {/* Header Card with Avatar, Title and Back Button */}
-        <Card className="glass-premium mb-4 border-0 overflow-hidden">
+        <Card className="glass-premium mb-3 border-0 overflow-hidden">
           <CardHeader className="pb-4 bg-gradient-to-r from-background/30 to-background/50 backdrop-blur-sm">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="flex items-center gap-4 w-full sm:w-auto">
@@ -493,7 +493,7 @@ export default function BeautyConsultantPage() {
         </Card>
 
         {/* Tab Navigation */}
-        <Card className="glass-panel mb-4 border-0">
+        <Card className="glass-panel mb-3 border-0">
           <CardContent className="p-1">
             <Tabs value={analysisMode} onValueChange={value => setAnalysisMode(value as 'chat' | 'product_analysis')} className="w-full">
               <TabsList className="grid w-full grid-cols-2 bg-transparent">
@@ -511,7 +511,7 @@ export default function BeautyConsultantPage() {
         </Card>
 
         {/* Chat Messages */}
-        <Card className="glass-premium mb-4 border-0 overflow-hidden">
+        <Card className="glass-premium mb-3 border-0 overflow-hidden">
           <CardContent className="p-0">
             <div className="h-[500px] overflow-y-auto scrollbar-hide p-6">
               <div className="space-y-6">
@@ -572,7 +572,7 @@ export default function BeautyConsultantPage() {
         </Card>
 
         {/* Image Preview Cards */}
-        {(imagePreview || productImagePreview || skinImagePreview) && <div className="mb-4 space-y-3">
+        {(imagePreview || productImagePreview || skinImagePreview) && <div className="mb-3 space-y-2">
             {imagePreview && analysisMode === 'chat' && <Card className="glass-panel border-0 animate-scale-in">
                 <CardContent className="p-4 flex items-center gap-4">
                   <img src={imagePreview} alt="Preview" className="w-16 h-16 object-cover rounded-lg shadow-md" />
@@ -626,7 +626,7 @@ export default function BeautyConsultantPage() {
           </div>}
 
         {/* Input Panel - Floating Style */}
-        <Card className="glass-premium border-0 mt-4">
+        <Card className="glass-premium border-0 mt-3">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
               {/* Action Buttons */}
