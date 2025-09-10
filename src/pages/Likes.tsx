@@ -22,8 +22,8 @@ interface LikedProduct {
     external_url?: string;
     brands: {
       name: string;
-    };
-  };
+    } | null;
+  } | null;
 }
 
 const Likes: React.FC = () => {
@@ -65,8 +65,8 @@ const Likes: React.FC = () => {
       // Combine the data
       const result = likeData.map(like => ({
         ...like,
-        products: products?.find(p => p.id === like.product_id)
-      })).filter(item => item.products) as LikedProduct[];
+        products: products?.find(p => p.id === like.product_id) || null
+      })).filter(item => item.products !== null) as LikedProduct[];
 
       return result;
     },
@@ -196,21 +196,24 @@ const Likes: React.FC = () => {
           </div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-6">
-            {likes.map((like) => (
+            {likes.map((like) => {
+              if (!like.products) return null;
+              
+              return (
               <div key={like.id} className="group relative bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2">
                 <div 
                   className="w-full aspect-[3/4] bg-muted rounded-2xl overflow-hidden relative cursor-pointer"
-                  onClick={() => handleShopNow(like.products)}
+                  onClick={() => handleShopNow(like.products!)}
                 >
                   <img
                     src={
-                      Array.isArray(like.products.media_urls) 
-                        ? like.products.media_urls[0] 
-                        : typeof like.products.media_urls === 'string' 
-                          ? JSON.parse(like.products.media_urls)[0] 
+                      Array.isArray(like.products!.media_urls) 
+                        ? like.products!.media_urls[0] 
+                        : typeof like.products!.media_urls === 'string' 
+                          ? JSON.parse(like.products!.media_urls)[0] 
                           : '/placeholder.svg'
                     }
-                    alt={like.products.title}
+                    alt={like.products!.title}
                     className="w-full h-full object-cover"
                     onError={(e) => {
                       (e.target as HTMLImageElement).src = '/placeholder.svg';
@@ -228,7 +231,7 @@ const Likes: React.FC = () => {
                       className="h-8 w-8 rounded-full bg-white/90 hover:bg-white backdrop-blur-sm"
                       onClick={(e) => {
                         e.stopPropagation();
-                        addToWishlistMutation.mutate(like.products.id);
+                        addToWishlistMutation.mutate(like.products!.id);
                       }}
                       disabled={addToWishlistMutation.isPending}
                     >
@@ -239,13 +242,13 @@ const Likes: React.FC = () => {
                   {/* Product Info Overlay (appears on hover) */}
                   <div className="absolute bottom-4 left-4 right-4 bg-white/60 backdrop-blur-sm rounded-xl p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                     <div className="text-xs font-medium line-clamp-1 mb-1">
-                      {like.products.title}
+                      {like.products!.title}
                     </div>
                     <div className="text-xs text-muted-foreground mb-1">
-                      {like.products.brands?.name || 'Unbranded'}
+                      {like.products!.brands?.name || 'Unbranded'}
                     </div>
                     <div className="text-xs font-semibold text-primary mb-3">
-                      {formatPrice(like.products.price_cents, like.products.currency)}
+                      {formatPrice(like.products!.price_cents, like.products!.currency)}
                     </div>
                     
                     {/* Action buttons */}
@@ -255,7 +258,7 @@ const Likes: React.FC = () => {
                         size="sm"
                         onClick={(e) => {
                           e.stopPropagation();
-                          removeLikeMutation.mutate(like.products.id);
+                          removeLikeMutation.mutate(like.products!.id);
                         }}
                         disabled={removeLikeMutation.isPending}
                         className="flex-1 text-xs h-8"
@@ -265,13 +268,13 @@ const Likes: React.FC = () => {
                       </Button>
                       
                       {/* Shop Now button */}
-                      {like.products.external_url && (
+                      {like.products!.external_url && (
                         <Button
                           variant="default"
                           size="sm"
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleShopNow(like.products);
+                            handleShopNow(like.products!);
                           }}
                           className="flex-1 text-xs h-8"
                         >
@@ -283,7 +286,8 @@ const Likes: React.FC = () => {
                   </div>
                 </div>
               </div>
-            ))}
+            );
+            })}
           </div>
         )}
       </div>
