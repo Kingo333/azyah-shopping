@@ -367,7 +367,7 @@ const Auth = () => {
                       </Button>
                     </div>
                     <div className="relative">
-                      <Input id="signup-password" name="password" type={showPassword ? "text" : "password"} placeholder="Create password (8+ characters)" required minLength={8} value={signupForm.password} onChange={e => handleSignupFormChange("password", e.target.value)} className="h-10 glass-panel border-white/20 text-sm pr-10" />
+                      <Input id="signup-password" name="password" type={showPassword ? "text" : "password"} placeholder="Create password (6+ characters)" required minLength={6} value={signupForm.password} onChange={e => handleSignupFormChange("password", e.target.value)} className="h-10 glass-panel border-white/20 text-sm pr-10" />
                       <Button type="button" variant="ghost" size="sm" onClick={() => setShowPassword(!showPassword)} className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6 p-0 hover:bg-transparent">
                         {showPassword ? <EyeOff className="h-3 w-3 text-muted-foreground" /> : <Eye className="h-3 w-3 text-muted-foreground" />}
                       </Button>

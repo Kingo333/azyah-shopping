@@ -95,7 +95,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         errorMessage = "Please enter a valid email address.";
       } else if (error.message.includes('password')) {
         errorTitle = "Password Error";
-        errorMessage = "Password must be at least 8 characters long.";
+        errorMessage = "Password must be at least 6 characters long.";
       }
       
       toast({

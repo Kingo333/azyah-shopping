@@ -11,7 +11,7 @@ export const PasswordStrengthIndicator = ({ strength, password }: PasswordStreng
   if (!password) return null;
 
   const requirements = [
-    { key: 'minLength', label: 'At least 8 characters', met: strength.minLength },
+    { key: 'minLength', label: 'At least 6 characters', met: strength.minLength },
     { key: 'hasThreeTypes', label: 'Mix of 3 types: lowercase, uppercase, numbers, symbols', met: strength.hasThreeTypes },
     { key: 'notCommon', label: 'Not a common password', met: strength.notCommon }
   ];

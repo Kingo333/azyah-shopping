@@ -10,7 +10,7 @@ const WEAK_PASSWORDS = [
 // Check if password meets strength requirements
 export const checkPasswordStrength = (email: string, password: string) => {
   const checks = {
-    minLength: password.length >= 8,
+    minLength: password.length >= 6,
     hasLowercase: /[a-z]/.test(password),
     hasUppercase: /[A-Z]/.test(password),
     hasNumber: /\d/.test(password),
@@ -38,12 +38,12 @@ export const checkPasswordStrength = (email: string, password: string) => {
 // Zod schema for credential validation
 export const CredentialsSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
-  password: z.string().min(8, "Password must be at least 8 characters")
+  password: z.string().min(6, "Password must be at least 6 characters")
 }).refine(({ email, password }) => {
   const strength = checkPasswordStrength(email, password);
   return strength.isValid;
 }, {
-  message: "Password must be 8+ characters and include at least 3 of: lowercase, uppercase, numbers, symbols. Avoid common passwords.",
+  message: "Password must be 6+ characters and include at least 3 of: lowercase, uppercase, numbers, symbols. Avoid common passwords.",
   path: ["password"]
 });
 
