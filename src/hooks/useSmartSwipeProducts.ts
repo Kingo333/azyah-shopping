@@ -4,6 +4,7 @@ import { Product } from '@/types';
 import { convertJsonToProductAttributes } from '@/lib/type-utils';
 import { useToast } from '@/hooks/use-toast';
 import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
+import { getFeatureFlag } from '@/lib/features';
 import { optimizeImageUrls } from '@/utils/imageOptimizer';
 
 interface UseSmartSwipeProductsProps {
@@ -203,6 +204,20 @@ export const useSmartSwipeProducts = ({
   const fetchProducts = useCallback(async () => {
     setIsLoading(true);
     try {
+      // Enhanced debugging for domain-specific issues
+      const currentUrl = window.location.origin;
+      const isDirect = currentUrl.includes('klwolsopucgswhtdlsps.supabase.co');
+      const isProxy = currentUrl.includes('api.azyahstyle.com');
+      
+      console.log('🌐 DOMAIN DEBUG:', {
+        currentUrl,
+        isDirect,
+        isProxy,
+        env_VITE_SUPABASE_URL: import.meta.env.VITE_SUPABASE_URL,
+        env_PROD: import.meta.env.PROD,
+        env_DEV: import.meta.env.DEV
+      });
+      
       // Check authentication status first
       const { data: { user } } = await supabase.auth.getUser();
       
@@ -227,11 +242,16 @@ export const useSmartSwipeProducts = ({
           `)
           .eq('status', 'active');
 
-        // Apply the same feature flag logic for anonymous users
-        const axessoImportEnabled = isEnabled('axessoImport');
-        const axessoImportBulkEnabled = isEnabled('axessoImportBulk');
+        // Apply the same feature flag logic for anonymous users with fallbacks
+        const axessoImportEnabled = isEnabled('axessoImport') ?? getFeatureFlag('axessoImport');
+        const axessoImportBulkEnabled = isEnabled('axessoImportBulk') ?? getFeatureFlag('axessoImportBulk');
         
-        console.log('🔍 Anonymous user feature flags:', { axessoImportEnabled, axessoImportBulkEnabled });
+        console.log('🔍 ANONYMOUS DEBUG - Domain:', currentUrl);
+        console.log('🔍 ANONYMOUS DEBUG - Feature flags:', { 
+          axessoImportEnabled, 
+          axessoImportBulkEnabled,
+          featureSource: 'context+fallback'
+        });
         
         if (!axessoImportEnabled && !axessoImportBulkEnabled) {
           anonymousQuery = anonymousQuery.eq('is_external', false);
@@ -258,9 +278,11 @@ export const useSmartSwipeProducts = ({
         const { data, error } = await anonymousQuery;
 
         if (error) {
-          console.error('❌ Error fetching anonymous products:', error);
+          console.error('❌ ANONYMOUS QUERY ERROR - Domain:', currentUrl, 'Error:', error);
           throw error;
         }
+        
+        console.log('📦 ANONYMOUS QUERY SUCCESS - Domain:', currentUrl, 'Products fetched:', data?.length);
 
         // Transform minimal data for anonymous users
         const anonymousProducts: Product[] = (data || []).map(item => ({
@@ -372,11 +394,16 @@ export const useSmartSwipeProducts = ({
           attributes
         `).eq('status', 'active');
 
-      // Handle external products based on feature flags
-      const axessoImportEnabled = isEnabled('axessoImport');
-      const axessoImportBulkEnabled = isEnabled('axessoImportBulk');
+      // Handle external products based on feature flags with fallbacks
+      const axessoImportEnabled = isEnabled('axessoImport') ?? getFeatureFlag('axessoImport');
+      const axessoImportBulkEnabled = isEnabled('axessoImportBulk') ?? getFeatureFlag('axessoImportBulk');
       
-      console.log('🔍 Feature flags:', { axessoImportEnabled, axessoImportBulkEnabled });
+      console.log('🔍 AUTHENTICATED DEBUG - Domain:', currentUrl);
+      console.log('🔍 AUTHENTICATED DEBUG - Feature flags:', { 
+        axessoImportEnabled, 
+        axessoImportBulkEnabled,
+        featureSource: 'context+fallback'
+      });
       
       if (!axessoImportEnabled && !axessoImportBulkEnabled) {
         query = query.eq('is_external', false);
@@ -446,9 +473,12 @@ export const useSmartSwipeProducts = ({
       query = query.limit(200);
       
       const { data, error } = await query;
-      if (error) throw error;
+      if (error) {
+        console.error('❌ QUERY ERROR - Domain:', currentUrl, 'Error:', error);
+        throw error;
+      }
 
-      console.log('📦 Raw products fetched:', data?.length);
+      console.log('📦 QUERY SUCCESS - Domain:', currentUrl, 'Products fetched:', data?.length);
       
       // Count internal vs external products
       const internalCount = data?.filter(p => !p.is_external).length || 0;
