@@ -62,7 +62,13 @@ export function useAzyahVoice() {
               console.log('Session created');
               break;
             case 'session.updated':
-              console.log('Session updated');
+              console.log('Session updated, auto-starting Azyah introduction...');
+              // Auto-start Azyah's introduction after session is configured
+              setTimeout(() => {
+                if (clientRef.current) {
+                  clientRef.current.createResponse();
+                }
+              }, 500);
               break;
             case 'input_audio_buffer.speech_started':
               console.log('Speech started detected by server');
