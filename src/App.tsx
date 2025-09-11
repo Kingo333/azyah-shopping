@@ -10,6 +10,7 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 
 import Index from './pages/Index';
 import Auth from './pages/Auth';
+import EmailConfirmed from './pages/EmailConfirmed';
 
 import SelectRole from './pages/SelectRole';
 import Landing from './pages/Landing';
@@ -75,6 +76,7 @@ function App() {
                     </ProtectedRoute>
                   } />
                   <Route path="/auth" element={<Auth />} />
+                  <Route path="/email-confirmed" element={<EmailConfirmed />} />
                   
                   <Route path="/select-role" element={<SelectRole />} />
                   <Route path="/profile/:userId" element={

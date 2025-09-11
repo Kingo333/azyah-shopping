@@ -65,8 +65,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return { error };
     }
 
-    // Always redirect to dashboard for email confirmations to ensure proper auth flow
-    const redirectUrl = `${window.location.origin}/dashboard`;
+    // Always redirect to email confirmation page for email confirmations
+    const redirectUrl = `${window.location.origin}/email-confirmed`;
     
     const { error } = await supabase.auth.signUp({
       email,
