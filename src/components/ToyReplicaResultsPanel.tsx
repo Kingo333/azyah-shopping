@@ -100,6 +100,23 @@ export const ToyReplicaResultsPanel: React.FC<ToyReplicaResultsPanelProps> = ({
     }
   }, [selectedAssets, deleteAssets, onRefresh]);
 
+  const handleDownloadSelected = useCallback(async () => {
+    if (selectedAssets.length === 0) return;
+    
+    const selectedAssetData = assets.filter(asset => selectedAssets.includes(asset.id));
+    
+    for (const asset of selectedAssetData) {
+      if (asset.result_url) {
+        await downloadImage(asset.result_url, `toy-replica-${asset.id}.png`);
+      }
+    }
+    
+    toast({
+      title: 'Download Started',
+      description: `Downloading ${selectedAssets.length} image${selectedAssets.length > 1 ? 's' : ''}.`,
+    });
+  }, [selectedAssets, assets, downloadImage, toast]);
+
   const handleCancelSelection = useCallback(() => {
     setSelectedAssets([]);
     setIsSelectionMode(false);
@@ -158,14 +175,24 @@ export const ToyReplicaResultsPanel: React.FC<ToyReplicaResultsPanelProps> = ({
                 Cancel
               </Button>
               {selectedAssets.length > 0 && (
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={handleDeleteSelected}
-                >
-                  <Trash2 className="h-4 w-4 mr-1" />
-                  Delete ({selectedAssets.length})
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleDownloadSelected}
+                  >
+                    <Download className="h-4 w-4 mr-1" />
+                    Download ({selectedAssets.length})
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={handleDeleteSelected}
+                  >
+                    <Trash2 className="h-4 w-4 mr-1" />
+                    Delete ({selectedAssets.length})
+                  </Button>
+                </div>
               )}
             </div>
           )}
@@ -252,30 +279,6 @@ export const ToyReplicaResultsPanel: React.FC<ToyReplicaResultsPanelProps> = ({
                     className="w-full aspect-square object-cover"
                   />
                   
-                  {!isSelectionMode && (
-                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          downloadImage(asset.result_url!);
-                        }}
-                      >
-                        <Download className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          openFullSizeImage(asset.result_url!);
-                        }}
-                      >
-                        <ExternalLink className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  )}
                   
                   <div className="absolute bottom-2 right-2">
                     <Badge variant="secondary" className={`text-xs ${getStatusColor(asset.status)}`}>
