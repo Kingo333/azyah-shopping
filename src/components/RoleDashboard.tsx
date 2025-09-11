@@ -211,8 +211,6 @@ const RoleDashboard: React.FC = () => {
         </div>
       </div>;
   }
-  console.log('Rendering dashboard for user:', userProfile);
-
   // Auto-redirect users to their specific portals based on role
   useEffect(() => {
     if (userProfile && !loading) {
@@ -240,6 +238,8 @@ const RoleDashboard: React.FC = () => {
       }
     }
   }, [userProfile, loading, navigate]);
+
+  console.log('Rendering dashboard for user:', userProfile);
 
   const renderShopperDashboard = () => <div className="space-y-6">
       {/* Premium Banner */}
