@@ -1,22 +1,10 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Product } from '@/types';
 import { convertJsonToProductAttributes } from '@/lib/type-utils';
 import { useToast } from '@/hooks/use-toast';
 import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
-import { getFeatureFlag } from '@/lib/features';
 import { optimizeImageUrls } from '@/utils/imageOptimizer';
-
-// Stable feature flag function outside component to prevent re-creation
-const getFeatureFlagSafe = (flag: 'axessoImport' | 'axessoImportBulk'): boolean => {
-  try {
-    // This will be null outside provider context, we handle it in the component
-    return getFeatureFlag(flag);
-  } catch (error) {
-    console.warn(`Feature flag fallback for ${flag}`);
-    return getFeatureFlag(flag);
-  }
-};
 
 interface UseSmartSwipeProductsProps {
   filter: string;
@@ -49,27 +37,7 @@ export const useSmartSwipeProducts = ({
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
-  
-  // Stable feature flag access - try context first, fallback to direct
-  const getContextualFeatureFlag = useCallback((flag: 'axessoImport' | 'axessoImportBulk'): boolean => {
-    try {
-      const { isEnabled } = useFeatureFlags();
-      return isEnabled(flag);
-    } catch (error) {
-      // Context not available, use stable fallback
-      return getFeatureFlagSafe(flag);
-    }
-  }, []);
-  
-  // Stable memoized config for consistent dependencies
-  const stableConfig = useMemo(() => ({
-    filter,
-    subcategory,
-    gender,
-    priceRange: { min: priceRange.min, max: priceRange.max },
-    searchQuery: searchQuery?.trim() || '',
-    currency
-  }), [filter, subcategory, gender, priceRange.min, priceRange.max, searchQuery, currency]);
+  const { isEnabled } = useFeatureFlags();
 
   const analyzeUserPreferences = useCallback(async (userId: string): Promise<UserPreferences> => {
     try {
@@ -235,151 +203,6 @@ export const useSmartSwipeProducts = ({
   const fetchProducts = useCallback(async () => {
     setIsLoading(true);
     try {
-      // Enhanced debugging for domain-specific issues
-      const currentUrl = window.location.origin;
-      const isDirect = currentUrl.includes('klwolsopucgswhtdlsps.supabase.co');
-      const isProxy = currentUrl.includes('api.azyahstyle.com');
-      
-      console.log('🌐 DOMAIN DEBUG:', {
-        currentUrl,
-        isDirect,
-        isProxy,
-        env_VITE_SUPABASE_URL: import.meta.env.VITE_SUPABASE_URL,
-        env_PROD: import.meta.env.PROD,
-        env_DEV: import.meta.env.DEV
-      });
-      
-      // Check authentication status first
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      // For anonymous users, use minimal public data query
-      if (!user) {
-        console.log('🔒 Anonymous user - fetching public product data');
-        
-        let anonymousQuery = supabase
-          .from('products')
-          .select(`
-            id,
-            title,
-            price_cents,
-            currency,
-            media_urls,
-            external_url,
-            category_slug,
-            subcategory_slug,
-            is_external,
-            source,
-            brand:brands(name, logo_url)
-          `)
-          .eq('status', 'active');
-
-        // Apply the same feature flag logic for anonymous users with fallbacks
-        const axessoImportEnabled = getContextualFeatureFlag('axessoImport');
-        const axessoImportBulkEnabled = getContextualFeatureFlag('axessoImportBulk');
-        
-        console.log('🔍 ANONYMOUS DEBUG - Domain:', currentUrl);
-        console.log('🔍 ANONYMOUS DEBUG - Feature flags:', { 
-          axessoImportEnabled, 
-          axessoImportBulkEnabled,
-          featureSource: 'safe-fallback'
-        });
-        
-        if (!axessoImportEnabled && !axessoImportBulkEnabled) {
-          anonymousQuery = anonymousQuery.eq('is_external', false);
-          console.log('❌ External products disabled for anonymous users');
-        } else {
-          const allowedSources = [];
-          if (axessoImportEnabled) allowedSources.push('axesso-async');
-          if (axessoImportBulkEnabled) allowedSources.push('ASOS_AXESSO_BULK');
-          
-          console.log('✅ Anonymous allowed sources:', allowedSources);
-          
-          if (allowedSources.length > 0) {
-            const conditions = ['is_external.eq.false'];
-            allowedSources.forEach(source => {
-              conditions.push(`and(is_external.eq.true,source.eq.${source})`);
-            });
-            anonymousQuery = anonymousQuery.or(conditions.join(','));
-            console.log('🔍 Anonymous query conditions:', conditions.join(','));
-          }
-        }
-
-        anonymousQuery = anonymousQuery.limit(50);
-        
-        const { data, error } = await anonymousQuery;
-
-        if (error) {
-          console.error('❌ ANONYMOUS QUERY ERROR - Domain:', currentUrl, 'Error:', error);
-          throw error;
-        }
-        
-        console.log('📦 ANONYMOUS QUERY SUCCESS - Domain:', currentUrl, 'Products fetched:', data?.length);
-
-        // Transform minimal data for anonymous users
-        const anonymousProducts: Product[] = (data || []).map(item => ({
-          id: item.id,
-          title: item.title,
-          description: '',
-          price_cents: item.price_cents,
-          compare_at_price_cents: null,
-          currency: item.currency || 'USD',
-          media_urls: (() => {
-            let mediaUrls: string[] = [];
-            if (Array.isArray(item.media_urls)) {
-              mediaUrls = item.media_urls as string[];
-            } else if (typeof item.media_urls === 'string') {
-              try {
-                const parsed = JSON.parse(item.media_urls);
-                mediaUrls = Array.isArray(parsed) ? parsed : [];
-              } catch (e) {
-                mediaUrls = [];
-              }
-            }
-            return optimizeImageUrls(mediaUrls, 'swipe');
-          })(),
-          external_url: item.external_url,
-          ar_mesh_url: null,
-          brand_id: '',
-          retailer_id: null,
-          sku: '',
-          category_slug: item.category_slug,
-          subcategory_slug: item.subcategory_slug,
-          status: 'active',
-          stock_qty: 0,
-          min_stock_alert: 5,
-          weight_grams: null,
-          dimensions: undefined,
-          tags: [],
-          seo_title: null,
-          seo_description: null,
-          created_at: '',
-          updated_at: '',
-          brand: item.brand ? {
-            id: '',
-            name: item.brand.name || 'Unknown',
-            slug: '',
-            logo_url: item.brand.logo_url,
-            cover_image_url: null,
-            bio: '',
-            website: '',
-            socials: {},
-            shipping_regions: [],
-            contact_email: null,
-            owner_user_id: null,
-            created_at: '',
-            updated_at: ''
-          } : undefined,
-          attributes: {}
-        }));
-
-        console.log('✅ Anonymous products loaded:', anonymousProducts.length);
-        setProducts(shuffleArray(anonymousProducts));
-        return;
-      }
-
-      // Authenticated user - full product query
-      console.log('🔓 Authenticated user - fetching full product data');
-      
       let query = supabase.from('products').select(`
           id,
           title,
@@ -425,16 +248,11 @@ export const useSmartSwipeProducts = ({
           attributes
         `).eq('status', 'active');
 
-      // Handle external products based on feature flags with fallbacks
-      const axessoImportEnabled = getContextualFeatureFlag('axessoImport');
-      const axessoImportBulkEnabled = getContextualFeatureFlag('axessoImportBulk');
+      // Handle external products based on feature flags
+      const axessoImportEnabled = isEnabled('axessoImport');
+      const axessoImportBulkEnabled = isEnabled('axessoImportBulk');
       
-      console.log('🔍 AUTHENTICATED DEBUG - Domain:', currentUrl);
-      console.log('🔍 AUTHENTICATED DEBUG - Feature flags:', { 
-        axessoImportEnabled, 
-        axessoImportBulkEnabled,
-        featureSource: 'safe-fallback'
-      });
+      console.log('🔍 Feature flags:', { axessoImportEnabled, axessoImportBulkEnabled });
       
       if (!axessoImportEnabled && !axessoImportBulkEnabled) {
         query = query.eq('is_external', false);
@@ -504,12 +322,9 @@ export const useSmartSwipeProducts = ({
       query = query.limit(200);
       
       const { data, error } = await query;
-      if (error) {
-        console.error('❌ QUERY ERROR - Domain:', currentUrl, 'Error:', error);
-        throw error;
-      }
+      if (error) throw error;
 
-      console.log('📦 QUERY SUCCESS - Domain:', currentUrl, 'Products fetched:', data?.length);
+      console.log('📦 Raw products fetched:', data?.length);
       
       // Count internal vs external products
       const internalCount = data?.filter(p => !p.is_external).length || 0;
@@ -589,7 +404,10 @@ export const useSmartSwipeProducts = ({
         attributes: convertJsonToProductAttributes(item.attributes)
       }));
 
-      console.log('🔄 Processing products for authenticated user personalization...');
+      console.log('🔄 Processing products for user personalization...');
+      
+      // Get current user from Supabase auth
+      const { data: { user } } = await supabase.auth.getUser();
       
       if (user && transformedProducts.length > 0) {
         console.log('👤 Processing for authenticated user:', user.id);
@@ -652,9 +470,9 @@ export const useSmartSwipeProducts = ({
           setProducts(randomProducts);
         }
       } else {
-        console.log('🔒 No user or no products - showing random selection');
+        console.log('🔒 No user or no products - showing random selection for anonymous user');
         const randomProducts = shuffleArray(transformedProducts).slice(0, 50);
-        console.log('✅ Random products for authenticated user without preferences:', {
+        console.log('✅ Anonymous user products:', {
           total: randomProducts.length,
           internal: randomProducts.filter(p => !p.brand?.name?.includes('ASOS')).length,
           asos: randomProducts.filter(p => p.brand?.name?.includes('ASOS')).length
@@ -665,38 +483,26 @@ export const useSmartSwipeProducts = ({
     } catch (error: any) {
       console.error("Error fetching smart swipe products:", error);
       
-      // Don't show error toasts for anonymous users - provide fallback
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-          console.log('🔄 Anonymous error fallback - showing empty state');
-          setProducts([]);
-        } else {
-          // More specific error handling for authenticated users
-          if (error.message?.includes('Failed to fetch') || error.code === 'PGRST301') {
-            console.log('Network/RLS error - may be connection issue');
-            toast({
-              title: "Connection Error",
-              description: "Unable to load products. Please check your connection.",
-              variant: "destructive"
-            });
-          } else {
-            toast({
-              title: "Error",
-              description: "Failed to fetch products. Please try again.",
-              variant: "destructive"
-            });
-          }
-          setProducts([]);
-        }
-      } catch (authError) {
-        console.log('🔄 Auth check failed - treating as anonymous');
-        setProducts([]);
+      // More specific error handling for anonymous users
+      if (error.message?.includes('Failed to fetch') || error.code === 'PGRST301') {
+        console.log('Network/RLS error - may be anonymous access issue');
+        toast({
+          title: "Connection Error",
+          description: "Unable to load products. Please check your connection or try signing in.",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to fetch products. Please try again.",
+          variant: "destructive"
+        });
       }
+      setProducts([]);
     } finally {
       setIsLoading(false);
     }
-  }, [stableConfig, toast, getContextualFeatureFlag, analyzeUserPreferences, calculatePersonalizationScore, shuffleArray]);
+  }, [filter, subcategory, gender, priceRange, searchQuery, currency, toast, isEnabled, analyzeUserPreferences, calculatePersonalizationScore, shuffleArray]);
 
   useEffect(() => {
     fetchProducts();

@@ -9,10 +9,3 @@ export const features = {
 } as const;
 
 export type FeatureFlag = keyof typeof features;
-
-// Environment-agnostic feature flag getter for debugging
-export const getFeatureFlag = (flag: FeatureFlag): boolean => {
-  const value = features[flag];
-  console.log(`🚩 Feature flag ${flag}:`, value, 'from features.ts');
-  return value;
-};
