@@ -44,7 +44,7 @@ const handler = async (req: Request): Promise<Response> => {
       type: 'recovery',
       email: email,
       options: {
-        redirectTo: redirectTo || `${Deno.env.get('APP_DASHBOARD_URL') || 'https://azyahstyle.com'}/auth?tab=signin&reset=true`
+        redirectTo: redirectTo || `${Deno.env.get('APP_DASHBOARD_URL') || 'https://azyahstyle.com'}/auth?type=recovery`
       }
     });
 
