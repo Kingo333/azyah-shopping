@@ -79,14 +79,17 @@ export function VoiceOverlay({ open, onClose }: VoiceOverlayProps) {
     >
       {/* Top-right controls */}
       <div className="absolute top-4 right-4 flex items-center gap-3">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="text-white/90 hover:text-white hover:bg-white/10"
-          aria-label="Information"
-        >
-          <Info size={20} />
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-white/90 hover:text-white hover:bg-white/10"
+            aria-label="Information"
+          >
+            <Info size={20} />
+          </Button>
+          <p className="text-white/60 text-xs">No conversation is stored</p>
+        </div>
         
         <Button
           variant="ghost"
@@ -130,10 +133,6 @@ export function VoiceOverlay({ open, onClose }: VoiceOverlayProps) {
         <X size={20} />
       </Button>
 
-      {/* No conversation stored message */}
-      <div className="absolute bottom-[5vh] left-0 right-0 text-center px-6">
-        <p className="text-white/60 text-xs">No conversation is stored</p>
-      </div>
 
       {/* Main orb */}
       <canvas
