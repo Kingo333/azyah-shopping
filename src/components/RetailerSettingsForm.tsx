@@ -7,7 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { LogoUpload } from '@/components/LogoUpload';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Save, Plus, X } from 'lucide-react';
+import { Save, Plus, X, Trash2 } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 interface RetailerSettingsFormProps {
   retailer: {
@@ -31,6 +32,7 @@ export const RetailerSettingsForm: React.FC<RetailerSettingsFormProps> = ({
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [formData, setFormData] = useState({
     name: retailer.name || '',
     bio: retailer.bio || '',
@@ -132,102 +134,197 @@ export const RetailerSettingsForm: React.FC<RetailerSettingsFormProps> = ({
     setIsEditing(false);
   };
 
+  const handleDeleteAccount = async () => {
+    try {
+      setIsDeleting(true);
+      
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('No active session');
+      }
+
+      const response = await fetch(`https://klwolsopucgswhtdlsps.supabase.co/functions/v1/delete-account`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete account');
+      }
+
+      toast({
+        title: "Account Deleted",
+        description: "Your account and all associated data have been permanently deleted.",
+      });
+
+      // Sign out and redirect
+      await supabase.auth.signOut();
+      window.location.href = '/';
+    } catch (error) {
+      console.error('Error deleting account:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete account. Please try again or contact support.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   if (!isEditing) {
     return (
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Store Settings</CardTitle>
-          <Button onClick={() => setIsEditing(true)} variant="outline">
-            Edit Settings
-          </Button>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-6">
-            {/* Logo Section */}
-            <div>
-              <h3 className="text-lg font-medium mb-4">Store Logo</h3>
-              <div className="flex items-center gap-4">
-                {retailer.logo_url ? (
-                  <img 
-                    src={retailer.logo_url} 
-                    alt={retailer.name}
-                    className="w-16 h-16 rounded-lg object-cover"
-                  />
-                ) : (
-                  <div className="w-16 h-16 bg-muted rounded-lg flex items-center justify-center text-muted-foreground font-bold">
-                    {retailer.name.charAt(0).toUpperCase()}
+      <div className="space-y-6">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>Store Settings</CardTitle>
+            <Button onClick={() => setIsEditing(true)} variant="outline">
+              Edit Settings
+            </Button>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-6">
+              {/* Logo Section */}
+              <div>
+                <h3 className="text-lg font-medium mb-4">Store Logo</h3>
+                <div className="flex items-center gap-4">
+                  {retailer.logo_url ? (
+                    <img 
+                      src={retailer.logo_url} 
+                      alt={retailer.name}
+                      className="w-16 h-16 rounded-lg object-cover"
+                    />
+                  ) : (
+                    <div className="w-16 h-16 bg-muted rounded-lg flex items-center justify-center text-muted-foreground font-bold">
+                      {retailer.name.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  <div>
+                    <p className="font-medium">{retailer.name}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {retailer.logo_url ? 'Logo uploaded' : 'No logo uploaded'}
+                    </p>
                   </div>
-                )}
-                <div>
-                  <p className="font-medium">{retailer.name}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {retailer.logo_url ? 'Logo uploaded' : 'No logo uploaded'}
-                  </p>
+                </div>
+              </div>
+
+              {/* Store Information */}
+              <div>
+                <h3 className="text-lg font-medium mb-2">Store Information</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium">Store Name</label>
+                    <p className="text-muted-foreground">{retailer.name || 'Not set'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">Store Slug</label>
+                    <p className="text-muted-foreground">{retailer.slug || 'Not set'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">Website</label>
+                    <p className="text-muted-foreground">{retailer.website || 'Not set'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">Contact Email</label>
+                    <p className="text-muted-foreground">{retailer.contact_email || 'Not set'}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Store Bio */}
+              <div>
+                <h3 className="text-lg font-medium mb-2">Store Description</h3>
+                <p className="text-muted-foreground">{retailer.bio || 'No description available'}</p>
+              </div>
+
+              {/* Shipping Regions */}
+              <div>
+                <h3 className="text-lg font-medium mb-2">Shipping Regions</h3>
+                <div className="flex flex-wrap gap-2">
+                  {retailer.shipping_regions?.length > 0 ? (
+                    retailer.shipping_regions.map((region: string) => (
+                      <Badge key={region} variant="outline">{region}</Badge>
+                    ))
+                  ) : (
+                    <p className="text-muted-foreground">No shipping regions configured</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Social Links */}
+              <div>
+                <h3 className="text-lg font-medium mb-2">Social Media</h3>
+                <div className="flex flex-wrap gap-2">
+                  {Object.keys(retailer.socials || {}).length > 0 ? (
+                    Object.entries(retailer.socials || {}).map(([platform, url]) => (
+                      <Badge key={platform} variant="secondary">
+                        {platform}: {url}
+                      </Badge>
+                    ))
+                  ) : (
+                    <p className="text-muted-foreground">No social media links configured</p>
+                  )}
                 </div>
               </div>
             </div>
+          </CardContent>
+        </Card>
 
-            {/* Store Information */}
-            <div>
-              <h3 className="text-lg font-medium mb-2">Store Information</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium">Store Name</label>
-                  <p className="text-muted-foreground">{retailer.name || 'Not set'}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Store Slug</label>
-                  <p className="text-muted-foreground">{retailer.slug || 'Not set'}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Website</label>
-                  <p className="text-muted-foreground">{retailer.website || 'Not set'}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Contact Email</label>
-                  <p className="text-muted-foreground">{retailer.contact_email || 'Not set'}</p>
-                </div>
+        {/* Danger Zone */}
+        <Card className="border-destructive/20">
+          <CardHeader>
+            <CardTitle className="text-destructive">Danger Zone</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div>
+                <h4 className="font-medium mb-2">Delete Account</h4>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Permanently delete your retailer account and all associated data. This action cannot be undone.
+                </p>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive" disabled={isDeleting}>
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      {isDeleting ? 'Deleting...' : 'Delete Account'}
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This action cannot be undone. This will permanently delete your retailer account
+                        and remove all of your data from our servers including:
+                        <ul className="list-disc list-inside mt-2 space-y-1">
+                          <li>Your store profile and settings</li>
+                          <li>All uploaded products</li>
+                          <li>Analytics and engagement data</li>
+                          <li>Collaborations and applications</li>
+                          <li>All other associated data</li>
+                        </ul>
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={handleDeleteAccount}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        disabled={isDeleting}
+                      >
+                        {isDeleting ? 'Deleting...' : 'Yes, delete my account'}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
             </div>
-
-            {/* Store Bio */}
-            <div>
-              <h3 className="text-lg font-medium mb-2">Store Description</h3>
-              <p className="text-muted-foreground">{retailer.bio || 'No description available'}</p>
-            </div>
-
-            {/* Shipping Regions */}
-            <div>
-              <h3 className="text-lg font-medium mb-2">Shipping Regions</h3>
-              <div className="flex flex-wrap gap-2">
-                {retailer.shipping_regions?.length > 0 ? (
-                  retailer.shipping_regions.map((region: string) => (
-                    <Badge key={region} variant="outline">{region}</Badge>
-                  ))
-                ) : (
-                  <p className="text-muted-foreground">No shipping regions configured</p>
-                )}
-              </div>
-            </div>
-
-            {/* Social Links */}
-            <div>
-              <h3 className="text-lg font-medium mb-2">Social Media</h3>
-              <div className="flex flex-wrap gap-2">
-                {Object.keys(retailer.socials || {}).length > 0 ? (
-                  Object.entries(retailer.socials || {}).map(([platform, url]) => (
-                    <Badge key={platform} variant="secondary">
-                      {platform}: {url}
-                    </Badge>
-                  ))
-                ) : (
-                  <p className="text-muted-foreground">No social media links configured</p>
-                )}
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
