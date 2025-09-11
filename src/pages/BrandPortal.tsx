@@ -383,9 +383,15 @@ const BrandPortal: React.FC = () => {
       </div>
     </div>;
   if (!brand) return <div className="min-h-screen flex items-center justify-center p-4">
-      <div className="text-center">
-        <h2 className="text-xl font-semibold mb-2">No Brand Found</h2>
-        <p className="text-muted-foreground">Please create a brand profile first.</p>
+      <div className="text-center space-y-4">
+        <h2 className="text-xl font-semibold mb-2">Setting up your Brand Portal...</h2>
+        <p className="text-muted-foreground">Please wait while we create your brand profile.</p>
+        <Button 
+          onClick={() => window.location.reload()} 
+          variant="outline"
+        >
+          Refresh Page
+        </Button>
       </div>
     </div>;
   const analytics = {
