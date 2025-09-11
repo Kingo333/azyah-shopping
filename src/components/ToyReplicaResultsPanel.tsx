@@ -291,32 +291,6 @@ export const ToyReplicaResultsPanel: React.FC<ToyReplicaResultsPanelProps> = ({
           )}
         </div>
 
-        {/* All Assets with Status */}
-        {!loading && !assetsLoading && assets.length > completedAssets.length && (
-          <div className="space-y-2">
-            <h4 className="text-sm font-medium text-muted-foreground">All Generations</h4>
-            <div className="space-y-2">
-              {assets.slice(0, 5).map((asset) => (
-                <div key={asset.id} className="flex items-center justify-between p-2 rounded border">
-                  <div className="flex items-center gap-3">
-                    {getStatusIcon(asset.status)}
-                    <div>
-                      <p className="text-sm font-medium">
-                        {new Date(asset.created_at).toLocaleDateString()}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {asset.status === 'failed' && asset.error ? asset.error : asset.status}
-                      </p>
-                    </div>
-                  </div>
-                  <Badge variant="outline" className={getStatusColor(asset.status)}>
-                    {asset.status}
-                  </Badge>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
       </CardContent>
     </Card>
   );
