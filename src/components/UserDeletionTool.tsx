@@ -287,7 +287,7 @@ const UserDeletionTool = () => {
               <Checkbox 
                 id="force-delete" 
                 checked={forceDelete}
-                onCheckedChange={setForceDelete}
+                onCheckedChange={(checked) => setForceDelete(checked === true)}
               />
               <label htmlFor="force-delete" className="text-sm">
                 <div className="flex items-center gap-2">

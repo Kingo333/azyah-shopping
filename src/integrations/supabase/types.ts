@@ -2702,8 +2702,21 @@ export type Database = {
         Returns: boolean
       }
       delete_user_completely: {
-        Args: { target_email: string }
+        Args:
+          | { force_orphaned_deletion?: boolean; target_email: string }
+          | { target_email: string }
         Returns: Json
+      }
+      detect_orphaned_users: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          brand_count: number
+          created_at: string
+          email: string
+          product_count: number
+          role: Database["public"]["Enums"]["user_role"]
+          user_id: string
+        }[]
       }
       embed_query: {
         Args: { query_text: string }
