@@ -212,6 +212,35 @@ const RoleDashboard: React.FC = () => {
       </div>;
   }
   console.log('Rendering dashboard for user:', userProfile);
+
+  // Auto-redirect users to their specific portals based on role
+  useEffect(() => {
+    if (userProfile && !loading) {
+      const currentPath = window.location.pathname;
+      
+      // Only redirect if on main dashboard and user has specific role
+      if (currentPath === '/' || currentPath === '/dashboard') {
+        switch (userProfile.role) {
+          case 'brand':
+            console.log('Redirecting brand user to brand portal');
+            navigate('/brand-portal');
+            return;
+          case 'retailer':
+            console.log('Redirecting retailer user to retailer portal');
+            navigate('/retailer-portal');
+            return;
+          case 'admin':
+            // Admins can access the general dashboard
+            break;
+          case 'shopper':
+          default:
+            // Shoppers stay on the dashboard
+            break;
+        }
+      }
+    }
+  }, [userProfile, loading, navigate]);
+
   const renderShopperDashboard = () => <div className="space-y-6">
       {/* Premium Banner */}
       <PremiumBanner />
