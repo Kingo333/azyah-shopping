@@ -87,12 +87,12 @@ export const BrandPortalHeader: React.FC<BrandPortalHeaderProps> = ({
         {/* Import from Website Button */}
         <Button
           variant="outline"
-          disabled
+          onClick={handleImportFromWebsite}
           className="gap-1 md:gap-2 h-8 md:h-10 text-xs md:text-sm px-2 md:px-4"
         >
           <Globe className="h-3 w-3 md:h-4 md:w-4" />
-          <span className="hidden sm:inline">Coming Soon</span>
-          <span className="sm:hidden">Soon</span>
+          <span className="hidden sm:inline">Import from Website</span>
+          <span className="sm:hidden">Import</span>
         </Button>
 
         {onAddProduct && (
