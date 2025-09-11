@@ -47,60 +47,72 @@ export const BrandPortalHeader: React.FC<BrandPortalHeaderProps> = ({
   const getUserName = () => {
     return user?.user_metadata?.name || user?.email?.split('@')[0] || 'User';
   };
-  return <div className={cn("flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 sm:mb-6 gap-4 p-4 rounded-lg bg-card border border-border", className)}>
-      <div className="flex items-center gap-2 sm:gap-4">
-        <div className="flex items-center gap-2 sm:gap-4">
-          <div className="w-12 h-12 sm:w-16 sm:h-16 bg-muted/50 dark:bg-muted rounded-xl overflow-hidden border border-border">
-            {brand?.logo_url ? <img src={brand.logo_url} alt={brand.name} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-muted-foreground font-playfair bg-muted/30 dark:bg-muted/50">
-                {brand?.name.charAt(0).toUpperCase() || 'B'}
-              </div>}
+
+  const handleImportFromWebsite = () => {
+    toast({
+      title: "Coming Soon",
+      description: "Website import feature is coming soon! Use the feedback button to request early access.",
+    });
+  };
+  return (
+    <div className={cn("flex flex-col md:flex-row items-start md:items-center justify-between mb-4 md:mb-8 p-3 md:p-4 rounded-lg bg-card border border-border gap-3 md:gap-0", className)}>
+      <div className="flex items-center gap-3 md:gap-4 min-w-0 flex-1">
+        {brand?.logo_url && (
+          <div className="w-12 h-12 md:w-16 md:h-16 bg-muted rounded-full p-2 flex-shrink-0">
+            <img
+              src={brand.logo_url}
+              alt={`${brand.name} logo`}
+              className="w-full h-full object-contain rounded-full"
+            />
           </div>
-          <div>
-            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
-              <h1 className="text-lg sm:text-2xl font-bold font-playfair">{brand?.name || 'Brand Portal'}</h1>
-              <Badge variant="secondary" className="text-xs rounded-full w-fit">Verified</Badge>
-            </div>
-            <p className="text-muted-foreground text-sm dark:text-muted-foreground/80">{brand?.bio || 'Brand description'}</p>
-          </div>
+        )}
+        <div className="text-foreground min-w-0">
+          <h1 className="text-lg md:text-3xl font-bold truncate">
+            <span className="hidden md:inline">Brand Portal</span>
+            <span className="md:hidden">{brand?.name || 'Your Brand'}</span>
+          </h1>
+          <p className="text-xs md:text-base text-muted-foreground mt-0.5 md:mt-1 dark:text-muted-foreground/80 truncate">
+            <span className="hidden md:inline">{brand?.name || 'Your Brand'}</span>
+            <span className="md:hidden">Brand Portal</span>
+          </p>
         </div>
       </div>
 
-      <div className="flex items-center gap-2 w-full sm:w-auto">
+      <div className="flex items-center gap-2 md:gap-3 w-full md:w-auto justify-between md:justify-end">
         {/* Theme Toggle */}
-        <Button variant="ghost" size="sm" onClick={handleThemeToggle} className="hover:bg-accent/50 dark:hover:bg-accent/20 hover:scale-105 transition-all">
-          {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+        <Button variant="ghost" size="sm" onClick={handleThemeToggle} className="hover:bg-accent/50 dark:hover:bg-accent/20 hover:scale-105 transition-all h-8 w-8 md:h-10 md:w-10">
+          {theme === 'dark' ? <Sun className="h-4 w-4 md:h-5 md:w-5" /> : <Moon className="h-4 w-4 md:h-5 md:w-5" />}
         </Button>
 
-        <Button 
-          variant="outline" 
-          className="rounded-xl flex-1 sm:flex-none opacity-60 cursor-not-allowed" 
-          onClick={() => {
-            toast({
-              title: "Coming Soon",
-              description: "Website import feature is coming soon! Use the feedback button to request early access.",
-            });
-          }}
-          disabled
+        {/* Import from Website Button */}
+        <Button
+          variant="outline"
+          onClick={handleImportFromWebsite}
+          className="gap-1 md:gap-2 h-8 md:h-10 text-xs md:text-sm px-2 md:px-4"
         >
-          <Globe className="h-4 w-4 mr-2" />
-          Import from Website
+          <Globe className="h-3 w-3 md:h-4 md:w-4" />
+          <span className="hidden sm:inline">Import from Website</span>
+          <span className="sm:hidden">Import</span>
         </Button>
 
-        {onAddProduct && <Button className="rounded-xl bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 dark:from-pink-600 dark:to-purple-600 dark:hover:from-pink-700 dark:hover:to-purple-700 flex-1 sm:flex-none text-white" onClick={onAddProduct}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Product
-          </Button>}
+        {onAddProduct && (
+          <Button onClick={onAddProduct} className="gap-1 md:gap-2 bg-primary hover:bg-primary/90 dark:bg-primary dark:hover:bg-primary/80 h-8 md:h-10 text-xs md:text-sm px-2 md:px-4">
+            <Plus className="h-3 w-3 md:h-4 md:w-4" />
+            <span className="hidden sm:inline">Add Product</span>
+            <span className="sm:hidden">Add</span>
+          </Button>
+        )}
 
         {/* User Menu */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" className="flex items-center gap-3 hover:bg-accent/50 dark:hover:bg-accent/20 hover:scale-105 transition-all">
-              <Avatar className="h-8 w-8 border-2 border-border dark:border-border/50">
-                <AvatarFallback className="text-sm bg-gradient-to-br from-primary/20 to-accent/20 dark:from-primary/30 dark:to-accent/30">
+            <Button variant="ghost" size="sm" className="flex items-center gap-1 md:gap-3 hover:bg-accent/50 dark:hover:bg-accent/20 hover:scale-105 transition-all h-8 md:h-10 max-w-24 md:max-w-none">
+              <Avatar className="h-6 w-6 md:h-8 md:w-8 border-2 border-border dark:border-border/50 flex-shrink-0">
+                <AvatarFallback className="text-xs md:text-sm bg-gradient-to-br from-primary/20 to-accent/20 dark:from-primary/30 dark:to-accent/30">
                   {getUserName().charAt(0).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
-              <span className="hidden sm:inline text-sm font-medium">
+              <span className="text-xs md:text-sm font-medium truncate min-w-0">
                 {getUserName()}
               </span>
             </Button>
@@ -113,5 +125,6 @@ export const BrandPortalHeader: React.FC<BrandPortalHeaderProps> = ({
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-    </div>;
+    </div>
+  );
 };

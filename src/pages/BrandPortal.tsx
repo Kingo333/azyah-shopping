@@ -20,7 +20,7 @@ import { ImportWizardModal } from '@/components/ImportWizardModal';
 import { BulkImportActions } from '@/components/BulkImportActions';
 import { CollabDashboard } from '@/components/ugc/CollabDashboard';
 import { BrandSettingsForm } from '@/components/BrandSettingsForm';
-import { Plus, Edit, Trash2, Upload, BarChart3, TrendingUp, Eye, Heart, ShoppingBag, DollarSign, Download, Filter, Globe } from 'lucide-react';
+import { Plus, Edit, Trash2, Upload, BarChart3, TrendingUp, Eye, Heart, ShoppingBag, DollarSign, Download, Filter, Globe, Package, Archive, Store } from 'lucide-react';
 import { InfoTooltip } from '@/components/ui/info-tooltip';
 import { FeedbackModal } from '@/components/FeedbackModal';
 import { ProfileCompletionBanner } from '@/components/ProfileCompletionBanner';
@@ -410,8 +410,9 @@ const BrandPortal: React.FC = () => {
     likes: Math.floor(Math.random() * 200) + 20,
     revenue: `$${(Math.random() * 500 + 100).toFixed(2)}`
   }));
-  return <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-purple-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
-      <div className="container mx-auto max-w-7xl p-3 md:p-6">
+  return <div className="min-h-screen bg-background dark:bg-slate-950">
+      <div className="container max-w-7xl mx-auto p-3 md:p-6">
+        {/* Header */}
         <BrandPortalHeader brand={brand} onAddProduct={() => {
           if (products.length >= 10) {
             toast({
@@ -425,103 +426,210 @@ const BrandPortal: React.FC = () => {
         }} />
 
         {/* Feedback Section */}
-        <div className="mb-4 md:mb-6 flex justify-end">
+        <div className="mb-4 md:mb-8 flex justify-end">
           <FeedbackModal userType="brand" />
+        </div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 mb-6 md:mb-8">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-xs md:text-sm font-medium">Total Products</CardTitle>
+              <Package className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-lg md:text-2xl font-bold">{analytics.totalProducts}</div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-xs md:text-sm font-medium">Total Views</CardTitle>
+              <BarChart3 className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-lg md:text-2xl font-bold">{analytics.totalViews}</div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-xs md:text-sm font-medium">Total Likes</CardTitle>
+              <Heart className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-lg md:text-2xl font-bold">{analytics.totalLikes}</div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-xs md:text-sm font-medium">Active Products</CardTitle>
+              <ShoppingBag className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-lg md:text-2xl font-bold">
+                {products.filter(p => p.status === 'active').length}
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Profile Completion Banner */}
         <ProfileCompletionBanner />
         
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-4 rounded-xl bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border border-white/20 dark:border-slate-700/50">
-            <TabsTrigger value="products" className="rounded-lg text-xs md:text-sm data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-sm">Products</TabsTrigger>
-            <TabsTrigger value="collabs" className="rounded-lg text-xs md:text-sm data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-sm">Collabs</TabsTrigger>
-            <TabsTrigger value="analytics" className="rounded-lg text-xs md:text-sm data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-sm">Analytics</TabsTrigger>
-            <TabsTrigger value="settings" className="rounded-lg text-xs md:text-sm data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-sm">Settings</TabsTrigger>
+        {/* Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 md:space-y-6">
+          <TabsList className="bg-muted/50 dark:bg-slate-800/50 grid w-full grid-cols-4 md:flex md:w-auto">
+            <TabsTrigger value="products" className="data-[state=active]:bg-background dark:data-[state=active]:bg-slate-700 text-xs md:text-sm">Products</TabsTrigger>
+            <TabsTrigger value="collabs" className="data-[state=active]:bg-background dark:data-[state=active]:bg-slate-700 text-xs md:text-sm">Collabs</TabsTrigger>
+            <TabsTrigger value="analytics" className="data-[state=active]:bg-background dark:data-[state=active]:bg-slate-700 text-xs md:text-sm">Analytics</TabsTrigger>
+            <TabsTrigger value="settings" className="data-[state=active]:bg-background dark:data-[state=active]:bg-slate-700 text-xs md:text-sm">Settings</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="products" className="mt-3 md:mt-6">
-            <div className="space-y-3 md:space-y-6">
-              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-2 md:gap-4">
-                <div className="flex flex-wrap items-center gap-1 md:gap-2">
-                  <Button variant="outline" size="sm" className="text-xs md:text-sm border-border/50 hover:bg-accent/50 dark:hover:bg-accent/20 h-8 md:h-9">
-                    <Filter className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
-                    <span className="hidden sm:inline">Filter</span>
-                  </Button>
-                  
-                  
+          <TabsContent value="products">
+            <Card>
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <CardTitle>Product Catalog</CardTitle>
+                  {selectedProducts.size > 0 && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-muted-foreground">
+                        {selectedProducts.size} selected
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleBulkAction('Archive')}
+                        className="text-orange-600 border-orange-200 hover:bg-orange-50"
+                      >
+                        <Archive className="h-4 w-4 mr-1" />
+                        Archive
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleBulkAction('Delete')}
+                        className="text-red-600 border-red-200 hover:bg-red-50"
+                      >
+                        <Trash2 className="h-4 w-4 mr-1" />
+                        Delete
+                      </Button>
+                    </div>
+                  )}
                 </div>
-                {selectedProducts.size > 0 && <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-xs md:text-sm text-muted-foreground">{selectedProducts.size} selected</span>
-                    <Button variant="outline" size="sm" onClick={() => handleBulkAction('Archive')} className="border-border/50 hover:bg-accent/50 dark:hover:bg-accent/20 h-8 md:h-9 text-xs md:text-sm">Archive</Button>
-                    <Button variant="outline" size="sm" onClick={() => handleBulkAction('Delete')} className="border-border/50 hover:bg-destructive/10 dark:hover:bg-destructive/20 hover:text-destructive h-8 md:h-9 text-xs md:text-sm">Delete</Button>
-                  </div>}
-              </div>
-
-              {productsLoading ? <div className="text-center py-8">Loading products...</div> : products.length === 0 ? <div className="text-center py-8 text-muted-foreground">No products yet. Create your first product!</div> : <div className="grid gap-2 sm:gap-4">
-                  {products.map(product => <Card key={product.id} className="overflow-hidden border-border/50 hover:border-border transition-colors">
-                      <CardContent className="p-3 sm:p-4">
-                        <div className="flex items-center gap-2 sm:gap-4">
-                          <input type="checkbox" checked={selectedProducts.has(product.id)} onChange={() => handleSelectProduct(product.id)} className="w-4 h-4" />
-                          <div className="w-16 h-16 sm:w-20 sm:h-20 bg-muted/70 dark:bg-muted/30 rounded-lg overflow-hidden cursor-pointer hover:opacity-80 transition-opacity border border-border/30" onClick={() => handleViewProduct(product)}>
-                            {product.media_urls && product.media_urls[0] ? <img src={product.media_urls[0]} alt={product.title} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">No Image</div>}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mb-1">
-                              <h3 className="font-medium cursor-pointer hover:text-primary transition-colors truncate" onClick={() => handleViewProduct(product)}>
-                                {product.title}
-                              </h3>
-                              <Badge variant={getStatusColor(product.status) as any} className="w-fit text-xs">
-                                {product.status.replace('_', ' ')}
-                              </Badge>
-                            </div>
-                            <p className="text-sm text-muted-foreground mb-2">
-                              {product.category_slug} • {formatPrice(product.price_cents)}
-                            </p>
-                            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-sm text-muted-foreground">
-                              <span>Stock: {product.stock_qty}</span>
-                              <span>Created: {new Date(product.created_at).toLocaleDateString()}</span>
-                            </div>
-                          </div>
-                          <div className="flex sm:flex-row flex-col items-center gap-1 sm:gap-2">
-                            
-                            <Button variant="outline" size="sm" onClick={() => handleEditProduct(product)} className="border-border/50 hover:bg-accent/50 dark:hover:bg-accent/20">
-                              <Edit className="h-3 w-3 sm:h-4 sm:w-4" />
-                            </Button>
-                            <Button variant="outline" size="sm" onClick={() => handleDeleteProduct(product.id)} className="border-border/50 hover:bg-destructive/10 dark:hover:bg-destructive/20 hover:text-destructive">
-                              <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>)}
-                </div>}
-            </div>
+              </CardHeader>
+              <CardContent>
+                {productsLoading ? (
+                  <div className="text-center py-8">Loading products...</div>
+                ) : products.length > 0 ? (
+                  <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 md:gap-4">
+                    {products.map((product) => (
+                       <Card key={product.id} className="overflow-hidden border-border/50 hover:border-border transition-colors">
+                         <div className="aspect-square relative">
+                           <input
+                             type="checkbox"
+                             checked={selectedProducts.has(product.id)}
+                             onChange={() => handleSelectProduct(product.id)}
+                             className="absolute top-2 left-2 z-10 rounded border-gray-300"
+                           />
+                           <img
+                             src={product.media_urls?.[0] || '/placeholder.svg'}
+                             alt={product.title}
+                             className="w-full h-full object-cover cursor-pointer"
+                             onClick={() => handleViewProduct(product)}
+                           />
+                           {product.status === 'archived' && (
+                             <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                               <Badge 
+                                 variant="secondary"
+                                 className="text-white bg-destructive/90 border-destructive px-1 md:px-4 py-1 md:py-2 text-xs md:text-sm font-semibold"
+                               >
+                                 ARCHIVED
+                               </Badge>
+                             </div>
+                           )}
+                         </div>
+                         <CardContent className="p-2 md:p-4">
+                           <h3 className="font-medium text-xs md:text-sm mb-1 md:mb-2 line-clamp-2 leading-tight cursor-pointer hover:text-primary transition-colors" onClick={() => handleViewProduct(product)}>
+                             {product.title}
+                           </h3>
+                           <div className="flex items-center justify-between mb-1 md:mb-2">
+                             <span className="text-xs md:text-sm font-semibold text-primary">
+                               {formatPrice(product.price_cents)}
+                             </span>
+                             <Badge 
+                               variant={getStatusColor(product.status) as any}
+                               className="text-xs px-1 md:px-2 py-0.5"
+                             >
+                               {product.status.replace('_', ' ')}
+                             </Badge>
+                           </div>
+                           <div className="flex justify-between gap-1">
+                             <Button
+                               variant="ghost"
+                               size="sm"
+                               onClick={() => handleViewProduct(product)}
+                               className="h-6 md:h-8 px-1 md:px-2 hover:bg-accent/50"
+                             >
+                               <Eye className="h-3 w-3 md:h-4 md:w-4" />
+                             </Button>
+                             <Button
+                               variant="ghost"
+                               size="sm"
+                               onClick={() => handleEditProduct(product)}
+                               className="h-6 md:h-8 px-1 md:px-2 hover:bg-accent/50"
+                             >
+                               <Edit className="h-3 w-3 md:h-4 md:w-4" />
+                             </Button>
+                             <Button
+                               variant="ghost"
+                               size="sm"
+                               onClick={() => handleDeleteProduct(product.id)}
+                               className="h-6 md:h-8 px-1 md:px-2 hover:bg-destructive/10 text-destructive"
+                             >
+                               <Trash2 className="h-3 w-3 md:h-4 md:w-4" />
+                             </Button>
+                           </div>
+                         </CardContent>
+                       </Card>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <Package className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-medium mb-2">No products yet</h3>
+                    <p className="text-muted-foreground mb-6">Start building your brand catalog by adding your first product.</p>
+                    <Button onClick={() => {
+                      if (products.length >= 10) {
+                        toast({
+                          title: "Product Limit Reached",
+                          description: "You've reached the 10 product limit. Use the Feedback & Support button to request more.",
+                          variant: "destructive",
+                        });
+                        return;
+                      }
+                      setIsAddProductModalOpen(true);
+                    }}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Your First Product
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
 
-          <TabsContent value="collabs" className="mt-3 md:mt-6">
-            <div className="space-y-3 md:space-y-4">
-              <div className="bg-muted/50 dark:bg-slate-800/50 rounded-lg p-3 md:p-4 border border-border/50">
-                <h3 className="font-medium mb-2 text-sm md:text-base">What are Collaborations?</h3>
-                <p className="text-xs md:text-sm text-muted-foreground">
-                  Partner with content creators and influencers to showcase your brand. Create collaboration campaigns 
-                  with specific requirements, set compensation terms, and define deliverables. Review applications from 
-                  creators and manage your brand partnerships efficiently.
-                </p>
-              </div>
-              <CollabDashboard ownerOrgId={brand.id} orgType="brand" />
-            </div>
+          <TabsContent value="collabs">
+            <CollabDashboard ownerOrgId={brand.id} orgType="brand" />
           </TabsContent>
 
-          <TabsContent value="analytics" className="mt-3 md:mt-6">
+          <TabsContent value="analytics">
             <AnalyticsDashboard brandId={brand?.id} />
           </TabsContent>
 
-          <TabsContent value="settings" className="mt-3 md:mt-6">
-            <div className="space-y-3 md:space-y-6">
-              <BrandSettingsForm brand={brand} onBrandUpdate={setBrand} />
-              <BulkImportActions brandId={brand.id} onProductsDeleted={fetchProducts} />
-            </div>
+          <TabsContent value="settings">
+            <BrandSettingsForm brand={brand} onBrandUpdate={setBrand} />
           </TabsContent>
         </Tabs>
       </div>
