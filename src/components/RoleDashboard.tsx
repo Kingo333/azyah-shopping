@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
@@ -60,28 +60,7 @@ const RoleDashboard: React.FC = () => {
   const [aiStudioModalOpen, setAiStudioModalOpen] = useState(false);
   const [isClosetsMinimized, setIsClosetsMinimized] = useState(true);
   const [isAffiliateMinimized, setIsAffiliateMinimized] = useState(true);
-  useEffect(() => {
-    // Set correct page title
-    document.title = 'Azyah - Fashion Discovery Platform';
-    const initializeDashboard = async () => {
-      console.log('Initializing dashboard, user:', user);
-      if (!user) {
-        console.log('No user found, setting loading to false');
-        setLoading(false);
-        return;
-      }
-      try {
-        await fetchUserProfile();
-        await fetchDashboardStats();
-      } catch (error) {
-        console.error('Error initializing dashboard:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    initializeDashboard();
-  }, [user]);
-  const fetchUserProfile = async () => {
+  const fetchUserProfile = useCallback(async () => {
     if (!user) return;
     console.log('Fetching user profile for:', user.id);
     try {
@@ -132,8 +111,9 @@ const RoleDashboard: React.FC = () => {
       };
       setUserProfile(fallbackProfile);
     }
-  };
-  const fetchDashboardStats = async () => {
+  }, [user]);
+
+  const fetchDashboardStats = useCallback(async () => {
     if (!user) return;
     console.log('Fetching dashboard stats for:', user.id);
     try {
@@ -167,7 +147,29 @@ const RoleDashboard: React.FC = () => {
         totalProducts: 0
       });
     }
-  };
+  }, [user, userProfile]);
+
+  useEffect(() => {
+    // Set correct page title
+    document.title = 'Azyah - Fashion Discovery Platform';
+    const initializeDashboard = async () => {
+      console.log('Initializing dashboard, user:', user);
+      if (!user) {
+        console.log('No user found, setting loading to false');
+        setLoading(false);
+        return;
+      }
+      try {
+        await fetchUserProfile();
+        await fetchDashboardStats();
+      } catch (error) {
+        console.error('Error initializing dashboard:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    initializeDashboard();
+  }, [user, fetchUserProfile, fetchDashboardStats]);
   const formatPrice = (cents: number): string => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
