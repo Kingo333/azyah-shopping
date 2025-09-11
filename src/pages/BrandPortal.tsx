@@ -19,6 +19,7 @@ import { LogoUpload } from '@/components/LogoUpload';
 import { ImportWizardModal } from '@/components/ImportWizardModal';
 import { BulkImportActions } from '@/components/BulkImportActions';
 import { CollabDashboard } from '@/components/ugc/CollabDashboard';
+import { BrandSettingsForm } from '@/components/BrandSettingsForm';
 import { Plus, Edit, Trash2, Upload, BarChart3, TrendingUp, Eye, Heart, ShoppingBag, DollarSign, Download, Filter, Globe } from 'lucide-react';
 import { InfoTooltip } from '@/components/ui/info-tooltip';
 import { FeedbackModal } from '@/components/FeedbackModal';
@@ -30,6 +31,9 @@ interface Brand {
   logo_url: string | null;
   bio: string | null;
   website: string | null;
+  contact_email: string | null;
+  socials: any;
+  shipping_regions: string[];
 }
 const BrandPortal: React.FC = () => {
   const [activeTab, setActiveTab] = useState('products');
@@ -58,20 +62,85 @@ const BrandPortal: React.FC = () => {
     isLoading: analyticsLoading
   } = useAnalytics(brand?.id, 'brand');
   const mountedRef = useRef(true);
+  const generateUniqueSlug = async (baseName: string): Promise<string> => {
+    const baseSlug = baseName.toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+    
+    let slug = baseSlug;
+    let counter = 1;
+    
+    while (true) {
+      const { data } = await supabase
+        .from('brands')
+        .select('id')
+        .eq('slug', slug)
+        .maybeSingle();
+      
+      if (!data) break;
+      
+      slug = `${baseSlug}-${counter}`;
+      counter++;
+    }
+    
+    return slug;
+  };
+
+  const createBrandForUser = async (): Promise<Brand | null> => {
+    if (!user) return null;
+    
+    try {
+      const brandName = user.user_metadata?.name || user.email?.split('@')[0] || 'My Brand';
+      const slug = await generateUniqueSlug(brandName);
+      
+      const { data, error } = await supabase
+        .from('brands')
+        .insert({
+          name: brandName,
+          slug: slug,
+          owner_user_id: user.id,
+          contact_email: user.email,
+          bio: null,
+          website: null,
+          logo_url: null,
+          socials: {},
+          shipping_regions: []
+        })
+        .select()
+        .single();
+      
+      if (error) {
+        console.error('Error creating brand:', error);
+        throw error;
+      }
+      
+      console.log('Successfully created brand:', data);
+      return data;
+    } catch (error) {
+      console.error('Exception creating brand:', error);
+      return null;
+    }
+  };
+
   const fetchBrandData = useCallback(async () => {
     if (!user?.id) {
       console.log('No user ID available');
       setBrandLoading(false);
       return;
     }
+    
     try {
       console.log('Fetching brand for user:', user.id);
       setBrandLoading(true);
-      const {
-        data,
-        error
-      } = await supabase.from('brands').select('*').eq('owner_user_id', user.id).maybeSingle();
+      
+      const { data, error } = await supabase
+        .from('brands')
+        .select('*')
+        .eq('owner_user_id', user.id)
+        .maybeSingle();
+      
       console.log('Brand query completed - data:', data, 'error:', error);
+      
       if (error) {
         console.error('Supabase error fetching brand:', error);
         if (mountedRef.current) {
@@ -80,14 +149,29 @@ const BrandPortal: React.FC = () => {
         }
         return;
       }
+      
       if (!data) {
-        console.log('No brand found for user');
+        console.log('No brand found for user, creating new brand...');
+        
+        // Check if user has brand role before auto-creating
+        const userRole = user.user_metadata?.role;
+        if (userRole === 'brand' || userRole === 'admin') {
+          const newBrand = await createBrandForUser();
+          if (newBrand && mountedRef.current) {
+            setBrand(newBrand);
+            toast({
+              title: "Welcome to Azyah!",
+              description: "Your brand portal has been created. Complete your profile in Settings to get started.",
+            });
+          }
+        }
+        
         if (mountedRef.current) {
-          setBrand(null);
           setBrandLoading(false);
         }
         return;
       }
+      
       console.log('Successfully setting brand data:', data);
       if (mountedRef.current) {
         setBrand(data);
@@ -100,7 +184,7 @@ const BrandPortal: React.FC = () => {
         setBrandLoading(false);
       }
     }
-  }, [user?.id]);
+  }, [user?.id, user?.user_metadata?.name, user?.email, user?.user_metadata?.role, toast]);
   const fetchProducts = useCallback(async () => {
     if (!brand?.id) return;
     try {
@@ -413,18 +497,7 @@ const BrandPortal: React.FC = () => {
 
           <TabsContent value="settings" className="mt-3 md:mt-6">
             <div className="space-y-3 md:space-y-6">
-              <Card>
-                <CardHeader><CardTitle>Brand Profile</CardTitle></CardHeader>
-                <CardContent className="space-y-4">
-                  <LogoUpload currentLogoUrl={brand.logo_url} onLogoUpdate={handleLogoUpdate} entityType="brand" entityId={brand.id} />
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div><label className="text-sm font-medium mb-2 block">Brand Name</label><Input defaultValue={brand.name} /></div>
-                    <div><label className="text-sm font-medium mb-2 block">Website</label><Input defaultValue={brand.website || ''} /></div>
-                  </div>
-                  <div><label className="text-sm font-medium mb-2 block">Description</label><Textarea defaultValue={brand.bio || ''} /></div>
-                  <Button className="w-full sm:w-auto bg-primary hover:bg-primary/90 dark:bg-primary dark:hover:bg-primary/80">Save Changes</Button>
-                </CardContent>
-              </Card>
+              <BrandSettingsForm brand={brand} onBrandUpdate={setBrand} />
               <BulkImportActions brandId={brand.id} onProductsDeleted={fetchProducts} />
             </div>
           </TabsContent>
