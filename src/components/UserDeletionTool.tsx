@@ -1,16 +1,91 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { CheckCircle, XCircle, User, AlertTriangle } from 'lucide-react';
+
+interface UserStatus {
+  existsInPublic: boolean;
+  existsInAuth: boolean;
+  userId?: string;
+  role?: string;
+  brandCount?: number;
+  productCount?: number;
+  createdAt?: string;
+}
 
 const UserDeletionTool = () => {
   const [email, setEmail] = useState('abdullahiking33@gmail.com');
-  const [justification, setJustification] = useState('User deletion requested by administrator via Lovable interface');
+  const [justification, setJustification] = useState('User deletion requested by administrator - enabling fresh signup after incomplete deletion');
   const [loading, setLoading] = useState(false);
+  const [checking, setChecking] = useState(false);
+  const [userStatus, setUserStatus] = useState<UserStatus | null>(null);
   const [result, setResult] = useState<any>(null);
+
+  const checkUserStatus = async () => {
+    if (!email.trim()) return;
+    
+    setChecking(true);
+    try {
+      // Check if user exists in public.users
+      const { data: publicUser, error: publicError } = await supabase
+        .from('users')
+        .select('id, role, created_at')
+        .eq('email', email.trim())
+        .maybeSingle();
+
+      if (publicError && publicError.code !== 'PGRST116') {
+        throw publicError;
+      }
+
+      // Check brand count if user exists
+      let brandCount = 0;
+      let productCount = 0;
+      if (publicUser) {
+        const { data: brands } = await supabase
+          .from('brands')
+          .select('id')
+          .eq('owner_user_id', publicUser.id);
+        
+        brandCount = brands?.length || 0;
+
+        if (brandCount > 0) {
+          const { data: products } = await supabase
+            .from('products')
+            .select('id')
+            .in('brand_id', brands?.map(b => b.id) || []);
+          
+          productCount = products?.length || 0;
+        }
+      }
+
+      setUserStatus({
+        existsInPublic: !!publicUser,
+        existsInAuth: false, // We'll assume false since we can't directly query auth.users
+        userId: publicUser?.id,
+        role: publicUser?.role,
+        brandCount,
+        productCount,
+        createdAt: publicUser?.created_at
+      });
+    } catch (error: any) {
+      console.error('Error checking user status:', error);
+      toast.error('Failed to check user status');
+    } finally {
+      setChecking(false);
+    }
+  };
+
+  useEffect(() => {
+    if (email.trim()) {
+      checkUserStatus();
+    }
+  }, [email]);
 
   const handleDeleteUser = async () => {
     if (!email.trim()) {
@@ -48,7 +123,7 @@ const UserDeletionTool = () => {
     setResult(null);
 
     try {
-      const { data, error } = await supabase.functions.invoke('delete-user-completely', {
+      const { data, error } = await supabase.functions.invoke('admin-delete-user', {
         body: {
           email: email.trim(),
           justification: justification.trim()
@@ -63,8 +138,8 @@ const UserDeletionTool = () => {
       
       if (data.success) {
         toast.success(`User ${email} has been completely deleted from the system`);
-        setEmail('');
-        setJustification('');
+        // Refresh user status to confirm deletion
+        await checkUserStatus();
       } else {
         toast.error(data.message || 'Failed to delete user');
       }
@@ -97,9 +172,46 @@ const UserDeletionTool = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="user@example.com"
-              disabled={loading}
+              disabled={loading || checking}
             />
+            {checking && (
+              <p className="text-xs text-muted-foreground mt-1">Checking user status...</p>
+            )}
           </div>
+
+          {userStatus && (
+            <Alert>
+              <User className="h-4 w-4" />
+              <AlertDescription>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">User Status:</span>
+                    {userStatus.existsInPublic ? (
+                      <Badge variant="destructive" className="flex items-center gap-1">
+                        <XCircle className="h-3 w-3" />
+                        Found in Database
+                      </Badge>
+                    ) : (
+                      <Badge variant="default" className="flex items-center gap-1">
+                        <CheckCircle className="h-3 w-3" />
+                        Not Found - Can Sign Up
+                      </Badge>
+                    )}
+                  </div>
+                  
+                  {userStatus.existsInPublic && (
+                    <div className="text-sm space-y-1">
+                      <p><strong>User ID:</strong> {userStatus.userId}</p>
+                      <p><strong>Role:</strong> {userStatus.role}</p>
+                      <p><strong>Created:</strong> {new Date(userStatus.createdAt!).toLocaleString()}</p>
+                      <p><strong>Brands Owned:</strong> {userStatus.brandCount}</p>
+                      <p><strong>Products:</strong> {userStatus.productCount}</p>
+                    </div>
+                  )}
+                </div>
+              </AlertDescription>
+            </Alert>
+          )}
 
           <div>
             <label htmlFor="justification" className="block text-sm font-medium mb-2">
@@ -118,13 +230,23 @@ const UserDeletionTool = () => {
             </p>
           </div>
 
+          {userStatus?.existsInPublic && (
+            <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>
+                This user still exists in the system and has {userStatus.brandCount} brand(s) and {userStatus.productCount} product(s).
+                Deletion will permanently remove ALL associated data.
+              </AlertDescription>
+            </Alert>
+          )}
+
           <Button 
             onClick={handleDeleteUser}
-            disabled={loading || !email.trim() || justification.length < 10}
+            disabled={loading || checking || !email.trim() || justification.length < 10 || !userStatus?.existsInPublic}
             variant="destructive"
             className="w-full"
           >
-            {loading ? 'Deleting User...' : 'DELETE USER PERMANENTLY'}
+            {loading ? 'Deleting User...' : checking ? 'Checking User...' : userStatus?.existsInPublic ? 'DELETE USER PERMANENTLY' : 'User Not Found - No Action Needed'}
           </Button>
 
           {result && (
