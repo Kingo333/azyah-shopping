@@ -32,6 +32,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
+        
+        // Ensure portal setup when user signs in
+        if (event === 'SIGNED_IN' && session?.user) {
+          setTimeout(() => {
+            ensureUserPortalSetup(session.user, session.user.user_metadata?.role);
+          }, 0);
+        }
       }
     );
 
