@@ -7,7 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { CheckCircle, XCircle, User, AlertTriangle } from 'lucide-react';
+import { CheckCircle, XCircle, User, AlertTriangle, Shield } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface UserStatus {
   existsInPublic: boolean;
@@ -17,6 +18,7 @@ interface UserStatus {
   brandCount?: number;
   productCount?: number;
   createdAt?: string;
+  isOrphaned?: boolean;
 }
 
 const UserDeletionTool = () => {
@@ -26,6 +28,7 @@ const UserDeletionTool = () => {
   const [checking, setChecking] = useState(false);
   const [userStatus, setUserStatus] = useState<UserStatus | null>(null);
   const [result, setResult] = useState<any>(null);
+  const [forceDelete, setForceDelete] = useState(false);
 
   const checkUserStatus = async () => {
     if (!email.trim()) return;
@@ -36,12 +39,21 @@ const UserDeletionTool = () => {
       const { data: publicUser, error: publicError } = await supabase
         .from('users')
         .select('id, role, created_at')
-        .eq('email', email.trim())
+        .ilike('email', email.trim()) // Case insensitive search
         .maybeSingle();
 
       if (publicError && publicError.code !== 'PGRST116') {
         throw publicError;
       }
+
+      // Check if user exists in auth by calling our enhanced admin function
+      const { data: statusCheck } = await supabase.functions.invoke('admin-delete-user', {
+        body: {
+          email: email.trim(),
+          justification: 'Status check only',
+          checkOnly: true
+        }
+      });
 
       // Check brand count if user exists
       let brandCount = 0;
@@ -64,14 +76,18 @@ const UserDeletionTool = () => {
         }
       }
 
+      const existsInAuth = statusCheck?.userFound?.inAuth || false;
+      const isOrphaned = !!publicUser && !existsInAuth;
+
       setUserStatus({
         existsInPublic: !!publicUser,
-        existsInAuth: false, // We'll assume false since we can't directly query auth.users
+        existsInAuth,
         userId: publicUser?.id,
         role: publicUser?.role,
         brandCount,
         productCount,
-        createdAt: publicUser?.created_at
+        createdAt: publicUser?.created_at,
+        isOrphaned
       });
     } catch (error: any) {
       console.error('Error checking user status:', error);
@@ -126,7 +142,8 @@ const UserDeletionTool = () => {
       const { data, error } = await supabase.functions.invoke('admin-delete-user', {
         body: {
           email: email.trim(),
-          justification: justification.trim()
+          justification: justification.trim(),
+          forceDelete: forceDelete
         }
       });
 
@@ -197,6 +214,21 @@ const UserDeletionTool = () => {
                         Not Found - Can Sign Up
                       </Badge>
                     )}
+                    {userStatus.isOrphaned && (
+                      <Badge variant="outline" className="flex items-center gap-1 border-orange-500 text-orange-700">
+                        <AlertTriangle className="h-3 w-3" />
+                        Orphaned User
+                      </Badge>
+                    )}
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm">Auth Status:</span>
+                    {userStatus.existsInAuth ? (
+                      <Badge variant="secondary">In Auth System</Badge>
+                    ) : (
+                      <Badge variant="outline">Not in Auth</Badge>
+                    )}
                   </div>
                   
                   {userStatus.existsInPublic && (
@@ -209,6 +241,16 @@ const UserDeletionTool = () => {
                     </div>
                   )}
                 </div>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {userStatus?.isOrphaned && (
+            <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>
+                <strong>Orphaned User Detected:</strong> This user exists in the database but not in the authentication system. 
+                This can happen when deletion was incomplete. Use Force Delete to clean up orphaned records.
               </AlertDescription>
             </Alert>
           )}
@@ -240,13 +282,29 @@ const UserDeletionTool = () => {
             </Alert>
           )}
 
+          {userStatus?.existsInPublic && (
+            <div className="flex items-center space-x-2">
+              <Checkbox 
+                id="force-delete" 
+                checked={forceDelete}
+                onCheckedChange={setForceDelete}
+              />
+              <label htmlFor="force-delete" className="text-sm">
+                <div className="flex items-center gap-2">
+                  <Shield className="h-4 w-4" />
+                  Force Delete (bypass additional checks for orphaned users)
+                </div>
+              </label>
+            </div>
+          )}
+
           <Button 
             onClick={handleDeleteUser}
-            disabled={loading || checking || !email.trim() || justification.length < 10 || !userStatus?.existsInPublic}
+            disabled={loading || checking || !email.trim() || justification.length < 10 || (!userStatus?.existsInPublic && !forceDelete)}
             variant="destructive"
             className="w-full"
           >
-            {loading ? 'Deleting User...' : checking ? 'Checking User...' : userStatus?.existsInPublic ? 'DELETE USER PERMANENTLY' : 'User Not Found - No Action Needed'}
+            {loading ? 'Deleting User...' : checking ? 'Checking User...' : userStatus?.existsInPublic || forceDelete ? 'DELETE USER PERMANENTLY' : 'User Not Found - No Action Needed'}
           </Button>
 
           {result && (

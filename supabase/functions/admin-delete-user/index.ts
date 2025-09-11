@@ -9,6 +9,8 @@ const corsHeaders = {
 interface UserDeletionRequest {
   email: string;
   justification: string;
+  forceDelete?: boolean;
+  checkOnly?: boolean;
 }
 
 serve(async (req) => {
@@ -19,13 +21,13 @@ serve(async (req) => {
 
   try {
     // Parse request body
-    const { email, justification }: UserDeletionRequest = await req.json()
+    const { email, justification, forceDelete = false, checkOnly = false }: UserDeletionRequest = await req.json()
 
-    if (!email || !justification) {
+    if (!email || (!justification && !checkOnly)) {
       return new Response(
         JSON.stringify({ 
           error: 'Email and justification are required',
-          received: { email: !!email, justification: !!justification }
+          received: { email: !!email, justification: !!justification, checkOnly }
         }),
         { 
           status: 400, 
@@ -46,14 +48,15 @@ serve(async (req) => {
       }
     )
 
-    console.log(`Starting enhanced deletion for user: ${email}`)
+    console.log(`Starting ${checkOnly ? 'status check' : 'enhanced deletion'} for user: ${email}`)
     console.log(`Justification: ${justification}`)
+    console.log(`Force delete: ${forceDelete}, Check only: ${checkOnly}`)
     
-    // Step 1: Check if user exists in public.users
+    // Step 1: Check if user exists in public.users (case insensitive)
     const { data: publicUser, error: publicCheckError } = await supabaseAdmin
       .from('users')
       .select('id, email, role, created_at')
-      .eq('email', email.trim())
+      .ilike('email', email.trim())
       .maybeSingle()
 
     if (publicCheckError) {
@@ -82,20 +85,49 @@ serve(async (req) => {
         authUserId = authUser.id
       }
     } else {
-      // Try to find auth user by email directly
+      // Try to find auth user by email directly (case insensitive)
       const { data: authUsersByEmail, error: authEmailError } = await supabaseAdmin.auth.admin.listUsers()
       if (!authEmailError && authUsersByEmail.users) {
-        authUser = authUsersByEmail.users.find(u => u.email === email.trim())
+        authUser = authUsersByEmail.users.find(u => 
+          u.email?.toLowerCase() === email.trim().toLowerCase()
+        )
         authUserId = authUser?.id
       }
     }
 
+    const isOrphaned = !!publicUser && !authUser;
+    
     console.log(`User status check:`)
     console.log(`- Public user found: ${!!publicUser} ${publicUser ? `(ID: ${publicUser.id})` : ''}`)
     console.log(`- Auth user found: ${!!authUser} ${authUser ? `(ID: ${authUser.id})` : ''}`)
+    console.log(`- Is orphaned: ${isOrphaned}`)
 
-    // If no user found anywhere, return appropriate message
-    if (!publicUser && !authUser) {
+    // If this is just a status check, return the status
+    if (checkOnly) {
+      return new Response(
+        JSON.stringify({
+          success: true,
+          userFound: {
+            inPublic: !!publicUser,
+            inAuth: !!authUser
+          },
+          isOrphaned,
+          publicUser: publicUser ? {
+            id: publicUser.id,
+            email: publicUser.email,
+            role: publicUser.role,
+            created_at: publicUser.created_at
+          } : null
+        }),
+        { 
+          status: 200, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
+    }
+
+    // If no user found anywhere and not force delete, return appropriate message
+    if (!publicUser && !authUser && !forceDelete) {
       return new Response(
         JSON.stringify({
           success: false,
@@ -117,6 +149,8 @@ serve(async (req) => {
         inPublic: !!publicUser,
         inAuth: !!authUser
       },
+      isOrphaned,
+      forceDelete,
       deletionSteps: []
     }
 
@@ -125,7 +159,10 @@ serve(async (req) => {
       console.log('Deleting user data from public schema...')
       
       const { data: publicDeletionResult, error: publicDeletionError } = await supabaseAdmin
-        .rpc('delete_user_completely', { target_email: email.trim() })
+        .rpc('delete_user_completely', { 
+          target_email: email.trim(),
+          force_orphaned_deletion: forceDelete || isOrphaned
+        })
 
       if (publicDeletionError) {
         console.error('Error during public data deletion:', publicDeletionError)
