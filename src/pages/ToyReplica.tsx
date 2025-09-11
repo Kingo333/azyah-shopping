@@ -9,6 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Sparkles, Loader2, Download, Copy, RotateCcw, Info, Crown, AlertTriangle } from 'lucide-react';
 import { BackButton } from '@/components/ui/back-button';
 import { ToyReplicaUploader } from '@/components/ToyReplicaUploader';
+import { ToyReplicaResultsPanel } from '@/components/ToyReplicaResultsPanel';
 
 const ToyReplica = () => {
   const [toyReplicaId, setToyReplicaId] = useState<string | null>(null);
@@ -20,6 +21,7 @@ const ToyReplica = () => {
   const [generationsUsed, setGenerationsUsed] = useState<number>(0);
   const [loadingCount, setLoadingCount] = useState(true);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [refreshResults, setRefreshResults] = useState(0);
   
   const { toast } = useToast();
   const { user } = useAuth();
@@ -195,6 +197,14 @@ const ToyReplica = () => {
     }
     setPreviewUrl(null);
     setResult(null);
+  };
+
+  const handleResultSelect = (resultUrl: string) => {
+    setResult(resultUrl);
+  };
+
+  const handleRefreshResults = () => {
+    setRefreshResults(prev => prev + 1);
   };
 
   return (
@@ -389,6 +399,16 @@ const ToyReplica = () => {
               )}
             </div>
           </div>
+        </div>
+
+        {/* Results Gallery */}
+        <div className="mt-8">
+          <ToyReplicaResultsPanel
+            loading={generating}
+            currentResult={result}
+            onResultSelect={handleResultSelect}
+            onRefresh={handleRefreshResults}
+          />
         </div>
 
         {/* Upgrade Modal */}
