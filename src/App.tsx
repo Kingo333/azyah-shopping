@@ -43,6 +43,7 @@ import RetailerPortal from './pages/RetailerPortal';
 import RetailerBrandDetail from './pages/RetailerBrandDetail';
 import NotFound from './pages/NotFound';
 import PhotoCloseup from './components/PhotoCloseup';
+import UserDeletionTool from './components/UserDeletionTool';
 
 import { DebugHealthPage } from './components/DebugHealthPage';
 
@@ -185,6 +186,11 @@ function App() {
                   <Route path="/terms" element={<Terms />} />
                   <Route path="/privacy" element={<Privacy />} />
                   <Route path="/install" element={<Install />} />
+                  <Route path="/admin/delete-user" element={
+                    <ProtectedRoute roles={['admin']}>
+                      <UserDeletionTool />
+                    </ProtectedRoute>
+                  } />
                   <Route path="/debug/health" element={<DebugHealthPage />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
