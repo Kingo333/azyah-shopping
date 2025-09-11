@@ -203,6 +203,100 @@ export const useSmartSwipeProducts = ({
   const fetchProducts = useCallback(async () => {
     setIsLoading(true);
     try {
+      // Check authentication status first
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      // For anonymous users, use minimal public data query
+      if (!user) {
+        console.log('🔒 Anonymous user - fetching public product data');
+        
+        const { data, error } = await supabase
+          .from('products')
+          .select(`
+            id,
+            title,
+            price_cents,
+            currency,
+            media_urls,
+            external_url,
+            category_slug,
+            subcategory_slug,
+            brand:brands(name, logo_url)
+          `)
+          .eq('status', 'active')
+          .eq('is_external', false)
+          .limit(50);
+
+        if (error) {
+          console.error('❌ Error fetching anonymous products:', error);
+          throw error;
+        }
+
+        // Transform minimal data for anonymous users
+        const anonymousProducts: Product[] = (data || []).map(item => ({
+          id: item.id,
+          title: item.title,
+          description: '',
+          price_cents: item.price_cents,
+          compare_at_price_cents: null,
+          currency: item.currency || 'USD',
+          media_urls: (() => {
+            let mediaUrls: string[] = [];
+            if (Array.isArray(item.media_urls)) {
+              mediaUrls = item.media_urls as string[];
+            } else if (typeof item.media_urls === 'string') {
+              try {
+                const parsed = JSON.parse(item.media_urls);
+                mediaUrls = Array.isArray(parsed) ? parsed : [];
+              } catch (e) {
+                mediaUrls = [];
+              }
+            }
+            return optimizeImageUrls(mediaUrls, 'swipe');
+          })(),
+          external_url: item.external_url,
+          ar_mesh_url: null,
+          brand_id: '',
+          retailer_id: null,
+          sku: '',
+          category_slug: item.category_slug,
+          subcategory_slug: item.subcategory_slug,
+          status: 'active',
+          stock_qty: 0,
+          min_stock_alert: 5,
+          weight_grams: null,
+          dimensions: undefined,
+          tags: [],
+          seo_title: null,
+          seo_description: null,
+          created_at: '',
+          updated_at: '',
+          brand: item.brand ? {
+            id: '',
+            name: item.brand.name || 'Unknown',
+            slug: '',
+            logo_url: item.brand.logo_url,
+            cover_image_url: null,
+            bio: '',
+            website: '',
+            socials: {},
+            shipping_regions: [],
+            contact_email: null,
+            owner_user_id: null,
+            created_at: '',
+            updated_at: ''
+          } : undefined,
+          attributes: {}
+        }));
+
+        console.log('✅ Anonymous products loaded:', anonymousProducts.length);
+        setProducts(shuffleArray(anonymousProducts));
+        return;
+      }
+
+      // Authenticated user - full product query
+      console.log('🔓 Authenticated user - fetching full product data');
+      
       let query = supabase.from('products').select(`
           id,
           title,
@@ -404,10 +498,7 @@ export const useSmartSwipeProducts = ({
         attributes: convertJsonToProductAttributes(item.attributes)
       }));
 
-      console.log('🔄 Processing products for user personalization...');
-      
-      // Get current user from Supabase auth
-      const { data: { user } } = await supabase.auth.getUser();
+      console.log('🔄 Processing products for authenticated user personalization...');
       
       if (user && transformedProducts.length > 0) {
         console.log('👤 Processing for authenticated user:', user.id);
@@ -470,9 +561,9 @@ export const useSmartSwipeProducts = ({
           setProducts(randomProducts);
         }
       } else {
-        console.log('🔒 No user or no products - showing random selection for anonymous user');
+        console.log('🔒 No user or no products - showing random selection');
         const randomProducts = shuffleArray(transformedProducts).slice(0, 50);
-        console.log('✅ Anonymous user products:', {
+        console.log('✅ Random products for authenticated user without preferences:', {
           total: randomProducts.length,
           internal: randomProducts.filter(p => !p.brand?.name?.includes('ASOS')).length,
           asos: randomProducts.filter(p => p.brand?.name?.includes('ASOS')).length
@@ -483,22 +574,34 @@ export const useSmartSwipeProducts = ({
     } catch (error: any) {
       console.error("Error fetching smart swipe products:", error);
       
-      // More specific error handling for anonymous users
-      if (error.message?.includes('Failed to fetch') || error.code === 'PGRST301') {
-        console.log('Network/RLS error - may be anonymous access issue');
-        toast({
-          title: "Connection Error",
-          description: "Unable to load products. Please check your connection or try signing in.",
-          variant: "destructive"
-        });
-      } else {
-        toast({
-          title: "Error",
-          description: "Failed to fetch products. Please try again.",
-          variant: "destructive"
-        });
+      // Don't show error toasts for anonymous users - provide fallback
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          console.log('🔄 Anonymous error fallback - showing empty state');
+          setProducts([]);
+        } else {
+          // More specific error handling for authenticated users
+          if (error.message?.includes('Failed to fetch') || error.code === 'PGRST301') {
+            console.log('Network/RLS error - may be connection issue');
+            toast({
+              title: "Connection Error",
+              description: "Unable to load products. Please check your connection.",
+              variant: "destructive"
+            });
+          } else {
+            toast({
+              title: "Error",
+              description: "Failed to fetch products. Please try again.",
+              variant: "destructive"
+            });
+          }
+          setProducts([]);
+        }
+      } catch (authError) {
+        console.log('🔄 Auth check failed - treating as anonymous');
+        setProducts([]);
       }
-      setProducts([]);
     } finally {
       setIsLoading(false);
     }
