@@ -61,11 +61,11 @@ const Swipe = () => {
     },
     enabled: !!user?.id
   });
-  const showListToggle = (swipeCount || 0) >= 5; // Show list view after 5 swipes
+  const showListToggle = true; // Always show toggle
 
   // Show tooltip when the toggle first becomes available
   useEffect(() => {
-    if (showListToggle && !showTooltip) {
+    if (showListToggle && !showTooltip && (swipeCount || 0) >= 5) {
       setShowTooltip(true);
       const timer = setTimeout(() => {
         setShowTooltip(false);
@@ -73,7 +73,7 @@ const Swipe = () => {
 
       return () => clearTimeout(timer);
     }
-  }, [showListToggle]);
+  }, [showListToggle, swipeCount]);
 
   // Use unified products hook - handle multiple categories for list view
   const {
