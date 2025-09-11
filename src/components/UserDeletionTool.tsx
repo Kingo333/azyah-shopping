@@ -7,8 +7,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 const UserDeletionTool = () => {
-  const [email, setEmail] = useState('');
-  const [justification, setJustification] = useState('');
+  const [email, setEmail] = useState('abdullahiking33@gmail.com');
+  const [justification, setJustification] = useState('User deletion requested by administrator via Lovable interface');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
 
