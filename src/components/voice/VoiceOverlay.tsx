@@ -189,8 +189,11 @@ export function VoiceOverlay({ open, onClose }: VoiceOverlayProps) {
       <div className="absolute bottom-[10vh] left-0 right-0 text-center px-6">
         {state === 'idle' ? (
           <div className="text-white/80 text-sm tracking-wide">
-            <p>Say Hello</p>
-            <p className="text-xs mt-1">قل مرحبا</p>
+            {currentLanguage === 'ar' ? (
+              <p dir="rtl">قل مرحبا</p>
+            ) : (
+              <p>Say Hello</p>
+            )}
           </div>
         ) : (
           <p className="text-white/80 text-sm tracking-wide">
