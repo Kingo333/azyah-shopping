@@ -69,7 +69,16 @@ export const BrandPortalHeader: React.FC<BrandPortalHeaderProps> = ({
           {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
         </Button>
 
-        {onImportFromWebsite}
+        {onImportFromWebsite && (
+          <Button 
+            variant="outline" 
+            className="rounded-xl flex-1 sm:flex-none" 
+            onClick={onImportFromWebsite}
+          >
+            <Globe className="h-4 w-4 mr-2" />
+            Import from Website
+          </Button>
+        )}
 
         {onAddProduct && <Button className="rounded-xl bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 dark:from-pink-600 dark:to-purple-600 dark:hover:from-pink-700 dark:hover:to-purple-700 flex-1 sm:flex-none text-white" onClick={onAddProduct}>
             <Plus className="h-4 w-4 mr-2" />
