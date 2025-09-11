@@ -322,11 +322,7 @@ export const useSmartSwipeProducts = ({
       query = query.limit(200);
       
       const { data, error } = await query;
-      
-      if (error) {
-        console.error('❌ QUERY ERROR - Domain:', window.location.hostname, 'Error:', error);
-        throw error;
-      }
+      if (error) throw error;
 
       console.log('📦 Raw products fetched:', data?.length);
       
@@ -487,22 +483,14 @@ export const useSmartSwipeProducts = ({
     } catch (error: any) {
       console.error("Error fetching smart swipe products:", error);
       
-      // Get current user to determine access level
-      const { data: { user } } = await supabase.auth.getUser();
-      
       // More specific error handling for anonymous users
       if (error.message?.includes('Failed to fetch') || error.code === 'PGRST301') {
-        console.log('🔄 Anonymous error fallback - showing empty state');
-        if (!user) {
-          // Don't show error toast for anonymous users, just provide empty state
-          console.log('❌ Anonymous user facing connection issues');
-        } else {
-          toast({
-            title: "Connection Error",
-            description: "Unable to load products. Please check your connection.",
-            variant: "destructive"
-          });
-        }
+        console.log('Network/RLS error - may be anonymous access issue');
+        toast({
+          title: "Connection Error",
+          description: "Unable to load products. Please check your connection or try signing in.",
+          variant: "destructive"
+        });
       } else {
         toast({
           title: "Error",

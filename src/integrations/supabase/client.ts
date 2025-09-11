@@ -2,21 +2,14 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-// Environment-based URL selection for robust deployment
-// Use proxy only for production builds, direct URL for development and preview
-const isLovablePreview = window.location.hostname.includes('lovable.app');
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 
-  (import.meta.env.PROD && !isLovablePreview ? "https://api.azyahstyle.com" : "https://klwolsopucgswhtdlsps.supabase.co");
-
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "https://api.azyahstyle.com";
 const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtsd29sc29wdWNnc3dodGRsc3BzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQyNTQ4NTIsImV4cCI6MjA2OTgzMDg1Mn0.t1GFgR9xiIh7PBmoYs_xKLi1fF1iLTF6pqMlLMHowHQ";
 
-// Enhanced environment logging for debugging
-console.log('🔧 Environment Configuration:');
-console.log('- Build Mode:', import.meta.env.PROD ? 'Production' : 'Development/Preview');
-console.log('- Is Lovable Preview:', isLovablePreview);
-console.log('- SUPABASE_URL:', SUPABASE_URL);
-console.log('- Using Proxy:', SUPABASE_URL === 'https://api.azyahstyle.com');
-console.log('- URL Source:', import.meta.env.VITE_SUPABASE_URL ? 'Environment Variable' : 'Fallback Logic');
+// Dev-only console log to verify environment variables
+if (import.meta.env.DEV) {
+  console.log('SUPABASE_URL:', SUPABASE_URL);
+  console.log('Using proxy URL:', SUPABASE_URL === 'https://api.azyahstyle.com');
+}
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
