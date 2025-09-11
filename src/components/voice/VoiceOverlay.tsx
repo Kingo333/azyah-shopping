@@ -28,6 +28,7 @@ export function VoiceOverlay({ open, onClose }: VoiceOverlayProps) {
     captions,
     captionsOn,
     toggleCaptions,
+    currentLanguage,
     level,
     pttDown,
     pttUp,
@@ -169,7 +170,12 @@ export function VoiceOverlay({ open, onClose }: VoiceOverlayProps) {
       {captionsOn && captions && (
         <div className="absolute bottom-[20vh] left-0 right-0 flex justify-center px-6">
           <div className="bg-black/40 backdrop-blur-sm rounded-lg px-4 py-2 max-w-[min(90vw,600px)]">
-            <p className="text-center text-white/90 text-base leading-relaxed">
+            <p 
+              className={`text-center text-white/90 text-base leading-relaxed ${
+                currentLanguage === 'ar' ? 'text-right' : 'text-left'
+              }`}
+              dir={currentLanguage === 'ar' ? 'rtl' : 'ltr'}
+            >
               {captions}
             </p>
           </div>

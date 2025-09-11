@@ -14,6 +14,7 @@ export function useAzyahVoice() {
   // UI state
   const [captionsOn, setCaptionsOn] = useState(true);
   const [captions, setCaptions] = useState('');
+  const [currentLanguage, setCurrentLanguage] = useState<'en' | 'ar' | null>(null);
   const [level, setLevel] = useState(0);
 
   // Cleanup on unmount
@@ -82,15 +83,23 @@ export function useAzyahVoice() {
               break;
             case 'response.audio_transcript.delta':
               if (message.delta) {
+                // Detect language based on script
+                const isArabic = /[\u0600-\u06FF]/.test(message.delta);
+                const detectedLang = isArabic ? 'ar' : 'en';
+                
+                // Only show captions in the detected language
+                setCurrentLanguage(detectedLang);
                 setCaptions(prev => prev + message.delta);
               }
               break;
             case 'response.audio_transcript.done':
               setCaptions('');
+              setCurrentLanguage(null);
               break;
             case 'response.done':
               setState('idle');
               setCaptions('');
+              setCurrentLanguage(null);
               break;
             case 'error':
               console.error('Realtime API error:', message);
@@ -171,6 +180,7 @@ export function useAzyahVoice() {
     captions,
     captionsOn,
     toggleCaptions,
+    currentLanguage,
     level,
     connectOnce,
   };
