@@ -38,7 +38,17 @@ export const useSmartSwipeProducts = ({
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
-  const { isEnabled } = useFeatureFlags();
+  
+  // Safe feature flag access with fallback
+  const getFeatureFlagSafe = (flag: 'axessoImport' | 'axessoImportBulk'): boolean => {
+    try {
+      const { isEnabled } = useFeatureFlags();
+      return isEnabled(flag);
+    } catch (error) {
+      console.warn(`FeatureFlags context not available, using fallback for ${flag}`);
+      return getFeatureFlag(flag);
+    }
+  };
 
   const analyzeUserPreferences = useCallback(async (userId: string): Promise<UserPreferences> => {
     try {
@@ -243,14 +253,14 @@ export const useSmartSwipeProducts = ({
           .eq('status', 'active');
 
         // Apply the same feature flag logic for anonymous users with fallbacks
-        const axessoImportEnabled = isEnabled('axessoImport') ?? getFeatureFlag('axessoImport');
-        const axessoImportBulkEnabled = isEnabled('axessoImportBulk') ?? getFeatureFlag('axessoImportBulk');
+        const axessoImportEnabled = getFeatureFlagSafe('axessoImport');
+        const axessoImportBulkEnabled = getFeatureFlagSafe('axessoImportBulk');
         
         console.log('🔍 ANONYMOUS DEBUG - Domain:', currentUrl);
         console.log('🔍 ANONYMOUS DEBUG - Feature flags:', { 
           axessoImportEnabled, 
           axessoImportBulkEnabled,
-          featureSource: 'context+fallback'
+          featureSource: 'safe-fallback'
         });
         
         if (!axessoImportEnabled && !axessoImportBulkEnabled) {
@@ -395,14 +405,14 @@ export const useSmartSwipeProducts = ({
         `).eq('status', 'active');
 
       // Handle external products based on feature flags with fallbacks
-      const axessoImportEnabled = isEnabled('axessoImport') ?? getFeatureFlag('axessoImport');
-      const axessoImportBulkEnabled = isEnabled('axessoImportBulk') ?? getFeatureFlag('axessoImportBulk');
+      const axessoImportEnabled = getFeatureFlagSafe('axessoImport');
+      const axessoImportBulkEnabled = getFeatureFlagSafe('axessoImportBulk');
       
       console.log('🔍 AUTHENTICATED DEBUG - Domain:', currentUrl);
       console.log('🔍 AUTHENTICATED DEBUG - Feature flags:', { 
         axessoImportEnabled, 
         axessoImportBulkEnabled,
-        featureSource: 'context+fallback'
+        featureSource: 'safe-fallback'
       });
       
       if (!axessoImportEnabled && !axessoImportBulkEnabled) {
@@ -665,7 +675,7 @@ export const useSmartSwipeProducts = ({
     } finally {
       setIsLoading(false);
     }
-  }, [filter, subcategory, gender, priceRange, searchQuery, currency, toast, isEnabled, analyzeUserPreferences, calculatePersonalizationScore, shuffleArray]);
+  }, [filter, subcategory, gender, priceRange, searchQuery, currency, toast, getFeatureFlagSafe, analyzeUserPreferences, calculatePersonalizationScore, shuffleArray]);
 
   useEffect(() => {
     fetchProducts();
