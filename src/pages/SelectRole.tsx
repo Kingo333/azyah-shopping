@@ -25,11 +25,12 @@ const SelectRole = () => {
         return;
       }
 
-      // Only update the user's role metadata - the database trigger handles the rest
+      // Only update the user metadata - the database trigger will handle the rest
       await supabase.auth.updateUser({ 
         data: { role: selectedRole } 
       });
 
+      // Navigate to the appropriate dashboard
       const redirectPath = getRedirectRoute(selectedRole);
       navigate(redirectPath, { replace: true });
     } catch (error: any) {
