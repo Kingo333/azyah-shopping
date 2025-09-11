@@ -25,7 +25,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Streamlined auth state management - no complex portal setup
+    // Auth state management - database trigger handles profile creation automatically
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         console.log('AuthContext: Auth state changed:', { event, user: session?.user?.email });

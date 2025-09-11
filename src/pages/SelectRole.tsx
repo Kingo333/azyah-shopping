@@ -25,14 +25,9 @@ const SelectRole = () => {
         return;
       }
 
-      await supabase.auth.updateUser({ data: { role: selectedRole } });
-      await supabase.from('users').upsert({
-        id: session.user.id,
-        email: session.user.email,
-        name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0],
-        role: selectedRole
-      }, {
-        onConflict: 'id'
+      // Only update the user's role metadata - the database trigger handles the rest
+      await supabase.auth.updateUser({ 
+        data: { role: selectedRole } 
       });
 
       const redirectPath = getRedirectRoute(selectedRole);
