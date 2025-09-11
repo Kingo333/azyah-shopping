@@ -8,6 +8,3 @@ verify_jwt = true
 
 [functions.bitstudio-tryon]
 verify_jwt = true
-
-[functions.user-setup-hook]
-verify_jwt = false
