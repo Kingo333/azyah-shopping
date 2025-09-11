@@ -6,7 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useSubscription } from '@/hooks/useSubscription';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Sparkles, Loader2, Download, Copy, RotateCcw, Info, Crown, AlertTriangle } from 'lucide-react';
+import { Sparkles, Loader2, Download, RotateCcw, Info, Crown, AlertTriangle } from 'lucide-react';
 import { BackButton } from '@/components/ui/back-button';
 import { ToyReplicaUploader } from '@/components/ToyReplicaUploader';
 import { ToyReplicaResultsPanel } from '@/components/ToyReplicaResultsPanel';
@@ -141,21 +141,29 @@ const ToyReplica = () => {
     if (!result) return;
     
     try {
-      const response = await fetch(result);
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `lego-minifigure-${Date.now()}.png`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      const { data } = await supabase.storage
+        .from('toy-replica-result')
+        .createSignedUrl(result, 60);
       
-      toast({
-        title: "Downloaded",
-        description: "LEGO mini-figure saved to your downloads folder",
-      });
+      if (data?.signedUrl) {
+        const response = await fetch(data.signedUrl);
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `lego-minifigure-${Date.now()}.png`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        
+        toast({
+          title: "Downloaded",
+          description: "LEGO mini-figure saved to your downloads folder",
+        });
+      } else {
+        throw new Error('Failed to create download URL');
+      }
     } catch (error) {
       console.error('Download failed:', error);
       toast({
@@ -166,22 +174,6 @@ const ToyReplica = () => {
     }
   };
 
-  const handleCopyUrl = () => {
-    if (!result) return;
-    
-    navigator.clipboard.writeText(result).then(() => {
-      toast({
-        title: "Copied",
-        description: "Image URL copied to clipboard",
-      });
-    }).catch(() => {
-      toast({
-        title: "Copy Failed",
-        description: "Could not copy URL to clipboard",
-        variant: "destructive"
-      });
-    });
-  };
 
   const handleRegenerate = () => {
     if (toyReplicaId) {
@@ -362,24 +354,14 @@ const ToyReplica = () => {
                       }}
                     />
                   </div>
-                  <div className="flex gap-2">
-                    <Button 
-                      onClick={handleDownload}
-                      variant="outline"
-                      className="flex-1"
-                    >
-                      <Download className="h-4 w-4 mr-2" />
-                      Download PNG
-                    </Button>
-                    <Button 
-                      onClick={handleCopyUrl}
-                      variant="outline"
-                      className="flex-1"
-                    >
-                      <Copy className="h-4 w-4 mr-2" />
-                      Copy Link
-                    </Button>
-                  </div>
+                  <Button 
+                    onClick={handleDownload}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Download PNG
+                  </Button>
                   <Button 
                     onClick={handleRegenerate}
                     variant="outline"
