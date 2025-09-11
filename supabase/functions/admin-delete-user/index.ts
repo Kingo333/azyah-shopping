@@ -6,6 +6,11 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+interface UserDeletionRequest {
+  email: string;
+  justification: string;
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -13,6 +18,22 @@ serve(async (req) => {
   }
 
   try {
+    // Parse request body
+    const { email, justification }: UserDeletionRequest = await req.json()
+
+    if (!email || !justification) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'Email and justification are required',
+          received: { email: !!email, justification: !!justification }
+        }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
+    }
+
     // Create supabase admin client
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -25,22 +46,22 @@ serve(async (req) => {
       }
     )
 
-    // Delete user abdullahiking33@gmail.com completely
-    const email = 'abdullahiking33@gmail.com'
-    const justification = 'User deletion requested by administrator via Lovable interface'
-
-    console.log(`Starting complete deletion for user: ${email}`)
+    console.log(`Starting enhanced deletion for user: ${email}`)
+    console.log(`Justification: ${justification}`)
     
-    // Step 1: Delete all user data from public schema
-    const { data: deletionResult, error: deletionError } = await supabaseAdmin
-      .rpc('delete_user_completely', { target_email: email })
+    // Step 1: Check if user exists in public.users
+    const { data: publicUser, error: publicCheckError } = await supabaseAdmin
+      .from('users')
+      .select('id, email, role, created_at')
+      .eq('email', email.trim())
+      .maybeSingle()
 
-    if (deletionError) {
-      console.error('Error during public data deletion:', deletionError)
+    if (publicCheckError) {
+      console.error('Error checking public.users:', publicCheckError)
       return new Response(
         JSON.stringify({ 
-          error: 'Failed to delete user data', 
-          details: deletionError.message 
+          error: 'Failed to check user existence in public schema', 
+          details: publicCheckError.message 
         }),
         { 
           status: 500, 
@@ -49,12 +70,40 @@ serve(async (req) => {
       )
     }
 
-    console.log('Public data deletion result:', deletionResult)
+    // Step 2: Check if user exists in auth.users (by looking up with public user ID if available)
+    let authUser = null
+    let authUserId = null
 
-    if (!deletionResult.success) {
+    if (publicUser) {
+      // Try to find auth user by ID from public user
+      const { data: authUserData, error: authCheckError } = await supabaseAdmin.auth.admin.getUserById(publicUser.id)
+      if (!authCheckError && authUserData.user) {
+        authUser = authUserData.user
+        authUserId = authUser.id
+      }
+    } else {
+      // Try to find auth user by email directly
+      const { data: authUsersByEmail, error: authEmailError } = await supabaseAdmin.auth.admin.listUsers()
+      if (!authEmailError && authUsersByEmail.users) {
+        authUser = authUsersByEmail.users.find(u => u.email === email.trim())
+        authUserId = authUser?.id
+      }
+    }
+
+    console.log(`User status check:`)
+    console.log(`- Public user found: ${!!publicUser} ${publicUser ? `(ID: ${publicUser.id})` : ''}`)
+    console.log(`- Auth user found: ${!!authUser} ${authUser ? `(ID: ${authUser.id})` : ''}`)
+
+    // If no user found anywhere, return appropriate message
+    if (!publicUser && !authUser) {
       return new Response(
-        JSON.stringify({ 
-          error: deletionResult.message 
+        JSON.stringify({
+          success: false,
+          message: `No user found with email: ${email}`,
+          checked: {
+            publicSchema: 'not found',
+            authSchema: 'not found'
+          }
         }),
         { 
           status: 404, 
@@ -63,40 +112,100 @@ serve(async (req) => {
       )
     }
 
-    // Step 2: Delete user from auth.users table
-    const userId = deletionResult.user_id
-    
-    // Delete from auth schema using admin client
-    const { error: authDeleteError } = await supabaseAdmin.auth.admin.deleteUser(
-      userId,
-      true // shouldSoftDelete = false for permanent deletion
-    )
-
-    if (authDeleteError) {
-      console.error('Error deleting from auth.users:', authDeleteError)
-      return new Response(
-        JSON.stringify({
-          error: 'User data deleted but failed to remove from authentication system',
-          details: authDeleteError.message,
-          publicDataDeleted: true,
-          summary: deletionResult
-        }),
-        { 
-          status: 207, // Multi-status (partial success)
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      )
+    let deletionSummary: any = {
+      userFound: {
+        inPublic: !!publicUser,
+        inAuth: !!authUser
+      },
+      deletionSteps: []
     }
 
-    console.log(`Successfully deleted user ${email} from both public schema and auth system`)
+    // Step 3: Delete from public schema if user exists there
+    if (publicUser) {
+      console.log('Deleting user data from public schema...')
+      
+      const { data: publicDeletionResult, error: publicDeletionError } = await supabaseAdmin
+        .rpc('delete_user_completely', { target_email: email.trim() })
 
-    // Return complete success
+      if (publicDeletionError) {
+        console.error('Error during public data deletion:', publicDeletionError)
+        return new Response(
+          JSON.stringify({ 
+            error: 'Failed to delete user data from public schema', 
+            details: publicDeletionError.message 
+          }),
+          { 
+            status: 500, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        )
+      }
+
+      deletionSummary.publicDeletion = publicDeletionResult
+      deletionSummary.deletionSteps.push('Public schema data deleted')
+      console.log('Public data deletion completed:', publicDeletionResult)
+    } else {
+      deletionSummary.deletionSteps.push('No public schema data to delete')
+    }
+
+    // Step 4: Delete from auth.users if user exists there
+    if (authUser && authUserId) {
+      console.log('Deleting user from auth system...')
+      
+      const { error: authDeleteError } = await supabaseAdmin.auth.admin.deleteUser(
+        authUserId,
+        true // shouldSoftDelete = false for permanent deletion
+      )
+
+      if (authDeleteError) {
+        console.error('Error deleting from auth.users:', authDeleteError)
+        deletionSummary.authDeletionError = authDeleteError.message
+        deletionSummary.deletionSteps.push('Auth deletion failed')
+        
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: 'Failed to delete user from authentication system',
+            details: authDeleteError.message,
+            summary: deletionSummary
+          }),
+          { 
+            status: 207, // Multi-status (partial success)
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        )
+      }
+
+      deletionSummary.authDeleted = true
+      deletionSummary.deletionSteps.push('Auth user deleted')
+      console.log('Auth user deletion completed')
+    } else {
+      deletionSummary.deletionSteps.push('No auth user to delete')
+    }
+
+    // Step 5: Final verification - check if user still exists anywhere
+    const { data: verifyPublic } = await supabaseAdmin
+      .from('users')
+      .select('id')
+      .eq('email', email.trim())
+      .maybeSingle()
+
+    deletionSummary.verification = {
+      publicUserRemaining: !!verifyPublic,
+      deletionComplete: !verifyPublic
+    }
+
+    console.log(`Deletion completed for user ${email}`)
+    console.log('Final verification:', deletionSummary.verification)
+
+    // Return success response
     return new Response(
       JSON.stringify({
         success: true,
         message: `User ${email} has been completely removed from the system`,
-        summary: deletionResult,
-        authDeleted: true,
+        email: email,
+        justification: justification,
+        summary: deletionSummary,
         deletedAt: new Date().toISOString()
       }),
       { 
@@ -110,7 +219,8 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         error: 'Internal server error', 
-        details: error.message 
+        details: error.message,
+        stack: error.stack
       }),
       { 
         status: 500, 
