@@ -221,6 +221,7 @@ export const useSmartSwipeProducts = ({
             external_url,
             category_slug,
             subcategory_slug,
+            is_external,
             brand:brands(name, logo_url)
           `)
           .eq('status', 'active');
@@ -240,9 +241,23 @@ export const useSmartSwipeProducts = ({
 
         const { data, error } = await query.limit(50);
 
+        console.log('📊 Anonymous products query executed, limit: 50');
+
         if (error) {
           console.error('❌ Error fetching anonymous products:', error);
           throw error;
+        }
+
+        // Enhanced logging for debugging
+        console.log(`📦 Fetched ${data?.length || 0} anonymous products`);
+        if (data && data.length > 0) {
+          const internalCount = data.filter(p => !p.is_external).length;
+          const externalCount = data.filter(p => p.is_external).length;
+          console.log(`📊 Product breakdown: ${internalCount} internal, ${externalCount} external (ASOS)`);
+          
+          if (externalCount === 0 && (axessoImportEnabled || axessoImportBulkEnabled)) {
+            console.warn('⚠️ No external products found despite feature flags being enabled!');
+          }
         }
 
         // Transform minimal data for anonymous users
