@@ -368,32 +368,53 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
             <Input id="external_url" type="url" value={formData.external_url} onChange={e => handleInputChange('external_url', e.target.value)} placeholder="https://..." />
           </div>
 
-          <div>
-            <Label>Product Images (up to 4 image)</Label>
-            <div className="mt-2">
-              <input ref={fileInputRef} type="file" accept="image/jpeg,image/jpg,image/png,image/gif" multiple onChange={handleImageUpload} className="hidden" />
-              <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()} disabled={uploadingImages} className="w-full h-32 border-2 border-dashed hover:bg-gray-50">
-                <div className="text-center">
-                  {uploadingImages ? <>
-                      <Loader2 className="mx-auto h-8 w-8 text-gray-400 animate-spin" />
-                      <p className="text-sm text-gray-500 mt-2">Uploading images...</p>
-                    </> : <>
-                      <Upload className="mx-auto h-8 w-8 text-gray-400" />
-                      <p className="text-sm text-gray-500 mt-2">Click to upload images</p>
-                      <p className="text-xs text-gray-400">JPG, PNG, GIF up to 8MB each</p>
-                    </>}
+          <div className="space-y-4">
+            <Label>Product Images (up to 4 images)</Label>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {images.map((image, index) => (
+                <div key={index} className="relative aspect-square">
+                  <img 
+                    src={image} 
+                    alt={`Product ${index + 1}`} 
+                    className="w-full h-full object-cover rounded-lg border"
+                  />
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    className="absolute top-2 right-2 h-6 w-6 p-0"
+                    onClick={() => removeImage(index)}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
                 </div>
-              </Button>
+              ))}
+              
+              {images.length < 4 && (
+                <label className="relative aspect-square border-2 border-dashed border-muted-foreground/25 rounded-lg cursor-pointer hover:border-muted-foreground/40 transition-colors flex flex-col items-center justify-center">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/jpg,image/png,image/gif"
+                    multiple
+                    onChange={handleImageUpload}
+                    className="hidden"
+                    disabled={uploadingImages}
+                  />
+                  {uploadingImages ? (
+                    <div className="flex flex-col items-center space-y-2">
+                      <Loader2 className="h-6 w-6 text-muted-foreground animate-spin" />
+                      <span className="text-xs text-muted-foreground">Uploading...</span>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center space-y-2">
+                      <Upload className="h-6 w-6 text-muted-foreground" />
+                      <span className="text-xs text-muted-foreground text-center px-2">Add Image</span>
+                    </div>
+                  )}
+                </label>
+              )}
             </div>
-
-            {images.length > 0 && <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-4">
-                {images.map((image, index) => <div key={index} className="relative group">
-                    <img src={image} alt={`Product ${index + 1}`} className="w-full h-24 object-cover rounded-lg border" />
-                    <Button type="button" variant="destructive" size="sm" onClick={() => removeImage(index)} className="absolute -top-2 -right-2 w-6 h-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <X className="h-3 w-3" />
-                    </Button>
-                  </div>)}
-              </div>}
           </div>
 
           {/* Size Chart & Virtual Try-On Row */}
@@ -485,21 +506,41 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
             </div>
           </div>
 
-          <div className="flex justify-between space-x-2 pt-4 border-t">
-            <Button type="button" variant="destructive" onClick={handleDelete} disabled={loading} className="gap-2">
-              <Trash2 className="h-4 w-4" />
+           <div className="flex flex-col sm:flex-row justify-between gap-3 pt-4 border-t">
+            <Button 
+              type="button" 
+              variant="destructive" 
+              onClick={handleDelete} 
+              disabled={loading}
+              className="w-full sm:w-auto"
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
               Delete Product
             </Button>
             
-            <div className="flex space-x-2">
-              <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={onClose} 
+                disabled={loading}
+                className="w-full sm:w-auto"
+              >
                 Cancel
               </Button>
-              <Button type="submit" disabled={loading || uploadingImages}>
-                {loading ? <>
+              <Button 
+                type="submit" 
+                disabled={loading || uploadingImages}
+                className="w-full sm:w-auto"
+              >
+                {loading ? (
+                  <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                     Updating...
-                  </> : 'Update Product'}
+                  </>
+                ) : (
+                  'Update Product'
+                )}
               </Button>
             </div>
           </div>

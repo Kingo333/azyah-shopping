@@ -8,10 +8,11 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Upload, X, Loader2 } from 'lucide-react';
+import { Upload, X, Loader2, User } from 'lucide-react';
 import { CATEGORY_TREE, getAllCategories, getSubcategoriesForCategory, getCategoryDisplayName, getSubcategoryDisplayName, GENDER_OPTIONS, getGenderDisplayName } from '@/lib/categories';
 import { SUPPORTED_CURRENCIES } from '@/lib/currencies';
 import type { TopCategory, SubCategory, Gender } from '@/lib/categories';
+import { useProductOutfits } from '@/hooks/useProductOutfits';
 interface AddProductModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -37,7 +38,18 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [uploadingImages, setUploadingImages] = useState(false);
   const [images, setImages] = useState<string[]>([]);
+  const [sizeChartUrl, setSizeChartUrl] = useState<string | null>(null);
+  const [outfitImageUrl, setOutfitImageUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Try-on outfit functionality for brands
+  const { 
+    outfitAssets, 
+    uploadOutfit, 
+    deleteOutfit, 
+    isUploading: isUploadingOutfit,
+    remainingSlots 
+  } = useProductOutfits(userType === 'brand' ? brandId : undefined);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -162,6 +174,9 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
         media_urls: images,
         brand_id: userType === 'brand' ? brandId : null,
         retailer_id: userType === 'retailer' ? retailerId : null,
+        attributes: {
+          size_chart: sizeChartUrl
+        },
         status: 'active' as const
       };
       const {
@@ -187,6 +202,8 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
         external_url: ''
       });
       setImages([]);
+      setSizeChartUrl(null);
+      setOutfitImageUrl(null);
       onProductAdded();
       onClose();
     } catch (error: any) {
@@ -299,44 +316,256 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
             <Input id="external_url" type="url" value={formData.external_url} onChange={e => handleInputChange('external_url', e.target.value)} placeholder="https://..." />
           </div>
 
-          <div>
-            <Label>Product Images(Up to 3 images)</Label>
-            <div className="mt-2">
-              <input ref={fileInputRef} type="file" accept="image/jpeg,image/jpg,image/png,image/gif" multiple onChange={handleImageUpload} className="hidden" />
-              <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()} disabled={uploadingImages} className="w-full h-32 border-2 border-dashed hover:bg-gray-50">
-                <div className="text-center">
-                  {uploadingImages ? <>
-                      <Loader2 className="mx-auto h-8 w-8 text-gray-400 animate-spin" />
-                      <p className="text-sm text-gray-500 mt-2">Uploading images...</p>
-                    </> : <>
-                      <Upload className="mx-auto h-8 w-8 text-gray-400" />
-                      <p className="text-sm text-gray-500 mt-2">Click to upload images</p>
-                      <p className="text-xs text-gray-400">JPG, PNG, GIF up to 8MB each</p>
-                    </>}
+          <div className="space-y-4">
+            <Label>Product Images (up to 4 images)</Label>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {images.map((image, index) => (
+                <div key={index} className="relative aspect-square">
+                  <img 
+                    src={image} 
+                    alt={`Product ${index + 1}`} 
+                    className="w-full h-full object-cover rounded-lg border"
+                  />
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    className="absolute top-2 right-2 h-6 w-6 p-0"
+                    onClick={() => removeImage(index)}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
                 </div>
-              </Button>
+              ))}
+              
+              {images.length < 4 && (
+                <label className="relative aspect-square border-2 border-dashed border-muted-foreground/25 rounded-lg cursor-pointer hover:border-muted-foreground/40 transition-colors flex flex-col items-center justify-center">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/jpg,image/png,image/gif"
+                    multiple
+                    onChange={handleImageUpload}
+                    className="hidden"
+                    disabled={uploadingImages}
+                  />
+                  {uploadingImages ? (
+                    <div className="flex flex-col items-center space-y-2">
+                      <Loader2 className="h-6 w-6 text-muted-foreground animate-spin" />
+                      <span className="text-xs text-muted-foreground">Uploading...</span>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center space-y-2">
+                      <Upload className="h-6 w-6 text-muted-foreground" />
+                      <span className="text-xs text-muted-foreground text-center px-2">Add Image</span>
+                    </div>
+                  )}
+                </label>
+              )}
             </div>
-
-            {images.length > 0 && <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-4">
-                {images.map((image, index) => <div key={index} className="relative group">
-                    <img src={image} alt={`Product ${index + 1}`} className="w-full h-24 object-cover rounded-lg border" />
-                    <Button type="button" variant="destructive" size="sm" onClick={() => removeImage(index)} className="absolute -top-2 -right-2 w-6 h-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <X className="h-3 w-3" />
-                    </Button>
-                  </div>)}
-              </div>}
           </div>
 
-          <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-2 pt-4 border-t">
-            <Button type="button" variant="outline" onClick={onClose} disabled={loading} className="w-full sm:w-auto">
-              Cancel
-            </Button>
-            <Button type="submit" disabled={loading || uploadingImages} className="w-full sm:w-auto">
-              {loading ? <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Adding...
-                </> : 'Add Product'}
-            </Button>
+          {/* Size Chart & Virtual Try-On Section */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Size Chart Section */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <Label className="text-sm font-medium">Size Chart</Label>
+              </div>
+              <p className="text-sm text-muted-foreground">Upload a size chart to help customers choose the right size.</p>
+              
+              <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      if (!file.type.startsWith('image/')) {
+                        toast({
+                          title: 'Invalid file type',
+                          description: 'Please select an image file',
+                          variant: 'destructive'
+                        });
+                        return;
+                      }
+                      if (file.size > 8 * 1024 * 1024) {
+                        toast({
+                          title: 'File too large',
+                          description: 'Image size must be less than 8MB',
+                          variant: 'destructive'
+                        });
+                        return;
+                      }
+                      setUploadingImages(true);
+                      try {
+                        const url = await uploadImageToStorage(file);
+                        setSizeChartUrl(url);
+                        toast({
+                          title: 'Success',
+                          description: 'Size chart uploaded successfully'
+                        });
+                      } catch (error) {
+                        console.error('Error uploading size chart:', error);
+                        toast({
+                          title: 'Upload failed',
+                          description: 'Failed to upload size chart',
+                          variant: 'destructive'
+                        });
+                      } finally {
+                        setUploadingImages(false);
+                        e.target.value = '';
+                      }
+                    }
+                  }}
+                  className="hidden"
+                  id="size-chart-upload"
+                  disabled={uploadingImages}
+                />
+                <label htmlFor="size-chart-upload" className="cursor-pointer block">
+                  <div className="text-center">
+                    {uploadingImages ? (
+                      <div className="flex flex-col items-center space-y-2">
+                        <Loader2 className="h-8 w-8 text-muted-foreground animate-spin" />
+                        <p className="text-sm text-muted-foreground">Uploading size chart...</p>
+                      </div>
+                    ) : sizeChartUrl ? (
+                      <div className="flex flex-col items-center space-y-2">
+                        <img 
+                          src={sizeChartUrl} 
+                          alt="Size Chart" 
+                          className="w-20 h-20 object-cover rounded-lg"
+                        />
+                        <p className="text-sm text-green-600">Size chart uploaded</p>
+                        <p className="text-xs text-muted-foreground">Click to change</p>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center space-y-2">
+                        <Upload className="h-8 w-8 text-muted-foreground" />
+                        <p className="text-sm text-muted-foreground">Upload size chart</p>
+                        <p className="text-xs text-muted-foreground">JPG, PNG up to 8MB</p>
+                      </div>
+                    )}
+                  </div>
+                </label>
+              </div>
+            </div>
+            
+            {/* Virtual Try-On Section */}
+            {userType === 'brand' && (
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <User className="h-4 w-4 text-primary" />
+                  <Label className="text-sm font-medium">Virtual Try-On</Label>
+                  <span className="text-xs text-muted-foreground">
+                    ({5 - (outfitAssets?.length || 0)}/5)
+                  </span>
+                </div>
+                <p className="text-sm text-muted-foreground">Upload an outfit image to enable virtual try-on for this product.</p>
+                
+                <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        if (!file.type.startsWith('image/')) {
+                          toast({
+                            title: 'Invalid file type',
+                            description: 'Please select an image file',
+                            variant: 'destructive'
+                          });
+                          return;
+                        }
+                        if (file.size > 10 * 1024 * 1024) {
+                          toast({
+                            title: 'File too large',
+                            description: 'Image size must be less than 10MB',
+                            variant: 'destructive'
+                          });
+                          return;
+                        }
+                        try {
+                          const url = await uploadImageToStorage(file);
+                          setOutfitImageUrl(url);
+                          toast({
+                            title: 'Success',
+                            description: 'Outfit image uploaded successfully'
+                          });
+                        } catch (error) {
+                          console.error('Error uploading outfit image:', error);
+                          toast({
+                            title: 'Upload failed',
+                            description: 'Failed to upload outfit image',
+                            variant: 'destructive'
+                          });
+                        } finally {
+                          e.target.value = '';
+                        }
+                      }
+                    }}
+                    className="hidden"
+                    id="outfit-upload"
+                    disabled={isUploadingOutfit}
+                  />
+                  <label htmlFor="outfit-upload" className="cursor-pointer block">
+                    <div className="text-center">
+                      {isUploadingOutfit ? (
+                        <div className="flex flex-col items-center space-y-2">
+                          <Loader2 className="h-8 w-8 text-muted-foreground animate-spin" />
+                          <p className="text-sm text-muted-foreground">Uploading outfit image...</p>
+                        </div>
+                      ) : outfitImageUrl ? (
+                        <div className="flex flex-col items-center space-y-2">
+                          <img 
+                            src={outfitImageUrl} 
+                            alt="Outfit" 
+                            className="w-20 h-20 object-cover rounded-lg"
+                          />
+                          <p className="text-sm text-green-600">Outfit image uploaded</p>
+                          <p className="text-xs text-muted-foreground">Click to change</p>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center space-y-2">
+                          <Upload className="h-8 w-8 text-muted-foreground" />
+                          <p className="text-sm text-muted-foreground">Upload outfit image</p>
+                          <p className="text-xs text-muted-foreground">JPG, PNG up to 10MB</p>
+                        </div>
+                      )}
+                    </div>
+                  </label>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t">
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={onClose} 
+                disabled={loading}
+                className="w-full sm:w-auto"
+              >
+                Cancel
+              </Button>
+              <Button 
+                type="submit" 
+                disabled={loading || uploadingImages}
+                className="w-full sm:w-auto"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Adding...
+                  </>
+                ) : (
+                  'Add Product'
+                )}
+              </Button>
+            </div>
           </div>
         </form>
       </DialogContent>
