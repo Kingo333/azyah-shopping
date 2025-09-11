@@ -200,35 +200,6 @@ export const ToyReplicaResultsPanel: React.FC<ToyReplicaResultsPanelProps> = ({
       </CardHeader>
       
       <CardContent className="space-y-4">
-        {/* Current Result */}
-        {currentResult && (
-          <div className="space-y-2">
-            <h4 className="text-sm font-medium text-muted-foreground">Current Result</h4>
-            <div className="relative group">
-              <img
-                src={currentResult}
-                alt="Current toy replica result"
-                className="w-full h-48 object-cover rounded-lg border"
-              />
-              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center gap-2">
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => currentResult && downloadImage(currentResult)}
-                >
-                  <Download className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => currentResult && openFullSizeImage(currentResult)}
-                >
-                  <ExternalLink className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Gallery */}
         <div className="space-y-2">
