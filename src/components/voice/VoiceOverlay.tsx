@@ -25,7 +25,9 @@ export function VoiceOverlay({ open, onClose }: VoiceOverlayProps) {
     audioRef,
     state,
     error,
-    captions,
+    englishCaptions,
+    arabicCaptions,
+    currentLanguage,
     captionsOn,
     toggleCaptions,
     level,
@@ -166,12 +168,19 @@ export function VoiceOverlay({ open, onClose }: VoiceOverlayProps) {
       />
 
       {/* Live captions */}
-      {captionsOn && captions && (
+      {captionsOn && (englishCaptions || arabicCaptions) && (
         <div className="absolute bottom-[20vh] left-0 right-0 flex justify-center px-6">
           <div className="bg-black/40 backdrop-blur-sm rounded-lg px-4 py-2 max-w-[min(90vw,600px)]">
-            <p className="text-center text-white/90 text-base leading-relaxed">
-              {captions}
-            </p>
+            {currentLanguage === 'en' && englishCaptions && (
+              <p className="text-center text-white/90 text-base leading-relaxed">
+                {englishCaptions}
+              </p>
+            )}
+            {currentLanguage === 'ar' && arabicCaptions && (
+              <p className="text-center text-white/90 text-base leading-relaxed" dir="rtl">
+                {arabicCaptions}
+              </p>
+            )}
           </div>
         </div>
       )}
