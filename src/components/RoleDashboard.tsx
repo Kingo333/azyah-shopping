@@ -81,6 +81,19 @@ const RoleDashboard: React.FC = () => {
     };
     initializeDashboard();
   }, [user]);
+
+  // Handle role-based navigation after profile is loaded
+  useEffect(() => {
+    if (userProfile && !loading) {
+      if (userProfile.role === 'brand') {
+        navigate('/brand-portal');
+      } else if (userProfile.role === 'retailer') {
+        navigate('/retailer-portal');
+      } else if (userProfile.role === 'admin') {
+        navigate('/auth');
+      }
+    }
+  }, [userProfile, loading, navigate]);
   const fetchUserProfile = async () => {
     if (!user) return;
     console.log('Fetching user profile for:', user.id);
@@ -421,13 +434,6 @@ const RoleDashboard: React.FC = () => {
 
     </div>;
   const renderBrandDashboard = () => {
-    // Auto-redirect brand users to their portal
-    React.useEffect(() => {
-      if (userProfile?.role === 'brand') {
-        navigate('/brand-portal');
-      }
-    }, [userProfile?.role]);
-
     return <div className="space-y-4">
       <GlassPanel variant="premium" className="p-8">
         <div className="text-center space-y-4">
@@ -439,13 +445,6 @@ const RoleDashboard: React.FC = () => {
     </div>;
   };
   const renderRetailerDashboard = () => {
-    // Auto-redirect retailer users to their portal
-    React.useEffect(() => {
-      if (userProfile?.role === 'retailer') {
-        navigate('/retailer-portal');
-      }
-    }, [userProfile?.role]);
-
     return <div className="space-y-4">
       <GlassPanel variant="premium" className="p-8">
         <div className="text-center space-y-4">
@@ -469,11 +468,6 @@ const RoleDashboard: React.FC = () => {
           {userProfile?.role === 'shopper' && renderShopperDashboard()}
           {userProfile?.role === 'brand' && renderBrandDashboard()}
           {userProfile?.role === 'retailer' && renderRetailerDashboard()}
-          {userProfile?.role === 'admin' && (() => {
-            // Admin role is system-only, redirect to auth
-            navigate('/auth');
-            return null;
-          })()}
           
           {/* Show error if no valid role */}
           {userProfile && !['shopper', 'brand', 'retailer'].includes(userProfile.role) && <div className="space-y-4">
