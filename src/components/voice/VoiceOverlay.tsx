@@ -35,7 +35,9 @@ export function VoiceOverlay({ open, onClose }: VoiceOverlayProps) {
     connectOnce,
   } = useAzyahVoice();
 
-  useOrbRenderer(canvasRef, level, state !== 'idle');
+  // Show orb animation when speaking or listening
+  const orbLevel = state === 'speaking' ? 0.6 : level; // Simulate activity when speaking
+  useOrbRenderer(canvasRef, orbLevel, state !== 'idle');
 
   useEffect(() => {
     if (!open) return;
