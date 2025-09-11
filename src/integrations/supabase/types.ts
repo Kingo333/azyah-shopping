@@ -2701,6 +2701,10 @@ export type Database = {
         Args: { target_user_id: string }
         Returns: boolean
       }
+      delete_user_completely: {
+        Args: { target_email: string }
+        Returns: Json
+      }
       embed_query: {
         Args: { query_text: string }
         Returns: number[]
