@@ -11,7 +11,7 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  signUp: (email: string, password: string, userData?: any) => Promise<{ error: any }>;
+  signUp: (email: string, password: string, userData?: any) => Promise<{ error: any; isExistingUser?: boolean; email?: string }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   updateProfile: (data: any) => Promise<{ error: any }>;
@@ -75,13 +75,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       let errorMessage = error.message;
       let errorTitle = "Signup Failed";
       
-      // Provide better error messages for common cases
-      if (error.message.includes('User already registered')) {
-        errorTitle = "Account Already Exists";
-        errorMessage = "An account with this email already exists. Please sign in instead or use a different email.";
-      } else if (error.message.includes('duplicate key') || error.message.includes('already been taken')) {
-        errorTitle = "Email Already Used";
-        errorMessage = "This email is already registered. Please sign in instead or use a different email.";
+      // Handle existing user case specially - return flag for UI handling
+      if (error.message.includes('User already registered') || 
+          error.message.includes('duplicate key') || 
+          error.message.includes('already been taken')) {
+        return { 
+          error, 
+          isExistingUser: true, 
+          email: email 
+        };
       } else if (error.message.includes('invalid email')) {
         errorTitle = "Invalid Email";
         errorMessage = "Please enter a valid email address.";

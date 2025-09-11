@@ -39,6 +39,10 @@ const Auth = () => {
     password: '',
     name: ''
   });
+  const [signinForm, setSigninForm] = useState({
+    email: '',
+    password: ''
+  });
 
   useEffect(() => {
     // Pre-select role from URL params and switch to signup
@@ -68,11 +72,7 @@ const Auth = () => {
     setIsLoading(true);
     
     try {
-      const formData = new FormData(e.currentTarget);
-      const email = formData.get('email') as string;
-      const password = formData.get('password') as string;
-      
-      const { error } = await signIn(email, password);
+      const { error } = await signIn(signinForm.email, signinForm.password);
       
       if (error) {
         console.error('Sign in error:', error);
@@ -114,16 +114,38 @@ const Auth = () => {
         return;
       }
       
-      const { error } = await signUp(email, password, {
+      const result = await signUp(email, password, {
         name,
         role: selectedRole
       });
       
-      if (error) {
-        console.error('Sign up error:', error);
+      if (result?.isExistingUser) {
+        // Switch to sign-in tab and pre-fill email
+        setActiveTab('signin');
+        setSigninForm(prev => ({ ...prev, email: result.email || '' }));
+        
+        toast({
+          title: "Account Already Exists",
+          description: "This email is already registered. We've switched you to sign in.",
+          variant: "destructive",
+          action: (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setActiveTab('signin')}
+            >
+              Sign In
+            </Button>
+          ),
+        });
+        return;
+      }
+      
+      if (result?.error) {
+        console.error('Sign up error:', result.error);
         toast({
           title: "Registration Failed",
-          description: error.message || "Failed to create account. Please try again.",
+          description: result.error.message || "Failed to create account. Please try again.",
           variant: "destructive"
         });
       }
@@ -400,11 +422,27 @@ const Auth = () => {
                     <form onSubmit={handleSignIn} className="space-y-6">
                       <div className="space-y-3">
                         <Label htmlFor="signin-email" className="text-sm font-medium">Email</Label>
-                        <Input id="signin-email" name="email" type="email" placeholder="Enter your email" required className="h-12 glass-panel border-white/20" />
+                        <Input 
+                          id="signin-email" 
+                          type="email" 
+                          placeholder="Enter your email" 
+                          required 
+                          className="h-12 glass-panel border-white/20"
+                          value={signinForm.email}
+                          onChange={(e) => setSigninForm(prev => ({ ...prev, email: e.target.value }))}
+                        />
                       </div>
                       <div className="space-y-3">
                         <Label htmlFor="signin-password" className="text-sm font-medium">Password</Label>
-                        <Input id="signin-password" name="password" type="password" placeholder="Enter your password" required className="h-12 glass-panel border-white/20" />
+                        <Input 
+                          id="signin-password" 
+                          type="password" 
+                          placeholder="Enter your password" 
+                          required 
+                          className="h-12 glass-panel border-white/20"
+                          value={signinForm.password}
+                          onChange={(e) => setSigninForm(prev => ({ ...prev, password: e.target.value }))}
+                        />
                       </div>
                       <Button type="submit" variant="premium" size="lg" className="w-full h-12" disabled={isLoading}>
                         {isLoading ? <>
