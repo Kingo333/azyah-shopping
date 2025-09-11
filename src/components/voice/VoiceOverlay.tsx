@@ -25,9 +25,7 @@ export function VoiceOverlay({ open, onClose }: VoiceOverlayProps) {
     audioRef,
     state,
     error,
-    englishCaptions,
-    arabicCaptions,
-    currentLanguage,
+    captions,
     captionsOn,
     toggleCaptions,
     level,
@@ -168,19 +166,12 @@ export function VoiceOverlay({ open, onClose }: VoiceOverlayProps) {
       />
 
       {/* Live captions */}
-      {captionsOn && (englishCaptions || arabicCaptions) && (
+      {captionsOn && captions && (
         <div className="absolute bottom-[20vh] left-0 right-0 flex justify-center px-6">
           <div className="bg-black/40 backdrop-blur-sm rounded-lg px-4 py-2 max-w-[min(90vw,600px)]">
-            {currentLanguage === 'en' && englishCaptions && (
-              <p className="text-center text-white/90 text-base leading-relaxed">
-                {englishCaptions}
-              </p>
-            )}
-            {currentLanguage === 'ar' && arabicCaptions && (
-              <p className="text-center text-white/90 text-base leading-relaxed" dir="rtl">
-                {arabicCaptions}
-              </p>
-            )}
+            <p className="text-center text-white/90 text-base leading-relaxed">
+              {captions}
+            </p>
           </div>
         </div>
       )}
@@ -189,11 +180,8 @@ export function VoiceOverlay({ open, onClose }: VoiceOverlayProps) {
       <div className="absolute bottom-[10vh] left-0 right-0 text-center px-6">
         {state === 'idle' ? (
           <div className="text-white/80 text-sm tracking-wide">
-            {currentLanguage === 'ar' ? (
-              <p dir="rtl">قل مرحبا</p>
-            ) : (
-              <p>Say Hello</p>
-            )}
+            <p>Say Hello</p>
+            <p className="text-xs mt-1">قل مرحبا</p>
           </div>
         ) : (
           <p className="text-white/80 text-sm tracking-wide">

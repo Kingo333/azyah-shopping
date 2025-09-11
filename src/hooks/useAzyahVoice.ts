@@ -13,9 +13,7 @@ export function useAzyahVoice() {
 
   // UI state
   const [captionsOn, setCaptionsOn] = useState(true);
-  const [englishCaptions, setEnglishCaptions] = useState('');
-  const [arabicCaptions, setArabicCaptions] = useState('');
-  const [currentLanguage, setCurrentLanguage] = useState<'en' | 'ar' | null>(null);
+  const [captions, setCaptions] = useState('');
   const [level, setLevel] = useState(0);
 
   // Cleanup on unmount
@@ -84,30 +82,15 @@ export function useAzyahVoice() {
               break;
             case 'response.audio_transcript.delta':
               if (message.delta) {
-                // Detect language based on content
-                const isArabic = /[\u0600-\u06FF]/.test(message.delta);
-                
-                if (isArabic) {
-                  setCurrentLanguage('ar');
-                  setArabicCaptions(prev => prev + message.delta);
-                  setEnglishCaptions(''); // Clear English when Arabic is detected
-                } else {
-                  setCurrentLanguage('en');
-                  setEnglishCaptions(prev => prev + message.delta);
-                  setArabicCaptions(''); // Clear Arabic when English is detected
-                }
+                setCaptions(prev => prev + message.delta);
               }
               break;
             case 'response.audio_transcript.done':
-              setEnglishCaptions('');
-              setArabicCaptions('');
-              setCurrentLanguage(null);
+              setCaptions('');
               break;
             case 'response.done':
               setState('idle');
-              setEnglishCaptions('');
-              setArabicCaptions('');
-              setCurrentLanguage(null);
+              setCaptions('');
               break;
             case 'error':
               console.error('Realtime API error:', message);
@@ -138,9 +121,7 @@ export function useAzyahVoice() {
     clientRef.current?.disconnect();
     setConnected(false);
     setState('idle');
-    setEnglishCaptions('');
-    setArabicCaptions('');
-    setCurrentLanguage(null);
+    setCaptions('');
     setLevel(0);
   }, []);
 
@@ -187,9 +168,7 @@ export function useAzyahVoice() {
     pttUp,
     interrupt,
     disconnect,
-    englishCaptions,
-    arabicCaptions,
-    currentLanguage,
+    captions,
     captionsOn,
     toggleCaptions,
     level,
