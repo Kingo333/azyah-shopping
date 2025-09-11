@@ -5,10 +5,12 @@ import { ArrowRight, Heart, Users, Star, Sparkles, Play, Menu, X, CheckCircle, S
 import InstallBanner from "@/components/InstallBanner";
 import { Button } from "@/components/ui/button";
 import { SEOHead } from "@/components/SEOHead";
+import SwipeDeck from '@/components/SwipeDeck';
+import LandingSwipeDeck from '@/components/LandingSwipeDeck';
 import { clearInvalidSession, debugAuthState } from "@/utils/sessionDebug";
 import { useSmartSwipeProducts } from "@/hooks/useSmartSwipeProducts";
 import { useStableLoading } from "@/hooks/useStableLoading";
-import { SimpleProductGrid } from "@/components/SimpleProductGrid";
+import { getResponsiveImageProps } from "@/utils/asosImageUtils";
 import { InvestorContactModal } from "@/components/InvestorContactModal";
 import modernFashionHero from "@/assets/modern-fashion-hero.jpg";
 
@@ -418,10 +420,86 @@ export default function Landing() {
             </div>
           </div>
 
-          <SimpleProductGrid 
-            products={gridProducts} 
-            isLoading={productsLoading}
-          />
+          {/* Content based on view mode */}
+          {viewMode === 'grid' ? (/* Product Grid */
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+              {productsLoading ?
+          // Loading skeletons
+          [...Array(8)].map((_, i) => <div key={`skeleton-${i}`} className="aspect-[3/4] bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl animate-pulse" />) :
+          // Use stable gridProducts
+          gridProducts.map((product, i) => {
+            const imageUrl = product.image_url || (product.media_urls && Array.isArray(product.media_urls) && product.media_urls.length > 0 ? product.media_urls[0] : typeof product.media_urls === 'string' ? JSON.parse(product.media_urls)[0] : null) || '/placeholder.svg';
+            const imageProps = getResponsiveImageProps(imageUrl);
+            return <div key={`product-${product.id}`} className="group relative aspect-[3/4] bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2">
+                      {/* Product Image */}
+                      <img {...imageProps} alt={product.title || `Product ${i + 1}`} className="absolute inset-0 w-full h-full object-cover" onError={e => {
+                (e.target as HTMLImageElement).src = '/placeholder.svg';
+              }} />
+                      
+                      <div className="absolute inset-0 bg-gradient-to-t from-primary/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                      
+                      {/* Heart Icon */}
+                      <div className="absolute top-4 right-4 w-8 h-8 bg-background/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 cursor-pointer hover:bg-primary/10">
+                        <Heart className="w-4 h-4 text-primary" />
+                      </div>
+                      
+                      {/* AR Ready Badge */}
+                      {i % 3 === 0 && <div className="absolute top-4 left-4 bg-primary/90 backdrop-blur-sm rounded-lg px-3 py-1">
+                          <div className="flex items-center space-x-1">
+                            <span className="text-xs font-medium text-white">AR Ready</span>
+                          </div>
+                        </div>}
+                      
+                      {/* Product Info */}
+                      <div className="absolute bottom-4 left-4 right-4 bg-white/95 backdrop-blur-sm rounded-xl p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        <div className="text-sm font-medium line-clamp-1">{product.title || `Product ${i + 1}`}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {product.brand ? typeof product.brand === 'string' ? product.brand : product.brand.name || 'Premium Brand' : 'Premium Brand'}
+                        </div>
+                        <div className="flex items-center justify-between mt-2">
+                          <div className="text-sm font-bold text-primary">
+                            {product.price_cents ? `${product.currency || '$'}${(product.price_cents / 100).toFixed(0)}` : 'Price on request'}
+                          </div>
+                          <div className="flex space-x-1">
+                            <Button size="sm" variant="ghost" className="h-6 w-6 p-0 rounded-full bg-primary/10">
+                              <ShoppingBag className="w-3 h-3" />
+                            </Button>
+                            <Button size="sm" variant="ghost" className="h-6 w-6 p-0 rounded-full bg-primary/10" onClick={e => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      console.log('Shop now clicked for product:', product);
+                      console.log('External URL:', product.external_url);
+                      if (product.external_url) {
+                        // Always open in new tab/window
+                        window.open(product.external_url, '_blank', 'noopener,noreferrer');
+                        console.log('Opened external link in new tab');
+                      } else {
+                        console.warn('No external URL found for product:', product.id);
+                        // Could show a toast notification here if needed
+                      }
+                    }} title="Shop Now">
+                              <ExternalLink className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>;
+          })}
+            </div>) : (/* Swipe Interface */
+        <div className="mb-12">
+              <div className="relative w-full max-w-sm mx-auto h-[600px]">
+                <LandingSwipeDeck {...stableProductsConfig} />
+              </div>
+              <div className="text-center mt-8">
+                <p className="text-sm text-gray-600 mb-4">
+                  Experience our swipe interface just like in the main app!
+                </p>
+                <Button variant="outline" onClick={() => navigate("/swipe")} className="px-6 py-2">
+                  Try Full Swipe Experience
+                  <ArrowRight className="ml-2 w-4 h-4" />
+                </Button>
+              </div>
+            </div>)}
 
           <div className="text-center">
             <Button size="lg" className="px-8 py-4 bg-primary hover:bg-primary/90" onClick={() => navigate("/auth")}>
