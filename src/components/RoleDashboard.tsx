@@ -83,17 +83,7 @@ const RoleDashboard: React.FC = () => {
     initializeDashboard();
   }, [user]);
 
-  // Handle role-based navigation after profile is loaded
-  useEffect(() => {
-    if (userProfile && !loading) {
-      if (userProfile.role === 'brand') {
-        navigate('/brand-portal');
-      } else if (userProfile.role === 'retailer') {
-        navigate('/retailer-portal');
-      }
-      // Remove admin redirect - let them stay on dashboard if needed
-    }
-  }, [userProfile, loading, navigate]);
+  // Remove automatic redirects - let users access dashboard or choose their portal
   const fetchUserProfile = async () => {
     if (!user) return;
     console.log('Fetching user profile for:', user.id);
@@ -437,25 +427,122 @@ const RoleDashboard: React.FC = () => {
 
     </div>;
   const renderBrandDashboard = () => {
-    return <div className="space-y-4">
-      <GlassPanel variant="premium" className="p-8">
-        <div className="text-center space-y-4">
-          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <h3 className="text-xl font-cormorant font-semibold">Redirecting to Brand Portal...</h3>
-          <p className="text-muted-foreground">Taking you to your brand management dashboard</p>
+    return <div className="space-y-6">
+      <div className="text-center space-y-4">
+        <h1 className="text-3xl font-bold">Welcome to Your Brand Dashboard</h1>
+        <p className="text-muted-foreground">Manage your brand and products</p>
+      </div>
+      
+      <GlassPanel variant="premium" className="p-6 max-w-md mx-auto">
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <h3 className="font-semibold">Brand Portal</h3>
+            <p className="text-sm text-muted-foreground">
+              Access your dedicated brand management portal to add products, view analytics, and manage collaborations.
+            </p>
+          </div>
+          <Button 
+            onClick={() => navigate('/brand-portal')} 
+            className="w-full"
+            size="lg"
+          >
+            <Store className="h-4 w-4 mr-2" />
+            Go to Brand Portal
+          </Button>
         </div>
       </GlassPanel>
+
+      {/* Quick Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="p-4 text-center">
+            <ShoppingBag className="h-6 w-6 mx-auto mb-2 text-muted-foreground" />
+            <div className="text-2xl font-bold">{stats.totalProducts}</div>
+            <p className="text-xs text-muted-foreground">Products</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 text-center">
+            <Eye className="h-6 w-6 mx-auto mb-2 text-muted-foreground" />
+            <div className="text-2xl font-bold">{stats.totalViews}</div>
+            <p className="text-xs text-muted-foreground">Views</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 text-center">
+            <Heart className="h-6 w-6 mx-auto mb-2 text-muted-foreground" />
+            <div className="text-2xl font-bold">{stats.totalSales}</div>
+            <p className="text-xs text-muted-foreground">Likes</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 text-center">
+            <DollarSign className="h-6 w-6 mx-auto mb-2 text-muted-foreground" />
+            <div className="text-2xl font-bold">${(stats.totalRevenue / 100).toFixed(0)}</div>
+            <p className="text-xs text-muted-foreground">Revenue</p>
+          </CardContent>
+        </Card>
+      </div>
     </div>;
   };
+  
   const renderRetailerDashboard = () => {
-    return <div className="space-y-4">
-      <GlassPanel variant="premium" className="p-8">
-        <div className="text-center space-y-4">
-          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <h3 className="text-xl font-cormorant font-semibold">Redirecting to Retailer Portal...</h3>
-          <p className="text-muted-foreground">Taking you to your retailer management dashboard</p>
+    return <div className="space-y-6">
+      <div className="text-center space-y-4">
+        <h1 className="text-3xl font-bold">Welcome to Your Retailer Dashboard</h1>
+        <p className="text-muted-foreground">Manage your store and inventory</p>
+      </div>
+      
+      <GlassPanel variant="premium" className="p-6 max-w-md mx-auto">
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <h3 className="font-semibold">Retailer Portal</h3>
+            <p className="text-sm text-muted-foreground">
+              Access your dedicated retailer management portal to manage inventory, view analytics, and handle collaborations.
+            </p>
+          </div>
+          <Button 
+            onClick={() => navigate('/retailer-portal')} 
+            className="w-full"
+            size="lg"
+          >
+            <Store className="h-4 w-4 mr-2" />
+            Go to Retailer Portal
+          </Button>
         </div>
       </GlassPanel>
+
+      {/* Quick Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="p-4 text-center">
+            <ShoppingBag className="h-6 w-6 mx-auto mb-2 text-muted-foreground" />
+            <div className="text-2xl font-bold">{stats.totalProducts}</div>
+            <p className="text-xs text-muted-foreground">Products</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 text-center">
+            <Eye className="h-6 w-6 mx-auto mb-2 text-muted-foreground" />
+            <div className="text-2xl font-bold">{stats.totalViews}</div>
+            <p className="text-xs text-muted-foreground">Views</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 text-center">
+            <Heart className="h-6 w-6 mx-auto mb-2 text-muted-foreground" />
+            <div className="text-2xl font-bold">{stats.totalSales}</div>
+            <p className="text-xs text-muted-foreground">Likes</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 text-center">
+            <DollarSign className="h-6 w-6 mx-auto mb-2 text-muted-foreground" />
+            <div className="text-2xl font-bold">${(stats.totalRevenue / 100).toFixed(0)}</div>
+            <p className="text-xs text-muted-foreground">Revenue</p>
+          </CardContent>
+        </Card>
+      </div>
     </div>;
   };
   return <ErrorBoundary>

@@ -43,6 +43,8 @@ const BrandPortal: React.FC = () => {
   const [brand, setBrand] = useState<Brand | null>(null);
   const [brandLoading, setBrandLoading] = useState(true);
   const [productsLoading, setProductsLoading] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+  const [setupError, setSetupError] = useState<string | null>(null);
   const [isAddProductModalOpen, setIsAddProductModalOpen] = useState(false);
   const [isEditProductModalOpen, setIsEditProductModalOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
@@ -185,7 +187,7 @@ const BrandPortal: React.FC = () => {
         setBrandLoading(false);
       }
     }
-  }, [user?.id, user?.user_metadata?.name, user?.email, user?.user_metadata?.role, toast]);
+  }, [user?.id, user?.user_metadata?.name, user?.email, user?.user_metadata?.role, toast, retryCount]);
   const fetchProducts = useCallback(async () => {
     if (!brand?.id) return;
     try {

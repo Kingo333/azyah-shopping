@@ -47,6 +47,8 @@ const RetailerPortal = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
+  const [retryCount, setRetryCount] = useState(0);
+  const [setupError, setSetupError] = useState<string | null>(null);
 
   const { data: brands, isLoading: brandsLoading } = useRetailerBrands(retailer?.id || '');
 
@@ -54,7 +56,7 @@ const RetailerPortal = () => {
     if (user) {
       fetchRetailer();
     }
-  }, [user]);
+  }, [user, retryCount]);
 
   useEffect(() => {
     if (retailer) {
@@ -324,6 +326,70 @@ const RetailerPortal = () => {
         <div className="text-center">
           <h2 className="text-xl font-semibold mb-2">Access Restricted</h2>
           <p className="text-muted-foreground">Please log in to access the retailer portal.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="text-center space-y-4">
+          <h2 className="text-xl font-semibold">Setting up your Retailer Portal...</h2>
+          <div className="space-y-4">
+            <div className="flex items-center justify-center space-x-2">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+              <p className="text-muted-foreground">
+                {retryCount === 0 ? 'Initializing your retailer portal...' :
+                 retryCount <= 2 ? `Retrying setup (${retryCount}/3)...` :
+                 'Finalizing setup...'}
+              </p>
+            </div>
+            {retryCount > 0 && (
+              <p className="text-xs text-muted-foreground">
+                This may take a moment for new accounts.
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (setupError && !retailer) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="text-center space-y-4 max-w-md">
+          <h2 className="text-xl font-semibold">Setup Error</h2>
+          <p className="text-muted-foreground">
+            We're having trouble setting up your retailer portal.
+          </p>
+          <div className="space-y-2">
+            <Button 
+              onClick={() => {
+                setRetryCount(0);
+                setSetupError(null);
+                fetchRetailer();
+              }} 
+              className="w-full"
+            >
+              Try Again
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => window.location.reload()} 
+              className="w-full"
+            >
+              Refresh Page
+            </Button>
+            <Button 
+              variant="ghost" 
+              onClick={() => navigate('/dashboard')} 
+              className="w-full"
+            >
+              Go to Dashboard
+            </Button>
+          </div>
         </div>
       </div>
     );
