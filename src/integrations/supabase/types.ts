@@ -1796,7 +1796,7 @@ export type Database = {
           {
             foreignKeyName: "retailers_owner_user_id_fkey"
             columns: ["owner_user_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
@@ -2989,6 +2989,13 @@ export type Database = {
         }[]
       }
       get_retailer_contact_info: {
+        Args: { retailer_id_param: string }
+        Returns: {
+          contact_email: string
+          owner_user_id: string
+        }[]
+      }
+      get_retailer_contact_info_secure: {
         Args: { retailer_id_param: string }
         Returns: {
           contact_email: string

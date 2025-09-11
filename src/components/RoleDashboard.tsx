@@ -90,9 +90,8 @@ const RoleDashboard: React.FC = () => {
         navigate('/brand-portal');
       } else if (userProfile.role === 'retailer') {
         navigate('/retailer-portal');
-      } else if (userProfile.role === 'admin') {
-        navigate('/auth');
       }
+      // Remove admin redirect - let them stay on dashboard if needed
     }
   }, [userProfile, loading, navigate]);
   const fetchUserProfile = async () => {

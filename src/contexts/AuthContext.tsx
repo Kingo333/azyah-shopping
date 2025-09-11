@@ -25,20 +25,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Simple auth state management
+    // Streamlined auth state management - no complex portal setup
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         console.log('AuthContext: Auth state changed:', { event, user: session?.user?.email });
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
-        
-        // Ensure portal setup when user signs in
-        if (event === 'SIGNED_IN' && session?.user) {
-          setTimeout(() => {
-            ensureUserPortalSetup(session.user, session.user.user_metadata?.role);
-          }, 0);
-        }
       }
     );
 
@@ -65,8 +58,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return { error };
     }
 
-    // Redirect to email confirmation page to avoid fetch errors
-    const redirectUrl = `${window.location.origin}/email-confirmed`;
+    // Dynamic redirect based on role - go directly to appropriate dashboard
+    const userRole = userData?.role || 'shopper';
+    const redirectUrl = `${window.location.origin}${getRedirectRoute(userRole as UserRole)}`;
     
     const { error } = await supabase.auth.signUp({
       email,
@@ -111,82 +105,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { error };
   };
 
-  // Helper function to ensure user portal setup
-  const ensureUserPortalSetup = async (user: any, role?: string) => {
-    try {
-      const userRole = role || user.user_metadata?.role || 'shopper';
-      console.log('Setting up portal for user role:', userRole);
-      
-      if (userRole === 'brand') {
-        const { data: existingBrand } = await supabase
-          .from('brands')
-          .select('id')
-          .eq('owner_user_id', user.id)
-          .maybeSingle();
-          
-        if (!existingBrand) {
-          console.log('Creating brand for user:', user.id);
-          const defaultName = user.user_metadata?.name || user.email?.split('@')[0] || 'My Brand';
-          const baseSlug = defaultName.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-');
-          
-          const { data, error } = await supabase.from('brands').insert({
-            owner_user_id: user.id,
-            name: defaultName,
-            slug: `${baseSlug}-${Date.now()}`,
-            contact_email: user.email,
-          }).select().single();
-          
-          if (error) {
-            console.error('Error creating brand:', error);
-            throw error;
-          }
-          
-          console.log('Brand created successfully:', data);
-          toast({
-            title: "Welcome to Azyah!",
-            description: "Your brand portal has been set up. Complete your profile to get started.",
-          });
-        }
-      } else if (userRole === 'retailer') {
-        const { data: existingRetailer } = await supabase
-          .from('retailers')
-          .select('id')
-          .eq('owner_user_id', user.id)
-          .maybeSingle();
-          
-        if (!existingRetailer) {
-          console.log('Creating retailer for user:', user.id);
-          const defaultName = user.user_metadata?.name || user.email?.split('@')[0] || 'My Store';
-          const baseSlug = defaultName.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-');
-          
-          const { data, error } = await supabase.from('retailers').insert({
-            owner_user_id: user.id,
-            name: defaultName,
-            slug: `${baseSlug}-${Date.now()}`,
-            contact_email: user.email,
-          }).select().single();
-          
-          if (error) {
-            console.error('Error creating retailer:', error);
-            throw error;
-          }
-          
-          console.log('Retailer created successfully:', data);
-          toast({
-            title: "Welcome to Azyah!",
-            description: "Your retailer portal has been set up. Complete your profile to get started.",
-          });
-        }
-      }
-    } catch (error) {
-      console.error('Error setting up user portal:', error);
-      toast({
-        title: "Setup Error",
-        description: "There was an issue setting up your portal. Please refresh the page.",
-        variant: "destructive"
-      });
-    }
-  };
 
   const signIn = async (email: string, password: string) => {
     try {
