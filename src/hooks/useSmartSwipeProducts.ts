@@ -210,7 +210,7 @@ export const useSmartSwipeProducts = ({
       if (!user) {
         console.log('🔒 Anonymous user - fetching public product data');
         
-        const { data, error } = await supabase
+        let query = supabase
           .from('products')
           .select(`
             id,
@@ -223,9 +223,22 @@ export const useSmartSwipeProducts = ({
             subcategory_slug,
             brand:brands(name, logo_url)
           `)
-          .eq('status', 'active')
-          .eq('is_external', false)
-          .limit(50);
+          .eq('status', 'active');
+
+        // Apply external product filtering based on feature flags (same logic as authenticated users)
+        const axessoImportEnabled = isEnabled('axessoImport');
+        const axessoImportBulkEnabled = isEnabled('axessoImportBulk');
+        
+        console.log('🔍 Anonymous feature flags:', { axessoImportEnabled, axessoImportBulkEnabled });
+        
+        if (!axessoImportEnabled && !axessoImportBulkEnabled) {
+          query = query.eq('is_external', false);
+          console.log('❌ External products disabled for anonymous users');
+        } else {
+          console.log('✅ External products enabled for anonymous users');
+        }
+
+        const { data, error } = await query.limit(50);
 
         if (error) {
           console.error('❌ Error fetching anonymous products:', error);
