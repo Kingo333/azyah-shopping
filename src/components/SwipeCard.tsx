@@ -78,7 +78,7 @@ const SwipeCard = memo(({
 
   return (
     <motion.div
-      className="absolute top-16 sm:top-0 left-0 w-full h-full"
+      className="absolute top-8 sm:top-0 left-0 w-full h-full"
       {...motionProps}
     >
       <Card className="h-full flex flex-col cursor-grab active:cursor-grabbing overflow-hidden min-h-[650px] max-w-md mx-auto rounded-3xl shadow-xl shadow-black/10">
