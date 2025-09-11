@@ -176,15 +176,13 @@ export function VoiceOverlay({ open, onClose }: VoiceOverlayProps) {
         </div>
       )}
 
-      {/* Hint text as button */}
+      {/* Hint text */}
       <div className="absolute bottom-[10vh] left-0 right-0 text-center px-6">
         {state === 'idle' ? (
-          <button
-            onClick={pttDown}
-            className="text-white/80 text-sm tracking-wide hover:text-white hover:bg-white/10 px-4 py-2 rounded-lg transition-all duration-200 border border-white/20 hover:border-white/40"
-          >
-            Tap here to start speaking to Azyah
-          </button>
+          <div className="text-white/80 text-sm tracking-wide">
+            <p>Say Hello</p>
+            <p className="text-xs mt-1">قل مرحبا</p>
+          </div>
         ) : (
           <p className="text-white/80 text-sm tracking-wide">
             {getHintText()}
