@@ -36,6 +36,7 @@ import { convertJsonToProductAttributes } from '@/lib/type-utils';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { FeedbackModal } from '@/components/FeedbackModal';
+import { ProfileCompletionBanner } from '@/components/ProfileCompletionBanner';
 
 const RetailerPortal = () => {
   const { user } = useAuth();
@@ -389,6 +390,9 @@ const RetailerPortal = () => {
           </Card>
         </div>
 
+        {/* Profile Completion Banner */}
+        <ProfileCompletionBanner />
+        
         {/* Tabs */}
         <Tabs defaultValue="products" className="space-y-4 md:space-y-6">
           <TabsList className="bg-muted/50 dark:bg-slate-800/50 grid w-full grid-cols-5 md:flex md:w-auto">

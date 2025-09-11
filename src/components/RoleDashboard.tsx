@@ -24,6 +24,7 @@ import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
 import { FeedbackModal } from '@/components/FeedbackModal';
 import { TutorialTooltip } from '@/components/ui/tutorial-tooltip';
 import { PaymentIntegrationTest } from '@/components/PaymentIntegrationTest';
+import { ProfileCompletionBanner } from '@/components/ProfileCompletionBanner';
 interface UserProfile {
   id: string;
   name: string;
@@ -226,6 +227,9 @@ const RoleDashboard: React.FC = () => {
   }
   console.log('Rendering dashboard for user:', userProfile);
   const renderShopperDashboard = () => <div className="space-y-6">
+      {/* Profile Completion Banner */}
+      <ProfileCompletionBanner />
+      
       {/* Premium Banner */}
       <PremiumBanner />
 

@@ -23,6 +23,7 @@ import { BrandSettingsForm } from '@/components/BrandSettingsForm';
 import { Plus, Edit, Trash2, Upload, BarChart3, TrendingUp, Eye, Heart, ShoppingBag, DollarSign, Download, Filter, Globe } from 'lucide-react';
 import { InfoTooltip } from '@/components/ui/info-tooltip';
 import { FeedbackModal } from '@/components/FeedbackModal';
+import { ProfileCompletionBanner } from '@/components/ProfileCompletionBanner';
 import { useNavigate } from 'react-router-dom';
 import type { Product } from '@/types';
 interface Brand {
@@ -410,6 +411,9 @@ const BrandPortal: React.FC = () => {
           <FeedbackModal userType="brand" />
         </div>
 
+        {/* Profile Completion Banner */}
+        <ProfileCompletionBanner />
+        
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid w-full grid-cols-4 rounded-xl bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border border-white/20 dark:border-slate-700/50">
             <TabsTrigger value="products" className="rounded-lg text-xs md:text-sm data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-sm">Products</TabsTrigger>
