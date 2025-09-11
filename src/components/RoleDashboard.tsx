@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
@@ -60,7 +60,28 @@ const RoleDashboard: React.FC = () => {
   const [aiStudioModalOpen, setAiStudioModalOpen] = useState(false);
   const [isClosetsMinimized, setIsClosetsMinimized] = useState(true);
   const [isAffiliateMinimized, setIsAffiliateMinimized] = useState(true);
-  const fetchUserProfile = useCallback(async () => {
+  useEffect(() => {
+    // Set correct page title
+    document.title = 'Azyah - Fashion Discovery Platform';
+    const initializeDashboard = async () => {
+      console.log('Initializing dashboard, user:', user);
+      if (!user) {
+        console.log('No user found, setting loading to false');
+        setLoading(false);
+        return;
+      }
+      try {
+        await fetchUserProfile();
+        await fetchDashboardStats();
+      } catch (error) {
+        console.error('Error initializing dashboard:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    initializeDashboard();
+  }, [user]);
+  const fetchUserProfile = async () => {
     if (!user) return;
     console.log('Fetching user profile for:', user.id);
     try {
@@ -111,9 +132,8 @@ const RoleDashboard: React.FC = () => {
       };
       setUserProfile(fallbackProfile);
     }
-  }, [user]);
-
-  const fetchDashboardStats = useCallback(async () => {
+  };
+  const fetchDashboardStats = async () => {
     if (!user) return;
     console.log('Fetching dashboard stats for:', user.id);
     try {
@@ -147,29 +167,7 @@ const RoleDashboard: React.FC = () => {
         totalProducts: 0
       });
     }
-  }, [user, userProfile]);
-
-  useEffect(() => {
-    // Set correct page title
-    document.title = 'Azyah - Fashion Discovery Platform';
-    const initializeDashboard = async () => {
-      console.log('Initializing dashboard, user:', user);
-      if (!user) {
-        console.log('No user found, setting loading to false');
-        setLoading(false);
-        return;
-      }
-      try {
-        await fetchUserProfile();
-        await fetchDashboardStats();
-      } catch (error) {
-        console.error('Error initializing dashboard:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    initializeDashboard();
-  }, [user, fetchUserProfile, fetchDashboardStats]);
+  };
   const formatPrice = (cents: number): string => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -213,36 +211,7 @@ const RoleDashboard: React.FC = () => {
         </div>
       </div>;
   }
-  // Auto-redirect users to their specific portals based on role
-  useEffect(() => {
-    if (userProfile && !loading) {
-      const currentPath = window.location.pathname;
-      
-      // Only redirect if on main dashboard and user has specific role
-      if (currentPath === '/' || currentPath === '/dashboard') {
-        switch (userProfile.role) {
-          case 'brand':
-            console.log('Redirecting brand user to brand portal');
-            navigate('/brand-portal');
-            return;
-          case 'retailer':
-            console.log('Redirecting retailer user to retailer portal');
-            navigate('/retailer-portal');
-            return;
-          case 'admin':
-            // Admins can access the general dashboard
-            break;
-          case 'shopper':
-          default:
-            // Shoppers stay on the dashboard
-            break;
-        }
-      }
-    }
-  }, [userProfile, loading, navigate]);
-
   console.log('Rendering dashboard for user:', userProfile);
-
   const renderShopperDashboard = () => <div className="space-y-6">
       {/* Premium Banner */}
       <PremiumBanner />
