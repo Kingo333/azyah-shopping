@@ -43,6 +43,7 @@ import RetailerPortal from './pages/RetailerPortal';
 import RetailerBrandDetail from './pages/RetailerBrandDetail';
 import NotFound from './pages/NotFound';
 import PhotoCloseup from './components/PhotoCloseup';
+import EmailConfirmed from './pages/EmailConfirmed';
 import { DebugHealthPage } from './components/DebugHealthPage';
 
 const queryClient = new QueryClient({
@@ -75,6 +76,7 @@ function App() {
                     </ProtectedRoute>
                   } />
                   <Route path="/auth" element={<Auth />} />
+                  <Route path="/email-confirmed" element={<EmailConfirmed />} />
                   
                   <Route path="/select-role" element={<SelectRole />} />
                   <Route path="/profile/:userId" element={
