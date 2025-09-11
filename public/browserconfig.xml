@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<browserconfig>
+    <msapplication>
+        <tile>
+            <square70x70logo src="/marketing/azyah-logo.png"/>
+            <square150x150logo src="/marketing/azyah-logo.png"/>
+            <square310x310logo src="/marketing/azyah-logo.png"/>
+            <wide310x150logo src="/marketing/azyah-logo.png"/>
+            <TileColor>#FFFFFF</TileColor>
+        </tile>
+    </msapplication>
+</browserconfig>
