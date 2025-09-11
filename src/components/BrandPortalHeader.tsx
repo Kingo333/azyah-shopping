@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Settings, LogOut, Sun, Moon, User, Plus, Globe } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
 interface Brand {
   id: string;
   name: string;
@@ -36,6 +37,7 @@ export const BrandPortalHeader: React.FC<BrandPortalHeaderProps> = ({
     setTheme
   } = useTheme();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const handleThemeToggle = () => {
     setTheme(theme === 'dark' ? 'light' : 'dark');
   };
@@ -69,16 +71,20 @@ export const BrandPortalHeader: React.FC<BrandPortalHeaderProps> = ({
           {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
         </Button>
 
-        {onImportFromWebsite && (
-          <Button 
-            variant="outline" 
-            className="rounded-xl flex-1 sm:flex-none" 
-            onClick={onImportFromWebsite}
-          >
-            <Globe className="h-4 w-4 mr-2" />
-            Import from Website
-          </Button>
-        )}
+        <Button 
+          variant="outline" 
+          className="rounded-xl flex-1 sm:flex-none opacity-60 cursor-not-allowed" 
+          onClick={() => {
+            toast({
+              title: "Coming Soon",
+              description: "Website import feature is coming soon! Use the feedback button to request early access.",
+            });
+          }}
+          disabled
+        >
+          <Globe className="h-4 w-4 mr-2" />
+          Import from Website
+        </Button>
 
         {onAddProduct && <Button className="rounded-xl bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 dark:from-pink-600 dark:to-purple-600 dark:hover:from-pink-700 dark:hover:to-purple-700 flex-1 sm:flex-none text-white" onClick={onAddProduct}>
             <Plus className="h-4 w-4 mr-2" />

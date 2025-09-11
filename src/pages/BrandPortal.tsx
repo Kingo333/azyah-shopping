@@ -412,7 +412,17 @@ const BrandPortal: React.FC = () => {
   }));
   return <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-purple-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
       <div className="container mx-auto max-w-7xl p-3 md:p-6">
-        <BrandPortalHeader brand={brand} onAddProduct={() => setIsAddProductModalOpen(true)} onImportFromWebsite={() => setIsImportModalOpen(true)} />
+        <BrandPortalHeader brand={brand} onAddProduct={() => {
+          if (products.length >= 10) {
+            toast({
+              title: "Product Limit Reached",
+              description: "You've reached the 10 product limit. Use the Feedback & Support button to request more.",
+              variant: "destructive",
+            });
+            return;
+          }
+          setIsAddProductModalOpen(true);
+        }} />
 
         {/* Feedback Section */}
         <div className="mb-4 md:mb-6 flex justify-end">
