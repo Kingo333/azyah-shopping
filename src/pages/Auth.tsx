@@ -487,18 +487,17 @@ const Auth = () => {
                           </div>
                         </GlassPanel>
 
-                        {/* Retailer Role */}
-                        <GlassPanel variant={selectedRole === "retailer" ? "premium" : "default"} className={`p-3 cursor-pointer transition-all duration-200 ${selectedRole === "retailer" ? "border-primary/60 shadow-md scale-[1.02]" : "hover:scale-[1.01] hover:border-primary/40"}`} onClick={() => setSelectedRole(selectedRole === "retailer" ? "" : "retailer")}>
+                        {/* Retailer Role - Disabled */}
+                        <GlassPanel variant="default" className="p-3 opacity-50 cursor-not-allowed transition-all duration-200">
                           <div className="text-center space-y-2">
-                            <div className={`p-2 rounded-lg mx-auto w-fit ${selectedRole === "retailer" ? "bg-gradient-to-br from-primary/30 to-primary/20" : "bg-muted/50"}`}>
-                              <Building2 className="h-5 w-5 text-primary" />
+                            <div className="p-2 rounded-lg mx-auto w-fit bg-muted/50">
+                              <Building2 className="h-5 w-5 text-muted-foreground" />
                             </div>
                             <div>
-                              <h3 className="font-semibold text-xs">Retailer</h3>
-                              <p className="text-xs text-muted-foreground">Multi-brand</p>
+                              <h3 className="font-semibold text-xs text-muted-foreground">Retailer</h3>
+                              <p className="text-xs text-muted-foreground">Coming Soon</p>
                             </div>
-                            <div className={`w-4 h-4 rounded-full border-2 mx-auto ${selectedRole === "retailer" ? "border-primary bg-primary" : "border-muted-foreground"}`}>
-                              {selectedRole === "retailer" && <div className="w-2 h-2 rounded-full bg-white m-0.5"></div>}
+                            <div className="w-4 h-4 rounded-full border-2 mx-auto border-muted-foreground">
                             </div>
                           </div>
                         </GlassPanel>

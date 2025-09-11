@@ -130,6 +130,11 @@ export function VoiceOverlay({ open, onClose }: VoiceOverlayProps) {
         <X size={20} />
       </Button>
 
+      {/* No conversation stored message */}
+      <div className="absolute bottom-[5vh] left-0 right-0 text-center px-6">
+        <p className="text-white/60 text-xs">No conversation is stored</p>
+      </div>
+
       {/* Main orb */}
       <canvas
         ref={canvasRef}
