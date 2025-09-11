@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Product } from '@/types';
 import { convertJsonToProductAttributes } from '@/lib/type-utils';
@@ -6,6 +6,17 @@ import { useToast } from '@/hooks/use-toast';
 import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
 import { getFeatureFlag } from '@/lib/features';
 import { optimizeImageUrls } from '@/utils/imageOptimizer';
+
+// Stable feature flag function outside component to prevent re-creation
+const getFeatureFlagSafe = (flag: 'axessoImport' | 'axessoImportBulk'): boolean => {
+  try {
+    // This will be null outside provider context, we handle it in the component
+    return getFeatureFlag(flag);
+  } catch (error) {
+    console.warn(`Feature flag fallback for ${flag}`);
+    return getFeatureFlag(flag);
+  }
+};
 
 interface UseSmartSwipeProductsProps {
   filter: string;
@@ -39,16 +50,26 @@ export const useSmartSwipeProducts = ({
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   
-  // Safe feature flag access with fallback
-  const getFeatureFlagSafe = (flag: 'axessoImport' | 'axessoImportBulk'): boolean => {
+  // Stable feature flag access - try context first, fallback to direct
+  const getContextualFeatureFlag = useCallback((flag: 'axessoImport' | 'axessoImportBulk'): boolean => {
     try {
       const { isEnabled } = useFeatureFlags();
       return isEnabled(flag);
     } catch (error) {
-      console.warn(`FeatureFlags context not available, using fallback for ${flag}`);
-      return getFeatureFlag(flag);
+      // Context not available, use stable fallback
+      return getFeatureFlagSafe(flag);
     }
-  };
+  }, []);
+  
+  // Stable memoized config for consistent dependencies
+  const stableConfig = useMemo(() => ({
+    filter,
+    subcategory,
+    gender,
+    priceRange: { min: priceRange.min, max: priceRange.max },
+    searchQuery: searchQuery?.trim() || '',
+    currency
+  }), [filter, subcategory, gender, priceRange.min, priceRange.max, searchQuery, currency]);
 
   const analyzeUserPreferences = useCallback(async (userId: string): Promise<UserPreferences> => {
     try {
@@ -253,8 +274,8 @@ export const useSmartSwipeProducts = ({
           .eq('status', 'active');
 
         // Apply the same feature flag logic for anonymous users with fallbacks
-        const axessoImportEnabled = getFeatureFlagSafe('axessoImport');
-        const axessoImportBulkEnabled = getFeatureFlagSafe('axessoImportBulk');
+        const axessoImportEnabled = getContextualFeatureFlag('axessoImport');
+        const axessoImportBulkEnabled = getContextualFeatureFlag('axessoImportBulk');
         
         console.log('🔍 ANONYMOUS DEBUG - Domain:', currentUrl);
         console.log('🔍 ANONYMOUS DEBUG - Feature flags:', { 
@@ -405,8 +426,8 @@ export const useSmartSwipeProducts = ({
         `).eq('status', 'active');
 
       // Handle external products based on feature flags with fallbacks
-      const axessoImportEnabled = getFeatureFlagSafe('axessoImport');
-      const axessoImportBulkEnabled = getFeatureFlagSafe('axessoImportBulk');
+      const axessoImportEnabled = getContextualFeatureFlag('axessoImport');
+      const axessoImportBulkEnabled = getContextualFeatureFlag('axessoImportBulk');
       
       console.log('🔍 AUTHENTICATED DEBUG - Domain:', currentUrl);
       console.log('🔍 AUTHENTICATED DEBUG - Feature flags:', { 
@@ -675,7 +696,7 @@ export const useSmartSwipeProducts = ({
     } finally {
       setIsLoading(false);
     }
-  }, [filter, subcategory, gender, priceRange, searchQuery, currency, toast, getFeatureFlagSafe, analyzeUserPreferences, calculatePersonalizationScore, shuffleArray]);
+  }, [stableConfig, toast, getContextualFeatureFlag, analyzeUserPreferences, calculatePersonalizationScore, shuffleArray]);
 
   useEffect(() => {
     fetchProducts();

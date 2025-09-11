@@ -65,8 +65,8 @@ function App() {
           enableSystem={true}
           disableTransitionOnChange={false}
         >
-          <AuthProvider>
-            <FeatureFlagsProvider>
+          <FeatureFlagsProvider>
+            <AuthProvider>
               <Router>
                 <Routes>
                   <Route path="/" element={<Landing />} />
@@ -190,8 +190,8 @@ function App() {
                 </Routes>
               </Router>
               <Toaster />
-            </FeatureFlagsProvider>
-          </AuthProvider>
+            </AuthProvider>
+          </FeatureFlagsProvider>
         </ThemeProvider>
       </HelmetProvider>
     </QueryClientProvider>

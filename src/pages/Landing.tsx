@@ -9,6 +9,7 @@ import SwipeDeck from '@/components/SwipeDeck';
 import LandingSwipeDeck from '@/components/LandingSwipeDeck';
 import { clearInvalidSession, debugAuthState } from "@/utils/sessionDebug";
 import { useSmartSwipeProducts } from "@/hooks/useSmartSwipeProducts";
+import { useStableLoading } from "@/hooks/useStableLoading";
 import { getResponsiveImageProps } from "@/utils/asosImageUtils";
 import { InvestorContactModal } from "@/components/InvestorContactModal";
 import modernFashionHero from "@/assets/modern-fashion-hero.jpg";
@@ -51,19 +52,31 @@ export default function Landing() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
 
-  // Fetch products for grid view with stable configuration
-  const gridProductsConfig = useMemo(() => ({
+  // Stable products configuration to prevent flickering
+  const stableProductsConfig = useMemo(() => ({
     filter: 'all' as const,
-    priceRange: {
-      min: 0,
-      max: 1000
-    },
-    searchQuery: ''
+    priceRange: { min: 0, max: 1000 },
+    searchQuery: '',
+    currency: 'USD'
   }), []);
+  
+  // Single product fetch for both view modes
   const {
-    products: gridProducts,
-    isLoading: productsLoading
-  } = useSmartSwipeProducts(gridProductsConfig);
+    products: allProducts,
+    isLoading: rawLoading
+  } = useSmartSwipeProducts(stableProductsConfig);
+  
+  // Use stable loading to prevent flickering
+  const { isLoading: productsLoading, hasData } = useStableLoading(rawLoading, {
+    minLoadingTime: 300,
+    debounceTime: 150
+  });
+  
+  // Memoized products for grid view to prevent re-renders
+  const gridProducts = useMemo(() => 
+    hasData ? allProducts.slice(0, 12) : [], 
+    [allProducts, hasData]
+  );
   useEffect(() => setIsVisible(true), []);
 
   // Debug auth state and redirect logic
@@ -413,8 +426,8 @@ export default function Landing() {
               {productsLoading ?
           // Loading skeletons
           [...Array(8)].map((_, i) => <div key={`skeleton-${i}`} className="aspect-[3/4] bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl animate-pulse" />) :
-          // Use gridProducts
-          (gridProducts?.slice(0, 8) || []).map((product, i) => {
+          // Use stable gridProducts
+          gridProducts.map((product, i) => {
             const imageUrl = product.image_url || (product.media_urls && Array.isArray(product.media_urls) && product.media_urls.length > 0 ? product.media_urls[0] : typeof product.media_urls === 'string' ? JSON.parse(product.media_urls)[0] : null) || '/placeholder.svg';
             const imageProps = getResponsiveImageProps(imageUrl);
             return <div key={`product-${product.id}`} className="group relative aspect-[3/4] bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2">
@@ -475,10 +488,7 @@ export default function Landing() {
             </div>) : (/* Swipe Interface */
         <div className="mb-12">
               <div className="relative w-full max-w-sm mx-auto h-[600px]">
-                <LandingSwipeDeck filter="all" subcategory="" gender="" priceRange={{
-              min: 0,
-              max: 1000
-            }} searchQuery="" currency="USD" />
+                <LandingSwipeDeck {...stableProductsConfig} />
               </div>
               <div className="text-center mt-8">
                 <p className="text-sm text-gray-600 mb-4">
