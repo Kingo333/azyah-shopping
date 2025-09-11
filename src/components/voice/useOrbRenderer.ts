@@ -28,17 +28,22 @@ export function useOrbRenderer(
       ctx.clearRect(0, 0, width, height);
 
       if (!isActive) {
-        // Draw static orb when inactive
+        // Draw beautiful static orb when inactive
         const gradient = ctx.createRadialGradient(
           centerX, centerY, 0,
-          centerX, centerY, baseRadius
+          centerX, centerY, baseRadius * 0.8
         );
-        gradient.addColorStop(0, 'hsl(var(--muted-foreground))');
+        
+        // Static version of the main orb colors
+        gradient.addColorStop(0, 'hsl(343, 75%, 95%)'); // Light beige/cream
+        gradient.addColorStop(0.3, 'hsl(30, 40%, 85%)'); // Warm beige
+        gradient.addColorStop(0.6, 'hsl(15, 35%, 75%)'); // Soft taupe
+        gradient.addColorStop(0.8, 'hsl(343, 45%, 65%)'); // Muted maroon
         gradient.addColorStop(1, 'transparent');
         
         ctx.fillStyle = gradient;
         ctx.beginPath();
-        ctx.arc(centerX, centerY, baseRadius * 0.6, 0, Math.PI * 2);
+        ctx.arc(centerX, centerY, baseRadius * 0.8, 0, Math.PI * 2);
         ctx.fill();
         return;
       }
