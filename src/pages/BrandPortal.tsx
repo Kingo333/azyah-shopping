@@ -164,7 +164,21 @@ const BrandPortal: React.FC = () => {
               title: "Welcome to Azyah!",
               description: "Your brand portal has been created. Complete your profile in Settings to get started.",
             });
+          } else if (mountedRef.current) {
+            // Brand creation failed, show error message
+            toast({
+              title: "Brand Setup Error",
+              description: "Unable to create your brand portal. Please try refreshing the page or contact support.",
+              variant: "destructive"
+            });
           }
+        } else {
+          // User doesn't have brand role but is trying to access brand portal
+          toast({
+            title: "Access Denied",
+            description: "You don't have permission to access the brand portal. Please contact support if you believe this is an error.",
+            variant: "destructive"
+          });
         }
         
         if (mountedRef.current) {

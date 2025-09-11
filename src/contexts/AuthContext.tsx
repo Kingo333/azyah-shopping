@@ -134,10 +134,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             name: defaultName,
             slug: `${baseSlug}-${Date.now()}`,
             contact_email: user.email,
+            bio: null,
+            website: null,
+            logo_url: null,
+            socials: {},
+            shipping_regions: []
           }).select().single();
           
           if (error) {
             console.error('Error creating brand:', error);
+            toast({
+              title: "Brand Setup Error",
+              description: "Unable to create your brand portal. Please try again or contact support.",
+              variant: "destructive"
+            });
             throw error;
           }
           
