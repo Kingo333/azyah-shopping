@@ -73,9 +73,58 @@ const RetailerPortal = () => {
         throw error;
       }
 
-      setRetailer(data);
+      if (!data && user) {
+        // Auto-create retailer record for new retailer users
+        const defaultName = user.user_metadata?.name || user.email?.split('@')[0] || 'My Store';
+        const baseSlug = defaultName.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-');
+        let slug = baseSlug;
+        
+        // Ensure unique slug
+        const { data: existingSlugs } = await supabase
+          .from('retailers')
+          .select('slug')
+          .like('slug', `${baseSlug}%`);
+        
+        if (existingSlugs && existingSlugs.length > 0) {
+          slug = `${baseSlug}-${Date.now()}`;
+        }
+
+        const { data: newRetailer, error: createError } = await supabase
+          .from('retailers')
+          .insert({
+            owner_user_id: user.id,
+            name: defaultName,
+            slug: slug,
+            contact_email: user.email,
+          })
+          .select()
+          .single();
+
+        if (createError) {
+          console.error('Error creating retailer:', createError);
+          toast({
+            title: "Setup Error",
+            description: "Failed to create your retailer portal. Please try again.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        setRetailer(newRetailer);
+        toast({
+          title: "Welcome!",
+          description: "Your retailer portal has been set up successfully.",
+        });
+      } else {
+        setRetailer(data);
+      }
     } catch (error: any) {
       console.error('Error fetching retailer:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load your retailer portal.",
+        variant: "destructive",
+      });
     }
   };
 

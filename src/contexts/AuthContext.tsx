@@ -106,6 +106,53 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { error };
   };
 
+  // Helper function to ensure user portal setup
+  const ensureUserPortalSetup = async (user: any, role?: string) => {
+    try {
+      const userRole = role || user.user_metadata?.role || 'shopper';
+      
+      if (userRole === 'brand') {
+        const { data: existingBrand } = await supabase
+          .from('brands')
+          .select('id')
+          .eq('owner_user_id', user.id)
+          .maybeSingle();
+          
+        if (!existingBrand) {
+          const defaultName = user.user_metadata?.name || user.email?.split('@')[0] || 'My Brand';
+          const baseSlug = defaultName.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-');
+          
+          await supabase.from('brands').insert({
+            owner_user_id: user.id,
+            name: defaultName,
+            slug: `${baseSlug}-${Date.now()}`,
+            contact_email: user.email,
+          });
+        }
+      } else if (userRole === 'retailer') {
+        const { data: existingRetailer } = await supabase
+          .from('retailers')
+          .select('id')
+          .eq('owner_user_id', user.id)
+          .maybeSingle();
+          
+        if (!existingRetailer) {
+          const defaultName = user.user_metadata?.name || user.email?.split('@')[0] || 'My Store';
+          const baseSlug = defaultName.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-');
+          
+          await supabase.from('retailers').insert({
+            owner_user_id: user.id,
+            name: defaultName,
+            slug: `${baseSlug}-${Date.now()}`,
+            contact_email: user.email,
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error setting up user portal:', error);
+    }
+  };
+
   const signIn = async (email: string, password: string) => {
     try {
       setLoading(true);
