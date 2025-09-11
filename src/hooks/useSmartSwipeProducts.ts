@@ -210,7 +210,7 @@ export const useSmartSwipeProducts = ({
       if (!user) {
         console.log('🔒 Anonymous user - fetching public product data');
         
-        const { data, error } = await supabase
+        let anonymousQuery = supabase
           .from('products')
           .select(`
             id,
@@ -221,11 +221,41 @@ export const useSmartSwipeProducts = ({
             external_url,
             category_slug,
             subcategory_slug,
+            is_external,
+            source,
             brand:brands(name, logo_url)
           `)
-          .eq('status', 'active')
-          .eq('is_external', false)
-          .limit(50);
+          .eq('status', 'active');
+
+        // Apply the same feature flag logic for anonymous users
+        const axessoImportEnabled = isEnabled('axessoImport');
+        const axessoImportBulkEnabled = isEnabled('axessoImportBulk');
+        
+        console.log('🔍 Anonymous user feature flags:', { axessoImportEnabled, axessoImportBulkEnabled });
+        
+        if (!axessoImportEnabled && !axessoImportBulkEnabled) {
+          anonymousQuery = anonymousQuery.eq('is_external', false);
+          console.log('❌ External products disabled for anonymous users');
+        } else {
+          const allowedSources = [];
+          if (axessoImportEnabled) allowedSources.push('axesso-async');
+          if (axessoImportBulkEnabled) allowedSources.push('ASOS_AXESSO_BULK');
+          
+          console.log('✅ Anonymous allowed sources:', allowedSources);
+          
+          if (allowedSources.length > 0) {
+            const conditions = ['is_external.eq.false'];
+            allowedSources.forEach(source => {
+              conditions.push(`and(is_external.eq.true,source.eq.${source})`);
+            });
+            anonymousQuery = anonymousQuery.or(conditions.join(','));
+            console.log('🔍 Anonymous query conditions:', conditions.join(','));
+          }
+        }
+
+        anonymousQuery = anonymousQuery.limit(50);
+        
+        const { data, error } = await anonymousQuery;
 
         if (error) {
           console.error('❌ Error fetching anonymous products:', error);
