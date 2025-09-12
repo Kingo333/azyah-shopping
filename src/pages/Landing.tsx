@@ -15,33 +15,47 @@ import modernFashionHero from "@/assets/modern-fashion-hero.jpg";
 
 function FeatureCarousel() {
   const [currentFeature, setCurrentFeature] = useState(0);
-  const [isAnimating, setIsAnimating] = useState(false);
+  const [isSliding, setIsSliding] = useState(false);
   const features = [
-    "Virtual Try Ons",
-    "UGC Collab", 
-    "Beauty AI Assistance",
-    "Mood Boards",
-    "Rewarded for Shopping"
+    "AI-Curated Fashion",
+    "Personalized Recommendations", 
+    "Exclusive Designer Access",
+    "Global Style Community"
   ];
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setIsAnimating(true);
+      setIsSliding(true);
       setTimeout(() => {
         setCurrentFeature((prev) => (prev + 1) % features.length);
-        setIsAnimating(false);
-      }, 200);
-    }, 3000);
+        setIsSliding(false);
+      }, 500); // Match animation duration
+    }, 3500);
     return () => clearInterval(interval);
   }, [features.length]);
 
   return (
-    <div className="flex items-center gap-2 lg:gap-3 overflow-hidden">
-      <Crown className={`w-3 h-3 sm:w-4 sm:h-4 lg:w-5 lg:h-5 flex-shrink-0 transition-all duration-300 ${isAnimating ? 'animate-pulse scale-110' : ''}`} />
+    <div className="flex items-center space-x-4">
+      {/* Animated Crown */}
       <div className="relative">
-        <span className={`font-medium text-xs sm:text-xs lg:text-sm transition-all duration-500 ${isAnimating ? 'opacity-0 translate-y-2' : 'opacity-100 translate-y-0'}`}>
-          {features[currentFeature]}
-        </span>
+        <Crown className="w-6 h-6 text-amber-400 animate-glow-pulse" />
+        <div className="absolute inset-0 animate-glow-pulse">
+          <Crown className="w-6 h-6 text-amber-200 opacity-50" />
+        </div>
+      </div>
+      
+      {/* Sliding Text Container */}
+      <div className="relative h-6 w-48 overflow-hidden">
+        <div 
+          className={`absolute inset-0 flex items-center transition-all duration-500 ease-out ${
+            isSliding ? 'animate-slide-left-out' : 'animate-slide-right-in'
+          }`}
+          key={currentFeature}
+        >
+          <span className="text-sm font-semibold bg-gradient-to-r from-primary via-primary-foreground to-primary bg-clip-text text-transparent whitespace-nowrap">
+            {features[currentFeature]}
+          </span>
+        </div>
       </div>
     </div>
   );
@@ -275,11 +289,17 @@ export default function Landing() {
                 </Button>
               </div>
 
-              {/* Feature Carousel - Now positioned below buttons */}
+              {/* Feature Carousel - Enhanced Design */}
               <div className="mt-8 sm:mt-10 lg:mt-12">
                 <div className="flex justify-center">
-                  <div className="bg-gradient-to-r from-primary/10 to-primary/5 backdrop-blur-sm rounded-full px-6 py-3 border border-primary/20">
-                    <FeatureCarousel />
+                  <div className="relative group">
+                    {/* Glow Effect Background */}
+                    <div className="absolute -inset-1 bg-gradient-to-r from-primary via-accent-cartier to-primary rounded-full opacity-20 group-hover:opacity-30 transition-opacity duration-500 animate-glow-pulse"></div>
+                    
+                    {/* Main Container */}
+                    <div className="relative bg-gradient-to-r from-background/90 via-background/95 to-background/90 backdrop-blur-md rounded-full px-8 py-4 border border-primary/30 shadow-luxury">
+                      <FeatureCarousel />
+                    </div>
                   </div>
                 </div>
               </div>

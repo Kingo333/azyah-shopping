@@ -232,6 +232,26 @@ export default {
 					'75%': {
 						transform: 'rotate(270deg)'
 					}
+				},
+				'slide-left-out': {
+					'0%': { 
+						transform: 'translateX(0)', 
+						opacity: '1' 
+					},
+					'100%': { 
+						transform: 'translateX(-100%)', 
+						opacity: '0' 
+					}
+				},
+				'slide-right-in': {
+					'0%': { 
+						transform: 'translateX(100%)', 
+						opacity: '0' 
+					},
+					'100%': { 
+						transform: 'translateX(0)', 
+						opacity: '1' 
+					}
 				}
 			},
 			animation: {
@@ -245,7 +265,9 @@ export default {
 				'cartier-glow': 'cartier-glow 2s ease-in-out infinite',
 				'aurora-flow': 'aurora-flow 30s ease-in-out infinite',
 				'slow-pulse': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-				'clock-tick': 'clock-tick 1s ease-in-out infinite'
+				'clock-tick': 'clock-tick 1s ease-in-out infinite',
+				'slide-left-out': 'slide-left-out 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards',
+				'slide-right-in': 'slide-right-in 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards'
 			},
 			boxShadow: {
 				'glow': 'var(--shadow-glow)',
