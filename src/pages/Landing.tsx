@@ -343,7 +343,7 @@ export default function Landing() {
                     <span className="block text-primary italic">Perfect Style</span>
                   </h3>
                   <p className="text-sm sm:text-base lg:text-lg text-muted-foreground leading-relaxed font-light">
-                    AI learns your style and shows you pieces you'll love.
+                    AI learns your style and shows you pieces you'll love. Choose between grid view for browsing collections or swipe view for personalized discovery.
                   </p>
                 </div>
 
