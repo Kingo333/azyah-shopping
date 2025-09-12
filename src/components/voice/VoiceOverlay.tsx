@@ -66,7 +66,7 @@ export function VoiceOverlay({ open, onClose, onUpgrade }: VoiceOverlayProps) {
       case 'connecting':
         return 'Connecting to Azyah...';
       case 'listening':
-        return 'Listening...';
+        return 'Listening... speak naturally';
       case 'thinking':
         return 'Azyah is thinking...';
       case 'speaking':
