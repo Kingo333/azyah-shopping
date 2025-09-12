@@ -12,27 +12,55 @@ import { useSmartSwipeProducts } from "@/hooks/useSmartSwipeProducts";
 import { getResponsiveImageProps } from "@/utils/asosImageUtils";
 import { InvestorContactModal } from "@/components/InvestorContactModal";
 import modernFashionHero from "@/assets/modern-fashion-hero.jpg";
+
 function FeatureCarousel() {
   const [currentFeature, setCurrentFeature] = useState(0);
-  const [isAnimating, setIsAnimating] = useState(false);
-  const features = ["Virtual Try Ons", "UGC Collab", "Beauty AI Assistance", "Mood Boards", "Rewarded for Shopping"];
+  const [isSliding, setIsSliding] = useState(false);
+  const features = [
+    "AI-Curated Fashion",
+    "Personalized Recommendations", 
+    "Exclusive Designer Access",
+    "Global Style Community"
+  ];
+
   useEffect(() => {
     const interval = setInterval(() => {
-      setIsAnimating(true);
+      setIsSliding(true);
       setTimeout(() => {
-        setCurrentFeature(prev => (prev + 1) % features.length);
-        setIsAnimating(false);
-      }, 200);
-    }, 3000);
+        setCurrentFeature((prev) => (prev + 1) % features.length);
+        setIsSliding(false);
+      }, 500); // Match animation duration
+    }, 3500);
     return () => clearInterval(interval);
   }, [features.length]);
-  return <div className="flex items-center gap-2 lg:gap-3 overflow-hidden">
-      <Crown className={`w-3 h-3 sm:w-4 sm:h-4 lg:w-5 lg:h-5 flex-shrink-0 transition-all duration-300 ${isAnimating ? 'animate-pulse scale-110' : ''}`} />
+
+  return (
+    <div className="flex items-center space-x-4">
+      {/* Animated Crown */}
       <div className="relative">
-        
+        <Crown className="w-6 h-6 text-amber-400 animate-glow-pulse" />
+        <div className="absolute inset-0 animate-glow-pulse">
+          <Crown className="w-6 h-6 text-amber-200 opacity-50" />
+        </div>
       </div>
-    </div>;
+      
+      {/* Sliding Text Container */}
+      <div className="relative h-6 w-48 overflow-hidden">
+        <div 
+          className={`absolute inset-0 flex items-center transition-all duration-500 ease-out ${
+            isSliding ? 'animate-slide-left-out' : 'animate-slide-right-in'
+          }`}
+          key={currentFeature}
+        >
+          <span className="text-sm font-semibold bg-gradient-to-r from-primary via-primary-foreground to-primary bg-clip-text text-transparent whitespace-nowrap">
+            {features[currentFeature]}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
 }
+
 export default function Landing() {
   const [isVisible, setIsVisible] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'swipe'>('grid');
@@ -156,7 +184,12 @@ export default function Landing() {
           {/* Mobile actions: Install Button + Hamburger Menu */}
           <div className="flex lg:hidden items-center gap-2">
             {/* Install Button - Compact for mobile nav */}
-            <Button variant="ghost" size="sm" onClick={() => navigate("/install")} className="text-xs px-2 py-1 h-8 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => navigate("/install")}
+              className="text-xs px-2 py-1 h-8 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20"
+            >
               Install
             </Button>
             
@@ -229,29 +262,17 @@ export default function Landing() {
                 
                 <div className="space-y-2 sm:space-y-3 lg:space-y-4">
                   <h1 className="font-cormorant text-6xl sm:text-7xl md:text-8xl lg:text-8xl xl:text-9xl font-bold leading-[0.9] sm:leading-[0.85] tracking-tight">
-                    <span className="block text-white animate-fade-in" style={{
-                    animationDelay: '0.2s',
-                    animationFillMode: 'both'
-                  }}>
+                    <span className="block text-white animate-fade-in" style={{ animationDelay: '0.2s', animationFillMode: 'both' }}>
                       Find Your
                     </span>
-                    <span className="block bg-gradient-to-r from-primary via-primary to-primary/80 bg-clip-text text-transparent italic animate-fade-in hover-scale" style={{
-                    animationDelay: '0.4s',
-                    animationFillMode: 'both'
-                  }}>
+                    <span className="block bg-gradient-to-r from-primary via-primary to-primary/80 bg-clip-text text-transparent italic animate-fade-in hover-scale" style={{ animationDelay: '0.4s', animationFillMode: 'both' }}>
                       Perfect
                     </span>
-                    <span className="block text-white animate-fade-in" style={{
-                    animationDelay: '0.6s',
-                    animationFillMode: 'both'
-                  }}>
+                    <span className="block text-white animate-fade-in" style={{ animationDelay: '0.6s', animationFillMode: 'both' }}>
                       Style
                     </span>
                   </h1>
-                  <p className="text-lg sm:text-xl lg:text-2xl text-gray-200 max-w-md lg:max-w-lg leading-relaxed font-light mx-auto animate-fade-in" style={{
-                  animationDelay: '0.8s',
-                  animationFillMode: 'both'
-                }}>
+                  <p className="text-lg sm:text-xl lg:text-2xl text-gray-200 max-w-md lg:max-w-lg leading-relaxed font-light mx-auto animate-fade-in" style={{ animationDelay: '0.8s', animationFillMode: 'both' }}>
                     Smart AI fashion discovery that learns your style.
                   </p>
                 </div>
@@ -268,11 +289,17 @@ export default function Landing() {
                 </Button>
               </div>
 
-              {/* Feature Carousel - Now positioned below buttons */}
+              {/* Feature Carousel - Enhanced Design */}
               <div className="mt-8 sm:mt-10 lg:mt-12">
                 <div className="flex justify-center">
-                  <div className="bg-gradient-to-r from-primary/10 to-primary/5 backdrop-blur-sm rounded-full px-6 py-3 border border-primary/20">
-                    <FeatureCarousel />
+                  <div className="relative group">
+                    {/* Glow Effect Background */}
+                    <div className="absolute -inset-1 bg-gradient-to-r from-primary via-accent-cartier to-primary rounded-full opacity-20 group-hover:opacity-30 transition-opacity duration-500 animate-glow-pulse"></div>
+                    
+                    {/* Main Container */}
+                    <div className="relative bg-gradient-to-r from-background/90 via-background/95 to-background/90 backdrop-blur-md rounded-full px-8 py-4 border border-primary/30 shadow-luxury">
+                      <FeatureCarousel />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -728,5 +755,5 @@ export default function Landing() {
       </footer>
       
       <InvestorContactModal isOpen={investorModalOpen} onOpenChange={setInvestorModalOpen} />
-    </div>;
+    </div>
 }
