@@ -1,10 +1,4 @@
 project_id = "klwolsopucgswhtdlsps"
 
-[functions.tryon-start]
-verify_jwt = true
-
-[functions.tryon-status]
-verify_jwt = true
-
-[functions.bitstudio-tryon]
+[functions.realtime-session]
 verify_jwt = true
