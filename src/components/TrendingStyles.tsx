@@ -7,7 +7,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { TrendingUp, Heart, ShoppingBag, ExternalLink } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { useNavigate } from 'react-router-dom';
 
 interface TrendingStyle {
   category: string;
@@ -32,7 +31,6 @@ interface TrendingStylesProps {
 const TrendingStyles: React.FC<TrendingStylesProps> = ({ limit = 6, showMore = true }) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const navigate = useNavigate();
 
   const { data: trendingStyles, isLoading } = useQuery({
     queryKey: ['trending-styles', limit],
@@ -316,7 +314,7 @@ const TrendingStyles: React.FC<TrendingStylesProps> = ({ limit = 6, showMore = t
         <div className="text-center">
           <Button 
             variant="outline" 
-            onClick={() => navigate('/explore?filter=trending')}
+            onClick={() => window.location.href = '/trending-styles'}
             className="hover:bg-primary hover:text-primary-foreground"
           >
             View All Trending Styles

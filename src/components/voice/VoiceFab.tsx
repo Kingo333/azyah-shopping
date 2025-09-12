@@ -11,10 +11,10 @@ export function VoiceFab({ onOpen }: VoiceFabProps) {
     <Button
       onClick={onOpen}
       size="lg"
-      className="fixed bottom-6 right-6 z-50 h-14 w-14 sm:h-16 sm:w-16 rounded-full bg-gradient-to-br from-primary to-primary/80 text-white shadow-lg hover:shadow-xl transition-all duration-200 active:scale-95 touch-manipulation flex items-center justify-center"
+      className="fixed bottom-4 left-4 z-40 h-14 w-14 rounded-full bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-200 active:scale-95"
       aria-label="Start voice conversation with Azyah"
     >
-      <Mic size={24} className="text-white" />
+      <Mic size={22} />
     </Button>
   );
 }

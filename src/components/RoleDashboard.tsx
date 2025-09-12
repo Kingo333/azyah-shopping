@@ -327,7 +327,7 @@ const RoleDashboard: React.FC = () => {
       <section className="px-4">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold">Trending Styles</h2>
-          <Button variant="ghost" size="sm" onClick={() => navigate('/explore?filter=trending')}>View All</Button>
+          <Button variant="ghost" size="sm">View All</Button>
         </div>
         <TrendingStylesCarousel limit={8} />
       </section>

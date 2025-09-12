@@ -3,8 +3,6 @@ import { X, Info, Share2, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAzyahVoice } from '@/hooks/useAzyahVoice';
 import { useOrbRenderer } from './useOrbRenderer';
-import { VoiceUsageIndicator } from '@/components/VoiceUsageIndicator';
-import { useSubscription } from '@/hooks/useSubscription';
 
 // Caption toggle icon component
 function CaptionsIcon() {
@@ -19,12 +17,10 @@ function CaptionsIcon() {
 interface VoiceOverlayProps {
   open: boolean;
   onClose: () => void;
-  onUpgrade?: () => void;
 }
 
-export function VoiceOverlay({ open, onClose, onUpgrade }: VoiceOverlayProps) {
+export function VoiceOverlay({ open, onClose }: VoiceOverlayProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const { createPaymentIntent } = useSubscription();
   const {
     audioRef,
     state,
@@ -38,8 +34,6 @@ export function VoiceOverlay({ open, onClose, onUpgrade }: VoiceOverlayProps) {
     pttUp,
     interrupt,
     connectOnce,
-    showTimeoutWarning,
-    timeoutCountdown,
   } = useAzyahVoice();
 
   useOrbRenderer(canvasRef, level, state === 'speaking' || state === 'listening');
@@ -176,15 +170,6 @@ export function VoiceOverlay({ open, onClose, onUpgrade }: VoiceOverlayProps) {
         }}
       />
 
-      {/* Timeout warning */}
-      {showTimeoutWarning && (
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 bg-red-500/20 backdrop-blur-sm rounded-lg px-6 py-3 border border-red-500/30">
-          <p className="text-white text-center text-sm">
-            Auto-disconnect in {timeoutCountdown}s
-          </p>
-        </div>
-      )}
-
       {/* Live captions */}
       {captionsOn && captions && (
         <div className="absolute bottom-[20vh] left-0 right-0 flex justify-center px-6">
@@ -217,9 +202,6 @@ export function VoiceOverlay({ open, onClose, onUpgrade }: VoiceOverlayProps) {
 
       {/* Audio element */}
       <audio ref={audioRef} autoPlay playsInline className="hidden" />
-
-      {/* Voice usage indicator */}
-      <VoiceUsageIndicator onUpgrade={onUpgrade || createPaymentIntent} />
 
       {/* Interrupt button when speaking */}
       {state === 'speaking' && (
