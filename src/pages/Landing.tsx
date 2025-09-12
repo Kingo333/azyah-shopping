@@ -15,6 +15,7 @@ import modernFashionHero from "@/assets/modern-fashion-hero.jpg";
 
 function FeatureCarousel() {
   const [currentFeature, setCurrentFeature] = useState(0);
+  const [isAnimating, setIsAnimating] = useState(false);
   const features = [
     "Virtual Try Ons",
     "UGC Collab", 
@@ -25,17 +26,23 @@ function FeatureCarousel() {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setCurrentFeature((prev) => (prev + 1) % features.length);
-    }, 2000);
+      setIsAnimating(true);
+      setTimeout(() => {
+        setCurrentFeature((prev) => (prev + 1) % features.length);
+        setIsAnimating(false);
+      }, 200);
+    }, 3000);
     return () => clearInterval(interval);
   }, [features.length]);
 
   return (
-    <div className="flex items-center gap-2 lg:gap-3">
-      <Crown className="w-3 h-3 sm:w-4 sm:h-4 lg:w-5 lg:h-5 flex-shrink-0" />
-      <span className="font-medium text-xs sm:text-xs lg:text-sm transition-all duration-500">
-        {features[currentFeature]}
-      </span>
+    <div className="flex items-center gap-2 lg:gap-3 overflow-hidden">
+      <Crown className={`w-3 h-3 sm:w-4 sm:h-4 lg:w-5 lg:h-5 flex-shrink-0 transition-all duration-300 ${isAnimating ? 'animate-pulse scale-110' : ''}`} />
+      <div className="relative">
+        <span className={`font-medium text-xs sm:text-xs lg:text-sm transition-all duration-500 ${isAnimating ? 'opacity-0 translate-y-2' : 'opacity-100 translate-y-0'}`}>
+          {features[currentFeature]}
+        </span>
+      </div>
     </div>
   );
 }
@@ -249,11 +256,17 @@ export default function Landing() {
                 
                 <div className="space-y-2 sm:space-y-3 lg:space-y-4">
                   <h1 className="font-cormorant text-6xl sm:text-7xl md:text-8xl lg:text-8xl xl:text-9xl font-bold leading-[0.9] sm:leading-[0.85] tracking-tight">
-                    <span className="block text-white">Find Your</span>
-                    <span className="block bg-gradient-to-r from-primary via-primary to-primary/80 bg-clip-text text-transparent italic">Perfect</span>
-                    <span className="block text-white">Style</span>
+                    <span className="block text-white animate-fade-in" style={{ animationDelay: '0.2s', animationFillMode: 'both' }}>
+                      Find Your
+                    </span>
+                    <span className="block bg-gradient-to-r from-primary via-primary to-primary/80 bg-clip-text text-transparent italic animate-fade-in hover-scale" style={{ animationDelay: '0.4s', animationFillMode: 'both' }}>
+                      Perfect
+                    </span>
+                    <span className="block text-white animate-fade-in" style={{ animationDelay: '0.6s', animationFillMode: 'both' }}>
+                      Style
+                    </span>
                   </h1>
-                  <p className="text-lg sm:text-xl lg:text-2xl text-gray-200 max-w-md lg:max-w-lg leading-relaxed font-light mx-auto">
+                  <p className="text-lg sm:text-xl lg:text-2xl text-gray-200 max-w-md lg:max-w-lg leading-relaxed font-light mx-auto animate-fade-in" style={{ animationDelay: '0.8s', animationFillMode: 'both' }}>
                     Smart AI fashion discovery that learns your style.
                   </p>
                 </div>
