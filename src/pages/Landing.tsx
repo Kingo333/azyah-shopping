@@ -566,7 +566,7 @@ export default function Landing() {
                     <div className="text-center space-y-2">
                       <Crown className="w-16 h-16 text-primary mx-auto" />
                       <div className="font-cormorant text-xl font-bold">Premium</div>
-                      <div className="text-sm text-muted-foreground">Quality Assured</div>
+                      
                     </div>
                   </div>
                 </div>
