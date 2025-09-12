@@ -35,24 +35,16 @@ function FeatureCarousel() {
   }, [features.length]);
 
   return (
-    <div className="flex items-center space-x-4">
-      {/* Animated Crown */}
-      <div className="relative">
-        <Crown className="w-6 h-6 text-amber-400 animate-glow-pulse" />
-        <div className="absolute inset-0 animate-glow-pulse">
-          <Crown className="w-6 h-6 text-amber-200 opacity-50" />
-        </div>
-      </div>
-      
+    <div className="flex items-center justify-center">
       {/* Sliding Text Container */}
       <div className="relative h-6 w-48 overflow-hidden">
         <div 
-          className={`absolute inset-0 flex items-center transition-all duration-500 ease-out ${
+          className={`absolute inset-0 flex items-center justify-center transition-all duration-500 ease-out ${
             isSliding ? 'animate-slide-left-out' : 'animate-slide-right-in'
           }`}
           key={currentFeature}
         >
-          <span className="text-sm font-semibold bg-gradient-to-r from-primary via-primary-foreground to-primary bg-clip-text text-transparent whitespace-nowrap">
+          <span className="text-sm font-semibold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent whitespace-nowrap">
             {features[currentFeature]}
           </span>
         </div>
@@ -289,15 +281,11 @@ export default function Landing() {
                 </Button>
               </div>
 
-              {/* Feature Carousel - Enhanced Design */}
+              {/* Feature Carousel - Minimal Design */}
               <div className="mt-8 sm:mt-10 lg:mt-12">
                 <div className="flex justify-center">
-                  <div className="relative group">
-                    {/* Glow Effect Background */}
-                    <div className="absolute -inset-1 bg-gradient-to-r from-primary via-accent-cartier to-primary rounded-full opacity-20 group-hover:opacity-30 transition-opacity duration-500 animate-glow-pulse"></div>
-                    
-                    {/* Main Container */}
-                    <div className="relative bg-gradient-to-r from-background/90 via-background/95 to-background/90 backdrop-blur-md rounded-full px-8 py-4 border border-primary/30 shadow-luxury">
+                  <div className="relative">
+                    <div className="bg-background/80 backdrop-blur-sm rounded-full px-6 py-3 border border-primary/20 shadow-sm">
                       <FeatureCarousel />
                     </div>
                   </div>
