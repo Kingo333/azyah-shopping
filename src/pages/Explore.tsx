@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { GlassPanel } from '@/components/ui/glass-panel';
 import { Button } from '@/components/ui/button';
@@ -11,16 +11,26 @@ import FeaturedBrands from '@/components/FeaturedBrands';
 import ExploreSearch from '@/components/ExploreSearch';
 import { useAuth } from '@/contexts/AuthContext';
 import { TrendingUp, Trophy, Search, Globe, MapPin, Star, Users, Sparkles, Crown } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { BackButton } from '@/components/ui/back-button';
 const Explore: React.FC = () => {
   const {
     user
   } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [activeLeaderboard, setActiveLeaderboard] = useState<'global' | 'country'>('global');
   const [activeSection, setActiveSection] = useState<'overview' | 'search'>('overview');
   const [activeFilter, setActiveFilter] = useState<'trending' | 'influencers' | 'brands'>('brands');
+
+  // Check URL parameters on mount to pre-select filters
+  useEffect(() => {
+    const filterParam = searchParams.get('filter');
+    if (filterParam === 'trending') {
+      setActiveFilter('trending');
+      setActiveSection('overview');
+    }
+  }, [searchParams]);
   return <div className="min-h-screen dashboard-bg">
       <div className="container mx-auto max-w-6xl p-4">
         <ShopperNavigation />
@@ -65,7 +75,7 @@ const Explore: React.FC = () => {
                   </div>
                   Trending Styles
                 </h2>
-                <TrendingStyles limit={12} showMore={false} />
+                <TrendingStyles limit={searchParams.get('filter') === 'trending' ? 20 : 12} showMore={false} />
               </GlassPanel>}
 
             {activeFilter === 'influencers' && <GlassPanel variant="premium" className="p-8">
