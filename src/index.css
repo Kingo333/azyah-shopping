@@ -129,7 +129,15 @@
 @layer base {
   * {
     @apply border-border;
+    box-sizing: border-box;
   }
+  
+  html, body {
+    overflow-x: hidden;
+    max-width: 100vw;
+    min-height: 100vh;
+  }
+  
   body {
     @apply bg-background text-foreground font-luxury;
   }
@@ -218,12 +226,76 @@
   }
 
   /* Hide scrollbars */
-  .scrollbar-hide {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
 
-  .scrollbar-hide::-webkit-scrollbar {
-    display: none;
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Container overflow fixes */
+.container {
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
+/* Mobile zoom protection */
+@media screen and (max-width: 480px) {
+  * {
+    max-width: 100%;
   }
+  
+  .carousel-item img {
+    max-width: 100%;
+    height: auto;
+  }
+  
+  /* Prevent layout breaks on small screens */
+  .card, .carousel-content, .carousel-item {
+    max-width: 100%;
+    overflow: hidden;
+  }
+}
+
+/* Safe viewport handling for very small screens */
+@media screen and (max-width: 360px) {
+  .container {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+  
+  .carousel-content {
+    margin-left: -0.5rem;
+  }
+  
+  .carousel-item {
+    padding-left: 0.5rem;
+  }
+}
+
+/* Container overflow fixes */
+.container {
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
+/* Mobile zoom protection */
+@media screen and (max-width: 480px) {
+  * {
+    max-width: 100%;
+  }
+  
+  .carousel-item img {
+    max-width: 100%;
+    height: auto;
+  }
+  
+  /* Prevent layout breaks on small screens */
+  .card, .carousel-content, .carousel-item {
+    max-width: 100%;
+    overflow: hidden;
+  }
+}
 }

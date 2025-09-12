@@ -401,14 +401,14 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
 
   return (
     <Carousel 
-      className="w-full" 
+      className="w-full overflow-hidden" 
       opts={{ align: "start", loop: true }} 
       setApi={setApi}
     >
-      <CarouselContent className="-ml-4 md:-ml-8">
+      <CarouselContent className="-ml-4 md:-ml-8 max-w-full">
         {trendingProducts.map((product, index) => (
-          <CarouselItem key={product.id} className="pl-4 md:pl-8 basis-1/2 md:basis-1/2">
-            <div className="group relative bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2">
+          <CarouselItem key={product.id} className="pl-4 md:pl-8 basis-1/2 md:basis-1/2 max-w-full overflow-hidden">
+            <div className="group relative bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 max-w-full overflow-hidden">
               {/* Trending Badge */}
               <div className="absolute top-2 left-2 z-10">
                 <Badge variant={index < 3 ? "default" : "secondary"} className="text-[10px] px-1.5 py-0.5">
@@ -417,7 +417,7 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
               </div>
 
               <div 
-                className="w-full aspect-[3/4] bg-muted rounded-2xl overflow-hidden relative cursor-pointer"
+                className="w-full aspect-[3/4] bg-muted rounded-2xl overflow-hidden relative cursor-pointer max-w-full"
               >
                 <img
                   src={product.image_url}

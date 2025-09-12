@@ -438,7 +438,7 @@ export default function BeautyConsultantPage() {
       <SEOHead title="AI Beauty Consultant - Azyah | Get Personalized Beauty Advice" description="Get AI-powered beauty advice, product recommendations, and skin analysis from Azyah. Upload photos for personalized beauty consultations and tips." keywords="AI beauty consultant, beauty advice, skin analysis, product recommendations, makeup tips, skincare" />
       <ShopperNavigation />
       
-      <main className="container mx-auto px-4 pt-4 max-w-4xl">
+      <main className="container mx-auto px-3 sm:px-4 pt-4 max-w-4xl overflow-x-hidden">
         {/* Header Card with Avatar, Title and Back Button */}
         <Card className="glass-premium mb-1 border-0 overflow-hidden">
           <CardHeader className="pb-4 bg-gradient-to-r from-background/30 to-background/50 backdrop-blur-sm">
