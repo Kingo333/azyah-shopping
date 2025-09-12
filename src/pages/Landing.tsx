@@ -576,7 +576,7 @@ export default function Landing() {
               <div className="absolute -top-4 -right-4 bg-background/95 backdrop-blur-sm rounded-xl p-3 shadow-lg border border-primary/20 animate-elastic-bounce"
                    style={{ animationDelay: '0.2s' }}>
                 <div className="text-xs font-medium text-center text-muted-foreground">Quality Testing</div>
-                <div className="text-lg font-bold text-primary text-center">100%</div>
+                <div className="text-lg font-bold text-primary text-center">80%</div>
               </div>
               
               <div className="absolute -bottom-4 -left-4 bg-background/95 backdrop-blur-sm rounded-xl p-3 shadow-lg border border-primary/20 animate-elastic-bounce"
