@@ -38,6 +38,8 @@ export function VoiceOverlay({ open, onClose, onUpgrade }: VoiceOverlayProps) {
     pttUp,
     interrupt,
     connectOnce,
+    showTimeoutWarning,
+    timeoutCountdown,
   } = useAzyahVoice();
 
   useOrbRenderer(canvasRef, level, state === 'speaking' || state === 'listening');
@@ -173,6 +175,15 @@ export function VoiceOverlay({ open, onClose, onUpgrade }: VoiceOverlayProps) {
           }
         }}
       />
+
+      {/* Timeout warning */}
+      {showTimeoutWarning && (
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 bg-red-500/20 backdrop-blur-sm rounded-lg px-6 py-3 border border-red-500/30">
+          <p className="text-white text-center text-sm">
+            Auto-disconnect in {timeoutCountdown}s
+          </p>
+        </div>
+      )}
 
       {/* Live captions */}
       {captionsOn && captions && (

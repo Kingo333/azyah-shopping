@@ -12,6 +12,12 @@ export function useAzyahVoice() {
   const [connected, setConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
+  // Timeout management
+  const idleTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const warningTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [showTimeoutWarning, setShowTimeoutWarning] = useState(false);
+  const [timeoutCountdown, setTimeoutCountdown] = useState(10);
+  
   // Voice usage tracking
   const { canStartSession, logUsage, getLimitWarning } = useVoiceUsage();
   const sessionStartRef = useRef<Date | null>(null);
@@ -23,12 +29,48 @@ export function useAzyahVoice() {
   const [currentLanguage, setCurrentLanguage] = useState<'en' | 'ar' | null>(null);
   const [level, setLevel] = useState(0);
 
+  // Helper functions for timeout management
+  const resetTimeouts = useCallback(() => {
+    if (idleTimeoutRef.current) {
+      clearTimeout(idleTimeoutRef.current);
+      idleTimeoutRef.current = null;
+    }
+    if (warningTimeoutRef.current) {
+      clearTimeout(warningTimeoutRef.current);
+      warningTimeoutRef.current = null;
+    }
+    setShowTimeoutWarning(false);
+    setTimeoutCountdown(10);
+  }, []);
+
+  const startIdleTimeout = useCallback(() => {
+    resetTimeouts();
+    idleTimeoutRef.current = setTimeout(() => {
+      setShowTimeoutWarning(true);
+      setTimeoutCountdown(10);
+      
+      const countdown = setInterval(() => {
+        setTimeoutCountdown(prev => {
+          if (prev <= 1) {
+            clearInterval(countdown);
+            disconnect();
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+      
+      warningTimeoutRef.current = countdown;
+    }, 10000); // 10 seconds of inactivity
+  }, [resetTimeouts]);
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
+      resetTimeouts();
       clientRef.current?.disconnect();
     };
-  }, []);
+  }, [resetTimeouts]);
 
   const connectOnce = useCallback(async () => {
     if (connected || state === 'connecting') return;
@@ -82,6 +124,7 @@ export function useAzyahVoice() {
             case 'input_audio_buffer.speech_started':
               console.log('Speech started detected by server');
               setState('listening');
+              resetTimeouts(); // Reset on speech start
               break;
             case 'input_audio_buffer.speech_stopped':
               console.log('Speech stopped detected by server');
@@ -97,6 +140,7 @@ export function useAzyahVoice() {
                 speakingStartRef.current = new Date();
               }
               setState('speaking');
+              resetTimeouts(); // Reset on AI response
               break;
             case 'response.audio_transcript.delta':
               if (message.delta) {
@@ -125,6 +169,7 @@ export function useAzyahVoice() {
               setState('idle');
               setCaptions('');
               setCurrentLanguage(null);
+              startIdleTimeout(); // Start timeout when response is done
               break;
             case 'error':
               console.error('Realtime API error:', message);
@@ -150,9 +195,12 @@ export function useAzyahVoice() {
       setConnected(false);
       sessionStartRef.current = null;
     }
-  }, [connected, state, canStartSession, getLimitWarning, logUsage]);
+  }, [connected, state, canStartSession, getLimitWarning, logUsage, resetTimeouts]);
 
   const disconnect = useCallback(() => {
+    // Reset timeouts first
+    resetTimeouts();
+    
     // Log any remaining usage before disconnecting
     if (sessionStartRef.current) {
       const sessionDuration = (new Date().getTime() - sessionStartRef.current.getTime()) / 1000;
@@ -168,7 +216,7 @@ export function useAzyahVoice() {
     setCaptions('');
     setLevel(0);
     speakingStartRef.current = null;
-  }, [logUsage]);
+  }, [logUsage, resetTimeouts]);
 
   const toggleCaptions = useCallback(() => {
     setCaptionsOn(prev => !prev);
@@ -227,5 +275,7 @@ export function useAzyahVoice() {
     currentLanguage,
     level,
     connectOnce,
+    showTimeoutWarning,
+    timeoutCountdown,
   };
 }
