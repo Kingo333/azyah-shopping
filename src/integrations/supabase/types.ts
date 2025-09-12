@@ -3253,6 +3253,14 @@ export type Database = {
         Args: { aed_price: number }
         Returns: string
       }
+      update_voice_usage: {
+        Args: {
+          input_secs?: number
+          output_secs?: number
+          target_user_id: string
+        }
+        Returns: boolean
+      }
       upsert_beauty_profile: {
         Args: { profile_updates: Json; target_user_id: string }
         Returns: string

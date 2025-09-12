@@ -32,7 +32,13 @@ export function useAzyahVoice() {
       setError(null);
 
       console.log('Requesting realtime session...');
-      const { data, error: funcError } = await supabase.functions.invoke('realtime-session');
+      
+      // Get current user to pass to session creation
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      const { data, error: funcError } = await supabase.functions.invoke('realtime-session', {
+        body: { user_id: user?.id }
+      });
 
       if (funcError) {
         throw new Error(funcError.message);
@@ -43,7 +49,7 @@ export function useAzyahVoice() {
       }
 
       const ephemeralKey = data.client_secret.value;
-      console.log('Got ephemeral key, connecting...');
+      console.log('Got ephemeral key, voice usage:', data.voiceUsage);
 
       // Ensure audio element exists
       if (!audioRef.current) {
