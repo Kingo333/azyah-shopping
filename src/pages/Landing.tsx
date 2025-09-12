@@ -17,9 +17,11 @@ function FeatureCarousel() {
   const [currentFeature, setCurrentFeature] = useState(0);
   const [isSliding, setIsSliding] = useState(false);
   const features = [
+    "Virtual Try-On Technology",
+    "UGC Collaboration Hub", 
+    "Beauty AI Assistant",
     "AI-Curated Fashion",
-    "Personalized Recommendations", 
-    "Exclusive Designer Access",
+    "Personalized Recommendations",
     "Global Style Community"
   ];
 
