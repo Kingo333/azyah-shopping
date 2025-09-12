@@ -220,14 +220,6 @@ export default function Landing() {
           </div>}
       </header>
 
-      {/* PREMIUM BANNER - More Minimal on Mobile */}
-      <div className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground py-2 sm:py-2 lg:py-3 px-3 sm:px-4 lg:px-6">
-        <div className="container max-w-7xl mx-auto flex items-center justify-center">
-          <FeatureCarousel />
-        </div>
-      </div>
-
-
       {/* HERO */}
       <section id="discover" className="relative overflow-hidden min-h-[60vh] sm:min-h-[75vh] lg:min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-background">
         {/* Minimalist Background Pattern */}
@@ -281,6 +273,15 @@ export default function Landing() {
                   <Play className="mr-2 w-4 h-4 lg:w-5 lg:h-5" /> 
                   <span>View Lookbook</span>
                 </Button>
+              </div>
+
+              {/* Feature Carousel - Now positioned below buttons */}
+              <div className="mt-8 sm:mt-10 lg:mt-12">
+                <div className="flex justify-center">
+                  <div className="bg-gradient-to-r from-primary/10 to-primary/5 backdrop-blur-sm rounded-full px-6 py-3 border border-primary/20">
+                    <FeatureCarousel />
+                  </div>
+                </div>
               </div>
             </div>
           </div>
