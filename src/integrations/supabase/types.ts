@@ -2200,42 +2200,6 @@ export type Database = {
         }
         Relationships: []
       }
-      user_voice_usage: {
-        Row: {
-          created_at: string
-          date: string
-          id: string
-          input_seconds: number
-          output_seconds: number
-          plan_type: string
-          total_seconds: number
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          date?: string
-          id?: string
-          input_seconds?: number
-          output_seconds?: number
-          plan_type?: string
-          total_seconds?: number
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          date?: string
-          id?: string
-          input_seconds?: number
-          output_seconds?: number
-          plan_type?: string
-          total_seconds?: number
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       users: {
         Row: {
           avatar_url: string | null
@@ -2290,6 +2254,27 @@ export type Database = {
           socials?: Json | null
           updated_at?: string
           website?: string | null
+        }
+        Relationships: []
+      }
+      voice_sessions: {
+        Row: {
+          created_at: string
+          id: string
+          seconds_used: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          seconds_used?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          seconds_used?: number
+          user_id?: string
         }
         Relationships: []
       }
@@ -3183,10 +3168,9 @@ export type Database = {
       get_voice_usage_today: {
         Args: { target_user_id: string }
         Returns: {
+          daily_limit: number
           is_premium: boolean
-          plan_type: string
           remaining_seconds: number
-          total_limit: number
           used_today: number
         }[]
       }
@@ -3237,6 +3221,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      log_voice_usage: {
+        Args: { seconds_used: number; target_user_id: string }
+        Returns: boolean
+      }
       policy_exists: {
         Args: { _name: string; _table: unknown }
         Returns: boolean
@@ -3252,14 +3240,6 @@ export type Database = {
       tier_from_price_aed: {
         Args: { aed_price: number }
         Returns: string
-      }
-      update_voice_usage: {
-        Args: {
-          input_secs?: number
-          output_secs?: number
-          target_user_id: string
-        }
-        Returns: boolean
       }
       upsert_beauty_profile: {
         Args: { profile_updates: Json; target_user_id: string }

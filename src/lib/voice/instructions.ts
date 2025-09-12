@@ -1,12 +1,12 @@
 // Dynamic instructions builder for Azyah voice assistant
 export interface VoiceInstructionsOptions {
-  plan: "free" | "premium";
+  isPremium: boolean;
   remainingSeconds: number;
   canDiscussWebApp?: boolean;
 }
 
 export function buildAzyahInstructions(opts: VoiceInstructionsOptions): string {
-  const planLimit = opts.plan === "premium" ? 360 : 120; // 6 min vs 2 min
+  const planLimit = opts.isPremium ? 300 : 120; // 5 min vs 2 min
   const remaining = Math.max(0, Math.min(planLimit, Math.floor(opts.remainingSeconds)));
 
   const baseInstructions = [
@@ -14,7 +14,7 @@ export function buildAzyahInstructions(opts: VoiceInstructionsOptions): string {
     "Speak naturally but keep replies brief: 1-2 sentences only, target ≤8 seconds of speech.",
     "Respect push-to-talk: reply only when a user turn is triggered, and end a turn automatically on brief silence.",
     "",
-    `User plan: ${opts.plan.toUpperCase()}. Daily spoken-audio limit: ${planLimit} seconds. Remaining today: ${remaining} seconds.`,
+    `User plan: ${opts.isPremium ? 'PREMIUM' : 'FREE'}. Daily spoken-audio limit: ${planLimit} seconds. Remaining today: ${remaining} seconds.`,
     "If remaining time is 0, do not continue speaking. Say one short line: \"You've reached your daily voice limit. Please come back tomorrow or upgrade to Premium for more time.\"",
     "",
     "You help users with beauty advice, product recommendations, shade matching, and styling tips.",

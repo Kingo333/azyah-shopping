@@ -25,7 +25,7 @@ export function VoiceUsageDisplay() {
     return remainingSeconds === 0 ? `${minutes}m` : `${minutes}m ${remainingSeconds}s`;
   };
 
-  const percentageUsed = (usage.used_today / usage.total_limit) * 100;
+  const percentageUsed = (usage.used_today / usage.daily_limit) * 100;
 
   return (
     <div className="flex items-center gap-3 p-3 bg-card rounded-lg border">
@@ -50,7 +50,7 @@ export function VoiceUsageDisplay() {
         </div>
         <div className="flex justify-between text-xs text-muted-foreground mt-1">
           <span>{formatTime(usage.used_today)} used</span>
-          <span>{formatTime(usage.total_limit)} total ({usage.plan_type})</span>
+          <span>{formatTime(usage.daily_limit)} total ({usage.is_premium ? 'premium' : 'free'})</span>
         </div>
       </div>
     </div>

@@ -4,9 +4,8 @@ import { supabase } from '@/integrations/supabase/client';
 
 interface VoiceUsage {
   remaining_seconds: number;
-  total_limit: number;
+  daily_limit: number;
   used_today: number;
-  plan_type: 'free' | 'premium';
   is_premium: boolean;
 }
 
@@ -34,9 +33,8 @@ export function useVoiceUsage() {
       if (data && data.length > 0) {
         setUsage({
           remaining_seconds: data[0].remaining_seconds,
-          total_limit: data[0].total_limit,
+          daily_limit: data[0].daily_limit,
           used_today: data[0].used_today,
-          plan_type: data[0].plan_type as 'free' | 'premium',
           is_premium: data[0].is_premium
         });
       }
@@ -47,27 +45,26 @@ export function useVoiceUsage() {
     }
   };
 
-  const updateUsage = async (inputSeconds: number = 0, outputSeconds: number = 0) => {
+  const logUsage = async (seconds: number) => {
     if (!user) return false;
 
     try {
       const { data, error } = await supabase
-        .rpc('update_voice_usage', { 
+        .rpc('log_voice_usage', { 
           target_user_id: user.id,
-          input_secs: inputSeconds,
-          output_secs: outputSeconds
+          seconds_used: seconds
         });
 
       if (error) {
-        console.error('Error updating voice usage:', error);
+        console.error('Error logging voice usage:', error);
         return false;
       }
 
-      // Refresh usage after update
+      // Refresh usage after logging
       await fetchUsage();
       return true;
     } catch (error) {
-      console.error('Error updating voice usage:', error);
+      console.error('Error logging voice usage:', error);
       return false;
     }
   };
@@ -80,6 +77,6 @@ export function useVoiceUsage() {
     usage,
     loading,
     refetch: fetchUsage,
-    updateUsage
+    logUsage
   };
 }

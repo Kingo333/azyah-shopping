@@ -28,7 +28,8 @@ serve(async (req) => {
     
     let voiceUsage = {
       remaining_seconds: 120, // Default free limit
-      plan_type: 'free',
+      daily_limit: 120,
+      used_today: 0,
       is_premium: false
     };
 
@@ -43,7 +44,8 @@ serve(async (req) => {
         if (!error && data && data.length > 0) {
           voiceUsage = {
             remaining_seconds: data[0].remaining_seconds,
-            plan_type: data[0].plan_type,
+            daily_limit: data[0].daily_limit,
+            used_today: data[0].used_today,
             is_premium: data[0].is_premium
           };
         }
@@ -53,7 +55,7 @@ serve(async (req) => {
     }
 
     // Build dynamic instructions
-    const planLimit = voiceUsage.plan_type === 'premium' ? 360 : 120;
+    const planLimit = voiceUsage.is_premium ? 300 : 120; // 5 min vs 2 min
     const remaining = Math.max(0, voiceUsage.remaining_seconds);
 
     const instructions = [
@@ -61,7 +63,7 @@ serve(async (req) => {
       "Speak naturally but keep replies brief: 1-2 sentences only, target ≤8 seconds of speech.",
       "Respect push-to-talk: reply only when a user turn is triggered, and end a turn automatically on brief silence.",
       "",
-      `User plan: ${voiceUsage.plan_type.toUpperCase()}. Daily spoken-audio limit: ${planLimit} seconds. Remaining today: ${remaining} seconds.`,
+      `User plan: ${voiceUsage.is_premium ? 'PREMIUM' : 'FREE'}. Daily spoken-audio limit: ${planLimit} seconds. Remaining today: ${remaining} seconds.`,
       "If remaining time is 0, do not continue speaking. Say one short line: \"You've reached your daily voice limit. Please come back tomorrow or upgrade to Premium for more time.\"",
       "",
       "You help users with beauty advice, product recommendations, shade matching, and styling tips.",
