@@ -1,9 +1,8 @@
 import React, { useEffect, useRef } from 'react';
-import { X, Info, Share2, Settings, Mic } from 'lucide-react';
+import { X, Info, Share2, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAzyahVoice } from '@/hooks/useAzyahVoice';
 import { useOrbRenderer } from './useOrbRenderer';
-import { VoiceUsageDisplay } from './VoiceUsageDisplay';
 
 // Caption toggle icon component
 function CaptionsIcon() {
@@ -78,11 +77,6 @@ export function VoiceOverlay({ open, onClose }: VoiceOverlayProps) {
       aria-modal="true"
       aria-label="Voice conversation with Azyah"
     >
-      {/* Top-left voice usage display */}
-      <div className="absolute top-4 left-4">
-        <VoiceUsageDisplay />
-      </div>
-
       {/* Top-right controls */}
       <div className="absolute top-4 right-4 flex items-center gap-3">
         <div className="flex items-center gap-2">
@@ -133,7 +127,7 @@ export function VoiceOverlay({ open, onClose }: VoiceOverlayProps) {
         variant="ghost"
         size="sm"
         onClick={onClose}
-        className="absolute top-4 left-1/2 -translate-x-1/2 text-white/90 hover:text-white hover:bg-white/10"
+        className="absolute top-4 left-4 text-white/90 hover:text-white hover:bg-white/10"
         aria-label="Close voice interface"
       >
         <X size={20} />
@@ -209,37 +203,13 @@ export function VoiceOverlay({ open, onClose }: VoiceOverlayProps) {
       {/* Audio element */}
       <audio ref={audioRef} autoPlay playsInline className="hidden" />
 
-      {/* Push-to-talk button - separate from orb */}
-      <div className="absolute bottom-[15vh] left-1/2 -translate-x-1/2 flex flex-col items-center gap-4">
-        <Button
-          variant="outline"
-          size="lg"
-          onMouseDown={pttDown}
-          onMouseUp={pttUp}
-          onMouseLeave={pttUp}
-          onTouchStart={(e) => {
-            e.preventDefault();
-            pttDown();
-          }}
-          onTouchEnd={(e) => {
-            e.preventDefault();
-            pttUp();
-          }}
-          className="w-16 h-16 rounded-full bg-white/10 border-white/20 text-white hover:bg-white/20 transition-all active:scale-95"
-          aria-label="Push to talk"
-        >
-          <Mic size={24} />
-        </Button>
-        <p className="text-white/70 text-sm">Hold to talk</p>
-      </div>
-
       {/* Interrupt button when speaking */}
       {state === 'speaking' && (
         <Button
           onClick={interrupt}
           variant="outline"
           size="sm"
-          className="absolute bottom-[30vh] left-1/2 -translate-x-1/2 bg-white/10 border-white/20 text-white hover:bg-white/20"
+          className="absolute bottom-[25vh] left-1/2 -translate-x-1/2 bg-white/10 border-white/20 text-white hover:bg-white/20"
         >
           Interrupt
         </Button>

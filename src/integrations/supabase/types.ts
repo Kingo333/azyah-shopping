@@ -2257,27 +2257,6 @@ export type Database = {
         }
         Relationships: []
       }
-      voice_sessions: {
-        Row: {
-          created_at: string
-          id: string
-          seconds_used: number
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          seconds_used?: number
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          seconds_used?: number
-          user_id?: string
-        }
-        Relationships: []
-      }
       webhook_events: {
         Row: {
           created_at: string | null
@@ -3165,15 +3144,6 @@ export type Database = {
           user_id: string
         }[]
       }
-      get_voice_usage_today: {
-        Args: { target_user_id: string }
-        Returns: {
-          daily_limit: number
-          is_premium: boolean
-          remaining_seconds: number
-          used_today: number
-        }[]
-      }
       infer_gender_from_text: {
         Args: { text_input: string }
         Returns: Database["public"]["Enums"]["gender_type"]
@@ -3220,10 +3190,6 @@ export type Database = {
           table_name: string
         }
         Returns: undefined
-      }
-      log_voice_usage: {
-        Args: { seconds_used: number; target_user_id: string }
-        Returns: boolean
       }
       policy_exists: {
         Args: { _name: string; _table: unknown }
