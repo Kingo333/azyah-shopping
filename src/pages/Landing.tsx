@@ -138,10 +138,10 @@ export default function Landing() {
   return <div className="min-h-screen bg-background">
         <SEOHead title="Azyah — Luxury Fashion Curation" description="AI-curated luxury fashion discovery. Exclusive designer collections for the discerning style connoisseur." canonical="https://azyah.app/" />
       {/* NAV - More Minimal for Mobile */}
-      <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-md border-b border-primary/10">
+      <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-md border-b border-primary/10 animate-slide-down-fade">
         <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 h-16 sm:h-20 flex items-center justify-between">
           {/* Logo - Show Azyah text on all screen sizes */}
-          <div className="flex items-center space-x-2 sm:space-x-4">
+          <div className="flex items-center space-x-2 sm:space-x-4 animate-scale-bounce" style={{ animationDelay: '0.1s', animationFillMode: 'both' }}>
             <div className="relative w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 rounded-lg overflow-hidden shadow-lg">
               <img src="/marketing/azyah-logo.png" alt="Azyah" className="w-full h-full object-cover" />
             </div>
@@ -155,14 +155,14 @@ export default function Landing() {
 
           {/* Desktop links */}
           <nav className="hidden lg:flex items-center space-x-8 xl:space-x-12">
-            {[["Discover", "#discover"], ["Features", "#features"], ["For Brands", "#brands"], ["For Retailers", "#retailers"], ["For Investors", "investors"]].map(([label, href]) => <button key={href} onClick={() => href === "investors" ? setInvestorModalOpen(true) : scrollToSection(href)} className="relative text-sm font-medium text-muted-foreground hover:text-primary transition-colors group">
+            {[["Discover", "#discover"], ["Features", "#features"], ["For Brands", "#brands"], ["For Retailers", "#retailers"], ["For Investors", "investors"]].map(([label, href], index) => <button key={href} onClick={() => href === "investors" ? setInvestorModalOpen(true) : scrollToSection(href)} className="relative text-sm font-medium text-muted-foreground hover:text-primary transition-colors group animate-slide-right-fade" style={{ animationDelay: `${0.2 + index * 0.1}s`, animationFillMode: 'both' }}>
                 {label}
                 <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all group-hover:w-full" />
               </button>)}
           </nav>
 
           {/* CTA + Actions - Hidden on Mobile */}
-          <div className="hidden lg:flex items-center space-x-3">
+          <div className="hidden lg:flex items-center space-x-3 animate-slide-right-fade" style={{ animationDelay: '0.7s', animationFillMode: 'both' }}>
             <Button variant="ghost" size="sm" onClick={() => navigate("/auth")} className="font-light">
               Sign In
             </Button>
@@ -256,35 +256,35 @@ export default function Landing() {
                 
                 <div className="space-y-2 sm:space-y-3 lg:space-y-4">
                   <h1 className="font-cormorant text-6xl sm:text-7xl md:text-8xl lg:text-8xl xl:text-9xl font-bold leading-[0.9] sm:leading-[0.85] tracking-tight">
-                    <span className="block text-white animate-fade-in" style={{ animationDelay: '0.2s', animationFillMode: 'both' }}>
+                    <span className="block text-white animate-slide-up-fade" style={{ animationDelay: '0.2s', animationFillMode: 'both' }}>
                       Find Your
                     </span>
-                    <span className="block bg-gradient-to-r from-primary via-primary to-primary/80 bg-clip-text text-transparent italic animate-fade-in hover-scale" style={{ animationDelay: '0.4s', animationFillMode: 'both' }}>
+                    <span className="block bg-gradient-to-r from-primary via-primary to-primary/80 bg-clip-text text-transparent italic animate-scale-bounce hover-scale" style={{ animationDelay: '0.5s', animationFillMode: 'both' }}>
                       Perfect
                     </span>
-                    <span className="block text-white animate-fade-in" style={{ animationDelay: '0.6s', animationFillMode: 'both' }}>
+                    <span className="block text-white animate-slide-up-fade" style={{ animationDelay: '0.8s', animationFillMode: 'both' }}>
                       Style
                     </span>
                   </h1>
-                  <p className="text-lg sm:text-xl lg:text-2xl text-gray-200 max-w-md lg:max-w-lg leading-relaxed font-light mx-auto animate-fade-in" style={{ animationDelay: '0.8s', animationFillMode: 'both' }}>
+                  <p className="text-lg sm:text-xl lg:text-2xl text-gray-200 max-w-md lg:max-w-lg leading-relaxed font-light mx-auto animate-blur-focus" style={{ animationDelay: '1.1s', animationFillMode: 'both' }}>
                     Smart AI fashion discovery that learns your style.
                   </p>
                 </div>
               </div>
 
               <div className="flex flex-col gap-3 sm:gap-4">
-                <Button size="sm" className="group px-6 py-3 sm:px-8 sm:py-4 lg:px-8 lg:py-4 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg hover:shadow-xl transition-all duration-300 text-sm sm:text-base font-medium" onClick={() => navigate("/auth")}>
+                <Button size="sm" className="group px-6 py-3 sm:px-8 sm:py-4 lg:px-8 lg:py-4 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg hover:shadow-xl transition-all duration-300 text-sm sm:text-base font-medium animate-scale-bounce" style={{ animationDelay: '1.4s', animationFillMode: 'both' }} onClick={() => navigate("/auth")}>
                   <span>Explore Collection</span>
                   <ArrowRight className="ml-2 w-4 h-4 lg:w-5 lg:h-5 group-hover:translate-x-1 transition-transform" />
                 </Button>
-                <Button variant="outline" size="sm" className="px-6 py-3 sm:px-8 sm:py-4 lg:px-8 lg:py-4 bg-background/50 backdrop-blur-sm border border-primary/30 hover:bg-background/80 hover:border-primary/50 text-sm sm:text-base font-light" onClick={() => scrollToSection("#featured-collections")}>
+                <Button variant="outline" size="sm" className="px-6 py-3 sm:px-8 sm:py-4 lg:px-8 lg:py-4 bg-background/50 backdrop-blur-sm border border-primary/30 hover:bg-background/80 hover:border-primary/50 text-sm sm:text-base font-light animate-scale-bounce" style={{ animationDelay: '1.6s', animationFillMode: 'both' }} onClick={() => scrollToSection("#featured-collections")}>
                   <Play className="mr-2 w-4 h-4 lg:w-5 lg:h-5" /> 
                   <span>View Lookbook</span>
                 </Button>
               </div>
 
               {/* Feature Carousel - Enhanced Elegant Design */}
-              <div className="mt-8 sm:mt-10 lg:mt-12">
+              <div className="mt-8 sm:mt-10 lg:mt-12 animate-slide-up-fade" style={{ animationDelay: '1.8s', animationFillMode: 'both' }}>
                 <div className="flex justify-center">
                   <div className="relative group">
                     {/* Subtle outer glow */}
@@ -311,11 +311,11 @@ export default function Landing() {
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/10 opacity-60" />
         <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 relative">
           <div className="text-center mb-12 sm:mb-16 lg:mb-20">
-            <h2 className="font-cormorant text-2xl sm:text-3xl lg:text-6xl font-bold mb-3 sm:mb-4 lg:mb-6 text-foreground">
+            <h2 className="font-cormorant text-2xl sm:text-3xl lg:text-6xl font-bold mb-3 sm:mb-4 lg:mb-6 text-foreground animate-slide-up-fade" style={{ animationDelay: '0.2s', animationFillMode: 'both' }}>
               Curated Collections
-              <span className="block text-primary italic">Premium Selection</span>
+              <span className="block text-primary italic animate-scale-bounce" style={{ animationDelay: '0.5s', animationFillMode: 'both' }}>Premium Selection</span>
             </h2>
-            <p className="text-sm sm:text-base lg:text-lg text-muted-foreground max-w-xl lg:max-w-2xl mx-auto font-light">
+            <p className="text-sm sm:text-base lg:text-lg text-muted-foreground max-w-xl lg:max-w-2xl mx-auto font-light animate-slide-up-fade" style={{ animationDelay: '0.8s', animationFillMode: 'both' }}>
               Discover fashion pieces you'll actually love.
             </p>
           </div>
@@ -339,7 +339,7 @@ export default function Landing() {
                 </div>
 
                 <div className="space-y-3 sm:space-y-4">
-                  <div className="flex items-center space-x-3 sm:space-x-4">
+                  <div className="flex items-center space-x-3 sm:space-x-4 animate-slide-left-fade" style={{ animationDelay: '1.1s', animationFillMode: 'both' }}>
                     <div className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 bg-gradient-to-r from-primary to-primary/80 rounded-full flex items-center justify-center flex-shrink-0">
                       <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 lg:w-6 lg:h-6 text-white" />
                     </div>
@@ -348,7 +348,7 @@ export default function Landing() {
                       <p className="text-xs sm:text-sm text-muted-foreground font-light">Love it? Save to your collection.</p>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-3 sm:space-x-4">
+                  <div className="flex items-center space-x-3 sm:space-x-4 animate-slide-left-fade" style={{ animationDelay: '1.3s', animationFillMode: 'both' }}>
                     <div className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 bg-gradient-to-r from-gray-500 to-gray-600 rounded-full flex items-center justify-center flex-shrink-0">
                       <X className="w-3 h-3 sm:w-4 sm:h-4 lg:w-6 lg:h-6 text-white" />
                     </div>
@@ -357,7 +357,7 @@ export default function Landing() {
                       <p className="text-xs sm:text-sm text-muted-foreground font-light">Not quite right? Pass to see better matches.</p>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-3 sm:space-x-4">
+                  <div className="flex items-center space-x-3 sm:space-x-4 animate-slide-left-fade" style={{ animationDelay: '1.5s', animationFillMode: 'both' }}>
                     <div className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 bg-gradient-to-r from-accent to-accent/80 rounded-full flex items-center justify-center flex-shrink-0">
                       <ShoppingBag className="w-3 h-3 sm:w-4 sm:h-4 lg:w-6 lg:h-6 text-white" />
                     </div>
@@ -375,7 +375,7 @@ export default function Landing() {
               </div>
 
               {/* Mock Swipe Interface - Minimal on Mobile */}
-              <div className="relative order-1 lg:order-2">
+              <div className="relative order-1 lg:order-2 animate-scale-bounce" style={{ animationDelay: '1.2s', animationFillMode: 'both' }}>
                 <div className="bg-white rounded-xl sm:rounded-2xl shadow-xl border border-primary/20 p-3 sm:p-4 lg:p-6 max-w-xs sm:max-w-sm mx-auto">
                   <div className="aspect-[3/4] bg-gradient-to-br from-primary/20 to-primary/10 rounded-lg sm:rounded-xl mb-3 sm:mb-4 relative overflow-hidden">
                     <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
@@ -422,7 +422,7 @@ export default function Landing() {
           </div>
 
           {/* Toggle Between Grid and List View */}
-          <div id="featured-collections" className="flex items-center justify-between mb-8">
+          <div id="featured-collections" className="flex items-center justify-between mb-8 animate-slide-up-fade" style={{ animationDelay: '1.1s', animationFillMode: 'both' }}>
             <h3 className="font-cormorant text-2xl font-bold">Featured Collections</h3>
             <div className="flex items-center space-x-4">
               <span className="text-sm text-muted-foreground">View:</span>
@@ -449,7 +449,7 @@ export default function Landing() {
           (gridProducts?.slice(0, 8) || []).map((product, i) => {
             const imageUrl = product.image_url || (product.media_urls && Array.isArray(product.media_urls) && product.media_urls.length > 0 ? product.media_urls[0] : typeof product.media_urls === 'string' ? JSON.parse(product.media_urls)[0] : null) || '/placeholder.svg';
             const imageProps = getResponsiveImageProps(imageUrl);
-            return <div key={`product-${product.id}`} className="group relative aspect-[3/4] bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2">
+            return <div key={`product-${product.id}`} className="group relative aspect-[3/4] bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 animate-slide-up-fade" style={{ animationDelay: `${1.3 + (i * 0.1)}s`, animationFillMode: 'both' }}>
                       {/* Product Image */}
                       <img {...imageProps} alt={product.title || `Product ${i + 1}`} className="absolute inset-0 w-full h-full object-cover" onError={e => {
                 (e.target as HTMLImageElement).src = '/placeholder.svg';
@@ -537,17 +537,17 @@ export default function Landing() {
         <div className="absolute inset-0 bg-gradient-to-tr from-primary/8 via-transparent to-primary/12 opacity-60" />
         <div className="container max-w-7xl mx-auto px-6 lg:px-12 relative">
           <div className="text-center mb-20">
-            <h2 className="font-cormorant text-4xl lg:text-6xl font-bold mb-6 text-foreground">
+            <h2 className="font-cormorant text-4xl lg:text-6xl font-bold mb-6 text-foreground animate-slide-up-fade" style={{ animationDelay: '0.2s', animationFillMode: 'both' }}>
               Quality You'll
-              <span className="block text-primary italic">Love</span>
+              <span className="block text-primary italic animate-scale-bounce" style={{ animationDelay: '0.5s', animationFillMode: 'both' }}>Love</span>
             </h2>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed animate-slide-up-fade" style={{ animationDelay: '0.8s', animationFillMode: 'both' }}>
               Every piece is carefully selected for quality and style that matches your taste.
             </p>
           </div>
 
           <div className="flex justify-center mb-16">
-            <div className="relative">
+            <div className="relative animate-scale-bounce" style={{ animationDelay: '1.1s', animationFillMode: 'both' }}>
               <div className="w-80 h-80 bg-gradient-to-br from-primary/10 to-primary/20 rounded-full flex items-center justify-center shadow-xl">
                 <div className="w-64 h-64 bg-background/95 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg border border-primary/20">
                   <div className="w-48 h-48 bg-gradient-to-br from-primary/20 to-primary/10 rounded-full flex items-center justify-center">
@@ -561,12 +561,12 @@ export default function Landing() {
               </div>
               
               {/* Floating quality indicators */}
-              <div className="absolute -top-4 -right-4 bg-background/95 backdrop-blur-sm rounded-xl p-3 shadow-lg border border-primary/20">
+              <div className="absolute -top-4 -right-4 bg-background/95 backdrop-blur-sm rounded-xl p-3 shadow-lg border border-primary/20 animate-elastic-bounce" style={{ animationDelay: '1.4s', animationFillMode: 'both' }}>
                 <div className="text-xs font-medium text-center text-muted-foreground">Quality Testing</div>
                 <div className="text-lg font-bold text-primary text-center">100%</div>
               </div>
               
-              <div className="absolute -bottom-4 -left-4 bg-background/95 backdrop-blur-sm rounded-xl p-3 shadow-lg border border-primary/20">
+              <div className="absolute -bottom-4 -left-4 bg-background/95 backdrop-blur-sm rounded-xl p-3 shadow-lg border border-primary/20 animate-elastic-bounce" style={{ animationDelay: '1.6s', animationFillMode: 'both' }}>
                 <div className="text-xs font-medium text-center text-muted-foreground">Customer Satisfaction</div>
                 <div className="text-lg font-bold text-primary text-center">4.9</div>
               </div>
@@ -574,7 +574,7 @@ export default function Landing() {
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
-            {[["Premium Design", "Curated pieces from top fashion brands and niche and rare collections."], ["Expert Curation", "Our fashion experts handpick every piece for quality and style."], ["Sustainable Practice", "We're committed to ethical and sustainable fashion, partnering with like-minded brands."]].map(([title, desc]) => <div key={title} className="text-center space-y-4">
+            {[["Premium Design", "Curated pieces from top fashion brands and niche and rare collections."], ["Expert Curation", "Our fashion experts handpick every piece for quality and style."], ["Sustainable Practice", "We're committed to ethical and sustainable fashion, partnering with like-minded brands."]].map(([title, desc], index) => <div key={title} className="text-center space-y-4 animate-slide-up-fade" style={{ animationDelay: `${1.8 + (index * 0.2)}s`, animationFillMode: 'both' }}>
                  <div className="w-16 h-16 bg-gradient-to-r from-primary/20 to-primary/10 rounded-xl flex items-center justify-center mx-auto">
                    <CheckCircle className="w-8 h-8 text-primary" />
                  </div>
@@ -602,27 +602,27 @@ export default function Landing() {
           <div className="grid lg:grid-cols-2 gap-16 items-center">
             <div className="space-y-8">
               <div className="space-y-6">
-                <div className="inline-flex items-center space-x-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2">
+                <div className="inline-flex items-center space-x-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 animate-slide-right-fade" style={{ animationDelay: '0.2s', animationFillMode: 'both' }}>
                   <Sparkles className="w-4 h-4 text-primary" />
                   <span className="text-sm font-semibold text-primary uppercase tracking-wider">Innovation</span>
                 </div>
                 
-                <h2 className="font-cormorant text-5xl lg:text-7xl font-bold leading-tight">
+                <h2 className="font-cormorant text-5xl lg:text-7xl font-bold leading-tight animate-slide-right-fade" style={{ animationDelay: '0.5s', animationFillMode: 'both' }}>
                   Design for
-                  <span className="block text-primary italic">modern</span>
+                  <span className="block text-primary italic animate-scale-bounce" style={{ animationDelay: '0.8s', animationFillMode: 'both' }}>modern</span>
                 </h2>
                 
-                <p className="text-xl text-background/80 leading-relaxed">
+                <p className="text-xl text-background/80 leading-relaxed animate-slide-right-fade" style={{ animationDelay: '1.1s', animationFillMode: 'both' }}>
                   Luxury fashion that embraces your unique style from within, designed for radiant beauty and lasting results. Our AI-powered platform curates collections that match your personal aesthetic and lifestyle.
                 </p>
               </div>
               
-              <Button size="lg" className="px-8 py-4 bg-primary hover:bg-primary/90 text-white shadow-2xl" onClick={() => navigate("/auth")}>
+              <Button size="lg" className="px-8 py-4 bg-primary hover:bg-primary/90 text-white shadow-2xl animate-scale-bounce" style={{ animationDelay: '1.4s', animationFillMode: 'both' }} onClick={() => navigate("/auth")}>
                 Learn More <ArrowRight className="ml-2 w-5 h-5" />
               </Button>
             </div>
 
-            <div className="relative">
+            <div className="relative animate-slide-left-fade" style={{ animationDelay: '1.2s', animationFillMode: 'both' }}>
               <div className="aspect-[4/5] bg-gradient-to-br from-primary/20 to-primary/10 rounded-2xl overflow-hidden shadow-2xl border border-white/20">
                 <div className="w-full h-full bg-gradient-to-br from-primary/30 to-primary/20 flex items-center justify-center relative overflow-hidden">
                   <img src={modernFashionHero} alt="Modern fashion model showcasing contemporary design" className="absolute inset-0 w-full h-full object-cover" />
@@ -642,17 +642,17 @@ export default function Landing() {
         <div className="absolute inset-0 bg-gradient-to-br from-primary/8 via-transparent to-primary/5 opacity-60" />
         <div className="container max-w-4xl mx-auto px-6 lg:px-12 relative">
           <div className="text-center mb-16">
-            <h2 className="font-cormorant text-4xl lg:text-6xl font-bold mb-6 text-foreground">
+            <h2 className="font-cormorant text-4xl lg:text-6xl font-bold mb-6 text-foreground animate-slide-down-fade" style={{ animationDelay: '0.2s', animationFillMode: 'both' }}>
               Frequently Asked
-              <span className="block text-primary italic">Questions</span>
+              <span className="block text-primary italic animate-scale-bounce" style={{ animationDelay: '0.5s', animationFillMode: 'both' }}>Questions</span>
             </h2>
-            <p className="text-xl text-muted-foreground">
+            <p className="text-xl text-muted-foreground animate-slide-up-fade" style={{ animationDelay: '0.8s', animationFillMode: 'both' }}>
               Everything you need to know about fashion discovery with Azyah.
             </p>
           </div>
 
           <div className="space-y-6">
-            {[["How does AI-powered fashion discovery work?", "Our AI learns from your swipes and preferences to show you fashion pieces you'll love. The more you use Azyah, the better our recommendations become."], ["Do you sell the products directly?", "No, Azyah is a fashion discovery platform. We show you products that match your style, then redirect you to the retailer where you can purchase them."], ["How does the swipe discovery work?", "Swipe right on styles you love, left on ones you don't. Our AI learns from these interactions to show you more items you'll love."], ["What are the benefits of Premium?", "Premium members get 20 virtual fittings daily, unlimited AI replicas, UGC collaboration access, and priority support."], ["Can I save items to my closet and wishlist?", "Yes! You can save items to your personal closet, create wishlists, and organize your favorite finds. Share your collections with friends or keep them private - it's up to you."], ["How do I connect with the community?", "Join our global fashion community! Share your discoveries, follow other users, and get inspired by trending looks."]].map(([question, answer], index) => <div key={index} className="bg-white/80 backdrop-blur-sm rounded-2xl border border-primary/10 overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300">
+            {[["How does AI-powered fashion discovery work?", "Our AI learns from your swipes and preferences to show you fashion pieces you'll love. The more you use Azyah, the better our recommendations become."], ["Do you sell the products directly?", "No, Azyah is a fashion discovery platform. We show you products that match your style, then redirect you to the retailer where you can purchase them."], ["How does the swipe discovery work?", "Swipe right on styles you love, left on ones you don't. Our AI learns from these interactions to show you more items you'll love."], ["What are the benefits of Premium?", "Premium members get 20 virtual fittings daily, unlimited AI replicas, UGC collaboration access, and priority support."], ["Can I save items to my closet and wishlist?", "Yes! You can save items to your personal closet, create wishlists, and organize your favorite finds. Share your collections with friends or keep them private - it's up to you."], ["How do I connect with the community?", "Join our global fashion community! Share your discoveries, follow other users, and get inspired by trending looks."]].map(([question, answer], index) => <div key={index} className="bg-white/80 backdrop-blur-sm rounded-2xl border border-primary/10 overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 animate-slide-up-fade" style={{ animationDelay: `${1.1 + (index * 0.1)}s`, animationFillMode: 'both' }}>
                 <div className="p-6">
                   <div className="flex items-center justify-between">
                     <h3 className="font-cormorant text-xl font-bold pr-8">{question}</h3>
@@ -679,22 +679,22 @@ export default function Landing() {
         
         <div className="container max-w-7xl mx-auto px-6 lg:px-12 text-center relative space-y-12">
           <div className="space-y-8">
-            <div className="inline-flex items-center space-x-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2">
+            <div className="inline-flex items-center space-x-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 animate-slide-up-fade" style={{ animationDelay: '0.2s', animationFillMode: 'both' }}>
               <Sparkles className="w-4 h-4 text-primary" />
               <span className="text-sm font-semibold text-primary uppercase tracking-wider">Get Started</span>
             </div>
             
-            <h2 className="font-cormorant text-5xl lg:text-7xl font-bold leading-tight">
+            <h2 className="font-cormorant text-5xl lg:text-7xl font-bold leading-tight animate-scale-bounce" style={{ animationDelay: '0.5s', animationFillMode: 'both' }}>
               Begin Your 
-              <span className="block bg-gradient-to-r from-primary via-red-400 to-primary bg-clip-text text-transparent italic">Luxury Journey</span>
+              <span className="block bg-gradient-to-r from-primary via-red-400 to-primary bg-clip-text text-transparent italic animate-slide-up-fade" style={{ animationDelay: '0.8s', animationFillMode: 'both' }}>Luxury Journey</span>
             </h2>
             
-            <p className="text-xl lg:text-2xl text-background/80 max-w-4xl mx-auto leading-relaxed">
+            <p className="text-xl lg:text-2xl text-background/80 max-w-4xl mx-auto leading-relaxed animate-blur-focus" style={{ animationDelay: '1.1s', animationFillMode: 'both' }}>
               Join the exclusive community that discovers, curates & celebrates luxury fashion with cutting-edge AI technology.
             </p>
           </div>
           
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center animate-scale-bounce" style={{ animationDelay: '1.4s', animationFillMode: 'both' }}>
             <Button size="lg" className="px-10 py-4 bg-primary hover:bg-primary/90 text-white shadow-2xl" onClick={() => navigate("/auth")}>
               Start Your Journey <ArrowRight className="ml-2 w-5 h-5" />
             </Button>
