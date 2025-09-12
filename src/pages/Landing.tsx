@@ -16,7 +16,6 @@ import { useScrollAnimation, useStaggeredScrollAnimation } from "@/hooks/useScro
 
 function FeatureCarousel() {
   const [currentFeature, setCurrentFeature] = useState(0);
-  const [isSliding, setIsSliding] = useState(false);
   const features = [
     "Virtual Try-On Technology",
     "UGC Collaboration Hub", 
@@ -28,11 +27,7 @@ function FeatureCarousel() {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setIsSliding(true);
-      setTimeout(() => {
-        setCurrentFeature((prev) => (prev + 1) % features.length);
-        setIsSliding(false);
-      }, 500); // Match animation duration
+      setCurrentFeature((prev) => (prev + 1) % features.length);
     }, 3500);
     return () => clearInterval(interval);
   }, [features.length]);
@@ -41,13 +36,11 @@ function FeatureCarousel() {
     <div className="flex items-center justify-center">
       {/* Sliding Text Container */}
       <div className="relative h-6 w-56 overflow-hidden">
-        <div 
-          className={`absolute inset-0 flex items-center justify-center transition-all duration-500 ease-out ${
-            isSliding ? 'animate-slide-left-out' : 'animate-slide-right-in'
-          }`}
-          key={currentFeature}
-        >
-          <span className="text-sm font-semibold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent whitespace-nowrap">
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span 
+            className="text-sm font-semibold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent whitespace-nowrap transition-all duration-700 ease-in-out animate-fade-in"
+            key={currentFeature}
+          >
             {features[currentFeature]}
           </span>
         </div>
