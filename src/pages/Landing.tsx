@@ -12,6 +12,7 @@ import { useSmartSwipeProducts } from "@/hooks/useSmartSwipeProducts";
 import { getResponsiveImageProps } from "@/utils/asosImageUtils";
 import { InvestorContactModal } from "@/components/InvestorContactModal";
 import modernFashionHero from "@/assets/modern-fashion-hero.jpg";
+import { useScrollAnimation, useStaggeredScrollAnimation } from "@/hooks/useScrollAnimation";
 
 function FeatureCarousel() {
   const [currentFeature, setCurrentFeature] = useState(0);
@@ -65,6 +66,18 @@ export default function Landing() {
   } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
+
+  // Scroll animations
+  const trendingSection = useScrollAnimation({ animationType: 'fade-up', delay: 200 });
+  const qualitySection = useScrollAnimation({ animationType: 'scale-bounce', delay: 300 });
+  const modernSection = useScrollAnimation({ animationType: 'fade-left', delay: 200 });
+  const faqSection = useScrollAnimation({ animationType: 'fade-up', delay: 100 });
+  const ctaSection = useScrollAnimation({ animationType: 'scale-bounce', delay: 200 });
+  const footerSection = useScrollAnimation({ animationType: 'fade-up', delay: 100 });
+
+  // Staggered animations for grids and lists
+  const qualityCards = useStaggeredScrollAnimation(3, { animationType: 'fade-up', staggerDelay: 150 });
+  const faqCards = useStaggeredScrollAnimation(6, { animationType: 'fade-up', staggerDelay: 100 });
 
   // Fetch products for grid view with stable configuration
   const gridProductsConfig = useMemo(() => ({
@@ -308,14 +321,17 @@ export default function Landing() {
 
       {/* TRENDING STYLES SECTION - Mobile Optimized */}
       <section className="py-16 sm:py-20 lg:py-32 bg-gradient-to-b from-background to-muted/30 relative">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/10 opacity-60" />
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/10 opacity-60 animate-parallax-slow" />
         <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 relative">
-          <div className="text-center mb-12 sm:mb-16 lg:mb-20">
-            <h2 className="font-cormorant text-2xl sm:text-3xl lg:text-6xl font-bold mb-3 sm:mb-4 lg:mb-6 text-foreground animate-slide-up-fade" style={{ animationDelay: '0.2s', animationFillMode: 'both' }}>
+          <div 
+            ref={trendingSection.ref}
+            className={`text-center mb-12 sm:mb-16 lg:mb-20 ${trendingSection.animationClasses}`}
+          >
+            <h2 className="font-cormorant text-2xl sm:text-3xl lg:text-6xl font-bold mb-3 sm:mb-4 lg:mb-6 text-foreground">
               Curated Collections
-              <span className="block text-primary italic animate-scale-bounce" style={{ animationDelay: '0.5s', animationFillMode: 'both' }}>Premium Selection</span>
+              <span className="block text-primary italic">Premium Selection</span>
             </h2>
-            <p className="text-sm sm:text-base lg:text-lg text-muted-foreground max-w-xl lg:max-w-2xl mx-auto font-light animate-slide-up-fade" style={{ animationDelay: '0.8s', animationFillMode: 'both' }}>
+            <p className="text-sm sm:text-base lg:text-lg text-muted-foreground max-w-xl lg:max-w-2xl mx-auto font-light">
               Discover fashion pieces you'll actually love.
             </p>
           </div>
@@ -534,21 +550,24 @@ export default function Landing() {
 
       {/* QUALITY SECTION */}
       <section id="features" className="py-24 lg:py-32 bg-gradient-to-b from-muted/30 to-muted/60 relative">
-        <div className="absolute inset-0 bg-gradient-to-tr from-primary/8 via-transparent to-primary/12 opacity-60" />
+        <div className="absolute inset-0 bg-gradient-to-tr from-primary/8 via-transparent to-primary/12 opacity-60 animate-parallax-slow" />
         <div className="container max-w-7xl mx-auto px-6 lg:px-12 relative">
-          <div className="text-center mb-20">
-            <h2 className="font-cormorant text-4xl lg:text-6xl font-bold mb-6 text-foreground animate-slide-up-fade" style={{ animationDelay: '0.2s', animationFillMode: 'both' }}>
+          <div 
+            ref={qualitySection.ref}
+            className={`text-center mb-20 ${qualitySection.animationClasses}`}
+          >
+            <h2 className="font-cormorant text-4xl lg:text-6xl font-bold mb-6 text-foreground">
               Quality You'll
-              <span className="block text-primary italic animate-scale-bounce" style={{ animationDelay: '0.5s', animationFillMode: 'both' }}>Love</span>
+              <span className="block text-primary italic">Love</span>
             </h2>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed animate-slide-up-fade" style={{ animationDelay: '0.8s', animationFillMode: 'both' }}>
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
               Every piece is carefully selected for quality and style that matches your taste.
             </p>
           </div>
 
           <div className="flex justify-center mb-16">
-            <div className="relative animate-scale-bounce" style={{ animationDelay: '1.1s', animationFillMode: 'both' }}>
-              <div className="w-80 h-80 bg-gradient-to-br from-primary/10 to-primary/20 rounded-full flex items-center justify-center shadow-xl">
+            <div className="relative animate-parallax-float">
+              <div className="w-80 h-80 bg-gradient-to-br from-primary/10 to-primary/20 rounded-full flex items-center justify-center shadow-xl animate-glow-pulse">
                 <div className="w-64 h-64 bg-background/95 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg border border-primary/20">
                   <div className="w-48 h-48 bg-gradient-to-br from-primary/20 to-primary/10 rounded-full flex items-center justify-center">
                     <div className="text-center space-y-2">
@@ -561,12 +580,14 @@ export default function Landing() {
               </div>
               
               {/* Floating quality indicators */}
-              <div className="absolute -top-4 -right-4 bg-background/95 backdrop-blur-sm rounded-xl p-3 shadow-lg border border-primary/20 animate-elastic-bounce" style={{ animationDelay: '1.4s', animationFillMode: 'both' }}>
+              <div className="absolute -top-4 -right-4 bg-background/95 backdrop-blur-sm rounded-xl p-3 shadow-lg border border-primary/20 animate-elastic-bounce"
+                   style={{ animationDelay: '0.2s' }}>
                 <div className="text-xs font-medium text-center text-muted-foreground">Quality Testing</div>
                 <div className="text-lg font-bold text-primary text-center">100%</div>
               </div>
               
-              <div className="absolute -bottom-4 -left-4 bg-background/95 backdrop-blur-sm rounded-xl p-3 shadow-lg border border-primary/20 animate-elastic-bounce" style={{ animationDelay: '1.6s', animationFillMode: 'both' }}>
+              <div className="absolute -bottom-4 -left-4 bg-background/95 backdrop-blur-sm rounded-xl p-3 shadow-lg border border-primary/20 animate-elastic-bounce"
+                   style={{ animationDelay: '0.4s' }}>
                 <div className="text-xs font-medium text-center text-muted-foreground">Customer Satisfaction</div>
                 <div className="text-lg font-bold text-primary text-center">4.9</div>
               </div>
@@ -574,50 +595,59 @@ export default function Landing() {
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
-            {[["Premium Design", "Curated pieces from top fashion brands and niche and rare collections."], ["Expert Curation", "Our fashion experts handpick every piece for quality and style."], ["Sustainable Practice", "We're committed to ethical and sustainable fashion, partnering with like-minded brands."]].map(([title, desc], index) => <div key={title} className="text-center space-y-4 animate-slide-up-fade" style={{ animationDelay: `${1.8 + (index * 0.2)}s`, animationFillMode: 'both' }}>
+            {[["Premium Design", "Curated pieces from top fashion brands and niche and rare collections."], ["Expert Curation", "Our fashion experts handpick every piece for quality and style."], ["Sustainable Practice", "We're committed to ethical and sustainable fashion, partnering with like-minded brands."]].map(([title, desc], index) => 
+               <div 
+                 key={title} 
+                 ref={qualityCards[index].ref}
+                 className={`text-center space-y-4 ${qualityCards[index].animationClasses}`}
+               >
                  <div className="w-16 h-16 bg-gradient-to-r from-primary/20 to-primary/10 rounded-xl flex items-center justify-center mx-auto">
                    <CheckCircle className="w-8 h-8 text-primary" />
                  </div>
                  <h3 className="font-cormorant text-xl font-bold text-gray-800">{title}</h3>
                  <p className="text-gray-700">{desc}</p>
-               </div>)}
+               </div>
+            )}
           </div>
         </div>
       </section>
 
       {/* DESIGN FOR MODERN SECTION */}
       <section className="relative py-24 lg:py-32 bg-gradient-to-br from-foreground via-gray-950 to-gray-900 text-background overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-primary/10 to-primary/5" />
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-primary/10 to-primary/5 animate-parallax-slow" />
         <div className="absolute inset-0 bg-gradient-to-tr from-gray-900/80 via-transparent to-gray-800/60" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_70%,rgba(239,68,68,0.15),transparent_60%)]" />
         
         {/* Large Background Text */}
         <div className="absolute inset-0 flex items-center justify-start pl-12 pointer-events-none">
-          <div className="font-cormorant text-[20vw] lg:text-[15vw] font-bold text-white/5 leading-none tracking-wider">
+          <div className="font-cormorant text-[20vw] lg:text-[15vw] font-bold text-white/5 leading-none tracking-wider animate-parallax-float">
             AZYAH
           </div>
         </div>
 
         <div className="container max-w-7xl mx-auto px-6 lg:px-12 relative">
           <div className="grid lg:grid-cols-2 gap-16 items-center">
-            <div className="space-y-8">
+            <div 
+              ref={modernSection.ref}
+              className={`space-y-8 ${modernSection.animationClasses}`}
+            >
               <div className="space-y-6">
-                <div className="inline-flex items-center space-x-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 animate-slide-right-fade" style={{ animationDelay: '0.2s', animationFillMode: 'both' }}>
+                <div className="inline-flex items-center space-x-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2">
                   <Sparkles className="w-4 h-4 text-primary" />
                   <span className="text-sm font-semibold text-primary uppercase tracking-wider">Innovation</span>
                 </div>
                 
-                <h2 className="font-cormorant text-5xl lg:text-7xl font-bold leading-tight animate-slide-right-fade" style={{ animationDelay: '0.5s', animationFillMode: 'both' }}>
+                <h2 className="font-cormorant text-5xl lg:text-7xl font-bold leading-tight">
                   Design for
-                  <span className="block text-primary italic animate-scale-bounce" style={{ animationDelay: '0.8s', animationFillMode: 'both' }}>modern</span>
+                  <span className="block text-primary italic">modern</span>
                 </h2>
                 
-                <p className="text-xl text-background/80 leading-relaxed animate-slide-right-fade" style={{ animationDelay: '1.1s', animationFillMode: 'both' }}>
+                <p className="text-xl text-background/80 leading-relaxed">
                   Luxury fashion that embraces your unique style from within, designed for radiant beauty and lasting results. Our AI-powered platform curates collections that match your personal aesthetic and lifestyle.
                 </p>
               </div>
               
-              <Button size="lg" className="px-8 py-4 bg-primary hover:bg-primary/90 text-white shadow-2xl animate-scale-bounce" style={{ animationDelay: '1.4s', animationFillMode: 'both' }} onClick={() => navigate("/auth")}>
+              <Button size="lg" className="px-8 py-4 bg-primary hover:bg-primary/90 text-white shadow-2xl" onClick={() => navigate("/auth")}>
                 Learn More <ArrowRight className="ml-2 w-5 h-5" />
               </Button>
             </div>
@@ -639,20 +669,28 @@ export default function Landing() {
 
       {/* FAQ SECTION */}
       <section id="faq" className="py-24 lg:py-32 bg-gradient-to-b from-muted/60 to-muted relative">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/8 via-transparent to-primary/5 opacity-60" />
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/8 via-transparent to-primary/5 opacity-60 animate-parallax-slow" />
         <div className="container max-w-4xl mx-auto px-6 lg:px-12 relative">
-          <div className="text-center mb-16">
-            <h2 className="font-cormorant text-4xl lg:text-6xl font-bold mb-6 text-foreground animate-slide-down-fade" style={{ animationDelay: '0.2s', animationFillMode: 'both' }}>
+          <div 
+            ref={faqSection.ref}
+            className={`text-center mb-16 ${faqSection.animationClasses}`}
+          >
+            <h2 className="font-cormorant text-4xl lg:text-6xl font-bold mb-6 text-foreground">
               Frequently Asked
-              <span className="block text-primary italic animate-scale-bounce" style={{ animationDelay: '0.5s', animationFillMode: 'both' }}>Questions</span>
+              <span className="block text-primary italic">Questions</span>
             </h2>
-            <p className="text-xl text-muted-foreground animate-slide-up-fade" style={{ animationDelay: '0.8s', animationFillMode: 'both' }}>
+            <p className="text-xl text-muted-foreground">
               Everything you need to know about fashion discovery with Azyah.
             </p>
           </div>
 
           <div className="space-y-6">
-            {[["How does AI-powered fashion discovery work?", "Our AI learns from your swipes and preferences to show you fashion pieces you'll love. The more you use Azyah, the better our recommendations become."], ["Do you sell the products directly?", "No, Azyah is a fashion discovery platform. We show you products that match your style, then redirect you to the retailer where you can purchase them."], ["How does the swipe discovery work?", "Swipe right on styles you love, left on ones you don't. Our AI learns from these interactions to show you more items you'll love."], ["What are the benefits of Premium?", "Premium members get 20 virtual fittings daily, unlimited AI replicas, UGC collaboration access, and priority support."], ["Can I save items to my closet and wishlist?", "Yes! You can save items to your personal closet, create wishlists, and organize your favorite finds. Share your collections with friends or keep them private - it's up to you."], ["How do I connect with the community?", "Join our global fashion community! Share your discoveries, follow other users, and get inspired by trending looks."]].map(([question, answer], index) => <div key={index} className="bg-white/80 backdrop-blur-sm rounded-2xl border border-primary/10 overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 animate-slide-up-fade" style={{ animationDelay: `${1.1 + (index * 0.1)}s`, animationFillMode: 'both' }}>
+            {[["How does AI-powered fashion discovery work?", "Our AI learns from your swipes and preferences to show you fashion pieces you'll love. The more you use Azyah, the better our recommendations become."], ["Do you sell the products directly?", "No, Azyah is a fashion discovery platform. We show you products that match your style, then redirect you to the retailer where you can purchase them."], ["How does the swipe discovery work?", "Swipe right on styles you love, left on ones you don't. Our AI learns from these interactions to show you more items you'll love."], ["What are the benefits of Premium?", "Premium members get 20 virtual fittings daily, unlimited AI replicas, UGC collaboration access, and priority support."], ["Can I save items to my closet and wishlist?", "Yes! You can save items to your personal closet, create wishlists, and organize your favorite finds. Share your collections with friends or keep them private - it's up to you."], ["How do I connect with the community?", "Join our global fashion community! Share your discoveries, follow other users, and get inspired by trending looks."]].map(([question, answer], index) => 
+              <div 
+                key={index} 
+                ref={faqCards[index].ref}
+                className={`bg-white/80 backdrop-blur-sm rounded-2xl border border-primary/10 overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 ${faqCards[index].animationClasses}`}
+              >
                 <div className="p-6">
                   <div className="flex items-center justify-between">
                     <h3 className="font-cormorant text-xl font-bold pr-8">{question}</h3>
@@ -660,7 +698,8 @@ export default function Landing() {
                   </div>
                   <p className="text-muted-foreground mt-4 leading-relaxed">{answer}</p>
                 </div>
-              </div>)}
+              </div>
+            )}
           </div>
 
           <div className="text-center mt-12">
@@ -674,42 +713,49 @@ export default function Landing() {
 
       {/* FINAL CTA */}
       <section id="retailers" className="relative py-24 lg:py-32 bg-gradient-to-br from-foreground via-gray-900 to-foreground text-background overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/15 via-primary/5 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/15 via-primary/5 to-transparent animate-parallax-slow" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_30%,rgba(239,68,68,0.1),transparent_50%)]" />
         
-        <div className="container max-w-7xl mx-auto px-6 lg:px-12 text-center relative space-y-12">
-          <div className="space-y-8">
-            <div className="inline-flex items-center space-x-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 animate-slide-up-fade" style={{ animationDelay: '0.2s', animationFillMode: 'both' }}>
-              <Sparkles className="w-4 h-4 text-primary" />
-              <span className="text-sm font-semibold text-primary uppercase tracking-wider">Get Started</span>
+        <div className="container max-w-7xl mx-auto px-6 lg:px-12 text-center relative">
+          <div 
+            ref={ctaSection.ref}
+            className={`space-y-12 ${ctaSection.animationClasses}`}
+          >
+            <div className="space-y-8">
+              <div className="inline-flex items-center space-x-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2">
+                <Sparkles className="w-4 h-4 text-primary" />
+                <span className="text-sm font-semibold text-primary uppercase tracking-wider">Get Started</span>
+              </div>
+              
+              <h2 className="font-cormorant text-5xl lg:text-7xl font-bold leading-tight">
+                Begin Your 
+                <span className="block bg-gradient-to-r from-primary via-red-400 to-primary bg-clip-text text-transparent italic">Luxury Journey</span>
+              </h2>
+              
+              <p className="text-xl lg:text-2xl text-background/80 max-w-4xl mx-auto leading-relaxed">
+                Join the exclusive community that discovers, curates & celebrates luxury fashion with cutting-edge AI technology.
+              </p>
             </div>
             
-            <h2 className="font-cormorant text-5xl lg:text-7xl font-bold leading-tight animate-scale-bounce" style={{ animationDelay: '0.5s', animationFillMode: 'both' }}>
-              Begin Your 
-              <span className="block bg-gradient-to-r from-primary via-red-400 to-primary bg-clip-text text-transparent italic animate-slide-up-fade" style={{ animationDelay: '0.8s', animationFillMode: 'both' }}>Luxury Journey</span>
-            </h2>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button size="lg" className="px-10 py-4 bg-primary hover:bg-primary/90 text-white shadow-2xl" onClick={() => navigate("/auth")}>
+                Start Your Journey <ArrowRight className="ml-2 w-5 h-5" />
+              </Button>
+            </div>
             
-            <p className="text-xl lg:text-2xl text-background/80 max-w-4xl mx-auto leading-relaxed animate-blur-focus" style={{ animationDelay: '1.1s', animationFillMode: 'both' }}>
-              Join the exclusive community that discovers, curates & celebrates luxury fashion with cutting-edge AI technology.
+            <p className="text-background/60 text-sm uppercase tracking-wider font-medium">
+              Exclusive • Curated • Personal
             </p>
           </div>
-          
-          <div className="flex flex-col sm:flex-row gap-4 justify-center animate-scale-bounce" style={{ animationDelay: '1.4s', animationFillMode: 'both' }}>
-            <Button size="lg" className="px-10 py-4 bg-primary hover:bg-primary/90 text-white shadow-2xl" onClick={() => navigate("/auth")}>
-              Start Your Journey <ArrowRight className="ml-2 w-5 h-5" />
-            </Button>
-            
-          </div>
-          
-          <p className="text-background/60 text-sm uppercase tracking-wider font-medium">
-            Exclusive • Curated • Personal
-          </p>
         </div>
       </section>
 
       {/* FOOTER */}
       <footer className="py-20 bg-white border-t border-primary/10">
-        <div className="container max-w-7xl mx-auto px-6 lg:px-12">
+        <div 
+          ref={footerSection.ref}
+          className={`container max-w-7xl mx-auto px-6 lg:px-12 ${footerSection.animationClasses}`}
+        >
           <div className="grid lg:grid-cols-4 gap-12 mb-12">
             <div className="space-y-6">
               <div className="flex items-center space-x-3">
