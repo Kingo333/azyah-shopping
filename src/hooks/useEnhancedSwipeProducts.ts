@@ -74,7 +74,7 @@ export const useEnhancedSwipeProducts = ({
           image_url,
           media_urls,
           brand_id,
-          brands!inner(name),
+          brands(name),
           tags,
           attributes,
           status,

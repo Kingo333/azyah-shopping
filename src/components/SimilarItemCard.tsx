@@ -141,7 +141,7 @@ const SimilarItemCard: React.FC<SimilarItemCardProps> = ({ item, onItemClick, on
             {item.title}
           </div>
           <div className="text-xs text-muted-foreground mb-1">
-            {(item.brand as any)?.name || (item as any).retailer?.name || 'ASOS'}
+            {(item.brand as any)?.name || (item as any).retailer?.name || ''}
           </div>
           <div className="text-xs font-semibold text-primary mb-3">
             {formatPrice(item.price_cents, item.currency)}

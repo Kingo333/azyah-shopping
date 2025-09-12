@@ -4,6 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Heart, X, Bookmark } from 'lucide-react';
 import { Product } from '@/types';
+import { getBrandDisplayName } from '@/utils/brandHelpers';
 
 interface MiniCardProps {
   product: Product;
@@ -61,7 +62,7 @@ const MiniCard: React.FC<MiniCardProps> = ({ product, swipeAction, onClick }) =>
       <CardContent className="p-2 h-14 flex flex-col justify-between">
         <div className="flex-1 min-h-0">
           <h4 className="text-xs font-medium line-clamp-1 mb-1">{product.title}</h4>
-          <p className="text-xs text-muted-foreground line-clamp-1">{product.brand?.name}</p>
+          <p className="text-xs text-muted-foreground line-clamp-1">{getBrandDisplayName(product)}</p>
         </div>
         <div className="flex items-center justify-between mt-1">
           <span className="text-xs font-semibold text-cartier-600">

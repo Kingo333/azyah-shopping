@@ -63,7 +63,7 @@ export const usePersonalizedProducts = ({
           source,
           source_vendor,
           source_imported_at,
-          brand:brands!inner(
+          brand:brands(
             id, 
             name, 
             slug, 

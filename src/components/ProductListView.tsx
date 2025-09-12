@@ -17,6 +17,7 @@ import { getResponsiveImageProps } from '@/utils/asosImageUtils';
 import { getPrimaryImageUrl, hasMultipleImages, getImageCount } from '@/utils/imageHelpers';
 import { useProductHasOutfit } from '@/hooks/useProductOutfits';
 import CategoryCarousel from '@/components/CategoryCarousel';
+import { getBrandDisplayName } from '@/utils/brandHelpers';
 
 interface ProductListViewProps {
   products: Product[];
@@ -139,7 +140,7 @@ const ProductCard: React.FC<{
             {product.title}
           </div>
           <div className="text-xs text-muted-foreground mb-1">
-            {product.brand?.name || product.retailer?.name || 'ASOS'}
+            {getBrandDisplayName(product)}
           </div>
           <div className="text-xs font-semibold text-primary mb-3">
             {formatPrice(product.price_cents, product.currency)}

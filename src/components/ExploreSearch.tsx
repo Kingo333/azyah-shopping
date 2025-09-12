@@ -141,7 +141,7 @@ const ExploreSearch: React.FC<ExploreSearchProps> = ({
             subtitle: `${new Intl.NumberFormat('en-US', {
               style: 'currency',
               currency: product.currency || 'USD'
-            }).format(product.price_cents / 100)} • ${product.brands?.name || 'ASOS'}`,
+            }).format(product.price_cents / 100)} • ${product.brands?.name || ''}`,
             image: product.media_urls?.[0],
             badge: product.category_slug,
             data: product

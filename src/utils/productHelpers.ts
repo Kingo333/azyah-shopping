@@ -13,7 +13,7 @@ export const createFallbackProduct = (productId?: string): Partial<Product> => (
   brand: {
     id: 'unknown',
     owner_user_id: 'unknown',
-    name: 'Brand Unknown',
+    name: '',
     slug: 'unknown',
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString()
@@ -49,7 +49,7 @@ export const sanitizeProduct = (product: any): Product => {
     brand: product.brand || {
       id: 'unknown',
       owner_user_id: 'unknown',
-      name: 'Brand Unknown',
+      name: '',
       slug: 'unknown',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()

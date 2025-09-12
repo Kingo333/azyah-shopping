@@ -71,7 +71,7 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
         image_url: product.image_url || '/placeholder.svg',
         price_cents: product.price_cents,
         currency: product.currency || 'USD',
-        brand_name: product.brands?.name || product.retailers?.name || 'ASOS',
+        brand_name: product.brands?.name || product.retailers?.name || '',
         external_url: product.external_url
       }));
     },
