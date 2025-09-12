@@ -3180,6 +3180,16 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_voice_usage_today: {
+        Args: { target_user_id: string }
+        Returns: {
+          is_premium: boolean
+          plan_type: string
+          remaining_seconds: number
+          total_limit: number
+          used_today: number
+        }[]
+      }
       infer_gender_from_text: {
         Args: { text_input: string }
         Returns: Database["public"]["Enums"]["gender_type"]
