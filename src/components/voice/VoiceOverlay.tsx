@@ -3,6 +3,8 @@ import { X, Info, Share2, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAzyahVoice } from '@/hooks/useAzyahVoice';
 import { useOrbRenderer } from './useOrbRenderer';
+import { VoiceUsageIndicator } from '@/components/VoiceUsageIndicator';
+import { useSubscription } from '@/hooks/useSubscription';
 
 // Caption toggle icon component
 function CaptionsIcon() {
@@ -17,10 +19,12 @@ function CaptionsIcon() {
 interface VoiceOverlayProps {
   open: boolean;
   onClose: () => void;
+  onUpgrade?: () => void;
 }
 
-export function VoiceOverlay({ open, onClose }: VoiceOverlayProps) {
+export function VoiceOverlay({ open, onClose, onUpgrade }: VoiceOverlayProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const { createPaymentIntent } = useSubscription();
   const {
     audioRef,
     state,
@@ -202,6 +206,9 @@ export function VoiceOverlay({ open, onClose }: VoiceOverlayProps) {
 
       {/* Audio element */}
       <audio ref={audioRef} autoPlay playsInline className="hidden" />
+
+      {/* Voice usage indicator */}
+      <VoiceUsageIndicator onUpgrade={onUpgrade || createPaymentIntent} />
 
       {/* Interrupt button when speaking */}
       {state === 'speaking' && (

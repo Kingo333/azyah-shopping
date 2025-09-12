@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { RealtimeClient } from '@/lib/voice/RealtimeClient';
 import { supabase } from '@/integrations/supabase/client';
+import { useVoiceUsage } from '@/hooks/useVoiceUsage';
 
 export type VoiceState = 'idle' | 'connecting' | 'listening' | 'thinking' | 'speaking';
 
@@ -10,6 +11,11 @@ export function useAzyahVoice() {
   const [state, setState] = useState<VoiceState>('idle');
   const [connected, setConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Voice usage tracking
+  const { canStartSession, logUsage, getLimitWarning } = useVoiceUsage();
+  const sessionStartRef = useRef<Date | null>(null);
+  const speakingStartRef = useRef<Date | null>(null);
 
   // UI state
   const [captionsOn, setCaptionsOn] = useState(true);
@@ -27,9 +33,17 @@ export function useAzyahVoice() {
   const connectOnce = useCallback(async () => {
     if (connected || state === 'connecting') return;
     
+    // Check usage limits before connecting
+    if (!canStartSession) {
+      const warning = getLimitWarning();
+      setError(warning || 'Daily voice limit reached');
+      return;
+    }
+    
     try {
       setState('connecting');
       setError(null);
+      sessionStartRef.current = new Date();
 
       console.log('Requesting realtime session...');
       const { data, error: funcError } = await supabase.functions.invoke('realtime-session');
@@ -79,6 +93,9 @@ export function useAzyahVoice() {
               setState('thinking');
               break;
             case 'response.audio.delta':
+              if (state !== 'speaking') {
+                speakingStartRef.current = new Date();
+              }
               setState('speaking');
               break;
             case 'response.audio_transcript.delta':
@@ -97,6 +114,14 @@ export function useAzyahVoice() {
               setCurrentLanguage(null);
               break;
             case 'response.done':
+              // Log usage when response is done
+              if (speakingStartRef.current) {
+                const speakingDuration = (new Date().getTime() - speakingStartRef.current.getTime()) / 1000;
+                if (speakingDuration > 0) {
+                  logUsage(speakingDuration);
+                }
+                speakingStartRef.current = null;
+              }
               setState('idle');
               setCaptions('');
               setCurrentLanguage(null);
@@ -123,16 +148,27 @@ export function useAzyahVoice() {
       setError(error instanceof Error ? error.message : 'Connection failed');
       setState('idle');
       setConnected(false);
+      sessionStartRef.current = null;
     }
-  }, [connected, state]);
+  }, [connected, state, canStartSession, getLimitWarning, logUsage]);
 
   const disconnect = useCallback(() => {
+    // Log any remaining usage before disconnecting
+    if (sessionStartRef.current) {
+      const sessionDuration = (new Date().getTime() - sessionStartRef.current.getTime()) / 1000;
+      if (sessionDuration > 0) {
+        logUsage(sessionDuration);
+      }
+      sessionStartRef.current = null;
+    }
+    
     clientRef.current?.disconnect();
     setConnected(false);
     setState('idle');
     setCaptions('');
     setLevel(0);
-  }, []);
+    speakingStartRef.current = null;
+  }, [logUsage]);
 
   const toggleCaptions = useCallback(() => {
     setCaptionsOn(prev => !prev);
@@ -163,10 +199,18 @@ export function useAzyahVoice() {
 
   const interrupt = useCallback(() => {
     if (state === 'speaking') {
+      // Log speaking time before interrupting
+      if (speakingStartRef.current) {
+        const speakingDuration = (new Date().getTime() - speakingStartRef.current.getTime()) / 1000;
+        if (speakingDuration > 0) {
+          logUsage(speakingDuration);
+        }
+        speakingStartRef.current = null;
+      }
       clientRef.current?.interrupt();
       setState('idle');
     }
-  }, [state]);
+  }, [state, logUsage]);
 
   return {
     audioRef,
