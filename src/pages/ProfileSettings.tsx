@@ -737,9 +737,19 @@ const ProfileSettings: React.FC = () => {
               <AlertDialogContent>
                 <AlertDialogHeader>
                   <AlertDialogTitle>Delete Account</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This action cannot be undone. Your account will be scheduled for permanent deletion in 30 days.
-                    All your data including wishlists, posts, and preferences will be removed.
+                  <AlertDialogDescription className="space-y-3">
+                    <div>
+                      <strong>⚠️ This action cannot be undone.</strong> Your account will be scheduled for permanent deletion in 30 days.
+                      All your data including wishlists, posts, and preferences will be removed.
+                    </div>
+                    {subscription && isPremium && (
+                      <div className="p-3 bg-warning/10 border border-warning/20 rounded-md">
+                        <strong>💳 Subscription Notice:</strong> You have an active premium subscription. Please cancel your subscription first to avoid future charges, then proceed with account deletion.
+                      </div>
+                    )}
+                    <div className="text-sm text-muted-foreground">
+                      Please confirm that you understand this action is permanent and irreversible.
+                    </div>
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
