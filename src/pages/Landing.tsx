@@ -11,7 +11,7 @@ import { clearInvalidSession, debugAuthState } from "@/utils/sessionDebug";
 import { useSmartSwipeProducts } from "@/hooks/useSmartSwipeProducts";
 import { getResponsiveImageProps } from "@/utils/asosImageUtils";
 import { InvestorContactModal } from "@/components/InvestorContactModal";
-import luxuryFashionModern from "@/assets/luxury-fashion-modern.jpg";
+import luxuryFashionEditorial from "@/assets/luxury-fashion-editorial.jpg";
 import { useScrollAnimation, useStaggeredScrollAnimation } from "@/hooks/useScrollAnimation";
 
 function FeatureCarousel() {
@@ -655,7 +655,7 @@ export default function Landing() {
             <div className="relative animate-slide-left-fade" style={{ animationDelay: '1.2s', animationFillMode: 'both' }}>
               <div className="aspect-[4/5] bg-gradient-to-br from-primary/20 to-primary/10 rounded-2xl overflow-hidden shadow-2xl border border-white/20">
                 <div className="w-full h-full bg-gradient-to-br from-primary/30 to-primary/20 flex items-center justify-center relative overflow-hidden">
-                  <img src={luxuryFashionModern} alt="Luxury fashion model showcasing modern contemporary design" className="absolute inset-0 w-full h-full object-cover" />
+                  <img src={luxuryFashionEditorial} alt="Editorial luxury fashion model in contemporary designer setting" className="absolute inset-0 w-full h-full object-cover" />
                   <div className="absolute inset-0 bg-gradient-to-t from-primary/40 to-transparent"></div>
                   <div className="relative z-10 text-center space-y-4">
                     <p className="text-white font-medium text-lg drop-shadow-lg">Modern Fashion</p>
