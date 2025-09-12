@@ -281,12 +281,20 @@ export default function Landing() {
                 </Button>
               </div>
 
-              {/* Feature Carousel - Minimal Design */}
+              {/* Feature Carousel - Enhanced Elegant Design */}
               <div className="mt-8 sm:mt-10 lg:mt-12">
                 <div className="flex justify-center">
-                  <div className="relative">
-                    <div className="bg-background/80 backdrop-blur-sm rounded-full px-6 py-3 border border-primary/20 shadow-sm">
-                      <FeatureCarousel />
+                  <div className="relative group">
+                    {/* Subtle outer glow */}
+                    <div className="absolute -inset-2 bg-gradient-to-r from-primary/20 via-primary/10 to-primary/20 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-700 blur-md"></div>
+                    
+                    {/* Glass morphism container */}
+                    <div className="relative bg-gradient-to-r from-background/95 via-white/90 to-background/95 backdrop-blur-lg rounded-full px-8 py-4 border border-primary/30 shadow-xl">
+                      {/* Inner shimmer effect */}
+                      <div className="absolute inset-0 rounded-full bg-gradient-to-r from-transparent via-primary/5 to-transparent opacity-50"></div>
+                      <div className="relative">
+                        <FeatureCarousel />
+                      </div>
                     </div>
                   </div>
                 </div>
