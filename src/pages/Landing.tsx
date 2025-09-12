@@ -37,7 +37,7 @@ function FeatureCarousel() {
   return (
     <div className="flex items-center justify-center">
       {/* Sliding Text Container */}
-      <div className="relative h-6 w-48 overflow-hidden">
+      <div className="relative h-6 w-56 overflow-hidden">
         <div 
           className={`absolute inset-0 flex items-center justify-center transition-all duration-500 ease-out ${
             isSliding ? 'animate-slide-left-out' : 'animate-slide-right-in'
