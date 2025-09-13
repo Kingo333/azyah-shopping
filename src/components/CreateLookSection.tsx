@@ -333,27 +333,6 @@ export const CreateLookSection: React.FC<CreateLookSectionProps> = ({
             </div>
           </ResizablePanel>
 
-          {/* Right Panel - Inspector */}
-          {!inspectorCollapsed && (
-            <>
-              <ResizableHandle />
-              <ResizablePanel defaultSize={25} minSize={20}>
-                <div className="h-full p-4 bg-background border-l overflow-y-auto">
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h4 className="font-semibold text-sm">Inspector</h4>
-                      <Button variant="ghost" size="sm" onClick={() => setInspectorCollapsed(true)}>
-                        <span className="text-xs">→</span>
-                      </Button>
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      Select items on the canvas to edit their properties
-                    </div>
-                  </div>
-                </div>
-              </ResizablePanel>
-            </>
-          )}
         </ResizablePanelGroup>
       </div>
 
