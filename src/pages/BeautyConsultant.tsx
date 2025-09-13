@@ -715,6 +715,11 @@ export default function BeautyConsultantPage() {
 
       </main>
 
+      {/* Floating Voice FAB */}
+      <div className="fixed bottom-6 right-6 z-50">
+        <VoiceFab onOpen={() => setVoiceOverlayOpen(true)} />
+      </div>
+
       {/* Voice Overlay */}
       <VoiceOverlay open={voiceOverlayOpen} onClose={() => setVoiceOverlayOpen(false)} />
 

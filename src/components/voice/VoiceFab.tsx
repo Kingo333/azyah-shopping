@@ -15,15 +15,15 @@ export function VoiceFab({ onOpen, className = "" }: VoiceFabProps) {
       {/* Main button */}
       <button
         onClick={onOpen}
-        className="relative w-24 h-24 md:w-28 md:h-28 rounded-full bg-gradient-to-br from-primary via-primary/90 to-primary/70 hover:from-primary/90 hover:via-primary hover:to-primary/80 shadow-2xl hover:shadow-3xl border-2 border-white/30 backdrop-blur-md transition-all duration-500 active:scale-95 hover:scale-105 group flex items-center justify-center"
+        className="relative w-14 h-14 md:w-16 md:h-16 rounded-full bg-gradient-to-br from-primary via-primary/90 to-primary/70 hover:from-primary/90 hover:via-primary hover:to-primary/80 shadow-2xl hover:shadow-3xl border-2 border-white/30 backdrop-blur-md transition-all duration-500 active:scale-95 hover:scale-105 group flex items-center justify-center"
         aria-label="Start voice conversation with Azyah"
       >
         {/* Sparkle decorations */}
-        <Sparkles className="absolute -top-2 -right-2 w-4 h-4 text-white/80 animate-ping" />
-        <Sparkles className="absolute -bottom-1 -left-2 w-3 h-3 text-white/60 animate-ping animation-delay-700" />
+        <Sparkles className="absolute -top-1 -right-1 w-3 h-3 text-white/80 animate-ping" />
+        <Sparkles className="absolute -bottom-0.5 -left-1 w-2 h-2 text-white/60 animate-ping animation-delay-700" />
         
         {/* Mic icon */}
-        <Mic className="w-8 h-8 md:w-10 md:h-10 text-white drop-shadow-lg group-hover:scale-110 transition-transform duration-300" strokeWidth={2.5} />
+        <Mic className="w-6 h-6 md:w-7 md:h-7 text-white drop-shadow-lg group-hover:scale-110 transition-transform duration-300" strokeWidth={2.5} />
         
         {/* Pulse ring */}
         <div className="absolute inset-0 rounded-full border-2 border-white/20 animate-ping" />
