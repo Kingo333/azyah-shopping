@@ -1,254 +1,422 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useDefaultCloset } from '@/hooks/useDefaultCloset';
-import { useEnhancedClosetItems, EnhancedClosetItem } from '@/hooks/useEnhancedClosets';
-import { StyleBoardBuilder } from '@/components/StyleBoardBuilder';
-import { AddItemModal } from '@/components/AddItemModal';
-import { ItemDetailModal } from '@/components/ItemDetailModal';
-import { OutfitTemplatesSection } from '@/components/OutfitTemplatesSection';
-import { PublishLookModal } from '@/components/PublishLookModal';
-import { BackButton } from '@/components/ui/back-button';
+import React, { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
-import { Plus, Palette, Sparkles, Heart, Search, Grid3X3, Layers } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { toast } from '@/hooks/use-toast';
+import { BackButton } from '@/components/ui/back-button';
+import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { useClosets, usePublicClosets, useCreateCloset, useDeleteCloset } from '@/hooks/useClosets';
+import { Grid3X3, Search, Plus, Star, Lock, Globe, Heart, Palette, Trash2 } from 'lucide-react';
+import { CreateLookSection } from '@/components/CreateLookSection';
 
 const LoadingFallback = () => (
-  <div className="flex items-center justify-center min-h-[200px]">
-    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+  <div className="space-y-4">
+    <div className="animate-pulse space-y-4">
+      <div className="h-8 bg-muted rounded w-1/4"></div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        {Array.from({ length: 8 }, (_, i) => (
+          <div key={i} className="h-64 bg-muted rounded"></div>
+        ))}
+      </div>
+    </div>
   </div>
 );
 
 const Closets = () => {
-  const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('wardrobe');
+  const [activeTab, setActiveTab] = useState<'explore' | 'my-closets'>('my-closets');
   const [searchQuery, setSearchQuery] = useState('');
-  const [showStyleBoard, setShowStyleBoard] = useState(false);
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [selectedItem, setSelectedItem] = useState<EnhancedClosetItem | null>(null);
-  const [viewMode, setViewMode] = useState<'grid' | 'categories'>('categories');
-  const [selectedLookForPublish, setSelectedLookForPublish] = useState<any>(null);
-  
-  const { defaultCloset, isLoading: closetLoading } = useDefaultCloset();
-  const { data: closetItems = [], isLoading: itemsLoading } = useEnhancedClosetItems(
-    defaultCloset?.id || '', 
-    'all',
-    searchQuery.trim() || undefined
-  );
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [newClosetData, setNewClosetData] = useState({
+    title: '',
+    description: '',
+    is_public: false
+  });
 
-  const categorizedItems = closetItems.reduce((acc, item) => {
-    const category = item.category || 'other';
-    if (!acc[category]) acc[category] = [];
-    acc[category].push(item);
-    return acc;
-  }, {} as Record<string, any[]>);
+  const { data: myClosets, isLoading: loadingMyClosets } = useClosets();
+  const { data: publicClosets, isLoading: loadingPublicClosets } = usePublicClosets();
+  const createClosetMutation = useCreateCloset();
+  const deleteClosetMutation = useDeleteCloset();
 
-  if (showStyleBoard) {
-    return <StyleBoardBuilder onClose={() => setShowStyleBoard(false)} />;
-  }
+  // Get the default closet for Create Look section
+  const defaultClosetId = myClosets?.[0]?.id;
+
+  const handleCreateCloset = async () => {
+    if (!newClosetData.title.trim()) return;
+    
+    try {
+      await createClosetMutation.mutateAsync(newClosetData);
+      setShowCreateModal(false);
+      setNewClosetData({ title: '', description: '', is_public: false });
+    } catch (error) {
+      console.error('Error creating closet:', error);
+    }
+  };
+
 
   return (
-    <div className="container mx-auto p-4 max-w-6xl">
-      <div className="mb-8">
-        <div className="flex items-center gap-4 mb-4">
-          <BackButton fallbackPath="/" />
-          <div>
-            <h1 className="text-3xl font-bold">My Wardrobe</h1>
-            <p className="text-muted-foreground">
-              Your personal style collection and outfit builder
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div className="mb-6 space-y-4">
-        <div className="flex gap-4 flex-wrap">
-          <Button 
-            onClick={() => setShowStyleBoard(true)}
-            className="gap-2 bg-gradient-to-r from-primary to-primary/80"
-          >
-            <Palette className="h-4 w-4" />
-            Create Style
-          </Button>
-          
-          <div className="flex items-center gap-2 ml-auto">
-            <Button
-              variant={viewMode === 'categories' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setViewMode('categories')}
-              className="gap-2"
-            >
-              <Layers className="h-4 w-4" />
-              Categories
-            </Button>
-            <Button
-              variant={viewMode === 'grid' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setViewMode('grid')}
-              className="gap-2"
-            >
-              <Grid3X3 className="h-4 w-4" />
-              Grid
-            </Button>
-          </div>
-        </div>
-
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-          <Input
-            placeholder="Search your wardrobe..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-      </div>
-
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-1">
-          <TabsTrigger value="wardrobe" className="gap-2">
-            <Heart className="h-4 w-4" />
-            My Wardrobe
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="wardrobe" className="space-y-6">
-          {/* Outfit Templates Section */}
-          <OutfitTemplatesSection 
-            onCreateFromTemplate={() => setShowStyleBoard(true)}
-            onOpenStyleBoard={() => setShowStyleBoard(true)}
-          />
-
-          {closetLoading || itemsLoading ? (
-            <LoadingFallback />
-          ) : closetItems.length === 0 ? (
-            <EmptyWardrobeState 
-              onAddItems={() => setShowAddModal(true)}
-              onBrowseInspiration={() => navigate('/explore')}
-            />
-          ) : (
-            <div className="space-y-6">
-              {viewMode === 'categories' ? (
-                // Category View
-                <div className="space-y-8">
-                  {Object.entries(categorizedItems).map(([category, items]) => (
-                    <div key={category}>
-                      <div className="flex items-center gap-3 mb-4">
-                        <Badge variant="secondary" className="capitalize text-sm">
-                          {category.replace('_', ' ')}
-                        </Badge>
-                        <span className="text-muted-foreground text-sm">
-                          {items.length} items
-                        </span>
-                      </div>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                        {items.map((item) => (
-                          <WardrobeItemCard 
-                            key={item.id} 
-                            item={item} 
-                            onClick={() => setSelectedItem(item)}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                // Grid View
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                  {closetItems.map((item) => (
-                    <WardrobeItemCard 
-                      key={item.id} 
-                      item={item} 
-                      onClick={() => setSelectedItem(item)}
-                    />
-                  ))}
-                </div>
-              )}
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <div className="border-b bg-card">
+        <div className="mx-auto max-w-7xl p-4">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <BackButton />
+              <div>
+                <h1 className="text-2xl font-bold text-foreground">My Closets</h1>
+                <p className="text-muted-foreground">Discover and create curated fashion collections</p>
+              </div>
             </div>
-          )}
-        </TabsContent>
-      </Tabs>
+          </div>
 
-      {/* Modals */}
-      <AddItemModal 
-        open={showAddModal} 
-        onOpenChange={setShowAddModal}
-        onNavigateToExplore={() => navigate('/explore')}
-      />
-      
-      <ItemDetailModal
-        open={!!selectedItem}
-        onOpenChange={(open) => !open && setSelectedItem(null)}
-        item={selectedItem}
-      />
+          {/* Tabs */}
+          <div className="flex gap-4 mb-4">
+            <Button
+              variant={activeTab === 'explore' ? 'default' : 'outline'}
+              onClick={() => setActiveTab('explore')}
+            >
+              Explore
+            </Button>
+            <Button
+              variant={activeTab === 'my-closets' ? 'default' : 'outline'}
+              onClick={() => setActiveTab('my-closets')}
+            >
+              My Closets
+            </Button>
+            <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
+              <DialogTrigger asChild>
+                <Button variant="outline">
+                  <Plus className="h-4 w-4 mr-2" />
+                  New Closet
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Create New Closet</DialogTitle>
+                </DialogHeader>
+                <CreateClosetForm 
+                  newClosetData={newClosetData}
+                  setNewClosetData={setNewClosetData}
+                  onSubmit={handleCreateCloset}
+                  isLoading={createClosetMutation.isPending}
+                  onCancel={() => setShowCreateModal(false)}
+                />
+              </DialogContent>
+            </Dialog>
+          </div>
 
-      <PublishLookModal 
-        open={!!selectedLookForPublish}
-        onOpenChange={(open) => !open && setSelectedLookForPublish(null)}
-        look={selectedLookForPublish}
-        onPublished={() => {
-          setSelectedLookForPublish(null);
-          navigate('/explore');
-        }}
-      />
+          {/* Search Controls */}
+          <div className="flex flex-col sm:flex-row gap-4 items-center">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search closets..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="mx-auto max-w-7xl p-4">
+        {/* Create Look Section - Always visible at main level */}
+        {activeTab === 'my-closets' && (
+          <div className="mb-8">
+            <CreateLookSection closetId={defaultClosetId} />
+          </div>
+        )}
+
+        {activeTab === 'explore' && (
+          <div>
+            {loadingPublicClosets ? (
+              <LoadingFallback />
+            ) : publicClosets && publicClosets.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {publicClosets.map((closet: any) => (
+                  <Card key={closet.id} className="hover:shadow-lg transition-shadow">
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-lg truncate">{closet.title}</CardTitle>
+                        <div className="flex items-center gap-2">
+                          <Globe className="h-4 w-4 text-green-500" />
+                          <div className="flex items-center">
+                            <Star className="h-4 w-4 text-yellow-500" />
+                            <span className="text-sm ml-1">
+                              {closet.closet_ratings?.length > 0 
+                                ? (closet.closet_ratings.reduce((sum: number, r: any) => sum + r.rating, 0) / closet.closet_ratings.length).toFixed(1)
+                                : '0.0'
+                              }
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      {closet.description && (
+                        <p className="text-sm text-muted-foreground line-clamp-2">{closet.description}</p>
+                      )}
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-full bg-primary" />
+                          <span className="text-sm">{closet.users?.name || 'Anonymous'}</span>
+                        </div>
+                        <Button variant="outline" size="sm">
+                          <Heart className="h-4 w-4 mr-1" />
+                          View
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <h3 className="text-lg font-semibold mb-4">No public closets found</h3>
+                <p className="text-muted-foreground">Be the first to share your closet with the community!</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'my-closets' && (
+          <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+              <div>
+                <h2 className="text-lg font-semibold">Your Fashion Collections</h2>
+                <p className="text-sm text-muted-foreground">Manage your closets and organize your wardrobe</p>
+              </div>
+            </div>
+            {loadingMyClosets ? (
+              <LoadingFallback />
+            ) : myClosets && myClosets.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {myClosets.map((closet) => (
+                  <ClosetCard 
+                    key={closet.id} 
+                    closet={closet}
+                    onDelete={() => deleteClosetMutation.mutate(closet.id)}
+                    isDeleting={deleteClosetMutation.isPending}
+                  />
+                ))}
+              </div>
+            ) : (
+              <EmptyClosetsState 
+                onCreateFirst={() => setShowCreateModal(true)}
+                newClosetData={newClosetData}
+                setNewClosetData={setNewClosetData}
+                handleCreateCloset={handleCreateCloset}
+                createClosetMutation={createClosetMutation}
+              />
+            )}
+          </div>
+        )}
+
+
+      </div>
     </div>
   );
 };
 
-const WardrobeItemCard = ({ item, onClick }: { item: EnhancedClosetItem; onClick: () => void }) => {
+// Separate components for better organization
+interface ClosetCardProps {
+  closet: any;
+  onDelete: () => void;
+  isDeleting?: boolean;
+}
+
+const ClosetCard: React.FC<ClosetCardProps> = ({ closet, onDelete, isDeleting }) => {
   return (
-    <Card className="overflow-hidden hover:shadow-lg transition-all hover:scale-105 group cursor-pointer border-2 hover:border-primary/20" onClick={onClick}>
-      <div className="aspect-[3/4] relative overflow-hidden">
-        <img
-          src={item.image_url || '/placeholder.svg'}
-          alt={item.title || 'Wardrobe item'}
-          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-        <div className="absolute bottom-2 left-2 right-2 text-white opacity-0 group-hover:opacity-100 transition-opacity">
-          <p className="text-sm font-medium truncate">{item.title}</p>
-          {item.brand && (
-            <p className="text-xs opacity-80">{item.brand}</p>
-          )}
+    <Card className="hover:shadow-lg transition-shadow group">
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-lg truncate">{closet.title}</CardTitle>
+          <div className="flex items-center gap-2">
+            {closet.is_public ? (
+              <Globe className="h-4 w-4 text-green-500" />
+            ) : (
+              <Lock className="h-4 w-4 text-gray-500" />
+            )}
+            <Badge variant={closet.is_public ? 'default' : 'secondary'}>
+              {closet.is_public ? 'Public' : 'Private'}
+            </Badge>
+          </div>
         </div>
-        {/* Click indicator */}
-        <div className="absolute top-2 right-2 w-6 h-6 bg-primary/80 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-          <Plus className="h-3 w-3 text-white" />
+        {closet.description && (
+          <p className="text-sm text-muted-foreground line-clamp-2">{closet.description}</p>
+        )}
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-3">
+          {/* Item thumbnails preview */}
+          <div className="flex -space-x-2">
+            {[1, 2, 3, 4].map((i) => (
+              <div 
+                key={i} 
+                className="w-8 h-8 rounded-full bg-gradient-to-br from-gray-200 to-gray-300 border-2 border-white flex items-center justify-center"
+              >
+                <span className="text-xs text-gray-500">{i}</span>
+              </div>
+            ))}
+            <div className="w-8 h-8 rounded-full bg-muted border-2 border-white flex items-center justify-center">
+              <span className="text-xs text-muted-foreground">+</span>
+            </div>
+          </div>
+          
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-muted-foreground">
+              Created {new Date(closet.created_at).toLocaleDateString()}
+            </span>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm">
+                View Items
+              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive" size="sm" disabled={isDeleting}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete Closet</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to delete "{closet.title}"? This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={onDelete}>
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+          </div>
         </div>
-      </div>
+      </CardContent>
     </Card>
   );
 };
 
-const EmptyWardrobeState = ({ onAddItems, onBrowseInspiration }: { onAddItems: () => void; onBrowseInspiration: () => void }) => (
-  <Card className="text-center py-12">
-    <CardContent className="space-y-6">
-      <div className="mx-auto w-24 h-24 bg-muted rounded-full flex items-center justify-center">
-        <Heart className="h-12 w-12 text-muted-foreground" />
-      </div>
+interface CreateClosetFormProps {
+  newClosetData: any;
+  setNewClosetData: (data: any) => void;
+  onSubmit: () => void;
+  isLoading: boolean;
+  onCancel: () => void;
+}
+
+const CreateClosetForm: React.FC<CreateClosetFormProps> = ({
+  newClosetData,
+  setNewClosetData,
+  onSubmit,
+  isLoading,
+  onCancel
+}) => {
+  return (
+    <div className="space-y-4">
+      {/* Inspiration thumbnails */}
       <div className="space-y-2">
-        <h3 className="text-xl font-semibold">Your wardrobe is empty</h3>
-        <p className="text-muted-foreground max-w-md mx-auto">
-          Start building your style collection by adding items to your wardrobe. 
-          You can upload photos, shop from brands, or create virtual pieces.
+        <Label>Get inspired by these collections</Label>
+        <div className="grid grid-cols-4 gap-2">
+          {[
+            { name: 'Minimalist', color: 'from-gray-100 to-gray-200' },
+            { name: 'Colorful', color: 'from-pink-100 to-purple-200' },
+            { name: 'Professional', color: 'from-blue-100 to-indigo-200' },
+            { name: 'Casual', color: 'from-green-100 to-emerald-200' }
+          ].map((style) => (
+            <div 
+              key={style.name}
+              className={`aspect-square rounded-lg bg-gradient-to-br ${style.color} flex items-center justify-center cursor-pointer hover:scale-105 transition-transform`}
+              onClick={() => setNewClosetData(prev => ({ ...prev, title: style.name + ' Collection' }))}
+            >
+              <span className="text-xs font-medium text-gray-700">{style.name}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="title">Closet Name</Label>
+        <Input
+          id="title"
+          value={newClosetData.title}
+          onChange={(e) => setNewClosetData(prev => ({ ...prev, title: e.target.value }))}
+          placeholder="My Fashion Collection"
+        />
+      </div>
+      
+      <div className="space-y-2">
+        <Label htmlFor="description">Description (optional)</Label>
+        <Textarea
+          id="description"
+          value={newClosetData.description}
+          onChange={(e) => setNewClosetData(prev => ({ ...prev, description: e.target.value }))}
+          placeholder="Describe your closet..."
+          rows={3}
+        />
+      </div>
+      
+      <div className="flex items-center space-x-2">
+        <Switch
+          id="public"
+          checked={newClosetData.is_public}
+          onCheckedChange={(checked) => setNewClosetData(prev => ({ ...prev, is_public: checked }))}
+        />
+        <Label htmlFor="public">Make this closet public</Label>
+      </div>
+      
+      <div className="flex justify-end gap-2">
+        <Button variant="outline" onClick={onCancel}>
+          Cancel
+        </Button>
+        <Button onClick={onSubmit} disabled={isLoading}>
+          {isLoading ? 'Creating...' : 'Create Closet'}
+        </Button>
+      </div>
+    </div>
+  );
+};
+
+interface EmptyClosetsStateProps {
+  onCreateFirst: () => void;
+  newClosetData: any;
+  setNewClosetData: (data: any) => void;
+  handleCreateCloset: () => void;
+  createClosetMutation: any;
+}
+
+const EmptyClosetsState: React.FC<EmptyClosetsStateProps> = ({
+  onCreateFirst,
+  newClosetData,
+  setNewClosetData,
+  handleCreateCloset,
+  createClosetMutation
+}) => {
+  return (
+    <div className="text-center py-12">
+      <div className="max-w-md mx-auto space-y-4">
+        <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto">
+          <Grid3X3 className="h-8 w-8 text-muted-foreground" />
+        </div>
+        <h3 className="text-lg font-semibold">No closets yet</h3>
+        <p className="text-muted-foreground">
+          Create your first closet to start curating your fashion collection and building stunning mood boards
         </p>
-      </div>
-      <div className="flex flex-col sm:flex-row gap-3 justify-center">
-        <Button onClick={onAddItems} className="gap-2">
-          <Plus className="h-4 w-4" />
-          Add Items
-        </Button>
-        <Button variant="outline" className="gap-2" onClick={onBrowseInspiration}>
-          <Search className="h-4 w-4" />
-          Browse Inspiration
+        <Button onClick={onCreateFirst}>
+          <Plus className="h-4 w-4 mr-2" />
+          Create Your First Closet
         </Button>
       </div>
-    </CardContent>
-  </Card>
-);
+    </div>
+  );
+};
 
 export default Closets;

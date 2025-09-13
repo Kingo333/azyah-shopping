@@ -9,7 +9,6 @@ import TrendingStyles from '@/components/TrendingStyles';
 import TopInfluencers from '@/components/TopInfluencers';
 import FeaturedBrands from '@/components/FeaturedBrands';
 import ExploreSearch from '@/components/ExploreSearch';
-import MasonryMoodBoards from '@/components/MasonryMoodBoards';
 import { useAuth } from '@/contexts/AuthContext';
 import { TrendingUp, Trophy, Search, Globe, MapPin, Star, Users, Sparkles, Crown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -36,7 +35,6 @@ const Explore: React.FC = () => {
         <Tabs value={activeSection} onValueChange={value => setActiveSection(value as any)} className="mb-8">
           <TabsList className="glass-panel">
             <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="moodboards">Mood Boards</TabsTrigger>
             <TabsTrigger value="search">Search</TabsTrigger>
           </TabsList>
 
@@ -89,18 +87,6 @@ const Explore: React.FC = () => {
                 </h2>
                 <FeaturedBrands limit={12} showMore={false} />
               </GlassPanel>}
-          </TabsContent>
-
-          <TabsContent value="moodboards">
-            <GlassPanel variant="premium" className="p-8">
-              <h2 className="text-2xl font-cormorant font-bold mb-6 flex items-center gap-3">
-                <div className="p-2 rounded-full bg-gradient-to-br from-pink-500/10 to-pink-600/10">
-                  <Sparkles className="h-6 w-6 text-pink-500" />
-                </div>
-                Mood Boards
-              </h2>
-              <MasonryMoodBoards />
-            </GlassPanel>
           </TabsContent>
 
           <TabsContent value="search">

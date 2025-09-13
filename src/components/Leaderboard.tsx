@@ -114,25 +114,14 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ type = 'global', country }) =
           .select('id')
           .in('closet_id', (closets || []).map(c => c.id));
 
-        // Get look votes received by this user
-        const { data: lookVotes } = await supabase
-          .from('look_votes')
-          .select('value')
-          .in('look_id', (await supabase
-            .from('looks')
-            .select('id')
-            .eq('user_id', user.id)
-          ).data?.map(l => l.id) || []);
-
         const likesCount = postLikes?.length || 0;
         const postsCount = posts?.length || 0;
         const savedItemsCount = wishlistItems?.length || 0;
         const closetsCount = closets?.length || 0;
         const closetItemsCount = closetItems?.length || 0;
-        const lookVotesCount = lookVotes?.reduce((sum, vote) => sum + vote.value, 0) || 0;
 
-        // Updated scoring: posts (10pts), closet items (2pts each), likes (3pts), wishlist (1pt), closets (5pts), look votes (5pts each)
-        const score = (postsCount * 10) + (closetItemsCount * 2) + (likesCount * 3) + (savedItemsCount * 1) + (closetsCount * 5) + (lookVotesCount * 5);
+        // Updated scoring: posts (10pts), closet items (2pts each), likes (3pts), wishlist (1pt), closets (5pts)
+        const score = (postsCount * 10) + (closetItemsCount * 2) + (likesCount * 3) + (savedItemsCount * 1) + (closetsCount * 5);
 
         scoredUsers.push({
           id: user.id,
