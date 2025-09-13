@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useDefaultCloset } from '@/hooks/useDefaultCloset';
 import { useEnhancedClosetItems } from '@/hooks/useEnhancedClosets';
 import { useLooks, useCreateLook, useUpdateLook } from '@/hooks/useLooks';
+import { useLikedProducts } from '@/hooks/useLikedProducts';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -30,6 +31,7 @@ export const StyleBoardBuilder: React.FC<StyleBoardBuilderProps> = ({ onClose })
   const { defaultCloset } = useDefaultCloset();
   const { data: closetItems = [] } = useEnhancedClosetItems(defaultCloset?.id || '', 'all');
   const { data: looks = [] } = useLooks();
+  const { likedProducts } = useLikedProducts();
   const createLookMutation = useCreateLook();
   const updateLookMutation = useUpdateLook();
 
@@ -112,6 +114,23 @@ export const StyleBoardBuilder: React.FC<StyleBoardBuilderProps> = ({ onClose })
     const category = item.category || 'other';
     if (!acc[category]) acc[category] = [];
     acc[category].push(item);
+    return acc;
+  }, {} as Record<string, any[]>);
+
+  // Also categorize liked products for suggestions
+  const likedItemsByCategory = likedProducts.reduce((acc, product) => {
+    const category = 'liked_items';
+    if (!acc[category]) acc[category] = [];
+    acc[category].push({
+      id: product.id,
+      title: product.title,
+      brand: product.brands?.name,
+      image_url: product.media_urls?.[0],
+      price_cents: product.price_cents,
+      currency: product.currency,
+      category: 'liked_items',
+      isLikedProduct: true
+    });
     return acc;
   }, {} as Record<string, any[]>);
 
@@ -205,14 +224,14 @@ export const StyleBoardBuilder: React.FC<StyleBoardBuilderProps> = ({ onClose })
 
         {/* Item Categories */}
         <section>
-          <h2 className="text-lg font-medium mb-4">Add Items from Your Wardrobe</h2>
-          {closetItems.length === 0 ? (
+          <h2 className="text-lg font-medium mb-4">Add Items from Your Collection</h2>
+          {closetItems.length === 0 && likedProducts.length === 0 ? (
             <Card className="p-8 text-center">
               <div className="space-y-3">
                 <div className="text-4xl">👗</div>
-                <h3 className="text-lg font-medium">Your wardrobe is empty</h3>
+                <h3 className="text-lg font-medium">No items available</h3>
                 <p className="text-muted-foreground">
-                  Add some items to your closet to start creating outfits
+                  Add items to your closet or like some products to start creating outfits
                 </p>
                 <Button className="gap-2" onClick={() => onClose && onClose()}>
                   <Plus className="h-4 w-4" />
@@ -222,6 +241,43 @@ export const StyleBoardBuilder: React.FC<StyleBoardBuilderProps> = ({ onClose })
             </Card>
           ) : (
             <div className="space-y-4">
+              {/* Show liked products first if available */}
+              {likedProducts.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <Badge variant="outline" className="gap-1">
+                      <Heart className="h-3 w-3 text-red-500" />
+                      Liked Products
+                    </Badge>
+                    <span className="text-sm text-muted-foreground">
+                      {likedProducts.length} items • Add to wardrobe first
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
+                    {likedProducts.slice(0, 12).map((product: any) => (
+                      <div
+                        key={product.id}
+                        className="relative cursor-pointer transition-all hover:scale-105 opacity-60"
+                        title="Add to wardrobe first to use in outfits"
+                      >
+                        <img
+                          src={product.media_urls?.[0] || '/placeholder.svg'}
+                          alt={product.title}
+                          className="w-full aspect-[3/4] object-cover rounded-lg"
+                        />
+                        <div className="absolute inset-0 bg-black/60 rounded-lg flex items-center justify-center">
+                          <div className="text-center text-white text-xs">
+                            <Plus className="h-4 w-4 mx-auto mb-1" />
+                            Add to Wardrobe
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Wardrobe items */}
               {Object.entries(categorizedItems).map(([category, items]) => (
                 <div key={category}>
                   <div className="flex items-center gap-2 mb-3">
