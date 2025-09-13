@@ -52,11 +52,11 @@ serve(async (req) => {
                      req.headers.get('x-real-ip') || 
                      'unknown';
 
-    // Verify IP allowlist (commented out for development)
-    // if (!ALLOWED_IPS.includes(clientIP)) {
-    //   console.error('Unauthorized IP:', clientIP);
-    //   return new Response('Unauthorized', { status: 403 });
-    // }
+    // Verify IP allowlist for production security
+    if (!ALLOWED_IPS.includes(clientIP)) {
+      console.error('Unauthorized IP:', clientIP);
+      return new Response('Unauthorized', { status: 403 });
+    }
 
     // Get raw body for HMAC verification
     const rawBody = await req.text();
