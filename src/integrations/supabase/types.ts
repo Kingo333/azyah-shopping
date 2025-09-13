@@ -3234,7 +3234,7 @@ export type Database = {
       }
       log_user_data_access: {
         Args: {
-          accessed_user_id: string
+          accessed_user_id?: string
           action_type: string
           table_name: string
         }
