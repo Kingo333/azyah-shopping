@@ -407,7 +407,7 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
     >
       <CarouselContent className="-ml-4 md:-ml-8 max-w-full">
         {trendingProducts.map((product, index) => (
-          <CarouselItem key={product.id} className="pl-4 md:pl-8 basis-1/2 md:basis-1/2 max-w-full overflow-hidden">
+          <CarouselItem key={product.id} className="pl-4 md:pl-8 basis-1/2 md:basis-1/3 lg:basis-1/4 max-w-full overflow-hidden">
             <div className="group relative bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 max-w-full overflow-hidden">
               {/* Trending Badge */}
               <div className="absolute top-2 left-2 z-10">
