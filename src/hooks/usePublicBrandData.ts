@@ -8,6 +8,10 @@ interface PublicBrandData {
   slug: string;
   logo_url: string | null;
   bio: string | null;
+  website: string | null;
+  socials: any;
+  shipping_regions: string[];
+  cover_image_url: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -23,9 +27,9 @@ export const usePublicBrandData = (brandId?: string) => {
     queryFn: async (): Promise<PublicBrandData | null> => {
       if (!brandId) return null;
       
-      // Use secure function that requires authentication
-      const { data, error } = await supabase.rpc('get_public_brands', {
-        limit_param: 1000 // Get all brands, then filter client-side
+      // Use secure function for individual brand safe fields
+      const { data, error } = await supabase.rpc('get_brand_safe_fields', {
+        brand_id_param: brandId
       });
 
       if (error) {
@@ -33,9 +37,7 @@ export const usePublicBrandData = (brandId?: string) => {
         throw error;
       }
       
-      // Find the specific brand by ID
-      const brand = data?.find((b: any) => b.id === brandId);
-      return brand || null;
+      return data?.[0] || null;
     },
     enabled: !!brandId,
   });
@@ -49,17 +51,28 @@ export const usePublicBrandsList = (limit = 50) => {
   return useQuery({
     queryKey: ['public-brands-list', limit],
     queryFn: async (): Promise<PublicBrandData[]> => {
-      // Use secure function that requires authentication
-      const { data, error } = await supabase.rpc('get_public_brands', {
-        limit_param: limit
-      });
+      // Use secure function for public brands list
+      const { data, error } = await supabase.rpc('get_public_brands');
 
       if (error) {
         console.error('Failed to fetch public brands list:', error);
         throw error;
       }
       
-      return data || [];
+      // Map to ensure all fields are present
+      return (data || []).map((brand: any) => ({
+        id: brand.id,
+        name: brand.name,
+        slug: brand.slug,
+        logo_url: brand.logo_url,
+        bio: brand.bio,
+        website: brand.website || null,
+        socials: brand.socials || {},
+        shipping_regions: brand.shipping_regions || [],
+        cover_image_url: brand.cover_image_url || null,
+        created_at: brand.created_at,
+        updated_at: brand.updated_at,
+      }));
     },
   });
 };

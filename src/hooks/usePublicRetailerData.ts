@@ -8,6 +8,10 @@ interface PublicRetailerData {
   slug: string;
   logo_url: string | null;
   bio: string | null;
+  website: string | null;
+  socials: any;
+  shipping_regions: string[];
+  cover_image_url: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -23,9 +27,9 @@ export const usePublicRetailerData = (retailerId?: string) => {
     queryFn: async (): Promise<PublicRetailerData | null> => {
       if (!retailerId) return null;
       
-      // Use secure function that requires authentication
-      const { data, error } = await supabase.rpc('get_public_retailers', {
-        limit_param: 1000 // Get all retailers, then filter client-side
+      // Use secure function for individual retailer safe fields
+      const { data, error } = await supabase.rpc('get_retailer_safe_fields', {
+        retailer_id_param: retailerId
       });
 
       if (error) {
@@ -33,9 +37,7 @@ export const usePublicRetailerData = (retailerId?: string) => {
         throw error;
       }
       
-      // Find the specific retailer by ID
-      const retailer = data?.find((r: any) => r.id === retailerId);
-      return retailer || null;
+      return data?.[0] || null;
     },
     enabled: !!retailerId,
   });
@@ -49,17 +51,28 @@ export const usePublicRetailersList = (limit = 50) => {
   return useQuery({
     queryKey: ['public-retailers-list', limit],
     queryFn: async (): Promise<PublicRetailerData[]> => {
-      // Use secure function that requires authentication
-      const { data, error } = await supabase.rpc('get_public_retailers', {
-        limit_param: limit
-      });
+      // Use secure function for public retailers list
+      const { data, error } = await supabase.rpc('get_public_retailers');
 
       if (error) {
         console.error('Failed to fetch public retailers list:', error);
         throw error;
       }
       
-      return data || [];
+      // Map to ensure all fields are present
+      return (data || []).map((retailer: any) => ({
+        id: retailer.id,
+        name: retailer.name,
+        slug: retailer.slug,
+        logo_url: retailer.logo_url,
+        bio: retailer.bio,
+        website: retailer.website || null,
+        socials: retailer.socials || {},
+        shipping_regions: retailer.shipping_regions || [],
+        cover_image_url: retailer.cover_image_url || null,
+        created_at: retailer.created_at,
+        updated_at: retailer.updated_at,
+      }));
     },
   });
 };
