@@ -85,7 +85,24 @@ serve(async (req) => {
     }
 
     const ziinaData = await ziinaResponse.json();
-    const paymentIntentId = ziinaData.payment_intent.id;
+    
+    console.log('Ziina API Response:', { 
+      stage: 'RESPONSE_RECEIVED',
+      response_structure: Object.keys(ziinaData),
+      full_response: ziinaData 
+    });
+
+    // Handle response structure - Ziina API may return data directly or nested
+    const paymentIntent = ziinaData.payment_intent || ziinaData;
+    const paymentIntentId = paymentIntent.id;
+    const operationId = paymentIntent.operation_id;
+    const status = paymentIntent.status;
+    const redirectUrl = paymentIntent.url || paymentIntent.redirect_url;
+
+    if (!paymentIntentId) {
+      console.error('Payment intent ID missing from response:', ziinaData);
+      throw new Error('Invalid response from Ziina API - missing payment intent ID');
+    }
 
     // Generate actual URLs with payment intent ID
     const successUrl = `${appBaseUrl}/payment-success?payment_intent_id=${paymentIntentId}`;
@@ -96,16 +113,16 @@ serve(async (req) => {
     const { error: dbError } = await supabase.from('payments').insert({
       user_id: user.id,
       payment_intent_id: paymentIntentId,
-      operation_id: ziinaData.payment_intent.operation_id,
+      operation_id: operationId,
       amount_fils: amountFils,
       currency: 'AED',
-      status: ziinaData.payment_intent.status,
+      status: status,
       provider: 'ziina',
       product: 'consumer_premium',
       success_url: successUrl,
       cancel_url: cancelUrl,
       failure_url: failureUrl,
-      redirect_url: ziinaData.payment_intent.url
+      redirect_url: redirectUrl
     });
 
     if (dbError) {
@@ -116,15 +133,17 @@ serve(async (req) => {
     console.log('Payment intent created successfully:', {
       stage: 'SUCCESS',
       payment_intent_id: paymentIntentId,
-      status: ziinaData.payment_intent.status
+      status: status
     });
 
     return new Response(
       JSON.stringify({
         success: true,
         payment_intent_id: paymentIntentId,
-        url: ziinaData.payment_intent.url,
-        status: ziinaData.payment_intent.status
+        pi: paymentIntentId, // For tester compatibility
+        url: redirectUrl,
+        redirectUrl: redirectUrl, // For tester compatibility
+        status: status
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
