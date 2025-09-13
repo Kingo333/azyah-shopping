@@ -40,7 +40,7 @@ export function useSubscription(): UseSubscriptionReturn {
     if (!subscription) return false;
     
     const now = new Date();
-    return (subscription.status === 'active' || subscription.status === 'canceled') &&
+    return subscription.status === 'active' &&
            subscription.current_period_end &&
            new Date(subscription.current_period_end) >= now;
   })();

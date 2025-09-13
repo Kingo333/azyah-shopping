@@ -2,3 +2,12 @@ project_id = "klwolsopucgswhtdlsps"
 
 [functions.realtime-session]
 verify_jwt = false
+
+[functions.create-payment-intent]
+verify_jwt = true
+
+[functions.verify-payment] 
+verify_jwt = true
+
+[functions.payment-webhook]
+verify_jwt = false
