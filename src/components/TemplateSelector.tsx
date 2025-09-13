@@ -187,17 +187,10 @@ export const TemplateSelector: React.FC<TemplateSelectorProps> = ({
     }
   ];
 
-  // Filter templates based on device type and scale them
-  // Make abaya-set (now "Outfit & Items") the default first template
-  const predefinedTemplates = isMobile 
-    ? [
-        baseTemplates.find(t => t.id === 'abaya-set'),
-        ...baseTemplates.filter(t => t.id !== 'abaya-set' && (t.id === 'mobile-stack' || t.id === 'editorial-3up'))
-      ].filter(Boolean).map(scaleTemplate)
-    : [
-        baseTemplates.find(t => t.id === 'abaya-set'),
-        ...baseTemplates.filter(t => t.id !== 'abaya-set')
-      ].filter(Boolean).map(scaleTemplate);
+  // Show only "Outfit & Items" template
+  const predefinedTemplates = [
+    baseTemplates.find(t => t.id === 'abaya-set')
+  ].filter(Boolean).map(scaleTemplate);
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -209,43 +202,46 @@ export const TemplateSelector: React.FC<TemplateSelectorProps> = ({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 mt-4">
+        <div className="space-y-4 mt-4">
           {predefinedTemplates.map((template) => (
             <Card 
               key={template.id} 
-              className="p-3 md:p-4 cursor-pointer hover:shadow-lg transition-shadow group"
+              className="p-4 cursor-pointer hover:shadow-lg transition-shadow group border-2 border-primary/20"
               onClick={() => onSelectTemplate(template)}
             >
-              <div className="space-y-2 md:space-y-3">
+              <div className="flex items-center gap-4">
                 {/* Template preview */}
-                <div className="aspect-[3/2] bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg flex items-center justify-center border-2 border-dashed border-gray-200 group-hover:border-primary transition-colors">
-                  <Grid3X3 className="h-6 w-6 md:h-8 md:w-8 text-gray-400 group-hover:text-primary transition-colors" />
+                <div className="w-20 h-20 bg-gradient-to-br from-primary/10 to-primary/20 rounded-lg flex items-center justify-center border border-primary/30">
+                  <Grid3X3 className="h-8 w-8 text-primary" />
                 </div>
 
                 {/* Template info */}
-                <div>
-                  <h3 className="font-medium text-xs md:text-sm">{template.name}</h3>
-                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                <div className="flex-1">
+                  <h3 className="font-semibold text-lg text-primary">{template.name}</h3>
+                  <p className="text-sm text-muted-foreground mt-1">
                     {template.description}
                   </p>
+                  <div className="flex items-center gap-2 mt-2">
+                    <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
+                      {template.slots.length} slots
+                    </span>
+                    <span className="text-xs text-primary font-medium">Recommended</span>
+                  </div>
                 </div>
 
-                {/* Slot count */}
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-muted-foreground">
-                    {template.slots.length} slots
-                  </span>
-                  <Button 
-                    size="sm" 
-                    variant="outline" 
-                    className="text-xs opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    Use
-                  </Button>
-                </div>
+                <Button 
+                  size="lg" 
+                  className="shrink-0"
+                >
+                  Use Template
+                </Button>
               </div>
             </Card>
           ))}
+
+          <div className="text-center text-sm text-muted-foreground bg-muted/50 p-4 rounded-lg">
+            This template is perfect for creating complete outfit collections with main pieces and accessories.
+          </div>
         </div>
 
         <div className="flex justify-end gap-2 mt-4 md:mt-6">

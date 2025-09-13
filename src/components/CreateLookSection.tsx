@@ -278,41 +278,32 @@ export const CreateLookSection: React.FC<CreateLookSectionProps> = ({
         </div>
       </div>
 
-      {/* Main Mood Board Interface */}
-      <div className="h-[400px] md:h-[600px] border rounded-lg overflow-hidden">
-        <ResizablePanelGroup direction="horizontal">
-          {/* Left Panel - Closet Items */}
-          {!closetCollapsed && <>
-              
-              <ResizableHandle />
-            </>}
-
-          {/* Center Panel - Canvas */}
-          <ResizablePanel defaultSize={40} minSize={35} className="md:defaultSize-50 md:minSize-40">
-            <div className="h-full relative bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
-              {/* Collapse buttons for minimized panels */}
-              {closetCollapsed && <Button variant="ghost" size="sm" onClick={() => setClosetCollapsed(false)} className="absolute left-1 md:left-2 top-1 md:top-2 z-10 shadow-lg hover:shadow-xl transition-shadow bg-background/90 backdrop-blur-sm">
-                  <span className="text-xs">open closet</span>
-                </Button>}
-              
-              {inspectorCollapsed && <Button variant="ghost" size="sm" onClick={() => setInspectorCollapsed(false)} className="absolute right-1 md:right-2 top-1 md:top-2 z-10 shadow-lg hover:shadow-xl transition-shadow bg-background/90 backdrop-blur-sm">
-                  <span className="text-xs">open inspector</span>
-                </Button>}
-              
-              {boardState.slots.length === 0 ? <div className="text-center p-4 md:p-8 border-2 border-dashed border-muted-foreground/30 rounded-lg bg-background/50 mx-2" onDragOver={e => e.preventDefault()} onDrop={handleDrop}>
-                  <Palette className="h-8 w-8 md:h-12 md:w-12 text-muted-foreground mx-auto mb-2 md:mb-4" />
-                  <h3 className="text-sm md:text-lg font-semibold mb-1 md:mb-2">Create Your Look</h3>
-                  <p className="text-xs md:text-sm text-muted-foreground">Drag items from your closet to start building your mood board</p>
-                </div> : <BoardCanvas ref={canvasRef} boardState={boardState} setBoardState={setBoardState} onDrop={handleDrop} onDragOver={e => e.preventDefault()} isDragging={isDragging} dragPreview={dragPreview} saveToHistory={saveToHistory} />}
+      {/* Simplified Canvas Area */}
+      <div className="h-[400px] md:h-[600px] border rounded-lg overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100">
+        <div className="h-full relative flex items-center justify-center">
+          {boardState.slots.length === 0 ? (
+            <div 
+              className="text-center p-4 md:p-8 border-2 border-dashed border-muted-foreground/30 rounded-lg bg-background/50 mx-2" 
+              onDragOver={e => e.preventDefault()} 
+              onDrop={handleDrop}
+            >
+              <Palette className="h-8 w-8 md:h-12 md:w-12 text-muted-foreground mx-auto mb-2 md:mb-4" />
+              <h3 className="text-sm md:text-lg font-semibold mb-1 md:mb-2">Create Your Look</h3>
+              <p className="text-xs md:text-sm text-muted-foreground">Drag items from below to start building your mood board</p>
             </div>
-          </ResizablePanel>
-
-          {/* Right Panel - Inspector */}
-          {!inspectorCollapsed && <>
-              <ResizableHandle />
-              
-            </>}
-        </ResizablePanelGroup>
+          ) : (
+            <BoardCanvas 
+              ref={canvasRef} 
+              boardState={boardState} 
+              setBoardState={setBoardState} 
+              onDrop={handleDrop} 
+              onDragOver={e => e.preventDefault()} 
+              isDragging={isDragging} 
+              dragPreview={dragPreview} 
+              saveToHistory={saveToHistory} 
+            />
+          )}
+        </div>
       </div>
 
       {/* Wishlist Carousel */}
@@ -335,28 +326,68 @@ export const CreateLookSection: React.FC<CreateLookSectionProps> = ({
           </div>}
       </div>
 
-      {/* Liked Products Grid */}
+      {/* Closet Items Grid */}
       <div className="space-y-4">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <Heart className="h-5 w-5" />
-            <h3 className="text-lg font-semibold">My Liked Products</h3>
-            <Badge variant="secondary">{likedProducts?.length || 0}</Badge>
-          </div>
-          <p className="text-sm text-muted-foreground">Press & hold when adding item to template</p>
+        <div className="flex items-center gap-2">
+          <ShoppingBag className="h-5 w-5" />
+          <h3 className="text-lg font-semibold">Closet Items</h3>
+          <Badge variant="secondary">{closetItems?.length || 0}</Badge>
         </div>
         
-        {likedLoading ? <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-            {Array.from({
-          length: 8
-        }, (_, i) => <div key={i} className="aspect-square bg-muted rounded-lg animate-pulse" />)}
-          </div> : likedProducts && likedProducts.length > 0 ? <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-            {likedProducts.map(product => <ProductCard key={product.id} product={product} onDragStart={handleDragStart} onAddToBoard={addToBoard} onTryOn={handleTryOn} />)}
-          </div> : <div className="text-center py-8 bg-muted/30 rounded-lg">
+        {closetItems && closetItems.length > 0 ? (
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            {closetItems.map(item => (
+              <ProductCard 
+                key={item.id} 
+                product={item.products || item} 
+                onDragStart={handleDragStart} 
+                onAddToBoard={addToBoard} 
+                onTryOn={handleTryOn} 
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8 bg-muted/30 rounded-lg">
+            <ShoppingBag className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+            <p className="text-muted-foreground">No items in this closet yet</p>
+            <p className="text-sm text-muted-foreground mt-1">Add items to your closet to use them in looks</p>
+          </div>
+        )}
+      </div>
+
+      {/* Liked Products Grid */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          <Heart className="h-5 w-5 text-red-500" />
+          <h3 className="text-lg font-semibold">Liked Products</h3>
+          <Badge variant="secondary">{likedProducts?.length || 0}</Badge>
+        </div>
+        
+        {likedLoading ? (
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            {Array.from({ length: 8 }, (_, i) => (
+              <div key={i} className="aspect-square bg-muted rounded-lg animate-pulse" />
+            ))}
+          </div>
+        ) : likedProducts && likedProducts.length > 0 ? (
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            {likedProducts.map(product => (
+              <ProductCard 
+                key={product.id} 
+                product={product} 
+                onDragStart={handleDragStart} 
+                onAddToBoard={addToBoard} 
+                onTryOn={handleTryOn} 
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8 bg-muted/30 rounded-lg">
             <Heart className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
             <p className="text-muted-foreground">No liked products yet</p>
             <p className="text-sm text-muted-foreground mt-1">Like products to see them here</p>
-          </div>}
+          </div>
+        )}
       </div>
 
       {/* Template Selector Modal */}
