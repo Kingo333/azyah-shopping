@@ -147,7 +147,7 @@ const SubcategoryCard: React.FC<{
 
   return (
     <Card className={cn(
-      "group cursor-pointer transition-all duration-300 hover:shadow-lg border-0 bg-gradient-to-br from-card to-card/50 backdrop-blur-sm overflow-hidden h-24 md:h-28 max-w-full",
+      "group cursor-pointer transition-all duration-300 hover:shadow-lg border-0 bg-gradient-to-br from-card to-card/50 backdrop-blur-sm overflow-hidden h-16 md:h-18 max-w-full",
       isSelected ? "ring-2 ring-primary shadow-lg scale-[1.02]" : "hover:shadow-md hover:scale-[1.01]"
     )}>
       <CardContent className="p-0 relative h-full max-w-full overflow-hidden">
@@ -171,12 +171,11 @@ const SubcategoryCard: React.FC<{
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
             </div>
             
-            {/* Content positioned at bottom */}
-            <div className="absolute bottom-0 left-0 right-0 z-10 p-2 md:p-3">
-              <h4 className="font-medium text-xs md:text-sm text-white drop-shadow-lg text-center leading-tight">
+            {/* Content positioned at center */}
+            <div className="absolute inset-0 z-10 flex items-center justify-center p-2">
+              <h4 className="font-medium text-xs text-white drop-shadow-lg text-center leading-tight">
                 {getSubcategoryDisplayName(subcategory)}
               </h4>
-              <div className="w-6 h-0.5 bg-white/60 mt-1 mx-auto transition-all duration-300 group-hover:w-8 group-hover:bg-white" />
             </div>
             
             {/* Selection indicator */}
