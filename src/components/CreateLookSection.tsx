@@ -278,32 +278,117 @@ export const CreateLookSection: React.FC<CreateLookSectionProps> = ({
         </div>
       </div>
 
-      {/* Simplified Canvas Area */}
-      <div className="h-[400px] md:h-[600px] border rounded-lg overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100">
-        <div className="h-full relative flex items-center justify-center">
-          {boardState.slots.length === 0 ? (
-            <div 
-              className="text-center p-4 md:p-8 border-2 border-dashed border-muted-foreground/30 rounded-lg bg-background/50 mx-2" 
-              onDragOver={e => e.preventDefault()} 
-              onDrop={handleDrop}
-            >
-              <Palette className="h-8 w-8 md:h-12 md:w-12 text-muted-foreground mx-auto mb-2 md:mb-4" />
-              <h3 className="text-sm md:text-lg font-semibold mb-1 md:mb-2">Create Your Look</h3>
-              <p className="text-xs md:text-sm text-muted-foreground">Drag items from below to start building your mood board</p>
-            </div>
-          ) : (
-            <BoardCanvas 
-              ref={canvasRef} 
-              boardState={boardState} 
-              setBoardState={setBoardState} 
-              onDrop={handleDrop} 
-              onDragOver={e => e.preventDefault()} 
-              isDragging={isDragging} 
-              dragPreview={dragPreview} 
-              saveToHistory={saveToHistory} 
-            />
+      {/* Main Mood Board Interface */}
+      <div className="h-[400px] md:h-[600px] border rounded-lg overflow-hidden">
+        <ResizablePanelGroup direction="horizontal">
+          {/* Left Panel - Closet Items */}
+          {!closetCollapsed && (
+            <>
+              <ResizablePanel defaultSize={25} minSize={20}>
+                <div className="h-full p-4 bg-background border-r overflow-y-auto">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-semibold text-sm">Closet Items</h4>
+                      <Button variant="ghost" size="sm" onClick={() => setClosetCollapsed(true)}>
+                        <span className="text-xs">←</span>
+                      </Button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      {closetItems.slice(0, 6).map(item => (
+                        <div
+                          key={item.id}
+                          className="aspect-square bg-muted rounded-lg cursor-grab active:cursor-grabbing"
+                          draggable
+                          onDragStart={(e) => handleDragStart(item.products || item, e)}
+                        >
+                          <img 
+                            src={getImageUrl(item.products || item)} 
+                            alt={item.title || 'Item'}
+                            className="w-full h-full object-cover rounded-lg"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </ResizablePanel>
+              <ResizableHandle />
+            </>
           )}
-        </div>
+
+          {/* Center Panel - Canvas */}
+          <ResizablePanel defaultSize={40} minSize={35} className="md:defaultSize-50 md:minSize-40">
+            <div className="h-full relative bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
+              {/* Collapse buttons for minimized panels */}
+              {closetCollapsed && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => setClosetCollapsed(false)} 
+                  className="absolute left-1 md:left-2 top-1 md:top-2 z-10 shadow-lg hover:shadow-xl transition-shadow bg-background/90 backdrop-blur-sm"
+                >
+                  <span className="text-xs">open closet</span>
+                </Button>
+              )}
+              
+              {inspectorCollapsed && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => setInspectorCollapsed(false)} 
+                  className="absolute right-1 md:right-2 top-1 md:top-2 z-10 shadow-lg hover:shadow-xl transition-shadow bg-background/90 backdrop-blur-sm"
+                >
+                  <span className="text-xs">open inspector</span>
+                </Button>
+              )}
+              
+              {boardState.slots.length === 0 ? (
+                <div 
+                  className="text-center p-4 md:p-8 border-2 border-dashed border-muted-foreground/30 rounded-lg bg-background/50 mx-2" 
+                  onDragOver={e => e.preventDefault()} 
+                  onDrop={handleDrop}
+                >
+                  <Palette className="h-8 w-8 md:h-12 md:w-12 text-muted-foreground mx-auto mb-2 md:mb-4" />
+                  <h3 className="text-sm md:text-lg font-semibold mb-1 md:mb-2">Create Your Look</h3>
+                  <p className="text-xs md:text-sm text-muted-foreground">Drag items from your closet to start building your mood board</p>
+                </div>
+              ) : (
+                <BoardCanvas 
+                  ref={canvasRef} 
+                  boardState={boardState} 
+                  setBoardState={setBoardState} 
+                  onDrop={handleDrop} 
+                  onDragOver={e => e.preventDefault()} 
+                  isDragging={isDragging} 
+                  dragPreview={dragPreview} 
+                  saveToHistory={saveToHistory} 
+                />
+              )}
+            </div>
+          </ResizablePanel>
+
+          {/* Right Panel - Inspector */}
+          {!inspectorCollapsed && (
+            <>
+              <ResizableHandle />
+              <ResizablePanel defaultSize={25} minSize={20}>
+                <div className="h-full p-4 bg-background border-l overflow-y-auto">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-semibold text-sm">Inspector</h4>
+                      <Button variant="ghost" size="sm" onClick={() => setInspectorCollapsed(true)}>
+                        <span className="text-xs">→</span>
+                      </Button>
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      Select items on the canvas to edit their properties
+                    </div>
+                  </div>
+                </div>
+              </ResizablePanel>
+            </>
+          )}
+        </ResizablePanelGroup>
       </div>
 
       {/* Wishlist Carousel */}
