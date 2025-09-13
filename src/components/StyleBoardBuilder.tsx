@@ -214,7 +214,7 @@ export const StyleBoardBuilder: React.FC<StyleBoardBuilderProps> = ({ onClose })
                 <p className="text-muted-foreground">
                   Add some items to your closet to start creating outfits
                 </p>
-                <Button className="gap-2">
+                <Button className="gap-2" onClick={() => onClose && onClose()}>
                   <Plus className="h-4 w-4" />
                   Add Items
                 </Button>

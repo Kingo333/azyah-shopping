@@ -1,7 +1,10 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useDefaultCloset } from '@/hooks/useDefaultCloset';
-import { useEnhancedClosetItems } from '@/hooks/useEnhancedClosets';
+import { useEnhancedClosetItems, EnhancedClosetItem } from '@/hooks/useEnhancedClosets';
 import { StyleBoardBuilder } from '@/components/StyleBoardBuilder';
+import { AddItemModal } from '@/components/AddItemModal';
+import { ItemDetailModal } from '@/components/ItemDetailModal';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -17,9 +20,12 @@ const LoadingFallback = () => (
 );
 
 const Closets = () => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('wardrobe');
   const [searchQuery, setSearchQuery] = useState('');
   const [showStyleBoard, setShowStyleBoard] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<EnhancedClosetItem | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'categories'>('categories');
   
   const { defaultCloset, isLoading: closetLoading } = useDefaultCloset();
@@ -104,7 +110,10 @@ const Closets = () => {
           {closetLoading || itemsLoading ? (
             <LoadingFallback />
           ) : closetItems.length === 0 ? (
-            <EmptyWardrobeState />
+            <EmptyWardrobeState 
+              onAddItems={() => setShowAddModal(true)}
+              onBrowseInspiration={() => navigate('/explore')}
+            />
           ) : (
             <div className="space-y-6">
               {viewMode === 'categories' ? (
@@ -122,7 +131,11 @@ const Closets = () => {
                       </div>
                       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
                         {items.map((item) => (
-                          <WardrobeItemCard key={item.id} item={item} />
+                          <WardrobeItemCard 
+                            key={item.id} 
+                            item={item} 
+                            onClick={() => setSelectedItem(item)}
+                          />
                         ))}
                       </div>
                     </div>
@@ -132,7 +145,11 @@ const Closets = () => {
                 // Grid View
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
                   {closetItems.map((item) => (
-                    <WardrobeItemCard key={item.id} item={item} />
+                    <WardrobeItemCard 
+                      key={item.id} 
+                      item={item} 
+                      onClick={() => setSelectedItem(item)}
+                    />
                   ))}
                 </div>
               )}
@@ -140,13 +157,26 @@ const Closets = () => {
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Modals */}
+      <AddItemModal 
+        open={showAddModal} 
+        onOpenChange={setShowAddModal}
+        onNavigateToExplore={() => navigate('/explore')}
+      />
+      
+      <ItemDetailModal
+        open={!!selectedItem}
+        onOpenChange={(open) => !open && setSelectedItem(null)}
+        item={selectedItem}
+      />
     </div>
   );
 };
 
-const WardrobeItemCard = ({ item }: { item: any }) => {
+const WardrobeItemCard = ({ item, onClick }: { item: EnhancedClosetItem; onClick: () => void }) => {
   return (
-    <Card className="overflow-hidden hover:shadow-md transition-all hover:scale-105 group">
+    <Card className="overflow-hidden hover:shadow-md transition-all hover:scale-105 group cursor-pointer" onClick={onClick}>
       <div className="aspect-[3/4] relative overflow-hidden">
         <img
           src={item.image_url || '/placeholder.svg'}
@@ -165,7 +195,7 @@ const WardrobeItemCard = ({ item }: { item: any }) => {
   );
 };
 
-const EmptyWardrobeState = () => (
+const EmptyWardrobeState = ({ onAddItems, onBrowseInspiration }: { onAddItems: () => void; onBrowseInspiration: () => void }) => (
   <Card className="text-center py-12">
     <CardContent className="space-y-6">
       <div className="mx-auto w-24 h-24 bg-muted rounded-full flex items-center justify-center">
@@ -179,11 +209,11 @@ const EmptyWardrobeState = () => (
         </p>
       </div>
       <div className="flex flex-col sm:flex-row gap-3 justify-center">
-        <Button className="gap-2">
+        <Button onClick={onAddItems} className="gap-2">
           <Plus className="h-4 w-4" />
           Add Items
         </Button>
-        <Button variant="outline" className="gap-2">
+        <Button variant="outline" className="gap-2" onClick={onBrowseInspiration}>
           <Search className="h-4 w-4" />
           Browse Inspiration
         </Button>
