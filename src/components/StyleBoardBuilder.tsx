@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useDefaultCloset } from '@/hooks/useDefaultCloset';
-import { useEnhancedClosetItems } from '@/hooks/useEnhancedClosets';
+import { useEnhancedClosetItems, useAddExternalProduct } from '@/hooks/useEnhancedClosets';
 import { useLooks, useCreateLook, useUpdateLook } from '@/hooks/useLooks';
 import { useLikedProducts } from '@/hooks/useLikedProducts';
 import { Button } from '@/components/ui/button';
@@ -34,11 +34,13 @@ export const StyleBoardBuilder: React.FC<StyleBoardBuilderProps> = ({ onClose })
   const { likedProducts } = useLikedProducts();
   const createLookMutation = useCreateLook();
   const updateLookMutation = useUpdateLook();
+  const addToWardrobeMutation = useAddExternalProduct();
 
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
   const [selectedItems, setSelectedItems] = useState<any[]>([]);
   const [lookTitle, setLookTitle] = useState('');
   const [isCreating, setIsCreating] = useState(false);
+  const [addingToWardrobe, setAddingToWardrobe] = useState<Set<string>>(new Set());
 
   const handleTemplateSelect = (templateId: string) => {
     setSelectedTemplate(templateId);
@@ -107,6 +109,52 @@ export const StyleBoardBuilder: React.FC<StyleBoardBuilderProps> = ({ onClose })
       });
     } finally {
       setIsCreating(false);
+    }
+  };
+
+  const handleAddToWardrobe = async (product: any) => {
+    if (!defaultCloset?.id) {
+      toast({
+        title: "Error",
+        description: "No default closet found"
+      });
+      return;
+    }
+
+    setAddingToWardrobe(prev => new Set([...prev, product.id]));
+
+    try {
+      await addToWardrobeMutation.mutateAsync({
+        closetId: defaultCloset.id,
+        productData: {
+          external_product_id: product.id,
+          title: product.title,
+          brand: product.brands?.name,
+          price_cents: product.price_cents,
+          currency: product.currency,
+          image_url: product.media_urls?.[0] || undefined,
+          attrs: { 
+            external_url: product.external_url,
+            source: 'liked_products'
+          }
+        }
+      });
+
+      toast({
+        title: "Added to wardrobe!",
+        description: `${product.title} is now available for styling`
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to add item to your wardrobe"
+      });
+    } finally {
+      setAddingToWardrobe(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(product.id);
+        return newSet;
+      });
     }
   };
 
@@ -253,26 +301,33 @@ export const StyleBoardBuilder: React.FC<StyleBoardBuilderProps> = ({ onClose })
                       {likedProducts.length} items • Add to wardrobe first
                     </span>
                   </div>
-                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
-                    {likedProducts.slice(0, 12).map((product: any) => (
-                      <div
-                        key={product.id}
-                        className="relative cursor-pointer transition-all hover:scale-105 opacity-60"
-                        title="Add to wardrobe first to use in outfits"
-                      >
-                        <img
-                          src={product.media_urls?.[0] || '/placeholder.svg'}
-                          alt={product.title}
-                          className="w-full aspect-[3/4] object-cover rounded-lg"
-                        />
-                        <div className="absolute inset-0 bg-black/60 rounded-lg flex items-center justify-center">
-                          <div className="text-center text-white text-xs">
-                            <Plus className="h-4 w-4 mx-auto mb-1" />
-                            Add to Wardrobe
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+                   <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
+                     {likedProducts.slice(0, 12).map((product: any) => {
+                       const isAdding = addingToWardrobe.has(product.id);
+                       return (
+                         <div
+                           key={product.id}
+                           className="relative cursor-pointer transition-all hover:scale-105"
+                           onClick={() => handleAddToWardrobe(product)}
+                         >
+                           <img
+                             src={product.media_urls?.[0] || '/placeholder.svg'}
+                             alt={product.title}
+                             className="w-full aspect-[3/4] object-cover rounded-lg"
+                           />
+                           <div className="absolute inset-0 bg-black/60 rounded-lg flex items-center justify-center">
+                             <div className="text-center text-white text-xs">
+                               {isAdding ? (
+                                 <div className="h-4 w-4 mx-auto mb-1 animate-spin rounded-full border border-white border-t-transparent" />
+                               ) : (
+                                 <Plus className="h-4 w-4 mx-auto mb-1" />
+                               )}
+                               {isAdding ? 'Adding...' : 'Add to Wardrobe'}
+                             </div>
+                           </div>
+                         </div>
+                       );
+                     })}
                   </div>
                 </div>
               )}

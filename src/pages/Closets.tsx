@@ -5,6 +5,8 @@ import { useEnhancedClosetItems, EnhancedClosetItem } from '@/hooks/useEnhancedC
 import { StyleBoardBuilder } from '@/components/StyleBoardBuilder';
 import { AddItemModal } from '@/components/AddItemModal';
 import { ItemDetailModal } from '@/components/ItemDetailModal';
+import { OutfitTemplatesSection } from '@/components/OutfitTemplatesSection';
+import { PublishLookModal } from '@/components/PublishLookModal';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -27,6 +29,7 @@ const Closets = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState<EnhancedClosetItem | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'categories'>('categories');
+  const [selectedLookForPublish, setSelectedLookForPublish] = useState<any>(null);
   
   const { defaultCloset, isLoading: closetLoading } = useDefaultCloset();
   const { data: closetItems = [], isLoading: itemsLoading } = useEnhancedClosetItems(
@@ -107,6 +110,12 @@ const Closets = () => {
         </TabsList>
 
         <TabsContent value="wardrobe" className="space-y-6">
+          {/* Outfit Templates Section */}
+          <OutfitTemplatesSection 
+            onCreateFromTemplate={() => setShowStyleBoard(true)}
+            onOpenStyleBoard={() => setShowStyleBoard(true)}
+          />
+
           {closetLoading || itemsLoading ? (
             <LoadingFallback />
           ) : closetItems.length === 0 ? (
@@ -169,6 +178,16 @@ const Closets = () => {
         open={!!selectedItem}
         onOpenChange={(open) => !open && setSelectedItem(null)}
         item={selectedItem}
+      />
+
+      <PublishLookModal 
+        open={!!selectedLookForPublish}
+        onOpenChange={(open) => !open && setSelectedLookForPublish(null)}
+        look={selectedLookForPublish}
+        onPublished={() => {
+          setSelectedLookForPublish(null);
+          navigate('/explore');
+        }}
       />
     </div>
   );

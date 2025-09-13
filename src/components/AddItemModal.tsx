@@ -71,7 +71,7 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
     external_url: ''
   });
 
-  const [activeTab, setActiveTab] = useState('manual');
+  const [activeTab, setActiveTab] = useState('liked');
   const [addingLikedItems, setAddingLikedItems] = useState<Set<string>>(new Set());
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -197,11 +197,9 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="liked" className="text-xs">Liked</TabsTrigger>
-            <TabsTrigger value="manual" className="text-xs">Manual</TabsTrigger>
             <TabsTrigger value="upload" className="text-xs">Upload</TabsTrigger>
-            <TabsTrigger value="url" className="text-xs">From URL</TabsTrigger>
             <TabsTrigger value="browse" className="text-xs">Browse</TabsTrigger>
           </TabsList>
 
@@ -284,119 +282,6 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
             </Card>
           </TabsContent>
 
-          <TabsContent value="manual" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Camera className="h-5 w-5" />
-                  Add Item Manually
-                </CardTitle>
-                <CardDescription>
-                  Enter the details of your clothing item
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="title">Item Name *</Label>
-                      <Input
-                        id="title"
-                        value={formData.title}
-                        onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                        placeholder="e.g., Blue Denim Jacket"
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="brand">Brand</Label>
-                      <Input
-                        id="brand"
-                        value={formData.brand}
-                        onChange={(e) => setFormData(prev => ({ ...prev, brand: e.target.value }))}
-                        placeholder="e.g., Levi's"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="category">Category</Label>
-                      <Select value={formData.category} onValueChange={(value) => setFormData(prev => ({ ...prev, category: value }))}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select category" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {CATEGORIES.map((category) => (
-                            <SelectItem key={category} value={category}>
-                              {category.charAt(0).toUpperCase() + category.slice(1)}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="color">Color</Label>
-                      <Select value={formData.color} onValueChange={(value) => setFormData(prev => ({ ...prev, color: value }))}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select color" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {COLORS.map((color) => (
-                            <SelectItem key={color} value={color}>
-                              {color.charAt(0).toUpperCase() + color.slice(1)}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="space-y-2 col-span-2">
-                      <Label htmlFor="price">Price</Label>
-                      <Input
-                        id="price"
-                        type="number"
-                        value={formData.price_cents}
-                        onChange={(e) => setFormData(prev => ({ ...prev, price_cents: e.target.value }))}
-                        placeholder="0"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="currency">Currency</Label>
-                      <Select value={formData.currency} onValueChange={(value) => setFormData(prev => ({ ...prev, currency: value }))}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="USD">USD</SelectItem>
-                          <SelectItem value="EUR">EUR</SelectItem>
-                          <SelectItem value="GBP">GBP</SelectItem>
-                          <SelectItem value="AED">AED</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="image_url">Image URL</Label>
-                    <Input
-                      id="image_url"
-                      value={formData.image_url}
-                      onChange={(e) => setFormData(prev => ({ ...prev, image_url: e.target.value }))}
-                      placeholder="https://example.com/image.jpg"
-                    />
-                  </div>
-
-                  <Button type="submit" className="w-full" disabled={addItemMutation.isPending}>
-                    {addItemMutation.isPending ? 'Adding...' : 'Add to Wardrobe'}
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
           <TabsContent value="upload" className="space-y-4">
             <Card>
               <CardHeader>
@@ -415,65 +300,13 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
                     Photo upload feature coming soon!
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    For now, you can add items manually or use the URL option
+                    For now, you can add items from your liked products or browse for inspiration
                   </p>
                 </div>
               </CardContent>
             </Card>
           </TabsContent>
 
-          <TabsContent value="url" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Link className="h-5 w-5" />
-                  Import from URL
-                </CardTitle>
-                <CardDescription>
-                  Add an item from a website link
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="url">Product URL</Label>
-                    <Input
-                      id="url"
-                      value={formData.external_url}
-                      onChange={(e) => setFormData(prev => ({ ...prev, external_url: e.target.value }))}
-                      placeholder="https://store.com/product-page"
-                    />
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="title-url">Item Name *</Label>
-                      <Input
-                        id="title-url"
-                        value={formData.title}
-                        onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                        placeholder="e.g., Black Sneakers"
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="brand-url">Brand</Label>
-                      <Input
-                        id="brand-url"
-                        value={formData.brand}
-                        onChange={(e) => setFormData(prev => ({ ...prev, brand: e.target.value }))}
-                        placeholder="e.g., Nike"
-                      />
-                    </div>
-                  </div>
-
-                  <Button type="submit" className="w-full" disabled={addItemMutation.isPending}>
-                    {addItemMutation.isPending ? 'Adding...' : 'Add from URL'}
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
-          </TabsContent>
 
           <TabsContent value="browse" className="space-y-4">
             <Card>
