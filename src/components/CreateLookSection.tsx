@@ -281,40 +281,6 @@ export const CreateLookSection: React.FC<CreateLookSectionProps> = ({
       {/* Main Mood Board Interface */}
       <div className="h-[400px] md:h-[600px] border rounded-lg overflow-hidden">
         <ResizablePanelGroup direction="horizontal">
-          {/* Left Panel - Closet Items */}
-          {!closetCollapsed && (
-            <>
-              <ResizablePanel defaultSize={25} minSize={20}>
-                <div className="h-full p-4 bg-background border-r overflow-y-auto">
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h4 className="font-semibold text-sm">Closet Items</h4>
-                      <Button variant="ghost" size="sm" onClick={() => setClosetCollapsed(true)}>
-                        <span className="text-xs">←</span>
-                      </Button>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      {closetItems.slice(0, 6).map(item => (
-                        <div
-                          key={item.id}
-                          className="aspect-square bg-muted rounded-lg cursor-grab active:cursor-grabbing"
-                          draggable
-                          onDragStart={(e) => handleDragStart(item.products || item, e)}
-                        >
-                          <img 
-                            src={getImageUrl(item.products || item)} 
-                            alt={item.title || 'Item'}
-                            className="w-full h-full object-cover rounded-lg"
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </ResizablePanel>
-              <ResizableHandle />
-            </>
-          )}
 
           {/* Center Panel - Canvas */}
           <ResizablePanel defaultSize={40} minSize={35} className="md:defaultSize-50 md:minSize-40">
