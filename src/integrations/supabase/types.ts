@@ -2477,6 +2477,9 @@ export type Database = {
           name: string | null
           shipping_regions: string[] | null
           slug: string | null
+          socials: Json | null
+          updated_at: string | null
+          website: string | null
         }
         Insert: {
           bio?: string | null
@@ -2487,6 +2490,9 @@ export type Database = {
           name?: string | null
           shipping_regions?: string[] | null
           slug?: string | null
+          socials?: Json | null
+          updated_at?: string | null
+          website?: string | null
         }
         Update: {
           bio?: string | null
@@ -2497,6 +2503,9 @@ export type Database = {
           name?: string | null
           shipping_regions?: string[] | null
           slug?: string | null
+          socials?: Json | null
+          updated_at?: string | null
+          website?: string | null
         }
         Relationships: []
       }
@@ -2976,7 +2985,7 @@ export type Database = {
         }[]
       }
       get_public_brands: {
-        Args: { limit_param?: number }
+        Args: Record<PropertyKey, never> | { limit_param?: number }
         Returns: {
           bio: string
           created_at: string
@@ -3030,15 +3039,19 @@ export type Database = {
         }[]
       }
       get_public_retailers: {
-        Args: { limit_param?: number }
+        Args: Record<PropertyKey, never> | { limit_param?: number }
         Returns: {
           bio: string
+          cover_image_url: string
           created_at: string
           id: string
           logo_url: string
           name: string
+          shipping_regions: string[]
           slug: string
+          socials: Json
           updated_at: string
+          website: string
         }[]
       }
       get_retailer_contact_info: {
