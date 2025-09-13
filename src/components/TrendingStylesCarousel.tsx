@@ -37,45 +37,137 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
   const [api, setApi] = React.useState<any>();
 
   const { data: trendingProducts, isLoading, error } = useQuery({
-    queryKey: ['trending-products-carousel', limit],
+    queryKey: ['trending-products-engagement', limit],
     queryFn: async (): Promise<TrendingProduct[]> => {
-      console.log('TrendingProductsCarousel: Starting direct product fetch');
+      console.log('TrendingProductsCarousel: Starting engagement-based fetch');
       
-      // Direct query to products table
-      const { data, error } = await supabase
-        .from('products')
-        .select(`
-          id,
-          title,
-          image_url,
-          price_cents,
-          currency,
-          external_url,
-          brands:brand_id(name),
-          retailers:retailer_id(name)
-        `)
-        .eq('status', 'active')
-        .not('title', 'is', null)
-        .order('created_at', { ascending: false })
-        .limit(limit);
-      
-      if (error) {
-        console.error('TrendingProductsCarousel: Error fetching products:', error);
-        throw error;
+      try {
+        // Get trending products based on likes from the last 7 days
+        const { data: likeData, error: likeError } = await supabase
+          .from('likes')
+          .select(`
+            product_id,
+            products (
+              id,
+              title,
+              image_url,
+              price_cents,
+              currency,
+              external_url,
+              status,
+              brands:brand_id(name),
+              retailers:retailer_id(name)
+            )
+          `)
+          .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
+          .not('products.title', 'is', null)
+          .eq('products.status', 'active');
+
+        if (likeError) {
+          console.error('TrendingProductsCarousel: Error fetching liked products:', likeError);
+          throw likeError;
+        }
+
+        // Count likes per product and sort by popularity
+        const productLikeCounts = new Map<string, { product: any; count: number }>();
+        
+        (likeData || []).forEach((like: any) => {
+          if (like.products) {
+            const existing = productLikeCounts.get(like.product_id);
+            if (existing) {
+              existing.count++;
+            } else {
+              productLikeCounts.set(like.product_id, {
+                product: like.products,
+                count: 1
+              });
+            }
+          }
+        });
+
+        // Sort by like count and take top products
+        const sortedProducts = Array.from(productLikeCounts.values())
+          .sort((a, b) => b.count - a.count)
+          .slice(0, limit)
+          .map(item => item.product);
+
+        // If we don't have enough trending products, fall back to recent products
+        if (sortedProducts.length < limit) {
+          console.log('TrendingProductsCarousel: Insufficient trending data, fetching recent products');
+          
+          const { data: recentData, error: recentError } = await supabase
+            .from('products')
+            .select(`
+              id,
+              title,
+              image_url,
+              price_cents,
+              currency,
+              external_url,
+              brands:brand_id(name),
+              retailers:retailer_id(name)
+            `)
+            .eq('status', 'active')
+            .not('title', 'is', null)
+            .order('created_at', { ascending: false })
+            .limit(limit - sortedProducts.length);
+
+          if (recentError) {
+            console.error('TrendingProductsCarousel: Error fetching recent products:', recentError);
+          } else if (recentData) {
+            // Add recent products that aren't already in trending
+            const existingIds = new Set(sortedProducts.map(p => p.id));
+            const newProducts = recentData.filter(p => !existingIds.has(p.id));
+            sortedProducts.push(...newProducts);
+          }
+        }
+        
+        console.log('TrendingProductsCarousel: Products fetched:', sortedProducts.length);
+        return sortedProducts.map((product: any) => ({
+          id: product.id,
+          title: product.title,
+          image_url: product.image_url || '/placeholder.svg',
+          price_cents: product.price_cents,
+          currency: product.currency || 'USD',
+          brand_name: product.brands?.name || product.retailers?.name || '',
+          external_url: product.external_url
+        }));
+        
+      } catch (error) {
+        console.error('TrendingProductsCarousel: Error in engagement fetch:', error);
+        // Fallback to recent products on error
+        const { data: fallbackData, error: fallbackError } = await supabase
+          .from('products')
+          .select(`
+            id,
+            title,
+            image_url,
+            price_cents,
+            currency,
+            external_url,
+            brands:brand_id(name),
+            retailers:retailer_id(name)
+          `)
+          .eq('status', 'active')
+          .not('title', 'is', null)
+          .order('created_at', { ascending: false })
+          .limit(limit);
+
+        if (fallbackError) throw fallbackError;
+        
+        return (fallbackData || []).map((product: any) => ({
+          id: product.id,
+          title: product.title,
+          image_url: product.image_url || '/placeholder.svg',
+          price_cents: product.price_cents,
+          currency: product.currency || 'USD',
+          brand_name: product.brands?.name || product.retailers?.name || '',
+          external_url: product.external_url
+        }));
       }
-      
-      console.log('TrendingProductsCarousel: Products fetched:', data?.length || 0);
-      return (data || []).map((product: any) => ({
-        id: product.id,
-        title: product.title,
-        image_url: product.image_url || '/placeholder.svg',
-        price_cents: product.price_cents,
-        currency: product.currency || 'USD',
-        brand_name: product.brands?.name || product.retailers?.name || '',
-        external_url: product.external_url
-      }));
     },
-    staleTime: 1000 * 60 * 15, // 15 minutes
+    staleTime: 1000 * 60 * 60 * 48, // 48 hours
+    gcTime: 1000 * 60 * 60 * 48, // 48 hours
   });
 
   // Auto-slide functionality
