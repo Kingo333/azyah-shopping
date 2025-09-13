@@ -519,6 +519,7 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
+          is_default: boolean | null
           is_public: boolean
           title: string
           updated_at: string
@@ -528,6 +529,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          is_default?: boolean | null
           is_public?: boolean
           title?: string
           updated_at?: string
@@ -537,6 +539,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          is_default?: boolean | null
           is_public?: boolean
           title?: string
           updated_at?: string
@@ -1274,10 +1277,14 @@ export type Database = {
           description: string | null
           id: string
           is_public: boolean | null
+          is_template: boolean | null
           mood: string | null
           occasion: string | null
           published_at: string | null
           tags: string[] | null
+          template_type:
+            | Database["public"]["Enums"]["outfit_template_type"]
+            | null
           title: string
           updated_at: string | null
           user_id: string
@@ -1289,10 +1296,14 @@ export type Database = {
           description?: string | null
           id?: string
           is_public?: boolean | null
+          is_template?: boolean | null
           mood?: string | null
           occasion?: string | null
           published_at?: string | null
           tags?: string[] | null
+          template_type?:
+            | Database["public"]["Enums"]["outfit_template_type"]
+            | null
           title: string
           updated_at?: string | null
           user_id: string
@@ -1304,10 +1315,14 @@ export type Database = {
           description?: string | null
           id?: string
           is_public?: boolean | null
+          is_template?: boolean | null
           mood?: string | null
           occasion?: string | null
           published_at?: string | null
           tags?: string[] | null
+          template_type?:
+            | Database["public"]["Enums"]["outfit_template_type"]
+            | null
           title?: string
           updated_at?: string | null
           user_id?: string
@@ -2257,6 +2272,27 @@ export type Database = {
         }
         Relationships: []
       }
+      voice_sessions: {
+        Row: {
+          created_at: string
+          id: string
+          seconds_used: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          seconds_used?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          seconds_used?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       webhook_events: {
         Row: {
           created_at: string | null
@@ -3144,6 +3180,15 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_voice_usage_today: {
+        Args: { target_user_id: string }
+        Returns: {
+          daily_limit: number
+          is_premium: boolean
+          remaining_seconds: number
+          used_today: number
+        }[]
+      }
       infer_gender_from_text: {
         Args: { text_input: string }
         Returns: Database["public"]["Enums"]["gender_type"]
@@ -3190,6 +3235,10 @@ export type Database = {
           table_name: string
         }
         Returns: undefined
+      }
+      log_voice_usage: {
+        Args: { seconds_used: number; target_user_id: string }
+        Returns: boolean
       }
       policy_exists: {
         Args: { _name: string; _table: unknown }
@@ -3293,6 +3342,15 @@ export type Database = {
         | "delivered"
         | "cancelled"
         | "returned"
+      outfit_template_type:
+        | "casual"
+        | "formal"
+        | "party"
+        | "work"
+        | "sporty"
+        | "evening"
+        | "weekend"
+        | "date_night"
       product_status:
         | "active"
         | "inactive"
@@ -3538,6 +3596,16 @@ export const Constants = {
         "delivered",
         "cancelled",
         "returned",
+      ],
+      outfit_template_type: [
+        "casual",
+        "formal",
+        "party",
+        "work",
+        "sporty",
+        "evening",
+        "weekend",
+        "date_night",
       ],
       product_status: [
         "active",
