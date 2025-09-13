@@ -25,6 +25,8 @@ const SubcategoryCarousel: React.FC<SubcategoryCarouselProps> = ({
 
   // Get all subcategories for selected categories
   const subcategories = React.useMemo(() => {
+    if (selectedCategories.length === 0) return [];
+    
     const allSubcategories = new Set<SubCategory>();
     selectedCategories.forEach(category => {
       const subs = getSubcategoriesForCategory(category);
