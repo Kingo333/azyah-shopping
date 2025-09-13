@@ -147,7 +147,7 @@ const SubcategoryCard: React.FC<{
 
   return (
     <Card className={cn(
-      "group cursor-pointer transition-all duration-300 hover:shadow-lg border-0 bg-gradient-to-br from-card to-card/50 backdrop-blur-sm overflow-hidden h-12 max-w-full",
+      "group cursor-pointer transition-all duration-300 hover:shadow-lg border-0 bg-gradient-to-br from-card to-card/50 backdrop-blur-sm overflow-hidden h-6 max-w-full",
       isSelected ? "ring-2 ring-primary shadow-lg scale-[1.02]" : "hover:shadow-md hover:scale-[1.01]"
     )}>
       <CardContent className="p-0 relative h-full max-w-full overflow-hidden">
