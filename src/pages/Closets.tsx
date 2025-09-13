@@ -7,6 +7,7 @@ import { AddItemModal } from '@/components/AddItemModal';
 import { ItemDetailModal } from '@/components/ItemDetailModal';
 import { OutfitTemplatesSection } from '@/components/OutfitTemplatesSection';
 import { PublishLookModal } from '@/components/PublishLookModal';
+import { BackButton } from '@/components/ui/back-button';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -52,10 +53,15 @@ const Closets = () => {
   return (
     <div className="container mx-auto p-4 max-w-6xl">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">My Wardrobe</h1>
-        <p className="text-muted-foreground">
-          Your personal style collection and outfit builder
-        </p>
+        <div className="flex items-center gap-4 mb-4">
+          <BackButton fallbackPath="/" />
+          <div>
+            <h1 className="text-3xl font-bold">My Wardrobe</h1>
+            <p className="text-muted-foreground">
+              Your personal style collection and outfit builder
+            </p>
+          </div>
+        </div>
       </div>
 
       <div className="mb-6 space-y-4">
@@ -195,7 +201,7 @@ const Closets = () => {
 
 const WardrobeItemCard = ({ item, onClick }: { item: EnhancedClosetItem; onClick: () => void }) => {
   return (
-    <Card className="overflow-hidden hover:shadow-md transition-all hover:scale-105 group cursor-pointer" onClick={onClick}>
+    <Card className="overflow-hidden hover:shadow-lg transition-all hover:scale-105 group cursor-pointer border-2 hover:border-primary/20" onClick={onClick}>
       <div className="aspect-[3/4] relative overflow-hidden">
         <img
           src={item.image_url || '/placeholder.svg'}
@@ -208,6 +214,10 @@ const WardrobeItemCard = ({ item, onClick }: { item: EnhancedClosetItem; onClick
           {item.brand && (
             <p className="text-xs opacity-80">{item.brand}</p>
           )}
+        </div>
+        {/* Click indicator */}
+        <div className="absolute top-2 right-2 w-6 h-6 bg-primary/80 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+          <Plus className="h-3 w-3 text-white" />
         </div>
       </div>
     </Card>
