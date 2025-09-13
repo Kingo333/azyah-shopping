@@ -1,20 +1,40 @@
 import React from 'react';
-import { Mic } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Mic, Sparkles } from 'lucide-react';
 
 interface VoiceFabProps {
   onOpen: () => void;
+  className?: string;
 }
 
-export function VoiceFab({ onOpen }: VoiceFabProps) {
+export function VoiceFab({ onOpen, className = "" }: VoiceFabProps) {
   return (
-    <Button
-      onClick={onOpen}
-      size="lg"
-      className="fixed bottom-20 right-4 md:bottom-6 md:right-6 z-30 h-12 w-12 md:h-16 md:w-16 rounded-full bg-gradient-to-br from-primary via-primary/90 to-primary/80 shadow-lg hover:shadow-xl transition-all duration-300 active:scale-95 hover:scale-105 border-2 border-white/20"
-      aria-label="Start voice conversation with Azyah"
-    >
-      <Mic className="w-5 h-5 md:w-6 md:h-6 text-white" strokeWidth={2.5} />
-    </Button>
+    <div className={`relative group ${className}`}>
+      {/* Animated glow effect */}
+      <div className="absolute inset-0 rounded-full bg-gradient-to-br from-primary/40 via-secondary/30 to-accent/40 animate-pulse opacity-75 group-hover:opacity-100 transition-opacity duration-500" />
+      
+      {/* Main button */}
+      <button
+        onClick={onOpen}
+        className="relative w-24 h-24 md:w-28 md:h-28 rounded-full bg-gradient-to-br from-primary via-primary/90 to-primary/70 hover:from-primary/90 hover:via-primary hover:to-primary/80 shadow-2xl hover:shadow-3xl border-2 border-white/30 backdrop-blur-md transition-all duration-500 active:scale-95 hover:scale-105 group flex items-center justify-center"
+        aria-label="Start voice conversation with Azyah"
+      >
+        {/* Sparkle decorations */}
+        <Sparkles className="absolute -top-2 -right-2 w-4 h-4 text-white/80 animate-ping" />
+        <Sparkles className="absolute -bottom-1 -left-2 w-3 h-3 text-white/60 animate-ping animation-delay-700" />
+        
+        {/* Mic icon */}
+        <Mic className="w-8 h-8 md:w-10 md:h-10 text-white drop-shadow-lg group-hover:scale-110 transition-transform duration-300" strokeWidth={2.5} />
+        
+        {/* Pulse ring */}
+        <div className="absolute inset-0 rounded-full border-2 border-white/20 animate-ping" />
+      </button>
+      
+      {/* Label */}
+      <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
+        <span className="text-xs md:text-sm font-medium text-muted-foreground bg-background/80 backdrop-blur-sm px-3 py-1 rounded-full border border-border/50">
+          Ask Azyah
+        </span>
+      </div>
+    </div>
   );
 }

@@ -625,6 +625,14 @@ export default function BeautyConsultantPage() {
               </div>}
           </div>}
 
+        {/* Central Voice Button */}
+        <div className="flex justify-center my-6">
+          <VoiceFab 
+            onOpen={() => setVoiceOverlayOpen(true)} 
+            className="animate-fade-in"
+          />
+        </div>
+
         {/* Input Panel - Floating Style */}
         <Card className="glass-premium border-0 mt-1">
           <CardContent className="p-1">
@@ -707,9 +715,6 @@ export default function BeautyConsultantPage() {
 
       </main>
 
-      {/* Floating Voice Button */}
-      <VoiceFab onOpen={() => setVoiceOverlayOpen(true)} />
-      
       {/* Voice Overlay */}
       <VoiceOverlay open={voiceOverlayOpen} onClose={() => setVoiceOverlayOpen(false)} />
 
