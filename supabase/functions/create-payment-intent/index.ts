@@ -53,7 +53,7 @@ serve(async (req) => {
     // Create payment intent with Ziina
     const paymentIntentData = {
       amount: amountFils,
-      currency: "AED",
+      currency_code: "AED",
       message: message,
       success_url: `${appBaseUrl}/payment-success?payment_intent_id={PAYMENT_INTENT_ID}`,
       cancel_url: `${appBaseUrl}/payment-cancel?payment_intent_id={PAYMENT_INTENT_ID}`,
