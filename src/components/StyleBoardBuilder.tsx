@@ -63,7 +63,7 @@ export const StyleBoardBuilder: React.FC<StyleBoardBuilderProps> = ({ onClose })
     }
   };
 
-  const handleCreateLook = async () => {
+  const handleCreateLook = async (saveAsDraft = false) => {
     if (!selectedTemplate || selectedItems.length === 0) {
       toast({
         title: "Missing items",
@@ -93,7 +93,7 @@ export const StyleBoardBuilder: React.FC<StyleBoardBuilderProps> = ({ onClose })
 
       toast({
         title: "Style created!",
-        description: "Your outfit has been saved to your looks"
+        description: saveAsDraft ? "Your outfit has been saved as draft" : "Your outfit has been published to Mood Board"
       });
 
       // Reset form
@@ -192,14 +192,24 @@ export const StyleBoardBuilder: React.FC<StyleBoardBuilderProps> = ({ onClose })
             <h1 className="text-lg font-semibold">Style Board</h1>
           </div>
           <div className="flex items-center gap-2">
-            <Button
-              onClick={handleCreateLook}
-              disabled={!selectedTemplate || selectedItems.length === 0 || isCreating}
-              className="gap-2"
-            >
-              <Sparkles className="h-4 w-4" />
-              {isCreating ? 'Creating...' : 'Create Style'}
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => handleCreateLook(true)}
+                disabled={!selectedTemplate || selectedItems.length === 0 || isCreating}
+                className="gap-2"
+              >
+                {isCreating ? 'Saving...' : 'Save as Draft'}
+              </Button>
+              <Button
+                onClick={() => handleCreateLook(false)}
+                disabled={!selectedTemplate || selectedItems.length === 0 || isCreating}
+                className="gap-2"
+              >
+                <Sparkles className="h-4 w-4" />
+                {isCreating ? 'Publishing...' : 'Publish to Mood Board'}
+              </Button>
+            </div>
             {onClose && (
               <Button variant="ghost" size="icon" onClick={onClose}>
                 <X className="h-4 w-4" />

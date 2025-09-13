@@ -21,10 +21,12 @@ import {
   Filter,
   Download,
   Copy,
-  Flag
+  Flag,
+  MessageCircle
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { formatDistanceToNow } from 'date-fns';
+import MoodBoardComments from './MoodBoardComments';
 
 interface MoodBoardPin {
   id: string;
@@ -79,6 +81,7 @@ const MasonryMoodBoards = ({
     is_collaborative: false
   });
   const [draggedPin, setDraggedPin] = useState<MoodBoardPin | null>(null);
+  const [showComments, setShowComments] = useState<string | null>(null);
   const masonryRef = useRef<HTMLDivElement>(null);
 
   // Mock data generator
@@ -479,8 +482,32 @@ const MasonryMoodBoards = ({
                 )}
               </div>
               
-              <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <div className="flex items-center gap-3">
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowComments(board.id);
+                      }}
+                      className="flex items-center gap-1 hover:text-foreground transition-colors"
+                    >
+                      <MessageCircle className="h-3 w-3" />
+                      Comments
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleLike(board.id);
+                      }}
+                      className="flex items-center gap-1 hover:text-foreground transition-colors"
+                    >
+                      <Heart className="h-3 w-3" />
+                      {board.likes_count}
+                    </button>
+                    <div className="flex items-center gap-1">
+                      <Eye className="h-3 w-3" />
+                      {board.views_count}
+                    </div>
                   <span className="flex items-center gap-1">
                     <Eye className="h-3 w-3" />
                     {board.views_count}

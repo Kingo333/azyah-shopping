@@ -3,7 +3,7 @@ import { useLooks } from '@/hooks/useLooks';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Palette, Calendar, Users } from 'lucide-react';
+import { Palette, Calendar, Users, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface OutfitTemplatesSectionProps {
@@ -59,39 +59,54 @@ export const OutfitTemplatesSection: React.FC<OutfitTemplatesSectionProps> = ({
         </Button>
       </div>
 
-      {/* Saved Outfits */}
+      {/* Saved Outfits - Horizontal Scroll */}
       {savedLooks.length > 0 && (
         <div className="space-y-3">
           <div className="flex items-center gap-2">
             <Badge variant="secondary" className="gap-1">
               <Calendar className="h-3 w-3" />
-              Saved Outfits
+              Your Outfits
             </Badge>
             <span className="text-sm text-muted-foreground">
               {savedLooks.length} outfit{savedLooks.length !== 1 ? 's' : ''}
             </span>
           </div>
           
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+          <div className="flex gap-4 overflow-x-auto pb-4">
             {savedLooks.slice(0, 8).map((look) => (
               <Card 
                 key={look.id} 
-                className="group cursor-pointer transition-all hover:shadow-md hover:scale-105"
+                className="group cursor-pointer transition-all hover:shadow-md hover:scale-105 w-64 flex-shrink-0"
                 onClick={() => onCreateFromTemplate?.(look.id)}
               >
                 <CardContent className="p-0">
-                  <div className="aspect-[3/4] relative">
+                  <div className="h-48 relative overflow-hidden">
                     {look.cover_image_url ? (
                       <img
                         src={look.cover_image_url}
                         alt={look.title}
-                        className="w-full h-full object-cover rounded-t-lg"
+                        className="w-full h-full object-cover rounded-t-lg group-hover:scale-105 transition-transform duration-200"
                       />
                     ) : (
                       <div className="w-full h-full bg-gradient-to-br from-primary/5 to-primary/15 rounded-t-lg flex items-center justify-center">
                         <Palette className="h-8 w-8 text-primary/60" />
                       </div>
                     )}
+                    
+                    {/* Item Addition Overlay */}
+                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
+                      <Button
+                        size="sm"
+                        className="bg-white/90 text-black hover:bg-white"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onCreateFromTemplate?.(look.id);
+                        }}
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Items
+                      </Button>
+                    </div>
                     
                     {look.is_public && (
                       <Badge 
