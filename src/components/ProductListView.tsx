@@ -18,12 +18,15 @@ import { getPrimaryImageUrl, hasMultipleImages, getImageCount } from '@/utils/im
 import { useProductHasOutfit } from '@/hooks/useProductOutfits';
 import CategoryCarousel from '@/components/CategoryCarousel';
 import { getBrandDisplayName } from '@/utils/brandHelpers';
+import type { SubCategory } from '@/lib/categories';
 
 interface ProductListViewProps {
   products: Product[];
   isLoading: boolean;
   selectedCategories?: string[];
   onCategoryToggle?: (category: string) => void;
+  selectedSubcategories?: SubCategory[];
+  onSubcategoryToggle?: (subcategory: SubCategory) => void;
   showCategoryCarousel?: boolean;
 }
 
@@ -187,6 +190,8 @@ const ProductListView: React.FC<ProductListViewProps> = ({
   isLoading, 
   selectedCategories = [], 
   onCategoryToggle = () => {}, 
+  selectedSubcategories = [],
+  onSubcategoryToggle = () => {},
   showCategoryCarousel = false 
 }) => {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -276,6 +281,8 @@ const ProductListView: React.FC<ProductListViewProps> = ({
         <CategoryCarousel 
           selectedCategories={selectedCategories as any}
           onCategoryToggle={onCategoryToggle}
+          selectedSubcategories={selectedSubcategories}
+          onSubcategoryToggle={onSubcategoryToggle}
         />
       )}
       

@@ -11,6 +11,7 @@ import ProductListView from '@/components/ProductListView';
 import { useUnifiedProducts } from '@/hooks/useUnifiedProducts';
 import UnifiedCategoryFilter from '@/components/UnifiedCategoryFilter';
 import type { UnifiedFilterState } from '@/components/UnifiedCategoryFilter';
+import type { SubCategory } from '@/lib/categories';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 const Swipe = () => {
@@ -217,6 +218,15 @@ const Swipe = () => {
                   categories: prev.categories.includes(category as any)
                     ? prev.categories.filter(c => c !== category)
                     : [...prev.categories, category as any]
+                }));
+              }}
+              selectedSubcategories={filters.subcategories}
+              onSubcategoryToggle={(subcategory) => {
+                setFilters(prev => ({
+                  ...prev,
+                  subcategories: prev.subcategories.includes(subcategory)
+                    ? prev.subcategories.filter(s => s !== subcategory)
+                    : [...prev.subcategories, subcategory]
                 }));
               }}
               showCategoryCarousel={true}

@@ -8,16 +8,20 @@ import { Home } from 'lucide-react';
 import { usePublicProducts } from '@/hooks/usePublicProducts';
 import { getPrimaryImageUrl } from '@/utils/imageHelpers';
 import { cn } from '@/lib/utils';
-import type { TopCategory } from '@/lib/categories';
+import type { TopCategory, SubCategory } from '@/lib/categories';
+import SubcategoryCarousel from '@/components/SubcategoryCarousel';
 
 // Import default category images
 const modestWearImage = '/lovable-uploads/553f6cd6-f082-43bf-bba2-79e8d824e681.png';
 import clothingImage from '@/assets/category-clothing.jpg';
 import bagsImage from '@/assets/category-bags.jpg';
 import footwearImage from '@/assets/category-footwear.jpg';
+
 interface CategoryCarouselProps {
   selectedCategories: TopCategory[];
   onCategoryToggle: (category: TopCategory) => void;
+  selectedSubcategories?: SubCategory[];
+  onSubcategoryToggle?: (subcategory: SubCategory) => void;
 }
 const CATEGORIES = [{
   slug: 'modestwear' as TopCategory,
@@ -42,7 +46,9 @@ const CATEGORIES = [{
 }];
 const CategoryCarousel: React.FC<CategoryCarouselProps> = ({
   selectedCategories,
-  onCategoryToggle
+  onCategoryToggle,
+  selectedSubcategories = [],
+  onSubcategoryToggle
 }) => {
   const [api, setApi] = React.useState<CarouselApi>();
   const intervalRef = useRef<NodeJS.Timeout>();
@@ -124,6 +130,15 @@ const CategoryCarousel: React.FC<CategoryCarouselProps> = ({
         <CarouselPrevious className="absolute -left-2 top-1/2 -translate-y-1/2 h-8 w-8 border-0 bg-background/80 backdrop-blur-sm shadow-md hover:bg-background/90" />
         <CarouselNext className="absolute -right-2 top-1/2 -translate-y-1/2 h-8 w-8 border-0 bg-background/80 backdrop-blur-sm shadow-md hover:bg-background/90" />
       </Carousel>
+
+      {/* Subcategory Carousel */}
+      {selectedCategories.length > 0 && onSubcategoryToggle && (
+        <SubcategoryCarousel
+          selectedCategories={selectedCategories}
+          selectedSubcategories={selectedSubcategories}
+          onSubcategoryToggle={onSubcategoryToggle}
+        />
+      )}
     </div>;
 };
 const CategoryCard: React.FC<{
