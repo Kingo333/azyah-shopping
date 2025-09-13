@@ -24,7 +24,46 @@ interface CreateLookSectionProps {
 export const CreateLookSection: React.FC<CreateLookSectionProps> = ({
   closetId
 }) => {
-  const [boardState, setBoardState] = useState({
+  const isMobile = useIsMobile();
+  
+  // Default template - "Outfit & Items"
+  const getDefaultTemplate = () => {
+    const scale = isMobile ? 0.4 : 1;
+    const baseSlots = [
+      {
+        id: 'outfit',
+        x: 100, y: 50, w: 300, h: 500,
+        type: 'tall' as const, size: 'L' as const, mask: 'rect' as const, padding: 16
+      },
+      {
+        id: 'accessories',
+        x: 450, y: 80, w: 200, h: 120,
+        type: 'wide' as const, size: 'S' as const, mask: 'rect' as const, padding: 8
+      },
+      {
+        id: 'bag',
+        x: 450, y: 220, w: 200, h: 150,
+        type: 'square' as const, size: 'M' as const, mask: 'rect' as const, padding: 10
+      },
+      {
+        id: 'jewelry',
+        x: 450, y: 390, w: 200, h: 80,
+        type: 'wide' as const, size: 'S' as const, mask: 'rect' as const, padding: 6
+      }
+    ];
+    
+    return baseSlots.map((slot, index) => ({
+      ...slot,
+      id: `slot_${Date.now()}_${index}`,
+      x: Math.round(slot.x * scale),
+      y: Math.round(slot.y * scale),
+      w: Math.round(slot.w * scale),
+      h: Math.round(slot.h * scale),
+      padding: Math.max(4, Math.round(slot.padding * scale))
+    }));
+  };
+
+  const [boardState, setBoardState] = useState(() => ({
     canvas: {
       width: 1080,
       height: 1440,
@@ -33,11 +72,12 @@ export const CreateLookSection: React.FC<CreateLookSectionProps> = ({
         color: '#F6F6F4'
       }
     },
-    slots: [],
+    slots: getDefaultTemplate(),
     selectedSlotIds: [],
     history: [],
     historyIndex: -1
-  });
+  }));
+
   const [showTemplates, setShowTemplates] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isDragging, setIsDragging] = useState(false);
@@ -48,27 +88,31 @@ export const CreateLookSection: React.FC<CreateLookSectionProps> = ({
   // Try-on modal state
   const [showTryOnModal, setShowTryOnModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
+
   const canvasRef = useRef<HTMLDivElement>(null);
   const createLookMutation = useCreateLook();
   const updateLookMutation = useUpdateLook();
+
   const {
     wishlistProducts,
     isLoading: wishlistLoading
   } = useWishlistProducts();
+
   const {
     likedProducts,
     isLoading: likedLoading
   } = useLikedProducts();
+
   const {
     data: products,
     isLoading: productsLoading
   } = useProducts({
     limit: 50
   });
+
   const {
     data: closetItems = []
   } = useEnhancedClosetItems(closetId || '', 'all', searchQuery);
-  const isMobile = useIsMobile();
 
   // Save board state to history for undo/redo
   const saveToHistory = useCallback((newState: any) => {
