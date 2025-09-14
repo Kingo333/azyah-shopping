@@ -114,11 +114,16 @@ export function getImageCount(product: any): number {
  * Handles both array and JSON string formats for media_urls
  */
 export function getProductImageUrls(product: any): string[] {
-  console.log('=== Product Image URL Debug ===');
-  console.log('Product ID:', product?.id);
+  if (!product) {
+    console.warn('getProductImageUrls: No product provided');
+    return ['/placeholder.svg'];
+  }
+
+  console.log('=== Production Image Debug ===');
+  console.log('Product ID:', product?.id, 'Brand:', product?.brand?.name || product?.merchant_name);
   console.log('media_urls type:', typeof product?.media_urls);
   console.log('media_urls value:', product?.media_urls);
-  console.log('media_urls raw JSON:', JSON.stringify(product?.media_urls));
+  console.log('image_url:', product?.image_url);
   
   let finalImages: string[] = [];
   
@@ -129,7 +134,7 @@ export function getProductImageUrls(product: any): string[] {
       .map(url => url.trim());
     
     if (validImages.length > 0) {
-      console.log(`✅ Using ${validImages.length} images from media_urls array:`, validImages);
+      console.log(`✅ PRODUCTION: Using ${validImages.length} images from media_urls array for ${product?.brand?.name || 'Unknown'}:`, validImages);
       finalImages = validImages;
     }
   }
@@ -146,30 +151,29 @@ export function getProductImageUrls(product: any): string[] {
           .map(url => url.trim());
         
         if (validImages.length > 0) {
-          console.log(`✅ Using ${validImages.length} images from parsed media_urls:`, validImages);
+          console.log(`✅ PRODUCTION: Using ${validImages.length} images from parsed media_urls for ${product?.brand?.name || 'Unknown'}:`, validImages);
           finalImages = validImages;
         }
       }
     } catch (e) {
-      console.warn('❌ Failed to parse media_urls JSON:', product.media_urls, 'Error:', e);
+      console.warn('❌ PRODUCTION: Failed to parse media_urls JSON:', product.media_urls, 'Error:', e);
     }
   }
   
   // Priority 3: Fallback to image_url
   if (finalImages.length === 0 && product.image_url && product.image_url.trim()) {
-    console.log('⚠️ Using image_url as fallback:', product.image_url);
+    console.log('⚠️ PRODUCTION: Using image_url as fallback for', product?.brand?.name || 'Unknown', ':', product.image_url);
     finalImages = [product.image_url.trim()];
   }
   
   // Final fallback to placeholder
   if (finalImages.length === 0) {
-    console.warn('❌ No valid images found, using placeholder');
+    console.warn('❌ PRODUCTION: No valid images found for', product?.brand?.name || 'Unknown', ', using placeholder');
     finalImages = ['/placeholder.svg'];
   }
 
-  console.log(`🎯 Final image array (${finalImages.length} images):`, finalImages);
-  console.log('🔍 ISSUE DETECTION: If this shows 1 image for ASOS product, the media_urls is not being processed correctly');
-  console.log('=== End Product Image URL Debug ===');
+  console.log(`🎯 PRODUCTION FINAL: ${finalImages.length} images for ${product?.brand?.name || 'Unknown'}:`, finalImages);
+  console.log('=== End Production Image Debug ===');
   
   return finalImages;
 }
