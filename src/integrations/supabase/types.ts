@@ -3007,6 +3007,17 @@ export type Database = {
       get_public_products: {
         Args:
           | {
+              brand_filter?: string
+              category_filter?: string
+              gender_filter?: string
+              limit_param?: number
+              offset_param?: number
+              price_max?: number
+              price_min?: number
+              search_query?: string
+              subcategory_filter?: string
+            }
+          | {
               category_filter?: string
               limit_param?: number
               offset_param?: number

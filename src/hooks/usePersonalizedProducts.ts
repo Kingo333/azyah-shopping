@@ -5,6 +5,7 @@ import { convertJsonToProductAttributes } from '@/lib/type-utils';
 import { useToast } from '@/hooks/use-toast';
 import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
 import { optimizeImageUrls } from '@/utils/imageOptimizer';
+import { getProductImageUrls } from '@/utils/imageHelpers';
 
 interface UsePersonalizedProductsProps {
   filter: string;
@@ -162,20 +163,13 @@ export const usePersonalizedProducts = ({
         compare_at_price_cents: item.compare_at_price_cents,
         currency: item.currency || 'USD',
         media_urls: (() => {
-          let mediaUrls: string[] = [];
-          if (Array.isArray(item.media_urls)) {
-            mediaUrls = item.media_urls as string[];
-          } else if (typeof item.media_urls === 'string') {
-            try {
-              const parsed = JSON.parse(item.media_urls);
-              mediaUrls = Array.isArray(parsed) ? parsed : [];
-            } catch (e) {
-              console.warn('Failed to parse media_urls for product', item.id, ':', item.media_urls);
-              mediaUrls = [];
-            }
-          }
+          console.log('usePersonalizedProducts processing media_urls for:', item.id, 'Brand:', item.brand?.name);
+          
+          // Use standardized image helper function
+          const imageUrls = getProductImageUrls(item);
+          
           // Optimize image URLs for grid display
-          return optimizeImageUrls(mediaUrls, 'grid');
+          return optimizeImageUrls(imageUrls, 'grid');
         })(),
         external_url: item.external_url,
         ar_mesh_url: item.ar_mesh_url,

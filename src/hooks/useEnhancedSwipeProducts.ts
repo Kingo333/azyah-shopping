@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { getProductImageUrls } from '@/utils/imageHelpers';
 
 interface SwipeProduct {
   id: string;
@@ -11,6 +12,7 @@ interface SwipeProduct {
   category_slug: string;
   subcategory_slug?: string;
   image_url?: string;
+  image_urls?: string[];
   media_urls?: any;
   brand_id?: string;
   brands?: { name: string };
@@ -142,20 +144,21 @@ export const useEnhancedSwipeProducts = ({
       // Merge scores with products
       const scoresMap = new Map(scores?.map(s => [s.product_id, s.personalization_score]) || []);
       
-      return productList.map(product => ({
-        ...product,
-        personalization_score: scoresMap.get(product.id) || 0.5,
-        // Parse media_urls if it's a JSON string
-        media_urls: (() => {
-          try {
-            return typeof product.media_urls === 'string' 
-              ? JSON.parse(product.media_urls)
-              : product.media_urls;
-          } catch {
-            return [];
-          }
-        })()
-      }));
+      return productList.map(product => {
+        console.log('Processing enhanced swipe product:', product.id, 'Brand:', product.brands?.name || product.merchant_name);
+        
+        // Use standardized image helper for consistent image processing
+        const imageUrls = getProductImageUrls(product);
+        
+        return {
+          ...product,
+          personalization_score: scoresMap.get(product.id) || 0.5,
+          image_urls: imageUrls,
+          image_url: imageUrls[0] || '/placeholder.svg',
+          // Keep original media_urls for compatibility
+          media_urls: product.media_urls
+        };
+      });
     } catch (error) {
       console.warn('Error getting personalization scores:', error);
       return productList.map(p => ({ ...p, personalization_score: 0.5 }));
@@ -166,10 +169,18 @@ export const useEnhancedSwipeProducts = ({
   const sortProducts = useMemo(() => {
     return (personalizedProducts: SwipeProduct[]) => {
       // Pre-generate random values to avoid recalculation during sort
-      const productsWithRandomScore = personalizedProducts.map(product => ({
-        ...product,
-        sortScore: (product.personalization_score || 0.5) * 0.7 + Math.random() * 0.3
-      }));
+      const productsWithRandomScore = personalizedProducts.map(product => {
+        // Ensure images are properly processed for swipe mode
+        const imageUrls = product.image_urls || [product.image_url || '/placeholder.svg'];
+        console.log('Enhanced swipe product images for sorting:', product.id, 'URLs:', imageUrls);
+        
+        return {
+          ...product,
+          image_urls: imageUrls,
+          image_url: imageUrls[0] || '/placeholder.svg',
+          sortScore: (product.personalization_score || 0.5) * 0.7 + Math.random() * 0.3
+        };
+      });
       
       return productsWithRandomScore
         .sort((a, b) => b.sortScore - a.sortScore)
