@@ -5,15 +5,25 @@ import { Json } from '@/integrations/supabase/types';
 interface PublicProductData {
   id: string;
   title: string;
-  brand_id: string;
-  brand_logo: string;
-  brand_name: string;
-  brand_slug: string;
-  category_name: string;
+  description: string;
+  price_cents: number | null;
+  currency: string;
+  image_url: string;
+  media_urls: any;
+  external_url: string;
   category_slug: string;
-  retailer_id: string;
+  subcategory_slug: string;
+  gender: string;
+  tags: string[];
   status: string;
+  is_external: boolean;
+  merchant_name: string;
+  brand_id: string;
+  retailer_id: string;
   created_at: string;
+  updated_at: string;
+  brand: any;
+  retailer: any;
 }
 
 /**
@@ -29,7 +39,7 @@ export const usePublicProducts = (
   return useQuery({
     queryKey: ['public-products', limit, offset, categoryFilter],
     queryFn: async (): Promise<PublicProductData[]> => {
-      const { data, error } = await supabase.rpc('get_public_products', {
+      const { data, error } = await supabase.rpc('get_public_products_secure', {
         limit_param: limit,
         offset_param: offset,
         category_filter: categoryFilter || null
