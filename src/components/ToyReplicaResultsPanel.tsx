@@ -244,11 +244,18 @@ export const ToyReplicaResultsPanel: React.FC<ToyReplicaResultsPanelProps> = ({
                     </div>
                   )}
                   
-                  <img
-                    src={asset.result_url!}
-                    alt="Toy replica result"
-                    className="w-full aspect-square object-cover"
-                  />
+                   <img
+                     src={asset.result_url!}
+                     alt="Toy replica result"
+                     className="w-full aspect-square object-cover"
+                     onError={(e) => {
+                       console.error('Toy replica image failed to load:', asset.result_url);
+                       e.currentTarget.src = '/placeholder.svg';
+                     }}
+                     onLoad={() => {
+                       console.log('✅ Toy replica image loaded successfully:', asset.result_url);
+                     }}
+                   />
                   
                   
                   <div className="absolute bottom-2 right-2">

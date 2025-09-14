@@ -15,6 +15,7 @@ interface SwipeProduct {
   image_urls?: string[];
   media_urls?: any;
   brand_id?: string;
+  brand?: any; // From secure function
   brands?: { name: string };
   tags?: string[];
   attributes?: any;
@@ -60,66 +61,58 @@ export const useEnhancedSwipeProducts = ({
     []
   );
   
-  // Fetch products with personalization scores
+  // Fetch products with personalization scores using secure function
   const { data: rawProducts, isLoading, refetch } = useQuery({
     queryKey: ['enhanced-swipe-products', filter, subcategory, gender, priceRange, searchQuery, currency],
     queryFn: async () => {
-      let query = supabase
-        .from('products')
-        .select(`
-          id,
-          title,
-          price_cents,
-          currency,
-          category_slug,
-          subcategory_slug,
-          image_url,
-          media_urls,
-          brand_id,
-          brands(name),
-          tags,
-          attributes,
-          status,
-          is_external,
-          external_url,
-          merchant_name,
-          ar_mesh_url
-        `)
-        .eq('status', 'active')
-        .order('created_at', { ascending: false })
-        .limit(100);
+      console.log('🔄 Enhanced swipe products: Fetching with secure function');
+      
+      // Use the secure function for consistent data access
+      const { data, error } = await supabase.rpc('get_public_products_secure', {
+        limit_param: 100,
+        offset_param: 0,
+        category_filter: filter && filter !== 'all' ? filter : null
+      });
 
-      // Apply filters
-      if (filter && filter !== 'all') {
-        query = query.eq('category_slug', filter as any);
+      if (error) {
+        console.error('❌ Enhanced swipe products: Failed to fetch products:', error);
+        throw error;
       }
       
+      let products = data || [];
+      console.log(`✅ Enhanced swipe products: Fetched ${products.length} products from secure function`);
+      
+      // Apply additional client-side filters
       if (subcategory) {
-        query = query.eq('subcategory_slug', subcategory as any);
+        products = products.filter(p => p.subcategory_slug === subcategory);
       }
       
       if (gender) {
-        query = query.eq('gender', gender as any);
+        products = products.filter(p => p.gender === gender);
       }
       
       if (priceRange) {
-        query = query
-          .gte('price_cents', priceRange[0] * 100)
-          .lte('price_cents', priceRange[1] * 100);
+        products = products.filter(p => 
+          p.price_cents >= priceRange[0] * 100 && 
+          p.price_cents <= priceRange[1] * 100
+        );
       }
       
       if (currency) {
-        query = query.eq('currency', currency);
+        products = products.filter(p => p.currency === currency);
       }
       
       if (searchQuery) {
-        query = query.or(`title.ilike.%${searchQuery}%, brands.name.ilike.%${searchQuery}%`);
+        const searchTerm = searchQuery.toLowerCase();
+        products = products.filter(p => {
+          const title = p.title?.toLowerCase() || '';
+          const brandName = (p.brand as any)?.name?.toLowerCase() || '';
+          return title.includes(searchTerm) || brandName.includes(searchTerm);
+        });
       }
-
-      const { data, error } = await query;
-      if (error) throw error;
       
-      return data || [];
+      console.log(`🎯 Enhanced swipe products: After filtering: ${products.length} products`);
+      return products;
     }
   });
 
@@ -145,18 +138,21 @@ export const useEnhancedSwipeProducts = ({
       const scoresMap = new Map(scores?.map(s => [s.product_id, s.personalization_score]) || []);
       
       return productList.map(product => {
-        console.log('Processing enhanced swipe product:', product.id, 'Brand:', product.brands?.name || product.merchant_name);
+        const brandName = (product.brand as any)?.name || product.brands?.name || product.merchant_name;
+        console.log('🔄 Processing enhanced swipe product:', product.id, 'Brand:', brandName);
         
         // Use standardized image helper for consistent image processing
         const imageUrls = getProductImageUrls(product);
+        console.log('📸 Enhanced swipe product images:', product.id, 'URLs:', imageUrls);
         
         return {
           ...product,
           personalization_score: scoresMap.get(product.id) || 0.5,
           image_urls: imageUrls,
           image_url: imageUrls[0] || '/placeholder.svg',
-          // Keep original media_urls for compatibility
-          media_urls: product.media_urls
+          // Keep original media_urls for compatibility and ensure brand access
+          media_urls: product.media_urls,
+          brands: product.brand ? { name: (product.brand as any)?.name } : product.brands
         };
       });
     } catch (error) {

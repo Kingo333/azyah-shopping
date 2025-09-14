@@ -120,7 +120,8 @@ export function getProductImageUrls(product: any): string[] {
   }
 
   console.log('=== Production Image Debug ===');
-  console.log('Product ID:', product?.id, 'Brand:', product?.brand?.name || product?.merchant_name);
+  console.log('Product ID:', product?.id);
+  console.log('Brand:', product?.brand?.name || product?.brands?.name || product?.merchant_name);
   console.log('media_urls type:', typeof product?.media_urls);
   console.log('media_urls value:', product?.media_urls);
   console.log('image_url:', product?.image_url);
