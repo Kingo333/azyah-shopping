@@ -35,8 +35,35 @@ export function upgradeAsosImageUrl(url: string, minWid = 1500): string {
   }
 }
 
-// Get responsive image props
+// Check if URL is from Supabase storage
+function isSupabaseStorageUrl(url: string): boolean {
+  return url.includes('supabase.co') || url.includes('supabase.com') || url.includes('/storage/v1/object/');
+}
+
+// Get responsive image props for Supabase storage URLs
+export function getSupabaseImageProps(imageUrl: string, sizes = "(max-width: 768px) 100vw, 50vw") {
+  return {
+    src: imageUrl,
+    sizes,
+    loading: 'lazy' as const,
+    decoding: 'async' as const,
+    crossOrigin: 'anonymous' as const,
+    style: {
+      imageRendering: 'auto' as const,
+      WebkitBackfaceVisibility: 'hidden' as const,
+      backfaceVisibility: 'hidden' as const,
+    }
+  };
+}
+
+// Get responsive image props - auto-detects URL type
 export function getResponsiveImageProps(imageUrl: string, sizes = "(max-width: 768px) 100vw, 50vw") {
+  // For Supabase storage URLs, use simple props without ASOS optimizations
+  if (isSupabaseStorageUrl(imageUrl)) {
+    return getSupabaseImageProps(imageUrl, sizes);
+  }
+  
+  // For ASOS and other external URLs, apply ASOS optimizations
   const src = upgradeAsosImageUrl(imageUrl, 800);
   const srcSet = buildAsosSrcSet(imageUrl);
   
