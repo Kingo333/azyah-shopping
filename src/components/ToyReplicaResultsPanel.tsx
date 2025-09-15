@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useToyReplicaAssets, type ToyReplicaAsset } from '@/hooks/useToyReplicaAssets';
 import { supabase } from '@/integrations/supabase/client';
 import { SmartImage } from '@/components/SmartImage';
+import { imageUrlFrom } from '@/lib/imageUrl';
 
 interface ToyReplicaResultsPanelProps {
   loading: boolean;
@@ -246,7 +247,7 @@ export const ToyReplicaResultsPanel: React.FC<ToyReplicaResultsPanelProps> = ({
                   )}
                   
                    <SmartImage
-                      src={asset.result_url!}
+                      src={imageUrlFrom('toy-replica-result', asset.result_url!)}
                       alt="Toy replica result"
                       className="w-full aspect-square object-cover"
                       sizes="(max-width: 768px) 50vw, 33vw"
