@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Heart, ShoppingBag, Info, Image } from 'lucide-react';
 import { Product } from '@/types';
 import { getPrimaryImageUrl, hasMultipleImages, getImageCount } from '@/utils/imageHelpers';
-import { getResponsiveImageProps } from '@/utils/asosImageUtils';
+import { SmartImage } from '@/components/SmartImage';
 import { useAuth } from '@/contexts/AuthContext';
 import { useWishlist } from '@/hooks/useWishlist';
 import { useToast } from '@/hooks/use-toast';
@@ -85,16 +85,11 @@ const SimilarItemCard: React.FC<SimilarItemCardProps> = ({ item, onItemClick, on
         className="w-full aspect-[3/4] bg-muted rounded-2xl overflow-hidden relative cursor-pointer"
         onClick={() => onItemClick(item)}
       >
-        <img
-          {...getResponsiveImageProps(
-            getPrimaryImageUrl(item),
-            "(max-width: 768px) 50vw, 25vw"
-          )}
+        <SmartImage
+          src={getPrimaryImageUrl(item)}
           alt={item.title}
           className="w-full h-full object-cover"
-          onError={(e) => {
-            (e.target as HTMLImageElement).src = '/placeholder.svg';
-          }}
+          sizes="(max-width: 768px) 50vw, 25vw"
         />
         
         {/* Multiple images indicator */}

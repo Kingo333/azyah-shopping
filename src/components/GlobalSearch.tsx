@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Search, Users, Package, Store, UserPlus, UserMinus } from 'lucide-react';
+import { SmartImage } from '@/components/SmartImage';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -204,7 +205,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ isOpen, onClose }) => {
                     className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted cursor-pointer"
                   >
                     {result.image && (
-                      <img src={result.image} alt={result.title} className="w-12 h-12 rounded-lg object-cover" />
+                      <SmartImage src={result.image} alt={result.title} className="w-12 h-12 rounded-lg object-cover" sizes="48px" />
                     )}
                     <div className="flex-1">
                       <h4 className="font-medium">{result.title}</h4>
@@ -261,7 +262,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ isOpen, onClose }) => {
                     className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted cursor-pointer"
                   >
                     {result.image && (
-                      <img src={result.image} alt={result.title} className="w-12 h-12 rounded-lg object-cover" />
+                      <SmartImage src={result.image} alt={result.title} className="w-12 h-12 rounded-lg object-cover" sizes="48px" />
                     )}
                     <div className="flex-1">
                       <h4 className="font-medium">{result.title}</h4>

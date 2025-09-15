@@ -3,6 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Plus, Heart, ShoppingBag, ExternalLink, Info, Image, User } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { SmartImage } from '@/components/SmartImage';
 import { getPrimaryImageUrl, hasMultipleImages, getImageCount } from '@/utils/imageHelpers';
 import { useProductHasOutfit } from '@/hooks/useProductOutfits';
 import { getBrandDisplayName } from '@/utils/brandHelpers';
@@ -118,10 +119,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       onMouseLeave={() => setShowPlusButton(false)}
     >
       <div className="aspect-[3/4] bg-muted rounded-2xl overflow-hidden relative">
-        <img 
+        <SmartImage 
           src={getPrimaryImageUrl(product)} 
           alt={product.title}
           className="w-full h-full object-cover"
+          sizes="(max-width: 768px) 50vw, 25vw"
         />
         
         {/* Multiple images indicator for ASOS products */}

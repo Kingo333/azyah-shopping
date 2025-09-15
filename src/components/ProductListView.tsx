@@ -13,7 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import ProductDetailPage from '@/components/ProductDetailPage';
 import PhotoCloseup from '@/components/PhotoCloseup';
 import ProductTryOnModal from '@/components/ProductTryOnModal';
-import { getResponsiveImageProps } from '@/utils/asosImageUtils';
+import { SmartImage } from '@/components/SmartImage';
 import { getPrimaryImageUrl, hasMultipleImages, getImageCount } from '@/utils/imageHelpers';
 import { useProductHasOutfit } from '@/hooks/useProductOutfits';
 import CategoryCarousel from '@/components/CategoryCarousel';
@@ -78,16 +78,11 @@ const ProductCard: React.FC<{
         className="w-full aspect-[3/4] bg-muted rounded-2xl overflow-hidden relative cursor-pointer"
         onClick={() => handleProductClick(product)}
       >
-        <img
-          {...getResponsiveImageProps(
-            getPrimaryImageUrl(product),
-            "(max-width: 768px) 50vw, 25vw"
-          )}
+        <SmartImage
+          src={getPrimaryImageUrl(product)}
           alt={product.title}
           className="w-full h-full object-cover"
-          onError={(e) => {
-            (e.target as HTMLImageElement).src = '/placeholder.svg';
-          }}
+          sizes="(max-width: 768px) 50vw, 25vw"
         />
         
         {/* Multiple images indicator for ASOS products */}

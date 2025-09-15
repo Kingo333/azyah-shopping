@@ -7,7 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Star, Package, TrendingUp, ArrowRight, ExternalLink } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { getResponsiveImageProps } from '@/utils/asosImageUtils';
+import { SmartImage } from '@/components/SmartImage';
+import { getPrimaryImageUrl } from '@/utils/imageHelpers';
 
 interface FeaturedBrand {
   id: string;
@@ -215,38 +216,14 @@ const FeaturedBrands: React.FC<FeaturedBrandsProps> = ({ limit = 6, showMore = t
               {brand.recent_products.length > 0 && (
                 <div className="flex gap-2 mb-3">
                   {brand.recent_products.map((product) => {
-                    // Handle different media_urls formats
-                    let imageUrl = '/placeholder.svg';
-                    
-                    if (product.media_urls) {
-                      // If it's a JSON string, parse it
-                      if (typeof product.media_urls === 'string') {
-                        try {
-                          const parsed = JSON.parse(product.media_urls);
-                          imageUrl = Array.isArray(parsed) ? parsed[0] : parsed;
-                        } catch {
-                          imageUrl = product.media_urls;
-                        }
-                      }
-                      // If it's already an array
-                      else if (Array.isArray(product.media_urls)) {
-                        imageUrl = product.media_urls[0];
-                      }
-                    }
-                    
-                    const imageProps = imageUrl.includes('asos-media.com') 
-                      ? getResponsiveImageProps(imageUrl, "(max-width: 768px) 64px, 64px")
-                      : { src: imageUrl };
                     
                     return (
                       <div key={product.id} className="relative">
-                        <img
-                          {...imageProps}
+                        <SmartImage
+                          src={getPrimaryImageUrl(product)}
                           alt={product.title}
                           className="w-16 h-16 object-cover rounded-md"
-                          onError={(e) => {
-                            e.currentTarget.src = '/placeholder.svg';
-                          }}
+                          sizes="64px"
                         />
                       </div>
                     );

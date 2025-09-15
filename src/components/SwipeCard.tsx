@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { motion } from 'framer-motion';
 import { Heart, X, ShoppingBag, Sparkles, Info, Image } from 'lucide-react';
-import { getResponsiveImageProps } from '@/utils/asosImageUtils';
+import { SmartImage } from '@/components/SmartImage';
 import { getPrimaryImageUrl, hasMultipleImages, getImageCount } from '@/utils/imageHelpers';
 import { getBrandDisplayName } from '@/utils/brandHelpers';
 
@@ -92,19 +92,11 @@ const SwipeCard = memo(({
             }}
             onClick={onInstructionsClick}
           >
-            <img
-              {...getResponsiveImageProps(
-                getPrimaryImageUrl(product),
-                "(max-width: 768px) 100vw, 50vw"
-              )}
+            <SmartImage
+              src={getPrimaryImageUrl(product)}
               alt={product.title}
-              className="object-contain w-full h-full transition-opacity duration-300 max-h-full"
-              onLoad={onImageLoad}
-              onError={(e) => {
-                const img = e.target as HTMLImageElement;
-                img.src = '/placeholder.svg';
-              }}
-              style={{ maxHeight: '100%', maxWidth: '100%' }}
+              className="object-contain w-full h-full transition-opacity duration-300"
+              sizes="(max-width: 768px) 100vw, 50vw"
             />
             
             <div className="absolute top-4 left-4 flex items-center gap-3">

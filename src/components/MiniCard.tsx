@@ -4,6 +4,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Heart, X, Bookmark } from 'lucide-react';
 import { Product } from '@/types';
+import { SmartImage } from '@/components/SmartImage';
+import { getPrimaryImageUrl } from '@/utils/imageHelpers';
 import { getBrandDisplayName } from '@/utils/brandHelpers';
 
 interface MiniCardProps {
@@ -48,10 +50,11 @@ const MiniCard: React.FC<MiniCardProps> = ({ product, swipeAction, onClick }) =>
       onClick={onClick}
     >
       <div className="relative h-16 w-full">
-        <img 
-          src={product.media_urls[0] || '/placeholder.svg'} 
+        <SmartImage 
+          src={getPrimaryImageUrl(product)} 
           alt={product.title}
           className="w-full h-full object-cover"
+          sizes="(max-width: 768px) 25vw, 20vw"
         />
         <div className="absolute top-1 right-1">
           <Badge variant="secondary" className="h-5 px-1 text-xs flex items-center gap-1">

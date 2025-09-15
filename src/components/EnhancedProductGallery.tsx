@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ZoomIn, RotateCw } from 'lucide-react';
 import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
-import { getResponsiveImageProps } from '@/utils/asosImageUtils';
+import { SmartImage } from '@/components/SmartImage';
 
 interface EnhancedProductGalleryProps {
   images: string[];
@@ -65,15 +65,10 @@ export const EnhancedProductGallery: React.FC<EnhancedProductGalleryProps> = ({
           </div>
         )}
         
-        <motion.img
+        <motion.div
           key={`${selectedImage}-${images[selectedImage]}`}
-          {...getResponsiveImageProps(
-            images[selectedImage] || '/placeholder.svg',
-            "(max-width: 768px) 90vw, 50vw"
-          )}
-          alt={`${productTitle} view ${selectedImage + 1}`}
-          className={`w-full h-full object-contain cursor-zoom-in transition-all duration-300 ${
-            isZoomed ? 'scale-150 object-cover' : 'scale-100'
+          className={`w-full h-full transition-all duration-300 ${
+            isZoomed ? 'scale-150' : 'scale-100'
           } ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
           style={{ rotate: `${rotation}deg` }}
           initial={{ opacity: 0, scale: 0.95 }}
@@ -83,16 +78,23 @@ export const EnhancedProductGallery: React.FC<EnhancedProductGalleryProps> = ({
           }}
           transition={{ duration: 0.3 }}
           onClick={handleZoom}
-          onLoad={() => {
-            console.log('Image loaded successfully:', images[selectedImage]);
-            handleImageLoad();
-          }}
-          onError={(e) => {
-            console.error('Image failed to load:', images[selectedImage], e);
-            handleImageError();
-          }}
-          loading="eager"
-        />
+        >
+          <SmartImage
+            src={images[selectedImage] || '/placeholder.svg'}
+            alt={`${productTitle} view ${selectedImage + 1}`}
+            className="w-full h-full object-contain cursor-zoom-in"
+            sizes="(max-width: 768px) 90vw, 50vw"
+            loading="eager"
+            onLoad={() => {
+              console.log('Image loaded successfully:', images[selectedImage]);
+              handleImageLoad();
+            }}
+            onError={() => {
+              console.error('Image failed to load:', images[selectedImage]);
+              handleImageError();
+            }}
+          />
+        </motion.div>
         
         {/* Overlay Controls */}
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-200">
@@ -134,10 +136,11 @@ export const EnhancedProductGallery: React.FC<EnhancedProductGalleryProps> = ({
                 whileHover={{ scale: selectedImage === index ? 1.05 : 1.1 }}
                 whileTap={{ scale: 0.95 }}
               >
-                <img
-                  {...getResponsiveImageProps(image, "40px")}
+                <SmartImage
+                  src={image}
                   alt={`${productTitle} thumbnail ${index + 1}`}
                   className="w-full h-full object-cover"
+                  sizes="40px"
                   loading="lazy"
                 />
               </motion.button>

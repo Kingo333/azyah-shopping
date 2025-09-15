@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Heart, X, ShoppingBag, ExternalLink, Sparkles, Info } from 'lucide-react';
 import { useSmartSwipeProducts } from '@/hooks/useSmartSwipeProducts';
-import { getResponsiveImageProps } from '@/utils/asosImageUtils';
+import { SmartImage } from '@/components/SmartImage';
 import { motion, AnimatePresence, PanInfo, useMotionValue, useTransform, animate } from 'framer-motion';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
@@ -404,17 +404,11 @@ const LandingSwipeDeck: React.FC<LandingSwipeDeckProps> = ({
                   }}
                   onClick={() => setShowInstructions(true)}
                 >
-                  <img
-                    {...getResponsiveImageProps(getImageUrl(currentProduct))}
+                  <SmartImage
+                    src={getImageUrl(currentProduct)}
                     alt={currentProduct.title}
                     className="w-full h-full object-cover"
-                    onLoad={handleImageLoad}
-                    onError={(e) => {
-                      const img = e.target as HTMLImageElement;
-                      if (img.src !== '/placeholder.svg') {
-                        img.src = '/placeholder.svg';
-                      }
-                    }}
+                    sizes="(max-width: 768px) 100vw, 50vw"
                   />
                 </div>
                 

@@ -11,7 +11,7 @@ import { Product } from '@/types';
 import SimilarItemsGrid from './SimilarItemsGrid';
 import ProductDetailPage from './ProductDetailPage';
 import { getPrimaryImageUrl } from '@/utils/imageHelpers';
-import { getResponsiveImageProps } from '@/utils/asosImageUtils';
+import { SmartImage } from '@/components/SmartImage';
 
 interface PhotoCloseupProps {
   onClose?: () => void;
@@ -361,21 +361,16 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
         <div className="overflow-y-auto h-full pb-20">
           {/* Hero Image */}
           <div className="relative aspect-[3/4] bg-muted">
-            <img
-              {...getResponsiveImageProps(
-                (() => {
-                  const mediaUrls = getMediaUrls(product);
-                  return mediaUrls.length > 0 
-                    ? mediaUrls[currentImageIndex] 
-                    : getPrimaryImageUrl(product);
-                })(),
-                "(max-width: 768px) 100vw, 50vw"
-              )}
+            <SmartImage
+              src={(() => {
+                const mediaUrls = getMediaUrls(product);
+                return mediaUrls.length > 0 
+                  ? mediaUrls[currentImageIndex] 
+                  : getPrimaryImageUrl(product);
+              })()}
               alt={product.title}
               className="w-full h-full object-cover"
-              onError={(e) => {
-                (e.target as HTMLImageElement).src = '/placeholder.svg';
-              }}
+              sizes="(max-width: 768px) 100vw, 50vw"
             />
             
             {/* Mobile Thumbnails - Bottom Right */}
@@ -393,13 +388,11 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
                           : 'border-white/50 hover:border-white/80'
                       }`}
                     >
-                      <img
+                      <SmartImage
                         src={imageUrl}
                         alt={`${product.title} view ${index + 1}`}
                         className="w-full h-full object-cover"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = '/placeholder.svg';
-                        }}
+                        sizes="48px"
                       />
                     </button>
                   ))}
@@ -519,21 +512,16 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
         <div className="grid grid-cols-2 gap-6 p-6 h-[calc(100vh-10rem)] max-h-screen">{/* Force update */}
           {/* Left: Product Image */}
           <div className="bg-muted rounded-xl overflow-hidden flex items-start justify-center h-full pt-8 relative">
-            <img
-              {...getResponsiveImageProps(
-                (() => {
-                  const mediaUrls = getMediaUrls(product);
-                  return mediaUrls.length > 0 
-                    ? mediaUrls[currentImageIndex] 
-                    : getPrimaryImageUrl(product);
-                })(),
-                "50vw"
-              )}
+            <SmartImage
+              src={(() => {
+                const mediaUrls = getMediaUrls(product);
+                return mediaUrls.length > 0 
+                  ? mediaUrls[currentImageIndex] 
+                  : getPrimaryImageUrl(product);
+              })()}
               alt={product.title}
               className="max-w-full max-h-[80%] object-contain"
-              onError={(e) => {
-                (e.target as HTMLImageElement).src = '/placeholder.svg';
-              }}
+              sizes="50vw"
             />
             
             {/* Thumbnails */}
@@ -551,13 +539,11 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
                           : 'border-border/30 hover:border-border'
                       }`}
                     >
-                      <img
+                      <SmartImage
                         src={imageUrl}
                         alt={`${product.title} view ${index + 1}`}
                         className="w-full h-full object-cover"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = '/placeholder.svg';
-                        }}
+                        sizes="48px"
                       />
                     </button>
                   ))}
