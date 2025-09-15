@@ -4,6 +4,8 @@ const CACHE_VERSION = 'v9';
 // Hosts we NEVER intercept (let the browser hit the network directly).
 const BYPASS_HOSTS = [
   'api.azyahstyle.com', // our Supabase custom domain
+  'klwolsopucgswhtdlsps.supabase.co', // direct Supabase host for fallbacks
+  'wsrv.nl', // image proxy fallback
 ];
 
 self.addEventListener('install', (event) => {

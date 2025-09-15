@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { cn } from '@/lib/utils';
+import { displaySrc, displaySrcSet } from '../lib/displaySrc';
+import { getImageFallbacks } from '../lib/fallbackImage';
 
 interface LazyImageProps {
   src: string;
@@ -31,6 +33,8 @@ const LazyImage = ({
   const [isLoaded, setIsLoaded] = useState(false);
   const [isError, setIsError] = useState(false);
   const [isInView, setIsInView] = useState(priority);
+  const [currentSrc, setCurrentSrc] = useState(src);
+  const [fallbackIndex, setFallbackIndex] = useState(0);
   const imgRef = useRef<HTMLImageElement>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
 
@@ -127,11 +131,20 @@ const LazyImage = ({
   };
 
   const handleError = () => {
-    setIsError(true);
-    onError?.();
+    const fallbacks = getImageFallbacks(src);
+    const nextIndex = fallbackIndex + 1;
+    
+    if (nextIndex < fallbacks.length) {
+      setCurrentSrc(fallbacks[nextIndex]);
+      setFallbackIndex(nextIndex);
+      setIsLoaded(false); // Reset loading state for retry
+    } else {
+      setIsError(true);
+      onError?.();
+    }
   };
 
-  const optimizedSrc = getOptimizedSrc(src);
+  const optimizedSrc = getOptimizedSrc(currentSrc);
 
   return (
     <div className="relative overflow-hidden">
@@ -186,8 +199,8 @@ const LazyImage = ({
       {isInView && (
         <img
           ref={imgRef}
-          src={optimizedSrc}
-          srcSet={generateSrcSet(src)}
+          src={displaySrc(optimizedSrc)}
+          srcSet={displaySrcSet(optimizedSrc) || generateSrcSet(currentSrc)}
           sizes={sizes || "(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"}
           alt={alt}
           className={cn(
@@ -199,6 +212,7 @@ const LazyImage = ({
           onError={handleError}
           loading={priority ? "eager" : "lazy"}
           decoding="async"
+          crossOrigin="anonymous"
         />
       )}
 

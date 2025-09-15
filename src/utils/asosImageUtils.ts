@@ -1,7 +1,10 @@
 // Utility functions for ASOS image handling with responsive rendering
 
-// Build srcSet for responsive images
+// Build srcSet for responsive images (ASOS only)
 export function buildAsosSrcSet(baseUrl: string): string {
+  // Only build srcSet for ASOS URLs
+  if (!baseUrl.includes('asos-media.com')) return '';
+  
   const widths = [400, 800, 1200, 1600];
   return widths.map(px => `${upgradeAsosImageUrl(baseUrl, px)} ${px}w`).join(', ');
 }
@@ -12,6 +15,7 @@ export function upgradeAsosImageUrl(url: string, minWid = 1500): string {
     const ASOS_HOSTS = ['images.asos-media.com', 'asos-media.com'];
     const urlObj = new URL(url);
     
+    // Only process ASOS URLs - guard against Supabase URLs
     if (!ASOS_HOSTS.some(h => urlObj.hostname.endsWith(h))) return url;
 
     // Strip existing macros

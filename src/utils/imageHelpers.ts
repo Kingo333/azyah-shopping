@@ -1,4 +1,6 @@
 // Utility functions for handling product images, especially ASOS products
+import { imageUrlFrom, extractSupabasePath } from '../lib/imageUrl';
+import { isSupabaseAbsoluteUrl } from '../lib/urlGuards';
 
 export interface ImageData {
   url: string;
@@ -23,10 +25,20 @@ export function getAllProductImages(product: any): ImageData[] {
         console.log('ASOS product - all images extracted:', product.id, 'Total:', parsed.length);
         parsed.forEach((url: string, index: number) => {
           if (url && typeof url === 'string' && url.trim()) {
+            let processedUrl = url.trim();
+            
+            // Convert absolute Supabase URLs to environment-aware URLs
+            if (isSupabaseAbsoluteUrl(processedUrl)) {
+              const pathData = extractSupabasePath(processedUrl);
+              if (pathData) {
+                processedUrl = imageUrlFrom(pathData.bucket, pathData.path);
+              }
+            }
+            
             images.push({
-              url: url.trim(),
+              url: processedUrl,
               index,
-              isAsos: true
+              isAsos: url.includes('asos-media.com')
             });
           }
         });
@@ -40,10 +52,20 @@ export function getAllProductImages(product: any): ImageData[] {
   if (images.length === 0 && product.media_urls && Array.isArray(product.media_urls)) {
     product.media_urls.forEach((url: string, index: number) => {
       if (url && typeof url === 'string' && url.trim()) {
+        let processedUrl = url.trim();
+        
+        // Convert absolute Supabase URLs to environment-aware URLs
+        if (isSupabaseAbsoluteUrl(processedUrl)) {
+          const pathData = extractSupabasePath(processedUrl);
+          if (pathData) {
+            processedUrl = imageUrlFrom(pathData.bucket, pathData.path);
+          }
+        }
+        
         images.push({
-          url: url.trim(),
+          url: processedUrl,
           index,
-          isAsos: false
+          isAsos: url.includes('asos-media.com')
         });
       }
     });
@@ -132,7 +154,19 @@ export function getProductImageUrls(product: any): string[] {
   if (Array.isArray(product.media_urls) && product.media_urls.length > 0) {
     const validImages = product.media_urls
       .filter(url => url && typeof url === 'string' && url.trim())
-      .map(url => url.trim());
+      .map(url => {
+        let processedUrl = url.trim();
+        
+        // Convert absolute Supabase URLs to environment-aware URLs
+        if (isSupabaseAbsoluteUrl(processedUrl)) {
+          const pathData = extractSupabasePath(processedUrl);
+          if (pathData) {
+            processedUrl = imageUrlFrom(pathData.bucket, pathData.path);
+          }
+        }
+        
+        return processedUrl;
+      });
     
     if (validImages.length > 0) {
       console.log(`✅ PRODUCTION: Using ${validImages.length} images from media_urls array for ${product?.brand?.name || 'Unknown'}:`, validImages);
@@ -149,7 +183,19 @@ export function getProductImageUrls(product: any): string[] {
       if (Array.isArray(parsed) && parsed.length > 0) {
         const validImages = parsed
           .filter(url => url && typeof url === 'string' && url.trim())
-          .map(url => url.trim());
+          .map(url => {
+            let processedUrl = url.trim();
+            
+            // Convert absolute Supabase URLs to environment-aware URLs
+            if (isSupabaseAbsoluteUrl(processedUrl)) {
+              const pathData = extractSupabasePath(processedUrl);
+              if (pathData) {
+                processedUrl = imageUrlFrom(pathData.bucket, pathData.path);
+              }
+            }
+            
+            return processedUrl;
+          });
         
         if (validImages.length > 0) {
           console.log(`✅ PRODUCTION: Using ${validImages.length} images from parsed media_urls for ${product?.brand?.name || 'Unknown'}:`, validImages);
