@@ -8,8 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, ExternalLink, Package, Heart, Star } from 'lucide-react';
 import { SEOHead } from '@/components/SEOHead';
-import { SmartImage } from '@/components/SmartImage';
-import { getPrimaryImageUrl } from '@/utils/imageHelpers';
+import { getResponsiveImageProps } from '@/utils/asosImageUtils';
 
 const BrandDetail = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -56,6 +55,30 @@ const BrandDetail = () => {
     }).format(cents / 100);
   };
 
+  const getImageUrl = (product: any) => {
+    // Handle different media_urls formats
+    if (product.image_url) {
+      return product.image_url;
+    }
+    
+    if (product.media_urls) {
+      // If it's a JSON string, parse it
+      if (typeof product.media_urls === 'string') {
+        try {
+          const parsed = JSON.parse(product.media_urls);
+          return Array.isArray(parsed) ? parsed[0] : parsed;
+        } catch {
+          return product.media_urls;
+        }
+      }
+      // If it's already an array
+      if (Array.isArray(product.media_urls)) {
+        return product.media_urls[0];
+      }
+    }
+    
+    return '/placeholder.svg';
+  };
 
   if (brandLoading) {
     return (
@@ -167,15 +190,21 @@ const BrandDetail = () => {
           ) : products && products.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {products.map((product) => {
-                const imageUrl = getPrimaryImageUrl(product);
+                const imageUrl = getImageUrl(product);
+                const imageProps = imageUrl.includes('asos-media.com') 
+                  ? getResponsiveImageProps(imageUrl, "(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw")
+                  : { src: imageUrl };
 
                 return (
                   <Card key={product.id} className="group hover:shadow-lg transition-all duration-300">
                     <div className="aspect-square overflow-hidden rounded-t-lg">
-                      <SmartImage
-                        src={imageUrl}
+                      <img
+                        {...imageProps}
                         alt={product.title}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        onError={(e) => {
+                          e.currentTarget.src = '/placeholder.svg';
+                        }}
                       />
                     </div>
                     <CardContent className="p-4">

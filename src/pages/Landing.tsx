@@ -9,8 +9,7 @@ import SwipeDeck from '@/components/SwipeDeck';
 import LandingSwipeDeck from '@/components/LandingSwipeDeck';
 import { clearInvalidSession, debugAuthState } from "@/utils/sessionDebug";
 import { useSmartSwipeProducts } from "@/hooks/useSmartSwipeProducts";
-import { SmartImage } from "@/components/SmartImage";
-import { getPrimaryImageUrl } from "@/utils/imageHelpers";
+import { getResponsiveImageProps } from "@/utils/asosImageUtils";
 import { InvestorContactModal } from "@/components/InvestorContactModal";
 import luxuryFashionEditorial from "@/assets/luxury-fashion-editorial.jpg";
 import { useScrollAnimation, useStaggeredScrollAnimation } from "@/hooks/useScrollAnimation";
@@ -457,14 +456,13 @@ export default function Landing() {
           [...Array(8)].map((_, i) => <div key={`skeleton-${i}`} className="aspect-[3/4] bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl animate-pulse" />) :
           // Use gridProducts
           (gridProducts?.slice(0, 8) || []).map((product, i) => {
-            const imageUrl = getPrimaryImageUrl(product);
+            const imageUrl = product.image_url || (product.media_urls && Array.isArray(product.media_urls) && product.media_urls.length > 0 ? product.media_urls[0] : typeof product.media_urls === 'string' ? JSON.parse(product.media_urls)[0] : null) || '/placeholder.svg';
+            const imageProps = getResponsiveImageProps(imageUrl);
             return <div key={`product-${product.id}`} className="group relative aspect-[3/4] bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 animate-slide-up-fade" style={{ animationDelay: `${1.3 + (i * 0.1)}s`, animationFillMode: 'both' }}>
                       {/* Product Image */}
-                      <SmartImage
-                        src={imageUrl}
-                        alt={product.title || `Product ${i + 1}`}
-                        className="absolute inset-0 w-full h-full object-cover"
-                      />
+                      <img {...imageProps} alt={product.title || `Product ${i + 1}`} className="absolute inset-0 w-full h-full object-cover" onError={e => {
+                (e.target as HTMLImageElement).src = '/placeholder.svg';
+              }} />
                       
                       <div className="absolute inset-0 bg-gradient-to-t from-primary/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                       
