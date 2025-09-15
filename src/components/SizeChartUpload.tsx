@@ -7,6 +7,8 @@ import { Upload, X, Image as ImageIcon, Loader2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { imageUrlFrom, extractSupabasePath } from '@/lib/imageUrl';
+import { isSupabaseAbsoluteUrl } from '@/lib/urlGuards';
 
 interface SizeChartUploadProps {
   currentSizeChart?: string | null;
@@ -35,11 +37,8 @@ export const SizeChartUpload: React.FC<SizeChartUploadProps> = ({
 
     if (error) throw error;
 
-    const { data: publicUrl } = supabase.storage
-      .from('size-charts')
-      .getPublicUrl(fileName);
-
-    return publicUrl.publicUrl;
+    // Store relative path format for mobile-friendly URLs
+    return `size-charts/${fileName}`;
   };
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -125,7 +124,14 @@ export const SizeChartUpload: React.FC<SizeChartUploadProps> = ({
             </Button>
           </div>
           <img 
-            src={previewUrl} 
+            src={(() => {
+              if (!previewUrl) return '';
+              if (isSupabaseAbsoluteUrl(previewUrl)) {
+                const pathData = extractSupabasePath(previewUrl);
+                return pathData ? imageUrlFrom(pathData.bucket, pathData.path) : previewUrl;
+              }
+              return previewUrl.includes('/') ? imageUrlFrom(previewUrl.split('/')[0], previewUrl.split('/').slice(1).join('/')) : previewUrl;
+            })()} 
             alt="Size chart preview" 
             className="w-full h-20 object-cover rounded border"
           />

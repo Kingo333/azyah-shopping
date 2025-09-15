@@ -13,6 +13,8 @@ import { CATEGORY_TREE, getAllCategories, getSubcategoriesForCategory, getCatego
 import { SUPPORTED_CURRENCIES } from '@/lib/currencies';
 import type { TopCategory, SubCategory, Gender } from '@/lib/categories';
 import { useProductOutfits } from '@/hooks/useProductOutfits';
+import { imageUrlFrom, extractSupabasePath } from '@/lib/imageUrl';
+import { isSupabaseAbsoluteUrl } from '@/lib/urlGuards';
 interface AddProductModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -92,10 +94,9 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
       error
     } = await supabase.storage.from('product-images').upload(fileName, file);
     if (error) throw error;
-    const {
-      data: publicUrl
-    } = supabase.storage.from('product-images').getPublicUrl(fileName);
-    return publicUrl.publicUrl;
+    
+    // Store relative path format for mobile-friendly URLs
+    return `product-images/${fileName}`;
   };
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -322,7 +323,13 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
               {images.map((image, index) => (
                 <div key={index} className="relative aspect-square">
                   <img 
-                    src={image} 
+                    src={(() => {
+                      if (isSupabaseAbsoluteUrl(image)) {
+                        const pathData = extractSupabasePath(image);
+                        return pathData ? imageUrlFrom(pathData.bucket, pathData.path) : image;
+                      }
+                      return image.includes('/') ? imageUrlFrom(image.split('/')[0], image.split('/').slice(1).join('/')) : image;
+                    })()} 
                     alt={`Product ${index + 1}`} 
                     className="w-full h-full object-cover rounded-lg border"
                   />
@@ -432,7 +439,14 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
                     ) : sizeChartUrl ? (
                       <div className="flex flex-col items-center space-y-2">
                         <img 
-                          src={sizeChartUrl} 
+                          src={(() => {
+                            if (!sizeChartUrl) return '';
+                            if (isSupabaseAbsoluteUrl(sizeChartUrl)) {
+                              const pathData = extractSupabasePath(sizeChartUrl);
+                              return pathData ? imageUrlFrom(pathData.bucket, pathData.path) : sizeChartUrl;
+                            }
+                            return sizeChartUrl.includes('/') ? imageUrlFrom(sizeChartUrl.split('/')[0], sizeChartUrl.split('/').slice(1).join('/')) : sizeChartUrl;
+                          })()} 
                           alt="Size Chart" 
                           className="w-20 h-20 object-cover rounded-lg"
                         />

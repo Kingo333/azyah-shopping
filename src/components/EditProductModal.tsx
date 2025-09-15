@@ -15,6 +15,8 @@ import type { TopCategory, SubCategory, Gender } from '@/lib/categories';
 import { SUPPORTED_CURRENCIES } from '@/lib/currencies';
 import { useProductOutfits } from '@/hooks/useProductOutfits';
 import type { Product } from '@/types';
+import { imageUrlFrom, extractSupabasePath } from '@/lib/imageUrl';
+import { isSupabaseAbsoluteUrl } from '@/lib/urlGuards';
 interface EditProductModalProps {
   product: Product | null;
   isOpen: boolean;
@@ -117,10 +119,9 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
       error
     } = await supabase.storage.from('product-images').upload(fileName, file);
     if (error) throw error;
-    const {
-      data: publicUrl
-    } = supabase.storage.from('product-images').getPublicUrl(fileName);
-    return publicUrl.publicUrl;
+    
+    // Store relative path format for mobile-friendly URLs
+    return `product-images/${fileName}`;
   };
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -374,7 +375,13 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
               {images.map((image, index) => (
                 <div key={index} className="relative aspect-square">
                   <img 
-                    src={image} 
+                    src={(() => {
+                      if (isSupabaseAbsoluteUrl(image)) {
+                        const pathData = extractSupabasePath(image);
+                        return pathData ? imageUrlFrom(pathData.bucket, pathData.path) : image;
+                      }
+                      return image.includes('/') ? imageUrlFrom(image.split('/')[0], image.split('/').slice(1).join('/')) : image;
+                    })()} 
                     alt={`Product ${index + 1}`} 
                     className="w-full h-full object-cover rounded-lg border"
                   />
