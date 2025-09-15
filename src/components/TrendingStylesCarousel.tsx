@@ -15,7 +15,8 @@ import {
 } from "@/components/ui/carousel";
 import { TrendingUp, Heart, ShoppingBag, ExternalLink } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { upgradeAsosImageUrl, getResponsiveImageProps } from '@/utils/asosImageUtils';
+import { SmartImage } from '@/components/SmartImage';
+import { getPrimaryImageUrl } from '@/utils/imageHelpers';
 
 interface TrendingProduct {
   id: string;
@@ -205,36 +206,6 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
     return () => clearInterval(autoSlide);
   }, [api, scrollNext]);
 
-  const getProductImage = (product: any) => {
-    console.log('Product media data:', { image_url: product.image_url, media_urls: product.media_urls });
-    
-    // Try image_url first
-    if (product.image_url) {
-      return upgradeAsosImageUrl(product.image_url, 800);
-    }
-    
-    // Then try media_urls array
-    if (product.media_urls && Array.isArray(product.media_urls) && product.media_urls.length > 0) {
-      const firstMedia = product.media_urls[0];
-      console.log('First media item:', firstMedia, 'Type:', typeof firstMedia);
-      
-      if (typeof firstMedia === 'string') {
-        return upgradeAsosImageUrl(firstMedia, 800);
-      } else if (firstMedia && typeof firstMedia === 'object') {
-        // Try different possible properties
-        if (firstMedia.url) return upgradeAsosImageUrl(firstMedia.url, 800);
-        if (firstMedia.src) return upgradeAsosImageUrl(firstMedia.src, 800);
-        if (firstMedia.href) return upgradeAsosImageUrl(firstMedia.href, 800);
-        // If it's an array within array, get the first string
-        if (Array.isArray(firstMedia) && firstMedia.length > 0) {
-          return upgradeAsosImageUrl(firstMedia[0], 800);
-        }
-      }
-    }
-    
-    console.log('No valid image found, using placeholder');
-    return '/placeholder.svg';
-  };
 
   const formatProductTitle = (title: string) => {
     return title.length > 50 ? `${title.slice(0, 50)}...` : title;
@@ -511,13 +482,10 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
               <div 
                 className="w-full aspect-[3/4] bg-muted rounded-2xl overflow-hidden relative cursor-pointer max-w-full"
               >
-                <img
-                  src={product.image_url}
+                <SmartImage
+                  src={getPrimaryImageUrl(product)}
                   alt={product.title}
                   className="w-full h-full object-cover"
-                  onError={(e) => {
-                    e.currentTarget.src = '/placeholder.svg';
-                  }}
                 />
                 
                 {/* Hover gradient overlay */}
