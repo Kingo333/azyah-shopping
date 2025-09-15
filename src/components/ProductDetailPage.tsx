@@ -8,6 +8,7 @@ import { AdvancedSizeColorSelector } from './AdvancedSizeColorSelector';
 import { AddToClosetModal } from './AddToClosetModal';
 import { useToast } from '@/hooks/use-toast';
 import { useAnalytics } from '@/hooks/useAnalytics';
+import { getProductImageUrls } from '@/utils/imageHelpers';
 interface ProductDetailPageProps {
   product: Product;
   onBack: () => void;
@@ -23,8 +24,7 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
   const [selectedColor, setSelectedColor] = useState('');
   const [isClosetModalOpen, setIsClosetModalOpen] = useState(false);
   const images = useMemo<string[]>(() => {
-    const media = (product?.media_urls ?? []) as unknown as string[];
-    return Array.isArray(media) ? media.filter(Boolean) : [];
+    return getProductImageUrls(product);
   }, [product]);
   const priceCurrency = product?.currency || 'USD';
   const priceCents = product?.price_cents ?? 0;

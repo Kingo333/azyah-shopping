@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { SmartImage } from '@/components/SmartImage';
 
 interface ToyReplicaUploaderProps {
   onFileUploaded: (toyReplicaId: string, fileName: string, previewUrl: string) => void;
@@ -150,10 +151,11 @@ export const ToyReplicaUploader: React.FC<ToyReplicaUploaderProps> = ({
       ) : (
         <div className="space-y-4">
           <div className="relative">
-            <img 
+            <SmartImage 
               src={preview} 
               alt="Preview" 
               className="w-full h-64 object-cover rounded-lg border"
+              sizes="(max-width: 768px) 100vw, 50vw"
             />
             <Button
               onClick={clearFile}

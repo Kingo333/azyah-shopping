@@ -8,6 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { useToyReplicaAssets, type ToyReplicaAsset } from '@/hooks/useToyReplicaAssets';
 import { supabase } from '@/integrations/supabase/client';
+import { SmartImage } from '@/components/SmartImage';
 
 interface ToyReplicaResultsPanelProps {
   loading: boolean;
@@ -244,18 +245,18 @@ export const ToyReplicaResultsPanel: React.FC<ToyReplicaResultsPanelProps> = ({
                     </div>
                   )}
                   
-                   <img
-                     src={asset.result_url!}
-                     alt="Toy replica result"
-                     className="w-full aspect-square object-cover"
-                     onError={(e) => {
-                       console.error('Toy replica image failed to load:', asset.result_url);
-                       e.currentTarget.src = '/placeholder.svg';
-                     }}
-                     onLoad={() => {
-                       console.log('✅ Toy replica image loaded successfully:', asset.result_url);
-                     }}
-                   />
+                   <SmartImage
+                      src={asset.result_url!}
+                      alt="Toy replica result"
+                      className="w-full aspect-square object-cover"
+                      sizes="(max-width: 768px) 50vw, 33vw"
+                      onError={() => {
+                        console.error('Toy replica image failed to load:', asset.result_url);
+                      }}
+                      onLoad={() => {
+                        console.log('✅ Toy replica image loaded successfully:', asset.result_url);
+                      }}
+                    />
                   
                   
                   <div className="absolute bottom-2 right-2">

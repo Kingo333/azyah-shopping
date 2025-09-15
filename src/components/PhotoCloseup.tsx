@@ -10,7 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Product } from '@/types';
 import SimilarItemsGrid from './SimilarItemsGrid';
 import ProductDetailPage from './ProductDetailPage';
-import { getPrimaryImageUrl } from '@/utils/imageHelpers';
+import { getProductImageUrls } from '@/utils/imageHelpers';
 import { SmartImage } from '@/components/SmartImage';
 
 interface PhotoCloseupProps {
@@ -288,27 +288,8 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
     }).format(cents / 100);
   };
 
-  // Helper function to safely get media URLs as array
-  const getMediaUrls = (product: Product): string[] => {
-    if (!product.media_urls) return [];
-    
-    // If it's already an array, return it
-    if (Array.isArray(product.media_urls)) {
-      return product.media_urls;
-    }
-    
-    // If it's a string, try to parse as JSON
-    if (typeof product.media_urls === 'string') {
-      try {
-        const parsed = JSON.parse(product.media_urls);
-        return Array.isArray(parsed) ? parsed : [];
-      } catch {
-        return [];
-      }
-    }
-    
-    return [];
-  };
+  // Use unified image processing system
+  const productImages = getProductImageUrls(product);
 
   return (
     <div 
@@ -362,48 +343,40 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
           {/* Hero Image */}
           <div className="relative aspect-[3/4] bg-muted">
             <SmartImage
-              src={(() => {
-                const mediaUrls = getMediaUrls(product);
-                return mediaUrls.length > 0 
-                  ? mediaUrls[currentImageIndex] 
-                  : getPrimaryImageUrl(product);
-              })()}
+              src={productImages[currentImageIndex] || productImages[0]}
               alt={product.title}
               className="w-full h-full object-cover"
               sizes="(max-width: 768px) 100vw, 50vw"
             />
             
             {/* Mobile Thumbnails - Bottom Right */}
-            {(() => {
-              const mediaUrls = getMediaUrls(product);
-              return mediaUrls.length > 1 && (
-                <div className="absolute bottom-4 right-4 flex gap-2 max-w-[calc(100%-2rem)] overflow-x-auto">
-                  {mediaUrls.slice(0, 4).map((imageUrl, index) => (
-                    <button
-                      key={index}
-                      onClick={() => setCurrentImageIndex(index)}
-                      className={`w-12 h-12 rounded-lg overflow-hidden border-2 transition-all hover:scale-105 flex-shrink-0 ${
-                        currentImageIndex === index 
-                          ? 'border-white shadow-lg' 
-                          : 'border-white/50 hover:border-white/80'
-                      }`}
-                    >
-                      <SmartImage
-                        src={imageUrl}
-                        alt={`${product.title} view ${index + 1}`}
-                        className="w-full h-full object-cover"
-                        sizes="48px"
-                      />
-                    </button>
-                  ))}
-                  {mediaUrls.length > 4 && (
-                    <div className="w-12 h-12 rounded-lg bg-black/50 border-2 border-white/50 flex items-center justify-center text-xs text-white flex-shrink-0">
-                      +{mediaUrls.length - 4}
-                    </div>
-                  )}
-                </div>
-              );
-            })()}
+            {productImages.length > 1 && (
+              <div className="absolute bottom-4 right-4 flex gap-2 max-w-[calc(100%-2rem)] overflow-x-auto">
+                {productImages.slice(0, 4).map((imageUrl, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setCurrentImageIndex(index)}
+                    className={`w-12 h-12 rounded-lg overflow-hidden border-2 transition-all hover:scale-105 flex-shrink-0 ${
+                      currentImageIndex === index 
+                        ? 'border-white shadow-lg' 
+                        : 'border-white/50 hover:border-white/80'
+                    }`}
+                  >
+                    <SmartImage
+                      src={imageUrl}
+                      alt={`${product.title} view ${index + 1}`}
+                      className="w-full h-full object-cover"
+                      sizes="48px"
+                    />
+                  </button>
+                ))}
+                {productImages.length > 4 && (
+                  <div className="w-12 h-12 rounded-lg bg-black/50 border-2 border-white/50 flex items-center justify-center text-xs text-white flex-shrink-0">
+                    +{productImages.length - 4}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Product Info */}
@@ -513,23 +486,16 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
           {/* Left: Product Image */}
           <div className="bg-muted rounded-xl overflow-hidden flex items-start justify-center h-full pt-8 relative">
             <SmartImage
-              src={(() => {
-                const mediaUrls = getMediaUrls(product);
-                return mediaUrls.length > 0 
-                  ? mediaUrls[currentImageIndex] 
-                  : getPrimaryImageUrl(product);
-              })()}
+              src={productImages[currentImageIndex] || productImages[0]}
               alt={product.title}
               className="max-w-full max-h-[80%] object-contain"
               sizes="50vw"
             />
             
             {/* Thumbnails */}
-            {(() => {
-              const mediaUrls = getMediaUrls(product);
-              return mediaUrls.length > 1 && (
-                <div className="absolute top-4 left-4 flex flex-col gap-2 max-h-[calc(100%-2rem)] overflow-y-auto">
-                  {mediaUrls.slice(0, 6).map((imageUrl, index) => (
+            {productImages.length > 1 && (
+              <div className="absolute top-4 left-4 flex flex-col gap-2 max-h-[calc(100%-2rem)] overflow-y-auto">
+                {productImages.slice(0, 6).map((imageUrl, index) => (
                     <button
                       key={index}
                       onClick={() => setCurrentImageIndex(index)}
@@ -546,15 +512,14 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
                         sizes="48px"
                       />
                     </button>
-                  ))}
-                  {mediaUrls.length > 6 && (
-                    <div className="w-12 h-12 rounded-lg bg-muted border-2 border-border/30 flex items-center justify-center text-xs text-muted-foreground">
-                      +{mediaUrls.length - 6}
-                    </div>
-                  )}
-                </div>
-              );
-            })()}
+                ))}
+                {productImages.length > 6 && (
+                  <div className="w-12 h-12 rounded-lg bg-muted border-2 border-border/30 flex items-center justify-center text-xs text-muted-foreground">
+                    +{productImages.length - 6}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Right: Product Details */}

@@ -10,6 +10,7 @@ import { Sparkles, Loader2, Download, RotateCcw, Info, Crown, AlertTriangle } fr
 import { BackButton } from '@/components/ui/back-button';
 import { ToyReplicaUploader } from '@/components/ToyReplicaUploader';
 import { ToyReplicaResultsPanel } from '@/components/ToyReplicaResultsPanel';
+import { SmartImage } from '@/components/SmartImage';
 
 const ToyReplica = () => {
   const [toyReplicaId, setToyReplicaId] = useState<string | null>(null);
@@ -340,11 +341,11 @@ const ToyReplica = () => {
                       backgroundSize: '20px 20px'
                     }}
                   >
-                    <img 
+                     <SmartImage 
                       src={result} 
                       alt="Generated LEGO mini-figure" 
                       className="w-full rounded-lg"
-                      onError={(e) => {
+                      onError={() => {
                         console.error('Image failed to load:', result);
                         toast({
                           title: "Image Load Error",
