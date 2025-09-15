@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { X, Share2, Heart, ShoppingBag, ExternalLink, ArrowLeft } from 'lucide-react';
+import { X, Share2, Heart, ShoppingBag, ExternalLink, ArrowLeft, Ruler } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useWishlist } from '@/hooks/useWishlist';
@@ -12,6 +13,8 @@ import SimilarItemsGrid from './SimilarItemsGrid';
 import ProductDetailPage from './ProductDetailPage';
 import { getProductImageUrls } from '@/utils/imageHelpers';
 import { SmartImage } from '@/components/SmartImage';
+import { imageUrlFrom, extractSupabasePath } from '@/lib/imageUrl';
+import { isSupabaseAbsoluteUrl } from '@/lib/urlGuards';
 
 interface PhotoCloseupProps {
   onClose?: () => void;
@@ -29,6 +32,7 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
   const [selectedDetailProduct, setSelectedDetailProduct] = useState<Product | null>(null);
   const [showProductDetail, setShowProductDetail] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [showSizeChart, setShowSizeChart] = useState(false);
   
   const isOverlay = searchParams.get('from') === 'list';
   const productId = id || initialProduct?.id;
@@ -288,6 +292,22 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
     }).format(cents / 100);
   };
 
+  // Get size chart URL from product attributes
+  const getSizeChartUrl = () => {
+    const attributes = product?.attributes as any;
+    const sizeChartUrl = attributes?.size_chart;
+    if (!sizeChartUrl) return null;
+    
+    if (isSupabaseAbsoluteUrl(sizeChartUrl)) {
+      const pathData = extractSupabasePath(sizeChartUrl);
+      return pathData ? imageUrlFrom(pathData.bucket, pathData.path) : sizeChartUrl;
+    }
+    
+    return sizeChartUrl.includes('/') ? imageUrlFrom(sizeChartUrl.split('/')[0], sizeChartUrl.split('/').slice(1).join('/')) : sizeChartUrl;
+  };
+
+  const sizeChartUrl = getSizeChartUrl();
+
   // Use unified image processing system
   const productImages = getProductImageUrls(product);
 
@@ -412,6 +432,17 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
                 <ShoppingBag className="h-4 w-4 mr-2" />
                 Save
               </Button>
+              {sizeChartUrl && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowSizeChart(true)}
+                  className="flex-1"
+                >
+                  <Ruler className="h-4 w-4 mr-2" />
+                  Size
+                </Button>
+              )}
             </div>
 
             {/* Similar Items */}
@@ -555,6 +586,16 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
                   <ShoppingBag className="h-4 w-4 mr-2" />
                   Save
                 </Button>
+                {sizeChartUrl && (
+                  <Button
+                    variant="ghost"
+                    onClick={() => setShowSizeChart(true)}
+                    className="flex-1"
+                  >
+                    <Ruler className="h-4 w-4 mr-2" />
+                    Size Chart
+                  </Button>
+                )}
                 {product.external_url && (
                   <Button
                     onClick={handleVisitBrand}
@@ -596,6 +637,25 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
           </div>
         </div>
       </div>
+
+      {/* Size Chart Modal */}
+      {showSizeChart && sizeChartUrl && (
+        <Dialog open={showSizeChart} onOpenChange={setShowSizeChart}>
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Size Chart - {product.title}</DialogTitle>
+            </DialogHeader>
+            <div className="flex justify-center p-4">
+              <SmartImage
+                src={sizeChartUrl}
+                alt={`Size chart for ${product.title}`}
+                className="max-w-full h-auto rounded-lg"
+                sizes="(max-width: 768px) 100vw, 80vw"
+              />
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
 
       {/* Product Detail Modal */}
       {showProductDetail && selectedDetailProduct && (
