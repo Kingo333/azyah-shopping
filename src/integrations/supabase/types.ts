@@ -3184,17 +3184,30 @@ export type Database = {
             }
           | { limit_param?: number; offset_param?: number }
         Returns: {
+          attributes: Json
+          brand: Json
           brand_id: string
-          brand_logo: string
-          brand_name: string
-          brand_slug: string
-          category_name: string
           category_slug: string
           created_at: string
+          currency: string
+          description: string
+          external_url: string
+          gender: string
           id: string
+          image_url: string
+          is_external: boolean
+          media_urls: Json
+          merchant_name: string
+          price_cents: number
+          retailer: Json
           retailer_id: string
+          size_chart: Json
+          source: string
           status: string
+          subcategory_slug: string
+          tags: string[]
           title: string
+          updated_at: string
         }[]
       }
       get_public_products_secure: {
@@ -3255,16 +3268,12 @@ export type Database = {
         Args: Record<PropertyKey, never> | { limit_param?: number }
         Returns: {
           bio: string
-          cover_image_url: string
           created_at: string
           id: string
           logo_url: string
           name: string
-          shipping_regions: string[]
           slug: string
-          socials: Json
           updated_at: string
-          website: string
         }[]
       }
       get_retailer_contact_info: {
