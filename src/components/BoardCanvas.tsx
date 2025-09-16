@@ -366,8 +366,8 @@ const SlotComponent: React.FC<SlotComponentProps> = ({
       style={{
         left: slot.x,
         top: slot.y,
-        width: slot.w,
-        height: slot.h,
+        width: isMobile ? Math.min(slot.w, 120) : slot.w,
+        height: isMobile ? Math.min(slot.h, 120) : slot.h,
         transform: slot.rotation ? `rotate(${slot.rotation}deg)` : undefined,
         zIndex: isSelected ? 10 : isDragging ? 50 : 1,
         userSelect: 'none'
