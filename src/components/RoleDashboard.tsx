@@ -23,6 +23,7 @@ import { UGCCollabButton } from '@/components/ugc/UGCCollabButton';
 import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
 import { FeedbackModal } from '@/components/FeedbackModal';
 import { TutorialTooltip } from '@/components/ui/tutorial-tooltip';
+import MainNav from '@/components/nav/MainNav';
 import { PaymentIntegrationTest } from '@/components/PaymentIntegrationTest';
 import { ProfileCompletionBanner } from '@/components/ProfileCompletionBanner';
 interface UserProfile {
@@ -221,107 +222,6 @@ const RoleDashboard: React.FC = () => {
       
       {/* Premium Banner */}
       <PremiumBanner />
-
-      {/* Quick Actions - Horizontal Pills */}
-      <section className="px-4 pt-3">
-        <div className="flex gap-2 overflow-x-auto pb-1 [-webkit-overflow-scrolling:touch] scrollbar-hide">
-          {/* Swipe Chip */}
-          <TutorialTooltip content="Swipe through fashion items to discover your style. Swipe right to like items and build your personal taste profile." feature="swipe">
-            <button
-              onClick={() => navigate('/swipe')}
-              className="flex items-center gap-2 px-4 py-2 h-10 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-colors font-medium text-sm whitespace-nowrap flex-shrink-0 min-w-fit"
-            >
-              <Heart className="h-4 w-4" />
-              Shop
-            </button>
-          </TutorialTooltip>
-
-          {/* AI Studio Chip with New Badge */}
-          <TutorialTooltip content="Create AI-generated fashion content and try-on experiences. Upload photos and use AI to enhance your style." feature="ai-studio">
-            <button
-              onClick={() => setAiStudioModalOpen(true)}
-              className="relative flex items-center gap-2 px-4 py-2 h-10 rounded-xl bg-background border border-border hover:bg-accent transition-colors font-medium text-sm whitespace-nowrap flex-shrink-0 min-w-fit"
-            >
-              <Sparkles className="h-4 w-4" />
-              AI Studio
-              <span className="absolute -top-1 -right-1 bg-muted text-muted-foreground text-xs px-1.5 py-0.5 rounded-full leading-none">
-                New
-              </span>
-            </button>
-          </TutorialTooltip>
-
-          {/* Beauty Chip */}
-          {isEnabled('ai_beauty_consultant') && (
-            <TutorialTooltip content="Get personalized beauty advice from our AI consultant. Upload photos and receive tailored recommendations." feature="beauty-consultant">
-              <button
-                onClick={() => navigate('/beauty-consultant')}
-                className="relative flex items-center gap-2 px-4 py-2 h-10 rounded-xl bg-background border border-border hover:bg-accent transition-colors font-medium text-sm whitespace-nowrap flex-shrink-0 min-w-fit"
-              >
-                <WandSparkles className="h-4 w-4" />
-                Beauty
-                <span className="absolute -top-1 -right-1 bg-muted text-muted-foreground text-xs px-1.5 py-0.5 rounded-full leading-none">
-                  New
-                </span>
-              </button>
-            </TutorialTooltip>
-          )}
-
-          {/* Fashion Feed Chip - when beauty is not enabled */}
-          {!isEnabled('ai_beauty_consultant') && (
-            <TutorialTooltip content="Connect with the fashion community. Share your style and discover what others are wearing." feature="fashion-feed">
-              <button
-                onClick={() => navigate('/fashion-feed')}
-                className="flex items-center gap-2 px-4 py-2 h-10 rounded-xl bg-background border border-border hover:bg-accent transition-colors font-medium text-sm whitespace-nowrap flex-shrink-0 min-w-fit"
-              >
-                <Users className="h-4 w-4" />
-                Feed
-              </button>
-            </TutorialTooltip>
-          )}
-
-          {/* Wishlist Chip */}
-          <TutorialTooltip content="Save items you love to your wishlist. Keep track of favorites and shop them later when you're ready." feature="wishlist">
-            <button
-              onClick={() => navigate('/wishlist')}
-              className="flex items-center gap-2 px-4 py-2 h-10 rounded-xl bg-background border border-border hover:bg-accent transition-colors font-medium text-sm whitespace-nowrap flex-shrink-0 min-w-fit"
-            >
-              <ShoppingBag className="h-4 w-4" />
-              Wishlist
-            </button>
-          </TutorialTooltip>
-
-          {/* Explore Chip */}
-          <TutorialTooltip content="Search and discover products from top brands. Use filters to find exactly what you're looking for." feature="explore">
-            <button
-              onClick={() => navigate('/explore')}
-              className="flex items-center gap-2 px-4 py-2 h-10 rounded-xl bg-background border border-border hover:bg-accent transition-colors font-medium text-sm whitespace-nowrap flex-shrink-0 min-w-fit"
-            >
-              <Search className="h-4 w-4" />
-              Explore
-            </button>
-          </TutorialTooltip>
-
-          {/* UGC Collab Chip */}
-          <TutorialTooltip content="Collaborate with brands on user-generated content. Apply for brand partnerships and create sponsored content." feature="ugc-collab">
-            <UGCCollabButton className="flex items-center gap-2 px-4 py-2 h-10 rounded-xl bg-background border border-border hover:bg-accent transition-colors font-medium text-sm whitespace-nowrap flex-shrink-0 min-w-fit" />
-          </TutorialTooltip>
-
-          {/* Toy Replica Chip */}
-          <TutorialTooltip content="Create AI-generated toy replicas of fashion items. Upload photos and get miniature versions for play or display." feature="toy-replica">
-            <button
-              onClick={handleToyReplicaClick}
-              className="relative flex items-center gap-2 px-4 py-2 h-10 rounded-xl bg-background border border-border hover:bg-accent transition-colors font-medium text-sm whitespace-nowrap flex-shrink-0 min-w-fit"
-            >
-              <Blocks className="h-4 w-4" />
-              Toy AI
-              <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs px-1.5 py-0.5 rounded-full leading-none">
-                AI
-              </span>
-            </button>
-          </TutorialTooltip>
-
-        </div>
-      </section>
 
       {/* Trending Styles Section */}
       <section className="px-4">
@@ -549,10 +449,11 @@ const RoleDashboard: React.FC = () => {
       <SEOHead title="Azyah - Fashion Discovery Platform" description="Discover, shop and create your perfect style with AI-powered fashion recommendations" key="dashboard-seo" // Force re-render to override payment cancel title
     />
       <div className="min-h-screen bg-background pb-32">
-        {/* Header with hairline divider */}
-        <header className="px-4 pt-4 pb-2 border-b border-border/20 bg-background/80 backdrop-blur-sm sticky top-0 z-40">
-          <DashboardHeader />
-        </header>
+        {/* Main Navigation with Quick Actions */}
+        <MainNav 
+          setAiStudioModalOpen={setAiStudioModalOpen}
+          handleToyReplicaClick={handleToyReplicaClick}
+        />
 
           {/* Role-based Dashboard Content - Only render ONE dashboard */}
           {userProfile?.role === 'shopper' && renderShopperDashboard()}
