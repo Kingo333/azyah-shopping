@@ -230,14 +230,13 @@ const RoleDashboard: React.FC = () => {
           <TutorialTooltip content="Return to your personalized dashboard with all your fashion insights and recommendations." feature="home">
             <button
               onClick={() => navigate('/dashboard')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 h-8 rounded-lg transition-colors font-medium text-xs whitespace-nowrap flex-shrink-0 min-w-fit ${
+              className={`flex items-center justify-center p-1.5 h-8 w-8 rounded-lg transition-colors font-medium text-xs flex-shrink-0 ${
                 location.pathname === '/dashboard' 
                   ? 'bg-primary text-primary-foreground hover:bg-primary/90' 
                   : 'bg-background border border-border hover:bg-accent'
               }`}
             >
               <Home className="h-3.5 w-3.5" />
-              Home
             </button>
           </TutorialTooltip>
 
