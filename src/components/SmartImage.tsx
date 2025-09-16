@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { displaySrc, displaySrcSet } from '../lib/displaySrc';
 import { getImageFallbacks } from '../lib/fallbackImage';
+import { useConnectionAware } from '../hooks/useConnectionAware';
 
 interface SmartImageProps {
   src: string;

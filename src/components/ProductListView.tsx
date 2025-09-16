@@ -14,6 +14,7 @@ import ProductDetailPage from '@/components/ProductDetailPage';
 import PhotoCloseup from '@/components/PhotoCloseup';
 import ProductTryOnModal from '@/components/ProductTryOnModal';
 import { SmartImage } from '@/components/SmartImage';
+import { ProgressiveImage } from '@/components/ProgressiveImage';
 import { getPrimaryImageUrl, hasMultipleImages, getImageCount } from '@/utils/imageHelpers';
 import { useProductHasOutfit } from '@/hooks/useProductOutfits';
 import CategoryCarousel from '@/components/CategoryCarousel';
@@ -78,10 +79,12 @@ const ProductCard: React.FC<{
         className="w-full aspect-[3/4] bg-muted rounded-2xl overflow-hidden relative cursor-pointer"
         onClick={() => handleProductClick(product)}
       >
-        <SmartImage
+        <ProgressiveImage
           src={getPrimaryImageUrl(product)}
           alt={product.title}
           className="w-full h-full object-cover"
+          containerType="grid"
+          priority={false}
           sizes="(max-width: 768px) 50vw, 25vw"
         />
         

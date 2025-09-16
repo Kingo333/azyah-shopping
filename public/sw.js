@@ -1,5 +1,5 @@
 // Bump this any time you change the SW so all devices get the update.
-const CACHE_VERSION = 'v9';
+const CACHE_VERSION = 'v10';
 
 // Hosts we NEVER intercept (let the browser hit the network directly).
 const BYPASS_HOSTS = [
@@ -46,15 +46,33 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 4) Cache-first for static assets (JS/CSS/img)
-  event.respondWith(
-    caches.match(request).then((cached) => {
-      if (cached) return cached;
-      return fetch(request).then((res) => {
-        const copy = res.clone();
-        caches.open('static-' + CACHE_VERSION).then((c) => c.put(request, copy));
-        return res;
-      });
-    })
-  );
+  // 4) Cache-first for static assets (JS/CSS/img) with stale-while-revalidate for images
+  const isImage = request.url.match(/\.(jpg|jpeg|png|gif|webp|avif|svg)$/i);
+  
+  if (isImage) {
+    // Stale-while-revalidate for images
+    event.respondWith(
+      caches.match(request).then((cached) => {
+        const fetchPromise = fetch(request).then((res) => {
+          const copy = res.clone();
+          caches.open('images-' + CACHE_VERSION).then((c) => c.put(request, copy));
+          return res;
+        }).catch(() => cached); // Fallback to cached on network error
+        
+        return cached || fetchPromise;
+      })
+    );
+  } else {
+    // Regular cache-first for other static assets
+    event.respondWith(
+      caches.match(request).then((cached) => {
+        if (cached) return cached;
+        return fetch(request).then((res) => {
+          const copy = res.clone();
+          caches.open('static-' + CACHE_VERSION).then((c) => c.put(request, copy));
+          return res;
+        });
+      })
+    );
+  }
 });

@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { motion } from 'framer-motion';
 import { Heart, X, ShoppingBag, Sparkles, Info, Image } from 'lucide-react';
 import { SmartImage } from '@/components/SmartImage';
+import { ProgressiveImage } from '@/components/ProgressiveImage';
 import { getPrimaryImageUrl, hasMultipleImages, getImageCount } from '@/utils/imageHelpers';
 import { getBrandDisplayName } from '@/utils/brandHelpers';
 
@@ -92,10 +93,12 @@ const SwipeCard = memo(({
             }}
             onClick={onInstructionsClick}
           >
-            <SmartImage
+            <ProgressiveImage
               src={getPrimaryImageUrl(product)}
               alt={product.title}
               className="object-contain w-full h-full transition-opacity duration-300"
+              containerType="swipe"
+              priority={true}
               sizes="(max-width: 768px) 100vw, 50vw"
             />
             

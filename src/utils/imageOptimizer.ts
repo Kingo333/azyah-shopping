@@ -108,11 +108,33 @@ const optimizeGenericCdnUrl = (url: string, dimensions: ImageDimensions): string
 };
 
 /**
- * Simple passthrough optimizer - no URL manipulation
+ * Active image optimization for mobile performance
  */
 export const optimizeAsosImageUrl = (url: string, dimensions: ImageDimensions): string => {
-  // Just return the original URL without any modification
-  return url || '/placeholder.svg';
+  if (!url || url === '/placeholder.svg') return url;
+  
+  const connectionSpeed = getConnectionSpeed();
+  const { width, height, quality = 85 } = dimensions;
+  
+  // Adjust quality based on connection speed
+  const adjustedQuality = connectionSpeed === 'slow' ? Math.max(quality - 25, 60) :
+                         connectionSpeed === 'medium' ? Math.max(quality - 15, 75) : quality;
+  
+  // Use ASOS-specific optimization if it's an ASOS URL
+  if (url.includes('asos.com') || url.includes('images.asos-media.com')) {
+    const asosOptimized = optimizeAsosSpecificUrl(url, width);
+    // Add quality parameter for ASOS URLs
+    try {
+      const urlObj = new URL(asosOptimized);
+      urlObj.searchParams.set('qlt', adjustedQuality.toString());
+      return urlObj.toString();
+    } catch {
+      return asosOptimized;
+    }
+  }
+  
+  // Use generic CDN optimization for other URLs
+  return optimizeGenericCdnUrl(url, { width, height, quality: adjustedQuality });
 };
 
 /**
