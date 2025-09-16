@@ -230,13 +230,13 @@ const RoleDashboard: React.FC = () => {
           <TutorialTooltip content="Return to your personalized dashboard with all your fashion insights and recommendations." feature="home">
             <button
               onClick={() => navigate('/dashboard')}
-              className={`flex items-center justify-center p-1.5 h-8 w-8 rounded-lg transition-colors font-medium text-sm flex-shrink-0 ${
+              className={`flex items-center justify-center p-2 h-9 w-9 rounded-lg transition-colors font-medium text-sm flex-shrink-0 ${
                 location.pathname === '/dashboard' 
                   ? 'bg-primary text-primary-foreground hover:bg-primary/90' 
                   : 'bg-background border border-border hover:bg-accent'
               }`}
             >
-              <Home className="h-3.5 w-3.5" />
+              <Home className="h-4 w-4" />
             </button>
           </TutorialTooltip>
 
@@ -244,9 +244,9 @@ const RoleDashboard: React.FC = () => {
           <TutorialTooltip content="Swipe through fashion items to discover your style. Swipe right to like items and build your personal taste profile." feature="swipe">
             <button
               onClick={() => navigate('/swipe')}
-              className="flex items-center gap-2 px-3 py-1.5 h-8 rounded-lg bg-background border border-border hover:bg-accent transition-colors font-medium text-xs whitespace-nowrap flex-shrink-0 min-w-fit"
+              className="flex items-center gap-2 px-3 py-2 h-9 rounded-lg bg-background border border-border hover:bg-accent transition-colors font-medium text-sm whitespace-nowrap flex-shrink-0 min-w-fit"
             >
-              <Heart className="h-3.5 w-3.5" />
+              <Heart className="h-4 w-4" />
               Shop
             </button>
           </TutorialTooltip>
@@ -255,11 +255,11 @@ const RoleDashboard: React.FC = () => {
           <TutorialTooltip content="Create AI-generated fashion content and try-on experiences. Upload photos and use AI to enhance your style." feature="ai-studio">
             <button
               onClick={() => setAiStudioModalOpen(true)}
-              className="relative flex items-center gap-2 px-3 py-1.5 h-8 rounded-lg bg-background border border-border hover:bg-accent transition-colors font-medium text-xs whitespace-nowrap flex-shrink-0 min-w-fit"
+              className="relative flex items-center gap-2 px-3 py-2 h-9 rounded-lg bg-background border border-border hover:bg-accent transition-colors font-medium text-sm whitespace-nowrap flex-shrink-0 min-w-fit"
             >
-              <Sparkles className="h-3.5 w-3.5" />
+              <Sparkles className="h-4 w-4" />
               AI Studio
-              <span className="absolute -top-0.5 -right-0.5 bg-muted text-muted-foreground text-[10px] px-1.5 py-0.5 rounded-full leading-none">
+              <span className="absolute -top-0.5 -right-0.5 bg-muted text-muted-foreground text-[11px] px-1.5 py-0.5 rounded-full leading-none">
                 New
               </span>
             </button>
@@ -270,11 +270,11 @@ const RoleDashboard: React.FC = () => {
             <TutorialTooltip content="Get personalized beauty advice from our AI consultant. Upload photos and receive tailored recommendations." feature="beauty-consultant">
               <button
                 onClick={() => navigate('/beauty-consultant')}
-                className="relative flex items-center gap-2 px-3 py-1.5 h-8 rounded-lg bg-background border border-border hover:bg-accent transition-colors font-medium text-xs whitespace-nowrap flex-shrink-0 min-w-fit"
+                className="relative flex items-center gap-2 px-3 py-2 h-9 rounded-lg bg-background border border-border hover:bg-accent transition-colors font-medium text-sm whitespace-nowrap flex-shrink-0 min-w-fit"
               >
-                <WandSparkles className="h-3.5 w-3.5" />
+                <WandSparkles className="h-4 w-4" />
                 Beauty
-                <span className="absolute -top-0.5 -right-0.5 bg-muted text-muted-foreground text-[10px] px-1.5 py-0.5 rounded-full leading-none">
+                <span className="absolute -top-0.5 -right-0.5 bg-muted text-muted-foreground text-[11px] px-1.5 py-0.5 rounded-full leading-none">
                   New
                 </span>
               </button>
@@ -286,9 +286,9 @@ const RoleDashboard: React.FC = () => {
             <TutorialTooltip content="Connect with the fashion community. Share your style and discover what others are wearing." feature="fashion-feed">
               <button
                 onClick={() => navigate('/fashion-feed')}
-                className="flex items-center gap-2 px-3 py-1.5 h-8 rounded-lg bg-background border border-border hover:bg-accent transition-colors font-medium text-xs whitespace-nowrap flex-shrink-0 min-w-fit"
+                className="flex items-center gap-2 px-3 py-2 h-9 rounded-lg bg-background border border-border hover:bg-accent transition-colors font-medium text-sm whitespace-nowrap flex-shrink-0 min-w-fit"
               >
-                <Users className="h-3.5 w-3.5" />
+                <Users className="h-4 w-4" />
                 Feed
               </button>
             </TutorialTooltip>
@@ -298,9 +298,9 @@ const RoleDashboard: React.FC = () => {
           <TutorialTooltip content="Save items you love to your wishlist. Keep track of favorites and shop them later when you're ready." feature="wishlist">
             <button
               onClick={() => navigate('/wishlist')}
-              className="flex items-center gap-2 px-3 py-1.5 h-8 rounded-lg bg-background border border-border hover:bg-accent transition-colors font-medium text-xs whitespace-nowrap flex-shrink-0 min-w-fit"
+              className="flex items-center gap-2 px-3 py-2 h-9 rounded-lg bg-background border border-border hover:bg-accent transition-colors font-medium text-sm whitespace-nowrap flex-shrink-0 min-w-fit"
             >
-              <ShoppingBag className="h-3.5 w-3.5" />
+              <ShoppingBag className="h-4 w-4" />
               Wishlist
             </button>
           </TutorialTooltip>
@@ -309,27 +309,27 @@ const RoleDashboard: React.FC = () => {
           <TutorialTooltip content="Search and discover products from top brands. Use filters to find exactly what you're looking for." feature="explore">
             <button
               onClick={() => navigate('/explore')}
-              className="flex items-center gap-2 px-3 py-1.5 h-8 rounded-lg bg-background border border-border hover:bg-accent transition-colors font-medium text-xs whitespace-nowrap flex-shrink-0 min-w-fit"
+              className="flex items-center gap-2 px-3 py-2 h-9 rounded-lg bg-background border border-border hover:bg-accent transition-colors font-medium text-sm whitespace-nowrap flex-shrink-0 min-w-fit"
             >
-              <Search className="h-3.5 w-3.5" />
+              <Search className="h-4 w-4" />
               Explore
             </button>
           </TutorialTooltip>
 
           {/* UGC Collab Chip */}
           <TutorialTooltip content="Collaborate with brands on user-generated content. Apply for brand partnerships and create sponsored content." feature="ugc-collab">
-            <UGCCollabButton className="flex items-center gap-2 px-3 py-1.5 h-8 rounded-lg bg-background border border-border hover:bg-accent transition-colors font-medium text-xs whitespace-nowrap flex-shrink-0 min-w-fit" />
+            <UGCCollabButton className="flex items-center gap-2 px-3 py-2 h-9 rounded-lg bg-background border border-border hover:bg-accent transition-colors font-medium text-sm whitespace-nowrap flex-shrink-0 min-w-fit" />
           </TutorialTooltip>
 
           {/* Toy Replica Chip */}
           <TutorialTooltip content="Create AI-generated toy replicas of fashion items. Upload photos and get miniature versions for play or display." feature="toy-replica">
             <button
               onClick={handleToyReplicaClick}
-              className="relative flex items-center gap-2 px-3 py-1.5 h-8 rounded-lg bg-background border border-border hover:bg-accent transition-colors font-medium text-xs whitespace-nowrap flex-shrink-0 min-w-fit"
+              className="relative flex items-center gap-2 px-3 py-2 h-9 rounded-lg bg-background border border-border hover:bg-accent transition-colors font-medium text-sm whitespace-nowrap flex-shrink-0 min-w-fit"
             >
-              <Blocks className="h-3.5 w-3.5" />
+              <Blocks className="h-4 w-4" />
               Toy AI
-              <span className="absolute -top-0.5 -right-0.5 bg-primary text-primary-foreground text-[10px] px-1.5 py-0.5 rounded-full leading-none">
+              <span className="absolute -top-0.5 -right-0.5 bg-primary text-primary-foreground text-[11px] px-1.5 py-0.5 rounded-full leading-none">
                 AI
               </span>
             </button>
