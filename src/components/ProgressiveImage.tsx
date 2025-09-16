@@ -1,7 +1,8 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import { useConnectionAware } from '@/hooks/useConnectionAware';
 import { getOptimalImageDimensions, generateImageSources } from '@/utils/imageOptimizer';
+import { getImageFallbacks } from '@/lib/fallbackImage';
 
 interface ProgressiveImageProps {
   src: string;
@@ -31,6 +32,8 @@ export const ProgressiveImage = ({
   const [isError, setIsError] = useState(false);
   const [isInView, setIsInView] = useState(priority);
   const [currentQuality, setCurrentQuality] = useState<'low' | 'medium' | 'high'>('low');
+  const [currentFallbackIndex, setCurrentFallbackIndex] = useState(0);
+  const [currentSrc, setCurrentSrc] = useState(src);
   const imgRef = useRef<HTMLImageElement>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
 
@@ -87,7 +90,7 @@ export const ProgressiveImage = ({
   }, [isInView, connectionSpeed, priority]);
 
   const getOptimizedSrc = () => {
-    if (!src || !isInView) return BLUR_PLACEHOLDER;
+    if (!currentSrc || !isInView) return BLUR_PLACEHOLDER;
 
     const dimensions = getOptimalImageDimensions(containerType);
     const qualityMap = {
@@ -101,7 +104,7 @@ export const ProgressiveImage = ({
       quality: qualityMap[currentQuality]
     };
 
-    const sources = generateImageSources(src, containerType);
+    const sources = generateImageSources(currentSrc, containerType);
     return sources.primary;
   };
 
@@ -110,10 +113,22 @@ export const ProgressiveImage = ({
     onLoad?.();
   };
 
-  const handleError = () => {
-    setIsError(true);
-    onError?.();
-  };
+  const handleError = useCallback(() => {
+    const fallbacks = getImageFallbacks(src);
+    const nextIndex = currentFallbackIndex + 1;
+    
+    console.warn(`Progressive image failed: ${currentSrc}, trying fallback ${nextIndex}/${fallbacks.length}`);
+    
+    if (nextIndex < fallbacks.length) {
+      setCurrentFallbackIndex(nextIndex);
+      setCurrentSrc(fallbacks[nextIndex]);
+      setIsError(false); // Reset error state for retry
+    } else {
+      console.error(`All progressive image fallbacks failed for: ${src}`);
+      setIsError(true);
+      onError?.();
+    }
+  }, [src, currentSrc, currentFallbackIndex, onError]);
 
   const optimizedSrc = getOptimizedSrc();
 

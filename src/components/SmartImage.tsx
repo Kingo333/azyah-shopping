@@ -33,10 +33,13 @@ export const SmartImage = ({
   const handleError = () => {
     const nextIndex = fallbackIndex + 1;
     
+    console.warn(`Image failed to load: ${currentSrc}, trying fallback ${nextIndex}/${fallbacks.length}`);
+    
     if (nextIndex < fallbacks.length) {
       setCurrentSrc(fallbacks[nextIndex]);
       setFallbackIndex(nextIndex);
     } else {
+      console.error(`All image fallbacks failed for: ${src}`);
       setIsError(true);
       onError?.();
     }

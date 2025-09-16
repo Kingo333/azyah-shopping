@@ -18,23 +18,26 @@ export function upgradeAsosImageUrl(url: string, minWid = 1500): string {
     // Only process ASOS URLs - guard against Supabase URLs
     if (!ASOS_HOSTS.some(h => urlObj.hostname.endsWith(h))) return url;
 
-    // Strip existing macros
+    // Strip existing macros and size parameters
     urlObj.pathname = urlObj.pathname.replace(/\$[^$]*\$/g, '');
+    
+    // Clear existing parameters to avoid conflicts
+    urlObj.search = '';
 
-    // Upgrade width
-    const currentWid = Number(urlObj.searchParams.get('wid') || '0');
-    const targetWid = Math.max(currentWid || 0, minWid);
+    // Upgrade width - ensure minimum for quality
+    const targetWid = Math.max(minWid, 800);
     urlObj.searchParams.set('wid', String(targetWid));
 
-    // Set quality parameters
+    // Set ASOS-specific quality parameters in correct order
     urlObj.searchParams.set('fit', 'constrain');
-    urlObj.searchParams.set('fmt', 'jpg');
-    urlObj.searchParams.set('qlt', '90');
+    urlObj.searchParams.set('fmt', 'webp');
+    urlObj.searchParams.set('qlt', '85');
     urlObj.searchParams.set('resmode', 'sharp2');
-    urlObj.searchParams.set('bg', 'fff');
+    urlObj.searchParams.set('op_sharpen', '1');
     
     return urlObj.toString();
-  } catch {
+  } catch (error) {
+    console.warn('Failed to upgrade ASOS image URL:', url, error);
     return url;
   }
 }
