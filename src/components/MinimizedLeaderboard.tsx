@@ -223,40 +223,39 @@ const MinimizedLeaderboard: React.FC<MinimizedLeaderboardProps> = ({
         
         <CollapsibleContent>
           <CardContent className="space-y-4">
-            {/* Controls */}
-            <div className="flex flex-col gap-4">
-              <div>
-                <h3 className="text-lg font-semibold font-playfair">Top Fashion Leaders</h3>
-                <p className="text-sm text-muted-foreground">
-                  Compete with style enthusiasts globally
-                </p>
-              </div>
-              
-              <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
-                <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)}>
-                  <TabsList className="grid grid-cols-3 w-full sm:w-auto">
-                    <TabsTrigger value="weekly" className="text-xs sm:text-sm">Week</TabsTrigger>
-                    <TabsTrigger value="monthly" className="text-xs sm:text-sm">Month</TabsTrigger>
-                    <TabsTrigger value="alltime" className="text-xs sm:text-sm">All</TabsTrigger>
-                  </TabsList>
-                </Tabs>
+              <div className="flex flex-col gap-3">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <Trophy className="h-5 w-5 text-yellow-500" />
+                    <h3 className="text-lg font-semibold font-playfair">Fashion Leaders</h3>
+                  </div>
+                  
+                  <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+                    <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="w-full sm:w-auto">
+                      <TabsList className="grid grid-cols-3 w-full sm:w-auto">
+                        <TabsTrigger value="weekly" className="text-xs sm:text-sm">Week</TabsTrigger>
+                        <TabsTrigger value="monthly" className="text-xs sm:text-sm">Month</TabsTrigger>
+                        <TabsTrigger value="alltime" className="text-xs sm:text-sm">All</TabsTrigger>
+                      </TabsList>
+                    </Tabs>
 
-                {type === 'country' && (
-                  <Select value={selectedCountry} onValueChange={setSelectedCountry}>
-                    <SelectTrigger className="w-full sm:w-48">
-                      <SelectValue placeholder="Select Country" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {COUNTRIES.map((country) => (
-                        <SelectItem key={country.code} value={country.name}>
-                          {country.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
+                    {type === 'country' && (
+                      <Select value={selectedCountry} onValueChange={setSelectedCountry}>
+                        <SelectTrigger className="w-full sm:w-48">
+                          <SelectValue placeholder="Select Country" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {COUNTRIES.map((country) => (
+                            <SelectItem key={country.code} value={country.name}>
+                              {country.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </div>
+                </div>
               </div>
-            </div>
 
             {isLoading ? (
               <div className="space-y-2">

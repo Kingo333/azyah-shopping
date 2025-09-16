@@ -394,49 +394,6 @@ const RoleDashboard: React.FC = () => {
 
       {/* Fashion Leaderboards Section */}
       <section className="px-4">
-        <h2 className="text-lg font-semibold mb-4">Fashion Leaderboards</h2>
-        
-        {/* Your Rank Tile */}
-        <div className="rounded-2xl bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-950/20 dark:to-orange-950/20 border border-yellow-200 dark:border-yellow-800 p-4 mb-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-full bg-yellow-500/10">
-              <Trophy className="h-5 w-5 text-yellow-600" />
-            </div>
-            <div>
-              <p className="font-medium">Your Current Rank</p>
-              <p className="text-sm text-muted-foreground">#1 globally</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Controls Row */}
-        <div className="flex items-center justify-between mb-4">
-          {/* Segmented Control */}
-          <div className="flex bg-muted rounded-lg p-1">
-            <button
-              onClick={() => setActiveLeaderboard('global')}
-              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                activeLeaderboard === 'global' 
-                  ? 'bg-background shadow-sm' 
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              Global
-            </button>
-            <button
-              onClick={() => setActiveLeaderboard('country')}
-              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                activeLeaderboard === 'country' 
-                  ? 'bg-background shadow-sm' 
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              Country
-            </button>
-          </div>
-
-        </div>
-
         <MinimizedLeaderboard type={activeLeaderboard} country={user?.user_metadata?.country} />
       </section>
 
