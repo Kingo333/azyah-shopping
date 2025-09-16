@@ -3,7 +3,6 @@ import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { displaySrc, displaySrcSet } from '../lib/displaySrc';
 import { getImageFallbacks } from '../lib/fallbackImage';
-import { useConnectionAware } from '../hooks/useConnectionAware';
 
 interface SmartImageProps {
   src: string;
@@ -33,13 +32,10 @@ export const SmartImage = ({
   const handleError = () => {
     const nextIndex = fallbackIndex + 1;
     
-    console.warn(`Image failed to load: ${currentSrc}, trying fallback ${nextIndex}/${fallbacks.length}`);
-    
     if (nextIndex < fallbacks.length) {
       setCurrentSrc(fallbacks[nextIndex]);
       setFallbackIndex(nextIndex);
     } else {
-      console.error(`All image fallbacks failed for: ${src}`);
       setIsError(true);
       onError?.();
     }
