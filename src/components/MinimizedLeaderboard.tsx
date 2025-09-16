@@ -224,7 +224,7 @@ const MinimizedLeaderboard: React.FC<MinimizedLeaderboardProps> = ({
         <CollapsibleContent>
           <CardContent className="space-y-4">
             {/* Controls */}
-            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+            <div className="flex flex-col gap-4">
               <div>
                 <h3 className="text-lg font-semibold font-playfair">Top Fashion Leaders</h3>
                 <p className="text-sm text-muted-foreground">
@@ -232,19 +232,19 @@ const MinimizedLeaderboard: React.FC<MinimizedLeaderboardProps> = ({
                 </p>
               </div>
               
-              <div className="flex flex-col sm:flex-row gap-2">
+              <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
                 <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)}>
-                  <TabsList className="grid grid-cols-3">
-                    <TabsTrigger value="weekly" className="text-xs">Week</TabsTrigger>
-                    <TabsTrigger value="monthly" className="text-xs">Month</TabsTrigger>
-                    <TabsTrigger value="alltime" className="text-xs">All</TabsTrigger>
+                  <TabsList className="grid grid-cols-3 w-full sm:w-auto">
+                    <TabsTrigger value="weekly" className="text-xs sm:text-sm">Week</TabsTrigger>
+                    <TabsTrigger value="monthly" className="text-xs sm:text-sm">Month</TabsTrigger>
+                    <TabsTrigger value="alltime" className="text-xs sm:text-sm">All</TabsTrigger>
                   </TabsList>
                 </Tabs>
 
                 {type === 'country' && (
                   <Select value={selectedCountry} onValueChange={setSelectedCountry}>
-                    <SelectTrigger className="w-36">
-                      <SelectValue placeholder="Country" />
+                    <SelectTrigger className="w-full sm:w-48">
+                      <SelectValue placeholder="Select Country" />
                     </SelectTrigger>
                     <SelectContent>
                       {COUNTRIES.map((country) => (
@@ -261,21 +261,21 @@ const MinimizedLeaderboard: React.FC<MinimizedLeaderboardProps> = ({
             {isLoading ? (
               <div className="space-y-2">
                 {[...Array(3)].map((_, i) => (
-                  <div key={i} className="animate-pulse bg-muted rounded-lg h-12" />
+                  <div key={i} className="animate-pulse bg-muted rounded-xl h-14" />
                 ))}
               </div>
             ) : (
               <>
                 {/* User's Current Rank */}
                 {userRank && (
-                  <div className="p-3 rounded-xl bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20">
+                  <div className="p-4 rounded-xl bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20">
                     <div className="flex items-center gap-3">
                       <div className={`p-2 rounded-full text-white ${getRankBadgeColor(userRank)}`}>
                         {getRankIcon(userRank)}
                       </div>
                       <div>
-                        <p className="font-semibold text-sm">Your Current Rank</p>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="font-semibold">Your Current Rank</p>
+                        <p className="text-sm text-muted-foreground">
                           #{userRank} {type === 'global' ? 'globally' : `in ${selectedCountry}`}
                         </p>
                       </div>
@@ -285,39 +285,39 @@ const MinimizedLeaderboard: React.FC<MinimizedLeaderboardProps> = ({
 
                 {/* Top 3 Compact View */}
                 {topThree.length > 0 && (
-                  <div className="space-y-2">
-                    <h4 className="font-semibold text-sm text-muted-foreground">Top Performers</h4>
+                  <div className="space-y-3">
+                    <h4 className="font-semibold text-muted-foreground">Top Performers</h4>
                     {topThree.map((leader, index) => (
                       <div
                         key={leader.id}
-                        className={`flex items-center gap-3 p-3 rounded-xl ${
-                          leader.id === user?.id ? 'bg-primary/10 border border-primary/20' : 'bg-muted/30'
+                        className={`flex items-center gap-4 p-4 rounded-xl transition-colors ${
+                          leader.id === user?.id ? 'bg-primary/10 border border-primary/20' : 'bg-muted/30 hover:bg-muted/50'
                         }`}
                       >
-                        <div className="flex items-center justify-center w-8">
+                        <div className="flex items-center justify-center w-10">
                           {getRankIcon(leader.rank)}
                         </div>
 
-                        <Avatar className="w-8 h-8">
+                        <Avatar className="w-10 h-10">
                           <AvatarImage src={leader.avatar_url} />
-                          <AvatarFallback className="text-xs">{leader.name[0]}</AvatarFallback>
+                          <AvatarFallback>{leader.name[0]}</AvatarFallback>
                         </Avatar>
 
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
-                            <p className="font-semibold truncate text-sm">{leader.name}</p>
+                            <p className="font-semibold truncate">{leader.name}</p>
                             {leader.id === user?.id && (
                               <Badge variant="secondary" className="text-xs">You</Badge>
                             )}
                           </div>
                           {leader.country && (
-                            <p className="text-xs text-muted-foreground">{leader.country}</p>
+                            <p className="text-sm text-muted-foreground">{leader.country}</p>
                           )}
                         </div>
 
                         <div className="text-right">
-                          <p className="text-xs font-medium">{leader.score} pts</p>
-                          <p className="text-xs text-muted-foreground">
+                          <p className="font-medium">{leader.score} pts</p>
+                          <p className="text-sm text-muted-foreground">
                             {leader.stats.posts_created}p • {leader.stats.closet_items}i
                           </p>
                         </div>
@@ -327,9 +327,10 @@ const MinimizedLeaderboard: React.FC<MinimizedLeaderboardProps> = ({
                 )}
 
                 {leaders.length === 0 && (
-                  <div className="text-center py-8 text-muted-foreground bg-muted/30 rounded-lg">
-                    <Users className="h-8 w-8 mx-auto mb-2" />
-                    <p className="text-sm">No rankings yet. Be the first to engage!</p>
+                  <div className="text-center py-12 text-muted-foreground bg-muted/30 rounded-xl">
+                    <Users className="h-12 w-12 mx-auto mb-4" />
+                    <h4 className="font-semibold mb-2">No rankings yet</h4>
+                    <p className="text-sm">Be the first to engage and climb the leaderboard!</p>
                   </div>
                 )}
               </>
