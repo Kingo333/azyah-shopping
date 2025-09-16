@@ -323,7 +323,7 @@ export const CreateLookSection: React.FC<CreateLookSectionProps> = ({
       </div>
 
       {/* Main Mood Board Interface */}
-      <div className="h-[400px] md:h-[600px] border rounded-lg overflow-hidden">
+      <div className="h-[250px] md:h-[600px] border rounded-lg overflow-hidden">
         <ResizablePanelGroup direction="horizontal">
 
           {/* Center Panel - Canvas */}
