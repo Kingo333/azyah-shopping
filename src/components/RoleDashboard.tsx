@@ -232,7 +232,7 @@ const RoleDashboard: React.FC = () => {
               className="flex items-center gap-2 px-4 py-2 h-10 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-colors font-medium text-sm whitespace-nowrap flex-shrink-0 min-w-fit"
             >
               <Heart className="h-4 w-4" />
-              Swipe
+              Shop
             </button>
           </TutorialTooltip>
 
