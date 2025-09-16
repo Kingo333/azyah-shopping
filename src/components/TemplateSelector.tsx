@@ -28,19 +28,18 @@ export const TemplateSelector: React.FC<TemplateSelectorProps> = ({
   
   // Scale template slots for mobile screens
   const scaleTemplate = (template: Template): Template => {
-    const scale = isMobile ? 0.25 : 1; // Scale down to 25% on mobile for better fit
-    const offsetX = isMobile ? 10 : 0; // Add small offset on mobile for padding
-    const offsetY = isMobile ? 10 : 0;
+    const scale = isMobile ? 0.4 : 1; // Scale down to 40% on mobile
+    const canvasScale = isMobile ? { width: 432, height: 576 } : { width: 1080, height: 1440 }; // Mobile canvas is smaller
     
     return {
       ...template,
       slots: template.slots.map(slot => ({
         ...slot,
-        x: Math.round(slot.x * scale) + offsetX,
-        y: Math.round(slot.y * scale) + offsetY,
-        w: Math.round(Math.max(60, slot.w * scale)), // Minimum width of 60px
-        h: Math.round(Math.max(60, slot.h * scale)), // Minimum height of 60px
-        padding: Math.max(2, Math.round(slot.padding * scale))
+        x: Math.round(slot.x * scale),
+        y: Math.round(slot.y * scale),
+        w: Math.round(slot.w * scale),
+        h: Math.round(slot.h * scale),
+        padding: Math.max(4, Math.round(slot.padding * scale))
       }))
     };
   };
