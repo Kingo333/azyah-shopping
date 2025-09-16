@@ -107,9 +107,30 @@ export const QuickActionsPanel: React.FC<QuickActionsPanelProps> = ({
 
   return (
     <div id="quick-actions-panel" className="min-h-[400px] px-4 pt-6">
-      {['dashboard', 'shop', 'ai', 'beauty', 'feed', 'wishlist', 'explore', 'ugc', 'toy'].map(section => 
-        renderSection(section as QuickActionKey)
-      )}
+      <Suspense fallback={<SectionSkeleton />}>
+        {selectedSection === 'dashboard' && (
+          <DashboardSection 
+            userProfile={userProfile}
+            dashboardStats={dashboardStats}
+            formatPrice={formatPrice}
+            leaderboardType={leaderboardType}
+            setLeaderboardType={setLeaderboardType}
+          />
+        )}
+        {selectedSection === 'shop' && <ShopSection />}
+        {selectedSection === 'ai' && <AiStudioSection onAiStudioOpen={onAiStudioOpen} />}
+        {selectedSection === 'beauty' && <BeautySection />}
+        {selectedSection === 'feed' && <FeedSection />}
+        {selectedSection === 'wishlist' && <WishlistSection />}
+        {selectedSection === 'explore' && <ExploreSection />}
+        {selectedSection === 'ugc' && (
+          <UgcSection 
+            modalOpen={ugcModalOpen}
+            setModalOpen={setUgcModalOpen}
+          />
+        )}
+        {selectedSection === 'toy' && <ToySection onToyReplicaClick={onToyReplicaClick} />}
+      </Suspense>
     </div>
   );
 };

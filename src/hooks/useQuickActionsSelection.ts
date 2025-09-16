@@ -22,12 +22,13 @@ export const useQuickActionsSelection = () => {
 
   // Update URL when selection changes
   const updateSection = useCallback((section: QuickActionKey) => {
+    setSelectedSection(section);
+    
     const searchParams = new URLSearchParams(location.search);
     searchParams.set('section', section);
     
     // Use replace to avoid cluttering browser history
     navigate(`${location.pathname}?${searchParams.toString()}`, { replace: true });
-    setSelectedSection(section);
   }, [location.pathname, location.search, navigate]);
 
   return {
