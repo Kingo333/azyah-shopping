@@ -4,7 +4,7 @@ import { GlassPanel } from '@/components/ui/glass-panel';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import ShopperNavigation from '@/components/ShopperNavigation';
-import Leaderboard from '@/components/Leaderboard';
+import MinimizedLeaderboard from '@/components/MinimizedLeaderboard';
 import TrendingStyles from '@/components/TrendingStyles';
 import TopInfluencers from '@/components/TopInfluencers';
 import FeaturedBrands from '@/components/FeaturedBrands';

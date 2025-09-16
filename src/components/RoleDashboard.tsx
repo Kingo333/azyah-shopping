@@ -17,7 +17,7 @@ import AiStudioModal from '@/components/AiStudioModal';
 import PremiumBanner from '@/components/PremiumBanner';
 import { Heart, ShoppingBag, Search, Sparkles, Package, BarChart3, Users, Settings, Store, TrendingUp, Plus, Eye, DollarSign, Globe, Bell, LogOut, User, Archive, Trophy, MapPin, Blocks, WandSparkles, ChevronDown, ChevronUp, Gift, ChevronLeft, ChevronRight, Home } from 'lucide-react';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
-import Leaderboard from '@/components/Leaderboard';
+import MinimizedLeaderboard from '@/components/MinimizedLeaderboard';
 import TrendingStylesCarousel from '@/components/TrendingStylesCarousel';
 import { UGCCollabButton } from '@/components/ugc/UGCCollabButton';
 import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
@@ -437,7 +437,7 @@ const RoleDashboard: React.FC = () => {
 
         </div>
 
-        <Leaderboard type={activeLeaderboard} country={user?.user_metadata?.country} />
+        <MinimizedLeaderboard type={activeLeaderboard} country={user?.user_metadata?.country} />
       </section>
 
     </div>;
