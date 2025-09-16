@@ -8,14 +8,14 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { GlassPanel } from '@/components/ui/glass-panel';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import GlobalSearch from '@/components/GlobalSearch';
 import DashboardHeader from '@/components/DashboardHeader';
 import AffiliateHub from '@/components/AffiliateHub';
 import AiStudioModal from '@/components/AiStudioModal';
 import PremiumBanner from '@/components/PremiumBanner';
-import { Heart, ShoppingBag, Search, Sparkles, Package, BarChart3, Users, Settings, Store, TrendingUp, Plus, Eye, DollarSign, Globe, Bell, LogOut, User, Archive, Trophy, MapPin, Blocks, WandSparkles, ChevronDown, ChevronUp, Gift, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Heart, ShoppingBag, Search, Sparkles, Package, BarChart3, Users, Settings, Store, TrendingUp, Plus, Eye, DollarSign, Globe, Bell, LogOut, User, Archive, Trophy, MapPin, Blocks, WandSparkles, ChevronDown, ChevronUp, Gift, ChevronLeft, ChevronRight, Home } from 'lucide-react';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import Leaderboard from '@/components/Leaderboard';
 import TrendingStylesCarousel from '@/components/TrendingStylesCarousel';
@@ -47,6 +47,7 @@ const RoleDashboard: React.FC = () => {
   } = useAuth();
   console.log('RoleDashboard: user state:', user);
   const navigate = useNavigate();
+  const location = useLocation();
   const {
     toast
   } = useToast();
@@ -225,11 +226,26 @@ const RoleDashboard: React.FC = () => {
       {/* Quick Actions - Horizontal Pills */}
       <section className="px-4 pt-3">
         <div className="flex gap-2 overflow-x-auto pb-1 [-webkit-overflow-scrolling:touch] scrollbar-hide">
-          {/* Swipe Chip */}
+          {/* Home Chip */}
+          <TutorialTooltip content="Return to your personalized dashboard with all your fashion insights and recommendations." feature="home">
+            <button
+              onClick={() => navigate('/dashboard')}
+              className={`flex items-center gap-2 px-4 py-2 h-10 rounded-xl transition-colors font-medium text-sm whitespace-nowrap flex-shrink-0 min-w-fit ${
+                location.pathname === '/dashboard' 
+                  ? 'bg-primary text-primary-foreground hover:bg-primary/90' 
+                  : 'bg-background border border-border hover:bg-accent'
+              }`}
+            >
+              <Home className="h-4 w-4" />
+              Home
+            </button>
+          </TutorialTooltip>
+
+          {/* Shop Chip */}
           <TutorialTooltip content="Swipe through fashion items to discover your style. Swipe right to like items and build your personal taste profile." feature="swipe">
             <button
               onClick={() => navigate('/swipe')}
-              className="flex items-center gap-2 px-4 py-2 h-10 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-colors font-medium text-sm whitespace-nowrap flex-shrink-0 min-w-fit"
+              className="flex items-center gap-2 px-4 py-2 h-10 rounded-xl bg-background border border-border hover:bg-accent transition-colors font-medium text-sm whitespace-nowrap flex-shrink-0 min-w-fit"
             >
               <Heart className="h-4 w-4" />
               Shop
