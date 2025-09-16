@@ -85,19 +85,19 @@ const ProductCard: React.FC<{
           sizes="(max-width: 768px) 50vw, 25vw"
         />
         
-        {/* Try On label when AI Try On is available */}
-        {shouldShowHeadIcon && (
-          <div className="absolute top-2 left-2 bg-accent text-accent-foreground text-xs px-2 py-1 rounded-full flex items-center gap-1 opacity-90 z-10">
-            <Sparkles className="h-3 w-3" />
-            Try On
-          </div>
-        )}
-
-        {/* Multiple images indicator for ASOS products - only show if no Try On label */}
-        {hasMultipleImages(product) && !shouldShowHeadIcon && (
+        {/* Multiple images indicator */}
+        {hasMultipleImages(product) && (
           <div className="absolute top-2 left-2 bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full flex items-center gap-1 opacity-90">
             <Image className="h-3 w-3" />
             {getImageCount(product)}
+          </div>
+        )}
+
+        {/* Try On label when AI Try On is available - positioned below multiple images indicator */}
+        {shouldShowHeadIcon && (
+          <div className="absolute top-8 left-2 bg-accent text-accent-foreground text-xs px-2 py-1 rounded-full flex items-center gap-1 opacity-90 z-10">
+            <Sparkles className="h-3 w-3" />
+            Try On
           </div>
         )}
         

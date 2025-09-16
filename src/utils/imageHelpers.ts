@@ -157,8 +157,19 @@ export function getProductImageUrls(product: any): string[] {
       .map(url => {
         let processedUrl = url.trim();
         
+        // Handle relative Supabase paths that don't start with https://
+        if (!processedUrl.startsWith('https://') && processedUrl.includes('/')) {
+          // This is likely a relative Supabase path like "product-images/bucket/file.png"
+          const parts = processedUrl.split('/');
+          if (parts.length >= 2) {
+            const bucket = parts[0];
+            const path = parts.slice(1).join('/');
+            processedUrl = imageUrlFrom(bucket, path);
+            console.log('🔧 Converting relative path:', url, '→', processedUrl);
+          }
+        }
         // Convert absolute Supabase URLs to environment-aware URLs
-        if (isSupabaseAbsoluteUrl(processedUrl)) {
+        else if (isSupabaseAbsoluteUrl(processedUrl)) {
           const pathData = extractSupabasePath(processedUrl);
           if (pathData) {
             processedUrl = imageUrlFrom(pathData.bucket, pathData.path);
