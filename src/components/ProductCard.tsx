@@ -44,20 +44,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
 
   const handleTouchStart = useCallback(() => {
-    if (isMobile && onAddToBoard) {
-      const timer = setTimeout(() => {
-        setShowPlusButton(true);
-      }, 500); // Show plus button after 500ms hold
-      setPressTimer(timer);
-    }
-  }, [isMobile, onAddToBoard]);
+    // No longer needed for mobile - button always shows
+  }, []);
 
   const handleTouchEnd = useCallback(() => {
-    if (pressTimer) {
-      clearTimeout(pressTimer);
-      setPressTimer(null);
-    }
-  }, [pressTimer]);
+    // No longer needed for mobile - button always shows
+  }, []);
 
   const handleAddClick = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -162,8 +154,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           {/* Remove try-on button from here - only in list view */}
         </div>
         
-        {/* Mobile add button (shows on long press) */}
-        {showPlusButton && onAddToBoard && isMobile && (
+        {/* Mobile add button (always visible) */}
+        {onAddToBoard && isMobile && (
           <Button
             size="sm"
             className="absolute top-2 right-2 h-8 w-8 rounded-full bg-green-500 hover:bg-green-600 text-white shadow-lg"
