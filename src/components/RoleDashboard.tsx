@@ -394,6 +394,33 @@ const RoleDashboard: React.FC = () => {
 
       {/* Fashion Leaderboards Section */}
       <section className="px-4">
+        {/* Global/Country Toggle */}
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold">Fashion Leaderboards</h2>
+          <div className="flex bg-muted rounded-lg p-1">
+            <button
+              onClick={() => setActiveLeaderboard('global')}
+              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                activeLeaderboard === 'global' 
+                  ? 'bg-background shadow-sm' 
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Global
+            </button>
+            <button
+              onClick={() => setActiveLeaderboard('country')}
+              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                activeLeaderboard === 'country' 
+                  ? 'bg-background shadow-sm' 
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Country
+            </button>
+          </div>
+        </div>
+        
         <MinimizedLeaderboard type={activeLeaderboard} country={user?.user_metadata?.country} />
       </section>
 

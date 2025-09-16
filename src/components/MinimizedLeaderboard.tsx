@@ -225,9 +225,10 @@ const MinimizedLeaderboard: React.FC<MinimizedLeaderboardProps> = ({
           <CardContent className="space-y-4">
               <div className="flex flex-col gap-3">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                  <div className="flex items-center gap-2">
-                    <Trophy className="h-5 w-5 text-yellow-500" />
-                    <h3 className="text-lg font-semibold font-playfair">Fashion Leaders</h3>
+                  <div>
+                    <p className="text-sm text-muted-foreground">
+                      {type === 'global' ? 'Compete with style enthusiasts worldwide' : 'Top performers in your country'}
+                    </p>
                   </div>
                   
                   <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
@@ -282,11 +283,11 @@ const MinimizedLeaderboard: React.FC<MinimizedLeaderboardProps> = ({
                   </div>
                 )}
 
-                {/* Top 3 Compact View */}
+                {/* Top 3 + More Leaders Compact View */}
                 {topThree.length > 0 && (
                   <div className="space-y-3">
                     <h4 className="font-semibold text-muted-foreground">Top Performers</h4>
-                    {topThree.map((leader, index) => (
+                    {leaders.slice(0, 5).map((leader, index) => (
                       <div
                         key={leader.id}
                         className={`flex items-center gap-4 p-4 rounded-xl transition-colors ${
@@ -317,11 +318,19 @@ const MinimizedLeaderboard: React.FC<MinimizedLeaderboardProps> = ({
                         <div className="text-right">
                           <p className="font-medium">{leader.score} pts</p>
                           <p className="text-sm text-muted-foreground">
-                            {leader.stats.posts_created}p • {leader.stats.closet_items}i
+                            {leader.stats.posts_created}p • {leader.stats.closet_items}i • {leader.stats.closets_created}c
                           </p>
                         </div>
                       </div>
                     ))}
+                    
+                    {leaders.length > 5 && (
+                      <div className="text-center pt-2">
+                        <p className="text-sm text-muted-foreground">
+                          +{leaders.length - 5} more competitors
+                        </p>
+                      </div>
+                    )}
                   </div>
                 )}
 
