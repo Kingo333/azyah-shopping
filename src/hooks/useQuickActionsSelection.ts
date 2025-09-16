@@ -13,22 +13,28 @@ export const useQuickActionsSelection = () => {
     const searchParams = new URLSearchParams(location.search);
     const section = searchParams.get('section') as QuickActionKey;
     
+    // Only update if it's a valid section and different from current
     if (section && ['dashboard', 'shop', 'ai', 'beauty', 'feed', 'wishlist', 'explore', 'ugc', 'toy'].includes(section)) {
-      setSelectedSection(section);
-    } else {
+      if (section !== selectedSection) {
+        setSelectedSection(section);
+      }
+    } else if (!section && selectedSection !== 'dashboard') {
+      // Only default to dashboard if no section param exists and we're not already on dashboard
       setSelectedSection('dashboard');
     }
-  }, [location.search]);
+  }, [location.search, selectedSection]);
 
   // Update URL when selection changes
   const updateSection = useCallback((section: QuickActionKey) => {
+    if (section === selectedSection) return; // Prevent unnecessary updates
+    
     const searchParams = new URLSearchParams(location.search);
     searchParams.set('section', section);
     
     // Use replace to avoid cluttering browser history
     navigate(`${location.pathname}?${searchParams.toString()}`, { replace: true });
     setSelectedSection(section);
-  }, [location.pathname, location.search, navigate]);
+  }, [location.pathname, location.search, navigate, selectedSection]);
 
   return {
     selectedSection,

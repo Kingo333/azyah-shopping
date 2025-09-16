@@ -55,8 +55,8 @@ export const QuickActionsPanel: React.FC<QuickActionsPanelProps> = ({
   }, []);
 
   const renderSection = (section: QuickActionKey) => {
-    const isLoaded = loadedSections.has(section);
     const isVisible = selectedSection === section;
+    const isLoaded = loadedSections.has(section);
 
     // Track analytics for section switching
     if (isVisible && !isLoaded) {
@@ -69,13 +69,16 @@ export const QuickActionsPanel: React.FC<QuickActionsPanelProps> = ({
       handleSectionLoad(section);
     }
 
+    // Only render the active section to prevent routing conflicts
+    if (!isVisible) return null;
+
     return (
       <div
         key={section}
         id={`panel-${section}`}
         role="tabpanel"
         aria-labelledby={`tab-${section}`}
-        className={isVisible ? 'block' : 'hidden'}
+        className="block"
       >
         <Suspense fallback={<SectionSkeleton />}>
           {section === 'dashboard' && (
@@ -107,9 +110,7 @@ export const QuickActionsPanel: React.FC<QuickActionsPanelProps> = ({
 
   return (
     <div id="quick-actions-panel" className="min-h-[400px] px-4 pt-6">
-      {['dashboard', 'shop', 'ai', 'beauty', 'feed', 'wishlist', 'explore', 'ugc', 'toy'].map(section => 
-        renderSection(section as QuickActionKey)
-      )}
+      {renderSection(selectedSection)}
     </div>
   );
 };
