@@ -159,18 +159,20 @@ export const BoardCanvas = forwardRef<HTMLDivElement, BoardCanvasProps>(({
       {/* Canvas Container */}
       <div 
         className={`relative mx-auto shadow-2xl rounded-lg overflow-visible ${
-          isMobile ? 'h-[200px] mx-1' : 'min-h-[580px]'
+          isMobile ? 'min-h-[400px] mx-1' : 'min-h-[580px]'
         }`}
         style={{
           backgroundColor: boardState.canvas.background.color,
           width: isMobile 
-            ? 'calc(100% - 8px)'
+            ? 'calc(100vw - 24px)'
             : boardState.slots.length > 0 
               ? `${Math.max(800, Math.max(...boardState.slots.map(slot => slot.x + slot.w)) + 40)}px`
               : '100%',
-          maxWidth: isMobile ? '100%' : '100%',
+          maxWidth: isMobile ? 'calc(100vw - 24px)' : '100%',
           height: isMobile
-            ? '200px'  // Fixed height that fits the scaled template
+            ? boardState.slots.length > 0 
+              ? `${Math.max(400, Math.max(...boardState.slots.map(slot => slot.y + slot.h)) + 20)}px`
+              : '400px'
             : boardState.slots.length > 0 
               ? `${Math.max(580, Math.max(...boardState.slots.map(slot => slot.y + slot.h)) + 40)}px`
               : '580px'
