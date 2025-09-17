@@ -31,7 +31,7 @@ serve(async (req) => {
     console.log('Checking BitStudio status for ID:', id);
 
     // Call actual BitStudio status API
-    const response = await fetch(`https://api.bitstudio.ai/v1/images/${id}`, {
+    const response = await fetch(`https://api.bitstudio.ai/v1/status/${id}`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${bitStudioApiKey}`,
