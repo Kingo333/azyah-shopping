@@ -346,11 +346,11 @@ const RoleDashboard: React.FC = () => {
         </div>
       </section>
 
-      {/* Trending Styles Section - AURA Style */}
+      {/* Trending Styles Section */}
       <section className="px-4">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2 flex-1 min-w-0">
-            <h2 className="text-base font-semibold flex-shrink-0 text-sage-deep">Trending</h2>
+            <h2 className="text-base font-semibold flex-shrink-0">Trending</h2>
             
             {/* Category Filter */}
             <Popover open={isTrendingFilterOpen} onOpenChange={setIsTrendingFilterOpen}>

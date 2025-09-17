@@ -45,14 +45,18 @@ export default {
 				accent: {
 					DEFAULT: 'hsl(var(--accent-cartier))',
 					foreground: 'hsl(var(--accent-foreground))',
-				sage: {
-					deep: 'hsl(var(--sage-deep))',
-					calm: 'hsl(var(--sage-calm))',
-					glow: 'hsl(var(--sage-glow))',
-					mist: 'hsl(var(--sage-mist))',
-					whisper: 'hsl(var(--sage-whisper))',
-					white: 'hsl(var(--sage-white))',
-					DEFAULT: 'hsl(var(--accent-sage))'
+				cartier: {
+					50: 'hsl(343 85% 97%)',
+					100: 'hsl(343 90% 94%)',
+					200: 'hsl(343 85% 88%)',
+					300: 'hsl(343 75% 78%)',
+					400: 'hsl(343 85% 65%)',
+					500: 'hsl(343 75% 50%)',
+					600: 'hsl(343 75% 32%)',
+					700: 'hsl(343 80% 27%)',
+					800: 'hsl(343 85% 22%)',
+					900: 'hsl(343 90% 17%)',
+					DEFAULT: 'hsl(var(--accent-cartier))'
 				}
 				},
 				popover: {
