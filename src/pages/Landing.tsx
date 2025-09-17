@@ -235,17 +235,19 @@ export default function Landing() {
       </header>
 
       {/* HERO */}
-      <section id="discover" className="relative overflow-hidden min-h-[60vh] sm:min-h-[75vh] lg:min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-background">
-        {/* Minimalist Background Pattern */}
+      <section id="discover" className="relative overflow-hidden min-h-[60vh] sm:min-h-[75vh] lg:min-h-screen bg-gradient-to-br from-sage-whisper via-sage-mist to-sage-white">
+        {/* Organic Background Pattern */}
         <div className="absolute inset-0">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(239,68,68,0.15),transparent_70%)]" />
-          <div className="absolute inset-0 bg-gradient-to-t from-background/60 via-transparent to-gray-900/30" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,hsl(var(--sage-glow)/0.3),transparent_70%)]" />
+          <div className="absolute inset-0 bg-gradient-to-t from-sage-white/60 via-transparent to-sage-whisper/30" />
+          <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-sage-glow/20 rounded-full blur-3xl" />
+          <div className="absolute bottom-1/4 left-1/4 w-64 h-64 bg-sage-calm/15 rounded-full blur-2xl" />
         </div>
         
-        {/* Subtle Background Text - Smaller on Mobile */}
+        {/* Subtle Background Text - AURA Style */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="font-cormorant text-[15vw] sm:text-[12vw] lg:text-[10vw] font-bold text-primary/5 leading-none tracking-wider">
-            AZYAH
+          <div className="font-cormorant text-[15vw] sm:text-[12vw] lg:text-[10vw] font-bold text-sage-deep/5 leading-none tracking-wider">
+            AURA
           </div>
         </div>
 
@@ -262,30 +264,30 @@ export default function Landing() {
                 
                 <div className="space-y-2 sm:space-y-3 lg:space-y-4">
                   <h1 className="font-cormorant text-6xl sm:text-7xl md:text-8xl lg:text-8xl xl:text-9xl font-bold leading-[0.9] sm:leading-[0.85] tracking-tight">
-                    <span className="block text-white animate-slide-up-fade" style={{ animationDelay: '0.2s', animationFillMode: 'both' }}>
-                      Find Your
+                    <span className="block text-sage-deep animate-slide-up-fade" style={{ animationDelay: '0.2s', animationFillMode: 'both' }}>
+                      Discover Your
                     </span>
-                    <span className="block bg-gradient-to-r from-primary via-primary to-primary/80 bg-clip-text text-transparent italic animate-scale-bounce hover-scale" style={{ animationDelay: '0.5s', animationFillMode: 'both' }}>
-                      Perfect
+                    <span className="block bg-gradient-to-r from-sage-deep via-sage-calm to-sage-glow bg-clip-text text-transparent italic animate-scale-bounce hover-scale" style={{ animationDelay: '0.5s', animationFillMode: 'both' }}>
+                      Wellness
                     </span>
-                    <span className="block text-white animate-slide-up-fade" style={{ animationDelay: '0.8s', animationFillMode: 'both' }}>
-                      Style
+                    <span className="block text-sage-deep animate-slide-up-fade" style={{ animationDelay: '0.8s', animationFillMode: 'both' }}>
+                      Journey
                     </span>
                   </h1>
-                  <p className="text-lg sm:text-xl lg:text-2xl text-gray-200 max-w-md lg:max-w-lg leading-relaxed font-light mx-auto animate-blur-focus" style={{ animationDelay: '1.1s', animationFillMode: 'both' }}>
-                    Smart AI fashion discovery that learns your style.
+                  <p className="text-lg sm:text-xl lg:text-2xl text-sage-deep/80 max-w-md lg:max-w-lg leading-relaxed font-light mx-auto animate-blur-focus" style={{ animationDelay: '1.1s', animationFillMode: 'both' }}>
+                    AI-powered fashion curation for mindful style discovery.
                   </p>
                 </div>
               </div>
 
               <div className="flex flex-col gap-3 sm:gap-4">
-                <Button size="sm" className="group px-6 py-3 sm:px-8 sm:py-4 lg:px-8 lg:py-4 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg hover:shadow-xl transition-all duration-300 text-sm sm:text-base font-medium animate-scale-bounce" style={{ animationDelay: '1.4s', animationFillMode: 'both' }} onClick={() => navigate("/auth")}>
-                  <span>Sign Up to Explore Our AI and More</span>
+                <Button size="lg" className="group px-8 py-4 sm:px-10 sm:py-5 lg:px-12 lg:py-6 bg-gradient-to-r from-sage-deep to-sage-calm hover:from-sage-calm hover:to-sage-glow shadow-aura hover:shadow-sage text-sm sm:text-base font-medium animate-scale-bounce rounded-full" style={{ animationDelay: '1.4s', animationFillMode: 'both' }} onClick={() => navigate("/auth")}>
+                  <span>Begin Your Journey</span>
                   <ArrowRight className="ml-2 w-4 h-4 lg:w-5 lg:h-5 group-hover:translate-x-1 transition-transform" />
                 </Button>
-                <Button variant="outline" size="sm" className="px-6 py-3 sm:px-8 sm:py-4 lg:px-8 lg:py-4 bg-background/50 backdrop-blur-sm border border-primary/30 hover:bg-background/80 hover:border-primary/50 text-sm sm:text-base font-light animate-scale-bounce" style={{ animationDelay: '1.6s', animationFillMode: 'both' }} onClick={() => scrollToSection("#featured-collections")}>
+                <Button variant="outline" size="lg" className="px-8 py-4 sm:px-10 sm:py-5 lg:px-12 lg:py-6 bg-sage-white/80 backdrop-blur-sm border border-sage-mist hover:bg-sage-whisper hover:border-sage-calm text-sm sm:text-base font-light animate-scale-bounce rounded-full" style={{ animationDelay: '1.6s', animationFillMode: 'both' }} onClick={() => scrollToSection("#featured-collections")}>
                   <Play className="mr-2 w-4 h-4 lg:w-5 lg:h-5" /> 
-                  <span>View Lookbook</span>
+                  <span>Explore Collection</span>
                 </Button>
               </div>
 
@@ -296,10 +298,10 @@ export default function Landing() {
                     {/* Subtle outer glow */}
                     <div className="absolute -inset-2 bg-gradient-to-r from-primary/20 via-primary/10 to-primary/20 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-700 blur-md"></div>
                     
-                    {/* Glass morphism container */}
-                    <div className="relative bg-gradient-to-r from-background/95 via-white/90 to-background/95 backdrop-blur-lg rounded-full px-8 py-4 border border-primary/30 shadow-xl">
+                    {/* AURA glass morphism container */}
+                    <div className="relative bg-gradient-to-r from-sage-white/95 via-sage-whisper/90 to-sage-white/95 backdrop-blur-lg rounded-full px-8 py-4 border border-sage-mist shadow-aura">
                       {/* Inner shimmer effect */}
-                      <div className="absolute inset-0 rounded-full bg-gradient-to-r from-transparent via-primary/5 to-transparent opacity-50"></div>
+                      <div className="absolute inset-0 rounded-full bg-gradient-to-r from-transparent via-sage-glow/5 to-transparent opacity-50"></div>
                       <div className="relative">
                         <FeatureCarousel />
                       </div>
