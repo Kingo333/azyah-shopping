@@ -11,11 +11,14 @@ serve(async (req) => {
   }
 
   try {
-    const { id } = await req.json();
+    // Extract ID from URL path
+    const url = new URL(req.url);
+    const pathParts = url.pathname.split('/');
+    const id = pathParts[pathParts.length - 1];
 
-    if (!id) {
+    if (!id || id === 'bitstudio-status') {
       return new Response(
-        JSON.stringify({ error: 'Missing image ID' }),
+        JSON.stringify({ error: 'Missing image ID in URL path' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
