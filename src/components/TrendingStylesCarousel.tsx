@@ -17,6 +17,7 @@ import { TrendingUp, Heart, ShoppingBag, ExternalLink } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { SmartImage } from '@/components/SmartImage';
 import { getPrimaryImageUrl } from '@/utils/imageHelpers';
+import { TopCategory } from '@/lib/categories';
 
 interface TrendingProduct {
   id: string;
@@ -30,21 +31,22 @@ interface TrendingProduct {
 
 interface TrendingStylesCarouselProps {
   limit?: number;
+  categoryFilter?: TopCategory;
 }
 
-const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit = 8 }) => {
+const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit = 8, categoryFilter }) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [api, setApi] = React.useState<any>();
 
   const { data: trendingProducts, isLoading, error } = useQuery({
-    queryKey: ['trending-products-engagement', limit],
+    queryKey: ['trending-products-engagement', limit, categoryFilter],
     queryFn: async (): Promise<TrendingProduct[]> => {
       console.log('TrendingProductsCarousel: Starting engagement-based fetch');
       
       try {
         // Get trending products based on likes from the last 7 days
-        const { data: likeData, error: likeError } = await supabase
+        let query = supabase
           .from('likes')
           .select(`
             product_id,
@@ -56,6 +58,7 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
               currency,
               external_url,
               status,
+              category_slug,
               brands:brand_id(name),
               retailers:retailer_id(name)
             )
@@ -63,6 +66,12 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
           .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
           .not('products.title', 'is', null)
           .eq('products.status', 'active');
+
+        if (categoryFilter) {
+          query = query.eq('products.category_slug', categoryFilter);
+        }
+
+        const { data: likeData, error: likeError } = await query;
 
         if (likeError) {
           console.error('TrendingProductsCarousel: Error fetching liked products:', likeError);
@@ -96,7 +105,7 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
         if (sortedProducts.length < limit) {
           console.log('TrendingProductsCarousel: Insufficient trending data, fetching recent products');
           
-          const { data: recentData, error: recentError } = await supabase
+          let recentQuery = supabase
             .from('products')
             .select(`
               id,
@@ -105,6 +114,7 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
               price_cents,
               currency,
               external_url,
+              category_slug,
               brands:brand_id(name),
               retailers:retailer_id(name)
             `)
@@ -112,6 +122,12 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
             .not('title', 'is', null)
             .order('created_at', { ascending: false })
             .limit(limit - sortedProducts.length);
+
+          if (categoryFilter) {
+            recentQuery = recentQuery.eq('category_slug', categoryFilter);
+          }
+
+          const { data: recentData, error: recentError } = await recentQuery;
 
           if (recentError) {
             console.error('TrendingProductsCarousel: Error fetching recent products:', recentError);
@@ -137,7 +153,7 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
       } catch (error) {
         console.error('TrendingProductsCarousel: Error in engagement fetch:', error);
         // Fallback to recent products on error
-        const { data: fallbackData, error: fallbackError } = await supabase
+        let fallbackQuery = supabase
           .from('products')
           .select(`
             id,
@@ -146,6 +162,7 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
             price_cents,
             currency,
             external_url,
+            category_slug,
             brands:brand_id(name),
             retailers:retailer_id(name)
           `)
@@ -153,6 +170,12 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
           .not('title', 'is', null)
           .order('created_at', { ascending: false })
           .limit(limit);
+
+        if (categoryFilter) {
+          fallbackQuery = fallbackQuery.eq('category_slug', categoryFilter);
+        }
+
+        const { data: fallbackData, error: fallbackError } = await fallbackQuery;
 
         if (fallbackError) throw fallbackError;
         

@@ -65,7 +65,7 @@ const Explore: React.FC = () => {
                   </div>
                   Trending Styles
                 </h2>
-                <TrendingStyles limit={12} showMore={false} />
+                <TrendingStyles limit={12} showMore={true} />
               </GlassPanel>}
 
             {activeFilter === 'influencers' && <GlassPanel variant="premium" className="p-8">
