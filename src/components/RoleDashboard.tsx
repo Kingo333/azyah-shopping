@@ -406,7 +406,7 @@ const RoleDashboard: React.FC = () => {
             variant="ghost" 
             size="sm"
             className="h-7 px-2 text-xs flex-shrink-0"
-            onClick={() => navigate('/trending-styles')}
+            onClick={() => navigate('/swipe')}
           >
             Shop
           </Button>
