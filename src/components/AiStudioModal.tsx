@@ -367,7 +367,17 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
 
               {/* Tips */}
               <div className="rounded-2xl border border-black/10 bg-white p-4">
-                <h4 className="text-sm font-semibold mb-2">Pro Tips</h4>
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="text-sm font-semibold">Pro Tips</h4>
+                  {!isPremium && (
+                    <button
+                      onClick={handleUpgradeClick}
+                      className="text-[11px] text-[#7B2E2E] font-medium hover:underline"
+                    >
+                      Upgrade
+                    </button>
+                  )}
+                </div>
                 <ul className="text-sm text-black/70 list-disc pl-5 space-y-1">
                   <li>Front-facing, full-body photos</li>
                   <li>Plain backgrounds work best</li>
@@ -435,16 +445,6 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                 )}
               </motion.button>
               
-              {!isPremium && (
-                <div className="flex items-center justify-end mt-2">
-                  <button
-                    onClick={handleUpgradeClick}
-                    className="text-[11px] text-[#7B2E2E] font-medium hover:underline"
-                  >
-                    Upgrade
-                  </button>
-                </div>
-              )}
             </div>
           </motion.div>
         </div>
