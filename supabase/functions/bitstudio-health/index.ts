@@ -11,15 +11,48 @@ serve(async (req) => {
   }
 
   try {
-    // Mock health check response
-    const healthResponse = {
-      ok: true,
-      base: 'BitStudio API Mock',
-      timestamp: new Date().toISOString(),
-      version: '1.0.0'
-    };
+    const bitStudioApiKey = Deno.env.get('BITSTUDIO_API_KEY');
+    if (!bitStudioApiKey) {
+      throw new Error('BitStudio API key not configured');
+    }
 
-    console.log('BitStudio health check:', healthResponse);
+    console.log('Checking BitStudio API health...');
+
+    // Call actual BitStudio health check API
+    const response = await fetch('https://api.bitstudio.ai/v1/health', {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${bitStudioApiKey}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('BitStudio API health check failed:', response.status, errorText);
+      return new Response(
+        JSON.stringify({
+          ok: false,
+          error: `BitStudio API health check failed: ${response.status}`,
+          details: errorText,
+          timestamp: new Date().toISOString()
+        }),
+        { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const bitStudioResponse = await response.json();
+    console.log('BitStudio health check response:', bitStudioResponse);
+
+    // Map BitStudio response to our expected format
+    const healthResponse = {
+      ok: bitStudioResponse.ok !== false,
+      base: bitStudioResponse.service || 'BitStudio API',
+      timestamp: new Date().toISOString(),
+      version: bitStudioResponse.version || '1.0.0',
+      status: bitStudioResponse.status,
+      details: bitStudioResponse
+    };
 
     return new Response(
       JSON.stringify(healthResponse),
@@ -28,7 +61,12 @@ serve(async (req) => {
   } catch (error) {
     console.error('Health check error:', error);
     return new Response(
-      JSON.stringify({ ok: false, error: error.message }),
+      JSON.stringify({ 
+        ok: false, 
+        error: error.message,
+        timestamp: new Date().toISOString(),
+        details: 'Unable to connect to BitStudio API'
+      }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

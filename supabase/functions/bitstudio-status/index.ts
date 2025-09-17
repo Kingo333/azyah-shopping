@@ -11,6 +11,11 @@ serve(async (req) => {
   }
 
   try {
+    const bitStudioApiKey = Deno.env.get('BITSTUDIO_API_KEY');
+    if (!bitStudioApiKey) {
+      throw new Error('BitStudio API key not configured');
+    }
+
     // Extract ID from URL path
     const url = new URL(req.url);
     const pathParts = url.pathname.split('/');
@@ -23,25 +28,49 @@ serve(async (req) => {
       );
     }
 
-    // Mock response for now - replace with actual BitStudio API call
-    const mockResponse = {
-      id: id,
-      type: 'virtual-try-on',
-      status: 'completed',
-      path: `https://picsum.photos/400/600?random=${id}`,
-      credits_used: 1
+    console.log('Checking BitStudio status for ID:', id);
+
+    // Call actual BitStudio status API
+    const response = await fetch(`https://api.bitstudio.ai/v1/status/${id}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${bitStudioApiKey}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('BitStudio API error:', response.status, errorText);
+      throw new Error(`BitStudio API error: ${response.status} - ${errorText}`);
+    }
+
+    const bitStudioResponse = await response.json();
+    console.log('BitStudio status response:', bitStudioResponse);
+
+    // Map BitStudio response to our expected format
+    const mappedResponse = {
+      id: bitStudioResponse.id || id,
+      type: bitStudioResponse.type || 'virtual-try-on',
+      status: bitStudioResponse.status,
+      path: bitStudioResponse.url || bitStudioResponse.path,
+      credits_used: bitStudioResponse.credits_used || 0,
+      error: bitStudioResponse.error,
+      video_path: bitStudioResponse.video_url || bitStudioResponse.video_path
     };
 
-    console.log('BitStudio status response:', mockResponse);
-
     return new Response(
-      JSON.stringify(mockResponse),
+      JSON.stringify(mappedResponse),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
     console.error('Status check error:', error);
     return new Response(
-      JSON.stringify({ error: 'Status check failed', details: error.message }),
+      JSON.stringify({ 
+        error: 'Status check failed', 
+        details: error.message,
+        bitstudio_error: error.cause || null
+      }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

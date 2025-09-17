@@ -11,6 +11,11 @@ serve(async (req) => {
   }
 
   try {
+    const bitStudioApiKey = Deno.env.get('BITSTUDIO_API_KEY');
+    if (!bitStudioApiKey) {
+      throw new Error('BitStudio API key not configured');
+    }
+
     const formData = await req.formData();
     const file = formData.get('file') as File;
     const type = formData.get('type') as string;
@@ -22,25 +27,52 @@ serve(async (req) => {
       );
     }
 
-    // Mock response for now - replace with actual BitStudio API call
-    const mockResponse = {
-      id: `img_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`,
+    // Create FormData for BitStudio API
+    const bitStudioFormData = new FormData();
+    bitStudioFormData.append('file', file);
+    bitStudioFormData.append('type', type);
+
+    console.log('Uploading to BitStudio API:', { fileName: file.name, type, size: file.size });
+
+    // Call actual BitStudio API
+    const response = await fetch('https://api.bitstudio.ai/v1/upload', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${bitStudioApiKey}`,
+      },
+      body: bitStudioFormData,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('BitStudio API error:', response.status, errorText);
+      throw new Error(`BitStudio API error: ${response.status} - ${errorText}`);
+    }
+
+    const bitStudioResponse = await response.json();
+    console.log('BitStudio upload response:', bitStudioResponse);
+
+    // Map BitStudio response to our expected format
+    const mappedResponse = {
+      id: bitStudioResponse.id || bitStudioResponse.image_id,
       type: type,
-      status: 'completed',
-      path: `https://bitstudio.placeholder/${file.name}`,
-      credits_used: 0
+      status: bitStudioResponse.status || 'completed',
+      path: bitStudioResponse.url || bitStudioResponse.path,
+      credits_used: bitStudioResponse.credits_used || 0
     };
 
-    console.log('BitStudio upload response:', mockResponse);
-
     return new Response(
-      JSON.stringify(mockResponse),
+      JSON.stringify(mappedResponse),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
     console.error('Upload error:', error);
     return new Response(
-      JSON.stringify({ error: 'Upload failed', details: error.message }),
+      JSON.stringify({ 
+        error: 'Upload failed', 
+        details: error.message,
+        bitstudio_error: error.cause || null
+      }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
