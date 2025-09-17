@@ -65,7 +65,10 @@ const RoleDashboard: React.FC = () => {
   const [aiStudioModalOpen, setAiStudioModalOpen] = useState(false);
   const [isClosetsMinimized, setIsClosetsMinimized] = useState(true);
   const [isAffiliateMinimized, setIsAffiliateMinimized] = useState(true);
-  const [selectedTrendingCategory, setSelectedTrendingCategory] = useState<TopCategory | null>(null);
+  const [selectedTrendingCategory, setSelectedTrendingCategory] = useState<TopCategory | null>(() => {
+    const saved = localStorage.getItem('selectedTrendingCategory');
+    return saved ? saved as TopCategory : null;
+  });
   const [isTrendingFilterOpen, setIsTrendingFilterOpen] = useState(false);
   useEffect(() => {
     // Set correct page title
@@ -372,6 +375,7 @@ const RoleDashboard: React.FC = () => {
                       className="justify-start h-7 text-xs"
                       onClick={() => {
                         setSelectedTrendingCategory(null);
+                        localStorage.removeItem('selectedTrendingCategory');
                         setIsTrendingFilterOpen(false);
                       }}
                     >
@@ -385,6 +389,7 @@ const RoleDashboard: React.FC = () => {
                         className="justify-start h-7 text-xs"
                         onClick={() => {
                           setSelectedTrendingCategory(category as TopCategory);
+                          localStorage.setItem('selectedTrendingCategory', category);
                           setIsTrendingFilterOpen(false);
                         }}
                       >
