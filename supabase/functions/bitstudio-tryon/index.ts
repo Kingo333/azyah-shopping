@@ -30,13 +30,13 @@ serve(async (req) => {
     }
 
     // Mock response for now - replace with actual BitStudio API call
-    const mockResponse = {
+    const mockResponse = [{
       id: `tryon_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`,
       type: 'virtual-try-on',
       status: 'completed',
       path: `https://bitstudio.placeholder/tryon-result-${Date.now()}.png`,
       credits_used: 1
-    };
+    }];
 
     console.log('BitStudio try-on response:', mockResponse);
 
