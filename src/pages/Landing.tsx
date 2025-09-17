@@ -280,7 +280,7 @@ export default function Landing() {
 
               <div className="flex flex-col gap-3 sm:gap-4">
                 <Button size="sm" className="group px-6 py-3 sm:px-8 sm:py-4 lg:px-8 lg:py-4 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg hover:shadow-xl transition-all duration-300 text-sm sm:text-base font-medium animate-scale-bounce" style={{ animationDelay: '1.4s', animationFillMode: 'both' }} onClick={() => navigate("/auth")}>
-                  <span>Sign Up to Explore</span>
+                  <span>Sign Up to Explore Our AI and More</span>
                   <ArrowRight className="ml-2 w-4 h-4 lg:w-5 lg:h-5 group-hover:translate-x-1 transition-transform" />
                 </Button>
                 <Button variant="outline" size="sm" className="px-6 py-3 sm:px-8 sm:py-4 lg:px-8 lg:py-4 bg-background/50 backdrop-blur-sm border border-primary/30 hover:bg-background/80 hover:border-primary/50 text-sm sm:text-base font-light animate-scale-bounce" style={{ animationDelay: '1.6s', animationFillMode: 'both' }} onClick={() => scrollToSection("#featured-collections")}>
