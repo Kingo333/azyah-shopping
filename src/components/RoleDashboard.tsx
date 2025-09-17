@@ -346,8 +346,8 @@ const RoleDashboard: React.FC = () => {
       {/* Trending Styles Section */}
       <section className="px-4">
         <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <h2 className="text-lg font-semibold">Trending Styles</h2>
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            <h2 className="text-base font-semibold flex-shrink-0">Trending</h2>
             
             {/* Category Filter */}
             <Popover open={isTrendingFilterOpen} onOpenChange={setIsTrendingFilterOpen}>
@@ -355,21 +355,21 @@ const RoleDashboard: React.FC = () => {
                 <Button 
                   variant="outline" 
                   size="sm" 
-                  className="gap-2 h-8"
+                  className="gap-1.5 h-7 px-2.5 rounded-full text-xs flex-shrink-0"
                 >
                   <Filter className="h-3 w-3" />
-                  Category
+                  {selectedTrendingCategory ? getCategoryDisplayName(selectedTrendingCategory).substring(0, 8) + '...' : 'All'}
                   <ChevronDown className="h-3 w-3" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-56 p-3 bg-card/95 backdrop-blur-sm border shadow-lg z-50" align="start">
+              <PopoverContent className="w-48 p-3 bg-card/95 backdrop-blur-sm border shadow-lg z-50" align="start">
                 <div className="space-y-2">
-                  <div className="font-medium text-sm">Filter by Category</div>
+                  <div className="font-medium text-xs">Filter by Category</div>
                   <div className="grid gap-1">
                     <Button
                       variant={selectedTrendingCategory === null ? "default" : "ghost"}
                       size="sm"
-                      className="justify-start h-8"
+                      className="justify-start h-7 text-xs"
                       onClick={() => {
                         setSelectedTrendingCategory(null);
                         setIsTrendingFilterOpen(false);
@@ -382,7 +382,7 @@ const RoleDashboard: React.FC = () => {
                         key={category}
                         variant={selectedTrendingCategory === category ? "default" : "ghost"}
                         size="sm"
-                        className="justify-start h-8"
+                        className="justify-start h-7 text-xs"
                         onClick={() => {
                           setSelectedTrendingCategory(category as TopCategory);
                           setIsTrendingFilterOpen(false);
@@ -395,27 +395,12 @@ const RoleDashboard: React.FC = () => {
                 </div>
               </PopoverContent>
             </Popover>
-
-            {/* Selected Category Badge */}
-            {selectedTrendingCategory && (
-              <Badge 
-                variant="secondary" 
-                className="gap-1 text-xs"
-              >
-                {getCategoryDisplayName(selectedTrendingCategory)}
-                <button
-                  onClick={() => setSelectedTrendingCategory(null)}
-                  className="ml-1 hover:bg-muted rounded-full p-0.5"
-                >
-                  ×
-                </button>
-              </Badge>
-            )}
           </div>
           
           <Button 
             variant="ghost" 
             size="sm"
+            className="h-7 px-2 text-xs flex-shrink-0"
             onClick={() => navigate('/trending-styles')}
           >
             View All
