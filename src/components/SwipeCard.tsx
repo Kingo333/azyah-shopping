@@ -165,9 +165,9 @@ const SwipeCard = memo(({
                       e.stopPropagation();
                       onDislike();
                     }}
-                    className="h-8 w-8 rounded-full bg-destructive/10 hover:bg-destructive/20"
+                    className="h-12 w-12 rounded-full bg-destructive/10 hover:bg-destructive/20"
                   >
-                    <X className="h-3 w-3 text-destructive" />
+                    <X className="h-5 w-5 text-destructive" />
                   </Button>
                   <Button
                     variant="ghost"
@@ -177,9 +177,9 @@ const SwipeCard = memo(({
                       onWishlist(product);
                     }}
                     disabled={wishlistLoading}
-                    className="h-8 w-8 rounded-full bg-accent/10 hover:bg-accent/20"
+                    className="h-12 w-12 rounded-full bg-accent/10 hover:bg-accent/20"
                   >
-                    <ShoppingBag className="h-3 w-3 text-accent-foreground" />
+                    <ShoppingBag className="h-5 w-5 text-accent-foreground" />
                   </Button>
                   <Button
                     variant="ghost"
@@ -188,9 +188,9 @@ const SwipeCard = memo(({
                       e.stopPropagation();
                       onLike(product);
                     }}
-                    className="h-8 w-8 rounded-full bg-primary/10 hover:bg-primary/20"
+                    className="h-12 w-12 rounded-full bg-primary/10 hover:bg-primary/20"
                   >
-                    <Heart className="h-3 w-3 text-primary" />
+                    <Heart className="h-5 w-5 text-primary" />
                   </Button>
                 </div>
               </div>

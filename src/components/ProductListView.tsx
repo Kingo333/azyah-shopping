@@ -114,33 +114,33 @@ const ProductCard: React.FC<{
           <Button
             size="sm"
             variant="ghost"
-            className="h-8 w-8 rounded-full bg-white/90 hover:bg-white backdrop-blur-sm"
+            className="h-10 w-10 rounded-full bg-white/90 hover:bg-white backdrop-blur-sm"
             onClick={() => handleLike(product)}
           >
-            <Heart className="h-5 w-5" />
+            <Heart className="h-6 w-6" />
           </Button>
           <Button
             size="sm"
             variant="ghost"
-            className="h-8 w-8 rounded-full bg-white/90 hover:bg-white backdrop-blur-sm"
+            className="h-10 w-10 rounded-full bg-white/90 hover:bg-white backdrop-blur-sm"
             onClick={handleAddToWishlist}
             disabled={wishlistLoading}
           >
-            <ShoppingBag className="h-5 w-5" />
+            <ShoppingBag className="h-6 w-6" />
           </Button>
           {/* Try-on button - only show if product has outfit */}
           {shouldShowHeadIcon && (
             <Button
               size="sm"
               variant="ghost"
-              className="h-8 w-8 rounded-full bg-accent/90 hover:bg-accent backdrop-blur-sm"
+              className="h-10 w-10 rounded-full bg-accent/90 hover:bg-accent backdrop-blur-sm"
               onClick={(e) => {
                 e.stopPropagation();
                 setTryOnModalOpen(true);
               }}
               title="Try it on"
             >
-              <User className="h-5 w-5 text-white" />
+              <User className="h-6 w-6 text-white" />
             </Button>
           )}
         </div>
