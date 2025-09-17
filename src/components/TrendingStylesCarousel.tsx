@@ -17,17 +17,11 @@ import { TrendingUp, Heart, ShoppingBag, ExternalLink } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { SmartImage } from '@/components/SmartImage';
 import { getPrimaryImageUrl } from '@/utils/imageHelpers';
+import { PRODUCT_SELECT_WITH_RELATIONS, mapProductData, type StandardProduct } from '@/utils/productQueryHelpers';
 import { TopCategory } from '@/lib/categories';
 
-interface TrendingProduct {
-  id: string;
-  title: string;
-  image_url: string;
-  price_cents: number;
-  currency: string;
-  brand_name: string;
-  external_url: string | null;
-}
+// Use standardized product interface
+type TrendingProduct = StandardProduct;
 
 interface TrendingStylesCarouselProps {
   limit?: number;
@@ -48,18 +42,7 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
         // Start with recent products to ensure we show internal user products
         let recentQuery = supabase
           .from('products')
-          .select(`
-            id,
-            title,
-            image_url,
-            media_urls,
-            price_cents,
-            currency,
-            external_url,
-            category_slug,
-            brands:brand_id(name),
-            retailers:retailer_id(name)
-          `)
+          .select(PRODUCT_SELECT_WITH_RELATIONS)
           .eq('status', 'active')
           .not('title', 'is', null)
           .order('created_at', { ascending: false })
@@ -77,34 +60,14 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
         }
 
         console.log('TrendingProductsCarousel: Products fetched:', recentData?.length || 0);
-        return (recentData || []).map((product: any) => ({
-          id: product.id,
-          title: product.title,
-          image_url: product.image_url || '/placeholder.svg',
-          media_urls: product.media_urls,
-          price_cents: product.price_cents,
-          currency: product.currency || 'USD',
-          brand_name: product.brands?.name || product.retailers?.name || '',
-          external_url: product.external_url
-        }));
+        return (recentData || []).map(mapProductData);
         
       } catch (error) {
         console.error('TrendingProductsCarousel: Error in engagement fetch:', error);
         // Fallback to recent products on error
         let fallbackQuery = supabase
           .from('products')
-          .select(`
-            id,
-            title,
-            image_url,
-            media_urls,
-            price_cents,
-            currency,
-            external_url,
-            category_slug,
-            brands:brand_id(name),
-            retailers:retailer_id(name)
-          `)
+          .select(PRODUCT_SELECT_WITH_RELATIONS)
           .eq('status', 'active')
           .not('title', 'is', null)
           .order('created_at', { ascending: false })
@@ -118,16 +81,7 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
 
         if (fallbackError) throw fallbackError;
         
-        return (fallbackData || []).map((product: any) => ({
-          id: product.id,
-          title: product.title,
-          image_url: product.image_url || '/placeholder.svg',
-          media_urls: product.media_urls,
-          price_cents: product.price_cents,
-          currency: product.currency || 'USD',
-          brand_name: product.brands?.name || product.retailers?.name || '',
-          external_url: product.external_url
-        }));
+        return (fallbackData || []).map(mapProductData);
       }
     },
     staleTime: 1000 * 60 * 60 * 48, // 48 hours
