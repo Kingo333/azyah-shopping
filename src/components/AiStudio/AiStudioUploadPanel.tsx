@@ -42,7 +42,7 @@ export const AiStudioUploadPanel: React.FC<AiStudioUploadPanelProps> = ({
               <img 
                 src={URL.createObjectURL(personFile)} 
                 alt="Person preview" 
-                className="w-full h-12 sm:h-16 lg:h-20 object-cover rounded-md"
+                className="w-full h-12 sm:h-16 lg:h-20 object-contain rounded-md bg-gray-50"
               />
               {personImageId && (
                 <Badge className="absolute top-1 right-1 text-xs h-5">
@@ -72,7 +72,7 @@ export const AiStudioUploadPanel: React.FC<AiStudioUploadPanelProps> = ({
               <img 
                 src={URL.createObjectURL(outfitFile)} 
                 alt="Outfit preview" 
-                className="w-full h-12 sm:h-16 lg:h-20 object-cover rounded-md"
+                className="w-full h-12 sm:h-16 lg:h-20 object-contain rounded-md bg-gray-50"
               />
               {outfitImageId && (
                 <Badge className="absolute top-1 right-1 text-xs h-5">
