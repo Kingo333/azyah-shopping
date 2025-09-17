@@ -17,16 +17,16 @@ export const SEOHead: React.FC<SEOHeadProps> = ({
   title = 'Azyah - Discover Fashion Like Never Before',
   description = 'Swipe, discover, and try on fashion items with AR. Join the future of fashion discovery with personalized recommendations and virtual try-ons.',
   keywords = 'fashion, AR try-on, virtual fitting, fashion discovery, online shopping, swipe fashion, personalized style',
-  image = '/marketing/azyah-social-preview.png',
-  url = 'https://www.azyahstyle.com',
+  image = '/og-image.jpg',
+  url = 'https://azyah.app',
   type = 'website',
   noIndex = false,
   canonical,
   structuredData,
 }) => {
   const fullTitle = title.includes('Azyah') ? title : `${title} | Azyah`;
-  const fullUrl = url.startsWith('http') ? url : `https://www.azyahstyle.com${url}`;
-  const fullImage = image.startsWith('http') ? image : `https://www.azyahstyle.com${image}`;
+  const fullUrl = url.startsWith('http') ? url : `https://azyah.app${url}`;
+  const fullImage = image.startsWith('http') ? image : `https://azyah.app${image}`;
 
   return (
     <Helmet>
@@ -85,11 +85,11 @@ export const HomeSEO = () => (
       "@context": "https://schema.org",
       "@type": "WebSite",
       "name": "Azyah",
-      "url": "https://www.azyahstyle.com",
+      "url": "https://azyah.app",
       "description": "Fashion discovery platform with AR try-on",
       "potentialAction": {
         "@type": "SearchAction",
-        "target": "https://www.azyahstyle.com/search?q={search_term_string}",
+        "target": "https://azyah.app/search?q={search_term_string}",
         "query-input": "required name=search_term_string"
       }
     }}
@@ -143,7 +143,7 @@ export const BrandSEO = ({ brand }: { brand: any }) => (
       "name": brand.name,
       "description": brand.bio,
       "logo": brand.logo_url,
-      "url": `https://www.azyahstyle.com/brand/${brand.slug}`
+      "url": `https://azyah.app/brand/${brand.slug}`
     }}
   />
 );
