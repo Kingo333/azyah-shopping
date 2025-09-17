@@ -375,7 +375,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                       onClick={handleUpgradeClick}
                       className="text-[11px] text-[#7B2E2E] font-medium hover:underline"
                     >
-                      Upgrade
+                      Upgrade for daily credits
                     </button>
                   )}
                 </div>
