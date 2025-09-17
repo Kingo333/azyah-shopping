@@ -408,7 +408,7 @@ const RoleDashboard: React.FC = () => {
             className="h-7 px-2 text-xs flex-shrink-0"
             onClick={() => navigate('/trending-styles')}
           >
-            View All
+            Shop
           </Button>
         </div>
         <TrendingStylesCarousel limit={8} categoryFilter={selectedTrendingCategory} />
