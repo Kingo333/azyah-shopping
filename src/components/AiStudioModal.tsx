@@ -225,7 +225,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                 <h2 className="text-lg sm:text-xl font-semibold mt-1 text-[#121212]">AI Studio</h2>
               </div>
 
-              <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0 mt-4">
+              <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0 mt-6">
                 <CreditsPill used={remainingGenerations} total={maxGenerations} />
                 {/* Mobile progress bar */}
                 <div className="flex sm:hidden items-center gap-2 px-3 py-1.5 rounded-full bg-[#7B2E2E]/10">
