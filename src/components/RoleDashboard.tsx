@@ -231,264 +231,303 @@ const RoleDashboard: React.FC = () => {
       {/* Premium Banner */}
       <PremiumBanner />
 
-      {/* Quick Actions - Horizontal Pills */}
-      <section className="px-4 pt-3">
-        <div className="flex gap-2 overflow-x-auto pb-1 [-webkit-overflow-scrolling:touch] scrollbar-hide">
-          {/* Home Chip */}
+      {/* Quick Actions - AURA-style Cards */}
+      <section className="px-6 pt-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+          {/* Home Card */}
           <TutorialTooltip content="Return to your personalized dashboard with all your fashion insights and recommendations." feature="home">
-            <button
-              onClick={() => navigate('/dashboard')}
-              className={`flex items-center justify-center p-2 h-9 w-9 rounded-lg transition-colors font-medium text-sm flex-shrink-0 ${
+            <Card 
+              className={`cursor-pointer transition-all duration-200 hover:scale-105 hover:shadow-lg ${
                 location.pathname === '/dashboard' 
-                  ? 'bg-primary text-primary-foreground hover:bg-primary/90' 
-                  : 'bg-background border border-border hover:bg-accent'
+                  ? 'bg-primary text-primary-foreground border-primary shadow-md' 
+                  : 'glass-panel hover:glass-premium'
               }`}
+              onClick={() => navigate('/dashboard')}
             >
-              <Home className="h-4 w-4" />
-            </button>
+              <CardContent className="flex flex-col items-center justify-center p-4 h-20">
+                <Home className="h-5 w-5 mb-1" />
+                <span className="text-xs font-medium">Home</span>
+              </CardContent>
+            </Card>
           </TutorialTooltip>
 
-          {/* Shop Chip */}
+          {/* Shop Card */}
           <TutorialTooltip content="Swipe through fashion items to discover your style. Swipe right to like items and build your personal taste profile." feature="swipe">
-            <button
+            <Card 
+              className="cursor-pointer glass-panel hover:glass-premium transition-all duration-200 hover:scale-105 hover:shadow-lg"
               onClick={() => navigate('/swipe')}
-              className="flex items-center gap-2 px-3 py-2 h-9 rounded-lg bg-background border border-border hover:bg-accent transition-colors font-medium text-sm whitespace-nowrap flex-shrink-0 min-w-fit"
             >
-              <Heart className="h-4 w-4" />
-              Shop
-            </button>
+              <CardContent className="flex flex-col items-center justify-center p-4 h-20">
+                <Heart className="h-5 w-5 mb-1" />
+                <span className="text-xs font-medium">Shop</span>
+              </CardContent>
+            </Card>
           </TutorialTooltip>
 
-          {/* AI Studio Chip with New Badge */}
+          {/* AI Studio Card */}
           <TutorialTooltip content="Create AI-generated fashion content and try-on experiences. Upload photos and use AI to enhance your style." feature="ai-studio">
-            <button
+            <Card 
+              className="cursor-pointer glass-panel hover:glass-premium transition-all duration-200 hover:scale-105 hover:shadow-lg relative"
               onClick={() => setAiStudioModalOpen(true)}
-              className="relative flex items-center gap-2 px-3 py-2 h-9 rounded-lg bg-background border border-border hover:bg-accent transition-colors font-medium text-sm whitespace-nowrap flex-shrink-0 min-w-fit"
             >
-              <Sparkles className="h-4 w-4" />
-              AI Studio
-              <span className="absolute -top-0.5 -right-0.5 bg-muted text-muted-foreground text-[11px] px-1.5 py-0.5 rounded-full leading-none">
-                New
-              </span>
-            </button>
+              <CardContent className="flex flex-col items-center justify-center p-4 h-20">
+                <Sparkles className="h-5 w-5 mb-1" />
+                <span className="text-xs font-medium">AI Studio</span>
+                <Badge className="absolute -top-1 -right-1 text-[10px] px-1 py-0 h-4 bg-primary text-primary-foreground">
+                  New
+                </Badge>
+              </CardContent>
+            </Card>
           </TutorialTooltip>
 
-          {/* Beauty Chip */}
+          {/* Beauty Card */}
           {isEnabled('ai_beauty_consultant') && (
             <TutorialTooltip content="Get personalized beauty advice from our AI consultant. Upload photos and receive tailored recommendations." feature="beauty-consultant">
-              <button
+              <Card 
+                className="cursor-pointer glass-panel hover:glass-premium transition-all duration-200 hover:scale-105 hover:shadow-lg relative"
                 onClick={() => navigate('/beauty-consultant')}
-                className="relative flex items-center gap-2 px-3 py-2 h-9 rounded-lg bg-background border border-border hover:bg-accent transition-colors font-medium text-sm whitespace-nowrap flex-shrink-0 min-w-fit"
               >
-                <WandSparkles className="h-4 w-4" />
-                Beauty
-                <span className="absolute -top-0.5 -right-0.5 bg-muted text-muted-foreground text-[11px] px-1.5 py-0.5 rounded-full leading-none">
-                  New
-                </span>
-              </button>
+                <CardContent className="flex flex-col items-center justify-center p-4 h-20">
+                  <WandSparkles className="h-5 w-5 mb-1" />
+                  <span className="text-xs font-medium">Beauty</span>
+                  <Badge className="absolute -top-1 -right-1 text-[10px] px-1 py-0 h-4 bg-primary text-primary-foreground">
+                    New
+                  </Badge>
+                </CardContent>
+              </Card>
             </TutorialTooltip>
           )}
 
-          {/* Fashion Feed Chip - when beauty is not enabled */}
+          {/* Fashion Feed Card - when beauty is not enabled */}
           {!isEnabled('ai_beauty_consultant') && (
             <TutorialTooltip content="Connect with the fashion community. Share your style and discover what others are wearing." feature="fashion-feed">
-              <button
+              <Card 
+                className="cursor-pointer glass-panel hover:glass-premium transition-all duration-200 hover:scale-105 hover:shadow-lg"
                 onClick={() => navigate('/fashion-feed')}
-                className="flex items-center gap-2 px-3 py-2 h-9 rounded-lg bg-background border border-border hover:bg-accent transition-colors font-medium text-sm whitespace-nowrap flex-shrink-0 min-w-fit"
               >
-                <Users className="h-4 w-4" />
-                Feed
-              </button>
+                <CardContent className="flex flex-col items-center justify-center p-4 h-20">
+                  <Users className="h-5 w-5 mb-1" />
+                  <span className="text-xs font-medium">Feed</span>
+                </CardContent>
+              </Card>
             </TutorialTooltip>
           )}
 
-          {/* Wishlist Chip */}
+          {/* Wishlist Card */}
           <TutorialTooltip content="Save items you love to your wishlist. Keep track of favorites and shop them later when you're ready." feature="wishlist">
-            <button
+            <Card 
+              className="cursor-pointer glass-panel hover:glass-premium transition-all duration-200 hover:scale-105 hover:shadow-lg"
               onClick={() => navigate('/wishlist')}
-              className="flex items-center gap-2 px-3 py-2 h-9 rounded-lg bg-background border border-border hover:bg-accent transition-colors font-medium text-sm whitespace-nowrap flex-shrink-0 min-w-fit"
             >
-              <ShoppingBag className="h-4 w-4" />
-              Wishlist
-            </button>
+              <CardContent className="flex flex-col items-center justify-center p-4 h-20">
+                <ShoppingBag className="h-5 w-5 mb-1" />
+                <span className="text-xs font-medium">Wishlist</span>
+              </CardContent>
+            </Card>
           </TutorialTooltip>
 
-          {/* Explore Chip */}
+          {/* Explore Card */}
           <TutorialTooltip content="Search and discover products from top brands. Use filters to find exactly what you're looking for." feature="explore">
-            <button
+            <Card 
+              className="cursor-pointer glass-panel hover:glass-premium transition-all duration-200 hover:scale-105 hover:shadow-lg"
               onClick={() => navigate('/explore')}
-              className="flex items-center gap-2 px-3 py-2 h-9 rounded-lg bg-background border border-border hover:bg-accent transition-colors font-medium text-sm whitespace-nowrap flex-shrink-0 min-w-fit"
             >
-              <Search className="h-4 w-4" />
-              Explore
-            </button>
+              <CardContent className="flex flex-col items-center justify-center p-4 h-20">
+                <Search className="h-5 w-5 mb-1" />
+                <span className="text-xs font-medium">Explore</span>
+              </CardContent>
+            </Card>
           </TutorialTooltip>
 
-          {/* UGC Collab Chip */}
+          {/* UGC Collab Card */}
           <TutorialTooltip content="Collaborate with brands on user-generated content. Apply for brand partnerships and create sponsored content." feature="ugc-collab">
-            <UGCCollabButton className="flex items-center gap-2 px-3 py-2 h-9 rounded-lg bg-background border border-border hover:bg-accent transition-colors font-medium text-sm whitespace-nowrap flex-shrink-0 min-w-fit" />
+            <UGCCollabButton className="glass-panel hover:glass-premium transition-all duration-200 hover:scale-105 hover:shadow-lg rounded-lg p-4 h-20 flex flex-col items-center justify-center gap-1 border" />
           </TutorialTooltip>
 
-          {/* Toy Replica Chip */}
+          {/* Toy Replica Card */}
           <TutorialTooltip content="Create AI-generated toy replicas of fashion items. Upload photos and get miniature versions for play or display." feature="toy-replica">
-            <button
+            <Card 
+              className="cursor-pointer glass-panel hover:glass-premium transition-all duration-200 hover:scale-105 hover:shadow-lg relative"
               onClick={handleToyReplicaClick}
-              className="relative flex items-center gap-2 px-3 py-2 h-9 rounded-lg bg-background border border-border hover:bg-accent transition-colors font-medium text-sm whitespace-nowrap flex-shrink-0 min-w-fit"
             >
-              <Blocks className="h-4 w-4" />
-              Toy AI
-              <span className="absolute -top-0.5 -right-0.5 bg-primary text-primary-foreground text-[11px] px-1.5 py-0.5 rounded-full leading-none">
-                AI
-              </span>
-            </button>
+              <CardContent className="flex flex-col items-center justify-center p-4 h-20">
+                <Blocks className="h-5 w-5 mb-1" />
+                <span className="text-xs font-medium">Toy AI</span>
+                <Badge className="absolute -top-1 -right-1 text-[10px] px-1 py-0 h-4 bg-primary text-primary-foreground">
+                  AI
+                </Badge>
+              </CardContent>
+            </Card>
           </TutorialTooltip>
-
         </div>
       </section>
 
       {/* Trending Styles Section */}
-      <section className="px-4">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2 flex-1 min-w-0">
-            <h2 className="text-base font-semibold flex-shrink-0">Trending</h2>
-            
-            {/* Category Filter */}
-            <Popover open={isTrendingFilterOpen} onOpenChange={setIsTrendingFilterOpen}>
-              <PopoverTrigger asChild>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="gap-1.5 h-7 px-2.5 rounded-full text-xs flex-shrink-0"
-                >
-                  <Filter className="h-3 w-3" />
-                  {selectedTrendingCategory ? getCategoryDisplayName(selectedTrendingCategory).substring(0, 8) + '...' : 'All'}
-                  <ChevronDown className="h-3 w-3" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-48 p-3 bg-card/95 backdrop-blur-sm border shadow-lg z-50" align="start">
-                <div className="space-y-2">
-                  <div className="font-medium text-xs">Filter by Category</div>
-                  <div className="grid gap-1">
-                    <Button
-                      variant={selectedTrendingCategory === null ? "default" : "ghost"}
-                      size="sm"
-                      className="justify-start h-7 text-xs"
-                      onClick={() => {
-                        setSelectedTrendingCategory(null);
-                        localStorage.removeItem('selectedTrendingCategory');
-                        setIsTrendingFilterOpen(false);
-                      }}
-                    >
-                      All Categories
-                    </Button>
-                    {Object.keys(CATEGORY_TREE).map((category) => (
+      <section className="px-6 pt-8">
+        <Card className="glass-premium">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-xl flex items-center gap-3">
+                Trending Styles
+              </CardTitle>
+              
+              {/* Category Filter */}
+              <Popover open={isTrendingFilterOpen} onOpenChange={setIsTrendingFilterOpen}>
+                <PopoverTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="gap-2 h-8 px-4 rounded-full text-sm flex-shrink-0"
+                  >
+                    <Filter className="h-4 w-4" />
+                    {selectedTrendingCategory ? getCategoryDisplayName(selectedTrendingCategory) : 'All Categories'}
+                    <ChevronDown className="h-4 w-4" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-56 p-4 glass-premium border shadow-lg z-50" align="start">
+                  <div className="space-y-3">
+                    <div className="font-semibold text-sm">Filter by Category</div>
+                    <div className="grid gap-2">
                       <Button
-                        key={category}
-                        variant={selectedTrendingCategory === category ? "default" : "ghost"}
+                        variant={selectedTrendingCategory === null ? "default" : "ghost"}
                         size="sm"
-                        className="justify-start h-7 text-xs"
+                        className="justify-start h-8 text-sm"
                         onClick={() => {
-                          setSelectedTrendingCategory(category as TopCategory);
-                          localStorage.setItem('selectedTrendingCategory', category);
+                          setSelectedTrendingCategory(null);
+                          localStorage.removeItem('selectedTrendingCategory');
                           setIsTrendingFilterOpen(false);
                         }}
                       >
-                        {getCategoryDisplayName(category as TopCategory)}
+                        All Categories
                       </Button>
-                    ))}
+                      {Object.keys(CATEGORY_TREE).map((category) => (
+                        <Button
+                          key={category}
+                          variant={selectedTrendingCategory === category ? "default" : "ghost"}
+                          size="sm"
+                          className="justify-start h-8 text-sm"
+                          onClick={() => {
+                            setSelectedTrendingCategory(category as TopCategory);
+                            localStorage.setItem('selectedTrendingCategory', category);
+                            setIsTrendingFilterOpen(false);
+                          }}
+                        >
+                          {getCategoryDisplayName(category as TopCategory)}
+                        </Button>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              </PopoverContent>
-            </Popover>
-          </div>
-          
-          <Button 
-            variant="ghost" 
-            size="sm"
-            className="h-7 px-2 text-xs flex-shrink-0"
-            onClick={() => navigate('/swipe')}
-          >
-            Shop
-          </Button>
-        </div>
-        <TrendingStylesCarousel limit={8} categoryFilter={selectedTrendingCategory} />
+                </PopoverContent>
+              </Popover>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <TrendingStylesCarousel limit={8} categoryFilter={selectedTrendingCategory} />
+          </CardContent>
+        </Card>
       </section>
 
 
       {/* Affiliate Hub Section */}
-      <section className="px-4">
-        <div className="rounded-2xl border bg-card shadow-sm">
-          <Collapsible open={!isAffiliateMinimized} onOpenChange={open => setIsAffiliateMinimized(!open)}>
+      <section className="px-6">
+        <Card className="glass-premium">
+          <Collapsible open={!isAffiliateMinimized} onOpenChange={(open) => setIsAffiliateMinimized(!open)}>
             <CollapsibleTrigger asChild>
-              <button className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors">
-                <div className="flex items-center gap-3">
-                  <Gift className="h-5 w-5" />
-                  <h3 className="font-semibold text-left">Affiliate Hub</h3>
+              <CardHeader className="cursor-pointer hover:bg-accent/30 transition-colors rounded-t-lg">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Gift className="h-5 w-5 text-primary" />
+                    <CardTitle className="text-lg">Affiliate Hub</CardTitle>
+                    <Badge variant="secondary" className="text-xs px-2">Earn Rewards</Badge>
+                  </div>
+                  {isAffiliateMinimized ? <ChevronDown className="h-5 w-5 transition-transform" /> : <ChevronUp className="h-5 w-5 transition-transform" />}
                 </div>
-                {isAffiliateMinimized ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
-              </button>
+              </CardHeader>
             </CollapsibleTrigger>
-            <CollapsibleContent className="px-4 pb-4">
-              <AffiliateHub showTitle={false} />
+            <CollapsibleContent>
+              <CardContent className="pt-0">
+                <AffiliateHub showTitle={false} />
+              </CardContent>
             </CollapsibleContent>
           </Collapsible>
-        </div>
+        </Card>
       </section>
 
       {/* My Closets Section */}
-      <section className="px-4">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <Archive className="h-5 w-5" />
-            <h2 className="text-lg font-semibold">My Closets</h2>
-          </div>
-          <Button variant="ghost" size="sm" onClick={() => navigate('/closets')}>
-            View All
-          </Button>
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          {/* Closet Preview Tiles */}
-          <div className="aspect-square rounded-2xl bg-muted border border-border p-4 flex flex-col items-center justify-center text-center">
-            <Archive className="h-8 w-8 text-muted-foreground mb-2" />
-            <p className="text-sm text-muted-foreground">Create your first closet</p>
-          </div>
-          <div className="aspect-square rounded-2xl bg-muted/50 border border-dashed border-border p-4 flex flex-col items-center justify-center text-center">
-            <Plus className="h-8 w-8 text-muted-foreground mb-2" />
-            <p className="text-sm text-muted-foreground">Add items</p>
-          </div>
-        </div>
+      <section className="px-6">
+        <Card className="glass-premium">
+          <Collapsible open={!isClosetsMinimized} onOpenChange={(open) => setIsClosetsMinimized(!open)}>
+            <CollapsibleTrigger asChild>
+              <CardHeader className="cursor-pointer hover:bg-accent/30 transition-colors rounded-t-lg">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Archive className="h-5 w-5 text-primary" />
+                    <CardTitle className="text-lg">My Closets</CardTitle>
+                    <Badge variant="secondary" className="text-xs px-2">Organize</Badge>
+                  </div>
+                  {isClosetsMinimized ? <ChevronDown className="h-5 w-5 transition-transform" /> : <ChevronUp className="h-5 w-5 transition-transform" />}
+                </div>
+              </CardHeader>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <CardContent className="pt-0">
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  {/* Closet Preview Tiles */}
+                  <div className="aspect-square rounded-xl bg-muted/50 border border-border/50 p-4 flex flex-col items-center justify-center text-center hover:bg-muted/70 transition-colors cursor-pointer">
+                    <Archive className="h-8 w-8 text-muted-foreground mb-2" />
+                    <p className="text-sm text-muted-foreground">Create your first closet</p>
+                  </div>
+                  <div className="aspect-square rounded-xl bg-muted/30 border border-dashed border-border/50 p-4 flex flex-col items-center justify-center text-center hover:bg-muted/50 transition-colors cursor-pointer">
+                    <Plus className="h-8 w-8 text-muted-foreground mb-2" />
+                    <p className="text-sm text-muted-foreground">Add items</p>
+                  </div>
+                </div>
+                <div className="text-center">
+                  <Button variant="outline" size="sm" onClick={() => navigate('/closets')}>
+                    View All Closets
+                  </Button>
+                </div>
+              </CardContent>
+            </CollapsibleContent>
+          </Collapsible>
+        </Card>
       </section>
 
-      {/* Fashion Leaderboards Section */}
-      <section className="px-4">
-        {/* Global/Country Toggle */}
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold">Fashion Leaderboards</h2>
-          <div className="flex bg-muted rounded-lg p-1">
-            <button
-              onClick={() => setActiveLeaderboard('global')}
-              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                activeLeaderboard === 'global' 
-                  ? 'bg-background shadow-sm' 
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              Global
-            </button>
-            <button
-              onClick={() => setActiveLeaderboard('country')}
-              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                activeLeaderboard === 'country' 
-                  ? 'bg-background shadow-sm' 
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              Country
-            </button>
-          </div>
-        </div>
-        
-        <MinimizedLeaderboard type={activeLeaderboard} country={user?.user_metadata?.country} />
+      {/* Fashion Leaderboards */}
+      <section className="px-6">
+        <Card className="glass-premium">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg flex items-center gap-3">
+                <Trophy className="h-5 w-5 text-primary" />
+                Fashion Leaderboards
+              </CardTitle>
+              <div className="flex gap-2">
+                <Button
+                  variant={activeLeaderboard === 'global' ? 'default' : 'outline'}
+                  size="sm"
+                  className="h-8 px-3 text-sm"
+                  onClick={() => setActiveLeaderboard('global')}
+                >
+                  <Globe className="h-4 w-4 mr-1" />
+                  Global
+                </Button>
+                <Button
+                  variant={activeLeaderboard === 'country' ? 'default' : 'outline'}
+                  size="sm"
+                  className="h-8 px-3 text-sm"
+                  onClick={() => setActiveLeaderboard('country')}
+                >
+                  <MapPin className="h-4 w-4 mr-1" />
+                  Country
+                </Button>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <MinimizedLeaderboard type={activeLeaderboard} country={user?.user_metadata?.country} />
+          </CardContent>
+        </Card>
       </section>
 
     </div>;

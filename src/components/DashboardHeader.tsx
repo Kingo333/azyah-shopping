@@ -34,14 +34,14 @@ const DashboardHeader: React.FC = () => {
     if (path.includes('/retailer') || path.includes('/retailer-portal')) return 'retailer';
     return 'shopper';
   };
-  return <div className="flex items-center justify-between mb-8">
+  return <div className="flex items-center justify-between mb-6 px-6 pt-6">
       <div className="flex items-center gap-3">
-        <h1 className="font-cormorant text-2xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+        <h1 className="font-cormorant text-3xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
           Azyah
         </h1>
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-4">
         {/* Feedback Support Button */}
         <FeedbackModal userType={getUserType()}>
           <Button variant="ghost" size="sm" className="h-8 px-3 hover:bg-primary/10 hover:scale-105 transition-all shadow-sm hover:shadow-md">
