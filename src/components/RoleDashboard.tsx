@@ -15,7 +15,7 @@ import DashboardHeader from '@/components/DashboardHeader';
 import AffiliateHub from '@/components/AffiliateHub';
 import AiStudioModal from '@/components/AiStudioModal';
 import PremiumBanner from '@/components/PremiumBanner';
-import { Heart, ShoppingBag, Search, Sparkles, Package, BarChart3, Users, Settings, Store, TrendingUp, Plus, Eye, DollarSign, Globe, Bell, LogOut, User, Archive, Trophy, MapPin, Blocks, WandSparkles, ChevronDown, ChevronUp, Gift, ChevronLeft, ChevronRight, Home } from 'lucide-react';
+import { Heart, ShoppingBag, Search, Sparkles, Package, BarChart3, Users, Settings, Store, TrendingUp, Plus, Eye, DollarSign, Globe, Bell, LogOut, User, Archive, Trophy, MapPin, Blocks, WandSparkles, ChevronDown, ChevronUp, Gift, ChevronLeft, ChevronRight, Home, Filter } from 'lucide-react';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import MinimizedLeaderboard from '@/components/MinimizedLeaderboard';
 import TrendingStylesCarousel from '@/components/TrendingStylesCarousel';
@@ -25,6 +25,9 @@ import { FeedbackModal } from '@/components/FeedbackModal';
 import { TutorialTooltip } from '@/components/ui/tutorial-tooltip';
 import { PaymentIntegrationTest } from '@/components/PaymentIntegrationTest';
 import { ProfileCompletionBanner } from '@/components/ProfileCompletionBanner';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { CATEGORY_TREE, getCategoryDisplayName } from '@/lib/categories';
+import type { TopCategory } from '@/lib/categories';
 interface UserProfile {
   id: string;
   name: string;
@@ -62,6 +65,8 @@ const RoleDashboard: React.FC = () => {
   const [aiStudioModalOpen, setAiStudioModalOpen] = useState(false);
   const [isClosetsMinimized, setIsClosetsMinimized] = useState(true);
   const [isAffiliateMinimized, setIsAffiliateMinimized] = useState(true);
+  const [selectedTrendingCategory, setSelectedTrendingCategory] = useState<TopCategory | null>(null);
+  const [isTrendingFilterOpen, setIsTrendingFilterOpen] = useState(false);
   useEffect(() => {
     // Set correct page title
     document.title = 'Azyah - Fashion Discovery Platform';
@@ -341,7 +346,73 @@ const RoleDashboard: React.FC = () => {
       {/* Trending Styles Section */}
       <section className="px-4">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold">Trending Styles</h2>
+          <div className="flex items-center gap-3">
+            <h2 className="text-lg font-semibold">Trending Styles</h2>
+            
+            {/* Category Filter */}
+            <Popover open={isTrendingFilterOpen} onOpenChange={setIsTrendingFilterOpen}>
+              <PopoverTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="gap-2 h-8"
+                >
+                  <Filter className="h-3 w-3" />
+                  Category
+                  <ChevronDown className="h-3 w-3" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-56 p-3 bg-card/95 backdrop-blur-sm border shadow-lg z-50" align="start">
+                <div className="space-y-2">
+                  <div className="font-medium text-sm">Filter by Category</div>
+                  <div className="grid gap-1">
+                    <Button
+                      variant={selectedTrendingCategory === null ? "default" : "ghost"}
+                      size="sm"
+                      className="justify-start h-8"
+                      onClick={() => {
+                        setSelectedTrendingCategory(null);
+                        setIsTrendingFilterOpen(false);
+                      }}
+                    >
+                      All Categories
+                    </Button>
+                    {Object.keys(CATEGORY_TREE).map((category) => (
+                      <Button
+                        key={category}
+                        variant={selectedTrendingCategory === category ? "default" : "ghost"}
+                        size="sm"
+                        className="justify-start h-8"
+                        onClick={() => {
+                          setSelectedTrendingCategory(category as TopCategory);
+                          setIsTrendingFilterOpen(false);
+                        }}
+                      >
+                        {getCategoryDisplayName(category as TopCategory)}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
+
+            {/* Selected Category Badge */}
+            {selectedTrendingCategory && (
+              <Badge 
+                variant="secondary" 
+                className="gap-1 text-xs"
+              >
+                {getCategoryDisplayName(selectedTrendingCategory)}
+                <button
+                  onClick={() => setSelectedTrendingCategory(null)}
+                  className="ml-1 hover:bg-muted rounded-full p-0.5"
+                >
+                  ×
+                </button>
+              </Badge>
+            )}
+          </div>
+          
           <Button 
             variant="ghost" 
             size="sm"
@@ -350,7 +421,7 @@ const RoleDashboard: React.FC = () => {
             View All
           </Button>
         </div>
-        <TrendingStylesCarousel limit={8} />
+        <TrendingStylesCarousel limit={8} categoryFilter={selectedTrendingCategory} />
       </section>
 
 
