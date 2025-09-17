@@ -18,8 +18,8 @@ serve(async (req) => {
 
     console.log('Checking BitStudio API health...');
 
-    // Call actual BitStudio health check API
-    const response = await fetch('https://api.bitstudio.ai/v1/health', {
+    // Call actual BitStudio health check API (or test with images endpoint)
+    const response = await fetch('https://api.bitstudio.ai/health', {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${bitStudioApiKey}`,

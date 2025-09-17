@@ -35,53 +35,24 @@ export class BitStudioClient {
     try {
       console.log('[BitStudioClient] Starting upload:', { fileName: file.name, type, fileSize: file.size });
       
-      // Get the session token for authentication
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        throw { error: 'Authentication required', code: 'UNAUTHORIZED' } as BitStudioError;
-      }
-
-      // Create FormData for the upload
+      // Use supabase.functions.invoke for upload with FormData
       const formData = new FormData();
       formData.append('file', file);
       formData.append('type', type);
 
-      console.log('[BitStudioClient] FormData prepared for upload');
+      console.log('[BitStudioClient] Calling bitstudio-upload function via Supabase');
 
-      // Use the Supabase Functions URL for upload
-      const uploadUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/bitstudio-upload`;
-      console.log('[BitStudioClient] Upload URL:', uploadUrl);
-
-      const response = await fetch(uploadUrl, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          // Don't set Content-Type - let FormData set the boundary
-        },
+      const { data, error } = await supabase.functions.invoke('bitstudio-upload', {
         body: formData,
       });
 
-      console.log('[BitStudioClient] Upload response status:', response.status);
-      
-      if (!response.ok) {
-        let errorData;
-        try {
-          const responseText = await response.text();
-          console.log('[BitStudioClient] Upload error response text:', responseText);
-          errorData = JSON.parse(responseText);
-        } catch {
-          errorData = { 
-            error: `HTTP ${response.status}`, 
-            code: 'FETCH_ERROR' 
-          };
-        }
-        console.error('[BitStudioClient] Upload fetch error:', response.status, errorData);
-        throw errorData as BitStudioError;
+      if (error) {
+        console.error('[BitStudioClient] Supabase function error:', error);
+        throw { error: error.message, code: 'SUPABASE_ERROR' } as BitStudioError;
       }
 
-      const result = await response.json() as BitStudioImage;
-      console.log('[BitStudioClient] Upload successful:', result);
-      return result;
+      console.log('[BitStudioClient] Upload successful:', data);
+      return data as BitStudioImage;
     } catch (error: any) {
       console.error('[BitStudioClient] Upload error:', error);
       throw error;
@@ -91,14 +62,15 @@ export class BitStudioClient {
   static async getImage(id: string): Promise<BitStudioImage> {
     console.log('[BitStudioClient] Getting image status for ID:', id);
     
-    // Get auth session for direct API call
+    // Use supabase.functions.invoke for status check with ID in URL
+    // Since Supabase function invoke doesn't support URL params, we need to use fetch
+    // but use the correct Supabase URL format
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.access_token) {
       throw { error: 'Authentication required', code: 'UNAUTHORIZED' } as BitStudioError;
     }
 
-    // Call status function with image ID in URL path (BitStudio expects GET /images/{id})
-    const statusUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/bitstudio-status/${id}`;
+    const statusUrl = `https://klwolsopucgswhtdlsps.supabase.co/functions/v1/bitstudio-status/${id}`;
     console.log('[BitStudioClient] Status URL:', statusUrl);
 
     const response = await fetch(statusUrl, {

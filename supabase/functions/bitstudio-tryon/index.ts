@@ -34,8 +34,8 @@ serve(async (req) => {
       );
     }
 
-    // Call actual BitStudio virtual try-on API
-    const response = await fetch('https://api.bitstudio.ai/v1/virtual-try-on', {
+    // Call actual BitStudio virtual try-on API (correct endpoint from docs)
+    const response = await fetch('https://api.bitstudio.ai/virtual-try-on', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${bitStudioApiKey}`,
@@ -63,21 +63,28 @@ serve(async (req) => {
     console.log('BitStudio try-on response:', bitStudioResponse);
 
     // Map BitStudio response to our expected format
+    // Based on the docs, virtual try-on should return image objects with id, status, etc.
     const mappedResponse = Array.isArray(bitStudioResponse) 
       ? bitStudioResponse.map(item => ({
           id: item.id || item.job_id,
           type: 'virtual-try-on',
           status: item.status || 'pending',
-          path: item.url || item.path,
-          credits_used: item.credits_used || 1
+          path: item.path || item.url,
+          credits_used: item.credits_used || 1,
+          task: item.task || 'virtual-try-on',
+          versions: item.versions || []
         }))
       : [{
           id: bitStudioResponse.id || bitStudioResponse.job_id,
           type: 'virtual-try-on',
           status: bitStudioResponse.status || 'pending',
-          path: bitStudioResponse.url || bitStudioResponse.path,
-          credits_used: bitStudioResponse.credits_used || 1
+          path: bitStudioResponse.path || bitStudioResponse.url,
+          credits_used: bitStudioResponse.credits_used || 1,
+          task: bitStudioResponse.task || 'virtual-try-on',
+          versions: bitStudioResponse.versions || []
         }];
+
+    console.log('Mapped try-on response:', mappedResponse);
 
     return new Response(
       JSON.stringify(mappedResponse),

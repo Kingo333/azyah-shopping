@@ -34,8 +34,8 @@ serve(async (req) => {
 
     console.log('Uploading to BitStudio API:', { fileName: file.name, type, size: file.size });
 
-    // Call actual BitStudio API
-    const response = await fetch('https://api.bitstudio.ai/v1/upload', {
+    // Call actual BitStudio API (correct endpoint from docs)
+    const response = await fetch('https://api.bitstudio.ai/images', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${bitStudioApiKey}`,
@@ -53,13 +53,18 @@ serve(async (req) => {
     console.log('BitStudio upload response:', bitStudioResponse);
 
     // Map BitStudio response to our expected format
+    // Based on the docs, the response should have id, status, task, path, etc.
     const mappedResponse = {
       id: bitStudioResponse.id || bitStudioResponse.image_id,
       type: type,
       status: bitStudioResponse.status || 'completed',
-      path: bitStudioResponse.url || bitStudioResponse.path,
-      credits_used: bitStudioResponse.credits_used || 0
+      path: bitStudioResponse.path || bitStudioResponse.url,
+      credits_used: bitStudioResponse.credits_used || 0,
+      task: bitStudioResponse.task,
+      versions: bitStudioResponse.versions || []
     };
+
+    console.log('Mapped upload response:', mappedResponse);
 
     return new Response(
       JSON.stringify(mappedResponse),

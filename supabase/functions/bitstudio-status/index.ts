@@ -30,8 +30,8 @@ serve(async (req) => {
 
     console.log('Checking BitStudio status for ID:', id);
 
-    // Call actual BitStudio status API
-    const response = await fetch(`https://api.bitstudio.ai/v1/status/${id}`, {
+    // Call actual BitStudio status API (correct endpoint from docs)
+    const response = await fetch(`https://api.bitstudio.ai/images/${id}`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${bitStudioApiKey}`,
@@ -49,15 +49,22 @@ serve(async (req) => {
     console.log('BitStudio status response:', bitStudioResponse);
 
     // Map BitStudio response to our expected format
+    // Based on the docs, status response has id, status, task, path, versions, etc.
     const mappedResponse = {
       id: bitStudioResponse.id || id,
-      type: bitStudioResponse.type || 'virtual-try-on',
+      type: bitStudioResponse.task || bitStudioResponse.type || 'virtual-try-on',
       status: bitStudioResponse.status,
-      path: bitStudioResponse.url || bitStudioResponse.path,
+      path: bitStudioResponse.path || bitStudioResponse.url,
       credits_used: bitStudioResponse.credits_used || 0,
       error: bitStudioResponse.error,
-      video_path: bitStudioResponse.video_url || bitStudioResponse.video_path
+      video_path: bitStudioResponse.video_url || bitStudioResponse.video_path,
+      task: bitStudioResponse.task,
+      versions: bitStudioResponse.versions || [],
+      created_timestamp: bitStudioResponse.created_timestamp,
+      finish_timestamp: bitStudioResponse.finish_timestamp
     };
+
+    console.log('Mapped status response:', mappedResponse);
 
     return new Response(
       JSON.stringify(mappedResponse),
