@@ -374,6 +374,11 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                   <li>High resolution</li>
                   <li>Clear outfit visibility</li>
                 </ul>
+                {!isPremium && (
+                  <p className="text-[11px] text-black/50 mt-3">
+                    By continuing, you agree to use one credit for this try-on.
+                  </p>
+                )}
               </div>
 
               {/* Advanced Settings */}
@@ -431,10 +436,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
               </motion.button>
               
               {!isPremium && (
-                <div className="flex items-center justify-between mt-2">
-                  <p className="text-[11px] text-black/50">
-                    By continuing, you agree to use one credit for this try-on.
-                  </p>
+                <div className="flex items-center justify-end mt-2">
                   <button
                     onClick={handleUpgradeClick}
                     className="text-[11px] text-[#7B2E2E] font-medium hover:underline"
