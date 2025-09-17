@@ -214,39 +214,25 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
             style={{ backgroundColor: 'hsl(40 15% 94%)' }}
           >
             {/* Header */}
-            <div className="px-4 py-3 border-b border-black/10 bg-white/60 sticky top-0 z-10">
-              <div className="flex items-start justify-between">
-                <div className="min-w-0 flex-1">
-                  <div className="text-[13px] inline-flex items-center gap-2">
-                    <span className="px-2 py-1 rounded-full bg-[#7B2E2E]/10 text-[#7B2E2E] font-medium">
-                      AI Outfit try-on
-                    </span>
-                  </div>
-                  <h2 className="text-lg sm:text-xl font-semibold mt-1 text-[#121212]">AI Studio</h2>
-                  
-                  {/* Mobile Progress Bar */}
-                  <div className="mt-2 sm:hidden">
-                    <div className="flex items-center gap-2">
-                      <div className="flex-1 h-1 bg-black/10 rounded-full overflow-hidden">
-                        <div className="h-full w-1/2 bg-[#7B2E2E] rounded-full"></div>
-                      </div>
-                      <span className="text-xs text-black/60 font-medium">2/4</span>
-                    </div>
-                  </div>
+            <div className="flex items-center justify-between px-4 py-3 border-b border-black/10 bg-white/60 sticky top-0 z-10">
+              <div className="min-w-0 flex-1">
+                <div className="text-[13px] inline-flex items-center gap-2">
+                  <span className="px-2 py-1 rounded-full bg-[#7B2E2E]/10 text-[#7B2E2E] font-medium">
+                    AI Outfit try-on
+                  </span>
                 </div>
+                <h2 className="text-lg sm:text-xl font-semibold mt-1 text-[#121212]">AI Studio</h2>
+              </div>
 
-                <div className="flex flex-col items-end gap-2 flex-shrink-0">
-                  <div className="hidden sm:flex items-center gap-2">
-                    <CreditsPill used={remainingGenerations} total={maxGenerations} />
-                  </div>
-                  <button
-                    onClick={onClose}
-                    className="p-2 rounded-xl hover:bg-black/5 active:scale-95 transition mt-1"
-                    aria-label="Close"
-                  >
-                    <XMarkIcon className="h-5 w-5 sm:h-6 sm:w-6 text-[#121212]" />
-                  </button>
-                </div>
+              <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+                <CreditsPill used={remainingGenerations} total={maxGenerations} />
+                <button
+                  onClick={onClose}
+                  className="p-2 rounded-xl hover:bg-black/5 active:scale-95 transition"
+                  aria-label="Close"
+                >
+                  <XMarkIcon className="h-5 w-5 sm:h-6 sm:w-6 text-[#121212]" />
+                </button>
               </div>
             </div>
 
