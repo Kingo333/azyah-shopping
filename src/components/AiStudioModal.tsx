@@ -1,19 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { GlassPanel } from '@/components/ui/glass-panel';
-import { Download, Loader2, Sparkles } from 'lucide-react';
+import { XMarkIcon } from '@heroicons/react/24/outline';
 import { useBitStudio } from '@/hooks/useBitStudio';
 import { BITSTUDIO_IMAGE_TYPES } from '@/lib/bitstudio-types';
 import { useToast } from '@/hooks/use-toast';
 import { useAiAssets } from '@/hooks/useAiAssets';
 import { useSubscription } from '@/hooks/useSubscription';
-import { AiStudioHeader } from './AiStudio/AiStudioHeader';
-import { AiStudioResultsPanel } from './AiStudio/AiStudioResultsPanel';
-import { AiStudioUploadPanel } from './AiStudio/AiStudioUploadPanel';
-import { AiStudioControlsPanel } from './AiStudio/AiStudioControlsPanel';
-import { AiStudioHelpPanel } from './AiStudio/AiStudioHelpPanel';
 
 export interface AiStudioModalProps {
   open: boolean;
@@ -29,18 +22,18 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
   // File uploads
   const [personFile, setPersonFile] = useState<File | null>(null);
   const [outfitFile, setOutfitFile] = useState<File | null>(null);
-  const [outfitUrl, setOutfitUrl] = useState('');
 
   // Form data
   const [prompt, setPrompt] = useState('');
   const [resolution, setResolution] = useState<'standard' | 'high'>('standard');
   const [numImages, setNumImages] = useState(1);
-  const [showSettings, setShowSettings] = useState(false);
 
   // Results
   const [currentResult, setCurrentResult] = useState<any>(null);
   const [personImageId, setPersonImageId] = useState<string | null>(null);
   const [outfitImageId, setOutfitImageId] = useState<string | null>(null);
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedAssets, setSelectedAssets] = useState<string[]>([]);
 
   const {
     loading,
@@ -68,22 +61,13 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
     : assets;
     
   const remainingGenerations = maxGenerations - relevantAssets.length;
+  const canUpload = personImageId && outfitImageId && !loading && remainingGenerations > 0;
 
   useEffect(() => {
     if (open) {
       fetchAssets();
     }
-  }, [open]); // Remove fetchAssets dependency to prevent infinite loop
-
-  // Effect to show helpful messages when images are uploaded
-  useEffect(() => {
-    if (personImageId && outfitImageId && !loading && !currentResult) {
-      toast({
-        title: 'Ready to Generate',
-        description: 'Both images uploaded successfully! Click "Generate Try-On" to see the result.',
-      });
-    }
-  }, [personImageId, outfitImageId, loading, currentResult, toast]);
+  }, [open]);
 
   // File validation helper
   const validateFile = (file: File): boolean => {
@@ -106,16 +90,12 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
     return true;
   };
 
-  // State for tracking upload status
-  const [uploadingPerson, setUploadingPerson] = useState(false);
-  const [uploadingOutfit, setUploadingOutfit] = useState(false);
-
   // File upload handlers
-  const handleFileUpload = async (file: File, type: string, setImageId: (id: string) => void, setUploading: (uploading: boolean) => void) => {
+  const handleFileUpload = async (file: File, type: string, setImageId: (id: string) => void, setFile: (file: File) => void) => {
     if (!file || !validateFile(file)) return;
     try {
-      setUploading(true);
       clearError();
+      setFile(file);
       const result = await uploadImage(file, type);
       if (result?.id) {
         setImageId(result.id);
@@ -131,24 +111,6 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
         description: `Failed to upload ${type === BITSTUDIO_IMAGE_TYPES.PERSON ? 'person' : 'outfit'} image. Please try again.`,
         variant: 'destructive'
       });
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const handlePersonUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setPersonFile(file);
-      handleFileUpload(file, BITSTUDIO_IMAGE_TYPES.PERSON, setPersonImageId, setUploadingPerson);
-    }
-  };
-
-  const handleOutfitUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setOutfitFile(file);
-      handleFileUpload(file, BITSTUDIO_IMAGE_TYPES.OUTFIT, setOutfitImageId, setUploadingOutfit);
     }
   };
 
@@ -186,7 +148,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
       if (result) {
         setCurrentResult(result);
         
-        // Save the result to database (assets list is updated automatically by saveAsset)
+        // Save the result to database
         if (result.path) {
           const savedAsset = await saveAsset(result.path, result.id, `Virtual Try-On ${new Date().toLocaleDateString()}`);
           if (savedAsset) {
@@ -207,152 +169,346 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
     }
   };
 
-  const downloadImage = async () => {
-    if (!currentResult?.path) return;
-    try {
-      const response = await fetch(currentResult.path);
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `bitstudio-tryon-${currentResult.id}.png`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-    } catch (err) {
-      toast({
-        title: 'Download Failed',
-        description: 'Could not download the image',
-        variant: 'destructive'
-      });
-    }
-  };
-
   const handleUpgradeClick = async () => {
     await createPaymentIntent();
   };
 
+  const handleAssetClick = (asset: any) => {
+    if (selectMode) {
+      setSelectedAssets(prev => 
+        prev.includes(asset.id) 
+          ? prev.filter(id => id !== asset.id)
+          : [...prev, asset.id]
+      );
+    } else {
+      setCurrentResult(asset);
+    }
+  };
+
+  const handleDeleteSelected = async () => {
+    if (selectedAssets.length > 0) {
+      await deleteAssets(selectedAssets);
+      setSelectedAssets([]);
+      setSelectMode(false);
+    }
+  };
+
+  if (!open) return null;
+
   return (
     <Dialog open={open} onOpenChange={v => { if (!v) onClose(); }}>
       {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
-      <DialogContent className="max-w-[95vw] w-[95vw] h-[100dvh] p-0 border-0 md:max-w-7xl md:h-[95vh] md:max-h-[95vh] md:overflow-hidden">
-        <div className="h-full flex flex-col bg-gradient-to-br from-background via-background/95 to-muted/50 md:overflow-hidden">
-          {/* Header */}
-          <div className="flex-shrink-0 z-10">
-            <AiStudioHeader 
-              isPremium={isPremium}
-              onUpgradeClick={handleUpgradeClick}
-              onClose={onClose}
-            />
-          </div>
+      <DialogContent className="max-w-[95vw] w-[95vw] h-[100dvh] p-0 border-0 sm:max-w-md md:max-w-lg lg:max-w-xl sm:max-h-[92vh] sm:h-auto">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+          {/* Backdrop */}
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+          
+          {/* Sheet */}
+          <motion.div
+            initial={{ y: 24, opacity: 0 }} 
+            animate={{ y: 0, opacity: 1 }} 
+            exit={{ y: 24, opacity: 0 }}
+            transition={{ duration: 0.15, ease: "easeOut" }}
+            className="relative w-full sm:max-w-md md:max-w-lg lg:max-w-xl max-h-[92vh] overflow-hidden
+                       rounded-t-2xl sm:rounded-2xl bg-[#F2EFE8] shadow-2xl border border-black/5"
+            style={{ backgroundColor: 'hsl(40 15% 94%)' }}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 py-3 border-b border-black/10 bg-white/60">
+              <div className="min-w-0">
+                <div className="text-[13px] inline-flex items-center gap-2">
+                  <span className="px-2 py-1 rounded-full bg-[#7B2E2E]/10 text-[#7B2E2E] font-medium">
+                    AI Outfit try-on
+                  </span>
+                </div>
+                <h2 className="text-xl font-semibold mt-1 text-[#121212]">AI Studio</h2>
+              </div>
 
-          {/* Main Content - Mobile First Layout */}
-          <div className="flex-1 lg:flex lg:flex-row lg:min-h-0 relative">
-            
-            {/* Mobile: Simple scrollable container */}
-            <div className="lg:hidden">
-              <div className="p-3 space-y-2 pb-20 overflow-y-auto" style={{ height: 'calc(100dvh - 100px)' }}>
-                {/* Results Panel - Mobile */}
-                <AiStudioResultsPanel 
-                  loading={loading}
-                  currentResult={currentResult}
-                  assets={assets}
-                  remainingGenerations={remainingGenerations}
-                  isPremium={isPremium}
-                  onDownload={downloadImage}
-                  onResultSelect={setCurrentResult}
-                  onDeleteAssets={deleteAssets}
-                />
-                
-                {/* Controls Panel */}
-                <AiStudioControlsPanel 
-                  loading={loading}
-                  uploadingPerson={uploadingPerson}
-                  uploadingOutfit={uploadingOutfit}
-                  showSettings={showSettings}
-                  prompt={prompt}
-                  resolution={resolution}
-                  remainingGenerations={remainingGenerations}
-                  maxGenerations={maxGenerations}
-                  isPremium={isPremium}
-                  personImageId={personImageId}
-                  outfitImageId={outfitImageId}
-                  personFile={personFile}
-                  outfitFile={outfitFile}
-                  onShowSettingsToggle={() => setShowSettings(!showSettings)}
-                  onPromptChange={setPrompt}
-                  onResolutionChange={setResolution}
-                  onGenerate={handleVirtualTryOn}
-                  onPersonUpload={handlePersonUpload}
-                  onOutfitUpload={handleOutfitUpload}
-                />
-
-                {/* Help Panel */}
-                <AiStudioHelpPanel 
-                  error={error}
-                  resolution={resolution}
-                  onResolutionChange={setResolution}
-                />
+              <div className="flex items-center gap-2">
+                <CreditsPill used={remainingGenerations} total={maxGenerations} />
+                <button
+                  onClick={onClose}
+                  className="p-2 rounded-xl hover:bg-black/5 active:scale-95 transition"
+                  aria-label="Close"
+                >
+                  <XMarkIcon className="h-6 w-6 text-[#121212]" />
+                </button>
               </div>
             </div>
 
-            {/* Desktop Layout */}
-            <div className="hidden lg:flex flex-1 gap-3 p-3 min-h-0">
-              {/* Results Section - Desktop */}
-              <div className="flex-1 min-h-0">
-                <AiStudioResultsPanel 
-                  loading={loading}
-                  currentResult={currentResult}
-                  assets={assets}
-                  remainingGenerations={remainingGenerations}
-                  isPremium={isPremium}
-                  onDownload={downloadImage}
-                  onResultSelect={setCurrentResult}
-                  onDeleteAssets={deleteAssets}
-                />
+            {/* Body */}
+            <div className="p-4 space-y-4 overflow-y-auto max-h-[calc(92vh-160px)]">
+              {/* Results strip */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-sm font-semibold text-[#121212]">Your Results</h3>
+                  {assets.length > 0 && (
+                    <button 
+                      onClick={() => {
+                        setSelectMode(!selectMode);
+                        setSelectedAssets([]);
+                      }}
+                      className="text-sm px-3 py-1.5 rounded-full border border-black/10 bg-white hover:bg-black/5 transition"
+                    >
+                      {selectMode ? "Done" : "Select"}
+                    </button>
+                  )}
+                </div>
+                <div className="flex gap-3 overflow-x-auto pb-2">
+                  {assets?.length ? assets.map(asset => (
+                    <motion.button 
+                      key={asset.id} 
+                      onClick={() => handleAssetClick(asset)}
+                      whileTap={{ scale: 0.98 }}
+                      className={`shrink-0 relative w-20 h-28 rounded-xl overflow-hidden bg-white shadow
+                                 focus:outline-none focus:ring-2 focus:ring-[#7B2E2E] transition-all
+                                 ${selectMode && selectedAssets.includes(asset.id) ? 'ring-2 ring-[#7B2E2E]' : ''}`}
+                    >
+                      <img src={asset.asset_url} alt="" className="w-full h-full object-cover" />
+                      {selectMode && selectedAssets.includes(asset.id) && (
+                        <div className="absolute inset-0 bg-[#7B2E2E]/20 flex items-center justify-center">
+                          <div className="w-6 h-6 rounded-full bg-[#7B2E2E] flex items-center justify-center">
+                            <span className="text-white text-xs">✓</span>
+                          </div>
+                        </div>
+                      )}
+                    </motion.button>
+                  )) : (
+                    <div className="text-xs text-black/60">No results yet</div>
+                  )}
+                </div>
+                
+                {selectMode && selectedAssets.length > 0 && (
+                  <div className="mt-2 flex gap-2">
+                    <button
+                      onClick={handleDeleteSelected}
+                      className="px-3 py-1.5 text-sm bg-red-500 text-white rounded-lg hover:bg-red-600 transition"
+                    >
+                      Delete ({selectedAssets.length})
+                    </button>
+                  </div>
+                )}
               </div>
 
-              {/* Controls Section - Desktop */}
-              <div className="w-80 flex-shrink-0 min-h-0">
-                <div className="h-full space-y-3 overflow-y-auto scrollbar-thin">
-                  {/* Controls Panel */}
-                  <AiStudioControlsPanel 
-                    loading={loading}
-                    uploadingPerson={uploadingPerson}
-                    uploadingOutfit={uploadingOutfit}
-                    showSettings={showSettings}
-                    prompt={prompt}
-                    resolution={resolution}
-                    remainingGenerations={remainingGenerations}
-                    maxGenerations={maxGenerations}
-                    isPremium={isPremium}
-                    personImageId={personImageId}
-                    outfitImageId={outfitImageId}
-                    personFile={personFile}
-                    outfitFile={outfitFile}
-                    onShowSettingsToggle={() => setShowSettings(!showSettings)}
-                    onPromptChange={setPrompt}
-                    onResolutionChange={setResolution}
-                    onGenerate={handleVirtualTryOn}
-                    onPersonUpload={handlePersonUpload}
-                    onOutfitUpload={handleOutfitUpload}
-                  />
+              {/* Current Result Display */}
+              {currentResult && (
+                <div className="rounded-2xl border border-black/10 bg-white p-4">
+                  <div className="aspect-[3/4] w-full rounded-xl overflow-hidden bg-gray-100 mb-3">
+                    <img 
+                      src={currentResult.path || currentResult.asset_url} 
+                      alt="AI Try-On Result" 
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <button
+                    onClick={async () => {
+                      if (currentResult.path || currentResult.image_url) {
+                        try {
+                          const response = await fetch(currentResult.path || currentResult.asset_url);
+                          const blob = await response.blob();
+                          const url = window.URL.createObjectURL(blob);
+                          const a = document.createElement('a');
+                          a.href = url;
+                          a.download = `ai-studio-result-${currentResult.id}.png`;
+                          document.body.appendChild(a);
+                          a.click();
+                          window.URL.revokeObjectURL(url);
+                          document.body.removeChild(a);
+                        } catch (err) {
+                          toast({
+                            title: 'Download Failed',
+                            description: 'Could not download the image',
+                            variant: 'destructive'
+                          });
+                        }
+                      }
+                    }}
+                    className="w-full py-2 text-sm font-medium text-[#7B2E2E] border border-[#7B2E2E]/20 rounded-lg hover:bg-[#7B2E2E]/5 transition"
+                  >
+                    Download Result
+                  </button>
+                </div>
+              )}
 
-                  {/* Help Panel */}
-                  <AiStudioHelpPanel 
-                    error={error}
-                    resolution={resolution}
-                    onResolutionChange={setResolution}
+              {/* Dropzone */}
+              <div className="rounded-2xl border border-black/10 bg-white shadow-sm p-4">
+                <div className="mb-3 text-center">
+                  <div className="text-base font-semibold text-[#121212]">Ready to generate</div>
+                  <p className="text-sm text-black/60">Drop or upload two images to get started.</p>
+                  <p className="text-xs text-black/50 mt-1">{remainingGenerations}/{maxGenerations} credits left</p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <UploadCard
+                    label="Person Image"
+                    fileName={personFile?.name}
+                    onFile={(file) => handleFileUpload(file, BITSTUDIO_IMAGE_TYPES.PERSON, setPersonImageId, setPersonFile)}
+                    hint="Full-body, front-facing"
+                    hasImage={!!personImageId}
+                  />
+                  <UploadCard
+                    label="Outfit Image"
+                    fileName={outfitFile?.name}
+                    onFile={(file) => handleFileUpload(file, BITSTUDIO_IMAGE_TYPES.OUTFIT, setOutfitImageId, setOutfitFile)}
+                    hint="Clear front view"
+                    hasImage={!!outfitImageId}
                   />
                 </div>
               </div>
+
+              {/* Tips */}
+              <div className="rounded-2xl border border-black/10 bg-white p-4">
+                <h4 className="text-sm font-semibold mb-2">Pro Tips</h4>
+                <ul className="text-sm text-black/70 list-disc pl-5 space-y-1">
+                  <li>Front-facing, full-body photos</li>
+                  <li>Plain backgrounds work best</li>
+                  <li>High resolution</li>
+                  <li>Clear outfit visibility</li>
+                </ul>
+              </div>
+
+              {/* Advanced Settings */}
+              <details className="rounded-2xl border border-black/10 bg-white p-4">
+                <summary className="text-sm font-semibold cursor-pointer">Advanced Settings</summary>
+                <div className="text-sm text-black/70 mt-2 space-y-3">
+                  <div>
+                    <label className="block text-xs font-medium text-black/60 mb-1">Prompt (optional)</label>
+                    <input
+                      type="text"
+                      value={prompt}
+                      onChange={(e) => setPrompt(e.target.value)}
+                      placeholder="Describe any specific styling requests..."
+                      className="w-full px-3 py-2 text-sm border border-black/10 rounded-lg focus:ring-2 focus:ring-[#7B2E2E] focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-black/60 mb-1">Resolution</label>
+                    <select
+                      value={resolution}
+                      onChange={(e) => setResolution(e.target.value as 'standard' | 'high')}
+                      className="w-full px-3 py-2 text-sm border border-black/10 rounded-lg focus:ring-2 focus:ring-[#7B2E2E] focus:border-transparent"
+                    >
+                      <option value="standard">Standard</option>
+                      <option value="high">High</option>
+                    </select>
+                  </div>
+                </div>
+              </details>
             </div>
-          </div>
+
+            {/* Sticky action bar */}
+            <div className="p-3 border-t border-black/10 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60">
+              <motion.button
+                onClick={handleVirtualTryOn}
+                disabled={!canUpload}
+                whileTap={canUpload ? { scale: 0.99 } : {}}
+                className={`w-full h-12 rounded-xl font-semibold transition-all
+                  ${canUpload
+                    ? "bg-[#7B2E2E] text-white hover:opacity-95"
+                    : "bg-black/10 text-black/40 cursor-not-allowed"}`}
+              >
+                {loading ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Generating...
+                  </div>
+                ) : !personImageId || !outfitImageId ? (
+                  "Upload Both Images"
+                ) : remainingGenerations <= 0 ? (
+                  "No Credits Left"
+                ) : (
+                  "Generate Try-On"
+                )}
+              </motion.button>
+              
+              {!isPremium && (
+                <div className="flex items-center justify-between mt-2">
+                  <p className="text-[11px] text-black/50">
+                    By continuing, you agree to use one credit for this try-on.
+                  </p>
+                  <button
+                    onClick={handleUpgradeClick}
+                    className="text-[11px] text-[#7B2E2E] font-medium hover:underline"
+                  >
+                    Upgrade
+                  </button>
+                </div>
+              )}
+            </div>
+          </motion.div>
         </div>
       </DialogContent>
     </Dialog>
   );
 };
+
+/* ---- Subcomponents ---- */
+
+function CreditsPill({ used, total }: { used: number; total: number }) {
+  const pct = Math.max(0, Math.min(100, Math.round((used / total) * 100)));
+  return (
+    <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#7B2E2E]/10">
+      <div className="w-20 h-1.5 rounded-full bg-black/10 overflow-hidden">
+        <div className="h-full bg-[#7B2E2E] transition-all duration-300" style={{ width: `${pct}%` }} />
+      </div>
+      <span className="text-xs text-[#7B2E2E] font-semibold">{used}/{total}</span>
+    </div>
+  );
+}
+
+function UploadCard({
+  label, fileName, onFile, hint, hasImage
+}: { 
+  label: string; 
+  fileName?: string; 
+  onFile: (f: File) => void; 
+  hint: string;
+  hasImage: boolean;
+}) {
+  return (
+    <motion.label 
+      whileHover={{ scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
+      className={`group relative flex flex-col items-center justify-center gap-2
+                 h-36 rounded-xl border transition-all cursor-pointer
+                 ${hasImage 
+                   ? 'border-[#7B2E2E] bg-[#7B2E2E]/5' 
+                   : 'border-dashed border-black/20 bg-[#F7F6F3] hover:border-[#7B2E2E] hover:bg-white'
+                 }`}
+    >
+      <input
+        type="file"
+        accept="image/*"
+        className="absolute inset-0 opacity-0 cursor-pointer"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) onFile(f);
+        }}
+      />
+      <div className="text-[11px] uppercase tracking-wide text-black/60">{label}</div>
+      {fileName ? (
+        <>
+          <div className="max-w-[80%] text-xs text-[#121212] text-center line-clamp-2 font-medium">
+            {fileName}
+          </div>
+          {hasImage && (
+            <div className="flex items-center gap-1 text-[#7B2E2E]">
+              <span className="text-xs">✓</span>
+              <span className="text-[10px]">Uploaded</span>
+            </div>
+          )}
+        </>
+      ) : (
+        <>
+          <div className="px-3 py-1 rounded-full text-xs font-medium bg-white border border-black/10 group-hover:border-[#7B2E2E] transition-colors">
+            Upload
+          </div>
+          <div className="text-[11px] text-black/40">{hint}</div>
+        </>
+      )}
+      <span className="absolute bottom-2 right-2 text-[10px] text-black/40">JPG/PNG</span>
+    </motion.label>
+  );
+}
 
 export default AiStudioModal;
