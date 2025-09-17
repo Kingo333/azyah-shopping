@@ -26,14 +26,15 @@ interface TrendingStyle {
 interface TrendingStylesProps {
   limit?: number;
   showMore?: boolean;
+  categoryFilter?: string;
 }
 
-const TrendingStyles: React.FC<TrendingStylesProps> = ({ limit = 6, showMore = true }) => {
+const TrendingStyles: React.FC<TrendingStylesProps> = ({ limit = 6, showMore = true, categoryFilter }) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
   const { data: trendingStyles, isLoading } = useQuery({
-    queryKey: ['trending-styles', limit],
+    queryKey: ['trending-styles', limit, categoryFilter],
     queryFn: async () => {
       // Use fallback function first to avoid security warnings
       const { data: fallbackData, error: fallbackError } = await supabase
@@ -222,7 +223,7 @@ const TrendingStyles: React.FC<TrendingStylesProps> = ({ limit = 6, showMore = t
   return (
     <div className="space-y-8">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        {trendingStyles?.map((style, index) => (
+        {trendingStyles?.filter(style => !categoryFilter || style.category === categoryFilter).map((style, index) => (
           <Card 
             key={`${style.category}-${style.subcategory}`}
             className="group hover:shadow-lg transition-all duration-300 min-h-[280px]"
