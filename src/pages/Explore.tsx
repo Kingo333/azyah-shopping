@@ -27,7 +27,7 @@ const Explore: React.FC = () => {
         
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
-          <BackButton />
+          <BackButton fallbackPath="/dashboard" />
           <h1 className="text-3xl font-cormorant font-bold">Explore</h1>
         </div>
 
