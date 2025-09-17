@@ -35,7 +35,7 @@ serve(async (req) => {
     }
 
     // Call actual BitStudio virtual try-on API
-    const response = await fetch('https://api.bitstudio.ai/v1/virtual-try-on', {
+    const response = await fetch('https://api.bitstudio.ai/v1/images/virtual-try-on', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${bitStudioApiKey}`,

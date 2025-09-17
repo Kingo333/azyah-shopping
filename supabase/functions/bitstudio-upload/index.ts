@@ -35,7 +35,7 @@ serve(async (req) => {
     console.log('Uploading to BitStudio API:', { fileName: file.name, type, size: file.size });
 
     // Call actual BitStudio API
-    const response = await fetch('https://api.bitstudio.ai/v1/upload', {
+    const response = await fetch('https://api.bitstudio.ai/v1/images', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${bitStudioApiKey}`,

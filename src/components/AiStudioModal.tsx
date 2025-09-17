@@ -342,6 +342,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                   <UploadCard
                     label="Person Image"
                     fileName={personFile?.name}
+                    file={personFile}
                     onFile={(file) => handleFileUpload(file, BITSTUDIO_IMAGE_TYPES.PERSON, setPersonImageId, setPersonFile)}
                     hint="Full-body, front-facing"
                     hasImage={!!personImageId}
@@ -349,6 +350,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                   <UploadCard
                     label="Outfit Image"
                     fileName={outfitFile?.name}
+                    file={outfitFile}
                     onFile={(file) => handleFileUpload(file, BITSTUDIO_IMAGE_TYPES.OUTFIT, setOutfitImageId, setOutfitFile)}
                     hint="Clear front view"
                     hasImage={!!outfitImageId}
@@ -457,20 +459,21 @@ function CreditsPill({ used, total }: { used: number; total: number }) {
 }
 
 function UploadCard({
-  label, fileName, onFile, hint, hasImage
+  label, fileName, onFile, hint, hasImage, file
 }: { 
   label: string; 
   fileName?: string; 
   onFile: (f: File) => void; 
   hint: string;
   hasImage: boolean;
+  file?: File | null;
 }) {
   return (
     <motion.label 
       whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
       className={`group relative flex flex-col items-center justify-center gap-2
-                 h-36 rounded-xl border transition-all cursor-pointer
+                 h-36 rounded-xl border transition-all cursor-pointer overflow-hidden
                  ${hasImage 
                    ? 'border-[#7B2E2E] bg-[#7B2E2E]/5' 
                    : 'border-dashed border-black/20 bg-[#F7F6F3] hover:border-[#7B2E2E] hover:bg-white'
@@ -479,34 +482,45 @@ function UploadCard({
       <input
         type="file"
         accept="image/*"
-        className="absolute inset-0 opacity-0 cursor-pointer"
+        className="absolute inset-0 opacity-0 cursor-pointer z-10"
         onChange={(e) => {
           const f = e.target.files?.[0];
           if (f) onFile(f);
         }}
       />
-      <div className="text-[11px] uppercase tracking-wide text-black/60">{label}</div>
-      {fileName ? (
-        <>
-          <div className="max-w-[80%] text-xs text-[#121212] text-center line-clamp-2 font-medium">
-            {fileName}
-          </div>
+      
+      {/* Show uploaded image if available */}
+      {file && (
+        <div className="absolute inset-0">
+          <img 
+            src={URL.createObjectURL(file)} 
+            alt={`${label} preview`}
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-black/20" />
           {hasImage && (
-            <div className="flex items-center gap-1 text-[#7B2E2E]">
+            <div className="absolute top-2 right-2 flex items-center gap-1 bg-[#7B2E2E] text-white px-2 py-1 rounded-full">
               <span className="text-xs">✓</span>
               <span className="text-[10px]">Uploaded</span>
             </div>
           )}
-        </>
-      ) : (
+          <div className="absolute bottom-2 left-2 text-white text-xs font-medium bg-black/50 px-2 py-1 rounded">
+            {fileName}
+          </div>
+        </div>
+      )}
+      
+      {/* Show upload state when no file */}
+      {!file && (
         <>
+          <div className="text-[11px] uppercase tracking-wide text-black/60">{label}</div>
           <div className="px-3 py-1 rounded-full text-xs font-medium bg-white border border-black/10 group-hover:border-[#7B2E2E] transition-colors">
             Upload
           </div>
           <div className="text-[11px] text-black/40">{hint}</div>
+          <span className="absolute bottom-2 right-2 text-[10px] text-black/40">JPG/PNG</span>
         </>
       )}
-      <span className="absolute bottom-2 right-2 text-[10px] text-black/40">JPG/PNG</span>
     </motion.label>
   );
 }
