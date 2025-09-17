@@ -6,6 +6,7 @@ export const CATEGORY_TREE = {
     'jackets', 'coats', 'blazers', 'cardigans', 'trousers', 'jeans', 'skirts',
     'shorts', 'activewear', 'loungewear', 'sleepwear', 'swimwear', 'lingerie'
   ],
+  modestwear: ['abayas', 'hijabs', 'niqabs', 'jilbabs', 'kaftans'],
   footwear: ['heels', 'flats', 'sandals', 'sneakers', 'boots', 'loafers', 'slippers'],
   accessories: [
     'belts', 'scarves', 'hats', 'sunglasses', 'watches'
@@ -13,7 +14,6 @@ export const CATEGORY_TREE = {
   jewelry: ['necklaces', 'earrings', 'bracelets', 'rings', 'anklets', 'brooches'],
   beauty: ['skincare', 'haircare', 'makeup', 'fragrances', 'home fragrances', 'tools & accessories'],
   bags: ['handbags', 'clutches', 'totes', 'backpacks', 'wallets'],
-  modestwear: ['abayas', 'hijabs', 'niqabs', 'jilbabs', 'kaftans'],
   kids: ['baby clothing', 'girls clothing', 'boys clothing', 'kids footwear', 'kids accessories'],
   fragrance: ['oriental', 'floral', 'woody', 'citrus', 'gourmand', 'oud'],
   home: ['scented candles', 'diffusers', 'room sprays', 'fashion books'],
