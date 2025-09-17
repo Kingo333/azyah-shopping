@@ -226,12 +226,19 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
 
               <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
                 <CreditsPill used={remainingGenerations} total={maxGenerations} />
+                {/* Mobile progress bar */}
+                <div className="flex sm:hidden items-center gap-2 px-3 py-1.5 rounded-full bg-[#7B2E2E]/10">
+                  <div className="w-16 h-1 rounded-full bg-black/10 overflow-hidden">
+                    <div className="h-full bg-[#7B2E2E] transition-all duration-300" style={{ width: '50%' }} />
+                  </div>
+                  <span className="text-xs text-[#7B2E2E] font-semibold">2/4</span>
+                </div>
                 <button
                   onClick={onClose}
-                  className="p-2 rounded-xl hover:bg-black/5 active:scale-95 transition"
+                  className="p-1.5 sm:p-2 rounded-xl hover:bg-black/5 active:scale-95 transition"
                   aria-label="Close"
                 >
-                  <XMarkIcon className="h-5 w-5 sm:h-6 sm:w-6 text-[#121212]" />
+                  <XMarkIcon className="h-4 w-4 sm:h-6 sm:w-6 text-[#121212]" />
                 </button>
               </div>
             </div>
