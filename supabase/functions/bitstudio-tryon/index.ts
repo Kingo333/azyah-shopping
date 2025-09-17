@@ -34,7 +34,7 @@ serve(async (req) => {
       id: `tryon_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`,
       type: 'virtual-try-on',
       status: 'completed',
-      path: `https://bitstudio.placeholder/tryon-result-${Date.now()}.png`,
+      path: `https://picsum.photos/400/600?random=${Date.now()}`,
       credits_used: 1
     }];
 

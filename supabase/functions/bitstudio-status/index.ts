@@ -28,7 +28,7 @@ serve(async (req) => {
       id: id,
       type: 'virtual-try-on',
       status: 'completed',
-      path: `https://bitstudio.placeholder/${id}.png`,
+      path: `https://picsum.photos/400/600?random=${id}`,
       credits_used: 1
     };
 
