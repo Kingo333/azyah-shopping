@@ -342,7 +342,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
               <div className="rounded-2xl border border-black/10 bg-white shadow-sm p-4">
                 <div className="mb-3 text-center">
                   <div className="text-base font-semibold text-[#121212]">Ready to generate</div>
-                  <p className="text-sm text-black/60">Drop or upload two images to get started.</p>
+                  <p className="text-sm text-black/60">Upload two images to get started.</p>
                   <p className="text-xs text-black/50 mt-1">{remainingGenerations}/{maxGenerations} credits left</p>
                 </div>
 
