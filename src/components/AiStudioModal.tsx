@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { XMarkIcon } from '@heroicons/react/24/outline';
+import { User, Shirt } from 'lucide-react';
 import { useBitStudio } from '@/hooks/useBitStudio';
 import { BITSTUDIO_IMAGE_TYPES } from '@/lib/bitstudio-types';
 import { useToast } from '@/hooks/use-toast';
@@ -347,7 +348,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
 
                 <div className="grid grid-cols-2 gap-3">
                   <UploadCard
-                    label="Person Image"
+                    icon={<User className="h-4 w-4" />}
                     fileName={personFile?.name}
                     file={personFile}
                     onFile={(file) => handleFileUpload(file, BITSTUDIO_IMAGE_TYPES.PERSON, setPersonImageId, setPersonFile)}
@@ -355,7 +356,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
                     hasImage={!!personImageId}
                   />
                   <UploadCard
-                    label="Outfit Image"
+                    icon={<Shirt className="h-4 w-4" />}
                     fileName={outfitFile?.name}
                     file={outfitFile}
                     onFile={(file) => handleFileUpload(file, BITSTUDIO_IMAGE_TYPES.OUTFIT, setOutfitImageId, setOutfitFile)}
@@ -468,9 +469,9 @@ function CreditsPill({ used, total }: { used: number; total: number }) {
 }
 
 function UploadCard({
-  label, fileName, onFile, hint, hasImage, file
+  icon, fileName, onFile, hint, hasImage, file
 }: { 
-  label: string; 
+  icon: React.ReactNode;
   fileName?: string; 
   onFile: (f: File) => void; 
   hint: string;
@@ -503,7 +504,7 @@ function UploadCard({
         <div className="absolute inset-0">
           <img 
             src={URL.createObjectURL(file)} 
-            alt={`${label} preview`}
+            alt="Preview"
             className="w-full h-full object-cover"
           />
           <div className="absolute inset-0 bg-black/20" />
@@ -522,7 +523,7 @@ function UploadCard({
       {/* Show upload state when no file */}
       {!file && (
         <>
-          <div className="text-[11px] uppercase tracking-wide text-black/60">{label}</div>
+          <div className="text-black/60">{icon}</div>
           <div className="px-3 py-1 rounded-full text-xs font-medium bg-white border border-black/10 group-hover:border-[#7B2E2E] transition-colors">
             Upload
           </div>
