@@ -15,7 +15,7 @@ import DashboardHeader from '@/components/DashboardHeader';
 import AffiliateHub from '@/components/AffiliateHub';
 import AiStudioModal from '@/components/AiStudioModal';
 import PremiumBanner from '@/components/PremiumBanner';
-import { Heart, ShoppingBag, Search, Sparkles, Package, BarChart3, Users, Settings, Store, TrendingUp, Plus, Eye, DollarSign, Globe, Bell, LogOut, User, Archive, Trophy, MapPin, Blocks, WandSparkles, ChevronDown, ChevronUp, Gift, ChevronLeft, ChevronRight, Home, Filter } from 'lucide-react';
+import { Heart, ShoppingBag, Search, Sparkles, Package, BarChart3, Users, Settings, Store, TrendingUp, Plus, Eye, DollarSign, Globe, Bell, LogOut, User, Archive, Trophy, MapPin, Blocks, WandSparkles, ChevronDown, ChevronUp, Gift, ChevronLeft, ChevronRight, Home, Filter, Shield, Camera, Bookmark, Bot } from 'lucide-react';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import MinimizedLeaderboard from '@/components/MinimizedLeaderboard';
 import TrendingStylesCarousel from '@/components/TrendingStylesCarousel';
@@ -28,6 +28,7 @@ import { ProfileCompletionBanner } from '@/components/ProfileCompletionBanner';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CATEGORY_TREE, getCategoryDisplayName } from '@/lib/categories';
 import type { TopCategory } from '@/lib/categories';
+import { SafetyVoiceOverlay } from '@/components/voice/SafetyVoiceOverlay';
 interface UserProfile {
   id: string;
   name: string;
@@ -63,6 +64,7 @@ const RoleDashboard: React.FC = () => {
   const [searchOpen, setSearchOpen] = useState(false);
   const [activeLeaderboard, setActiveLeaderboard] = useState<'global' | 'country'>('global');
   const [aiStudioModalOpen, setAiStudioModalOpen] = useState(false);
+  const [showSafetyOverlay, setShowSafetyOverlay] = useState(false);
   const [isClosetsMinimized, setIsClosetsMinimized] = useState(true);
   const [isAffiliateMinimized, setIsAffiliateMinimized] = useState(true);
   const [selectedTrendingCategory, setSelectedTrendingCategory] = useState<TopCategory | null>(() => {
@@ -327,6 +329,20 @@ const RoleDashboard: React.FC = () => {
           {/* UGC Collab Chip */}
           <TutorialTooltip content="Collaborate with brands on user-generated content. Apply for brand partnerships and create sponsored content." feature="ugc-collab">
             <UGCCollabButton className="flex items-center gap-2 px-3 py-2 h-9 rounded-lg bg-background border border-border hover:bg-accent transition-colors font-medium text-sm whitespace-nowrap flex-shrink-0 min-w-fit" />
+          </TutorialTooltip>
+
+          {/* Safety AI Chip */}
+          <TutorialTooltip content="HSE Safety Reporting & Checklists. Create incident reports and get safety guidance for workplace situations." feature="safety-ai">
+            <button
+              onClick={() => setShowSafetyOverlay(true)}
+              className="relative flex items-center gap-2 px-3 py-2 h-9 rounded-lg bg-background border border-border hover:bg-accent transition-colors font-medium text-sm whitespace-nowrap flex-shrink-0 min-w-fit"
+            >
+              <Shield className="h-4 w-4" />
+              Safety AI
+              <span className="absolute -top-0.5 -right-0.5 bg-red-600 text-white text-[11px] px-1.5 py-0.5 rounded-full leading-none">
+                HSE
+              </span>
+            </button>
           </TutorialTooltip>
 
           {/* Toy Replica Chip */}
@@ -647,6 +663,12 @@ const RoleDashboard: React.FC = () => {
         
         {/* AI Studio Modal */}
         <AiStudioModal open={aiStudioModalOpen} onClose={() => setAiStudioModalOpen(false)} />
+        
+        {/* Safety Voice Overlay */}
+        <SafetyVoiceOverlay
+          open={showSafetyOverlay}
+          onClose={() => setShowSafetyOverlay(false)}
+        />
       </div>
     </ErrorBoundary>;
 };
