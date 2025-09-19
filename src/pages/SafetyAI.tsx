@@ -439,7 +439,24 @@ export default function SafetyAI() {
                         >
                           Reset Checklist
                         </Button>
-                        <Badge variant={checklistData.priority === 'high' ? 'destructive' : 'default'}>
+                        
+                        {checklistUrl && (
+                          <Button
+                            size="sm"
+                            className="bg-blue-600 hover:bg-blue-700 text-white text-xs"
+                            onClick={() => {
+                              const link = document.createElement('a');
+                              link.href = checklistUrl;
+                              link.download = `safety-checklist-${new Date().toISOString().split('T')[0]}.txt`;
+                              link.click();
+                            }}
+                          >
+                            <Download className="w-3 h-3 mr-1" />
+                            Download
+                          </Button>
+                        )}
+                        
+                        <Badge variant={checklistData.priority === 'High' ? 'destructive' : checklistData.priority === 'Medium' ? 'default' : 'secondary'}>
                           {checklistData.priority} priority
                         </Badge>
                       </div>
