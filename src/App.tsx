@@ -34,6 +34,7 @@ import ImageSearch from './pages/ImageSearch';
 import Affiliate from './pages/Affiliate';
 import ToyReplica from './pages/ToyReplica';
 import BeautyConsultant from './pages/BeautyConsultant';
+import SafetyAI from './pages/SafetyAI';
 import Terms from './pages/Terms';
 import Privacy from './pages/Privacy';
 import Install from './pages/Install';
@@ -161,6 +162,11 @@ function App() {
                   <Route path="/beauty-consultant" element={
                     <ProtectedRoute roles={['shopper', 'admin']}>
                       <BeautyConsultant />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/safety-ai" element={
+                    <ProtectedRoute>
+                      <SafetyAI />
                     </ProtectedRoute>
                   } />
                   <Route path="/brand-portal" element={
