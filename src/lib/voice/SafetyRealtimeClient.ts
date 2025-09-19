@@ -79,6 +79,26 @@ export class SafetyRealtimeClient {
                   },
                   required: ['situation']
                 }
+              },
+              {
+                type: 'function',
+                name: 'checklist_action',
+                description: 'Handle user actions during checklist interaction: complete, next, reset, or update.',
+                parameters: {
+                  type: 'object',
+                  properties: {
+                    action: { 
+                      type: 'string', 
+                      enum: ['complete', 'next', 'reset', 'update'],
+                      description: 'Action to perform on the checklist'
+                    },
+                    new_situation: { 
+                      type: 'string', 
+                      description: 'New situation description if updating checklist'
+                    }
+                  },
+                  required: ['action']
+                }
               }
             ],
             tool_choice: 'auto',
@@ -205,6 +225,10 @@ export class SafetyRealtimeClient {
           result = this.generateSafetyChecklist(parsedArgs);
           break;
 
+        case 'checklist_action':
+          result = this.handleChecklistAction(parsedArgs);
+          break;
+
         default:
           result = { error: 'Unknown safety tool function' };
       }
@@ -279,6 +303,56 @@ export class SafetyRealtimeClient {
       ],
       priority: 'high'
     };
+  }
+
+  private handleChecklistAction(data: any) {
+    const { action, new_situation } = data;
+    
+    switch (action) {
+      case 'complete':
+        return {
+          action: 'complete',
+          message: 'Item marked as complete. Moving to next item.',
+          success: true
+        };
+        
+      case 'next':
+        return {
+          action: 'next',
+          message: 'Moving to next item.',
+          success: true
+        };
+        
+      case 'reset':
+        return {
+          action: 'reset',
+          message: 'Checklist reset. Starting from the beginning.',
+          success: true
+        };
+        
+      case 'update':
+        if (new_situation) {
+          const newChecklist = this.generateSafetyChecklist({ situation: new_situation });
+          return {
+            action: 'update',
+            message: 'Generating updated checklist.',
+            checklist: newChecklist,
+            success: true
+          };
+        }
+        return {
+          action: 'update',
+          message: 'Please describe the new situation.',
+          success: false
+        };
+        
+      default:
+        return {
+          action: 'unknown',
+          message: 'Unknown action. Say complete, next, reset, or update checklist.',
+          success: false
+        };
+    }
   }
 
   startTurn() {

@@ -29,12 +29,16 @@ export default function SafetyAI() {
     totalSteps,
     reportData,
     reportUrl,
+    checklistData,
+    currentChecklistItem,
     connectOnce,
     disconnect,
     toggleCaptions,
     pttDown,
     pttUp,
     interrupt,
+    markChecklistItemComplete,
+    resetChecklist,
   } = useAzyahSafetyVoice();
 
   // Initialize orb renderer for visual feedback
@@ -59,8 +63,10 @@ export default function SafetyAI() {
         return 'Listening for your safety needs...';
       case 'decision':
         return 'Choose: Safety checklist or incident report?';
-      case 'checklist':
+      case 'checklist_mode':
         return 'Describing your situation for safety checklist...';
+      case 'checklist_interaction':
+        return 'Interacting with safety checklist - say "complete", "next", or "reset"';
       case 'reporting':
         return `Incident reporting: Question ${progressStep} of ${totalSteps}`;
       case 'complete':
@@ -350,6 +356,71 @@ export default function SafetyAI() {
                           <p className="text-sm font-medium text-muted-foreground mb-1">Azyah Safety AI</p>
                           <p className="text-foreground">{currentCaption}</p>
                         </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Safety Checklist Interaction */}
+                {(state === 'checklist_mode' || state === 'checklist_interaction') && checklistData && (
+                  <Card className="bg-blue-50/30 border-blue-200/30">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-lg flex items-center gap-2 text-blue-700">
+                        <Shield className="w-5 h-5" />
+                        Safety Checklist - {checklistData.situation}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="space-y-3">
+                        {checklistData.checklist.map((item, index) => (
+                          <div key={index} className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${
+                            checklistData.completedItems?.[index] 
+                              ? 'bg-green-50 border-green-200 text-green-800' 
+                              : index === currentChecklistItem 
+                                ? 'bg-blue-50 border-blue-200 text-blue-800 ring-2 ring-blue-200' 
+                                : 'bg-background border-border'
+                          }`}>
+                            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center text-xs font-medium ${
+                              checklistData.completedItems?.[index] 
+                                ? 'bg-green-600 border-green-600 text-white' 
+                                : index === currentChecklistItem 
+                                  ? 'bg-blue-600 border-blue-600 text-white' 
+                                  : 'border-muted-foreground text-muted-foreground'
+                            }`}>
+                              {checklistData.completedItems?.[index] ? '✓' : index + 1}
+                            </div>
+                            <span className="flex-1">{item}</span>
+                            {!checklistData.completedItems?.[index] && index === currentChecklistItem && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => markChecklistItemComplete(index)}
+                                className="text-xs"
+                              >
+                                Complete
+                              </Button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                      
+                      <div className="flex gap-2 pt-4 border-t">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={resetChecklist}
+                          className="text-xs"
+                        >
+                          Reset Checklist
+                        </Button>
+                        <Badge variant={checklistData.priority === 'high' ? 'destructive' : 'default'}>
+                          {checklistData.priority} priority
+                        </Badge>
+                      </div>
+                      
+                      <div className="text-xs text-muted-foreground bg-muted/30 p-3 rounded-lg">
+                        <p className="font-medium mb-1">Voice Commands:</p>
+                        <p>Say "complete" to mark current item done, "next" to skip, "reset" to restart checklist</p>
                       </div>
                     </CardContent>
                   </Card>

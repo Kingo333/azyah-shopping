@@ -76,8 +76,10 @@ export function SafetyVoiceOverlay({ open, onClose }: SafetyVoiceOverlayProps) {
         return 'Listening for your safety needs...';
       case 'decision':
         return 'Choose: Safety checklist or incident report?';
-      case 'checklist':
+      case 'checklist_mode':
         return 'Describing your situation for safety checklist...';
+      case 'checklist_interaction':
+        return 'Interacting with safety checklist - say "complete", "next", or "reset"';
       case 'reporting':
         return `Incident reporting: Question ${progressStep} of ${totalSteps}`;
       case 'complete':

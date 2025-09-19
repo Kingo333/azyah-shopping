@@ -19,13 +19,21 @@ interface SafetyReport {
   reporter?: string;
 }
 
+interface SafetyChecklist {
+  situation: string;
+  checklist: string[];
+  priority: string;
+  completedItems?: boolean[];
+}
+
 type SafetyVoiceState = 
   | 'disconnected' 
   | 'connecting' 
   | 'connected' 
   | 'introduction'
   | 'decision'
-  | 'checklist'
+  | 'checklist_mode'
+  | 'checklist_interaction'
   | 'reporting'
   | 'complete';
 
@@ -40,6 +48,8 @@ export function useAzyahSafetyVoice() {
   const [totalSteps] = useState(14); // Number of reporting questions
   const [reportData, setReportData] = useState<SafetyReport>({});
   const [reportUrl, setReportUrl] = useState<string | null>(null);
+  const [checklistData, setChecklistData] = useState<SafetyChecklist | null>(null);
+  const [currentChecklistItem, setCurrentChecklistItem] = useState(0);
 
   const clientRef = useRef<SafetyRealtimeClient | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -133,6 +143,10 @@ export function useAzyahSafetyVoice() {
       case 'response.function_call_arguments.done':
         if (message.name === 'generate_safety_report') {
           handleReportGeneration(message.arguments);
+        } else if (message.name === 'generate_safety_checklist') {
+          handleChecklistGeneration(message.arguments);
+        } else if (message.name === 'checklist_action') {
+          handleChecklistAction(message.arguments);
         }
         break;
 
@@ -160,6 +174,26 @@ export function useAzyahSafetyVoice() {
       setError('Failed to generate report');
     }
   }, [totalSteps]);
+
+  const handleChecklistGeneration = useCallback((args: string) => {
+    try {
+      const checklistArgs = JSON.parse(args);
+      console.log('Generating safety checklist:', checklistArgs);
+      
+      const checklist: SafetyChecklist = {
+        ...checklistArgs,
+        completedItems: new Array(checklistArgs.checklist?.length || 0).fill(false)
+      };
+      
+      setChecklistData(checklist);
+      setState('checklist_interaction');
+      setCurrentChecklistItem(0);
+      
+    } catch (error) {
+      console.error('Error generating checklist:', error);
+      setError('Failed to generate checklist');
+    }
+  }, []);
 
   const generateReportFile = useCallback((data: SafetyReport) => {
     // Create a formatted report content
@@ -221,7 +255,78 @@ End of Report
     setProgressStep(0);
     setReportData({});
     setReportUrl(null);
+    setChecklistData(null);
+    setCurrentChecklistItem(0);
   }, []);
+
+  const markChecklistItemComplete = useCallback((index: number) => {
+    if (!checklistData) return;
+    
+    const updatedItems = [...(checklistData.completedItems || [])];
+    updatedItems[index] = true;
+    
+    setChecklistData({
+      ...checklistData,
+      completedItems: updatedItems
+    });
+    
+    // Move to next item if available
+    if (index < checklistData.checklist.length - 1) {
+      setCurrentChecklistItem(index + 1);
+    }
+  }, [checklistData]);
+
+  const resetChecklist = useCallback(() => {
+    if (!checklistData) return;
+    
+    setChecklistData({
+      ...checklistData,
+      completedItems: new Array(checklistData.checklist.length).fill(false)
+    });
+    setCurrentChecklistItem(0);
+  }, [checklistData]);
+
+  const handleChecklistAction = useCallback((args: string) => {
+    try {
+      const actionArgs = JSON.parse(args);
+      console.log('Handling checklist action:', actionArgs);
+      
+      const { action, checklist } = actionArgs;
+      
+      switch (action) {
+        case 'complete':
+          if (checklistData) {
+            markChecklistItemComplete(currentChecklistItem);
+          }
+          break;
+          
+        case 'next':
+          if (checklistData && currentChecklistItem < checklistData.checklist.length - 1) {
+            setCurrentChecklistItem(currentChecklistItem + 1);
+          }
+          break;
+          
+        case 'reset':
+          resetChecklist();
+          break;
+          
+        case 'update':
+          if (checklist) {
+            const newChecklist: SafetyChecklist = {
+              ...checklist,
+              completedItems: new Array(checklist.checklist?.length || 0).fill(false)
+            };
+            setChecklistData(newChecklist);
+            setCurrentChecklistItem(0);
+          }
+          break;
+      }
+      
+    } catch (error) {
+      console.error('Error handling checklist action:', error);
+      setError('Failed to handle checklist action');
+    }
+  }, [checklistData, currentChecklistItem, markChecklistItemComplete, resetChecklist]);
 
   const toggleCaptions = useCallback(() => {
     setShowCaptions(prev => !prev);
@@ -262,11 +367,15 @@ End of Report
     totalSteps,
     reportData,
     reportUrl,
+    checklistData,
+    currentChecklistItem,
     connectOnce,
     disconnect,
     toggleCaptions,
     pttDown,
     pttUp,
     interrupt,
+    markChecklistItemComplete,
+    resetChecklist,
   };
 }
