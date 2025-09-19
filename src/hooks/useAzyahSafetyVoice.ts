@@ -149,8 +149,9 @@ export function useAzyahSafetyVoice() {
       // Update report data
       setReportData(reportArgs);
       
-      // Generate Excel file (this would be implemented in the client)
-      // For now, we'll just mark as complete
+      // Generate downloadable report
+      generateReportFile(reportArgs);
+      
       setState('complete');
       setProgressStep(totalSteps);
       
@@ -159,6 +160,55 @@ export function useAzyahSafetyVoice() {
       setError('Failed to generate report');
     }
   }, [totalSteps]);
+
+  const generateReportFile = useCallback((data: SafetyReport) => {
+    // Create a formatted report content
+    const reportContent = `
+SAFETY INCIDENT REPORT
+Generated: ${new Date().toLocaleString()}
+
+==========================================
+
+Date & Time: ${data.dateTime || 'Not specified'}
+Location: ${data.location || 'Not specified'}
+Weather Conditions: ${data.weather || 'Not specified'}
+Activity: ${data.activity || 'Not specified'}
+Equipment Involved: ${data.equipment || 'Not specified'}
+
+INJURY DETAILS:
+Injured Person: ${data.injuredPerson || 'Not specified'}
+Injury Description: ${data.injuryDetails || 'Not specified'}
+
+OTHER PEOPLE INVOLVED:
+${data.otherInvolved || 'Not specified'}
+
+WITNESSES:
+${data.witnesses || 'Not specified'}
+
+PROPERTY DAMAGE:
+${data.damage || 'Not specified'}
+
+PHOTOS/EVIDENCE:
+${data.photos || 'Not specified'}
+
+IMMEDIATE ACTIONS TAKEN:
+${data.immediateActions || 'Not specified'}
+
+PREVENTION MEASURES:
+${data.prevention || 'Not specified'}
+
+REPORTED BY:
+${data.reporter || 'Not specified'}
+
+==========================================
+End of Report
+    `.trim();
+
+    // Create blob and download URL
+    const blob = new Blob([reportContent], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    setReportUrl(url);
+  }, []);
 
   const disconnect = useCallback(() => {
     if (clientRef.current) {

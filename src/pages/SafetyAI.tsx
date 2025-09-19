@@ -211,13 +211,28 @@ export default function SafetyAI() {
                     )}
                     
                     {state === 'complete' && reportUrl && (
-                      <Button
-                        className="w-full justify-start bg-red-600 hover:bg-red-700 text-white"
-                        onClick={() => window.open(reportUrl, '_blank')}
-                      >
-                        <Download className="w-4 h-4 mr-2" />
-                        Download Report
-                      </Button>
+                      <div className="space-y-2">
+                        <Button
+                          className="w-full justify-start bg-red-600 hover:bg-red-700 text-white"
+                          onClick={() => {
+                            const link = document.createElement('a');
+                            link.href = reportUrl;
+                            link.download = `safety-report-${new Date().toISOString().split('T')[0]}.txt`;
+                            link.click();
+                          }}
+                        >
+                          <Download className="w-4 h-4 mr-2" />
+                          Download Report
+                        </Button>
+                        
+                        <Button
+                          variant="outline"
+                          className="w-full justify-start"
+                          onClick={() => window.open(reportUrl, '_blank')}
+                        >
+                          View Report
+                        </Button>
+                      </div>
                     )}
                     
                     {isConnected && (
@@ -336,6 +351,37 @@ export default function SafetyAI() {
                           <p className="text-foreground">{currentCaption}</p>
                         </div>
                       </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Completed Report Preview */}
+                {state === 'complete' && reportData && Object.keys(reportData).length > 0 && (
+                  <Card className="bg-green-50/30 border-green-200/30">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-lg flex items-center gap-2 text-green-700">
+                        <Shield className="w-5 h-5" />
+                        Safety Report Completed
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="grid gap-2 text-sm">
+                        {reportData.dateTime && (
+                          <div><span className="font-medium">Date/Time:</span> {reportData.dateTime}</div>
+                        )}
+                        {reportData.location && (
+                          <div><span className="font-medium">Location:</span> {reportData.location}</div>
+                        )}
+                        {reportData.injuryDetails && (
+                          <div><span className="font-medium">Incident:</span> {reportData.injuryDetails}</div>
+                        )}
+                        {reportData.reporter && (
+                          <div><span className="font-medium">Reported by:</span> {reportData.reporter}</div>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-2">
+                        Your complete safety report is ready for download.
+                      </p>
                     </CardContent>
                   </Card>
                 )}
