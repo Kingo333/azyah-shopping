@@ -70,14 +70,25 @@ export class SafetyRealtimeClient {
               {
                 type: 'function',
                 name: 'generate_safety_checklist',
-                description: 'Generate a safety checklist based on the situation or activity.',
+                description: 'Generate a comprehensive safety checklist with 10-15 detailed items based on the user\'s situation or activity. Make it thorough and downloadable.',
                 parameters: {
                   type: 'object',
                   properties: {
                     situation: { type: 'string', description: 'Current situation or activity' },
-                    environment: { type: 'string', description: 'Work environment details' }
+                    checklist: { 
+                      type: 'array', 
+                      items: { type: 'string' },
+                      description: '10-15 detailed safety check items, each specific and actionable'
+                    },
+                    priority: { type: 'string', description: 'Overall priority level (High, Medium, Low)' },
+                    location: { type: 'string', description: 'Work location or environment type' },
+                    hazards: { 
+                      type: 'array', 
+                      items: { type: 'string' },
+                      description: 'Potential hazards identified for this situation'
+                    }
                   },
-                  required: ['situation']
+                  required: ['situation', 'checklist', 'priority']
                 }
               },
               {
@@ -263,28 +274,109 @@ export class SafetyRealtimeClient {
   private generateSafetyChecklist(data: any) {
     const { situation } = data;
     
-    // Generate relevant safety checklist based on situation
+    // Generate comprehensive safety checklists with 10-15 items based on situation
     const checklists = {
       'working at height': [
-        'Check harness and safety equipment',
-        'Inspect ladder stability',
-        'Verify weather conditions',
-        'Ensure proper footwear',
-        'Check fall protection systems'
+        'Inspect all fall protection equipment (harness, lanyard, connectors)',
+        'Check ladder condition and proper placement (4:1 ratio)',
+        'Verify weather conditions are suitable (no high winds, rain, or ice)',
+        'Ensure proper non-slip footwear is worn',
+        'Confirm fall protection systems are anchored to certified points',
+        'Test communication equipment and establish contact protocols',
+        'Review emergency rescue procedures with team',
+        'Secure all tools and materials to prevent dropping',
+        'Establish controlled access zone below work area',
+        'Check guardrails and safety barriers are in place',
+        'Verify personal fall arrest system is properly fitted',
+        'Inspect work platform stability and load capacity',
+        'Ensure adequate lighting for safe work conditions',
+        'Confirm emergency evacuation routes are clear',
+        'Document safety briefing attendance and understanding'
       ],
       'machinery operation': [
-        'Verify equipment maintenance status',
-        'Check emergency stop functions',
-        'Ensure proper PPE is worn',
-        'Confirm safety guards are in place',
-        'Test communication systems'
+        'Verify equipment maintenance records are current',
+        'Test all emergency stop functions and switches',
+        'Inspect and wear all required PPE (gloves, eye protection, hearing protection)',
+        'Confirm all safety guards and barriers are securely in place',
+        'Test communication systems between operators and spotters',
+        'Check hydraulic fluid levels and inspect for leaks',
+        'Verify lockout/tagout procedures for maintenance activities',
+        'Inspect electrical connections and grounding systems',
+        'Review operating procedures and safety protocols',
+        'Check workspace for adequate lighting and ventilation',
+        'Ensure proper lifting techniques and weight limits are observed',
+        'Verify fire suppression systems are operational',
+        'Test warning devices and alarms functionality',
+        'Confirm operator certification and training currency',
+        'Establish clear communication signals with ground personnel'
       ],
       'chemical handling': [
-        'Check SDS availability',
-        'Verify ventilation systems',
-        'Ensure proper PPE',
-        'Check spill containment',
-        'Confirm emergency procedures'
+        'Review Safety Data Sheets (SDS) for all chemicals in use',
+        'Verify adequate ventilation systems are operational',
+        'Inspect and wear appropriate chemical-resistant PPE',
+        'Check spill containment materials are readily available',
+        'Confirm emergency shower and eyewash stations are accessible',
+        'Test chemical detection and monitoring equipment',
+        'Verify proper chemical storage and segregation protocols',
+        'Check waste disposal containers and labeling requirements',
+        'Review emergency response procedures for chemical exposure',
+        'Ensure proper handling tools and equipment are available',
+        'Verify fire suppression systems compatibility with chemicals',
+        'Check respiratory protection equipment and fit testing',
+        'Confirm proper chemical inventory and tracking systems',
+        'Test emergency communication and alarm systems',
+        'Establish decontamination procedures and equipment readiness'
+      ],
+      'electrical work': [
+        'Verify electrical isolation and lockout/tagout procedures',
+        'Test circuits with appropriate voltage detection equipment',
+        'Inspect insulated tools and protective equipment',
+        'Check electrical PPE certification and condition',
+        'Verify grounding and bonding systems are intact',
+        'Review electrical safety work practices and procedures',
+        'Test ground fault circuit interrupters (GFCI)',
+        'Inspect work area for wet conditions and moisture',
+        'Confirm proper arc flash protection is worn',
+        'Verify electrical permits and authorization to work',
+        'Check emergency shut-off locations and accessibility',
+        'Test emergency lighting and backup power systems',
+        'Inspect electrical panels and enclosure integrity',
+        'Verify proper cable management and routing',
+        'Establish clear boundaries for electrical work zones'
+      ],
+      'confined space': [
+        'Test atmospheric conditions (oxygen, toxic gases, combustible gases)',
+        'Verify continuous atmospheric monitoring equipment',
+        'Ensure proper ventilation systems are operational',
+        'Check emergency retrieval systems and equipment',
+        'Verify entrant, attendant, and supervisor roles are assigned',
+        'Test communication systems between inside and outside personnel',
+        'Inspect and fit personal protective equipment properly',
+        'Confirm rescue procedures and emergency contacts',
+        'Verify entry permits are properly completed and authorized',
+        'Check lighting systems and backup illumination',
+        'Test emergency escape breathing apparatus (SCSR)',
+        'Verify lockout/tagout of energy sources to space',
+        'Confirm medical surveillance and fitness for entry',
+        'Establish clear entry and exit procedures',
+        'Verify emergency response team availability and readiness'
+      ],
+      'hot work': [
+        'Obtain and review hot work permits and authorizations',
+        'Inspect fire extinguishing equipment and accessibility',
+        'Remove or protect combustible materials in work area',
+        'Verify fire watch personnel assignments and training',
+        'Test welding equipment and gas systems for leaks',
+        'Check ventilation systems for fume removal',
+        'Inspect personal protective equipment for heat resistance',
+        'Verify proper grounding of welding equipment',
+        'Review emergency response procedures for fire incidents',
+        'Check spark and spatter containment measures',
+        'Verify proper storage of compressed gas cylinders',
+        'Test emergency shutdown procedures and equipment',
+        'Confirm medical support availability for burn treatment',
+        'Inspect work area for hidden combustible materials',
+        'Establish continuous fire watch for specified duration post-work'
       ]
     };
 
@@ -292,17 +384,65 @@ export class SafetyRealtimeClient {
       situation.toLowerCase().includes(k)
     ) || 'general';
 
+    const selectedChecklist = checklists[key] || [
+      'Conduct comprehensive hazard assessment of work environment',
+      'Verify all required personal protective equipment is available and worn',
+      'Check emergency communication devices and contact procedures',
+      'Inspect work tools and equipment for safe operating condition',
+      'Establish clear emergency evacuation routes and assembly points',
+      'Verify first aid supplies and trained personnel availability',
+      'Review applicable safety procedures and work instructions',
+      'Check environmental conditions (weather, lighting, noise levels)',
+      'Confirm proper training and competency for assigned tasks',
+      'Verify adequate supervision and safety oversight is in place',
+      'Check material handling and storage safety requirements',
+      'Test emergency alarm systems and notification procedures',
+      'Inspect housekeeping and ensure clear walkways and exits',
+      'Verify incident reporting procedures and contact information',
+      'Establish safety monitoring and periodic check-in protocols'
+    ];
+
     return {
       situation,
-      checklist: checklists[key] || [
-        'Assess the work environment',
-        'Identify potential hazards',
-        'Ensure proper PPE',
-        'Check emergency procedures',
-        'Verify communication methods'
-      ],
-      priority: 'high'
+      checklist: selectedChecklist,
+      priority: this.determinePriority(situation),
+      location: 'Workplace',
+      hazards: this.identifyHazards(situation)
     };
+  }
+
+  private determinePriority(situation: string): string {
+    const highRisk = ['height', 'chemical', 'electrical', 'confined space', 'hot work', 'machinery'];
+    const mediumRisk = ['lifting', 'driving', 'construction', 'maintenance'];
+    
+    const situationLower = situation.toLowerCase();
+    
+    if (highRisk.some(risk => situationLower.includes(risk))) {
+      return 'High';
+    } else if (mediumRisk.some(risk => situationLower.includes(risk))) {
+      return 'Medium';
+    }
+    return 'Low';
+  }
+
+  private identifyHazards(situation: string): string[] {
+    const hazardMap = {
+      'height': ['Falls', 'Falling objects', 'Weather exposure'],
+      'chemical': ['Chemical exposure', 'Inhalation hazards', 'Skin contact', 'Fire/explosion'],
+      'electrical': ['Electrical shock', 'Arc flash', 'Burns', 'Fire'],
+      'machinery': ['Caught in/between', 'Struck by', 'Noise exposure', 'Vibration'],
+      'confined space': ['Atmospheric hazards', 'Engulfment', 'Entrapment'],
+      'hot work': ['Fire', 'Burns', 'Fume exposure', 'Explosion']
+    };
+
+    const situationLower = situation.toLowerCase();
+    for (const [key, hazards] of Object.entries(hazardMap)) {
+      if (situationLower.includes(key)) {
+        return hazards;
+      }
+    }
+    
+    return ['Physical injury', 'Environmental hazards', 'Equipment failure'];
   }
 
   private handleChecklistAction(data: any) {

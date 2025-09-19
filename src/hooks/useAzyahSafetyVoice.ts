@@ -23,6 +23,8 @@ interface SafetyChecklist {
   situation: string;
   checklist: string[];
   priority: string;
+  location?: string;
+  hazards?: string[];
   completedItems?: boolean[];
 }
 
@@ -49,6 +51,7 @@ export function useAzyahSafetyVoice() {
   const [reportData, setReportData] = useState<SafetyReport>({});
   const [reportUrl, setReportUrl] = useState<string | null>(null);
   const [checklistData, setChecklistData] = useState<SafetyChecklist | null>(null);
+  const [checklistUrl, setChecklistUrl] = useState<string | null>(null);
   const [currentChecklistItem, setCurrentChecklistItem] = useState(0);
 
   const clientRef = useRef<SafetyRealtimeClient | null>(null);
@@ -189,10 +192,55 @@ export function useAzyahSafetyVoice() {
       setState('checklist_interaction');
       setCurrentChecklistItem(0);
       
+      // Generate downloadable checklist file
+      generateChecklistFile(checklist);
+      
     } catch (error) {
       console.error('Error generating checklist:', error);
       setError('Failed to generate checklist');
     }
+  }, []);
+
+  const generateChecklistFile = useCallback((checklist: SafetyChecklist) => {
+    // Create a formatted checklist content
+    const checklistContent = `
+SAFETY CHECKLIST
+Generated: ${new Date().toLocaleString()}
+
+==========================================
+
+SITUATION: ${checklist.situation}
+LOCATION: ${checklist.location || 'Not specified'}
+PRIORITY LEVEL: ${checklist.priority}
+
+IDENTIFIED HAZARDS:
+${checklist.hazards?.map(hazard => `• ${hazard}`).join('\n') || 'No specific hazards identified'}
+
+SAFETY CHECKLIST (${checklist.checklist.length} items):
+${checklist.checklist.map((item, index) => `${index + 1}. [ ] ${item}`).join('\n')}
+
+==========================================
+
+INSTRUCTIONS:
+- Complete each item before proceeding to the next
+- Check off items as they are completed
+- Do not skip any safety checks
+- Report any issues or concerns immediately
+- Keep this checklist for your records
+
+COMPLETION STATUS:
+Date Completed: _______________
+Completed By: _________________
+Supervisor Review: ____________
+
+==========================================
+End of Checklist
+    `.trim();
+
+    // Create blob and download URL
+    const blob = new Blob([checklistContent], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    setChecklistUrl(url);
   }, []);
 
   const generateReportFile = useCallback((data: SafetyReport) => {
@@ -256,6 +304,7 @@ End of Report
     setReportData({});
     setReportUrl(null);
     setChecklistData(null);
+    setChecklistUrl(null);
     setCurrentChecklistItem(0);
   }, []);
 
@@ -368,6 +417,7 @@ End of Report
     reportData,
     reportUrl,
     checklistData,
+    checklistUrl,
     currentChecklistItem,
     connectOnce,
     disconnect,

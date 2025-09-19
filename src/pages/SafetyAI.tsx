@@ -30,6 +30,7 @@ export default function SafetyAI() {
     reportData,
     reportUrl,
     checklistData,
+    checklistUrl,
     currentChecklistItem,
     connectOnce,
     disconnect,
@@ -237,6 +238,31 @@ export default function SafetyAI() {
                           onClick={() => window.open(reportUrl, '_blank')}
                         >
                           View Report
+                        </Button>
+                      </div>
+                    )}
+                    
+                    {checklistData && checklistUrl && (
+                      <div className="space-y-2">
+                        <Button
+                          className="w-full justify-start bg-blue-600 hover:bg-blue-700 text-white"
+                          onClick={() => {
+                            const link = document.createElement('a');
+                            link.href = checklistUrl;
+                            link.download = `safety-checklist-${new Date().toISOString().split('T')[0]}.txt`;
+                            link.click();
+                          }}
+                        >
+                          <Download className="w-4 h-4 mr-2" />
+                          Download Checklist
+                        </Button>
+                        
+                        <Button
+                          variant="outline"
+                          className="w-full justify-start"
+                          onClick={() => window.open(checklistUrl, '_blank')}
+                        >
+                          View Checklist
                         </Button>
                       </div>
                     )}
