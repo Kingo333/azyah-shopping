@@ -411,14 +411,6 @@ const RoleDashboard: React.FC = () => {
             </Popover>
           </div>
           
-          <Button 
-            variant="ghost" 
-            size="sm"
-            className="h-7 px-2 text-xs flex-shrink-0"
-            onClick={() => navigate('/trending-styles')}
-          >
-            View All
-          </Button>
         </div>
         <TrendingStylesCarousel limit={8} categoryFilter={selectedTrendingCategory} />
       </section>
