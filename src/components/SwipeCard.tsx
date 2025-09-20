@@ -121,7 +121,7 @@ const SwipeCard = memo(({
             </div>
           </div>
           
-          <div className="flex flex-col flex-grow space-y-1 mt-1 mx-2">
+          <div className="flex flex-col space-y-1 mt-1 mx-2">
             <div className="flex items-start justify-between gap-2">
               <div className="flex-1 min-w-0">
                 <h3 className="text-sm sm:text-base font-semibold line-clamp-1">{product.title}</h3>
