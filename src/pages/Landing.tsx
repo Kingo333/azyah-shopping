@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { ArrowRight, Heart, Users, Star, Sparkles, Play, Menu, X, CheckCircle, ShoppingBag, Globe, Crown, ChevronRight, LayoutGrid, ExternalLink, Shuffle, Zap, Award, TrendingUp } from "lucide-react";
+import { ArrowRight, Heart, Users, Star, Sparkles, Play, Menu, X, CheckCircle, ShoppingBag, Globe, Crown, ChevronRight, LayoutGrid, ExternalLink, Shuffle } from "lucide-react";
 import InstallBanner from "@/components/InstallBanner";
 import { Button } from "@/components/ui/button";
 import { SEOHead } from "@/components/SEOHead";
@@ -13,24 +13,16 @@ import { getResponsiveImageProps } from "@/utils/asosImageUtils";
 import { InvestorContactModal } from "@/components/InvestorContactModal";
 import luxuryFashionEditorial from "@/assets/luxury-fashion-editorial.jpg";
 import { useScrollAnimation, useStaggeredScrollAnimation } from "@/hooks/useScrollAnimation";
-import { FloatingElements, ParticleBackground } from "@/components/FloatingElements";
-import { HeroAnimatedGradient } from "@/components/HeroAnimatedGradient";
-import { LiveStatsWidget } from "@/components/LiveStatsWidget";
-import { InteractiveProductPreview } from "@/components/InteractiveProductPreview";
-import { FloatingActionButton } from "@/components/FloatingActionButton";
-import { OptimizedLazyImage } from "@/components/OptimizedLazyImage";
-import { DynamicTestimonials } from "@/components/DynamicTestimonials";
-import { RippleButton, HoverCard, PulseElement, ShimmerText } from "@/components/MicroInteractions";
 
 function FeatureCarousel() {
   const [currentFeature, setCurrentFeature] = useState(0);
   const features = [
-    { text: "Virtual Try-On Technology", icon: Sparkles },
-    { text: "UGC Collaboration Hub", icon: Users }, 
-    { text: "Beauty AI Assistant", icon: Crown },
-    { text: "AI-Curated Fashion", icon: Zap },
-    { text: "Personalized Recommendations", icon: Heart },
-    { text: "Global Style Community", icon: Globe }
+    "Virtual Try-On Technology",
+    "UGC Collaboration Hub", 
+    "Beauty AI Assistant",
+    "AI-Curated Fashion",
+    "Personalized Recommendations",
+    "Global Style Community"
   ];
 
   useEffect(() => {
@@ -40,24 +32,17 @@ function FeatureCarousel() {
     return () => clearInterval(interval);
   }, [features.length]);
 
-  const CurrentIcon = features[currentFeature].icon;
-
   return (
-    <div className="flex items-center justify-center space-x-3">
-      <PulseElement intensity="medium">
-        <CurrentIcon className="w-5 h-5 text-primary" />
-      </PulseElement>
+    <div className="flex items-center justify-center">
       {/* Sliding Text Container */}
       <div className="relative h-6 w-56 overflow-hidden">
         <div className="absolute inset-0 flex items-center justify-center">
-          <ShimmerText>
-            <span 
-              className="text-sm font-semibold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent whitespace-nowrap transition-all duration-700 ease-in-out animate-fade-in"
-              key={currentFeature}
-            >
-              {features[currentFeature].text}
-            </span>
-          </ShimmerText>
+          <span 
+            className="text-sm font-semibold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent whitespace-nowrap transition-all duration-700 ease-in-out animate-fade-in"
+            key={currentFeature}
+          >
+            {features[currentFeature]}
+          </span>
         </div>
       </div>
     </div>
@@ -251,10 +236,11 @@ export default function Landing() {
 
       {/* HERO */}
       <section id="discover" className="relative overflow-hidden min-h-[60vh] sm:min-h-[75vh] lg:min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-background">
-        {/* Enhanced Background Effects */}
-        <HeroAnimatedGradient />
-        <ParticleBackground />
-        <FloatingElements />
+        {/* Minimalist Background Pattern */}
+        <div className="absolute inset-0">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(239,68,68,0.15),transparent_70%)]" />
+          <div className="absolute inset-0 bg-gradient-to-t from-background/60 via-transparent to-gray-900/30" />
+        </div>
         
         {/* Subtle Background Text - Smaller on Mobile */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -293,24 +279,14 @@ export default function Landing() {
               </div>
 
               <div className="flex flex-col gap-3 sm:gap-4">
-                <RippleButton 
-                  variant="primary"
-                  className="group px-6 py-3 sm:px-8 sm:py-4 lg:px-8 lg:py-4 text-sm sm:text-base font-medium animate-scale-bounce"
-                  style={{ animationDelay: '1.4s', animationFillMode: 'both' }} 
-                  onClick={() => navigate("/auth")}
-                >
+                <Button size="sm" className="group px-6 py-3 sm:px-8 sm:py-4 lg:px-8 lg:py-4 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg hover:shadow-xl transition-all duration-300 text-sm sm:text-base font-medium animate-scale-bounce" style={{ animationDelay: '1.4s', animationFillMode: 'both' }} onClick={() => navigate("/auth")}>
                   <span>Sign Up to Explore</span>
                   <ArrowRight className="ml-2 w-4 h-4 lg:w-5 lg:h-5 group-hover:translate-x-1 transition-transform" />
-                </RippleButton>
-                <RippleButton 
-                  variant="outline"
-                  className="px-6 py-3 sm:px-8 sm:py-4 lg:px-8 lg:py-4 bg-background/50 backdrop-blur-sm text-sm sm:text-base font-light animate-scale-bounce"
-                  style={{ animationDelay: '1.6s', animationFillMode: 'both' }} 
-                  onClick={() => scrollToSection("#featured-collections")}
-                >
+                </Button>
+                <Button variant="outline" size="sm" className="px-6 py-3 sm:px-8 sm:py-4 lg:px-8 lg:py-4 bg-background/50 backdrop-blur-sm border border-primary/30 hover:bg-background/80 hover:border-primary/50 text-sm sm:text-base font-light animate-scale-bounce" style={{ animationDelay: '1.6s', animationFillMode: 'both' }} onClick={() => scrollToSection("#featured-collections")}>
                   <Play className="mr-2 w-4 h-4 lg:w-5 lg:h-5" /> 
                   <span>View Lookbook</span>
-                </RippleButton>
+                </Button>
               </div>
 
               {/* Feature Carousel - Enhanced Elegant Design */}
@@ -353,35 +329,15 @@ export default function Landing() {
             </p>
           </div>
 
-          {/* Enhanced Interactive Section */}
-          <div className="grid lg:grid-cols-3 gap-6 lg:gap-8 mb-12 lg:mb-20">
-            {/* Live Stats */}
-            <HoverCard className="lg:col-span-3">
-              <LiveStatsWidget />
-            </HoverCard>
-            
-            {/* Interactive Product Preview */}
-            <HoverCard className="lg:col-span-2">
-              <InteractiveProductPreview />
-            </HoverCard>
-            
-            {/* Dynamic Testimonials */}
-            <HoverCard>
-              <DynamicTestimonials />
-            </HoverCard>
-          </div>
-
-          {/* Enhanced Preview Section */}
+          {/* Interactive Preview Section - Mobile First */}
           <div className="bg-gradient-to-br from-primary/5 to-primary/10 rounded-xl sm:rounded-2xl lg:rounded-3xl p-4 sm:p-6 lg:p-12 mb-8 sm:mb-12 lg:mb-16">
             <div className="grid lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-12 items-center">
               <div className="space-y-4 sm:space-y-6 lg:space-y-8 order-2 lg:order-1">
                 <div className="space-y-3 sm:space-y-4 lg:space-y-6">
-                  <PulseElement intensity="low">
-                    <div className="inline-flex items-center space-x-2 bg-primary/10 rounded-full px-3 sm:px-4 py-1 sm:py-2">
-                      <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 text-primary" />
-                      <span className="text-xs sm:text-sm font-semibold text-primary uppercase tracking-wider">How It Works</span>
-                    </div>
-                  </PulseElement>
+                  <div className="inline-flex items-center space-x-2 bg-primary/10 rounded-full px-3 sm:px-4 py-1 sm:py-2">
+                    <Play className="w-3 h-3 sm:w-4 sm:h-4 text-primary" />
+                    <span className="text-xs sm:text-sm font-semibold text-primary uppercase tracking-wider">How It Works</span>
+                  </div>
                   <h3 className="font-cormorant text-xl sm:text-2xl lg:text-4xl font-bold">
                     Discover Your
                     <span className="block text-primary italic">Perfect Style</span>
@@ -835,7 +791,6 @@ export default function Landing() {
         </div>
       </footer>
       
-      <FloatingActionButton />
       <InvestorContactModal isOpen={investorModalOpen} onOpenChange={setInvestorModalOpen} />
     </div>
 }
