@@ -67,6 +67,20 @@ const RoleDashboard: React.FC = () => {
   const [isAffiliateMinimized, setIsAffiliateMinimized] = useState(true);
   const [selectedTrendingCategory, setSelectedTrendingCategory] = useState<TopCategory | null>(null);
   const [isTrendingFilterOpen, setIsTrendingFilterOpen] = useState(false);
+
+  // Load saved category selection on component mount
+  useEffect(() => {
+    const savedCategory = localStorage.getItem('selectedTrendingCategory');
+    if (savedCategory && savedCategory !== 'null') {
+      setSelectedTrendingCategory(savedCategory as TopCategory);
+    }
+  }, []);
+
+  // Save category selection to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('selectedTrendingCategory', selectedTrendingCategory || 'null');
+  }, [selectedTrendingCategory]);
+
   useEffect(() => {
     // Set correct page title
     document.title = 'Azyah - Fashion Discovery Platform';
