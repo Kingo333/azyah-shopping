@@ -36,7 +36,7 @@ import ToyReplica from './pages/ToyReplica';
 import BeautyConsultant from './pages/BeautyConsultant';
 import Terms from './pages/Terms';
 import Privacy from './pages/Privacy';
-import Install from './pages/Install';
+
 
 import BrandPortal from './pages/BrandPortal';
 import RetailerPortal from './pages/RetailerPortal';
@@ -185,7 +185,7 @@ function App() {
                   } />
                   <Route path="/terms" element={<Terms />} />
                   <Route path="/privacy" element={<Privacy />} />
-                  <Route path="/install" element={<Install />} />
+                  
                   <Route path="/admin/delete-user" element={
                     <ProtectedRoute roles={['admin']}>
                       <UserDeletionTool />

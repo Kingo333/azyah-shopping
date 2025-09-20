@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { ArrowRight, Heart, Users, Star, Sparkles, Play, Menu, X, CheckCircle, ShoppingBag, Globe, Crown, ChevronRight, LayoutGrid, ExternalLink, Shuffle } from "lucide-react";
-import InstallBanner from "@/components/InstallBanner";
+
 import { Button } from "@/components/ui/button";
 import { SEOHead } from "@/components/SEOHead";
 import SwipeDeck from '@/components/SwipeDeck';
@@ -198,14 +198,8 @@ export default function Landing() {
               </Button>}
           </div>
 
-          {/* Mobile actions: Install Button + Hamburger Menu */}
-          <div className="flex lg:hidden items-center gap-2">
-            {/* Install Button - Compact for mobile nav */}
-            <Button variant="ghost" size="sm" onClick={() => navigate("/install")} className="text-xs px-2 py-1 h-8 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20">
-              Install
-            </Button>
-            
-            {/* Mobile burger - Cleaner Design */}
+          {/* Mobile hamburger menu */}
+          <div className="flex lg:hidden items-center">
             <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} aria-label="Toggle menu" className="p-2 rounded-lg hover:bg-primary/10 transition-colors">
               {mobileMenuOpen ? <X className="w-5 h-5 sm:w-6 sm:h-6 text-primary" /> : <Menu className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />}
             </button>
