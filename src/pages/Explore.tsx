@@ -10,9 +10,8 @@ import TopInfluencers from '@/components/TopInfluencers';
 import FeaturedBrands from '@/components/FeaturedBrands';
 import ExploreSearch from '@/components/ExploreSearch';
 import { useAuth } from '@/contexts/AuthContext';
-import { TrendingUp, Trophy, Search, Globe, MapPin, Star, Users, Sparkles, Crown } from 'lucide-react';
+import { TrendingUp, Trophy, Search, Globe, MapPin, Star, Users, Sparkles, Crown, Home } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { BackButton } from '@/components/ui/back-button';
 const Explore: React.FC = () => {
   const {
     user
@@ -27,7 +26,15 @@ const Explore: React.FC = () => {
         
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
-          <BackButton />
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate('/dashboard')}
+            className="flex items-center gap-2"
+          >
+            <Home className="h-4 w-4" />
+            Home
+          </Button>
           <h1 className="text-3xl font-cormorant font-bold">Explore</h1>
         </div>
 
