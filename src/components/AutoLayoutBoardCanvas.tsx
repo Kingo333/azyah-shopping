@@ -61,7 +61,7 @@ export const AutoLayoutBoardCanvas = forwardRef<HTMLDivElement, AutoLayoutBoardC
     );
     
     const itemWidth = (containerWidth - (padding * 2) - (gap * (cols - 1))) / cols;
-    const itemHeight = itemWidth * 1.2; // Slightly taller aspect ratio
+    const itemHeight = itemWidth * (4/3); // 3:4 aspect ratio to match ProductCard
     
     return items.map((item, index) => {
       const row = Math.floor(index / cols);
@@ -253,11 +253,11 @@ const AutoPositionedItem: React.FC<AutoPositionedItemProps> = ({
       }}
       onClick={onSelect}
     >
-      {/* Item Card */}
-      <Card className="w-full h-full overflow-hidden bg-white shadow-md hover:shadow-xl transition-all duration-300">
+      {/* Item Card - matches ProductCard styling */}
+      <Card className="w-full h-full overflow-hidden bg-gradient-to-br from-primary/10 to-primary/5 shadow-lg hover:shadow-xl transition-all duration-300 rounded-2xl">
         <div className="relative w-full h-full">
-          {/* Image */}
-          <div className="w-full h-3/4 overflow-hidden">
+          {/* Image container with 3:4 aspect ratio like ProductCard */}
+          <div className="w-full h-full overflow-hidden rounded-2xl">
             <img
               src={getPrimaryImageUrl(item)}
               alt={item.title || 'Item'}
@@ -266,8 +266,11 @@ const AutoPositionedItem: React.FC<AutoPositionedItemProps> = ({
             />
           </div>
           
-          {/* Item Info */}
-          <div className="absolute bottom-0 left-0 right-0 h-1/4 bg-white p-2 flex flex-col justify-center">
+          {/* Hover gradient overlay - matches ProductCard */}
+          <div className="absolute inset-0 bg-gradient-to-t from-primary/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          
+          {/* Item Info overlay - matches ProductCard */}
+          <div className="absolute bottom-2 left-2 right-2 bg-white/60 backdrop-blur-sm rounded-xl p-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
             <p className="text-xs font-medium text-foreground truncate">
               {item.title}
             </p>
