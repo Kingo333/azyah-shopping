@@ -47,9 +47,9 @@ export const AutoLayoutBoardCanvas = forwardRef<HTMLDivElement, AutoLayoutBoardC
   const calculateAutoLayout = useCallback((items: BoardItem[]) => {
     if (items.length === 0) return items;
     
-    const containerWidth = isMobile ? 280 : 600; // Reduced from 320/800
-    const padding = 12; // Reduced from 16
-    const gap = 8; // Reduced from 12
+    const containerWidth = isMobile ? 220 : 480; // Much smaller: mobile 220px, desktop 480px
+    const padding = 8; // Reduced from 12
+    const gap = 6; // Reduced from 8
     
     // Calculate optimal columns based on item count
     const cols = Math.min(
@@ -57,7 +57,7 @@ export const AutoLayoutBoardCanvas = forwardRef<HTMLDivElement, AutoLayoutBoardC
       items.length <= 4 ? 2 :
       items.length <= 6 ? 3 :
       items.length <= 9 ? 3 : 4,
-      Math.floor(containerWidth / 120) // Reduced min width from 180
+      Math.floor(containerWidth / 80) // Much smaller min width for tighter fit
     );
     
     const itemWidth = (containerWidth - (padding * 2) - (gap * (cols - 1))) / cols;
@@ -86,10 +86,10 @@ export const AutoLayoutBoardCanvas = forwardRef<HTMLDivElement, AutoLayoutBoardC
   // Calculate dynamic canvas dimensions - smaller to avoid scrolling
   const canvasDimensions = useMemo(() => {
     if (layoutedItems.length === 0) {
-      return { width: isMobile ? 280 : 600, height: isMobile ? 160 : 280 }; // Reduced
+      return { width: isMobile ? 220 : 480, height: isMobile ? 120 : 200 }; // Much smaller
     }
     
-    const padding = 12;
+    const padding = 8;
     const maxX = Math.max(...layoutedItems.map(item => 
       (item.position?.x || 0) + (item.size?.width || 0)
     ));
@@ -135,31 +135,31 @@ export const AutoLayoutBoardCanvas = forwardRef<HTMLDivElement, AutoLayoutBoardC
   return (
     <div 
       ref={ref}
-      className="relative w-full h-full overflow-auto bg-gradient-to-br from-slate-50 to-white"
+      className="relative w-full h-full overflow-auto bg-gradient-to-br from-slate-50 to-white p-2" // Added padding for mobile
       onDrop={onDrop}
       onDragOver={onDragOver}
     >
-      {/* Canvas Container - compact size */}
+      {/* Canvas Container - very compact for mobile */}
       <div 
-        className="relative mx-auto shadow-lg rounded-xl overflow-visible transition-all duration-300"
+        className="relative mx-auto shadow-md rounded-lg overflow-visible transition-all duration-300" 
         style={{
           backgroundColor: boardState.canvas.background.color,
           width: canvasDimensions.width,
           height: canvasDimensions.height,
-          minHeight: isMobile ? '160px' : '280px' // Reduced min heights
+          minHeight: isMobile ? '120px' : '200px' // Much smaller min heights
         }}
       >
         {/* Drop zone overlay when dragging */}
         {isDragging && (
-          <div className="absolute inset-0 bg-primary/5 border-2 border-dashed border-primary/20 rounded-xl flex items-center justify-center z-10 backdrop-blur-sm">
-            <div className="text-center p-6">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center">
-                <Heart className="w-8 h-8 text-primary" />
+          <div className="absolute inset-0 bg-primary/5 border-2 border-dashed border-primary/20 rounded-lg flex items-center justify-center z-10 backdrop-blur-sm">
+            <div className="text-center p-3"> {/* Reduced padding */}
+              <div className="w-8 h-8 mx-auto mb-2 rounded-full bg-primary/10 flex items-center justify-center"> {/* Smaller icon */}
+                <Heart className="w-4 h-4 text-primary" />
               </div>
-              <p className="text-primary font-medium text-lg">Add to your mood board</p>
+              <p className="text-primary font-medium text-sm">Add to board</p> {/* Smaller text */}
               {dragPreview && (
-                <p className="text-sm text-muted-foreground mt-2">
-                  {dragPreview.title || 'Item'} will be automatically positioned
+                <p className="text-xs text-muted-foreground mt-1"> {/* Smaller text */}
+                  {dragPreview.title || 'Item'} will be positioned automatically
                 </p>
               )}
             </div>
@@ -181,16 +181,16 @@ export const AutoLayoutBoardCanvas = forwardRef<HTMLDivElement, AutoLayoutBoardC
         {/* Empty state */}
         {boardState.items.length === 0 && !isDragging && (
           <div className="absolute inset-0 flex items-center justify-center">
-            <div className="text-center space-y-4 p-8">
-              <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center">
-                <Heart className="w-10 h-10 text-primary/50" />
+            <div className="text-center space-y-2 p-4"> {/* Reduced spacing and padding */}
+              <div className="w-12 h-12 mx-auto rounded-full bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center"> {/* Smaller */}
+                <Heart className="w-6 h-6 text-primary/50" />
               </div>
               <div>
-                <h3 className="text-xl font-semibold text-foreground mb-2">
-                  Start Creating Your Look
+                <h3 className="text-sm font-semibold text-foreground mb-1"> {/* Smaller text */}
+                  Create Your Look
                 </h3>
-                <p className="text-muted-foreground max-w-sm">
-                  Drag items from your closet here. They'll automatically arrange themselves beautifully.
+                <p className="text-xs text-muted-foreground max-w-xs"> {/* Smaller text */}
+                  Drag items here for auto-layout
                 </p>
               </div>
             </div>
