@@ -7,7 +7,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Users, Archive, MessageSquare, ArrowRight, Crown, Medal } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useToast } from '@/hooks/use-toast';
 
 interface TopInfluencer {
   id: string;
@@ -33,7 +32,6 @@ interface TopInfluencersProps {
 
 const TopInfluencers: React.FC<TopInfluencersProps> = ({ limit = 6, showMore = true }) => {
   const navigate = useNavigate();
-  const { toast } = useToast();
 
   const { data: topInfluencers, isLoading } = useQuery({
     queryKey: ['top-influencers', limit],
@@ -173,11 +171,7 @@ const TopInfluencers: React.FC<TopInfluencersProps> = ({ limit = 6, showMore = t
           <Card 
             key={influencer.id}
             className="group hover:shadow-lg transition-all duration-300 cursor-pointer"
-            onClick={() => toast({
-              title: "Coming Soon",
-              description: "User profiles are coming soon! Stay tuned for updates.",
-              duration: 3000,
-            })}
+            onClick={() => navigate(`/profile/${influencer.id}`)}
           >
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
