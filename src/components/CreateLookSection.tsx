@@ -13,7 +13,7 @@ import { useEnhancedClosetItems } from '@/hooks/useEnhancedClosets';
 import { useCreateLook, useUpdateLook } from '@/hooks/useLooks';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Palette, Heart, ShoppingBag, Plus, Grid3X3, Save, Share2, Square, Undo, Redo } from 'lucide-react';
-import { BoardCanvas } from '@/components/BoardCanvas';
+import { AutoLayoutBoardCanvas } from '@/components/AutoLayoutBoardCanvas';
 import { TemplateSelector } from '@/components/TemplateSelector';
 import { ProductCard } from '@/components/ProductCard';
 // Removed ProductTryOnModal import - not used in this component
@@ -363,10 +363,37 @@ export const CreateLookSection: React.FC<CreateLookSectionProps> = ({
                   <p className="text-xs md:text-sm text-muted-foreground">Drag items from your closet to start building your mood board</p>
                 </div>
               ) : (
-                <BoardCanvas 
+                <AutoLayoutBoardCanvas 
                   ref={canvasRef} 
-                  boardState={boardState} 
-                  setBoardState={setBoardState} 
+                  boardState={{
+                    canvas: boardState.canvas,
+                    items: boardState.slots
+                      .filter((slot: any) => slot.item)
+                      .map((slot: any) => ({
+                        id: slot.id,
+                        item: slot.item
+                      })),
+                    selectedItemIds: []
+                  }}
+                  setBoardState={(newState: any) => {
+                    // Convert back to old format for compatibility
+                    setBoardState(prev => ({
+                      ...prev,
+                      slots: newState.items.map((item: any, index: number) => ({
+                        id: item.id,
+                        x: 100 + (index % 2) * 180,
+                        y: 100 + Math.floor(index / 2) * 200,
+                        w: 160,
+                        h: 200,
+                        type: 'square' as const,
+                        size: 'M' as const,
+                        mask: 'rect' as const,
+                        padding: 8,
+                        itemId: item.item?.id,
+                        item: item.item
+                      }))
+                    }));
+                  }}
                   onDrop={handleDrop} 
                   onDragOver={e => e.preventDefault()} 
                   isDragging={isDragging} 

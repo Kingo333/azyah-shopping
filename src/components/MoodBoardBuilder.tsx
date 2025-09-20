@@ -26,7 +26,7 @@ import { useCreateLook, useUpdateLook, usePublishLook } from '@/hooks/useLooks';
 import { useEnhancedClosetItems } from '@/hooks/useEnhancedClosets';
 import { toast } from '@/hooks/use-toast';
 import { ClosetGrid } from './ClosetGrid';
-import { BoardCanvas } from './BoardCanvas';
+import { AutoLayoutBoardCanvas } from './AutoLayoutBoardCanvas';
 import { TemplateSelector } from './TemplateSelector';
 import { ProductQuickView } from './ProductQuickView';
 import { PublishDialog } from './PublishDialog';
@@ -292,10 +292,37 @@ export const MoodBoardBuilder: React.FC<MoodBoardBuilderProps> = ({
           {/* Center - Canvas */}
           <ResizablePanel defaultSize={isMobile ? 45 : 50} minSize={isMobile ? 35 : 40}>
             <div className="h-full relative bg-gradient-to-br from-gray-50 to-gray-100 overflow-auto">
-              <BoardCanvas
+              <AutoLayoutBoardCanvas
                 ref={canvasRef}
-                boardState={boardState}
-                setBoardState={setBoardState}
+                boardState={{
+                  canvas: boardState.canvas,
+                  items: boardState.slots
+                    .filter((slot: any) => slot.item)
+                    .map((slot: any) => ({
+                      id: slot.id,
+                      item: slot.item
+                    })),
+                  selectedItemIds: []
+                }}
+                setBoardState={(newState: any) => {
+                  // Convert back to old format for compatibility
+                  setBoardState(prev => ({
+                    ...prev,
+                    slots: newState.items.map((item: any, index: number) => ({
+                      id: item.id,
+                      x: 100 + (index % 3) * 180,
+                      y: 100 + Math.floor(index / 3) * 200,
+                      w: 160,
+                      h: 200,
+                      type: 'square' as const,
+                      size: 'M' as const,
+                      mask: 'rect' as const,
+                      padding: 8,
+                      itemId: item.item?.id,
+                      item: item.item
+                    }))
+                  }));
+                }}
                 onDrop={handleDrop}
                 onDragOver={(e) => e.preventDefault()}
                 isDragging={isDragging}
