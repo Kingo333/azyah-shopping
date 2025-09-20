@@ -29,29 +29,30 @@ const PremiumBanner: React.FC = () => {
     <section className="px-4">
       <div className="rounded-xl border bg-card shadow-sm">
         <div 
-          className="p-3 flex items-center justify-between cursor-pointer hover:bg-muted/50 transition-colors"
+          className="p-2 flex items-center justify-between cursor-pointer hover:bg-muted/50 transition-colors"
           onClick={() => setIsExpanded(!isExpanded)}
         >
-          <div className="flex items-center gap-2">
-            <Gift className="h-4 w-4" />
-            <span className="text-sm font-medium">Premium • 30 AED/month</span>
+          <div className="flex items-center gap-1.5">
+            <Gift className="h-3.5 w-3.5" />
+            <span className="text-xs font-medium">Premium • 30 AED/month</span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             <Button 
               onClick={(e) => {
                 e.stopPropagation();
                 handleUpgrade();
               }}
               size="sm"
+              className="h-7 px-2 text-xs"
               disabled={loading}
             >
               {loading ? (
-                <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                <div className="w-2.5 h-2.5 border border-current border-t-transparent rounded-full animate-spin" />
               ) : (
                 'Upgrade'
               )}
             </Button>
-            {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            {isExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
           </div>
         </div>
         
