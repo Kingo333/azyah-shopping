@@ -242,7 +242,7 @@ const AutoPositionedItem: React.FC<AutoPositionedItemProps> = ({
 
   return (
     <div
-      className={`absolute group transition-all duration-300 cursor-pointer hover:scale-105 hover:z-10 ${
+      className={`absolute group transition-all duration-300 hover:scale-105 hover:z-10 ${
         isSelected ? 'ring-2 ring-primary ring-offset-2 scale-105 z-10' : ''
       }`}
       style={{
@@ -251,7 +251,6 @@ const AutoPositionedItem: React.FC<AutoPositionedItemProps> = ({
         width: size.width,
         height: size.height,
       }}
-      onClick={onSelect}
     >
       {/* Item Card - matches ProductCard styling */}
       <Card className="w-full h-full overflow-hidden bg-gradient-to-br from-primary/10 to-primary/5 shadow-lg hover:shadow-xl transition-all duration-300 rounded-2xl">
