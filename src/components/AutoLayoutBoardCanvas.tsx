@@ -43,13 +43,13 @@ export const AutoLayoutBoardCanvas = forwardRef<HTMLDivElement, AutoLayoutBoardC
 }, ref) => {
   const isMobile = useIsMobile();
   
-  // Smart grid layout system
+  // Smart grid layout system with smaller sizing
   const calculateAutoLayout = useCallback((items: BoardItem[]) => {
     if (items.length === 0) return items;
     
-    const containerWidth = isMobile ? 320 : 800;
-    const padding = 16;
-    const gap = 12;
+    const containerWidth = isMobile ? 280 : 600; // Reduced from 320/800
+    const padding = 12; // Reduced from 16
+    const gap = 8; // Reduced from 12
     
     // Calculate optimal columns based on item count
     const cols = Math.min(
@@ -57,11 +57,11 @@ export const AutoLayoutBoardCanvas = forwardRef<HTMLDivElement, AutoLayoutBoardC
       items.length <= 4 ? 2 :
       items.length <= 6 ? 3 :
       items.length <= 9 ? 3 : 4,
-      Math.floor(containerWidth / 180) // Min item width + gap
+      Math.floor(containerWidth / 120) // Reduced min width from 180
     );
     
     const itemWidth = (containerWidth - (padding * 2) - (gap * (cols - 1))) / cols;
-    const itemHeight = itemWidth * (4/3); // 3:4 aspect ratio to match ProductCard
+    const itemHeight = itemWidth * (4/3); // Keep 3:4 aspect ratio to match ProductCard
     
     return items.map((item, index) => {
       const row = Math.floor(index / cols);
@@ -83,13 +83,13 @@ export const AutoLayoutBoardCanvas = forwardRef<HTMLDivElement, AutoLayoutBoardC
     return calculateAutoLayout(boardState.items);
   }, [boardState.items, calculateAutoLayout]);
 
-  // Calculate dynamic canvas dimensions
+  // Calculate dynamic canvas dimensions - smaller to avoid scrolling
   const canvasDimensions = useMemo(() => {
     if (layoutedItems.length === 0) {
-      return { width: isMobile ? 320 : 800, height: isMobile ? 200 : 400 };
+      return { width: isMobile ? 280 : 600, height: isMobile ? 160 : 280 }; // Reduced
     }
     
-    const padding = 16;
+    const padding = 12;
     const maxX = Math.max(...layoutedItems.map(item => 
       (item.position?.x || 0) + (item.size?.width || 0)
     ));
@@ -98,8 +98,8 @@ export const AutoLayoutBoardCanvas = forwardRef<HTMLDivElement, AutoLayoutBoardC
     ));
     
     return {
-      width: Math.max(isMobile ? 320 : 800, maxX + padding),
-      height: Math.max(isMobile ? 200 : 400, maxY + padding)
+      width: Math.max(isMobile ? 280 : 600, maxX + padding),
+      height: Math.max(isMobile ? 160 : 280, maxY + padding) // Reduced max heights
     };
   }, [layoutedItems, isMobile]);
 
@@ -139,14 +139,14 @@ export const AutoLayoutBoardCanvas = forwardRef<HTMLDivElement, AutoLayoutBoardC
       onDrop={onDrop}
       onDragOver={onDragOver}
     >
-      {/* Canvas Container */}
+      {/* Canvas Container - compact size */}
       <div 
         className="relative mx-auto shadow-lg rounded-xl overflow-visible transition-all duration-300"
         style={{
           backgroundColor: boardState.canvas.background.color,
           width: canvasDimensions.width,
           height: canvasDimensions.height,
-          minHeight: isMobile ? '200px' : '400px'
+          minHeight: isMobile ? '160px' : '280px' // Reduced min heights
         }}
       >
         {/* Drop zone overlay when dragging */}
