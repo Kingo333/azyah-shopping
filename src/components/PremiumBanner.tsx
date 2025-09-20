@@ -27,16 +27,16 @@ const PremiumBanner: React.FC = () => {
 
   return (
     <section className="px-4">
-      <div className="rounded-lg border bg-card shadow-sm">
+      <div className="rounded-xl border bg-card shadow-sm">
         <div 
-          className="p-2 flex items-center justify-between cursor-pointer hover:bg-muted/50 transition-colors"
+          className="p-3 flex items-center justify-between cursor-pointer hover:bg-muted/50 transition-colors"
           onClick={() => setIsExpanded(!isExpanded)}
         >
           <div className="flex items-center gap-2">
-            <Gift className="h-3 w-3" />
-            <span className="text-xs font-medium">Premium • 30 AED/month</span>
+            <Gift className="h-4 w-4" />
+            <span className="text-sm font-medium">Premium • 30 AED/month</span>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2">
             <Button 
               onClick={(e) => {
                 e.stopPropagation();
@@ -44,24 +44,23 @@ const PremiumBanner: React.FC = () => {
               }}
               size="sm"
               disabled={loading}
-              className="h-6 text-xs px-2"
             >
               {loading ? (
-                <div className="w-2 h-2 border border-current border-t-transparent rounded-full animate-spin" />
+                <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
               ) : (
                 'Upgrade'
               )}
             </Button>
-            {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+            {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
           </div>
         </div>
         
         {isExpanded && (
-          <div className="px-2 pb-2 pt-0 space-y-2 border-t border-border/50">
+          <div className="px-3 pb-3 pt-0 space-y-3 border-t border-border/50">
             {premiumBenefits.map((benefit, index) => (
-              <div key={index} className="flex items-center gap-2">
-                <benefit.icon className="h-3 w-3 text-primary" />
-                <span className="text-xs text-muted-foreground">{benefit.text}</span>
+              <div key={index} className="flex items-center gap-3">
+                <benefit.icon className="h-4 w-4 text-primary" />
+                <span className="text-sm text-muted-foreground">{benefit.text}</span>
               </div>
             ))}
           </div>
