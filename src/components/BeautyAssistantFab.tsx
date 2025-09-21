@@ -30,7 +30,7 @@ export function BeautyAssistantFab({ onClick }: BeautyAssistantFabProps) {
       {/* Label */}
       <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
         <span className="text-sm font-medium text-white bg-black/20 backdrop-blur-sm px-3 py-1 rounded-full border border-white/20">
-          Beauty AI
+          Beauty/Style AI
         </span>
       </div>
     </div>
