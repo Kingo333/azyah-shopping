@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { motion } from 'framer-motion';
 import { Heart, X, ShoppingBag, Sparkles, Info, Image } from 'lucide-react';
 import { SmartImage } from '@/components/SmartImage';
+import { BeforeAfterSlider } from '@/components/BeforeAfterSlider';
 import { getPrimaryImageUrl, hasMultipleImages, getImageCount } from '@/utils/imageHelpers';
 import { getBrandDisplayName } from '@/utils/brandHelpers';
 
@@ -92,12 +93,18 @@ const SwipeCard = memo(({
             }}
             onClick={onInstructionsClick}
           >
-            <SmartImage
-              src={getPrimaryImageUrl(product)}
-              alt={product.title}
-              className="object-contain w-full h-full transition-opacity duration-300"
-              sizes="(max-width: 768px) 100vw, 50vw"
-            />
+            {/* Use BeforeAfterSlider for demonstration - in real app, this would be conditional */}
+            <BeforeAfterSlider className="w-full h-full" />
+            
+            {/* Original image as fallback - you can make this conditional based on product data */}
+            {false && (
+              <SmartImage
+                src={getPrimaryImageUrl(product)}
+                alt={product.title}
+                className="object-contain w-full h-full transition-opacity duration-300"
+                sizes="(max-width: 768px) 100vw, 50vw"
+              />
+            )}
             
             <div className="absolute top-4 left-4 flex items-center gap-3">
               {hasMultipleImages(product) && (
