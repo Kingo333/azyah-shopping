@@ -343,15 +343,6 @@ export default function Landing() {
       <section className="py-16 sm:py-20 lg:py-32 bg-gradient-to-b from-background to-muted/30 relative">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/10 opacity-60 animate-parallax-slow" />
         <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 relative">
-          <div ref={trendingSection.ref} className={`text-center mb-12 sm:mb-16 lg:mb-20 ${trendingSection.animationClasses}`}>
-            <h2 className="font-cormorant text-2xl sm:text-3xl lg:text-6xl font-bold mb-3 sm:mb-4 lg:mb-6 text-foreground">
-              Curated Collections
-              <span className="block text-primary italic">Premium Selection</span>
-            </h2>
-            <p className="text-sm sm:text-base lg:text-lg text-muted-foreground max-w-xl lg:max-w-2xl mx-auto font-light">
-              Discover fashion pieces you'll actually love.
-            </p>
-          </div>
 
           {/* Interactive Preview Section - Mobile First */}
           <div className="bg-gradient-to-br from-primary/5 to-primary/10 rounded-xl sm:rounded-2xl lg:rounded-3xl p-4 sm:p-6 lg:p-12 mb-8 sm:mb-12 lg:mb-16">
