@@ -153,23 +153,8 @@ const SubcategoryCard: React.FC<{
       <CardContent className="p-0 relative h-full max-w-full overflow-hidden">
         <Button variant="ghost" className="w-full h-full p-0 hover:bg-transparent max-w-full" onClick={onToggle}>
           <div className="w-full h-full relative overflow-hidden max-w-full">
-            {/* Background Image */}
-            <div className="absolute inset-0">
-              {products.length > 0 ? (
-                <img 
-                  src={getPrimaryImageUrl(products[0])} 
-                  alt={products[0].title} 
-                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" 
-                  onError={e => {
-                    (e.target as HTMLImageElement).style.display = 'none';
-                  }} 
-                />
-              ) : (
-                <div className={cn("w-full h-full", getGradientColor(subcategory))} />
-              )}
-              {/* Overlay gradient */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
-            </div>
+            {/* Blank Background */}
+            <div className="absolute inset-0 bg-card" />
             
             {/* Content positioned at center */}
             <div className="absolute inset-0 z-10 flex items-center justify-center p-2">
