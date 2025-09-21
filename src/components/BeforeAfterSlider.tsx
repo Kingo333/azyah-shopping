@@ -10,13 +10,11 @@ interface BeforeAfterSliderProps {
 export const BeforeAfterSlider: React.FC<BeforeAfterSliderProps> = ({ className = "" }) => {
   const [sliderPosition, setSliderPosition] = useState(50);
   const [isDragging, setIsDragging] = useState(false);
-  const [isAutoAnimating, setIsAutoAnimating] = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     setIsDragging(true);
-    setIsAutoAnimating(false);
   }, []);
 
   const handleMouseMove = useCallback((e: MouseEvent) => {
@@ -35,7 +33,6 @@ export const BeforeAfterSlider: React.FC<BeforeAfterSliderProps> = ({ className 
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     e.preventDefault();
     setIsDragging(true);
-    setIsAutoAnimating(false);
   }, []);
 
   const handleTouchMove = useCallback((e: TouchEvent) => {
@@ -66,22 +63,6 @@ export const BeforeAfterSlider: React.FC<BeforeAfterSliderProps> = ({ className 
       document.removeEventListener('touchend', handleTouchEnd);
     };
   }, [isDragging, handleMouseMove, handleMouseUp, handleTouchMove, handleTouchEnd]);
-
-  // Auto animation effect
-  React.useEffect(() => {
-    if (!isAutoAnimating || isDragging) return;
-    
-    const interval = setInterval(() => {
-      setSliderPosition(prev => {
-        // Oscillate between 40% and 60%
-        if (prev <= 40) return 60;
-        if (prev >= 60) return 40;
-        return prev > 50 ? 40 : 60;
-      });
-    }, 2000); // Change every 2 seconds
-    
-    return () => clearInterval(interval);
-  }, [isAutoAnimating, isDragging]);
 
   return (
     <div 
@@ -123,11 +104,6 @@ export const BeforeAfterSlider: React.FC<BeforeAfterSliderProps> = ({ className 
       <motion.div
         className="absolute top-0 bottom-0 w-1 bg-white shadow-lg z-10 cursor-ew-resize"
         style={{ left: `${sliderPosition}%`, transform: 'translateX(-50%)' }}
-        animate={{ left: `${sliderPosition}%` }}
-        transition={{ 
-          duration: isAutoAnimating ? 1.5 : 0.1, 
-          ease: "easeInOut" 
-        }}
         onMouseDown={handleMouseDown}
         onTouchStart={handleTouchStart}
         whileHover={{ scale: 1.1 }}
@@ -146,8 +122,8 @@ export const BeforeAfterSlider: React.FC<BeforeAfterSliderProps> = ({ className 
         </motion.div>
       </motion.div>
       
-      {/* Instruction text (only shown initially and when auto-animating) */}
-      {sliderPosition === 50 && isAutoAnimating && (
+      {/* Instruction text (only shown initially) */}
+      {sliderPosition === 50 && (
         <motion.div
           initial={{ opacity: 1 }}
           animate={{ opacity: isDragging ? 0 : 1 }}
