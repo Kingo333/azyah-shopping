@@ -589,7 +589,7 @@ export default function Landing() {
       {/* QUALITY SECTION */}
       <section id="features" className="py-24 lg:py-32 bg-gradient-to-b from-muted/30 to-muted/60 relative">
         <div className="absolute inset-0 bg-gradient-to-tr from-primary/8 via-transparent to-primary/12 opacity-60 animate-parallax-slow" />
-        <div className="container max-w-7xl mx-auto px-6 lg:px-12 relative">
+        <div className="container max-w-7xl mx-auto px-6 lg:px-12 relative overflow-visible">
           <div ref={qualitySection.ref} className={`text-center mb-20 ${qualitySection.animationClasses}`}>
             <h2 className="font-cormorant text-4xl lg:text-6xl font-bold mb-6 text-foreground">
               Quality You'll
