@@ -13,15 +13,23 @@ export function LiveActivityIndicator() {
   const [isVisible, setIsVisible] = useState(true);
 
   useEffect(() => {
-    const interval = setInterval(() => {
+    const showActivity = () => {
       setIsVisible(false);
       setTimeout(() => {
         setCurrentActivity(Math.floor(Math.random() * activities.length));
         setIsVisible(true);
       }, 300);
-    }, 4000);
+      
+      // Random interval between 8-15 seconds for more natural timing
+      const nextInterval = Math.random() * 7000 + 8000;
+      setTimeout(showActivity, nextInterval);
+    };
 
-    return () => clearInterval(interval);
+    // Initial delay before first activity
+    const initialDelay = Math.random() * 3000 + 2000;
+    const initialTimer = setTimeout(showActivity, initialDelay);
+
+    return () => clearTimeout(initialTimer);
   }, []);
 
   const activity = activities[currentActivity];
