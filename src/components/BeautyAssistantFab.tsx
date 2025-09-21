@@ -7,7 +7,7 @@ interface BeautyAssistantFabProps {
 
 export function BeautyAssistantFab({ onClick }: BeautyAssistantFabProps) {
   return (
-    <div className="fixed bottom-6 right-6 z-50 animate-float-glow">
+    <div className="fixed bottom-6 right-6 z-50">
       
       {/* Main button */}
       <Button
