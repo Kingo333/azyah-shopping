@@ -356,114 +356,115 @@ export default function Landing() {
 
           {/* Interactive Preview Section - Mobile First */}
           <div className="bg-gradient-to-br from-primary/5 to-primary/10 rounded-xl sm:rounded-2xl lg:rounded-3xl p-4 sm:p-6 lg:p-12 mb-8 sm:mb-12 lg:mb-16">
-            <div className="grid lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-12 items-center">
-              <div className="space-y-4 sm:space-y-6 lg:space-y-8 order-2 lg:order-1">
-                <div className="space-y-3 sm:space-y-4 lg:space-y-6">
-                  <div className="inline-flex items-center space-x-2 bg-primary/10 rounded-full px-3 sm:px-4 py-1 sm:py-2">
-                    <Play className="w-3 h-3 sm:w-4 sm:h-4 text-primary" />
-                    <span className="text-xs sm:text-sm font-semibold text-primary uppercase tracking-wider">How It Works</span>
+            {/* Section Title */}
+            <div className="text-center mb-8 sm:mb-12">
+              <div className="inline-flex items-center space-x-2 bg-primary/10 rounded-full px-4 py-2 mb-4">
+                <Sparkles className="w-4 h-4 text-primary" />
+                <span className="text-sm font-semibold text-primary uppercase tracking-wider">Experience The Magic</span>
+              </div>
+              <h3 className="font-cormorant text-2xl sm:text-3xl lg:text-4xl font-bold mb-4">
+                Two Powerful Features in One Platform
+              </h3>
+            </div>
+
+            {/* Features Grid */}
+            <div className="grid lg:grid-cols-2 gap-8 sm:gap-12 lg:gap-16">
+              
+              {/* Feature 1: AI Try-On Technology */}
+              <div className="space-y-6">
+                <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg border border-primary/10 p-4 sm:p-6 max-w-sm mx-auto lg:mx-0">
+                  <div className="aspect-[3/4] rounded-lg sm:rounded-xl mb-4 relative overflow-hidden">
+                    <BeforeAfterSlider className="rounded-lg sm:rounded-xl" />
                   </div>
-                  <h3 className="font-cormorant text-xl sm:text-2xl lg:text-4xl font-bold">
-                    Discover Your
-                    <span className="block text-primary italic">Perfect Style</span>
-                  </h3>
-                  <p className="text-sm sm:text-base lg:text-lg text-muted-foreground leading-relaxed font-light">
-                    AI learns your style and shows you pieces you'll love. Choose between grid view for browsing collections or swipe view for personalized discovery.
+                  <div className="text-center">
+                    <div className="inline-flex items-center gap-2 bg-primary/10 rounded-full px-3 py-1 mb-2">
+                      <Sparkles className="w-3 h-3 text-primary" />
+                      <span className="text-xs font-semibold text-primary">AI Try-On</span>
+                    </div>
+                    <h4 className="font-semibold text-sm mb-1">See Before You Buy</h4>
+                    <p className="text-xs text-muted-foreground">Virtual try-on technology</p>
+                  </div>
+                </div>
+                
+                <div className="text-center lg:text-left space-y-4">
+                  <h4 className="font-cormorant text-xl sm:text-2xl font-bold">
+                    <span className="text-primary">AI-Powered</span> Virtual Try-On
+                  </h4>
+                  <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
+                    Experience how garments look on you before making a purchase. Our advanced AI technology creates realistic try-on experiences, helping you make confident style decisions.
                   </p>
-                </div>
-
-                <div className="space-y-3 sm:space-y-4">
-                  <div className="flex items-center space-x-3 sm:space-x-4 animate-slide-left-fade" style={{
-                  animationDelay: '1.1s',
-                  animationFillMode: 'both'
-                }}>
-                    <div className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 bg-gradient-to-r from-primary to-primary/80 rounded-full flex items-center justify-center flex-shrink-0">
-                      <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 lg:w-6 lg:h-6 text-white" />
-                    </div>
-                    <div>
-                      <h4 className="text-sm sm:text-base font-semibold">Like to Save</h4>
-                      <p className="text-xs sm:text-sm text-muted-foreground font-light">Love it? Save to your collection.</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-3 sm:space-x-4 animate-slide-left-fade" style={{
-                  animationDelay: '1.3s',
-                  animationFillMode: 'both'
-                }}>
-                    <div className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 bg-gradient-to-r from-gray-500 to-gray-600 rounded-full flex items-center justify-center flex-shrink-0">
-                      <X className="w-3 h-3 sm:w-4 sm:h-4 lg:w-6 lg:h-6 text-white" />
-                    </div>
-                    <div>
-                      <h4 className="text-sm sm:text-base font-semibold">Pass to Refine</h4>
-                      <p className="text-xs sm:text-sm text-muted-foreground font-light">Not quite right? Pass to see better matches.</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-3 sm:space-x-4 animate-slide-left-fade" style={{
-                  animationDelay: '1.5s',
-                  animationFillMode: 'both'
-                }}>
-                    <div className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 bg-gradient-to-r from-accent to-accent/80 rounded-full flex items-center justify-center flex-shrink-0">
-                      <ShoppingBag className="w-3 h-3 sm:w-4 sm:h-4 lg:w-6 lg:h-6 text-white" />
-                    </div>
-                    <div>
-                      <h4 className="text-sm sm:text-base font-semibold">Save for Later</h4>
-                      <p className="text-xs sm:text-sm text-muted-foreground font-light">Want to buy later? Save to wishlist.</p>
-                    </div>
+                  <div className="flex items-center justify-center lg:justify-start gap-2 text-sm text-primary font-medium">
+                    <CheckCircle className="w-4 h-4" />
+                    <span>Realistic fit visualization</span>
                   </div>
                 </div>
-
-                <Button size="sm" className="px-6 py-3 sm:px-8 sm:py-4 lg:px-8 lg:py-4 bg-primary hover:bg-primary/90 text-sm sm:text-base font-medium" onClick={() => navigate("/auth")}>
-                  <span>Start Discovering</span>
-                  <ArrowRight className="ml-2 w-3 h-3 sm:w-4 sm:h-4" />
-                </Button>
               </div>
 
-              {/* Mock Swipe Interface - Minimal on Mobile */}
-              <div className="relative order-1 lg:order-2 animate-scale-bounce" style={{
-              animationDelay: '1.2s',
-              animationFillMode: 'both'
-            }}>
-                <div className="bg-white rounded-xl sm:rounded-2xl shadow-xl border border-primary/20 p-3 sm:p-4 lg:p-6 max-w-xs sm:max-w-sm mx-auto">
-                  <div className="aspect-[3/4] bg-gradient-to-br from-primary/20 to-primary/10 rounded-lg sm:rounded-xl mb-3 sm:mb-4 relative overflow-hidden">
-                    <BeforeAfterSlider className="rounded-lg sm:rounded-xl" />
-                    <div className="absolute bottom-2 sm:bottom-4 left-2 sm:left-4 right-2 sm:right-4">
-                      <div className="bg-white/90 backdrop-blur-sm rounded-lg p-2 sm:p-3">
-                        <h4 className="font-semibold text-xs sm:text-sm">Designer Dress</h4>
-                        <p className="text-xs text-muted-foreground hidden sm:block">Premium Brand</p>
-                        <p className="text-sm sm:text-lg font-bold text-primary">$299</p>
+              {/* Feature 2: Smart Swipe Discovery */}
+              <div className="space-y-6">
+                <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg border border-primary/10 p-4 sm:p-6 max-w-sm mx-auto lg:mx-0">
+                  <div className="aspect-[3/4] bg-gradient-to-br from-primary/20 to-primary/10 rounded-lg sm:rounded-xl mb-4 relative overflow-hidden">
+                    <div className="absolute bottom-4 left-4 right-4">
+                      <div className="bg-white/90 backdrop-blur-sm rounded-lg p-3">
+                        <h4 className="font-semibold text-sm">Designer Dress</h4>
+                        <p className="text-xs text-muted-foreground">Premium Brand</p>
+                        <p className="text-lg font-bold text-primary">$299</p>
                       </div>
                     </div>
                   </div>
                   
-                  {/* Action Buttons - Smaller on Mobile */}
-                  <div className="flex justify-center space-x-2 sm:space-x-4">
-                    <div className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 bg-gray-100 rounded-full flex items-center justify-center">
-                      <X className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-gray-600" />
+                  {/* Action Buttons */}
+                  <div className="flex justify-center space-x-4">
+                    <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
+                      <X className="w-5 h-5 text-gray-600" />
                     </div>
-                    <div className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 bg-accent/10 rounded-full flex items-center justify-center">
-                      <ShoppingBag className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-accent" />
+                    <div className="w-10 h-10 bg-accent/10 rounded-full flex items-center justify-center">
+                      <ShoppingBag className="w-5 h-5 text-accent" />
                     </div>
-                    <div className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 bg-primary/10 rounded-full flex items-center justify-center">
-                      <Heart className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-primary" />
+                    <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                      <Heart className="w-5 h-5 text-primary" />
                     </div>
                   </div>
                 </div>
                 
-                {/* Simplified Swipe Indicators for Mobile */}
-                <div className="absolute -top-2 -left-2 sm:-top-4 sm:-left-4 bg-white/95 backdrop-blur-sm rounded-lg sm:rounded-xl p-2 sm:p-3 shadow-lg border border-primary/20">
-                  <div className="text-xs font-medium text-center hidden sm:block">Swipe Direction</div>
-                  <div className="flex space-x-1 sm:space-x-2 mt-0 sm:mt-2">
-                    <div className="w-4 h-4 sm:w-6 sm:h-6 bg-gray-100 rounded-full flex items-center justify-center">
-                      <span className="text-xs">←</span>
+                <div className="text-center lg:text-left space-y-4">
+                  <h4 className="font-cormorant text-xl sm:text-2xl font-bold">
+                    <span className="text-primary">Smart Swipe</span> Discovery
+                  </h4>
+                  <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
+                    Discover fashion pieces you'll actually love through intelligent swiping. Our AI learns your preferences and shows you increasingly better matches.
+                  </p>
+                  
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-center lg:justify-start gap-3">
+                      <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center flex-shrink-0">
+                        <Heart className="w-3 h-3 text-white" />
+                      </div>
+                      <span className="text-sm">Swipe right to like and save</span>
                     </div>
-                    <div className="w-4 h-4 sm:w-6 sm:h-6 bg-primary/20 rounded-full flex items-center justify-center">
-                      <span className="text-xs">→</span>
+                    <div className="flex items-center justify-center lg:justify-start gap-3">
+                      <div className="w-6 h-6 bg-gray-500 rounded-full flex items-center justify-center flex-shrink-0">
+                        <X className="w-3 h-3 text-white" />
+                      </div>
+                      <span className="text-sm">Swipe left to pass and refine</span>
                     </div>
-                    <div className="w-4 h-4 sm:w-6 sm:h-6 bg-accent/20 rounded-full flex items-center justify-center">
-                      <span className="text-xs">↑</span>
+                    <div className="flex items-center justify-center lg:justify-start gap-3">
+                      <div className="w-6 h-6 bg-accent rounded-full flex items-center justify-center flex-shrink-0">
+                        <ShoppingBag className="w-3 h-3 text-white" />
+                      </div>
+                      <span className="text-sm">Swipe up to add to wishlist</span>
                     </div>
                   </div>
                 </div>
               </div>
+            </div>
+
+            {/* Call to Action */}
+            <div className="text-center mt-8 sm:mt-12">
+              <Button size="lg" className="px-8 py-4 bg-primary hover:bg-primary/90 text-base font-medium" onClick={() => navigate("/auth")}>
+                <span>Start Your Style Journey</span>
+                <ArrowRight className="ml-2 w-4 h-4" />
+              </Button>
             </div>
           </div>
 
