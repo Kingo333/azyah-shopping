@@ -151,9 +151,9 @@ export default function Landing() {
   }
   return <div className="min-h-screen bg-background">
         <SEOHead title="Azyah — Luxury Fashion Curation" description="AI-curated luxury fashion discovery. Exclusive designer collections for the discerning style connoisseur." canonical="https://azyah.app/" />
-      {/* NAV - More Minimal for Mobile */}
-      <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-md border-b border-primary/10 animate-slide-down-fade">
-        <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 h-16 sm:h-20 flex items-center justify-between">
+      {/* NAV - Slim Premium Header */}
+      <header className="sticky top-0 z-50 bg-black/80 backdrop-blur-xl border-b border-white/10 animate-slide-down-fade">
+        <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 h-14 sm:h-16 flex items-center justify-between">
           {/* Logo - Show Azyah text on all screen sizes */}
           <div className="flex items-center space-x-2 sm:space-x-4 animate-scale-bounce" style={{
           animationDelay: '0.1s',
@@ -172,12 +172,12 @@ export default function Landing() {
 
           {/* Desktop links */}
           <nav className="hidden lg:flex items-center space-x-8 xl:space-x-12">
-            {[["Discover", "#discover"], ["Features", "#features"], ["For Brands", "#brands"], ["For Retailers", "#retailers"], ["For Investors", "investors"]].map(([label, href], index) => <button key={href} onClick={() => href === "investors" ? setInvestorModalOpen(true) : scrollToSection(href)} className="relative text-sm font-medium text-muted-foreground hover:text-primary transition-colors group animate-slide-right-fade" style={{
+            {[["Discover", "#discover"], ["Features", "#features"], ["For Brands", "#brands"], ["For Retailers", "#retailers"], ["For Investors", "investors"]].map(([label, href], index) => <button key={href} onClick={() => href === "investors" ? setInvestorModalOpen(true) : scrollToSection(href)} className="relative text-sm font-light text-white/80 hover:text-white transition-all duration-300 group animate-slide-right-fade" style={{
             animationDelay: `${0.2 + index * 0.1}s`,
             animationFillMode: 'both'
           }}>
                 {label}
-                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all group-hover:w-full" />
+                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-amber-400 to-rose-400 transition-all duration-300 group-hover:w-full" />
               </button>)}
           </nav>
 
@@ -241,31 +241,28 @@ export default function Landing() {
       </header>
 
       {/* HERO */}
-      <section id="discover" className="relative overflow-hidden min-h-[60vh] sm:min-h-[75vh] lg:min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-black">
-        {/* Premium Background Pattern */}
+      <section id="discover" className="relative overflow-hidden min-h-screen bg-gradient-to-br from-gray-950 via-purple-950/20 to-gray-900 animate-gradient-shift">
+        {/* Premium Shifting Background */}
         <div className="absolute inset-0">
-          {/* Animated gradient background */}
-          <div className="absolute inset-0 bg-gradient-to-br from-rose-950/20 via-purple-950/10 to-slate-900/40 animate-gradient-shift" style={{backgroundSize: '400% 400%'}} />
-          
-          {/* Flowing fabric silhouette */}
-          <div className="absolute inset-0 opacity-[0.03]">
-            <div className="absolute top-1/4 right-0 w-96 h-96 bg-gradient-to-bl from-white via-transparent to-transparent transform rotate-12 animate-parallax-float" />
-            <div className="absolute bottom-1/4 left-0 w-80 h-80 bg-gradient-to-tr from-white via-transparent to-transparent transform -rotate-12 animate-parallax-slow" />
-          </div>
-          
-          {/* Premium overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-slate-900/20" />
+          <div className="absolute inset-0 bg-gradient-to-br from-purple-900/30 via-rose-900/20 to-amber-900/10 animate-gradient-shift" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(168,85,247,0.15),transparent_50%)]" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,rgba(236,72,153,0.1),transparent_60%)]" />
         </div>
         
+        {/* Fashion Silhouette Background */}
+        <div className="absolute inset-0 flex items-center justify-end pr-12 pointer-events-none opacity-5">
+          <div className="w-96 h-full bg-gradient-to-t from-primary/20 via-primary/10 to-transparent mask-silhouette animate-parallax-float"></div>
+        </div>
+
         {/* Elegant Background Text */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="font-playfair text-[15vw] sm:text-[12vw] lg:text-[10vw] font-bold text-white/[0.02] leading-none tracking-wider italic">
+          <div className="font-serif text-[12vw] sm:text-[10vw] lg:text-[8vw] font-thin text-white/3 leading-none tracking-[0.2em] italic">
             AZYAH
           </div>
         </div>
 
-        <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 pt-8 pb-12 sm:pt-12 sm:pb-16 lg:pt-20 lg:pb-24 relative">
-          <div className="flex justify-center items-center transition-all duration-1000" style={{
+        <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 pt-6 pb-8 sm:pt-10 sm:pb-12 lg:pt-16 lg:pb-20 relative">
+          <div className="flex justify-center items-center min-h-[80vh] transition-all duration-1000" style={{
           opacity: isVisible ? 1 : 0,
           transform: `translateY(${isVisible ? 0 : 32}px)`
         }}>
@@ -273,96 +270,95 @@ export default function Landing() {
           {/* Hero Content - Centered */}
             <div className="space-y-8 sm:space-y-10 lg:space-y-16 z-10 text-center max-w-5xl">
               <div className="space-y-6 sm:space-y-8 lg:space-y-12">
-                
                 <div className="space-y-4 sm:space-y-6 lg:space-y-8">
                   <h1 className="leading-[0.85] sm:leading-[0.8] tracking-tight">
-                    {/* "Find Your" - Bold Sans-Serif */}
-                    <span className="block font-inter text-5xl sm:text-7xl md:text-8xl lg:text-9xl xl:text-[10rem] font-bold text-white animate-fade-in-up" style={{
-                    animationDelay: '0.2s',
+                    {/* Bold Sans-Serif for "Find Your" */}
+                    <span className="block font-bold text-5xl sm:text-7xl md:text-8xl lg:text-9xl xl:text-[10rem] text-white animate-fade-in-up" style={{
+                    fontFamily: 'Inter, system-ui, sans-serif',
+                    animationDelay: '0.3s',
                     animationFillMode: 'both'
                   }}>
-                      Find Your
+                      FIND YOUR
                     </span>
-                    {/* "Perfect" - Stylish Italic Serif */}
-                    <span className="block font-playfair text-6xl sm:text-8xl md:text-9xl lg:text-[7rem] xl:text-[8rem] font-bold bg-gradient-to-r from-rose-400 via-pink-400 to-purple-400 bg-clip-text text-transparent italic animate-fade-in-scale" style={{
-                    animationDelay: '0.6s',
+                    {/* Stylish Italic Serif for "Perfect" */}
+                    <span className="block font-serif italic font-light text-6xl sm:text-8xl md:text-9xl lg:text-[8rem] xl:text-[12rem] bg-gradient-to-r from-amber-200 via-rose-300 to-purple-300 bg-clip-text text-transparent animate-fade-in-scale" style={{
+                    fontFamily: 'Playfair Display, serif',
+                    animationDelay: '0.7s',
                     animationFillMode: 'both'
                   }}>
                       Perfect
                     </span>
-                    {/* "Style" - Bold Sans-Serif */}
-                    <span className="block font-inter text-5xl sm:text-7xl md:text-8xl lg:text-9xl xl:text-[10rem] font-bold text-white animate-fade-in-up" style={{
-                    animationDelay: '1.0s',
+                    {/* Bold Sans-Serif for "Style" */}
+                    <span className="block font-bold text-5xl sm:text-7xl md:text-8xl lg:text-9xl xl:text-[10rem] text-white animate-fade-in-up" style={{
+                    fontFamily: 'Inter, system-ui, sans-serif',
+                    animationDelay: '1.1s',
                     animationFillMode: 'both'
                   }}>
-                      Style
+                      STYLE
                     </span>
                   </h1>
-                  <p className="text-xl sm:text-2xl lg:text-3xl text-gray-300 max-w-2xl leading-relaxed font-light mx-auto animate-fade-in-up" style={{
-                  animationDelay: '1.4s',
+                  <p className="text-xl sm:text-2xl lg:text-3xl text-gray-300/90 max-w-2xl leading-relaxed font-light mx-auto animate-fade-in-up" style={{
+                  animationDelay: '1.5s',
                   animationFillMode: 'both'
-                }}>Where AI meets fashion — discover pieces as unique as you are.</p>
+                }}>Where AI meets haute couture — discover pieces as unique as you are.</p>
                 </div>
               </div>
 
               <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center items-center">
-                {/* Primary CTA - Premium Gradient */}
-                <Button size="lg" className="group px-10 py-5 bg-gradient-to-r from-rose-600 via-pink-600 to-purple-600 hover:from-rose-700 hover:via-pink-700 hover:to-purple-700 shadow-2xl hover:shadow-pink-500/25 transition-all duration-500 text-lg font-semibold text-white border-0 animate-fade-in-up hover:scale-105" style={{
-                animationDelay: '1.8s',
+                {/* Premium Primary CTA */}
+                <Button size="lg" className="group relative px-10 py-4 lg:px-12 lg:py-5 bg-gradient-to-r from-red-900 via-red-800 to-amber-700 hover:from-red-800 hover:via-red-700 hover:to-amber-600 shadow-2xl hover:shadow-amber-500/25 transition-all duration-500 text-lg font-semibold text-white border-0 animate-fade-in-scale overflow-hidden" style={{
+                animationDelay: '1.9s',
                 animationFillMode: 'both'
               }} onClick={() => navigate("/auth")}>
-                  <span>Explore Our AI & More</span>
-                  <ArrowRight className="ml-3 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-amber-400/20 to-rose-400/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                  <span className="relative z-10">Explore Our AI & More</span>
+                  <ArrowRight className="relative z-10 ml-3 w-5 h-5 lg:w-6 lg:h-6 group-hover:translate-x-1 transition-transform duration-300" />
                 </Button>
-                
-                {/* Secondary CTA - Minimal */}
-                <Button variant="outline" size="lg" className="px-8 py-5 bg-white/5 backdrop-blur-sm border border-white/20 hover:bg-white/10 hover:border-white/30 text-lg font-light text-white transition-all duration-300 animate-fade-in-up" style={{
-                animationDelay: '2.0s',
+
+                {/* Minimal Secondary CTA */}
+                <Button variant="ghost" size="lg" className="group px-8 py-4 lg:px-10 lg:py-5 text-white/90 hover:text-white border border-white/20 hover:border-white/40 bg-white/5 hover:bg-white/10 backdrop-blur-sm transition-all duration-300 text-lg font-light animate-fade-in-scale" style={{
+                animationDelay: '2.1s',
                 animationFillMode: 'both'
               }} onClick={() => scrollToSection("#featured-collections")}>
-                  <Play className="mr-3 w-5 h-5" /> 
+                  <Play className="mr-3 w-5 h-5 lg:w-6 lg:h-6 opacity-70" /> 
                   <span>View Lookbook</span>
                 </Button>
               </div>
 
-              {/* Floating Beauty AI Assistant Button */}
-              <div className="relative animate-fade-in-up" style={{
-              animationDelay: '2.2s',
-              animationFillMode: 'both'
-            }}>
-                <Button 
-                  className="relative px-8 py-4 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-medium rounded-full shadow-lg hover:shadow-emerald-500/30 transition-all duration-300 animate-float-glow"
-                  onClick={() => navigate("/auth")}
-                >
-                  <div className="flex items-center space-x-3">
-                    <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
-                      <Sparkles className="w-4 h-4" />
-                    </div>
-                    <span>Beauty AI Assistant</span>
-                  </div>
-                  {/* Glow effect */}
-                  <div className="absolute inset-0 rounded-full bg-gradient-to-r from-emerald-400/50 to-teal-400/50 blur-xl opacity-50 -z-10"></div>
-                </Button>
-              </div>
-
-              {/* Feature Carousel - Enhanced Premium Design */}
-              <div className="mt-6 animate-fade-in-up" style={{
-              animationDelay: '2.4s',
+              {/* Beauty AI Assistant - Floating Glow Button */}
+              <div className="mt-12 sm:mt-16 lg:mt-20 animate-fade-in-scale" style={{
+              animationDelay: '2.5s',
               animationFillMode: 'both'
             }}>
                 <div className="flex justify-center">
-                  <div className="relative group">
-                    {/* Premium outer glow */}
-                    <div className="absolute -inset-3 bg-gradient-to-r from-rose-500/20 via-pink-500/10 to-purple-500/20 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-700 blur-lg"></div>
+                  <div className="relative group cursor-pointer" onClick={() => navigate("/auth")}>
+                    {/* Glowing ring animation */}
+                    <div className="absolute -inset-4 bg-gradient-to-r from-purple-400 via-pink-400 to-amber-400 rounded-full opacity-75 animate-pulse blur-lg"></div>
+                    <div className="absolute -inset-2 bg-gradient-to-r from-purple-500 via-pink-500 to-amber-500 rounded-full opacity-50 animate-ping"></div>
                     
-                    {/* Glass morphism container */}
-                    <div className="relative bg-white/10 backdrop-blur-2xl rounded-full px-10 py-5 border border-white/20 shadow-2xl">
-                      {/* Inner shimmer effect */}
-                      <div className="absolute inset-0 rounded-full bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-60"></div>
-                      <div className="relative">
-                        <FeatureCarousel />
+                    {/* Main button */}
+                    <div className="relative bg-gradient-to-r from-purple-900/90 via-pink-900/90 to-amber-900/90 backdrop-blur-xl rounded-full px-8 py-4 border border-white/20 shadow-2xl group-hover:scale-105 transition-all duration-300">
+                      <div className="flex items-center space-x-3">
+                        {/* Chatbot icon */}
+                        <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
+                          <Sparkles className="w-5 h-5 text-white" />
+                        </div>
+                        <span className="text-white font-medium text-lg">Beauty AI Assistant</span>
+                        <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
                       </div>
                     </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Feature Carousel - Enhanced */}
+              <div className="mt-8 sm:mt-10 lg:mt-12 animate-fade-in-up" style={{
+              animationDelay: '2.9s',
+              animationFillMode: 'both'
+            }}>
+                <div className="flex justify-center">
+                  <div className="relative bg-black/20 backdrop-blur-xl rounded-2xl px-8 py-4 border border-white/10">
+                    <FeatureCarousel />
                   </div>
                 </div>
               </div>

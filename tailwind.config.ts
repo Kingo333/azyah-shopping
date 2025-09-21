@@ -359,43 +359,17 @@ export default {
 					'75%': { transform: 'translateX(-5px)' },
 					'100%': { transform: 'translateX(-10px)' }
 				},
+				'gradient-shift': {
+					'0%, 100%': { backgroundPosition: '0% 50%' },
+					'50%': { backgroundPosition: '100% 50%' }
+				},
 				'fade-in-up': {
-					'0%': {
-						opacity: '0',
-						transform: 'translateY(30px)'
-					},
-					'100%': {
-						opacity: '1',
-						transform: 'translateY(0)'
-					}
+					'0%': { opacity: '0', transform: 'translateY(30px)' },
+					'100%': { opacity: '1', transform: 'translateY(0)' }
 				},
 				'fade-in-scale': {
-					'0%': {
-						opacity: '0',
-						transform: 'scale(0.95)'
-					},
-					'100%': {
-						opacity: '1',
-						transform: 'scale(1)'
-					}
-				},
-				'gradient-shift': {
-					'0%, 100%': {
-						'background-position': '0% 50%'
-					},
-					'50%': {
-						'background-position': '100% 50%'
-					}
-				},
-				'float-glow': {
-					'0%, 100%': {
-						transform: 'translateY(0px)',
-						boxShadow: '0 4px 20px rgba(0,0,0,0.1)'
-					},
-					'50%': {
-						transform: 'translateY(-8px)',
-						boxShadow: '0 8px 30px rgba(0,0,0,0.15)'
-					}
+					'0%': { opacity: '0', transform: 'scale(0.95) translateY(20px)' },
+					'100%': { opacity: '1', transform: 'scale(1) translateY(0)' }
 				}
 			},
 			animation: {
@@ -423,10 +397,9 @@ export default {
 				'parallax-slow': 'parallax-slow 10s ease-in-out infinite',
 				'parallax-float': 'parallax-float 6s ease-in-out infinite',
 				'auto-swipe': 'auto-swipe 3s ease-in-out infinite',
-				'fade-in-up': 'fade-in-up 0.8s cubic-bezier(0.16, 1, 0.3, 1)',
-				'fade-in-scale': 'fade-in-scale 0.6s cubic-bezier(0.16, 1, 0.3, 1)',
 				'gradient-shift': 'gradient-shift 8s ease-in-out infinite',
-				'float-glow': 'float-glow 3s ease-in-out infinite'
+				'fade-in-up': 'fade-in-up 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards',
+				'fade-in-scale': 'fade-in-scale 1s cubic-bezier(0.4, 0, 0.2, 1) forwards'
 			},
 			boxShadow: {
 				'glow': 'var(--shadow-glow)',
@@ -437,8 +410,7 @@ export default {
 				fontFamily: {
 					'luxury': ['Inter', 'system-ui', 'sans-serif'],
 					'playfair': ['Playfair Display', 'serif'],
-					'cormorant': ['Cormorant Garamond', 'serif'],
-					'inter': ['Inter', 'system-ui', 'sans-serif']
+					'cormorant': ['Cormorant Garamond', 'serif']
 				},
 			spacing: {
 				'mobile-safe': 'env(safe-area-inset-bottom)'
