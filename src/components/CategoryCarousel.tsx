@@ -188,7 +188,7 @@ const CategoryCard: React.FC<{
             </div>
             
             {/* Content positioned at bottom */}
-            <div className="absolute bottom-0 left-0 right-0 z-10 p-3">
+            <div className="absolute bottom-0 left-0 right-0 z-10 p-4">
               <h3 className="font-bold text-sm md:text-base text-white drop-shadow-lg text-center">
                 {category.name}
               </h3>
