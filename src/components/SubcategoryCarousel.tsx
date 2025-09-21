@@ -158,7 +158,7 @@ const SubcategoryCard: React.FC<{
             
             {/* Content positioned at center */}
             <div className="absolute inset-0 z-10 flex items-center justify-center p-2">
-              <h4 className="font-medium text-xs text-white drop-shadow-lg text-center leading-tight">
+              <h4 className="font-medium text-xs text-foreground drop-shadow-lg text-center leading-tight">
                 {getSubcategoryDisplayName(subcategory)}
               </h4>
             </div>
