@@ -39,6 +39,8 @@ export const usePublicProducts = (
   return useQuery({
     queryKey: ['public-products', limit, offset, categoryFilter],
     queryFn: async (): Promise<PublicProductData[]> => {
+      console.log('Fetching public products with params:', { limit, offset, categoryFilter });
+      
       const { data, error } = await supabase.rpc('get_public_products_secure', {
         limit_param: limit,
         offset_param: offset,
@@ -46,11 +48,14 @@ export const usePublicProducts = (
       });
 
       if (error) {
-        console.error('Failed to fetch public products:', error);
+        console.error('Failed to fetch public products via RPC:', error);
         throw error;
       }
       
+      console.log('Successfully fetched products:', data?.length || 0, 'items');
       return data || [];
     },
+    retry: 1,
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 };

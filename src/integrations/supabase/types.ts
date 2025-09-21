@@ -3165,24 +3165,17 @@ export type Database = {
         }[]
       }
       get_public_products: {
-        Args:
-          | {
-              brand_filter?: string
-              category_filter?: string
-              gender_filter?: string
-              limit_param?: number
-              offset_param?: number
-              price_max?: number
-              price_min?: number
-              search_query?: string
-              subcategory_filter?: string
-            }
-          | {
-              category_filter?: string
-              limit_param?: number
-              offset_param?: number
-            }
-          | { limit_param?: number; offset_param?: number }
+        Args: {
+          brand_filter?: string
+          category_filter?: string
+          gender_filter?: string
+          limit_param?: number
+          offset_param?: number
+          price_max?: number
+          price_min?: number
+          search_query?: string
+          subcategory_filter?: string
+        }
         Returns: {
           attributes: Json
           brand: Json
@@ -3231,12 +3224,12 @@ export type Database = {
         Returns: {
           brand: Json
           brand_id: string
-          category_slug: Database["public"]["Enums"]["category_type"]
+          category_slug: string
           created_at: string
           currency: string
           description: string
           external_url: string
-          gender: Database["public"]["Enums"]["gender_type"]
+          gender: string
           id: string
           image_url: string
           is_external: boolean
@@ -3246,7 +3239,7 @@ export type Database = {
           retailer: Json
           retailer_id: string
           status: string
-          subcategory_slug: Database["public"]["Enums"]["subcategory_type"]
+          subcategory_slug: string
           tags: string[]
           title: string
           updated_at: string
