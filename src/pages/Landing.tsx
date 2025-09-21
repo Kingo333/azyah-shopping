@@ -11,6 +11,7 @@ import { clearInvalidSession, debugAuthState } from "@/utils/sessionDebug";
 import { useSmartSwipeProducts } from "@/hooks/useSmartSwipeProducts";
 import { getResponsiveImageProps } from "@/utils/asosImageUtils";
 import { InvestorContactModal } from "@/components/InvestorContactModal";
+import { BeforeAfterSlider } from "@/components/BeforeAfterSlider";
 import luxuryFashionEditorial from "@/assets/luxury-fashion-editorial.jpg";
 import { useScrollAnimation, useStaggeredScrollAnimation } from "@/hooks/useScrollAnimation";
 function FeatureCarousel() {
@@ -423,7 +424,7 @@ export default function Landing() {
             }}>
                 <div className="bg-white rounded-xl sm:rounded-2xl shadow-xl border border-primary/20 p-3 sm:p-4 lg:p-6 max-w-xs sm:max-w-sm mx-auto">
                   <div className="aspect-[3/4] bg-gradient-to-br from-primary/20 to-primary/10 rounded-lg sm:rounded-xl mb-3 sm:mb-4 relative overflow-hidden">
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+                    <BeforeAfterSlider className="rounded-lg sm:rounded-xl" />
                     <div className="absolute bottom-2 sm:bottom-4 left-2 sm:left-4 right-2 sm:right-4">
                       <div className="bg-white/90 backdrop-blur-sm rounded-lg p-2 sm:p-3">
                         <h4 className="font-semibold text-xs sm:text-sm">Designer Dress</h4>
