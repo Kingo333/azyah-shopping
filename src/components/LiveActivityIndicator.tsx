@@ -35,7 +35,7 @@ export function LiveActivityIndicator() {
   const activity = activities[currentActivity];
 
   return (
-    <div className="fixed bottom-14 left-6 z-40 animate-slide-in-right">
+    <div className="fixed bottom-14 left-4 z-40 animate-slide-in-right">
       <div 
         className={`flex items-center gap-1.5 bg-white/95 backdrop-blur-sm rounded-full px-3 py-1.5 shadow-lg border border-primary/20 transition-all duration-300 ${
           isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'
