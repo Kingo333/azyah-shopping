@@ -28,7 +28,7 @@ interface PublicProductData {
 /**
  * Hook for fetching public product data (safe fields only)
  * Available to all users including anonymous
- * Uses direct table query following app patterns
+ * Uses secure RPC function with limited data exposure
  */
 export const usePublicProducts = (
   limit = 20,
@@ -60,7 +60,7 @@ export const usePublicProducts = (
         price_cents: item.price_cents,
         currency: item.currency,
         image_url: item.image_url,
-        media_urls: item.media_urls,
+        media_urls: Array.isArray(item.media_urls) ? item.media_urls : [],
         external_url: item.external_url,
         category_slug: item.category_slug,
         subcategory_slug: item.subcategory_slug,
