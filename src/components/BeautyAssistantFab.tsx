@@ -14,7 +14,8 @@ export function BeautyAssistantFab({ onClick }: BeautyAssistantFabProps) {
       {/* Main button */}
       <Button
         onClick={onClick}
-        className="relative w-16 h-16 rounded-full bg-gradient-to-br from-primary via-primary/90 to-primary/70 hover:from-primary/90 hover:via-primary hover:to-primary/80 shadow-2xl hover:shadow-3xl border-2 border-white/30 backdrop-blur-md transition-all duration-500 active:scale-95 hover:scale-105 group p-0"
+        className="relative w-16 h-16 !rounded-full bg-gradient-to-br from-primary via-primary/90 to-primary/70 hover:from-primary/90 hover:via-primary hover:to-primary/80 shadow-2xl hover:shadow-3xl border-2 border-white/30 backdrop-blur-md transition-all duration-500 active:scale-95 hover:scale-105 group p-0 overflow-hidden"
+        style={{ borderRadius: '50%' }}
         aria-label="Beauty AI Assistant"
       >
         {/* Sparkle decorations */}
