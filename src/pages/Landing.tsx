@@ -339,7 +339,7 @@ export default function Landing() {
                     <div className="absolute -inset-2 bg-gradient-to-r from-primary/20 via-primary/10 to-primary/20 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-700 blur-md"></div>
                     
                     {/* Glass morphism container */}
-                    <div className="relative bg-gradient-to-r from-background/95 via-white/90 to-background/95 backdrop-blur-lg rounded-full px-8 py-4 border border-primary/30 shadow-xl">
+                    <div className="relative bg-white/20 backdrop-blur-lg rounded-full px-8 py-4 border border-white/20 shadow-lg">
                       <FeatureCarousel />
                     </div>
                   </div>
