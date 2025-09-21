@@ -340,11 +340,7 @@ export default function Landing() {
                     
                     {/* Glass morphism container */}
                     <div className="relative bg-gradient-to-r from-background/95 via-white/90 to-background/95 backdrop-blur-lg rounded-full px-8 py-4 border border-primary/30 shadow-xl">
-                      {/* Inner shimmer effect */}
-                      <div className="absolute inset-0 rounded-full bg-gradient-to-r from-transparent via-primary/5 to-transparent opacity-50"></div>
-                      <div className="relative">
-                        <FeatureCarousel />
-                      </div>
+                      <FeatureCarousel />
                     </div>
                   </div>
                 </div>
