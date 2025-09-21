@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Sparkles, Users, Heart } from 'lucide-react';
 
 const activities = [
-  { icon: Sparkles, text: "Sarah discovered her perfect style" },
-  { icon: Heart, text: "Alex found 5 items they love" },
-  { icon: Users, text: "Maria joined the community" },
-  { icon: Sparkles, text: "Someone found their dream outfit" },
-  { icon: Heart, text: "New style match completed" }
+  { text: "Someone discovered their perfect style" },
+  { text: "A user found items they love" },
+  { text: "Someone joined the community" },
+  { text: "A new style match was completed" },
+  { text: "Someone created a new wishlist" }
 ];
 
 export function LiveActivityIndicator() {
@@ -35,7 +34,6 @@ export function LiveActivityIndicator() {
         }`}
       >
         <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-        <activity.icon className="w-4 h-4 text-primary" />
         <span className="text-sm text-muted-foreground">{activity.text}</span>
       </div>
     </div>
