@@ -28,8 +28,8 @@ export function BeautyAssistantFab({ onClick }: BeautyAssistantFabProps) {
       </Button>
       
       {/* Label */}
-      <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 whitespace-nowrap max-w-[120px] sm:max-w-none">
-        <span className="text-[10px] sm:text-xs font-medium text-white bg-black/20 backdrop-blur-sm px-1.5 sm:px-2 py-0.5 rounded-full border border-white/20 block text-center">
+      <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
+        <span className="text-xs font-medium text-white bg-black/20 backdrop-blur-sm px-2 py-0.5 rounded-full border border-white/20">
           Beauty/Style AI
         </span>
       </div>

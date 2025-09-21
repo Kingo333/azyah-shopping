@@ -7,7 +7,7 @@ import { SEOHead } from "@/components/SEOHead";
 import SwipeDeck from '@/components/SwipeDeck';
 import LandingSwipeDeck from '@/components/LandingSwipeDeck';
 import { clearInvalidSession, debugAuthState } from "@/utils/sessionDebug";
-import { usePublicProducts } from "@/hooks/usePublicProducts";
+import { useSmartSwipeProducts } from "@/hooks/useSmartSwipeProducts";
 import { getResponsiveImageProps } from "@/utils/asosImageUtils";
 import { InvestorContactModal } from "@/components/InvestorContactModal";
 import { BeforeAfterSlider } from "@/components/BeforeAfterSlider";
@@ -84,11 +84,19 @@ export default function Landing() {
     staggerDelay: 100
   });
 
-  // Fetch products for grid view using public hook for anonymous access
+  // Fetch products for grid view with stable configuration
+  const gridProductsConfig = useMemo(() => ({
+    filter: 'all' as const,
+    priceRange: {
+      min: 0,
+      max: 1000
+    },
+    searchQuery: ''
+  }), []);
   const {
-    data: gridProducts = [],
+    products: gridProducts,
     isLoading: productsLoading
-  } = usePublicProducts(12); // Get 12 products for display
+  } = useSmartSwipeProducts(gridProductsConfig);
   useEffect(() => setIsVisible(true), []);
 
   // Debug auth state and redirect logic
