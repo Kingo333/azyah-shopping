@@ -2,7 +2,6 @@ import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { ArrowRight, Heart, Users, Star, Sparkles, Play, Menu, X, CheckCircle, ShoppingBag, Globe, Crown, ChevronRight, LayoutGrid, ExternalLink, Shuffle } from "lucide-react";
-
 import { Button } from "@/components/ui/button";
 import { SEOHead } from "@/components/SEOHead";
 import SwipeDeck from '@/components/SwipeDeck';
@@ -390,9 +389,7 @@ export default function Landing() {
                   <h4 className="font-cormorant text-xl sm:text-2xl font-bold">
                     <span className="text-primary">AI-Powered</span> Virtual Try-On
                   </h4>
-                  <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
-                    Experience how garments look on you before making a purchase. Our advanced AI technology creates realistic try-on experiences, helping you make confident style decisions.
-                  </p>
+                  <p className="text-sm sm:text-base text-muted-foreground leading-relaxed"> Our advanced AI technology creates realistic try-on experiences, helping you make confident decisions.</p>
                   <div className="flex items-center justify-center lg:justify-start gap-2 text-sm text-primary font-medium">
                     <CheckCircle className="w-4 h-4" />
                     <span>Realistic fit visualization</span>
@@ -431,9 +428,7 @@ export default function Landing() {
                   <h4 className="font-cormorant text-xl sm:text-2xl font-bold">
                     <span className="text-primary">Smart Swipe</span> Discovery
                   </h4>
-                  <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
-                    Discover fashion pieces you'll actually love through intelligent swiping. Our AI learns your preferences and shows you increasingly better matches.
-                  </p>
+                  <p className="text-sm sm:text-base text-muted-foreground leading-relaxed"> Our AI learns your preferences and shows you increasingly better matches.</p>
                   
                   <div className="space-y-3">
                     <div className="flex items-center justify-center lg:justify-start gap-3">
