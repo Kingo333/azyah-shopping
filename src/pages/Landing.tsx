@@ -41,7 +41,6 @@ export default function Landing() {
   const [isVisible, setIsVisible] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'swipe'>('grid');
   const [investorModalOpen, setInvestorModalOpen] = useState(false);
-  const [productOffset, setProductOffset] = useState(0);
   const {
     user,
     loading
@@ -89,22 +88,14 @@ export default function Landing() {
   const {
     data: allGridProducts = [],
     isLoading: productsLoading
-  } = usePublicProducts(24); // Get more products for rotation
+  } = usePublicProducts(24); // Get more products for variety on refresh
   
-  // Rotate products every 5 seconds
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setProductOffset(prev => (prev + 8) % Math.max(8, allGridProducts.length));
-    }, 5000);
-    return () => clearInterval(interval);
-  }, [allGridProducts.length]);
-  
-  // Get current products to display
+  // Randomize products on mount to show different ones on each page refresh
   const gridProducts = useMemo(() => {
     if (allGridProducts.length === 0) return [];
-    const rotated = [...allGridProducts.slice(productOffset), ...allGridProducts.slice(0, productOffset)];
-    return rotated.slice(0, 8);
-  }, [allGridProducts, productOffset]);
+    const shuffled = [...allGridProducts].sort(() => Math.random() - 0.5);
+    return shuffled.slice(0, 8);
+  }, [allGridProducts]);
   
   useEffect(() => setIsVisible(true), []);
 
