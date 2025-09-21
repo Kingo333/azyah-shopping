@@ -351,6 +351,13 @@ export default {
 				'parallax-float': {
 					'0%, 100%': { transform: 'translateY(0px)' },
 					'50%': { transform: 'translateY(-10px)' }
+				},
+				'auto-swipe': {
+					'0%': { transform: 'translateX(-10px)' },
+					'25%': { transform: 'translateX(10px)' },
+					'50%': { transform: 'translateX(15px)' },
+					'75%': { transform: 'translateX(-5px)' },
+					'100%': { transform: 'translateX(-10px)' }
 				}
 			},
 			animation: {
@@ -376,7 +383,8 @@ export default {
 				'slide-left-out': 'slide-left-out 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards',
 				'slide-right-in': 'slide-right-in 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards',
 				'parallax-slow': 'parallax-slow 10s ease-in-out infinite',
-				'parallax-float': 'parallax-float 6s ease-in-out infinite'
+				'parallax-float': 'parallax-float 6s ease-in-out infinite',
+				'auto-swipe': 'auto-swipe 3s ease-in-out infinite'
 			},
 			boxShadow: {
 				'glow': 'var(--shadow-glow)',

@@ -387,7 +387,7 @@ export default function Landing() {
 
               {/* Feature 2: Smart Swipe Discovery */}
               <div className="space-y-6">
-                <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg border border-primary/10 p-4 sm:p-6 max-w-sm mx-auto lg:mx-0 animate-slide-in-right">
+                <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg border border-primary/10 p-4 sm:p-6 max-w-sm mx-auto lg:mx-0 animate-auto-swipe">
                   <div className="aspect-[3/4] bg-gradient-to-br from-primary/20 to-primary/10 rounded-lg sm:rounded-xl mb-4 relative overflow-hidden">
                     <div className="absolute bottom-4 left-4 right-4">
                       <div className="bg-white/90 backdrop-blur-sm rounded-lg p-3">
