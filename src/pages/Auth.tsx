@@ -15,7 +15,6 @@ import { checkPasswordStrength } from '@/lib/password-validation';
 import { generateSecurePassword } from '@/lib/password-generator';
 import { PasswordStrengthIndicator } from '@/components/PasswordStrengthIndicator';
 import { toast } from '@/hooks/use-toast';
-
 const Auth = () => {
   const {
     user,
@@ -43,7 +42,6 @@ const Auth = () => {
     email: '',
     password: ''
   });
-
   useEffect(() => {
     // Pre-select role from URL params and switch to signup
     const roleParam = searchParams.get('role');
@@ -66,14 +64,13 @@ const Auth = () => {
     const redirectPath = getRedirectRoute(userRole);
     return <Navigate to={redirectPath} replace />;
   }
-
   const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
-    
     try {
-      const { error } = await signIn(signinForm.email, signinForm.password);
-      
+      const {
+        error
+      } = await signIn(signinForm.email, signinForm.password);
       if (error) {
         console.error('Sign in error:', error);
         toast({
@@ -93,17 +90,14 @@ const Auth = () => {
       setIsLoading(false);
     }
   };
-
   const handleSignUp = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
-    
     try {
       const formData = new FormData(e.currentTarget);
       const email = formData.get('email') as string;
       const password = formData.get('password') as string;
       const name = formData.get('name') as string;
-      
       if (!selectedRole) {
         toast({
           title: "Role Required",
@@ -113,34 +107,27 @@ const Auth = () => {
         setIsLoading(false);
         return;
       }
-      
       const result = await signUp(email, password, {
         name,
         role: selectedRole
       });
-      
       if (result?.isExistingUser) {
         // Switch to sign-in tab and pre-fill email
         setActiveTab('signin');
-        setSigninForm(prev => ({ ...prev, email: result.email || '' }));
-        
+        setSigninForm(prev => ({
+          ...prev,
+          email: result.email || ''
+        }));
         toast({
           title: "Account Already Exists",
           description: "This email is already registered. We've switched you to sign in.",
           variant: "destructive",
-          action: (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setActiveTab('signin')}
-            >
+          action: <Button variant="outline" size="sm" onClick={() => setActiveTab('signin')}>
               Sign In
             </Button>
-          ),
         });
         return;
       }
-      
       if (result?.error) {
         console.error('Sign up error:', result.error);
         toast({
@@ -152,7 +139,7 @@ const Auth = () => {
     } catch (err: any) {
       console.error('Sign up exception:', err);
       toast({
-        title: "Registration Failed", 
+        title: "Registration Failed",
         description: "An unexpected error occurred. Please try again.",
         variant: "destructive"
       });
@@ -160,14 +147,12 @@ const Auth = () => {
       setIsLoading(false);
     }
   };
-
   const handleSignupFormChange = (field: string, value: string) => {
     setSignupForm(prev => ({
       ...prev,
       [field]: value
     }));
   };
-
   const generatePassword = () => {
     const newPassword = generateSecurePassword({
       length: 16,
@@ -186,7 +171,6 @@ const Auth = () => {
       description: "A secure password has been generated for you. You can modify it if needed."
     });
   };
-
   const handleForgotPassword = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
@@ -220,10 +204,8 @@ const Auth = () => {
     }
     setIsLoading(false);
   };
-
   const handlePasswordReset = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    
     if (newPassword !== confirmPassword) {
       toast({
         title: "Password Mismatch",
@@ -232,7 +214,6 @@ const Auth = () => {
       });
       return;
     }
-
     if (newPassword.length < 6) {
       toast({
         title: "Password Too Short",
@@ -241,17 +222,16 @@ const Auth = () => {
       });
       return;
     }
-
     setIsLoading(true);
     try {
-      const { error } = await supabase.auth.updateUser({
+      const {
+        error
+      } = await supabase.auth.updateUser({
         password: newPassword
       });
-
       if (error) {
         throw error;
       }
-
       toast({
         title: "Password Updated",
         description: "Your password has been successfully updated. You can now sign in."
@@ -261,8 +241,9 @@ const Auth = () => {
       setIsResettingPassword(false);
       setNewPassword('');
       setConfirmPassword('');
-      navigate('/auth', { replace: true });
-      
+      navigate('/auth', {
+        replace: true
+      });
     } catch (error: any) {
       console.error('Password reset error:', error);
       toast({
@@ -270,24 +251,23 @@ const Auth = () => {
         description: error.message || "Failed to update password. The link may have expired.",
         variant: "destructive"
       });
-      
+
       // If token expired, redirect to normal auth
       if (error.message?.includes('expired') || error.message?.includes('invalid')) {
         setIsResettingPassword(false);
-        navigate('/auth', { replace: true });
+        navigate('/auth', {
+          replace: true
+        });
       }
     }
     setIsLoading(false);
   };
-
   const passwordStrength = checkPasswordStrength(signupForm.email, signupForm.password);
-
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-accent/5">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>;
   }
-
   return <div className="min-h-screen dashboard-bg flex items-center justify-center p-4">
       <div className="w-full max-w-md space-y-8">
         {/* Back to Landing Button */}
@@ -309,17 +289,15 @@ const Auth = () => {
             <h1 className="text-6xl font-cormorant font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
               Azyah
             </h1>
-            <p className="text-muted-foreground mt-3 text-lg">
-              Discover fashion that speaks to your soul
-            </p>
+            <p className="text-muted-foreground mt-3 text-lg">Discover fashion that is made for you</p>
           </div>
         </div>
 
         {/* Auth Card */}
         <GlassPanel variant="premium" className="p-8">
-          {isResettingPassword ? (
-            // Password Reset Form
-            <div className="space-y-6">
+          {isResettingPassword ?
+        // Password Reset Form
+        <div className="space-y-6">
               <div className="space-y-2 text-center">
                 <h2 className="text-2xl font-cormorant font-semibold">Reset Your Password</h2>
                 <p className="text-muted-foreground">Enter your new password to complete the reset</p>
@@ -329,75 +307,39 @@ const Auth = () => {
                 <div className="space-y-3">
                   <Label htmlFor="new-password" className="text-sm font-medium">New Password</Label>
                   <div className="relative">
-                    <Input 
-                      id="new-password" 
-                      type={showPassword ? "text" : "password"}
-                      placeholder="Enter your new password" 
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      required 
-                      minLength={6}
-                      className="h-12 glass-panel border-white/20 pr-10" 
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="absolute right-0 top-0 h-12 px-3 py-2 hover:bg-transparent"
-                      onClick={() => setShowPassword(!showPassword)}
-                    >
-                      {showPassword ? (
-                        <EyeOff className="h-4 w-4 text-muted-foreground" />
-                      ) : (
-                        <Eye className="h-4 w-4 text-muted-foreground" />
-                      )}
+                    <Input id="new-password" type={showPassword ? "text" : "password"} placeholder="Enter your new password" value={newPassword} onChange={e => setNewPassword(e.target.value)} required minLength={6} className="h-12 glass-panel border-white/20 pr-10" />
+                    <Button type="button" variant="ghost" size="sm" className="absolute right-0 top-0 h-12 px-3 py-2 hover:bg-transparent" onClick={() => setShowPassword(!showPassword)}>
+                      {showPassword ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
                     </Button>
                   </div>
                 </div>
 
                 <div className="space-y-3">
                   <Label htmlFor="confirm-password" className="text-sm font-medium">Confirm Password</Label>
-                  <Input 
-                    id="confirm-password" 
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Confirm your new password" 
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    required 
-                    className="h-12 glass-panel border-white/20" 
-                  />
+                  <Input id="confirm-password" type={showPassword ? "text" : "password"} placeholder="Confirm your new password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required className="h-12 glass-panel border-white/20" />
                 </div>
 
                 <Button type="submit" variant="premium" size="lg" className="w-full h-12" disabled={isLoading}>
-                  {isLoading ? (
-                    <>
+                  {isLoading ? <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Updating Password...
-                    </>
-                  ) : (
-                    'Update Password'
-                  )}
+                    </> : 'Update Password'}
                 </Button>
 
                 <div className="text-center">
-                  <Button 
-                    type="button" 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={() => {
-                      setIsResettingPassword(false);
-                      navigate('/auth', { replace: true });
-                    }}
-                    className="text-sm text-muted-foreground hover:text-primary"
-                  >
+                  <Button type="button" variant="ghost" size="sm" onClick={() => {
+                setIsResettingPassword(false);
+                navigate('/auth', {
+                  replace: true
+                });
+              }} className="text-sm text-muted-foreground hover:text-primary">
                     Back to Sign In
                   </Button>
                 </div>
               </form>
-            </div>
-          ) : (
-            // Normal Auth Flow
-            <>
+            </div> :
+        // Normal Auth Flow
+        <>
               <div className="space-y-2 text-center mb-8">
                 <h2 className="text-2xl font-cormorant font-semibold">
                   {activeTab === 'signin' ? 'Welcome back' : 'Join Azyah'}
@@ -422,27 +364,17 @@ const Auth = () => {
                     <form onSubmit={handleSignIn} className="space-y-6">
                       <div className="space-y-3">
                         <Label htmlFor="signin-email" className="text-sm font-medium">Email</Label>
-                        <Input 
-                          id="signin-email" 
-                          type="email" 
-                          placeholder="Enter your email" 
-                          required 
-                          className="h-12 glass-panel border-white/20"
-                          value={signinForm.email}
-                          onChange={(e) => setSigninForm(prev => ({ ...prev, email: e.target.value }))}
-                        />
+                        <Input id="signin-email" type="email" placeholder="Enter your email" required className="h-12 glass-panel border-white/20" value={signinForm.email} onChange={e => setSigninForm(prev => ({
+                      ...prev,
+                      email: e.target.value
+                    }))} />
                       </div>
                       <div className="space-y-3">
                         <Label htmlFor="signin-password" className="text-sm font-medium">Password</Label>
-                        <Input 
-                          id="signin-password" 
-                          type="password" 
-                          placeholder="Enter your password" 
-                          required 
-                          className="h-12 glass-panel border-white/20"
-                          value={signinForm.password}
-                          onChange={(e) => setSigninForm(prev => ({ ...prev, password: e.target.value }))}
-                        />
+                        <Input id="signin-password" type="password" placeholder="Enter your password" required className="h-12 glass-panel border-white/20" value={signinForm.password} onChange={e => setSigninForm(prev => ({
+                      ...prev,
+                      password: e.target.value
+                    }))} />
                       </div>
                       <Button type="submit" variant="premium" size="lg" className="w-full h-12" disabled={isLoading}>
                         {isLoading ? <>
@@ -582,8 +514,7 @@ const Auth = () => {
                   </TabsContent>
                 </Tabs>
               </div>
-            </>
-          )}
+            </>}
         </GlassPanel>
 
         {/* Footer */}
@@ -602,5 +533,4 @@ const Auth = () => {
       </div>
     </div>;
 };
-
 export default Auth;
