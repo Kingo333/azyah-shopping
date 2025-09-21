@@ -12,7 +12,7 @@ export function BeautyAssistantFab({ onClick }: BeautyAssistantFabProps) {
       {/* Main button */}
       <Button
         onClick={onClick}
-        className="relative w-16 h-16 !rounded-full bg-gradient-to-br from-primary via-primary/90 to-primary/70 hover:from-primary/90 hover:via-primary hover:to-primary/80 shadow-2xl hover:shadow-3xl border-2 border-white/30 backdrop-blur-md transition-all duration-500 active:scale-95 hover:scale-105 group p-0 overflow-hidden"
+        className="relative w-12 h-12 !rounded-full bg-gradient-to-br from-primary via-primary/90 to-primary/70 hover:from-primary/90 hover:via-primary hover:to-primary/80 shadow-2xl hover:shadow-3xl border-2 border-white/30 backdrop-blur-md transition-all duration-500 active:scale-95 hover:scale-105 group p-0 overflow-hidden"
         style={{ borderRadius: '50%' }}
         aria-label="Beauty AI Assistant"
       >
@@ -21,7 +21,7 @@ export function BeautyAssistantFab({ onClick }: BeautyAssistantFabProps) {
         <Sparkles className="absolute -bottom-0.5 -left-1 w-2 h-2 text-white/60 animate-ping" style={{ animationDelay: '0.7s' }} />
         
         {/* Main icon */}
-        <MessageCircle className="w-7 h-7 text-white drop-shadow-lg group-hover:scale-110 transition-transform duration-300" strokeWidth={2.5} />
+        <MessageCircle className="w-5 h-5 text-white drop-shadow-lg group-hover:scale-110 transition-transform duration-300" strokeWidth={2.5} />
         
         {/* Pulse ring */}
         <div className="absolute inset-0 rounded-full border-2 border-white/20 animate-ping" />
