@@ -4,7 +4,9 @@ import { supabase } from '@/integrations/supabase/client';
 interface PublicCategoryData {
   slug: string;
   name: string;
-  product_count: number;
+  description?: string;
+  image_url?: string;
+  sort_order?: number;
 }
 
 /**
@@ -23,7 +25,16 @@ export const usePublicCategories = () => {
         throw error;
       }
       
-      return data || [];
+      // Transform data to match interface
+      const transformedData = (data || []).map((item: any) => ({
+        slug: item.slug,
+        name: item.name,
+        description: item.description,
+        image_url: item.image_url,
+        sort_order: item.sort_order
+      }));
+      
+      return transformedData;
     },
   });
 };

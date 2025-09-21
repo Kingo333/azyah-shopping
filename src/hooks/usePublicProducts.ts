@@ -40,55 +40,45 @@ export const usePublicProducts = (
     queryFn: async (): Promise<PublicProductData[]> => {
       console.log('Fetching public products with params:', { limit, offset, categoryFilter });
       
-      let query = supabase.from('products').select(`
-        id,
-        title,
-        description,
-        price_cents,
-        currency,
-        image_url,
-        media_urls,
-        external_url,
-        category_slug,
-        subcategory_slug,
-        gender,
-        tags,
-        status,
-        is_external,
-        merchant_name,
-        brand_id,
-        retailer_id,
-        created_at,
-        updated_at,
-        brand:brands(
-          id,
-          name,
-          slug,
-          logo_url
-        ),
-        retailer:retailers(
-          id,
-          name,
-          slug,
-          logo_url
-        )
-      `).eq('status', 'active');
-
-      if (categoryFilter) {
-        query = query.eq('category_slug', categoryFilter as any);
-      }
-
-      const { data, error } = await query
-        .order('created_at', { ascending: false })
-        .range(offset, offset + limit - 1);
-
+      // Use secure RPC function instead of direct table access
+      const { data, error } = await supabase.rpc('get_public_products', {
+        p_limit: limit,
+        p_offset: offset,
+        p_category: categoryFilter || null
+      });
+      
       if (error) {
         console.error('Failed to fetch public products:', error);
         throw error;
       }
+
+      // Transform the secure data to match expected interface
+      const transformedData = (data || []).map((item: any) => ({
+        id: item.id,
+        title: item.title,
+        description: '', // Not exposed in public view for security
+        price_cents: item.price_cents,
+        currency: item.currency,
+        image_url: item.image_url,
+        media_urls: item.media_urls,
+        external_url: item.external_url,
+        category_slug: item.category_slug,
+        subcategory_slug: item.subcategory_slug,
+        gender: '', // Not exposed for security
+        tags: [], // Not exposed for security
+        status: 'active', // All public products are active
+        is_external: !!item.external_url,
+        merchant_name: item.brand_name,
+        brand_id: '',
+        retailer_id: '',
+        created_at: item.created_at,
+        updated_at: item.created_at,
+        brand: { name: item.brand_name, slug: '', logo_url: '' },
+        retailer: null
+      }));
       
-      console.log('Successfully fetched products:', data?.length || 0, 'items');
-      return data || [];
+      console.log('Successfully fetched products:', transformedData.length, 'items');
+      return transformedData;
     },
     retry: 1,
     staleTime: 5 * 60 * 1000, // 5 minutes
