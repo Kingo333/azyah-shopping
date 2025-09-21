@@ -12,7 +12,6 @@
   },
   "dependencies": {
     "@apollo/client": "^3.13.9",
-    "@fontsource/playfair-display": "^5.2.8",
     "@heroicons/react": "^2.2.0",
     "@hookform/resolvers": "^3.9.0",
     "@huggingface/transformers": "^3.7.1",
