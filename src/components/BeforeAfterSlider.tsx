@@ -10,11 +10,13 @@ interface BeforeAfterSliderProps {
 export const BeforeAfterSlider: React.FC<BeforeAfterSliderProps> = ({ className = "" }) => {
   const [sliderPosition, setSliderPosition] = useState(50);
   const [isDragging, setIsDragging] = useState(false);
+  const [isAutoAnimating, setIsAutoAnimating] = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     setIsDragging(true);
+    setIsAutoAnimating(false);
   }, []);
 
   const handleMouseMove = useCallback((e: MouseEvent) => {
@@ -33,6 +35,7 @@ export const BeforeAfterSlider: React.FC<BeforeAfterSliderProps> = ({ className 
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     e.preventDefault();
     setIsDragging(true);
+    setIsAutoAnimating(false);
   }, []);
 
   const handleTouchMove = useCallback((e: TouchEvent) => {
@@ -64,25 +67,41 @@ export const BeforeAfterSlider: React.FC<BeforeAfterSliderProps> = ({ className 
     };
   }, [isDragging, handleMouseMove, handleMouseUp, handleTouchMove, handleTouchEnd]);
 
+  // Auto animation effect
+  React.useEffect(() => {
+    if (!isAutoAnimating || isDragging) return;
+    
+    const interval = setInterval(() => {
+      setSliderPosition(prev => {
+        // Oscillate between 40% and 60%
+        if (prev <= 40) return 60;
+        if (prev >= 60) return 40;
+        return prev > 50 ? 40 : 60;
+      });
+    }, 2000); // Change every 2 seconds
+    
+    return () => clearInterval(interval);
+  }, [isAutoAnimating, isDragging]);
+
   return (
     <div 
       ref={containerRef}
       className={`relative w-full h-full overflow-hidden cursor-ew-resize select-none ${className}`}
     >
-      {/* Before Image (right side) */}
+      {/* After Image (right side) */}
       <div className="absolute inset-0">
         <img
-          src={beforeOutfit}
-          alt="Before outfit"
+          src={afterOutfit}
+          alt="After outfit"
           className="w-full h-full object-cover"
           draggable={false}
         />
         <div className="absolute top-4 right-4 bg-black/75 text-white text-xs px-2 py-1 rounded-full">
-          Before
+          After
         </div>
       </div>
       
-      {/* After Image (left side) with clip mask */}
+      {/* Before Image (left side) with clip mask */}
       <div 
         className="absolute inset-0"
         style={{
@@ -90,13 +109,13 @@ export const BeforeAfterSlider: React.FC<BeforeAfterSliderProps> = ({ className 
         }}
       >
         <img
-          src={afterOutfit}
-          alt="After outfit"
+          src={beforeOutfit}
+          alt="Before outfit"
           className="w-full h-full object-cover"
           draggable={false}
         />
         <div className="absolute top-4 left-4 bg-black/75 text-white text-xs px-2 py-1 rounded-full">
-          After
+          Before
         </div>
       </div>
       
@@ -109,14 +128,17 @@ export const BeforeAfterSlider: React.FC<BeforeAfterSliderProps> = ({ className 
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.95 }}
       >
-        {/* Handle Circle */}
+        {/* Handle Circle with left-right arrows */}
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-8 h-8 bg-white rounded-full shadow-lg flex items-center justify-center">
-          <div className="w-3 h-3 border-l-2 border-r-2 border-gray-400"></div>
+          <div className="flex items-center">
+            <div className="w-1 h-3 border-l-2 border-gray-400"></div>
+            <div className="w-1 h-3 border-r-2 border-gray-400 ml-1"></div>
+          </div>
         </div>
       </motion.div>
       
-      {/* Instruction text (only shown initially) */}
-      {sliderPosition === 50 && (
+      {/* Instruction text (only shown initially and when auto-animating) */}
+      {sliderPosition === 50 && isAutoAnimating && (
         <motion.div
           initial={{ opacity: 1 }}
           animate={{ opacity: isDragging ? 0 : 1 }}
