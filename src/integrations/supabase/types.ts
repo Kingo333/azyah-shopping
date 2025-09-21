@@ -2549,7 +2549,7 @@ export type Database = {
       }
       products_public: {
         Row: {
-          brand_name: string | null
+          brand_info: Json | null
           category_slug: Database["public"]["Enums"]["category_type"] | null
           created_at: string | null
           currency: string | null
@@ -2564,7 +2564,7 @@ export type Database = {
           title: string | null
         }
         Insert: {
-          brand_name?: never
+          brand_info?: never
           category_slug?: Database["public"]["Enums"]["category_type"] | null
           created_at?: string | null
           currency?: string | null
@@ -2579,7 +2579,7 @@ export type Database = {
           title?: string | null
         }
         Update: {
-          brand_name?: never
+          brand_info?: never
           category_slug?: Database["public"]["Enums"]["category_type"] | null
           created_at?: string | null
           currency?: string | null
@@ -3137,7 +3137,7 @@ export type Database = {
       get_public_products: {
         Args: { p_category?: string; p_limit?: number; p_offset?: number }
         Returns: {
-          brand_name: string | null
+          brand_info: Json | null
           category_slug: Database["public"]["Enums"]["category_type"] | null
           created_at: string | null
           currency: string | null

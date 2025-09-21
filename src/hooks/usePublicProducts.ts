@@ -68,12 +68,12 @@ export const usePublicProducts = (
         tags: [], // Not exposed for security
         status: 'active', // All public products are active
         is_external: !!item.external_url,
-        merchant_name: item.brand_name,
-        brand_id: '',
+        merchant_name: item.brand_info?.name || '',
+        brand_id: item.brand_info?.id || '',
         retailer_id: '',
         created_at: item.created_at,
         updated_at: item.created_at,
-        brand: { name: item.brand_name, slug: '', logo_url: '' },
+        brand: item.brand_info || { name: '', slug: '', logo_url: '' },
         retailer: null
       }));
       
