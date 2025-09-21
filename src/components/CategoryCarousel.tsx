@@ -184,7 +184,7 @@ const CategoryCard: React.FC<{
                 />
               )}
               {/* Overlay gradient */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+              <div className="absolute top-0 left-0 right-0 bottom-3 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
             </div>
             
             {/* Content positioned at bottom */}
