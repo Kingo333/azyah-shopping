@@ -26,7 +26,11 @@ export function VoiceFab({ onOpen, className = "" }: VoiceFabProps) {
         <Mic className="w-6 h-6 md:w-7 md:h-7 text-white drop-shadow-lg group-hover:scale-110 transition-transform duration-300" strokeWidth={2.5} />
         
         {/* Pulse ring */}
-        <div className="absolute inset-0 rounded-full border-2 border-white/20 animate-ping" />
+        <div className="absolute -inset-1 rounded-full border-2 border-white/20 animate-ping">
+          <div className="absolute top-0 left-1/4 w-1 h-1 bg-white/80 rounded-full animate-ping animation-delay-300" />
+          <div className="absolute top-1/4 right-0 w-0.5 h-0.5 bg-white/60 rounded-full animate-ping animation-delay-500" />
+          <div className="absolute bottom-1/4 left-0 w-0.5 h-0.5 bg-white/70 rounded-full animate-ping animation-delay-700" />
+        </div>
       </button>
       
       {/* Label */}
