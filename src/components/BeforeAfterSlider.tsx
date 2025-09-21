@@ -123,18 +123,27 @@ export const BeforeAfterSlider: React.FC<BeforeAfterSliderProps> = ({ className 
       <motion.div
         className="absolute top-0 bottom-0 w-1 bg-white shadow-lg z-10 cursor-ew-resize"
         style={{ left: `${sliderPosition}%`, transform: 'translateX(-50%)' }}
+        animate={{ left: `${sliderPosition}%` }}
+        transition={{ 
+          duration: isAutoAnimating ? 1.5 : 0.1, 
+          ease: "easeInOut" 
+        }}
         onMouseDown={handleMouseDown}
         onTouchStart={handleTouchStart}
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.95 }}
       >
         {/* Handle Circle with left-right arrows */}
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-8 h-8 bg-white rounded-full shadow-lg flex items-center justify-center">
+        <motion.div 
+          className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-8 h-8 bg-white rounded-full shadow-lg flex items-center justify-center"
+          animate={{ scale: isDragging ? 1.1 : 1 }}
+          transition={{ duration: 0.2 }}
+        >
           <div className="flex items-center">
             <div className="w-1 h-3 border-l-2 border-gray-400"></div>
             <div className="w-1 h-3 border-r-2 border-gray-400 ml-1"></div>
           </div>
-        </div>
+        </motion.div>
       </motion.div>
       
       {/* Instruction text (only shown initially and when auto-animating) */}
