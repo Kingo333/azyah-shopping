@@ -1,6 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Json } from '@/integrations/supabase/types';
 
 interface PublicProductData {
   id: string;
@@ -29,7 +28,7 @@ interface PublicProductData {
 /**
  * Hook for fetching public product data (safe fields only)
  * Available to all users including anonymous
- * Uses secure RPC function with limited data exposure
+ * Uses direct table query following app patterns
  */
 export const usePublicProducts = (
   limit = 20,
@@ -41,14 +40,50 @@ export const usePublicProducts = (
     queryFn: async (): Promise<PublicProductData[]> => {
       console.log('Fetching public products with params:', { limit, offset, categoryFilter });
       
-      const { data, error } = await supabase.rpc('get_public_products_secure', {
-        limit_param: limit,
-        offset_param: offset,
-        category_filter: categoryFilter || null
-      });
+      let query = supabase.from('products').select(`
+        id,
+        title,
+        description,
+        price_cents,
+        currency,
+        image_url,
+        media_urls,
+        external_url,
+        category_slug,
+        subcategory_slug,
+        gender,
+        tags,
+        status,
+        is_external,
+        merchant_name,
+        brand_id,
+        retailer_id,
+        created_at,
+        updated_at,
+        brand:brands(
+          id,
+          name,
+          slug,
+          logo_url
+        ),
+        retailer:retailers(
+          id,
+          name,
+          slug,
+          logo_url
+        )
+      `).eq('status', 'active');
+
+      if (categoryFilter) {
+        query = query.eq('category_slug', categoryFilter as any);
+      }
+
+      const { data, error } = await query
+        .order('created_at', { ascending: false })
+        .range(offset, offset + limit - 1);
 
       if (error) {
-        console.error('Failed to fetch public products via RPC:', error);
+        console.error('Failed to fetch public products:', error);
         throw error;
       }
       
