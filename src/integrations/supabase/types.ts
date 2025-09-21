@@ -3357,6 +3357,18 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_user_profile_secure: {
+        Args: { target_user_id: string }
+        Returns: {
+          avatar_url: string
+          country: string
+          created_at: string
+          email: string
+          id: string
+          name: string
+          role: Database["public"]["Enums"]["user_role"]
+        }[]
+      }
       get_voice_usage_today: {
         Args: { target_user_id: string }
         Returns: {
@@ -3393,6 +3405,14 @@ export type Database = {
           access_context?: string
           action_type: string
           payment_id: string
+        }
+        Returns: undefined
+      }
+      log_sensitive_data_access: {
+        Args: {
+          access_type: string
+          table_name: string
+          user_id_accessed: string
         }
         Returns: undefined
       }
