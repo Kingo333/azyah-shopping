@@ -2523,109 +2523,77 @@ export type Database = {
         }
         Relationships: []
       }
+      categories_public: {
+        Row: {
+          description: string | null
+          image_url: string | null
+          name: string | null
+          slug: string | null
+          sort_order: number | null
+        }
+        Insert: {
+          description?: string | null
+          image_url?: string | null
+          name?: string | null
+          slug?: string | null
+          sort_order?: number | null
+        }
+        Update: {
+          description?: string | null
+          image_url?: string | null
+          name?: string | null
+          slug?: string | null
+          sort_order?: number | null
+        }
+        Relationships: []
+      }
       products_public: {
         Row: {
-          brand_id: string | null
+          brand_info: Json | null
           category_slug: Database["public"]["Enums"]["category_type"] | null
-          compare_at_price_cents: number | null
           created_at: string | null
           currency: string | null
-          description: string | null
           external_url: string | null
-          gender: Database["public"]["Enums"]["gender_type"] | null
           id: string | null
           image_url: string | null
-          is_external: boolean | null
           media_urls: Json | null
-          merchant_name: string | null
           price_cents: number | null
-          retailer_id: string | null
-          status: Database["public"]["Enums"]["product_status"] | null
           subcategory_slug:
             | Database["public"]["Enums"]["subcategory_type"]
             | null
-          tags: string[] | null
           title: string | null
-          updated_at: string | null
         }
         Insert: {
-          brand_id?: string | null
+          brand_info?: never
           category_slug?: Database["public"]["Enums"]["category_type"] | null
-          compare_at_price_cents?: never
           created_at?: string | null
           currency?: string | null
-          description?: never
           external_url?: string | null
-          gender?: Database["public"]["Enums"]["gender_type"] | null
           id?: string | null
           image_url?: string | null
-          is_external?: boolean | null
           media_urls?: never
-          merchant_name?: string | null
-          price_cents?: never
-          retailer_id?: string | null
-          status?: Database["public"]["Enums"]["product_status"] | null
+          price_cents?: number | null
           subcategory_slug?:
             | Database["public"]["Enums"]["subcategory_type"]
             | null
-          tags?: string[] | null
           title?: string | null
-          updated_at?: string | null
         }
         Update: {
-          brand_id?: string | null
+          brand_info?: never
           category_slug?: Database["public"]["Enums"]["category_type"] | null
-          compare_at_price_cents?: never
           created_at?: string | null
           currency?: string | null
-          description?: never
           external_url?: string | null
-          gender?: Database["public"]["Enums"]["gender_type"] | null
           id?: string | null
           image_url?: string | null
-          is_external?: boolean | null
           media_urls?: never
-          merchant_name?: string | null
-          price_cents?: never
-          retailer_id?: string | null
-          status?: Database["public"]["Enums"]["product_status"] | null
+          price_cents?: number | null
           subcategory_slug?:
             | Database["public"]["Enums"]["subcategory_type"]
             | null
-          tags?: string[] | null
           title?: string | null
-          updated_at?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "products_brand_id_fkey"
-            columns: ["brand_id"]
-            isOneToOne: false
-            referencedRelation: "brands"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "products_brand_id_fkey"
-            columns: ["brand_id"]
-            isOneToOne: false
-            referencedRelation: "brands_public"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "products_retailer_id_fkey"
-            columns: ["retailer_id"]
-            isOneToOne: false
-            referencedRelation: "retailers"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "products_retailer_id_fkey"
-            columns: ["retailer_id"]
-            isOneToOne: false
-            referencedRelation: "retailers_public"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       retailers_public: {
         Row: {
@@ -3159,9 +3127,29 @@ export type Database = {
       get_public_categories: {
         Args: Record<PropertyKey, never>
         Returns: {
-          name: string
-          product_count: number
-          slug: string
+          description: string | null
+          image_url: string | null
+          name: string | null
+          slug: string | null
+          sort_order: number | null
+        }[]
+      }
+      get_public_products: {
+        Args: { p_category?: string; p_limit?: number; p_offset?: number }
+        Returns: {
+          brand_info: Json | null
+          category_slug: Database["public"]["Enums"]["category_type"] | null
+          created_at: string | null
+          currency: string | null
+          external_url: string | null
+          id: string | null
+          image_url: string | null
+          media_urls: Json | null
+          price_cents: number | null
+          subcategory_slug:
+            | Database["public"]["Enums"]["subcategory_type"]
+            | null
+          title: string | null
         }[]
       }
       get_public_products_secure: {
