@@ -362,9 +362,7 @@ export default function Landing() {
               <div className="inline-flex items-center bg-primary/10 rounded-full px-4 py-2 mb-4">
                 <span className="text-sm font-semibold text-primary uppercase tracking-wider">Experience The Magic</span>
               </div>
-              <h3 className="font-cormorant text-2xl sm:text-3xl lg:text-4xl font-bold mb-4">
-                AI-Powered Fashion Discovery & Try-On
-              </h3>
+              <h3 className="font-cormorant text-2xl sm:text-3xl lg:text-4xl font-bold mb-4">Smart Fashion Discovery & Try-On</h3>
             </div>
 
             {/* Features Grid */}
