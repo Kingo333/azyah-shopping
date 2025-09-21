@@ -356,7 +356,7 @@ export default function Landing() {
         <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 relative">
 
           {/* Interactive Preview Section - Mobile First */}
-          <div className="bg-gradient-to-br from-primary/5 to-primary/10 rounded-xl sm:rounded-2xl lg:rounded-3xl p-4 sm:p-6 lg:p-12 mb-8 sm:mb-12 lg:mb-16">
+          <div className="bg-gradient-to-br from-primary/5 to-primary/10 rounded-xl sm:rounded-2xl lg:rounded-3xl p-3 sm:p-5 lg:p-10 mb-6 sm:mb-10 lg:mb-14">
             {/* Section Title */}
             <div className="text-center mb-8 sm:mb-12">
               <div className="inline-flex items-center bg-primary/10 rounded-full px-4 py-2 mb-4">
