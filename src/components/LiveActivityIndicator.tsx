@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { X } from 'lucide-react';
 
 const activities = [
   { text: "Someone discovered their perfect style" },
@@ -11,6 +12,14 @@ const activities = [
 export function LiveActivityIndicator() {
   const [currentActivity, setCurrentActivity] = useState(0);
   const [isVisible, setIsVisible] = useState(true);
+  const [isClosed, setIsClosed] = useState(() => {
+    return localStorage.getItem('activity-indicator-closed') === 'true';
+  });
+
+  const handleClose = () => {
+    setIsClosed(true);
+    localStorage.setItem('activity-indicator-closed', 'true');
+  };
 
   useEffect(() => {
     const showActivity = () => {
@@ -34,15 +43,24 @@ export function LiveActivityIndicator() {
 
   const activity = activities[currentActivity];
 
+  if (isClosed) return null;
+
   return (
     <div className="fixed bottom-14 left-4 z-40 animate-slide-in-right">
       <div 
-        className={`flex items-center gap-1.5 bg-white/95 backdrop-blur-sm rounded-full px-3 py-1.5 shadow-lg border border-primary/20 transition-all duration-300 ${
+        className={`flex items-center gap-1.5 bg-black/20 backdrop-blur-sm rounded-full px-1.5 sm:px-2 py-0.5 border border-white/20 transition-all duration-300 ${
           isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'
         }`}
       >
         <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
-        <span className="text-xs text-muted-foreground">{activity.text}</span>
+        <span className="text-[10px] sm:text-xs font-medium text-white">{activity.text}</span>
+        <button
+          onClick={handleClose}
+          className="ml-1 text-white/60 hover:text-white transition-colors"
+          aria-label="Close activity indicator"
+        >
+          <X className="w-3 h-3" />
+        </button>
       </div>
     </div>
   );
