@@ -290,9 +290,7 @@ export default function Landing() {
                   <p className="text-lg sm:text-xl lg:text-2xl text-gray-200 max-w-md lg:max-w-lg leading-relaxed font-light mx-auto animate-blur-focus" style={{
                   animationDelay: '1.1s',
                   animationFillMode: 'both'
-                }}>
-                    Where AI meets luxury fashion - discover pieces as unique as you are.
-                  </p>
+                }}>Where AI meets fashion - discover pieces as unique as you are.</p>
                 </div>
               </div>
 
