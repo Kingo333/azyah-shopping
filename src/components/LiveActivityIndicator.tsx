@@ -5,7 +5,7 @@ const activities = [
   { text: "A user found items they love" },
   { text: "Someone joined the community" },
   { text: "A new style match was completed" },
-  { text: "Someone created a new wishlist" }
+  { text: "Someone posted their mood board" }
 ];
 
 export function LiveActivityIndicator() {
@@ -16,7 +16,7 @@ export function LiveActivityIndicator() {
     const interval = setInterval(() => {
       setIsVisible(false);
       setTimeout(() => {
-        setCurrentActivity(prev => (prev + 1) % activities.length);
+        setCurrentActivity(Math.floor(Math.random() * activities.length));
         setIsVisible(true);
       }, 300);
     }, 4000);
