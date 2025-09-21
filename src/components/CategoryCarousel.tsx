@@ -155,9 +155,6 @@ const CategoryCard: React.FC<{
   isSelected,
   onToggle
 }) => {
-  const {
-    data: products = []
-  } = usePublicProducts(4, 0, category.slug);
   return <Card className={cn(
       "group cursor-pointer transition-all duration-300 hover:shadow-lg border-0 bg-gradient-to-br from-card to-card/50 backdrop-blur-sm overflow-hidden h-28 md:h-32 max-w-full",
       isSelected ? "ring-2 ring-primary shadow-lg scale-[1.02]" : "hover:shadow-md hover:scale-[1.01]"
@@ -167,22 +164,11 @@ const CategoryCard: React.FC<{
           <div className="w-full h-full relative overflow-hidden max-w-full">
             {/* Background Thumbnail */}
             <div className="absolute inset-0">
-              {products.length > 0 ? (
-                <img 
-                  src={getPrimaryImageUrl(products[0])} 
-                  alt={products[0].title} 
-                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" 
-                  onError={e => {
-                    (e.target as HTMLImageElement).src = category.defaultImage;
-                  }} 
-                />
-              ) : (
-                <img 
-                  src={category.defaultImage} 
-                  alt={`${category.name} category`} 
-                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" 
-                />
-              )}
+              <img 
+                src={category.defaultImage} 
+                alt={`${category.name} category`} 
+                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" 
+              />
               {/* Overlay gradient */}
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
             </div>
