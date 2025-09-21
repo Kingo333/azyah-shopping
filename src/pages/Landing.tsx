@@ -13,6 +13,10 @@ import { InvestorContactModal } from "@/components/InvestorContactModal";
 import { BeforeAfterSlider } from "@/components/BeforeAfterSlider";
 import luxuryFashionEditorial from "@/assets/luxury-fashion-editorial.jpg";
 import { useScrollAnimation, useStaggeredScrollAnimation } from "@/hooks/useScrollAnimation";
+import { FloatingFashionIcons } from "@/components/FloatingFashionIcons";
+import { TrustBadges } from "@/components/TrustBadges";
+import { LiveActivityIndicator } from "@/components/LiveActivityIndicator";
+import { BeautyAssistantFab } from "@/components/BeautyAssistantFab";
 function FeatureCarousel() {
   const [currentFeature, setCurrentFeature] = useState(0);
   const features = ["Virtual Try-On Technology", "UGC Collaboration Hub", "Beauty AI Assistant", "AI-Curated Fashion", "Personalized Recommendations", "Global Style Community"];
@@ -242,10 +246,21 @@ export default function Landing() {
 
       {/* HERO */}
       <section id="discover" className="relative overflow-hidden min-h-[60vh] sm:min-h-[75vh] lg:min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-background">
-        {/* Minimalist Background Pattern */}
+        {/* Floating Fashion Icons */}
+        <FloatingFashionIcons />
+        
+        {/* Live Activity Indicator */}
+        <LiveActivityIndicator />
+        
+        {/* Beauty Assistant Fab */}
+        <BeautyAssistantFab onClick={() => navigate("/auth")} />
+        
+        {/* Enhanced Background Pattern */}
         <div className="absolute inset-0">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(239,68,68,0.15),transparent_70%)]" />
           <div className="absolute inset-0 bg-gradient-to-t from-background/60 via-transparent to-gray-900/30" />
+          {/* Animated gradient overlay */}
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-secondary/5 animate-gradient-shift opacity-60" />
         </div>
         
         {/* Subtle Background Text - Smaller on Mobile */}
@@ -309,6 +324,11 @@ export default function Landing() {
                   <Play className="mr-2 w-4 h-4 lg:w-5 lg:h-5" /> 
                   <span>View Lookbook</span>
                 </Button>
+              </div>
+
+              {/* Trust Badges */}
+              <div className="mt-8 sm:mt-10 lg:mt-12">
+                <TrustBadges />
               </div>
 
               {/* Feature Carousel - Enhanced Elegant Design */}

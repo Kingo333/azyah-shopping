@@ -1,0 +1,39 @@
+import { MessageCircle, Sparkles } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+
+interface BeautyAssistantFabProps {
+  onClick: () => void;
+}
+
+export function BeautyAssistantFab({ onClick }: BeautyAssistantFabProps) {
+  return (
+    <div className="fixed bottom-6 right-6 z-50 animate-float-glow">
+      {/* Glow effect */}
+      <div className="absolute inset-0 bg-gradient-to-r from-primary/40 to-secondary/40 rounded-full animate-pulse blur-lg opacity-75" />
+      
+      {/* Main button */}
+      <Button
+        onClick={onClick}
+        className="relative w-16 h-16 rounded-full bg-gradient-to-br from-primary via-primary/90 to-primary/70 hover:from-primary/90 hover:via-primary hover:to-primary/80 shadow-2xl hover:shadow-3xl border-2 border-white/30 backdrop-blur-md transition-all duration-500 active:scale-95 hover:scale-105 group p-0"
+        aria-label="Beauty AI Assistant"
+      >
+        {/* Sparkle decorations */}
+        <Sparkles className="absolute -top-1 -right-1 w-3 h-3 text-white/80 animate-ping" />
+        <Sparkles className="absolute -bottom-0.5 -left-1 w-2 h-2 text-white/60 animate-ping" style={{ animationDelay: '0.7s' }} />
+        
+        {/* Main icon */}
+        <MessageCircle className="w-7 h-7 text-white drop-shadow-lg group-hover:scale-110 transition-transform duration-300" strokeWidth={2.5} />
+        
+        {/* Pulse ring */}
+        <div className="absolute inset-0 rounded-full border-2 border-white/20 animate-ping" />
+      </Button>
+      
+      {/* Label */}
+      <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
+        <span className="text-sm font-medium text-white bg-black/20 backdrop-blur-sm px-3 py-1 rounded-full border border-white/20">
+          Beauty AI
+        </span>
+      </div>
+    </div>
+  );
+}
