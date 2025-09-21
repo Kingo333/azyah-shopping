@@ -41,6 +41,7 @@ export default function Landing() {
   const [isVisible, setIsVisible] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'swipe'>('grid');
   const [investorModalOpen, setInvestorModalOpen] = useState(false);
+  const [productOffset, setProductOffset] = useState(0);
   const {
     user,
     loading
@@ -86,9 +87,25 @@ export default function Landing() {
 
   // Fetch products for grid view using public hook for anonymous access
   const {
-    data: gridProducts = [],
+    data: allGridProducts = [],
     isLoading: productsLoading
-  } = usePublicProducts(12); // Get 12 products for display
+  } = usePublicProducts(24); // Get more products for rotation
+  
+  // Rotate products every 5 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setProductOffset(prev => (prev + 8) % Math.max(8, allGridProducts.length));
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [allGridProducts.length]);
+  
+  // Get current products to display
+  const gridProducts = useMemo(() => {
+    if (allGridProducts.length === 0) return [];
+    const rotated = [...allGridProducts.slice(productOffset), ...allGridProducts.slice(0, productOffset)];
+    return rotated.slice(0, 8);
+  }, [allGridProducts, productOffset]);
+  
   useEffect(() => setIsVisible(true), []);
 
   // Debug auth state and redirect logic
