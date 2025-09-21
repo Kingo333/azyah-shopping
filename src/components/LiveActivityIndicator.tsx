@@ -20,8 +20,8 @@ export function LiveActivityIndicator() {
         setIsVisible(true);
       }, 300);
       
-      // Random interval between 8-15 seconds for more natural timing
-      const nextInterval = Math.random() * 7000 + 8000;
+      // Random interval between 15-20 seconds for more natural timing
+      const nextInterval = Math.random() * 5000 + 15000;
       setTimeout(showActivity, nextInterval);
     };
 
@@ -35,7 +35,7 @@ export function LiveActivityIndicator() {
   const activity = activities[currentActivity];
 
   return (
-    <div className="fixed bottom-6 left-4 z-40 animate-slide-in-right">
+    <div className="fixed bottom-16 left-4 z-40 animate-slide-in-right">
       <div 
         className={`flex items-center gap-1.5 bg-white/95 backdrop-blur-sm rounded-full px-3 py-1.5 shadow-lg border border-primary/20 transition-all duration-300 ${
           isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'
