@@ -291,7 +291,7 @@ export default function Landing() {
                   animationDelay: '1.1s',
                   animationFillMode: 'both'
                 }}>
-                    Smart AI fashion discovery that learns your style.
+                    Where AI meets luxury fashion - discover pieces as unique as you are.
                   </p>
                 </div>
               </div>
