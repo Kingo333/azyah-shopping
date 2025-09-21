@@ -74,7 +74,13 @@ const LandingSwipeDeck: React.FC<LandingSwipeDeckProps> = ({
   const opacity = useTransform(x, [-200, 0, 200], [0, 1, 0]);
   const scale = useTransform(x, [-200, 0, 200], [0.8, 1, 0.8]);
   
-  const { data: products = [], isLoading } = usePublicProducts(20);
+  const { data: allProducts = [], isLoading } = usePublicProducts(50);
+  
+  // Shuffle products on mount to show different ones on each page refresh
+  const products = React.useMemo(() => {
+    if (allProducts.length === 0) return [];
+    return [...allProducts].sort(() => Math.random() - 0.5);
+  }, [allProducts]);
 
   const currentProduct = products[currentIndex] || null;
   console.log('🔍 Current state:', { currentIndex, productsLength: products.length, hasCurrentProduct: !!currentProduct });
