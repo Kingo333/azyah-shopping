@@ -367,7 +367,7 @@ export default function Landing() {
                 <span className="text-sm font-semibold text-primary uppercase tracking-wider">Experience The Magic</span>
               </div>
               <h3 className="font-cormorant text-2xl sm:text-3xl lg:text-4xl font-bold mb-4">
-                Two Powerful Features in One Platform
+                AI-Powered Fashion Discovery & Try-On
               </h3>
             </div>
 
