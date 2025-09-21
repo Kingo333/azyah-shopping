@@ -327,9 +327,7 @@ export default function Landing() {
               </div>
 
               {/* Trust Badges */}
-              <div className="mt-8 sm:mt-10 lg:mt-12">
-                <TrustBadges />
-              </div>
+              
 
               {/* Feature Carousel - Enhanced Elegant Design */}
               <div className="mt-8 sm:mt-10 lg:mt-12 animate-slide-up-fade" style={{
