@@ -89,14 +89,13 @@ export default function Landing() {
     data: allGridProducts = [],
     isLoading: productsLoading
   } = usePublicProducts(24); // Get more products for variety on refresh
-  
+
   // Randomize products on mount to show different ones on each page refresh
   const gridProducts = useMemo(() => {
     if (allGridProducts.length === 0) return [];
     const shuffled = [...allGridProducts].sort(() => Math.random() - 0.5);
     return shuffled.slice(0, 8);
   }, [allGridProducts]);
-  
   useEffect(() => setIsVisible(true), []);
 
   // Debug auth state and redirect logic
@@ -386,7 +385,7 @@ export default function Landing() {
                       <Sparkles className="w-3 h-3 text-primary" />
                       <span className="text-xs font-semibold text-primary">AI Try-On</span>
                     </div>
-                    <h4 className="font-semibold text-sm mb-1">See Before You Buy</h4>
+                    
                     <p className="text-xs text-muted-foreground">Virtual try-on technology</p>
                   </div>
                 </div>
