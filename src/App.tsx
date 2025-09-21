@@ -7,6 +7,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { FeatureFlagsProvider } from '@/contexts/FeatureFlagsContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import { useSessionMonitor } from '@/hooks/useSessionMonitor';
 
 import Index from './pages/Index';
 import Auth from './pages/Auth';
@@ -56,20 +57,11 @@ const queryClient = new QueryClient({
   },
 });
 
-function App() {
+function AppContent() {
+  useSessionMonitor();
   return (
-    <QueryClientProvider client={queryClient}>
-      <HelmetProvider>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="light"
-          enableSystem={true}
-          disableTransitionOnChange={false}
-        >
-          <AuthProvider>
-            <FeatureFlagsProvider>
-              <Router>
-                <Routes>
+    <>
+      <Routes>
                   <Route path="/" element={<Landing />} />
                   <Route path="/dashboard" element={
                     <ProtectedRoute>
@@ -193,9 +185,27 @@ function App() {
                   } />
                   <Route path="/debug/health" element={<DebugHealthPage />} />
                   <Route path="*" element={<NotFound />} />
-                </Routes>
+      </Routes>
+      <Toaster />
+    </>
+  );
+}
+
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <HelmetProvider>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="light"
+          enableSystem={true}
+          disableTransitionOnChange={false}
+        >
+          <AuthProvider>
+            <FeatureFlagsProvider>
+              <Router>
+                <AppContent />
               </Router>
-              <Toaster />
             </FeatureFlagsProvider>
           </AuthProvider>
         </ThemeProvider>

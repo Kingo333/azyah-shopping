@@ -6,6 +6,12 @@ import { toast } from '@/hooks/use-toast';
 import { CredentialsSchema } from '@/lib/password-validation';
 import { getRedirectRoute } from '@/lib/rbac';
 import type { UserRole } from '@/lib/rbac';
+import { 
+  performSessionHealthCheck, 
+  shouldPerformHealthCheck, 
+  recoverFromAuthError, 
+  clearAllAuthData 
+} from '@/utils/sessionHealthCheck';
 
 interface AuthContextType {
   user: User | null;
@@ -23,27 +29,71 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [healthCheckPerformed, setHealthCheckPerformed] = useState(false);
 
   useEffect(() => {
-    // Auth state management - database trigger handles profile creation automatically
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        console.log('AuthContext: Auth state changed:', { event, user: session?.user?.email });
+    // Perform health check on app startup
+    const initializeAuth = async () => {
+      if (shouldPerformHealthCheck() && !healthCheckPerformed) {
+        console.log('Performing startup session health check...');
+        setHealthCheckPerformed(true);
+        const isHealthy = await performSessionHealthCheck();
+        
+        if (!isHealthy) {
+          console.log('Session unhealthy - clearing state');
+          setSession(null);
+          setUser(null);
+          setLoading(false);
+          return;
+        }
+      }
+
+      // Auth state management - database trigger handles profile creation automatically
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(
+        async (event, session) => {
+          console.log('AuthContext: Auth state changed:', { event, user: session?.user?.email });
+          
+          // Handle auth errors proactively
+          if (event === 'TOKEN_REFRESHED' && !session) {
+            console.log('Token refresh failed - initiating recovery');
+            await recoverFromAuthError();
+            return;
+          }
+          
+          if (event === 'SIGNED_OUT' || !session) {
+            setSession(null);
+            setUser(null);
+          } else {
+            setSession(session);
+            setUser(session.user);
+          }
+          setLoading(false);
+        }
+      );
+
+      // Check for existing session
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.log('Session retrieval error:', error);
+          await recoverFromAuthError();
+          return;
+        }
+        
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
+      } catch (error) {
+        console.error('Auth initialization error:', error);
+        setLoading(false);
       }
-    );
 
-    // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
+      return () => subscription.unsubscribe();
+    };
 
-    return () => subscription.unsubscribe();
-  }, []);
+    initializeAuth();
+  }, [healthCheckPerformed]);
 
   const signUp = async (email: string, password: string, userData?: any) => {
     // Validate credentials before sending to Supabase
@@ -166,22 +216,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      // Handle session not found errors gracefully
-      if (error.message.includes('session_not_found') || error.message.includes('Session not found')) {
-        // Session was already invalid, just redirect
-        window.location.href = '/';
-      } else {
-        toast({
-          title: "Logout Failed",
-          description: error.message,
-          variant: "destructive"
-        });
+    try {
+      setLoading(true);
+      
+      // Clear all auth data first
+      clearAllAuthData();
+      
+      // Attempt proper signout
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        // Handle session not found errors gracefully
+        if (error.message.includes('session_not_found') || error.message.includes('Session not found')) {
+          console.log('Session already invalid during signout');
+        } else {
+          console.log('Signout error:', error.message);
+          toast({
+            title: "Signed Out",
+            description: "You have been signed out. Redirecting...",
+            variant: "default"
+          });
+        }
       }
-    } else {
-      // Redirect to landing page after sign out
+      
+      // Clear local state
+      setSession(null);
+      setUser(null);
+      
+      // Always redirect to landing page
       window.location.href = '/';
+      
+    } catch (error) {
+      console.error('Signout error:', error);
+      // Force cleanup and redirect even on error
+      clearAllAuthData();
+      setSession(null);
+      setUser(null);
+      window.location.href = '/';
+    } finally {
+      setLoading(false);
     }
   };
 
