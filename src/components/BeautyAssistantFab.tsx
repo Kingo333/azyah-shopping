@@ -9,7 +9,7 @@ export function BeautyAssistantFab({ onClick }: BeautyAssistantFabProps) {
   return (
     <div className="fixed bottom-6 right-6 z-50 animate-float-glow">
       {/* Glow effect */}
-      <div className="absolute inset-0 bg-gradient-to-r from-primary/40 to-secondary/40 rounded-full animate-pulse blur-lg opacity-75" />
+      <div className="absolute inset-0 bg-gradient-to-r from-primary/40 to-secondary/40 rounded-full animate-pulse blur-lg opacity-75" style={{ borderRadius: '50%' }} />
       
       {/* Main button */}
       <Button
