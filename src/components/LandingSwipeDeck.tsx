@@ -4,7 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Heart, X, ShoppingBag, ExternalLink, Sparkles, Info } from 'lucide-react';
-import { useSmartSwipeProducts } from '@/hooks/useSmartSwipeProducts';
+import { usePublicProducts } from '@/hooks/usePublicProducts';
 import { SmartImage } from '@/components/SmartImage';
 import { motion, AnimatePresence, PanInfo, useMotionValue, useTransform, animate } from 'framer-motion';
 import { useToast } from '@/hooks/use-toast';
@@ -74,14 +74,7 @@ const LandingSwipeDeck: React.FC<LandingSwipeDeckProps> = ({
   const opacity = useTransform(x, [-200, 0, 200], [0, 1, 0]);
   const scale = useTransform(x, [-200, 0, 200], [0.8, 1, 0.8]);
   
-  const { products, isLoading } = useSmartSwipeProducts({
-    filter: filter || 'all',
-    subcategory,
-    gender,
-    priceRange,
-    searchQuery,
-    currency
-  });
+  const { data: products = [], isLoading } = usePublicProducts(100); // Get 100 products for the swipe deck
 
   const currentProduct = products[currentIndex] || null;
   console.log('🔍 Current state:', { currentIndex, productsLength: products.length, hasCurrentProduct: !!currentProduct });
@@ -435,19 +428,17 @@ const LandingSwipeDeck: React.FC<LandingSwipeDeckProps> = ({
 
                   <div className="flex items-center justify-between">
                     <span className="text-base sm:text-lg font-bold">
-                      {new Intl.NumberFormat('en-US', {
-                        style: 'currency',
-                        currency: currentProduct.currency || 'USD'
-                      }).format(currentProduct.price_cents / 100)}
+                      {currentProduct.price_cents ? 
+                        new Intl.NumberFormat('en-US', {
+                          style: 'currency',
+                          currency: currentProduct.currency || 'USD'
+                        }).format(currentProduct.price_cents / 100) :
+                        'Price on request'
+                      }
                     </span>
                     
                     <div className="flex items-center gap-1">
-                      {currentProduct.ar_mesh_url && (
-                        <Badge variant="outline" className="gap-1 text-xs mr-2">
-                          <Sparkles className="h-3 w-3" />
-                          AR Ready
-                        </Badge>
-                      )}
+                      {/* Note: AR Ready badge temporarily disabled for public products */}
                       
                       <div className="flex items-center gap-1">
                         <Button
