@@ -831,6 +831,7 @@ const EventDetailManagement: React.FC<{
             }}
             brandId={selectedBrandForProducts}
             userType="retailer"
+            isEventContext={true}
           />
         )}
 

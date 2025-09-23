@@ -22,6 +22,7 @@ interface AddProductModalProps {
   userType: 'brand' | 'retailer';
   brandId?: string;
   retailerId?: string;
+  isEventContext?: boolean;
 }
 export const AddProductModal: React.FC<AddProductModalProps> = ({
   isOpen,
@@ -29,7 +30,8 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
   onProductAdded,
   userType,
   brandId,
-  retailerId
+  retailerId,
+  isEventContext = false
 }) => {
   const {
     toast
@@ -311,6 +313,13 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
               <Input id="sku" value={formData.sku} onChange={e => handleInputChange('sku', e.target.value)} placeholder="Auto-generated if empty" />
             </div>
           </div>
+
+          {!isEventContext && (
+            <div>
+              <Label htmlFor="external_url">Shop Now URL</Label>
+              <Input id="external_url" type="url" value={formData.external_url} onChange={e => handleInputChange('external_url', e.target.value)} placeholder="https://..." />
+            </div>
+          )}
 
 
           <div className="space-y-4">
