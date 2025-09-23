@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { CalendarIcon, Plus, MapPin, Camera, X, Users, Package } from 'lucide-react';
+import { CalendarIcon, Plus, MapPin, Camera, X, Users, Package, Upload } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useRetailerBrands } from '@/hooks/useRetailerBrands';
@@ -434,10 +434,57 @@ const CreateEventForm: React.FC<{ onSubmit: (data: any) => void }> = ({ onSubmit
     duration_days: 1,
     cover_photo_url: ''
   });
+  const [coverPhotoFile, setCoverPhotoFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const uploadCoverPhoto = async (): Promise<string | null> => {
+    if (!coverPhotoFile) return null;
+
+    try {
+      setUploading(true);
+      const fileExt = coverPhotoFile.name.split('.').pop();
+      const fileName = `event-cover-${Date.now()}.${fileExt}`;
+      const filePath = `event-covers/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('products')
+        .upload(filePath, coverPhotoFile);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('products')
+        .getPublicUrl(filePath);
+
+      return publicUrl;
+    } catch (error) {
+      console.error('Error uploading cover photo:', error);
+      toast({
+        title: "Error",
+        description: "Failed to upload cover photo",
+        variant: "destructive"
+      });
+      return null;
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData);
+    
+    let coverPhotoUrl = formData.cover_photo_url;
+    
+    if (coverPhotoFile) {
+      coverPhotoUrl = await uploadCoverPhoto();
+      if (!coverPhotoUrl) return; // Upload failed
+    }
+    
+    onSubmit({
+      ...formData,
+      cover_photo_url: coverPhotoUrl
+    });
   };
 
   return (
@@ -536,16 +583,46 @@ const CreateEventForm: React.FC<{ onSubmit: (data: any) => void }> = ({ onSubmit
       </div>
 
       <div>
-        <Label htmlFor="cover_photo">Cover Photo URL</Label>
-        <Input
-          id="cover_photo"
-          value={formData.cover_photo_url}
-          onChange={(e) => setFormData({...formData, cover_photo_url: e.target.value})}
-          placeholder="https://example.com/event-cover.jpg"
-        />
+        <Label htmlFor="cover_photo">Cover Photo</Label>
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <Input
+              id="cover_photo"
+              type="file"
+              accept="image/*"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  setCoverPhotoFile(file);
+                  setFormData({...formData, cover_photo_url: ''});
+                }
+              }}
+              className="flex-1"
+            />
+            <Upload className="h-4 w-4 text-muted-foreground" />
+          </div>
+          {coverPhotoFile && (
+            <div className="text-sm text-muted-foreground">
+              Selected: {coverPhotoFile.name}
+            </div>
+          )}
+          <div className="text-xs text-muted-foreground">
+            Or enter URL below if you prefer
+          </div>
+          <Input
+            value={formData.cover_photo_url}
+            onChange={(e) => {
+              setFormData({...formData, cover_photo_url: e.target.value});
+              setCoverPhotoFile(null);
+            }}
+            placeholder="https://example.com/event-cover.jpg"
+          />
+        </div>
       </div>
 
-      <Button type="submit" className="w-full">Create Event</Button>
+      <Button type="submit" className="w-full" disabled={uploading}>
+        {uploading ? "Uploading..." : "Create Event"}
+      </Button>
     </form>
   );
 };
