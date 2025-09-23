@@ -761,11 +761,11 @@ const EventDetailManagement: React.FC<{
                         )}
                       </div>
                       <Badge variant="outline">
-                        {productsByBrand[brandId]?.length || 0}/10 products
+                        {productsByBrand[brandId]?.length || 0}/5 products
                       </Badge>
                     </div>
                     <div className="flex gap-2">
-                      {(productsByBrand[brandId]?.length || 0) < 10 && (
+                      {(productsByBrand[brandId]?.length || 0) < 5 && (
                         <Button
                           size="sm"
                           onClick={() => {
