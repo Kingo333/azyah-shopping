@@ -24,6 +24,9 @@ interface AddProductModalProps {
   brandId?: string;
   retailerId?: string;
   isEventContext?: boolean;
+  onAddProductToEvent?: (productId: string) => Promise<void>;
+  selectedEvent?: any;
+  selectedBrandForProducts?: string;
 }
 export const AddProductModal: React.FC<AddProductModalProps> = ({
   isOpen,
@@ -32,7 +35,10 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
   userType,
   brandId,
   retailerId,
-  isEventContext = false
+  isEventContext = false,
+  onAddProductToEvent,
+  selectedEvent,
+  selectedBrandForProducts
 }) => {
   const {
     toast
@@ -212,6 +218,15 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
           .single();
 
         if (productError) throw productError;
+
+        // Connect product to event if this is for an event
+        if (isEventContext && onAddProductToEvent) {
+          try {
+            await onAddProductToEvent(productResult.id);
+          } catch (eventError) {
+            console.warn('Failed to connect product to event:', eventError);
+          }
+        }
 
         // Upload the same image as outfit for try-on
         if (userType === 'retailer' && retailerId) {

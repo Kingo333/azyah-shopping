@@ -426,6 +426,8 @@ export const EventManagement: React.FC<EventManagementProps> = ({ retailerId }) 
           onAddProduct={addProductToEvent}
           onRemoveProduct={removeProductFromEvent}
           onClose={() => setSelectedEvent(null)}
+          addProductToEvent={addProductToEvent}
+          fetchEventProducts={fetchEventProducts}
         />
       )}
     </div>
@@ -653,6 +655,8 @@ const EventDetailManagement: React.FC<{
   onAddProduct: (productId: string) => void;
   onRemoveProduct: (productId: string) => void;
   onClose: () => void;
+  addProductToEvent: (productId: string) => Promise<void>;
+  fetchEventProducts: () => void;
 }> = ({ 
   event, 
   eventBrands, 
@@ -663,7 +667,9 @@ const EventDetailManagement: React.FC<{
   onRemoveBrand, 
   onAddProduct, 
   onRemoveProduct, 
-  onClose
+  onClose,
+  addProductToEvent,
+  fetchEventProducts
 }) => {
   const [selectedBrandId, setSelectedBrandId] = useState<string>('');
   const [isAddProductModalOpen, setIsAddProductModalOpen] = useState(false);
@@ -829,6 +835,7 @@ const EventDetailManagement: React.FC<{
               setSelectedBrandForProducts(null);
             }}
             onProductAdded={() => {
+              fetchEventProducts(); // Refresh the event products
               setIsAddProductModalOpen(false);
               setSelectedBrandForProducts(null);
             }}
@@ -836,6 +843,9 @@ const EventDetailManagement: React.FC<{
             retailerId={retailerId}
             userType="retailer"
             isEventContext={true}
+            onAddProductToEvent={addProductToEvent}
+            selectedEvent={event}
+            selectedBrandForProducts={selectedBrandForProducts}
           />
         )}
 
