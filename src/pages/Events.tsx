@@ -404,14 +404,86 @@ const Events: React.FC = () => {
                   Upload a clear photo of yourself to try on items from this event. 
                   This photo will be saved and reused for all products in this event.
                 </p>
-                <div>
-                  <Label htmlFor="photo-url">Photo URL</Label>
-                  <Input
-                    id="photo-url"
-                    value={userPhotoUrl}
-                    onChange={(e) => setUserPhotoUrl(e.target.value)}
-                    placeholder="https://example.com/your-photo.jpg"
-                  />
+                <div className="space-y-4">
+                  <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          if (!file.type.startsWith('image/')) {
+                            toast({
+                              title: 'Invalid file type',
+                              description: 'Please select an image file',
+                              variant: 'destructive'
+                            });
+                            return;
+                          }
+                          if (file.size > 10 * 1024 * 1024) {
+                            toast({
+                              title: 'File too large',
+                              description: 'Image size must be less than 10MB',
+                              variant: 'destructive'
+                            });
+                            return;
+                          }
+                          try {
+                            const fileName = `event-person-${Date.now()}-${file.name}`;
+                            const filePath = `event-photos/${fileName}`;
+
+                            const { error: uploadError } = await supabase.storage
+                              .from('event-photos')
+                              .upload(filePath, file);
+
+                            if (uploadError) throw uploadError;
+
+                            const { data: { publicUrl } } = supabase.storage
+                              .from('event-photos')
+                              .getPublicUrl(filePath);
+
+                            setUserPhotoUrl(publicUrl);
+                            toast({
+                              title: 'Success',
+                              description: 'Photo uploaded successfully'
+                            });
+                          } catch (error) {
+                            console.error('Error uploading photo:', error);
+                            toast({
+                              title: 'Upload failed',
+                              description: 'Failed to upload photo',
+                              variant: 'destructive'
+                            });
+                          } finally {
+                            e.target.value = '';
+                          }
+                        }
+                      }}
+                      className="hidden"
+                      id="person-photo-upload"
+                    />
+                    <label htmlFor="person-photo-upload" className="cursor-pointer block">
+                      <div className="text-center">
+                        {userPhotoUrl ? (
+                          <div className="flex flex-col items-center space-y-2">
+                            <img 
+                              src={userPhotoUrl} 
+                              alt="Your photo" 
+                              className="w-20 h-20 object-cover rounded-lg"
+                            />
+                            <p className="text-sm text-green-600">Photo uploaded</p>
+                            <p className="text-xs text-muted-foreground">Click to change</p>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col items-center space-y-2">
+                            <Upload className="h-8 w-8 text-muted-foreground" />
+                            <p className="text-sm text-muted-foreground">Upload your photo</p>
+                            <p className="text-xs text-muted-foreground">JPG, PNG up to 10MB</p>
+                          </div>
+                        )}
+                      </div>
+                    </label>
+                  </div>
                 </div>
                 <div className="flex gap-2">
                   <Button onClick={() => saveUserEventPhoto(userPhotoUrl)} disabled={!userPhotoUrl}>

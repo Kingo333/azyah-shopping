@@ -312,10 +312,6 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
             </div>
           </div>
 
-          <div>
-            <Label htmlFor="external_url">Shop Now URL</Label>
-            <Input id="external_url" type="url" value={formData.external_url} onChange={e => handleInputChange('external_url', e.target.value)} placeholder="https://..." />
-          </div>
 
           <div className="space-y-4">
             <Label>Product Images (up to 4 images)</Label>
@@ -466,7 +462,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
             </div>
             
             {/* Virtual Try-On Section */}
-            {userType === 'brand' && (
+            {(userType === 'brand' || userType === 'retailer') && (
               <div className="space-y-4">
                 <div className="flex items-center gap-2">
                   <User className="h-4 w-4 text-primary" />
