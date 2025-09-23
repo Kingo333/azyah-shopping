@@ -200,7 +200,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
           retailer_id: userType === 'retailer' ? retailerId : null,
           media_urls: [imageUrl],
           status: 'active' as const,
-          external_url: '',
+          external_url: null,
           sku: `EVENT-${Date.now()}-${index + 1}`,
           stock_qty: 0
         };

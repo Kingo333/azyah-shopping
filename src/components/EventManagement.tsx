@@ -420,6 +420,7 @@ export const EventManagement: React.FC<EventManagementProps> = ({ retailerId }) 
           eventBrands={eventBrands}
           eventProducts={eventProducts}
           availableBrands={availableBrands || []}
+          retailerId={retailerId}
           onAddBrand={addBrandToEvent}
           onRemoveBrand={removeBrandFromEvent}
           onAddProduct={addProductToEvent}
@@ -640,6 +641,7 @@ const EventDetailManagement: React.FC<{
   eventBrands: EventBrand[];
   eventProducts: EventProduct[];
   availableBrands: any[];
+  retailerId: string;
   onAddBrand: (brandData: {
     brand_id?: string;
     brand_name?: string;
@@ -656,11 +658,12 @@ const EventDetailManagement: React.FC<{
   eventBrands, 
   eventProducts, 
   availableBrands, 
+  retailerId,
   onAddBrand, 
   onRemoveBrand, 
   onAddProduct, 
   onRemoveProduct, 
-  onClose 
+  onClose
 }) => {
   const [selectedBrandId, setSelectedBrandId] = useState<string>('');
   const [isAddProductModalOpen, setIsAddProductModalOpen] = useState(false);
@@ -830,6 +833,7 @@ const EventDetailManagement: React.FC<{
               setSelectedBrandForProducts(null);
             }}
             brandId={selectedBrandForProducts}
+            retailerId={retailerId}
             userType="retailer"
             isEventContext={true}
           />
