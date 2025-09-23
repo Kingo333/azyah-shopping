@@ -331,39 +331,61 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
                   
                   <div className="space-y-3">
                     <div>
-                      <label className="text-sm font-medium">Product Type</label>
-                      <select 
-                        className="w-full mt-1 p-2 border rounded"
-                        value={editingProduct.try_on_data?.type || ''}
-                        onChange={(e) => setEditingProduct(prev => prev ? {
-                          ...prev,
-                          try_on_data: { ...prev.try_on_data, type: e.target.value }
-                        } : prev)}
-                      >
-                        <option value="">Select type</option>
-                        <option value="top">Top</option>
-                        <option value="bottom">Bottom</option>
-                        <option value="dress">Dress</option>
-                        <option value="outerwear">Outerwear</option>
-                        <option value="accessory">Accessory</option>
-                      </select>
-                    </div>
-                    
-                    <div>
-                      <label className="text-sm font-medium">Position</label>
-                      <select 
-                        className="w-full mt-1 p-2 border rounded"
-                        value={editingProduct.try_on_data?.position || ''}
-                        onChange={(e) => setEditingProduct(prev => prev ? {
-                          ...prev,
-                          try_on_data: { ...prev.try_on_data, position: e.target.value }
-                        } : prev)}
-                      >
-                        <option value="">Select position</option>
-                        <option value="upper-body">Upper Body</option>
-                        <option value="lower-body">Lower Body</option>
-                        <option value="full-body">Full Body</option>
-                      </select>
+                      <label className="text-sm font-medium">Upload Outfit Image</label>
+                      <p className="text-xs text-muted-foreground mb-2">
+                        Upload the product outfit image for virtual try-on
+                      </p>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+
+                          try {
+                            // Upload outfit image to storage
+                            const fileName = `outfit_${editingProduct.id}_${Date.now()}.${file.name.split('.').pop()}`;
+                            const { data: uploadData, error: uploadError } = await supabase.storage
+                              .from('ai-assets')
+                              .upload(fileName, file);
+
+                            if (uploadError) throw uploadError;
+
+                            // Get public URL
+                            const { data: urlData } = supabase.storage
+                              .from('ai-assets')
+                              .getPublicUrl(fileName);
+
+                            // Update editing product with outfit URL
+                            setEditingProduct(prev => prev ? {
+                              ...prev,
+                              try_on_data: { ...prev.try_on_data, outfit_image_url: urlData.publicUrl }
+                            } : prev);
+
+                            toast({
+                              title: "Outfit image uploaded",
+                              description: "Outfit image uploaded successfully"
+                            });
+                          } catch (error) {
+                            console.error('Error uploading outfit image:', error);
+                            toast({
+                              title: "Upload failed",
+                              description: "Failed to upload outfit image",
+                              variant: "destructive"
+                            });
+                          }
+                        }}
+                        className="w-full p-2 border rounded"
+                      />
+                      {editingProduct.try_on_data?.outfit_image_url && (
+                        <div className="mt-2">
+                          <img
+                            src={editingProduct.try_on_data.outfit_image_url}
+                            alt="Outfit preview"
+                            className="w-20 h-20 object-cover rounded"
+                          />
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>

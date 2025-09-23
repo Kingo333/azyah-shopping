@@ -4,8 +4,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, MapPin, Store } from 'lucide-react';
+import { Calendar, MapPin, Store, UserCircle, Upload, ChevronLeft, ChevronRight } from 'lucide-react';
 import { format } from 'date-fns';
+import EventTryOnModal from '@/components/EventTryOnModal';
+import { useToast } from '@/hooks/use-toast';
 
 interface RetailEvent {
   id: string;
@@ -31,15 +33,23 @@ interface EventProduct {
   id: string;
   image_url: string;
   try_on_data: any;
+  event_brand_id: string;
+  brand_name: string;
+  brand_logo_url?: string;
 }
 
 const Events = () => {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [events, setEvents] = useState<RetailEvent[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<RetailEvent | null>(null);
   const [eventBrands, setEventBrands] = useState<EventBrand[]>([]);
   const [loading, setLoading] = useState(true);
   const [isLoadingBrands, setIsLoadingBrands] = useState(false);
+  const [hasPersonImage, setHasPersonImage] = useState(false);
+  const [isUploadingPersonImage, setIsUploadingPersonImage] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<EventProduct | null>(null);
+  const [brandScrollPositions, setBrandScrollPositions] = useState<{[key: string]: number}>({});
 
   useEffect(() => {
     fetchUpcomingEvents();
@@ -91,7 +101,14 @@ const Events = () => {
             return { ...brand, products: [] };
           }
 
-          return { ...brand, products: productsData || [] };
+          // Add brand info to products
+          const productsWithBrandInfo = (productsData || []).map(product => ({
+            ...product,
+            brand_name: brand.brand_name,
+            brand_logo_url: brand.logo_url
+          }));
+
+          return { ...brand, products: productsWithBrandInfo };
         })
       );
 
@@ -106,6 +123,82 @@ const Events = () => {
   const selectEvent = (event: RetailEvent) => {
     setSelectedEvent(event);
     fetchEventBrands(event.id);
+    checkPersonImage(event.id);
+  };
+
+  const checkPersonImage = async (eventId: string) => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('event_user_photos')
+        .select('photo_url')
+        .eq('event_id', eventId)
+        .eq('user_id', user.id)
+        .single();
+
+      setHasPersonImage(!!data && !error);
+    } catch (err) {
+      setHasPersonImage(false);
+    }
+  };
+
+  const handlePersonImageUpload = async (file: File) => {
+    if (!selectedEvent || !user) return;
+
+    setIsUploadingPersonImage(true);
+    try {
+      // Upload to storage
+      const fileName = `person_${selectedEvent.id}_${user.id}_${Date.now()}.${file.name.split('.').pop()}`;
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('ai-assets')
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from('ai-assets')
+        .getPublicUrl(fileName);
+
+      // Store in event_user_photos
+      await supabase
+        .from('event_user_photos')
+        .upsert({
+          event_id: selectedEvent.id,
+          user_id: user.id,
+          photo_url: urlData.publicUrl
+        });
+
+      setHasPersonImage(true);
+      toast({
+        title: "Photo uploaded successfully!",
+        description: "You can now try on products from this event"
+      });
+    } catch (error) {
+      console.error('Error uploading person image:', error);
+      toast({
+        title: "Upload failed",
+        description: "Failed to upload your photo",
+        variant: "destructive"
+      });
+    } finally {
+      setIsUploadingPersonImage(false);
+    }
+  };
+
+  const scrollBrandProducts = (brandId: string, direction: 'left' | 'right') => {
+    const container = document.getElementById(`brand-products-${brandId}`);
+    if (!container) return;
+
+    const scrollAmount = 280; // Width of one product card + gap
+    const currentPosition = brandScrollPositions[brandId] || 0;
+    const newPosition = direction === 'left' 
+      ? Math.max(0, currentPosition - scrollAmount)
+      : currentPosition + scrollAmount;
+
+    container.scrollTo({ left: newPosition, behavior: 'smooth' });
+    setBrandScrollPositions(prev => ({ ...prev, [brandId]: newPosition }));
   };
 
   if (!user) {
@@ -162,8 +255,51 @@ const Events = () => {
                 className="w-16 h-16 rounded-lg object-cover"
               />
             )}
-            <div>
-              <h1 className="text-3xl font-bold mb-2">{selectedEvent.name}</h1>
+            <div className="flex-1">
+              <div className="flex items-center gap-3 mb-2">
+                <h1 className="text-3xl font-bold">{selectedEvent.name}</h1>
+                {/* Person Image Upload Button */}
+                <div className="relative">
+                  {hasPersonImage ? (
+                    <Badge className="bg-green-500 text-white">
+                      <UserCircle className="w-4 h-4 mr-1" />
+                      Photo Ready
+                    </Badge>
+                  ) : (
+                    <div>
+                      <input
+                        id="person-image-upload"
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handlePersonImageUpload(file);
+                        }}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        disabled={isUploadingPersonImage}
+                      />
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        disabled={isUploadingPersonImage}
+                        className="relative"
+                      >
+                        {isUploadingPersonImage ? (
+                          <>
+                            <Upload className="w-4 h-4 mr-1 animate-spin" />
+                            Uploading...
+                          </>
+                        ) : (
+                          <>
+                            <UserCircle className="w-4 h-4 mr-1" />
+                            Upload Photo
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </div>
               <div className="flex items-center gap-4 text-muted-foreground">
                 <div className="flex items-center gap-1">
                   <Store className="w-4 h-4" />
@@ -218,31 +354,75 @@ const Events = () => {
                   {brand.products.length === 0 ? (
                     <p className="text-muted-foreground text-sm">No products available</p>
                   ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                      {brand.products.map((product) => (
-                        <Card key={product.id} className="group hover:shadow-lg transition-shadow">
-                          <CardContent className="p-4">
-                            <div className="relative mb-3">
-                              <img
-                                src={product.image_url}
-                                alt="Product"
-                                className="w-full h-48 object-cover rounded"
-                              />
-                              {Object.keys(product.try_on_data || {}).length > 0 && (
-                                <Badge className="absolute top-2 right-2 bg-green-500">
-                                  Try-On Available
-                                </Badge>
-                              )}
-                            </div>
-                            <Button 
-                              className="w-full"
-                              disabled={Object.keys(product.try_on_data || {}).length === 0}
-                            >
-                              {Object.keys(product.try_on_data || {}).length > 0 ? 'Try On' : 'Not Available'}
-                            </Button>
-                          </CardContent>
-                        </Card>
-                      ))}
+                    <div className="relative">
+                      {/* Scroll buttons */}
+                      {brand.products.length > 4 && (
+                        <>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 backdrop-blur-sm"
+                            onClick={() => scrollBrandProducts(brand.id, 'left')}
+                          >
+                            <ChevronLeft className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 backdrop-blur-sm"
+                            onClick={() => scrollBrandProducts(brand.id, 'right')}
+                          >
+                            <ChevronRight className="w-4 h-4" />
+                          </Button>
+                        </>
+                      )}
+                      
+                      {/* Products carousel */}
+                      <div 
+                        id={`brand-products-${brand.id}`}
+                        className="flex gap-4 overflow-x-auto scrollbar-hide pb-2"
+                        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                      >
+                        {brand.products.map((product) => (
+                          <Card key={product.id} className="flex-shrink-0 w-64 group hover:shadow-lg transition-shadow">
+                            <CardContent className="p-4">
+                              <div className="relative mb-3">
+                                <img
+                                  src={product.image_url}
+                                  alt="Product"
+                                  className="w-full h-48 object-cover rounded"
+                                />
+                                {Object.keys(product.try_on_data || {}).length > 0 && hasPersonImage && (
+                                  <Badge className="absolute top-2 right-2 bg-green-500">
+                                    Try-On Ready
+                                  </Badge>
+                                )}
+                              </div>
+                              <Button 
+                                className="w-full"
+                                disabled={!hasPersonImage || Object.keys(product.try_on_data || {}).length === 0}
+                                onClick={() => {
+                                  if (hasPersonImage && Object.keys(product.try_on_data || {}).length > 0) {
+                                    setSelectedProduct({
+                                      ...product,
+                                      event_brand_id: brand.id,
+                                      brand_name: brand.brand_name,
+                                      brand_logo_url: brand.logo_url
+                                    });
+                                  }
+                                }}
+                              >
+                                {!hasPersonImage 
+                                  ? 'Upload Photo First' 
+                                  : Object.keys(product.try_on_data || {}).length > 0 
+                                  ? 'Try On' 
+                                  : 'Not Available'
+                                }
+                              </Button>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -250,6 +430,17 @@ const Events = () => {
             </div>
           )}
         </div>
+
+        {/* Try-On Modal */}
+        {selectedProduct && selectedEvent && (
+          <EventTryOnModal
+            isOpen={!!selectedProduct}
+            onClose={() => setSelectedProduct(null)}
+            product={selectedProduct}
+            eventId={selectedEvent.id}
+            eventName={selectedEvent.name}
+          />
+        )}
       </div>
     );
   }
