@@ -765,100 +765,45 @@ export type Database = {
           },
         ]
       }
-      event_brands: {
+      event_catalog: {
         Row: {
           added_at: string | null
-          brand_description: string | null
-          brand_id: string | null
-          brand_logo_url: string | null
-          brand_name: string | null
-          brand_website: string | null
-          event_id: string
+          event_id: string | null
+          featured: boolean | null
           id: string
+          product_id: string | null
         }
         Insert: {
           added_at?: string | null
-          brand_description?: string | null
-          brand_id?: string | null
-          brand_logo_url?: string | null
-          brand_name?: string | null
-          brand_website?: string | null
-          event_id: string
+          event_id?: string | null
+          featured?: boolean | null
           id?: string
+          product_id?: string | null
         }
         Update: {
           added_at?: string | null
-          brand_description?: string | null
-          brand_id?: string | null
-          brand_logo_url?: string | null
-          brand_name?: string | null
-          brand_website?: string | null
-          event_id?: string
+          event_id?: string | null
+          featured?: boolean | null
           id?: string
+          product_id?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "event_brands_event_id_fkey"
+            foreignKeyName: "event_catalog_event_id_fkey"
             columns: ["event_id"]
             isOneToOne: false
-            referencedRelation: "events_retail"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      event_products: {
-        Row: {
-          added_at: string | null
-          brand_id: string
-          event_id: string
-          id: string
-          product_id: string
-        }
-        Insert: {
-          added_at?: string | null
-          brand_id: string
-          event_id: string
-          id?: string
-          product_id: string
-        }
-        Update: {
-          added_at?: string | null
-          brand_id?: string
-          event_id?: string
-          id?: string
-          product_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "event_products_brand_id_fkey"
-            columns: ["brand_id"]
-            isOneToOne: false
-            referencedRelation: "brands"
+            referencedRelation: "retail_events"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "event_products_brand_id_fkey"
-            columns: ["brand_id"]
-            isOneToOne: false
-            referencedRelation: "brands_public"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "event_products_event_id_fkey"
-            columns: ["event_id"]
-            isOneToOne: false
-            referencedRelation: "events_retail"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "event_products_product_id_fkey"
+            foreignKeyName: "event_catalog_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "event_products_product_id_fkey"
+            foreignKeyName: "event_catalog_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products_public"
@@ -866,34 +811,31 @@ export type Database = {
           },
         ]
       }
-      event_tryon_sessions: {
+      event_participants: {
         Row: {
-          created_at: string | null
-          event_id: string
+          event_id: string | null
           id: string
-          person_image_url: string
-          user_id: string
+          joined_at: string | null
+          user_id: string | null
         }
         Insert: {
-          created_at?: string | null
-          event_id: string
+          event_id?: string | null
           id?: string
-          person_image_url: string
-          user_id: string
+          joined_at?: string | null
+          user_id?: string | null
         }
         Update: {
-          created_at?: string | null
-          event_id?: string
+          event_id?: string | null
           id?: string
-          person_image_url?: string
-          user_id?: string
+          joined_at?: string | null
+          user_id?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "event_tryon_sessions_event_id_fkey"
+            foreignKeyName: "event_participants_event_id_fkey"
             columns: ["event_id"]
             isOneToOne: false
-            referencedRelation: "events_retail"
+            referencedRelation: "retail_events"
             referencedColumns: ["id"]
           },
         ]
@@ -989,69 +931,6 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      events_retail: {
-        Row: {
-          city: string | null
-          country: string | null
-          cover_photo_url: string | null
-          created_at: string | null
-          description: string | null
-          duration_days: number | null
-          event_date: string
-          id: string
-          location_text: string | null
-          name: string
-          retailer_id: string
-          status: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          city?: string | null
-          country?: string | null
-          cover_photo_url?: string | null
-          created_at?: string | null
-          description?: string | null
-          duration_days?: number | null
-          event_date: string
-          id?: string
-          location_text?: string | null
-          name: string
-          retailer_id: string
-          status?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          city?: string | null
-          country?: string | null
-          cover_photo_url?: string | null
-          created_at?: string | null
-          description?: string | null
-          duration_days?: number | null
-          event_date?: string
-          id?: string
-          location_text?: string | null
-          name?: string
-          retailer_id?: string
-          status?: string | null
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "events_retail_retailer_id_fkey"
-            columns: ["retailer_id"]
-            isOneToOne: false
-            referencedRelation: "retailers"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "events_retail_retailer_id_fkey"
-            columns: ["retailer_id"]
-            isOneToOne: false
-            referencedRelation: "retailers_public"
             referencedColumns: ["id"]
           },
         ]
@@ -1984,6 +1863,57 @@ export type Database = {
             columns: ["id"]
             isOneToOne: true
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      retail_events: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          event_date: string
+          id: string
+          location: string | null
+          name: string
+          retailer_id: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          event_date: string
+          id?: string
+          location?: string | null
+          name: string
+          retailer_id?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          event_date?: string
+          id?: string
+          location?: string | null
+          name?: string
+          retailer_id?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "retail_events_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "retailers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "retail_events_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "retailers_public"
             referencedColumns: ["id"]
           },
         ]

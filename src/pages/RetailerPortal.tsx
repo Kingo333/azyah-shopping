@@ -30,7 +30,7 @@ import { RetailerSettingsForm } from '@/components/RetailerSettingsForm';
 import { CollabDashboard } from '@/components/ugc/CollabDashboard';
 import { AsosImportManager } from '@/components/AsosImportManager';
 import BulkAsosImportManager from '@/components/BulkAsosImportManager';
-import EventManagement from '@/components/EventManagement';
+import { RetailerEvents } from '@/components/RetailerEvents';
 import { useRetailerBrands } from '@/hooks/useRetailerBrands';
 import { Product } from '@/types';
 import { convertJsonToProductAttributes } from '@/lib/type-utils';
@@ -596,7 +596,7 @@ const RetailerPortal = () => {
           </TabsContent>
 
           <TabsContent value="events">
-            <EventManagement retailerId={retailer?.id || ''} />
+            <RetailerEvents retailerId={retailer?.id || ''} />
           </TabsContent>
 
           <TabsContent value="analytics">
