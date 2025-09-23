@@ -765,6 +765,71 @@ export type Database = {
           },
         ]
       }
+      event_brand_products: {
+        Row: {
+          created_at: string
+          event_brand_id: string
+          id: string
+          image_url: string
+          sort_order: number | null
+          try_on_data: Json | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          event_brand_id: string
+          id?: string
+          image_url: string
+          sort_order?: number | null
+          try_on_data?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          event_brand_id?: string
+          id?: string
+          image_url?: string
+          sort_order?: number | null
+          try_on_data?: Json | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_brand_products_event_brand_id_fkey"
+            columns: ["event_brand_id"]
+            isOneToOne: false
+            referencedRelation: "event_brands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_brands: {
+        Row: {
+          brand_name: string
+          created_at: string
+          event_id: string
+          id: string
+          logo_url: string | null
+          updated_at: string
+        }
+        Insert: {
+          brand_name: string
+          created_at?: string
+          event_id: string
+          id?: string
+          logo_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          brand_name?: string
+          created_at?: string
+          event_id?: string
+          id?: string
+          logo_url?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       event_catalog: {
         Row: {
           added_at: string | null
@@ -839,6 +904,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      event_user_photos: {
+        Row: {
+          created_at: string
+          event_id: string
+          id: string
+          photo_url: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          id?: string
+          photo_url: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          id?: string
+          photo_url?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       events: {
         Row: {
