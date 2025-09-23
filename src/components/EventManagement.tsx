@@ -448,13 +448,13 @@ const CreateEventForm: React.FC<{ onSubmit: (data: any) => void }> = ({ onSubmit
       const filePath = `event-covers/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
-        .from('products')
+        .from('event-covers')
         .upload(filePath, coverPhotoFile);
 
       if (uploadError) throw uploadError;
 
       const { data: { publicUrl } } = supabase.storage
-        .from('products')
+        .from('event-covers')
         .getPublicUrl(filePath);
 
       return publicUrl;
@@ -576,8 +576,8 @@ const CreateEventForm: React.FC<{ onSubmit: (data: any) => void }> = ({ onSubmit
             id="duration"
             type="number"
             min="1"
-            value={formData.duration_days}
-            onChange={(e) => setFormData({...formData, duration_days: parseInt(e.target.value)})}
+            value={formData.duration_days || 1}
+            onChange={(e) => setFormData({...formData, duration_days: parseInt(e.target.value) || 1})}
           />
         </div>
       </div>
