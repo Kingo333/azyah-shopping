@@ -34,8 +34,12 @@ interface Event {
 
 interface EventBrand {
   id: string;
-  brand_id: string;
-  brand: {
+  brand_id?: string;
+  brand_name?: string;
+  brand_logo_url?: string;
+  brand_description?: string;
+  brand_website?: string;
+  brand?: {
     id: string;
     name: string;
     logo_url?: string;
@@ -121,11 +125,10 @@ export const EventManagement: React.FC<EventManagementProps> = ({ retailerId }) 
         .select(`
           id,
           brand_id,
-          brand:brands(
-            id,
-            name,
-            logo_url
-          )
+          brand_name,
+          brand_logo_url,
+          brand_description,
+          brand_website
         `)
         .eq('event_id', selectedEvent.id);
 
@@ -215,7 +218,13 @@ export const EventManagement: React.FC<EventManagementProps> = ({ retailerId }) 
     }
   };
 
-  const addBrandToEvent = async (brandId: string) => {
+  const addBrandToEvent = async (brandData: {
+    brand_id?: string;
+    brand_name?: string;
+    brand_logo_url?: string;
+    brand_description?: string;
+    brand_website?: string;
+  }) => {
     if (!selectedEvent) return;
 
     try {
@@ -223,7 +232,7 @@ export const EventManagement: React.FC<EventManagementProps> = ({ retailerId }) 
         .from('event_brands')
         .insert({
           event_id: selectedEvent.id,
-          brand_id: brandId
+          ...brandData
         });
 
       if (error) throw error;
@@ -275,15 +284,14 @@ export const EventManagement: React.FC<EventManagementProps> = ({ retailerId }) 
     }
   };
 
-  const removeBrandFromEvent = async (brandId: string) => {
+  const removeBrandFromEvent = async (eventBrandId: string) => {
     if (!selectedEvent) return;
 
     try {
       const { error } = await supabase
         .from('event_brands')
         .delete()
-        .eq('event_id', selectedEvent.id)
-        .eq('brand_id', brandId);
+        .eq('id', eventBrandId);
 
       if (error) throw error;
 
@@ -632,8 +640,14 @@ const EventDetailManagement: React.FC<{
   eventBrands: EventBrand[];
   eventProducts: EventProduct[];
   availableBrands: any[];
-  onAddBrand: (brandId: string) => void;
-  onRemoveBrand: (brandId: string) => void;
+  onAddBrand: (brandData: {
+    brand_id?: string;
+    brand_name?: string;
+    brand_logo_url?: string;
+    brand_description?: string;
+    brand_website?: string;
+  }) => void;
+  onRemoveBrand: (eventBrandId: string) => void;
   onAddProduct: (productId: string) => void;
   onRemoveProduct: (productId: string) => void;
   onClose: () => void;
@@ -651,6 +665,7 @@ const EventDetailManagement: React.FC<{
   const [selectedBrandId, setSelectedBrandId] = useState<string>('');
   const [isAddProductModalOpen, setIsAddProductModalOpen] = useState(false);
   const [selectedBrandForProducts, setSelectedBrandForProducts] = useState<string | null>(null);
+  const [isAddCustomBrandModalOpen, setIsAddCustomBrandModalOpen] = useState(false);
 
   // Group products by brand
   const productsByBrand = eventProducts.reduce((acc, ep) => {
@@ -681,76 +696,101 @@ const EventDetailManagement: React.FC<{
               <Users className="h-5 w-5" />
               Brands ({eventBrands.length}/10)
             </h3>
-            {eventBrands.length < 10 && availableBrandsForEvent.length > 0 && (
-              <div className="flex gap-2">
-                <Select value={selectedBrandId} onValueChange={setSelectedBrandId}>
-                  <SelectTrigger className="w-48">
-                    <SelectValue placeholder="Select brand" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableBrandsForEvent.map(brand => (
-                      <SelectItem key={brand.id} value={brand.id}>
-                        {brand.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button 
-                  onClick={() => {
-                    if (selectedBrandId) {
-                      onAddBrand(selectedBrandId);
-                      setSelectedBrandId('');
-                    }
-                  }}
-                  disabled={!selectedBrandId}
-                >
-                  Add Brand
-                </Button>
-              </div>
-            )}
+            <div className="flex gap-2">
+              <Button 
+                onClick={() => setIsAddCustomBrandModalOpen(true)}
+                variant="outline"
+                disabled={eventBrands.length >= 10}
+              >
+                Add Custom Brand
+              </Button>
+              {eventBrands.length < 10 && availableBrandsForEvent.length > 0 && (
+                <>
+                  <Select value={selectedBrandId} onValueChange={setSelectedBrandId}>
+                    <SelectTrigger className="w-48">
+                      <SelectValue placeholder="Select existing brand" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableBrandsForEvent.map(brand => (
+                        <SelectItem key={brand.id} value={brand.id}>
+                          {brand.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button 
+                    onClick={() => {
+                      if (selectedBrandId) {
+                        onAddBrand({ brand_id: selectedBrandId });
+                        setSelectedBrandId('');
+                      }
+                    }}
+                    disabled={!selectedBrandId}
+                  >
+                    Add Existing Brand
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
 
           <div className="grid gap-4">
-            {eventBrands.map((eventBrand) => (
-              <div key={eventBrand.id} className="border rounded-lg p-4">
-                <div className="flex justify-between items-center mb-4">
-                  <div className="flex items-center gap-3">
-                    {eventBrand.brand.logo_url && (
-                      <img src={eventBrand.brand.logo_url} alt={eventBrand.brand.name} 
-                           className="w-8 h-8 object-cover rounded" />
-                    )}
-                    <h4 className="font-medium">{eventBrand.brand.name}</h4>
-                    <Badge variant="outline">
-                      {productsByBrand[eventBrand.brand_id]?.length || 0}/10 products
-                    </Badge>
-                  </div>
-                  <div className="flex gap-2">
-                    {(productsByBrand[eventBrand.brand_id]?.length || 0) < 10 && (
+            {eventBrands.map((eventBrand) => {
+              const brandName = eventBrand.brand_name || eventBrand.brand?.name || 'Unknown Brand';
+              const brandLogo = eventBrand.brand_logo_url || eventBrand.brand?.logo_url;
+              const brandId = eventBrand.brand_id || eventBrand.id;
+              
+              return (
+                <div key={eventBrand.id} className="border rounded-lg p-4">
+                  <div className="flex justify-between items-center mb-4">
+                    <div className="flex items-center gap-3">
+                      {brandLogo && (
+                        <img src={brandLogo} alt={brandName} 
+                             className="w-8 h-8 object-cover rounded" />
+                      )}
+                      <div>
+                        <h4 className="font-medium">{brandName}</h4>
+                        {eventBrand.brand_description && (
+                          <p className="text-sm text-muted-foreground">{eventBrand.brand_description}</p>
+                        )}
+                        {eventBrand.brand_website && (
+                          <a href={eventBrand.brand_website} target="_blank" rel="noopener noreferrer" 
+                             className="text-xs text-blue-500 hover:underline">
+                            {eventBrand.brand_website}
+                          </a>
+                        )}
+                      </div>
+                      <Badge variant="outline">
+                        {productsByBrand[brandId]?.length || 0}/10 products
+                      </Badge>
+                    </div>
+                    <div className="flex gap-2">
+                      {(productsByBrand[brandId]?.length || 0) < 10 && (
+                        <Button
+                          size="sm"
+                          onClick={() => {
+                            setSelectedBrandForProducts(brandId);
+                            setIsAddProductModalOpen(true);
+                          }}
+                        >
+                          <Package className="h-4 w-4 mr-1" />
+                          Add Products
+                        </Button>
+                      )}
                       <Button
+                        variant="outline"
                         size="sm"
-                        onClick={() => {
-                          setSelectedBrandForProducts(eventBrand.brand_id);
-                          setIsAddProductModalOpen(true);
-                        }}
+                        onClick={() => onRemoveBrand(eventBrand.id)}
                       >
-                        <Package className="h-4 w-4 mr-1" />
-                        Add Products
+                        <X className="h-4 w-4" />
                       </Button>
-                    )}
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => onRemoveBrand(eventBrand.brand_id)}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
+                    </div>
                   </div>
-                </div>
 
-                {/* Products for this brand */}
-                {productsByBrand[eventBrand.brand_id] && (
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                    {productsByBrand[eventBrand.brand_id].map((eventProduct) => (
+                  {/* Products for this brand */}
+                  {productsByBrand[brandId] && (
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                    {productsByBrand[brandId].map((eventProduct) => (
                       <div key={eventProduct.id} className="border rounded-lg p-2 relative">
                         <button
                           onClick={() => onRemoveProduct(eventProduct.product_id)}
@@ -772,7 +812,8 @@ const EventDetailManagement: React.FC<{
                   </div>
                 )}
               </div>
-            ))}
+            );
+            })}
           </div>
         </div>
 
@@ -790,11 +831,105 @@ const EventDetailManagement: React.FC<{
             }}
             brandId={selectedBrandForProducts}
             userType="retailer"
-            
           />
         )}
+
+        {/* Add Custom Brand Modal */}
+        <Dialog open={isAddCustomBrandModalOpen} onOpenChange={setIsAddCustomBrandModalOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add Custom Brand to Event</DialogTitle>
+            </DialogHeader>
+            <AddCustomBrandForm onSubmit={onAddBrand} onClose={() => setIsAddCustomBrandModalOpen(false)} />
+          </DialogContent>
+        </Dialog>
       </CardContent>
     </Card>
+  );
+};
+
+const AddCustomBrandForm: React.FC<{
+  onSubmit: (brandData: {
+    brand_name: string;
+    brand_logo_url?: string;
+    brand_description?: string;
+    brand_website?: string;
+  }) => void;
+  onClose: () => void;
+}> = ({ onSubmit, onClose }) => {
+  const [formData, setFormData] = useState({
+    brand_name: '',
+    brand_logo_url: '',
+    brand_description: '',
+    brand_website: ''
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.brand_name.trim()) return;
+    
+    onSubmit({
+      brand_name: formData.brand_name.trim(),
+      brand_logo_url: formData.brand_logo_url.trim() || undefined,
+      brand_description: formData.brand_description.trim() || undefined,
+      brand_website: formData.brand_website.trim() || undefined
+    });
+    onClose();
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div>
+        <Label htmlFor="brand_name">Brand Name *</Label>
+        <Input
+          id="brand_name"
+          value={formData.brand_name}
+          onChange={(e) => setFormData({ ...formData, brand_name: e.target.value })}
+          placeholder="Enter brand name"
+          required
+        />
+      </div>
+
+      <div>
+        <Label htmlFor="brand_logo_url">Logo URL</Label>
+        <Input
+          id="brand_logo_url"
+          value={formData.brand_logo_url}
+          onChange={(e) => setFormData({ ...formData, brand_logo_url: e.target.value })}
+          placeholder="https://example.com/logo.png"
+        />
+      </div>
+
+      <div>
+        <Label htmlFor="brand_description">Description</Label>
+        <Textarea
+          id="brand_description"
+          value={formData.brand_description}
+          onChange={(e) => setFormData({ ...formData, brand_description: e.target.value })}
+          placeholder="Brief brand description"
+          rows={3}
+        />
+      </div>
+
+      <div>
+        <Label htmlFor="brand_website">Website</Label>
+        <Input
+          id="brand_website"
+          value={formData.brand_website}
+          onChange={(e) => setFormData({ ...formData, brand_website: e.target.value })}
+          placeholder="https://brand-website.com"
+        />
+      </div>
+
+      <div className="flex justify-end gap-2">
+        <Button type="button" variant="outline" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button type="submit" disabled={!formData.brand_name.trim()}>
+          Add Brand
+        </Button>
+      </div>
+    </form>
   );
 };
 

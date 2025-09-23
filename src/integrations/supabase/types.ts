@@ -768,37 +768,35 @@ export type Database = {
       event_brands: {
         Row: {
           added_at: string | null
-          brand_id: string
+          brand_description: string | null
+          brand_id: string | null
+          brand_logo_url: string | null
+          brand_name: string | null
+          brand_website: string | null
           event_id: string
           id: string
         }
         Insert: {
           added_at?: string | null
-          brand_id: string
+          brand_description?: string | null
+          brand_id?: string | null
+          brand_logo_url?: string | null
+          brand_name?: string | null
+          brand_website?: string | null
           event_id: string
           id?: string
         }
         Update: {
           added_at?: string | null
-          brand_id?: string
+          brand_description?: string | null
+          brand_id?: string | null
+          brand_logo_url?: string | null
+          brand_name?: string | null
+          brand_website?: string | null
           event_id?: string
           id?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "event_brands_brand_id_fkey"
-            columns: ["brand_id"]
-            isOneToOne: false
-            referencedRelation: "brands"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "event_brands_brand_id_fkey"
-            columns: ["brand_id"]
-            isOneToOne: false
-            referencedRelation: "brands_public"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "event_brands_event_id_fkey"
             columns: ["event_id"]

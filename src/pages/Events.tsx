@@ -29,11 +29,12 @@ interface Event {
 }
 
 interface EventBrand {
-  brand: {
-    id: string;
-    name: string;
-    logo_url?: string;
-  };
+  id: string;
+  brand_id?: string;
+  brand_name?: string;
+  brand_logo_url?: string;
+  brand_description?: string;
+  brand_website?: string;
 }
 
 interface EventProduct {
@@ -121,11 +122,12 @@ const Events: React.FC = () => {
       const { data: brandsData, error: brandsError } = await supabase
         .from('event_brands')
         .select(`
-          brand:brands(
-            id,
-            name,
-            logo_url
-          )
+          id,
+          brand_id,
+          brand_name,
+          brand_logo_url,
+          brand_description,
+          brand_website
         `)
         .eq('event_id', selectedEvent.id);
 
@@ -339,17 +341,20 @@ const Events: React.FC = () => {
             <h2 className="text-xl font-semibold">Event Catalogue</h2>
             
             {eventBrands.map((eventBrand) => {
-              const brandProducts = productsByBrand[eventBrand.brand.id] || [];
+              const brandId = eventBrand.brand_id || eventBrand.id;
+              const brandName = eventBrand.brand_name || 'Unknown Brand';
+              const brandLogo = eventBrand.brand_logo_url;
+              const brandProducts = productsByBrand[brandId] || [];
               
               return (
-                <Card key={eventBrand.brand.id}>
+                <Card key={eventBrand.id}>
                   <CardHeader>
                     <div className="flex items-center gap-3">
-                      {eventBrand.brand.logo_url && (
-                        <img src={eventBrand.brand.logo_url} alt={eventBrand.brand.name}
+                      {brandLogo && (
+                        <img src={brandLogo} alt={brandName}
                              className="w-10 h-10 object-cover rounded" />
                       )}
-                      <CardTitle className="text-lg">{eventBrand.brand.name}</CardTitle>
+                      <CardTitle className="text-lg">{brandName}</CardTitle>
                       <Badge variant="outline">{brandProducts.length} products</Badge>
                     </div>
                   </CardHeader>
