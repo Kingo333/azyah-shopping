@@ -629,7 +629,7 @@ const CreateEventForm: React.FC<{ onSubmit: (data: any) => void }> = ({ onSubmit
       </div>
 
       <Button type="submit" className="w-full" disabled={uploading}>
-        {uploading ? "Uploading..." : "Create Event"}
+        {uploading ? "Adding Brand..." : "Add Brand"}
       </Button>
     </form>
   );
@@ -859,18 +859,60 @@ const AddCustomBrandForm: React.FC<{
 }> = ({ onSubmit, onClose }) => {
   const [formData, setFormData] = useState({
     brand_name: '',
-    brand_logo_url: '',
     brand_description: '',
     brand_website: ''
   });
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const uploadLogo = async (): Promise<string | null> => {
+    if (!logoFile) return null;
+
+    try {
+      setUploading(true);
+      const fileExt = logoFile.name.split('.').pop();
+      const fileName = `brand-logo-${Date.now()}.${fileExt}`;
+      const filePath = `brand-logos/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('brand-logos')
+        .upload(filePath, logoFile);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('brand-logos')
+        .getPublicUrl(filePath);
+
+      return publicUrl;
+    } catch (error) {
+      console.error('Error uploading logo:', error);
+      toast({
+        title: "Error",
+        description: "Failed to upload logo",
+        variant: "destructive"
+      });
+      return null;
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.brand_name.trim()) return;
     
+    let logoUrl = null;
+    
+    if (logoFile) {
+      logoUrl = await uploadLogo();
+      if (!logoUrl) return; // Upload failed
+    }
+    
     onSubmit({
       brand_name: formData.brand_name.trim(),
-      brand_logo_url: formData.brand_logo_url.trim() || undefined,
+      brand_logo_url: logoUrl || undefined,
       brand_description: formData.brand_description.trim() || undefined,
       brand_website: formData.brand_website.trim() || undefined
     });
@@ -891,13 +933,29 @@ const AddCustomBrandForm: React.FC<{
       </div>
 
       <div>
-        <Label htmlFor="brand_logo_url">Logo URL</Label>
-        <Input
-          id="brand_logo_url"
-          value={formData.brand_logo_url}
-          onChange={(e) => setFormData({ ...formData, brand_logo_url: e.target.value })}
-          placeholder="https://example.com/logo.png"
-        />
+        <Label htmlFor="brand_logo">Brand Logo</Label>
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <Input
+              id="brand_logo"
+              type="file"
+              accept="image/*"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  setLogoFile(file);
+                }
+              }}
+              className="flex-1"
+            />
+            <Upload className="h-4 w-4 text-muted-foreground" />
+          </div>
+          {logoFile && (
+            <div className="text-sm text-muted-foreground">
+              Selected: {logoFile.name}
+            </div>
+          )}
+        </div>
       </div>
 
       <div>
@@ -925,8 +983,8 @@ const AddCustomBrandForm: React.FC<{
         <Button type="button" variant="outline" onClick={onClose}>
           Cancel
         </Button>
-        <Button type="submit" disabled={!formData.brand_name.trim()}>
-          Add Brand
+        <Button type="submit" disabled={!formData.brand_name.trim() || uploading}>
+          {uploading ? "Adding Brand..." : "Add Brand"}
         </Button>
       </div>
     </form>
