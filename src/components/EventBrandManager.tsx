@@ -5,15 +5,17 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Upload, Edit, Trash2, Image } from 'lucide-react';
+import { Plus, Upload, Edit, Trash2, Image, Package } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { BrandProductManager } from './BrandProductManager';
 
 interface EventBrand {
   id: string;
   brand_name: string;
   logo_url?: string;
   created_at: string;
+  product_count?: number;
 }
 
 interface EventBrandManagerProps {
@@ -28,6 +30,7 @@ export const EventBrandManager = ({ eventId, eventName }: EventBrandManagerProps
   const [editingBrand, setEditingBrand] = useState<EventBrand | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedBrand, setSelectedBrand] = useState<EventBrand | null>(null);
   const { toast } = useToast();
 
   const [formData, setFormData] = useState({
@@ -42,14 +45,25 @@ export const EventBrandManager = ({ eventId, eventName }: EventBrandManagerProps
 
   const fetchBrands = async () => {
     try {
+      // Fetch brands with product counts
       const { data, error } = await supabase
         .from('event_brands')
-        .select('*')
+        .select(`
+          *,
+          event_brand_products(count)
+        `)
         .eq('event_id', eventId)
         .order('created_at', { ascending: true });
 
       if (error) throw error;
-      setBrands(data || []);
+      
+      // Transform data to include product count
+      const brandsWithCounts = (data || []).map(brand => ({
+        ...brand,
+        product_count: brand.event_brand_products?.[0]?.count || 0
+      }));
+      
+      setBrands(brandsWithCounts);
     } catch (error) {
       console.error('Error fetching brands:', error);
       toast({
@@ -247,6 +261,16 @@ export const EventBrandManager = ({ eventId, eventName }: EventBrandManagerProps
     return <div className="p-6">Loading brands...</div>;
   }
 
+  // Show product manager if a brand is selected
+  if (selectedBrand) {
+    return (
+      <BrandProductManager
+        brand={selectedBrand}
+        onBack={() => setSelectedBrand(null)}
+      />
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -341,7 +365,12 @@ export const EventBrandManager = ({ eventId, eventName }: EventBrandManagerProps
             <Card key={brand.id}>
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg">{brand.brand_name}</CardTitle>
+                  <div>
+                    <CardTitle className="text-lg">{brand.brand_name}</CardTitle>
+                    <p className="text-sm text-muted-foreground">
+                      {brand.product_count || 0}/5 products
+                    </p>
+                  </div>
                   <div className="flex space-x-1">
                     <Button
                       variant="ghost"
@@ -365,13 +394,22 @@ export const EventBrandManager = ({ eventId, eventName }: EventBrandManagerProps
                   <img
                     src={brand.logo_url}
                     alt={`${brand.brand_name} logo`}
-                    className="w-full h-24 object-contain bg-gray-50 rounded"
+                    className="w-full h-24 object-contain bg-gray-50 rounded mb-3"
                   />
                 ) : (
-                  <div className="w-full h-24 bg-gray-100 rounded flex items-center justify-center">
+                  <div className="w-full h-24 bg-gray-100 rounded flex items-center justify-center mb-3">
                     <span className="text-sm text-gray-500">No logo</span>
                   </div>
                 )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                  onClick={() => setSelectedBrand(brand)}
+                >
+                  <Package className="w-4 h-4 mr-2" />
+                  Manage Products
+                </Button>
               </CardContent>
             </Card>
           ))}
