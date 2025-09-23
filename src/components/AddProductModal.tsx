@@ -165,7 +165,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
     accept: {
       'image/*': ['.jpeg', '.jpg', '.png', '.webp']
     },
-    maxFiles: 10,
+    maxFiles: 5,
     onDrop: (acceptedFiles) => {
       setBulkImages(acceptedFiles);
     }
@@ -322,7 +322,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
           <div className="space-y-6">
             <div className="text-center">
               <p className="text-sm text-muted-foreground mb-4">
-                Upload up to 10 product images. Each image will create a product that can be edited later.
+                Upload up to 5 product images. Each image will create a product that can be edited later.
               </p>
               
               <div 
@@ -334,7 +334,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
                   <Upload className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
                   <p className="text-sm font-medium">Drop images here or click to select</p>
                   <p className="text-xs text-muted-foreground mt-2">
-                    Maximum 10 images • JPG, PNG, WEBP
+                    Maximum 5 images • JPG, PNG, WEBP
                   </p>
                 </div>
               </div>
