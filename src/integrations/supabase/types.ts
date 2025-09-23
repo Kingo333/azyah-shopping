@@ -1816,6 +1816,7 @@ export type Database = {
           gender: Database["public"]["Enums"]["gender_type"] | null
           id: string
           image_url: string | null
+          is_event_only: boolean | null
           is_external: boolean | null
           media_urls: Json | null
           merchant_name: string | null
@@ -1853,6 +1854,7 @@ export type Database = {
           gender?: Database["public"]["Enums"]["gender_type"] | null
           id?: string
           image_url?: string | null
+          is_event_only?: boolean | null
           is_external?: boolean | null
           media_urls?: Json | null
           merchant_name?: string | null
@@ -1890,6 +1892,7 @@ export type Database = {
           gender?: Database["public"]["Enums"]["gender_type"] | null
           id?: string
           image_url?: string | null
+          is_event_only?: boolean | null
           is_external?: boolean | null
           media_urls?: Json | null
           merchant_name?: string | null
