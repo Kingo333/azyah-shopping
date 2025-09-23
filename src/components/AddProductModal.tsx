@@ -208,7 +208,8 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
           status: 'active' as const,
           external_url: null,
           sku: `EVENT-${Date.now()}-${index + 1}`,
-          stock_qty: 0
+          stock_qty: 0,
+          is_event_only: isEventContext // Mark as event-only if this is for an event
         };
 
         const { data: productResult, error: productError } = await supabase
