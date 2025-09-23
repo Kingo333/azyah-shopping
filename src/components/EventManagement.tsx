@@ -16,6 +16,7 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useRetailerBrands } from '@/hooks/useRetailerBrands';
 import { AddProductModal } from '@/components/AddProductModal';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Event {
   id: string;
@@ -75,8 +76,18 @@ export const EventManagement: React.FC<EventManagementProps> = ({ retailerId }) 
   const [isAddProductModalOpen, setIsAddProductModalOpen] = useState(false);
   const [selectedBrandForProducts, setSelectedBrandForProducts] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   const { data: availableBrands } = useRetailerBrands(retailerId);
+
+  // Get current user ID
+  useEffect(() => {
+    const getCurrentUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setCurrentUserId(user?.id || null);
+    };
+    getCurrentUser();
+  }, []);
 
   useEffect(() => {
     fetchEvents();
@@ -228,11 +239,45 @@ export const EventManagement: React.FC<EventManagementProps> = ({ retailerId }) 
     if (!selectedEvent) return;
 
     try {
+      let finalBrandId = brandData.brand_id;
+
+      // If this is a custom brand (no brand_id), create a proper brand entry first
+      if (!brandData.brand_id && brandData.brand_name) {
+        console.log('Creating proper brand entry for custom brand:', brandData.brand_name);
+        
+        // Create the brand in the brands table
+        const { data: newBrand, error: brandError } = await supabase
+          .from('brands')
+          .insert({
+            name: brandData.brand_name,
+            slug: brandData.brand_name.toLowerCase().replace(/\s+/g, '-'),
+            logo_url: brandData.brand_logo_url,
+            bio: brandData.brand_description,
+            website: brandData.brand_website,
+            owner_user_id: currentUserId // Set the current user as the owner
+          })
+          .select()
+          .single();
+
+        if (brandError) {
+          console.error('Error creating brand:', brandError);
+          throw new Error(`Failed to create brand: ${brandError.message}`);
+        }
+
+        finalBrandId = newBrand.id;
+        console.log('Created brand with ID:', finalBrandId);
+      }
+
+      // Now create the event_brands entry with the proper brand_id
       const { error } = await supabase
         .from('event_brands')
         .insert({
           event_id: selectedEvent.id,
-          ...brandData
+          brand_id: finalBrandId,
+          brand_name: brandData.brand_name,
+          brand_logo_url: brandData.brand_logo_url,
+          brand_description: brandData.brand_description,
+          brand_website: brandData.brand_website
         });
 
       if (error) throw error;
@@ -248,7 +293,7 @@ export const EventManagement: React.FC<EventManagementProps> = ({ retailerId }) 
       console.error('Error adding brand to event:', error);
       toast({
         title: "Error",
-        description: "Failed to add brand to event",
+        description: error instanceof Error ? error.message : "Failed to add brand to event",
         variant: "destructive"
       });
     }
