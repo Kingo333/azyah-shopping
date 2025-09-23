@@ -15,6 +15,7 @@ import type { TopCategory, SubCategory, Gender } from '@/lib/categories';
 import { useProductOutfits } from '@/hooks/useProductOutfits';
 import { imageUrlFrom, extractSupabasePath } from '@/lib/imageUrl';
 import { isSupabaseAbsoluteUrl } from '@/lib/urlGuards';
+import { useDropzone } from 'react-dropzone';
 interface AddProductModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -45,6 +46,8 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
   const [sizeChartUrl, setSizeChartUrl] = useState<string | null>(null);
   const [outfitImageUrl, setOutfitImageUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [bulkImages, setBulkImages] = useState<File[]>([]);
+  const [isBulkUploading, setIsBulkUploading] = useState(false);
   
   // Try-on outfit functionality for brands
   const { 
@@ -157,6 +160,92 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
   const removeImage = (index: number) => {
     setImages(prev => prev.filter((_, i) => i !== index));
   };
+
+  const { getRootProps: getBulkRootProps, getInputProps: getBulkInputProps } = useDropzone({
+    accept: {
+      'image/*': ['.jpeg', '.jpg', '.png', '.webp']
+    },
+    maxFiles: 10,
+    onDrop: (acceptedFiles) => {
+      setBulkImages(acceptedFiles);
+    }
+  });
+
+  const handleBulkUpload = async () => {
+    if (bulkImages.length === 0) {
+      toast({
+        title: "No images selected",
+        description: "Please select at least one image to upload",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsBulkUploading(true);
+
+    try {
+      for (const [index, imageFile] of bulkImages.entries()) {
+        // Upload product image
+        const imageUrl = await uploadImageToStorage(imageFile);
+
+        // Create product with minimal data
+        const productData = {
+          title: `Product ${index + 1}`,
+          description: 'Event product - details to be added',
+          price_cents: 0,
+          currency: 'USD',
+          category_slug: 'clothing' as any,
+          subcategory_slug: 'tops' as any,
+          brand_id: userType === 'brand' ? brandId : null,
+          retailer_id: userType === 'retailer' ? retailerId : null,
+          media_urls: [imageUrl],
+          status: 'active' as const,
+          external_url: '',
+          sku: `EVENT-${Date.now()}-${index + 1}`,
+          stock_qty: 0
+        };
+
+        const { data: productResult, error: productError } = await supabase
+          .from('products')
+          .insert([productData])
+          .select()
+          .single();
+
+        if (productError) throw productError;
+
+        // Upload the same image as outfit for try-on
+        if (userType === 'retailer' && retailerId) {
+          try {
+            await uploadOutfit({
+              productId: productResult.id,
+              brandId: retailerId, // Use retailer ID for outfit association
+              file: imageFile
+            });
+          } catch (outfitError) {
+            console.warn('Failed to upload outfit image:', outfitError);
+          }
+        }
+      }
+
+      toast({
+        title: "Success",
+        description: `${bulkImages.length} products created successfully`
+      });
+
+      setBulkImages([]);
+      onProductAdded();
+      onClose();
+    } catch (error: any) {
+      console.error('Bulk upload error:', error);
+      toast({
+        title: "Upload failed",
+        description: error.message || "Failed to create products",
+        variant: "destructive"
+      });
+    } finally {
+      setIsBulkUploading(false);
+    }
+  };
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
@@ -207,6 +296,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
       setImages([]);
       setSizeChartUrl(null);
       setOutfitImageUrl(null);
+      setBulkImages([]);
       onProductAdded();
       onClose();
     } catch (error: any) {
@@ -223,10 +313,72 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
   return <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[95vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Add New Product</DialogTitle>
+          <DialogTitle>
+            {isEventContext ? 'Add Event Products' : 'Add New Product'}
+          </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        {isEventContext ? (
+          <div className="space-y-6">
+            <div className="text-center">
+              <p className="text-sm text-muted-foreground mb-4">
+                Upload up to 10 product images. Each image will create a product that can be edited later.
+              </p>
+              
+              <div 
+                {...getBulkRootProps()} 
+                className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 cursor-pointer hover:border-muted-foreground/50 transition-colors"
+              >
+                <input {...getBulkInputProps()} />
+                <div className="text-center">
+                  <Upload className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                  <p className="text-sm font-medium">Drop images here or click to select</p>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Maximum 10 images • JPG, PNG, WEBP
+                  </p>
+                </div>
+              </div>
+
+              {bulkImages.length > 0 && (
+                <div className="mt-4">
+                  <p className="text-sm font-medium mb-2">{bulkImages.length} images selected:</p>
+                  <div className="grid grid-cols-5 gap-2">
+                    {bulkImages.map((file, index) => (
+                      <div key={index} className="relative">
+                        <img
+                          src={URL.createObjectURL(file)}
+                          alt={`Preview ${index + 1}`}
+                          className="w-full h-20 object-cover rounded border"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setBulkImages(prev => prev.filter((_, i) => i !== index))}
+                          className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full w-5 h-5 flex items-center justify-center text-xs"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end space-x-2">
+              <Button type="button" variant="outline" onClick={onClose}>
+                Cancel
+              </Button>
+              <Button 
+                type="button" 
+                onClick={handleBulkUpload}
+                disabled={bulkImages.length === 0 || isBulkUploading}
+              >
+                {isBulkUploading ? 'Creating Products...' : `Create ${bulkImages.length} Products`}
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="title">Product Name *</Label>
@@ -587,6 +739,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
             </div>
           </div>
         </form>
+        )}
       </DialogContent>
     </Dialog>;
 };
