@@ -193,7 +193,11 @@ export const RetailerEvents: React.FC<RetailerEventsProps> = ({ retailerId }) =>
         >
           ← Back to Events
         </Button>
-        <EventCatalogManager eventId={selectedEvent.id} eventName={selectedEvent.name} />
+        <EventCatalogManager 
+          eventId={selectedEvent.id} 
+          eventName={selectedEvent.name} 
+          onBack={() => setSelectedEvent(null)}
+        />
       </div>
     );
   }
@@ -276,7 +280,7 @@ export const RetailerEvents: React.FC<RetailerEventsProps> = ({ retailerId }) =>
                   <p className="text-muted-foreground mb-4">{event.description}</p>
                 )}
                 <Button onClick={() => setSelectedEvent(event)}>
-                  Manage Catalog
+                  Manage Brands
                 </Button>
               </CardContent>
             </Card>

@@ -20,21 +20,26 @@ interface RetailEvent {
   };
 }
 
+interface EventBrand {
+  id: string;
+  brand_name: string;
+  logo_url?: string;
+  products: EventProduct[];
+}
+
 interface EventProduct {
   id: string;
-  title: string;
-  image_url?: string;
-  price_cents: number;
-  currency: string;
-  featured: boolean;
+  image_url: string;
+  try_on_data: any;
 }
 
 const Events = () => {
   const { user } = useAuth();
   const [events, setEvents] = useState<RetailEvent[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<RetailEvent | null>(null);
-  const [eventProducts, setEventProducts] = useState<EventProduct[]>([]);
+  const [eventBrands, setEventBrands] = useState<EventBrand[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isLoadingBrands, setIsLoadingBrands] = useState(false);
 
   useEffect(() => {
     fetchUpcomingEvents();
@@ -61,39 +66,46 @@ const Events = () => {
     }
   };
 
-  const fetchEventProducts = async (eventId: string) => {
+  const fetchEventBrands = async (eventId: string) => {
+    setIsLoadingBrands(true);
     try {
-      const { data, error } = await supabase
-        .from('event_catalog')
-        .select(`
-          featured,
-          product:products(
-            id,
-            title,
-            image_url,
-            price_cents,
-            currency
-          )
-        `)
+      const { data: brandsData, error: brandsError } = await supabase
+        .from('event_brands')
+        .select('*')
         .eq('event_id', eventId)
-        .order('featured', { ascending: false });
+        .order('created_at', { ascending: true });
 
-      if (error) throw error;
-      
-      const products = data?.map(item => ({
-        ...item.product,
-        featured: item.featured
-      })) || [];
-      
-      setEventProducts(products);
+      if (brandsError) throw brandsError;
+
+      // Fetch products for each brand
+      const brandsWithProducts = await Promise.all(
+        (brandsData || []).map(async (brand) => {
+          const { data: productsData, error: productsError } = await supabase
+            .from('event_brand_products')
+            .select('*')
+            .eq('event_brand_id', brand.id)
+            .order('sort_order', { ascending: true });
+
+          if (productsError) {
+            console.error('Error fetching products for brand:', brand.id, productsError);
+            return { ...brand, products: [] };
+          }
+
+          return { ...brand, products: productsData || [] };
+        })
+      );
+
+      setEventBrands(brandsWithProducts);
     } catch (error) {
-      console.error('Error fetching event products:', error);
+      console.error('Error fetching event brands:', error);
+    } finally {
+      setIsLoadingBrands(false);
     }
   };
 
   const selectEvent = (event: RetailEvent) => {
     setSelectedEvent(event);
-    fetchEventProducts(event.id);
+    fetchEventBrands(event.id);
   };
 
   if (!user) {
@@ -132,7 +144,10 @@ const Events = () => {
       <div className="container mx-auto px-4 py-8">
         <Button 
           variant="outline" 
-          onClick={() => setSelectedEvent(null)}
+          onClick={() => {
+            setSelectedEvent(null);
+            setEventBrands([]);
+          }}
           className="mb-6"
         >
           ← Back to Events
@@ -174,38 +189,63 @@ const Events = () => {
         </div>
 
         <div>
-          <h2 className="text-xl font-semibold mb-4">Event Catalog</h2>
-          {eventProducts.length === 0 ? (
+          <h2 className="text-xl font-semibold mb-4">Featured Brands</h2>
+          {isLoadingBrands ? (
+            <div className="text-center py-8">Loading brands...</div>
+          ) : eventBrands.length === 0 ? (
             <Card>
               <CardContent className="pt-6">
                 <p className="text-center text-muted-foreground">
-                  No products available for this event yet.
+                  No brands available for this event yet.
                 </p>
               </CardContent>
             </Card>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {eventProducts.map((product) => (
-                <Card key={product.id} className="overflow-hidden">
-                  <div className="relative">
-                    <img
-                      src={product.image_url || '/placeholder.svg'}
-                      alt={product.title}
-                      className="w-full h-48 object-cover"
-                    />
-                    {product.featured && (
-                      <Badge className="absolute top-2 left-2" variant="secondary">
-                        Featured
-                      </Badge>
+            <div className="space-y-8">
+              {eventBrands.map((brand) => (
+                <div key={brand.id} className="space-y-4">
+                  <div className="flex items-center space-x-4">
+                    {brand.logo_url && (
+                      <img
+                        src={brand.logo_url}
+                        alt={`${brand.brand_name} logo`}
+                        className="w-12 h-12 object-contain bg-white rounded-lg p-2 border"
+                      />
                     )}
+                    <h3 className="text-xl font-bold">{brand.brand_name}</h3>
                   </div>
-                  <CardContent className="p-4">
-                    <h3 className="font-medium mb-2 line-clamp-2">{product.title}</h3>
-                    <p className="text-lg font-semibold">
-                      {product.currency} {(product.price_cents / 100).toFixed(2)}
-                    </p>
-                  </CardContent>
-                </Card>
+                  
+                  {brand.products.length === 0 ? (
+                    <p className="text-muted-foreground text-sm">No products available</p>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                      {brand.products.map((product) => (
+                        <Card key={product.id} className="group hover:shadow-lg transition-shadow">
+                          <CardContent className="p-4">
+                            <div className="relative mb-3">
+                              <img
+                                src={product.image_url}
+                                alt="Product"
+                                className="w-full h-48 object-cover rounded"
+                              />
+                              {Object.keys(product.try_on_data || {}).length > 0 && (
+                                <Badge className="absolute top-2 right-2 bg-green-500">
+                                  Try-On Available
+                                </Badge>
+                              )}
+                            </div>
+                            <Button 
+                              className="w-full"
+                              disabled={Object.keys(product.try_on_data || {}).length === 0}
+                            >
+                              {Object.keys(product.try_on_data || {}).length > 0 ? 'Try On' : 'Not Available'}
+                            </Button>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+                </div>
               ))}
             </div>
           )}
