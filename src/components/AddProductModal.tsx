@@ -187,14 +187,42 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
       return;
     }
 
+    // Validation for event context
+    if (isEventContext && userType === 'retailer' && !selectedBrandForProducts) {
+      toast({
+        title: "Brand selection required",
+        description: "Please select a brand for the event products",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (isEventContext && userType === 'retailer' && !retailerId) {
+      toast({
+        title: "Retailer ID missing",
+        description: "Retailer information is required to create event products",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsBulkUploading(true);
 
     try {
+      console.log('Starting bulk upload with:', {
+        userType,
+        isEventContext,
+        retailerId,
+        selectedBrandForProducts,
+        imageCount: bulkImages.length
+      });
+
       for (const [index, imageFile] of bulkImages.entries()) {
         // Upload product image
         const imageUrl = await uploadImageToStorage(imageFile);
 
         // Create product with minimal data
+        // For event context with retailers: set both retailer_id (for ownership) and brand_id (for event association)
         const productData = {
           title: `Product ${index + 1}`,
           description: 'Event product - details to be added',
@@ -202,7 +230,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
           currency: 'USD',
           category_slug: 'clothing' as any,
           subcategory_slug: 'tops' as any,
-          brand_id: userType === 'brand' ? brandId : null,
+          brand_id: isEventContext && userType === 'retailer' ? selectedBrandForProducts : (userType === 'brand' ? brandId : null),
           retailer_id: userType === 'retailer' ? retailerId : null,
           media_urls: [imageUrl],
           status: 'active' as const,
@@ -212,13 +240,20 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
           is_event_only: isEventContext // Mark as event-only if this is for an event
         };
 
+        console.log('Creating product with data:', productData);
+
         const { data: productResult, error: productError } = await supabase
           .from('products')
           .insert([productData])
           .select()
           .single();
 
-        if (productError) throw productError;
+        if (productError) {
+          console.error('Product creation error:', productError);
+          throw new Error(`Failed to create product ${index + 1}: ${productError.message}`);
+        }
+
+        console.log('Product created successfully:', productResult.id);
 
         // Connect product to event if this is for an event
         if (isEventContext && onAddProductToEvent) {
@@ -234,11 +269,13 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
           try {
             await uploadOutfit({
               productId: productResult.id,
-              brandId: retailerId, // Use retailer ID for outfit association
+              brandId: isEventContext ? selectedBrandForProducts : retailerId, // Use event brand ID for event context
               file: imageFile
             });
+            console.log('Outfit uploaded successfully for product:', productResult.id);
           } catch (outfitError) {
-            console.warn('Failed to upload outfit image:', outfitError);
+            console.error('Failed to upload outfit image:', outfitError);
+            // Don't fail the entire process if outfit upload fails
           }
         }
       }
@@ -253,9 +290,20 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
       onClose();
     } catch (error: any) {
       console.error('Bulk upload error:', error);
+      
+      // Provide more specific error messages
+      let errorMessage = "Failed to create products";
+      if (error.message?.includes('row-level security')) {
+        errorMessage = "Permission denied: Unable to create products. Please check your permissions.";
+      } else if (error.message?.includes('brand_id')) {
+        errorMessage = "Brand association failed. Please ensure the selected brand is valid.";
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
       toast({
         title: "Upload failed",
-        description: error.message || "Failed to create products",
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {
