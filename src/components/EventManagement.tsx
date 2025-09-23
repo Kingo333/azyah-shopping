@@ -16,6 +16,7 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useRetailerBrands } from '@/hooks/useRetailerBrands';
 import { AddProductModal } from '@/components/AddProductModal';
+import { ProductTryOnManager } from '@/components/ProductTryOnManager';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface Event {
@@ -857,10 +858,21 @@ const EventDetailManagement: React.FC<{
                           alt={eventProduct.product.title}
                           className="w-full aspect-square object-cover rounded mb-2"
                         />
-                        <p className="text-xs font-medium line-clamp-2">{eventProduct.product.title}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {(eventProduct.product.price_cents / 100).toFixed(2)} {eventProduct.product.currency}
-                        </p>
+                         <p className="text-xs font-medium line-clamp-2">{eventProduct.product.title}</p>
+                         <div className="flex items-center justify-between text-xs">
+                           <span className="text-muted-foreground">
+                             {(eventProduct.product.price_cents / 100).toFixed(2)} {eventProduct.product.currency}
+                           </span>
+                           <ProductTryOnManager 
+                             product={{
+                               id: eventProduct.product.id,
+                               title: eventProduct.product.title,
+                               brand_id: eventProduct.brand_id
+                             }}
+                             variant="edit"
+                             className="ml-1"
+                           />
+                         </div>
                       </div>
                     ))}
                   </div>
