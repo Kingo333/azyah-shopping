@@ -30,6 +30,7 @@ import { RetailerSettingsForm } from '@/components/RetailerSettingsForm';
 import { CollabDashboard } from '@/components/ugc/CollabDashboard';
 import { AsosImportManager } from '@/components/AsosImportManager';
 import BulkAsosImportManager from '@/components/BulkAsosImportManager';
+import { EventManagement } from '@/components/EventManagement';
 import { useRetailerBrands } from '@/hooks/useRetailerBrands';
 import { Product } from '@/types';
 import { convertJsonToProductAttributes } from '@/lib/type-utils';
@@ -461,10 +462,11 @@ const RetailerPortal = () => {
         
         {/* Tabs */}
         <Tabs defaultValue="products" className="space-y-4 md:space-y-6">
-          <TabsList className="bg-muted/50 dark:bg-slate-800/50 grid w-full grid-cols-5 md:flex md:w-auto">
+          <TabsList className="bg-muted/50 dark:bg-slate-800/50 grid w-full grid-cols-6 md:flex md:w-auto">
             <TabsTrigger value="products" className="data-[state=active]:bg-background dark:data-[state=active]:bg-slate-700 text-xs md:text-sm">Products</TabsTrigger>
             <TabsTrigger value="collabs" className="data-[state=active]:bg-background dark:data-[state=active]:bg-slate-700 text-xs md:text-sm">Collabs</TabsTrigger>
             <TabsTrigger value="brands" className="data-[state=active]:bg-background dark:data-[state=active]:bg-slate-700 text-xs md:text-sm">Brands</TabsTrigger>
+            <TabsTrigger value="events" className="data-[state=active]:bg-background dark:data-[state=active]:bg-slate-700 text-xs md:text-sm">Events</TabsTrigger>
             <TabsTrigger value="analytics" className="data-[state=active]:bg-background dark:data-[state=active]:bg-slate-700 text-xs md:text-sm">Analytics</TabsTrigger>
             <TabsTrigger value="settings" className="data-[state=active]:bg-background dark:data-[state=active]:bg-slate-700 text-xs md:text-sm">Settings</TabsTrigger>
           </TabsList>
@@ -591,6 +593,10 @@ const RetailerPortal = () => {
 
           <TabsContent value="brands">
             <RetailerBrandsList retailerId={retailer?.id || ''} />
+          </TabsContent>
+
+          <TabsContent value="events">
+            <EventManagement retailerId={retailer?.id || ''} />
           </TabsContent>
 
           <TabsContent value="analytics">

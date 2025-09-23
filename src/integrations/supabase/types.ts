@@ -765,6 +765,141 @@ export type Database = {
           },
         ]
       }
+      event_brands: {
+        Row: {
+          added_at: string | null
+          brand_id: string
+          event_id: string
+          id: string
+        }
+        Insert: {
+          added_at?: string | null
+          brand_id: string
+          event_id: string
+          id?: string
+        }
+        Update: {
+          added_at?: string | null
+          brand_id?: string
+          event_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_brands_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_brands_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_brands_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events_retail"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_products: {
+        Row: {
+          added_at: string | null
+          brand_id: string
+          event_id: string
+          id: string
+          product_id: string
+        }
+        Insert: {
+          added_at?: string | null
+          brand_id: string
+          event_id: string
+          id?: string
+          product_id: string
+        }
+        Update: {
+          added_at?: string | null
+          brand_id?: string
+          event_id?: string
+          id?: string
+          product_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_products_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_products_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_products_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events_retail"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_products_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_products_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_tryon_sessions: {
+        Row: {
+          created_at: string | null
+          event_id: string
+          id: string
+          person_image_url: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          event_id: string
+          id?: string
+          person_image_url: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          event_id?: string
+          id?: string
+          person_image_url?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_tryon_sessions_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events_retail"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       events: {
         Row: {
           brand_id: string | null
@@ -856,6 +991,69 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      events_retail: {
+        Row: {
+          city: string | null
+          country: string | null
+          cover_photo_url: string | null
+          created_at: string | null
+          description: string | null
+          duration_days: number | null
+          event_date: string
+          id: string
+          location_text: string | null
+          name: string
+          retailer_id: string
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          city?: string | null
+          country?: string | null
+          cover_photo_url?: string | null
+          created_at?: string | null
+          description?: string | null
+          duration_days?: number | null
+          event_date: string
+          id?: string
+          location_text?: string | null
+          name: string
+          retailer_id: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          city?: string | null
+          country?: string | null
+          cover_photo_url?: string | null
+          created_at?: string | null
+          description?: string | null
+          duration_days?: number | null
+          event_date?: string
+          id?: string
+          location_text?: string | null
+          name?: string
+          retailer_id?: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "events_retail_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "retailers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_retail_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "retailers_public"
             referencedColumns: ["id"]
           },
         ]

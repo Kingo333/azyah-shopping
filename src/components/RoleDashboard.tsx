@@ -15,7 +15,7 @@ import DashboardHeader from '@/components/DashboardHeader';
 import AffiliateHub from '@/components/AffiliateHub';
 import AiStudioModal from '@/components/AiStudioModal';
 import PremiumBanner from '@/components/PremiumBanner';
-import { Heart, ShoppingBag, Search, Sparkles, Package, BarChart3, Users, Settings, Store, TrendingUp, Plus, Eye, DollarSign, Globe, Bell, LogOut, User, Archive, Trophy, MapPin, Blocks, WandSparkles, ChevronDown, ChevronUp, Gift, ChevronLeft, ChevronRight, Home, Filter } from 'lucide-react';
+import { Heart, ShoppingBag, Search, Sparkles, Package, BarChart3, Users, Settings, Store, TrendingUp, Plus, Eye, DollarSign, Globe, Bell, LogOut, User, Archive, Trophy, MapPin, Blocks, WandSparkles, ChevronDown, ChevronUp, Gift, ChevronLeft, ChevronRight, Home, Filter, CalendarIcon } from 'lucide-react';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import MinimizedLeaderboard from '@/components/MinimizedLeaderboard';
 import TrendingStylesCarousel from '@/components/TrendingStylesCarousel';
@@ -338,6 +338,17 @@ const RoleDashboard: React.FC = () => {
           {/* UGC Collab Chip */}
           <TutorialTooltip content="Collaborate with brands on user-generated content. Apply for brand partnerships and create sponsored content." feature="ugc-collab">
             <UGCCollabButton className="flex items-center gap-2 px-3 py-2 h-9 rounded-lg bg-background border border-border hover:bg-accent transition-colors font-medium text-sm whitespace-nowrap flex-shrink-0 min-w-fit" />
+          </TutorialTooltip>
+
+          {/* Events Chip */}
+          <TutorialTooltip content="Discover upcoming fashion events and try on the latest collections virtually from retailers." feature="events">
+            <button
+              onClick={() => navigate('/events')}
+              className="flex items-center gap-2 px-3 py-2 h-9 rounded-lg bg-background border border-border hover:bg-accent transition-colors font-medium text-sm whitespace-nowrap flex-shrink-0 min-w-fit"
+            >
+              <CalendarIcon className="h-4 w-4" />
+              Events
+            </button>
           </TutorialTooltip>
 
           {/* Toy Replica Chip */}
