@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Calendar, MapPin, Plus, Edit, Trash2 } from 'lucide-react';
+import { Calendar, MapPin, Plus, Edit, Trash2, Upload, Image } from 'lucide-react';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { EventCatalogManager } from './EventCatalogManager';
@@ -16,9 +16,11 @@ interface RetailEvent {
   name: string;
   description?: string;
   event_date: string;
+  end_date?: string;
   location?: string;
   status: string;
   retailer_id: string;
+  banner_image_url?: string;
   created_at: string;
 }
 
@@ -40,9 +42,13 @@ export const RetailerEvents: React.FC<RetailerEventsProps> = ({ retailerId }) =>
     name: '',
     description: '',
     event_date: '',
+    end_date: '',
     location: '',
-    status: 'draft' as 'draft' | 'active' | 'ended'
+    status: 'draft' as 'draft' | 'active' | 'ended',
+    banner_image_url: ''
   });
+  const [bannerFile, setBannerFile] = useState<File | null>(null);
+  const [uploadingBanner, setUploadingBanner] = useState(false);
 
   useEffect(() => {
     fetchEvents();
@@ -75,17 +81,59 @@ export const RetailerEvents: React.FC<RetailerEventsProps> = ({ retailerId }) =>
       name: '',
       description: '',
       event_date: '',
+      end_date: '',
       location: '',
-      status: 'draft'
+      status: 'draft',
+      banner_image_url: ''
     });
+    setBannerFile(null);
+  };
+
+  const uploadBannerImage = async (file: File): Promise<string | null> => {
+    try {
+      setUploadingBanner(true);
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random()}.${fileExt}`;
+      const filePath = `event-banners/${fileName}`;
+
+      const { data, error } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file);
+
+      if (error) throw error;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      return publicUrl;
+    } catch (error) {
+      console.error('Banner upload error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to upload banner image",
+        variant: "destructive"
+      });
+      return null;
+    } finally {
+      setUploadingBanner(false);
+    }
   };
 
   const handleCreate = async () => {
     try {
+      let bannerUrl = formData.banner_image_url;
+      
+      if (bannerFile) {
+        bannerUrl = await uploadBannerImage(bannerFile);
+        if (!bannerUrl) return; // Upload failed
+      }
+
       const { error } = await supabase
         .from('retail_events')
         .insert({
           ...formData,
+          banner_image_url: bannerUrl,
           retailer_id: retailerId
         });
 
@@ -112,9 +160,19 @@ export const RetailerEvents: React.FC<RetailerEventsProps> = ({ retailerId }) =>
     if (!editingEvent) return;
 
     try {
+      let bannerUrl = formData.banner_image_url;
+      
+      if (bannerFile) {
+        bannerUrl = await uploadBannerImage(bannerFile);
+        if (!bannerUrl) return; // Upload failed
+      }
+
       const { error } = await supabase
         .from('retail_events')
-        .update(formData)
+        .update({
+          ...formData,
+          banner_image_url: bannerUrl
+        })
         .eq('id', editingEvent.id);
 
       if (error) throw error;
@@ -169,8 +227,10 @@ export const RetailerEvents: React.FC<RetailerEventsProps> = ({ retailerId }) =>
       name: event.name,
       description: event.description || '',
       event_date: event.event_date,
+      end_date: event.end_date || '',
       location: event.location || '',
-      status: event.status as 'draft' | 'active' | 'ended'
+      status: event.status as 'draft' | 'active' | 'ended',
+      banner_image_url: event.banner_image_url || ''
     });
     setIsEditModalOpen(true);
   };
@@ -244,18 +304,21 @@ export const RetailerEvents: React.FC<RetailerEventsProps> = ({ retailerId }) =>
                         {event.status}
                       </Badge>
                     </CardTitle>
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground mt-2">
-                      <div className="flex items-center gap-1">
-                        <Calendar className="w-4 h-4" />
-                        {format(new Date(event.event_date), 'MMMM d, yyyy')}
-                      </div>
-                      {event.location && (
-                        <div className="flex items-center gap-1">
-                          <MapPin className="w-4 h-4" />
-                          {event.location}
-                        </div>
-                      )}
-                    </div>
+                     <div className="flex items-center gap-4 text-sm text-muted-foreground mt-2">
+                       <div className="flex items-center gap-1">
+                         <Calendar className="w-4 h-4" />
+                         {format(new Date(event.event_date), 'MMMM d, yyyy')}
+                         {event.end_date && event.end_date !== event.event_date && (
+                           <span> - {format(new Date(event.end_date), 'MMMM d, yyyy')}</span>
+                         )}
+                       </div>
+                       {event.location && (
+                         <div className="flex items-center gap-1">
+                           <MapPin className="w-4 h-4" />
+                           {event.location}
+                         </div>
+                       )}
+                     </div>
                   </div>
                   <div className="flex gap-2">
                     <Button 
@@ -275,14 +338,23 @@ export const RetailerEvents: React.FC<RetailerEventsProps> = ({ retailerId }) =>
                   </div>
                 </div>
               </CardHeader>
-              <CardContent>
-                {event.description && (
-                  <p className="text-muted-foreground mb-4">{event.description}</p>
-                )}
-                <Button onClick={() => setSelectedEvent(event)}>
-                  Manage Brands
-                </Button>
-              </CardContent>
+               <CardContent>
+                 {event.banner_image_url && (
+                   <div className="mb-4">
+                     <img
+                       src={event.banner_image_url}
+                       alt={event.name}
+                       className="w-full h-32 object-cover rounded-lg"
+                     />
+                   </div>
+                 )}
+                 {event.description && (
+                   <p className="text-muted-foreground mb-4">{event.description}</p>
+                 )}
+                 <Button onClick={() => setSelectedEvent(event)}>
+                   Manage Brands
+                 </Button>
+               </CardContent>
             </Card>
           ))}
         </div>
@@ -312,12 +384,60 @@ export const RetailerEvents: React.FC<RetailerEventsProps> = ({ retailerId }) =>
               />
             </div>
             <div>
-              <label className="text-sm font-medium">Event Date</label>
-              <Input
-                type="date"
-                value={formData.event_date}
-                onChange={(e) => setFormData(prev => ({ ...prev, event_date: e.target.value }))}
-              />
+              <label className="text-sm font-medium">Banner Image</label>
+              <div className="space-y-2">
+                {(bannerFile || formData.banner_image_url) && (
+                  <div className="w-full h-24 bg-muted rounded-lg overflow-hidden">
+                    <img
+                      src={bannerFile ? URL.createObjectURL(bannerFile) : formData.banner_image_url}
+                      alt="Banner preview"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                )}
+                <div className="flex gap-2">
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) setBannerFile(file);
+                    }}
+                    className="flex-1"
+                  />
+                  {(bannerFile || formData.banner_image_url) && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setBannerFile(null);
+                        setFormData(prev => ({ ...prev, banner_image_url: '' }));
+                      }}
+                    >
+                      Remove
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">Start Date</label>
+                <Input
+                  type="date"
+                  value={formData.event_date}
+                  onChange={(e) => setFormData(prev => ({ ...prev, event_date: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">End Date (Optional)</label>
+                <Input
+                  type="date"
+                  value={formData.end_date}
+                  onChange={(e) => setFormData(prev => ({ ...prev, end_date: e.target.value }))}
+                />
+              </div>
             </div>
             <div>
               <label className="text-sm font-medium">Location</label>
@@ -350,8 +470,8 @@ export const RetailerEvents: React.FC<RetailerEventsProps> = ({ retailerId }) =>
               >
                 Cancel
               </Button>
-              <Button onClick={handleCreate} className="flex-1">
-                Create Event
+              <Button onClick={handleCreate} disabled={uploadingBanner} className="flex-1">
+                {uploadingBanner ? 'Uploading...' : 'Create Event'}
               </Button>
             </div>
           </div>
@@ -382,12 +502,60 @@ export const RetailerEvents: React.FC<RetailerEventsProps> = ({ retailerId }) =>
               />
             </div>
             <div>
-              <label className="text-sm font-medium">Event Date</label>
-              <Input
-                type="date"
-                value={formData.event_date}
-                onChange={(e) => setFormData(prev => ({ ...prev, event_date: e.target.value }))}
-              />
+              <label className="text-sm font-medium">Banner Image</label>
+              <div className="space-y-2">
+                {(bannerFile || formData.banner_image_url) && (
+                  <div className="w-full h-24 bg-muted rounded-lg overflow-hidden">
+                    <img
+                      src={bannerFile ? URL.createObjectURL(bannerFile) : formData.banner_image_url}
+                      alt="Banner preview"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                )}
+                <div className="flex gap-2">
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) setBannerFile(file);
+                    }}
+                    className="flex-1"
+                  />
+                  {(bannerFile || formData.banner_image_url) && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setBannerFile(null);
+                        setFormData(prev => ({ ...prev, banner_image_url: '' }));
+                      }}
+                    >
+                      Remove
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">Start Date</label>
+                <Input
+                  type="date"
+                  value={formData.event_date}
+                  onChange={(e) => setFormData(prev => ({ ...prev, event_date: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">End Date (Optional)</label>
+                <Input
+                  type="date"
+                  value={formData.end_date}
+                  onChange={(e) => setFormData(prev => ({ ...prev, end_date: e.target.value }))}
+                />
+              </div>
             </div>
             <div>
               <label className="text-sm font-medium">Location</label>
@@ -421,8 +589,8 @@ export const RetailerEvents: React.FC<RetailerEventsProps> = ({ retailerId }) =>
               >
                 Cancel
               </Button>
-              <Button onClick={handleEdit} className="flex-1">
-                Update Event
+              <Button onClick={handleEdit} disabled={uploadingBanner} className="flex-1">
+                {uploadingBanner ? 'Uploading...' : 'Update Event'}
               </Button>
             </div>
           </div>

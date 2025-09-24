@@ -192,6 +192,48 @@ const EventTryOnModal: React.FC<EventTryOnModalProps> = ({
     }
   };
 
+  const fastTryOn = async () => {
+    if (!personImageId || !product.image_url) {
+      toast({
+        title: "Missing data",
+        description: "Please wait for the photo to upload and product to load",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    try {
+      setStatus('generating');
+      
+      // Use the product's main image directly for faster processing
+      const result = await virtualTryOn({
+        person_image_id: personImageId,
+        outfit_image_url: product.image_url,
+        resolution: 'standard',
+        num_images: 1
+      });
+
+      if (result?.path) {
+        setResultUrl(result.path);
+        setStatus('done');
+        
+        // Save the result with event and brand context
+        await saveAsset(result.path, undefined, `${eventName} - ${product.brand_name} - Fast Try-On`);
+        
+        toast({
+          title: 'Fast try-on complete!',
+          description: 'Your virtual try-on is ready'
+        });
+      } else {
+        throw new Error('No result returned from try-on');
+      }
+      
+    } catch (err: any) {
+      console.error('Fast try-on error:', err);
+      setStatus('failed');
+    }
+  };
+
   const resetFlow = () => {
     setFile(null);
     setStatus('idle');
@@ -318,20 +360,30 @@ const EventTryOnModal: React.FC<EventTryOnModalProps> = ({
                 )}
               </div>
 
-              <Button
-                onClick={startTryOn}
-                disabled={!personImageId || !product.try_on_data?.outfit_image_url || loading}
-                className="w-full"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                    Generating...
-                  </>
-                ) : (
-                  'Try It On'
-                )}
-              </Button>
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  onClick={startTryOn}
+                  disabled={!personImageId || !product.try_on_data?.outfit_image_url || loading}
+                  className="flex-1"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      Generating...
+                    </>
+                  ) : (
+                    'Try It On'
+                  )}
+                </Button>
+                <Button
+                  onClick={fastTryOn}
+                  disabled={!personImageId || !product.image_url || loading}
+                  variant="outline"
+                  className="flex-1"
+                >
+                  Fast Process
+                </Button>
+              </div>
             </>
           )}
 

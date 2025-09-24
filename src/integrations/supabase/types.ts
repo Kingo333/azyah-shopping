@@ -1961,8 +1961,10 @@ export type Database = {
       }
       retail_events: {
         Row: {
+          banner_image_url: string | null
           created_at: string | null
           description: string | null
+          end_date: string | null
           event_date: string
           id: string
           location: string | null
@@ -1972,8 +1974,10 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          banner_image_url?: string | null
           created_at?: string | null
           description?: string | null
+          end_date?: string | null
           event_date: string
           id?: string
           location?: string | null
@@ -1983,8 +1987,10 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          banner_image_url?: string | null
           created_at?: string | null
           description?: string | null
+          end_date?: string | null
           event_date?: string
           id?: string
           location?: string | null
