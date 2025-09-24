@@ -5,9 +5,11 @@ import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { X, User, ArrowRight } from 'lucide-react';
 import { useProfileCompletion } from '@/hooks/useProfileCompletion';
+import { useAuth } from '@/contexts/AuthContext';
 
 export function ProfileCompletionBanner() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { percentage, missingFields, isComplete, isLoading } = useProfileCompletion();
   const [isDismissed, setIsDismissed] = useState(false);
 
@@ -32,7 +34,18 @@ export function ProfileCompletionBanner() {
   };
 
   const handleCompleteProfile = () => {
-    navigate('/settings');
+    const userRole = user?.user_metadata?.role;
+    
+    if (userRole === 'brand') {
+      // Navigate to brand portal settings tab
+      navigate('/brand-portal?tab=settings');
+    } else if (userRole === 'retailer') {
+      // Navigate to retailer portal settings tab
+      navigate('/retailer-portal?tab=settings');
+    } else {
+      // Default to general settings for shoppers
+      navigate('/settings');
+    }
   };
 
   // Don't show if loading, complete, or dismissed
