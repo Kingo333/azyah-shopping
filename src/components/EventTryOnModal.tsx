@@ -120,9 +120,11 @@ const EventTryOnModal: React.FC<EventTryOnModalProps> = ({
   const uploadPersonImage = async (file: File) => {
     try {
       setStatus('uploading');
+      console.log('EventTryOn: Starting upload with file:', { name: file.name, size: file.size, type: file.type });
       
       // Upload to BitStudio and get image ID
       const result = await uploadImage(file, BITSTUDIO_IMAGE_TYPES.PERSON);
+      console.log('EventTryOn: Upload result:', result);
       
       if (result?.id) {
         setPersonImageId(result.id);
@@ -130,13 +132,20 @@ const EventTryOnModal: React.FC<EventTryOnModalProps> = ({
         // Also store in event_user_photos for persistent access
         const { data: user } = await supabase.auth.getUser();
         if (user.user) {
-          await supabase
+          console.log('EventTryOn: Storing photo reference in database for user:', user.user.id);
+          const { error: dbError } = await supabase
             .from('event_user_photos')
             .upsert({
               event_id: eventId,
               user_id: user.user.id,
               photo_url: result.id // Store BitStudio image ID
             });
+          
+          if (dbError) {
+            console.error('EventTryOn: Database error:', dbError);
+          } else {
+            console.log('EventTryOn: Photo reference stored successfully');
+          }
         }
         
         setStatus('idle');
@@ -144,10 +153,23 @@ const EventTryOnModal: React.FC<EventTryOnModalProps> = ({
           title: 'Photo uploaded successfully!',
           description: 'Ready to try on products from this event'
         });
+      } else {
+        console.error('EventTryOn: Upload returned no result or no ID');
+        setStatus('failed');
+        toast({
+          title: 'Upload failed',
+          description: 'No image ID returned from upload',
+          variant: 'destructive'
+        });
       }
     } catch (err: any) {
-      console.error('Person image upload error:', err);
+      console.error('EventTryOn: Person image upload error:', err);
       setStatus('failed');
+      toast({
+        title: 'Upload failed',
+        description: err.message || 'Failed to upload image',
+        variant: 'destructive'
+      });
     }
   };
 
