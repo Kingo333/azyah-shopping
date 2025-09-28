@@ -303,7 +303,7 @@ const EventTryOnModal: React.FC<EventTryOnModalProps> = ({
               </Alert>
 
               <div
-                className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+                className={`relative border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
                   dragActive 
                     ? 'border-primary bg-primary/5' 
                     : file || personImageId
@@ -315,6 +315,15 @@ const EventTryOnModal: React.FC<EventTryOnModalProps> = ({
                 onDragOver={handleDrag}
                 onDrop={handleDrop}
               >
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const selectedFile = e.target.files?.[0];
+                    if (selectedFile) handleFileSelect(selectedFile);
+                  }}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                />
                 {file || personImageId ? (
                   <div className="space-y-2">
                     {file && (
@@ -332,7 +341,8 @@ const EventTryOnModal: React.FC<EventTryOnModalProps> = ({
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation();
                         setFile(null);
                         setPersonImageId(null);
                       }}
@@ -347,15 +357,6 @@ const EventTryOnModal: React.FC<EventTryOnModalProps> = ({
                       <p className="text-sm font-medium">Drop your photo here</p>
                       <p className="text-xs text-muted-foreground">or click to browse</p>
                     </div>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => {
-                        const selectedFile = e.target.files?.[0];
-                        if (selectedFile) handleFileSelect(selectedFile);
-                      }}
-                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                    />
                   </div>
                 )}
               </div>
