@@ -3,9 +3,11 @@ import { useDropzone } from 'react-dropzone';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { ArrowLeft, Upload, Edit, Trash2, Image, Shirt } from 'lucide-react';
+import { ArrowLeft, Upload, Edit, Trash2, Image, Shirt, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useBitStudio } from '@/hooks/useBitStudio';
+import { BITSTUDIO_IMAGE_TYPES } from '@/lib/bitstudio-types';
 
 interface EventBrandProduct {
   id: string;
@@ -32,7 +34,9 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
   const [isUploading, setIsUploading] = useState(false);
   const [editingProduct, setEditingProduct] = useState<EventBrandProduct | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [uploadingOutfit, setUploadingOutfit] = useState(false);
   const { toast } = useToast();
+  const { uploadImage, loading: bitStudioLoading } = useBitStudio();
 
   useEffect(() => {
     fetchProducts();
@@ -329,65 +333,110 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
                     </p>
                   </div>
                   
-                  <div className="space-y-3">
-                    <div>
-                      <label className="text-sm font-medium">Upload Outfit Image</label>
-                      <p className="text-xs text-muted-foreground mb-2">
-                        Upload the product outfit image for virtual try-on
-                      </p>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={async (e) => {
-                          const file = e.target.files?.[0];
-                          if (!file) return;
+                   <div className="space-y-3">
+                     <div>
+                       <label className="text-sm font-medium">Upload Outfit Image</label>
+                       <p className="text-xs text-muted-foreground mb-2">
+                         Upload the product outfit image for virtual try-on
+                       </p>
+                       
+                       <div className="relative">
+                         <input
+                           type="file"
+                           accept="image/*"
+                           onChange={async (e) => {
+                             const file = e.target.files?.[0];
+                             if (!file) return;
 
-                          try {
-                            // Upload outfit image to storage
-                            const fileName = `outfit_${editingProduct.id}_${Date.now()}.${file.name.split('.').pop()}`;
-                            const { data: uploadData, error: uploadError } = await supabase.storage
-                              .from('ai-assets')
-                              .upload(fileName, file);
+                             // Validate file
+                             if (!file.type.startsWith('image/')) {
+                               toast({
+                                 title: "Invalid file type",
+                                 description: "Please select an image file (JPEG, PNG, WebP)",
+                                 variant: "destructive"
+                               });
+                               return;
+                             }
+                             
+                             if (file.size > 10 * 1024 * 1024) {
+                               toast({
+                                 title: "File too large",
+                                 description: "Please select an image under 10MB",
+                                 variant: "destructive"
+                               });
+                               return;
+                             }
 
-                            if (uploadError) throw uploadError;
+                             try {
+                               setUploadingOutfit(true);
+                               console.log('BrandProductManager: Starting outfit upload with file:', { 
+                                 name: file.name, 
+                                 size: file.size, 
+                                 type: file.type 
+                               });
 
-                            // Get public URL
-                            const { data: urlData } = supabase.storage
-                              .from('ai-assets')
-                              .getPublicUrl(fileName);
+                               // Upload to BitStudio API instead of Supabase storage
+                               const result = await uploadImage(file, BITSTUDIO_IMAGE_TYPES.OUTFIT);
+                               console.log('BrandProductManager: Outfit upload result:', result);
 
-                            // Update editing product with outfit URL
-                            setEditingProduct(prev => prev ? {
-                              ...prev,
-                              try_on_data: { ...prev.try_on_data, outfit_image_url: urlData.publicUrl }
-                            } : prev);
+                               if (result?.id) {
+                                 // Update editing product with BitStudio image ID
+                                 setEditingProduct(prev => prev ? {
+                                   ...prev,
+                                   try_on_data: { 
+                                     ...prev.try_on_data, 
+                                     outfit_image_id: result.id,
+                                     outfit_image_url: result.path || result.id // Use path if available, fallback to ID
+                                   }
+                                 } : prev);
 
-                            toast({
-                              title: "Outfit image uploaded",
-                              description: "Outfit image uploaded successfully"
-                            });
-                          } catch (error) {
-                            console.error('Error uploading outfit image:', error);
-                            toast({
-                              title: "Upload failed",
-                              description: "Failed to upload outfit image",
-                              variant: "destructive"
-                            });
-                          }
-                        }}
-                        className="w-full p-2 border rounded"
-                      />
-                      {editingProduct.try_on_data?.outfit_image_url && (
-                        <div className="mt-2">
-                          <img
-                            src={editingProduct.try_on_data.outfit_image_url}
-                            alt="Outfit preview"
-                            className="w-20 h-20 object-cover rounded"
-                          />
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                                 toast({
+                                   title: "Outfit image uploaded",
+                                   description: "Outfit image uploaded successfully"
+                                 });
+                               } else {
+                                 throw new Error('No result returned from upload');
+                               }
+                             } catch (error: any) {
+                               console.error('BrandProductManager: Error uploading outfit image:', error);
+                               toast({
+                                 title: "Upload failed",
+                                 description: error.message || "Failed to upload outfit image",
+                                 variant: "destructive"
+                               });
+                             } finally {
+                               setUploadingOutfit(false);
+                               e.target.value = ''; // Reset input
+                             }
+                           }}
+                           className="w-full p-2 border rounded"
+                           disabled={uploadingOutfit || bitStudioLoading}
+                         />
+                         
+                         {(uploadingOutfit || bitStudioLoading) && (
+                           <div className="absolute inset-0 bg-white/80 flex items-center justify-center rounded">
+                             <div className="flex items-center gap-2 text-sm">
+                               <Loader2 className="h-4 w-4 animate-spin" />
+                               Uploading...
+                             </div>
+                           </div>
+                         )}
+                       </div>
+                       
+                       {editingProduct.try_on_data?.outfit_image_url && (
+                         <div className="mt-2">
+                           <img
+                             src={editingProduct.try_on_data.outfit_image_url}
+                             alt="Outfit preview"
+                             className="w-20 h-20 object-cover rounded"
+                           />
+                           <p className="text-xs text-green-600 mt-1">
+                             Outfit configured for try-on
+                           </p>
+                         </div>
+                       )}
+                     </div>
+                   </div>
                 </div>
               </div>
               
