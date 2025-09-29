@@ -35,6 +35,8 @@ const EventTryOnModal: React.FC<EventTryOnModalProps> = ({
 }) => {
   const [file, setFile] = useState<File | null>(null);
   const [personImageId, setPersonImageId] = useState<string | null>(null);
+  const [outfitFile, setOutfitFile] = useState<File | null>(null);
+  const [outfitImageId, setOutfitImageId] = useState<string | null>(null);
   const [status, setStatus] = useState<'idle' | 'uploading' | 'generating' | 'done' | 'failed'>('idle');
   const [resultUrl, setResultUrl] = useState<string | null>(null);
   const [dragActive, setDragActive] = useState(false);
@@ -120,11 +122,11 @@ const EventTryOnModal: React.FC<EventTryOnModalProps> = ({
   const uploadPersonImage = async (file: File) => {
     try {
       setStatus('uploading');
-      console.log('EventTryOn: Starting upload with file:', { name: file.name, size: file.size, type: file.type });
+      console.log('EventTryOn: Starting person upload with file:', { name: file.name, size: file.size, type: file.type });
       
       // Upload to BitStudio and get image ID
       const result = await uploadImage(file, BITSTUDIO_IMAGE_TYPES.PERSON);
-      console.log('EventTryOn: Upload result:', result);
+      console.log('EventTryOn: Person upload result:', result);
       
       if (result?.id) {
         setPersonImageId(result.id);
@@ -150,7 +152,7 @@ const EventTryOnModal: React.FC<EventTryOnModalProps> = ({
         
         setStatus('idle');
         toast({
-          title: 'Photo uploaded successfully!',
+          title: 'Person photo uploaded successfully!',
           description: 'Ready to try on products from this event'
         });
       } else {
@@ -167,17 +169,69 @@ const EventTryOnModal: React.FC<EventTryOnModalProps> = ({
       setStatus('failed');
       toast({
         title: 'Upload failed',
-        description: err.message || 'Failed to upload image',
+        description: err.message || 'Failed to upload person image',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const uploadOutfitImage = async (file: File) => {
+    try {
+      setStatus('uploading');
+      console.log('EventTryOn: Starting outfit upload with file:', { name: file.name, size: file.size, type: file.type });
+      
+      // Upload to BitStudio and get image ID
+      const result = await uploadImage(file, BITSTUDIO_IMAGE_TYPES.OUTFIT);
+      console.log('EventTryOn: Outfit upload result:', result);
+      
+      if (result?.id) {
+        setOutfitImageId(result.id);
+        setStatus('idle');
+        toast({
+          title: 'Outfit photo uploaded successfully!',
+          description: 'Ready to try on with uploaded outfit'
+        });
+      } else {
+        console.error('EventTryOn: Outfit upload returned no result or no ID');
+        setStatus('failed');
+        toast({
+          title: 'Upload failed',
+          description: 'No image ID returned from outfit upload',
+          variant: 'destructive'
+        });
+      }
+    } catch (err: any) {
+      console.error('EventTryOn: Outfit image upload error:', err);
+      setStatus('failed');
+      toast({
+        title: 'Upload failed',
+        description: err.message || 'Failed to upload outfit image',
         variant: 'destructive'
       });
     }
   };
 
   const startTryOn = async () => {
-    if (!personImageId || !product.try_on_data?.outfit_image_url) {
+    if (!personImageId) {
       toast({
-        title: "Missing data",
-        description: "Please wait for the photo to upload and product to load",
+        title: "Missing person image",
+        description: "Please upload your photo first",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Determine outfit source: uploaded outfit > product try-on image > product main image
+    const outfitSource = outfitImageId 
+      ? { outfit_image_id: outfitImageId }
+      : product.try_on_data?.outfit_image_url 
+        ? { outfit_image_url: product.try_on_data.outfit_image_url }
+        : { outfit_image_url: product.image_url };
+
+    if (!outfitSource.outfit_image_id && !outfitSource.outfit_image_url) {
+      toast({
+        title: "Missing outfit data",
+        description: "Please upload an outfit image or ensure product has try-on data",
         variant: "destructive"
       });
       return;
@@ -188,7 +242,7 @@ const EventTryOnModal: React.FC<EventTryOnModalProps> = ({
       
       const result = await virtualTryOn({
         person_image_id: personImageId,
-        outfit_image_url: product.try_on_data.outfit_image_url,
+        ...outfitSource,
         resolution: 'standard',
         num_images: 1
       });
@@ -198,7 +252,8 @@ const EventTryOnModal: React.FC<EventTryOnModalProps> = ({
         setStatus('done');
         
         // Save the result with event and brand context
-        await saveAsset(result.path, undefined, `${eventName} - ${product.brand_name} - Try-On`);
+        const tryOnType = outfitImageId ? 'Custom Outfit' : 'Product';
+        await saveAsset(result.path, undefined, `${eventName} - ${product.brand_name} - ${tryOnType} Try-On`);
         
         toast({
           title: 'Try-on complete!',
@@ -215,10 +270,19 @@ const EventTryOnModal: React.FC<EventTryOnModalProps> = ({
   };
 
   const fastTryOn = async () => {
-    if (!personImageId || !product.image_url) {
+    if (!personImageId) {
       toast({
-        title: "Missing data",
-        description: "Please wait for the photo to upload and product to load",
+        title: "Missing person image",
+        description: "Please upload your photo first",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!product.image_url) {
+      toast({
+        title: "Missing product image",
+        description: "Product image not available",
         variant: "destructive"
       });
       return;
@@ -258,6 +322,9 @@ const EventTryOnModal: React.FC<EventTryOnModalProps> = ({
 
   const resetFlow = () => {
     setFile(null);
+    setOutfitFile(null);
+    setPersonImageId(null);
+    setOutfitImageId(null);
     setStatus('idle');
     setResultUrl(null);
   };
@@ -324,69 +391,127 @@ const EventTryOnModal: React.FC<EventTryOnModalProps> = ({
                 </AlertDescription>
               </Alert>
 
-              <div
-                className={`relative border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
-                  dragActive 
-                    ? 'border-primary bg-primary/5' 
-                    : file || personImageId
-                    ? 'border-green-500 bg-green-50' 
-                    : 'border-muted-foreground/25 hover:border-muted-foreground/50'
-                }`}
-                onDragEnter={handleDrag}
-                onDragLeave={handleDrag}
-                onDragOver={handleDrag}
-                onDrop={handleDrop}
-              >
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => {
-                    const selectedFile = e.target.files?.[0];
-                    if (selectedFile) handleFileSelect(selectedFile);
-                  }}
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                />
-                {file || personImageId ? (
-                  <div className="space-y-2">
-                    {file && (
-                      <div className="w-20 h-20 mx-auto rounded-lg overflow-hidden">
-                        <img
-                          src={URL.createObjectURL(file)}
-                          alt="Preview"
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                    )}
-                    <p className="text-sm font-medium">
-                      {personImageId ? 'Photo ready for try-on' : file?.name}
-                    </p>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setFile(null);
-                        setPersonImageId(null);
-                      }}
-                    >
-                      Change Photo
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    <Upload className="h-8 w-8 mx-auto text-muted-foreground" />
-                    <div>
-                      <p className="text-sm font-medium">Drop your photo here</p>
-                      <p className="text-xs text-muted-foreground">or click to browse</p>
+              {/* Person Image Upload */}
+              <div className="space-y-2">
+                <h4 className="text-sm font-medium">Your Photo</h4>
+                <div
+                  className={`relative border-2 border-dashed rounded-lg p-4 text-center transition-colors ${
+                    dragActive 
+                      ? 'border-primary bg-primary/5' 
+                      : file || personImageId
+                      ? 'border-green-500 bg-green-50' 
+                      : 'border-muted-foreground/25 hover:border-muted-foreground/50'
+                  }`}
+                  onDragEnter={handleDrag}
+                  onDragLeave={handleDrag}
+                  onDragOver={handleDrag}
+                  onDrop={handleDrop}
+                >
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const selectedFile = e.target.files?.[0];
+                      if (selectedFile) handleFileSelect(selectedFile);
+                    }}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  />
+                  {file || personImageId ? (
+                    <div className="space-y-2">
+                      {file && (
+                        <div className="w-16 h-16 mx-auto rounded-lg overflow-hidden">
+                          <img
+                            src={URL.createObjectURL(file)}
+                            alt="Person preview"
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      )}
+                      <p className="text-xs font-medium">
+                        {personImageId ? 'Person photo ready' : file?.name}
+                      </p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setFile(null);
+                          setPersonImageId(null);
+                        }}
+                      >
+                        Change
+                      </Button>
                     </div>
-                  </div>
-                )}
+                  ) : (
+                    <div className="space-y-2">
+                      <Upload className="h-6 w-6 mx-auto text-muted-foreground" />
+                      <div>
+                        <p className="text-xs font-medium">Drop person photo here</p>
+                        <p className="text-xs text-muted-foreground">or click to browse</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Outfit Image Upload */}
+              <div className="space-y-2">
+                <h4 className="text-sm font-medium">Outfit Photo (Optional)</h4>
+                <div className="relative border-2 border-dashed rounded-lg p-4 text-center transition-colors border-muted-foreground/25 hover:border-muted-foreground/50">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const selectedFile = e.target.files?.[0];
+                      if (selectedFile && validateFile(selectedFile)) {
+                        setOutfitFile(selectedFile);
+                        uploadOutfitImage(selectedFile);
+                      }
+                    }}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  />
+                  {outfitFile || outfitImageId ? (
+                    <div className="space-y-2">
+                      {outfitFile && (
+                        <div className="w-16 h-16 mx-auto rounded-lg overflow-hidden">
+                          <img
+                            src={URL.createObjectURL(outfitFile)}
+                            alt="Outfit preview"
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      )}
+                      <p className="text-xs font-medium">
+                        {outfitImageId ? 'Custom outfit ready' : outfitFile?.name}
+                      </p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setOutfitFile(null);
+                          setOutfitImageId(null);
+                        }}
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <Upload className="h-6 w-6 mx-auto text-muted-foreground" />
+                      <div>
+                        <p className="text-xs font-medium">Drop outfit photo here</p>
+                        <p className="text-xs text-muted-foreground">Use custom outfit or default to product image</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-2">
                 <Button
                   onClick={startTryOn}
-                  disabled={!personImageId || !product.try_on_data?.outfit_image_url || loading}
+                  disabled={!personImageId || loading}
                   className="flex-1"
                 >
                   {loading ? (
@@ -395,7 +520,7 @@ const EventTryOnModal: React.FC<EventTryOnModalProps> = ({
                       Generating...
                     </>
                   ) : (
-                    'Try It On'
+                    outfitImageId ? 'Try Custom Outfit' : 'Try Product'
                   )}
                 </Button>
                 <Button
