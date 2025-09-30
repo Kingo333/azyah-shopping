@@ -11,3 +11,15 @@ verify_jwt = true
 
 [functions.payment-webhook]
 verify_jwt = false
+
+[functions.bitstudio-upload]
+verify_jwt = false
+
+[functions.bitstudio-status]
+verify_jwt = false
+
+[functions.bitstudio-tryon]
+verify_jwt = false
+
+[functions.bitstudio-health]
+verify_jwt = false

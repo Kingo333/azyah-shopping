@@ -148,16 +148,25 @@ const Events = () => {
   const handlePersonImageUpload = async (file: File) => {
     if (!selectedEvent || !user) return;
 
+    console.log('Starting person image upload:', { file: file.name, size: file.size, type: file.type });
     setIsUploadingPersonImage(true);
     try {
       // Upload using BitStudio API
+      console.log('Calling uploadImage with file:', file.name, 'type: person');
       const uploadedImage = await uploadImage(file, 'person');
+      console.log('BitStudio upload result:', uploadedImage);
       
       if (!uploadedImage) {
         throw new Error('Failed to upload image to BitStudio');
       }
 
       // Store in event_user_photos
+      console.log('Storing in event_user_photos:', {
+        event_id: selectedEvent.id,
+        user_id: user.id,
+        photo_url: uploadedImage.path
+      });
+      
       await supabase
         .from('event_user_photos')
         .upsert({
@@ -175,7 +184,7 @@ const Events = () => {
       console.error('Error uploading person image:', error);
       toast({
         title: "Upload failed",
-        description: "Failed to upload your photo",
+        description: error instanceof Error ? error.message : "Failed to upload your photo",
         variant: "destructive"
       });
     } finally {
