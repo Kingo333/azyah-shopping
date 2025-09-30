@@ -8,6 +8,7 @@ import { Calendar, MapPin, Store, UserCircle, Upload, ChevronLeft, ChevronRight 
 import { format } from 'date-fns';
 import EventTryOnModal from '@/components/EventTryOnModal';
 import { useToast } from '@/hooks/use-toast';
+import { useBitStudio } from '@/hooks/useBitStudio';
 
 interface RetailEvent {
   id: string;
@@ -41,6 +42,7 @@ interface EventProduct {
 const Events = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { uploadImage, loading: bitStudioLoading } = useBitStudio();
   const [events, setEvents] = useState<RetailEvent[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<RetailEvent | null>(null);
   const [eventBrands, setEventBrands] = useState<EventBrand[]>([]);
@@ -148,18 +150,12 @@ const Events = () => {
 
     setIsUploadingPersonImage(true);
     try {
-      // Upload to storage
-      const fileName = `person_${selectedEvent.id}_${user.id}_${Date.now()}.${file.name.split('.').pop()}`;
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('ai-assets')
-        .upload(fileName, file);
-
-      if (uploadError) throw uploadError;
-
-      // Get public URL
-      const { data: urlData } = supabase.storage
-        .from('ai-assets')
-        .getPublicUrl(fileName);
+      // Upload using BitStudio API
+      const uploadedImage = await uploadImage(file, 'person');
+      
+      if (!uploadedImage) {
+        throw new Error('Failed to upload image to BitStudio');
+      }
 
       // Store in event_user_photos
       await supabase
@@ -167,7 +163,7 @@ const Events = () => {
         .upsert({
           event_id: selectedEvent.id,
           user_id: user.id,
-          photo_url: urlData.publicUrl
+          photo_url: uploadedImage.path
         });
 
       setHasPersonImage(true);
@@ -276,15 +272,15 @@ const Events = () => {
                           if (file) handlePersonImageUpload(file);
                         }}
                         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                        disabled={isUploadingPersonImage}
+                        disabled={isUploadingPersonImage || bitStudioLoading}
                       />
                       <Button 
                         variant="outline" 
                         size="sm"
-                        disabled={isUploadingPersonImage}
+                        disabled={isUploadingPersonImage || bitStudioLoading}
                         className="relative"
                       >
-                        {isUploadingPersonImage ? (
+                        {(isUploadingPersonImage || bitStudioLoading) ? (
                           <>
                             <Upload className="w-4 h-4 mr-1 animate-spin" />
                             Uploading...
