@@ -271,7 +271,7 @@ const Events = () => {
                           const file = e.target.files?.[0];
                           if (file) handlePersonImageUpload(file);
                         }}
-                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        className="hidden"
                         disabled={isUploadingPersonImage || bitStudioLoading}
                       />
                       <Button 
@@ -279,6 +279,7 @@ const Events = () => {
                         size="sm"
                         disabled={isUploadingPersonImage || bitStudioLoading}
                         className="relative"
+                        onClick={() => document.getElementById('person-image-upload')?.click()}
                       >
                         {(isUploadingPersonImage || bitStudioLoading) ? (
                           <>
