@@ -47,7 +47,7 @@ export default function IntroCarousel() {
   };
 
   const handleLogin = () => {
-    navigate('/auth');
+    navigate('/onboarding/signup');
   };
 
   return (
