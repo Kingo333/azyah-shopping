@@ -23,7 +23,7 @@ export default function NotificationsRequest() {
   };
 
   return (
-    <div className="h-screen bg-background flex flex-col overflow-hidden">
+    <div className="min-h-screen bg-background flex flex-col">
       {/* Progress Bar */}
       <div className="w-full h-1 bg-muted">
         <div className="h-full bg-foreground transition-all" style={{ width: '88%' }} />
@@ -41,7 +41,7 @@ export default function NotificationsRequest() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 flex flex-col items-center justify-center p-6 overflow-y-auto">
+      <div className="flex-1 flex flex-col items-center justify-center p-6">
         <div className="w-full max-w-md text-center">
           <div className="mb-8">
             <div className="w-24 h-24 mx-auto mb-8 bg-muted rounded-full flex items-center justify-center">

@@ -6,7 +6,7 @@ export default function CommunityIntro() {
   const navigate = useNavigate();
 
   return (
-    <div className="h-screen bg-background flex flex-col overflow-hidden">
+    <div className="min-h-screen bg-background flex flex-col">
       {/* Progress Bar */}
       <div className="w-full h-1 bg-muted">
         <div className="h-full bg-foreground transition-all" style={{ width: '85%' }} />
@@ -24,7 +24,7 @@ export default function CommunityIntro() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 flex flex-col items-center justify-center p-6 overflow-y-auto">
+      <div className="flex-1 flex flex-col items-center justify-center p-6">
         <div className="w-full max-w-md text-center">
           <div className="mb-8">
             <div className="w-48 h-48 mx-auto mb-8 bg-muted rounded-2xl flex items-center justify-center">

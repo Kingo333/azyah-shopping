@@ -85,7 +85,7 @@ export default function PlanSelection() {
   };
 
   return (
-    <div className="h-screen bg-background flex flex-col overflow-hidden">
+    <div className="min-h-screen bg-background flex flex-col">
       {/* Progress Bar */}
       <div className="w-full h-1 bg-foreground">
         <div className="h-full bg-foreground transition-all" style={{ width: '100%' }} />
