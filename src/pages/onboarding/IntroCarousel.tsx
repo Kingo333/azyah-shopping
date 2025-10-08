@@ -103,19 +103,19 @@ export default function IntroCarousel() {
       </div>
 
       {/* Bottom Actions */}
-      <div className="p-6 space-y-3 border-t bg-background">
+      <div className="p-6 space-y-4 border-t bg-background">
         <Button 
           onClick={handleJoinFree}
-          className="w-full h-12 text-base font-semibold rounded-xl"
+          className="w-full h-14 text-lg font-semibold rounded-full bg-black hover:bg-black/90 text-white"
         >
           Join for free
         </Button>
         
         <button
           onClick={handleLogin}
-          className="w-full text-muted-foreground hover:text-foreground transition-colors text-sm"
+          className="w-full h-14 text-lg font-semibold text-foreground hover:text-foreground/80 transition-colors"
         >
-          Already have an account? <span className="font-semibold">Log in</span>
+          Log in
         </button>
       </div>
     </div>
