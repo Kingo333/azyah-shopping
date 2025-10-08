@@ -1,0 +1,112 @@
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { ArrowLeft } from 'lucide-react';
+
+const genderOptions = [
+  { value: 'woman', label: 'Woman', emoji: '👩' },
+  { value: 'man', label: 'Man', emoji: '👨' },
+  { value: 'prefer_not_to_say', label: 'Prefer not to say', emoji: '🚫' },
+];
+
+export default function GenderSelect() {
+  const [selected, setSelected] = useState<string>('');
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+
+  const handleNext = async () => {
+    if (!selected) {
+      toast.error('Please select an option');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        toast.error('Not authenticated');
+        navigate('/auth');
+        return;
+      }
+
+      const { error } = await supabase
+        .from('users')
+        .update({ gender_selected: selected })
+        .eq('id', user.id);
+
+      if (error) throw error;
+
+      navigate('/onboarding/main-goals');
+    } catch (error) {
+      console.error('Error saving gender:', error);
+      toast.error('Failed to save selection');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-background flex flex-col">
+      {/* Progress Bar */}
+      <div className="w-full h-1 bg-muted">
+        <div className="h-full bg-foreground transition-all" style={{ width: '14%' }} />
+      </div>
+
+      {/* Back Button */}
+      <div className="p-4">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => navigate(-1)}
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 flex flex-col items-center justify-center p-6">
+        <div className="w-full max-w-md">
+          <div className="text-center mb-8">
+            <h1 className="text-2xl font-bold mb-2 text-foreground">
+              What's your gender?
+            </h1>
+            <p className="text-muted-foreground text-sm">
+              We use this to personalize your styling experience.
+            </p>
+          </div>
+
+          <div className="space-y-3 mb-8">
+            {genderOptions.map((option) => (
+              <Card
+                key={option.value}
+                onClick={() => setSelected(option.value)}
+                className={`p-4 cursor-pointer transition-all ${
+                  selected === option.value
+                    ? 'border-foreground bg-accent'
+                    : 'border-border hover:border-muted-foreground'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">{option.emoji}</span>
+                  <span className="text-base font-medium">{option.label}</span>
+                </div>
+              </Card>
+            ))}
+          </div>
+
+          <Button
+            onClick={handleNext}
+            disabled={!selected || loading}
+            className="w-full h-12 text-base font-semibold rounded-xl"
+          >
+            {loading ? 'Saving...' : 'Next'}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}

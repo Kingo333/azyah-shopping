@@ -13,8 +13,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/hooks/useSubscription';
 import { supabase } from '@/integrations/supabase/client';
 import { Trash2, Upload, Instagram, Twitter, Globe, Music, Crown, CreditCard, Calendar } from 'lucide-react';
-import { PaymentIntegrationTest } from '@/components/PaymentIntegrationTest';
-import { ZiinaPaymentTester } from '@/components/ZiinaPaymentTester';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -708,13 +706,7 @@ const ProfileSettings: React.FC = () => {
             </CardContent>
           </Card>
 
-          {/* Payment Integration Test - Only for shopper@test.com */}
-          {user?.email === 'shopper@test.com' && (
-            <div className="space-y-4">
-              <PaymentIntegrationTest />
-              <ZiinaPaymentTester />
-            </div>
-          )}
+          {/* Stripe integration will be added here once API keys are configured */}
 
           {/* Actions */}
           <div className="flex justify-between">

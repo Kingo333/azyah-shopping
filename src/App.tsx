@@ -49,6 +49,22 @@ import UserDeletionTool from './components/UserDeletionTool';
 
 import { DebugHealthPage } from './components/DebugHealthPage';
 
+// Onboarding pages
+import IntroCarousel from './pages/onboarding/IntroCarousel';
+import SignUp from './pages/onboarding/SignUp';
+import GenderSelect from './pages/onboarding/GenderSelect';
+import MainGoals from './pages/onboarding/MainGoals';
+import ReferralSource from './pages/onboarding/ReferralSource';
+import DateOfBirth from './pages/onboarding/DateOfBirth';
+import UsernameSetup from './pages/onboarding/UsernameSetup';
+import SuggestedItems from './pages/onboarding/SuggestedItems';
+import AIAnalyzerIntro from './pages/onboarding/AIAnalyzerIntro';
+import CommunityIntro from './pages/onboarding/CommunityIntro';
+import NotificationsRequest from './pages/onboarding/NotificationsRequest';
+import LocationRequest from './pages/onboarding/LocationRequest';
+import SubscriptionFeatures from './pages/onboarding/SubscriptionFeatures';
+import PlanSelection from './pages/onboarding/PlanSelection';
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -63,13 +79,30 @@ function AppContent() {
   return (
     <>
       <Routes>
-                  <Route path="/" element={<Landing />} />
+                  <Route path="/" element={<IntroCarousel />} />
+                  <Route path="/landing" element={<Landing />} />
                   <Route path="/dashboard" element={
                     <ProtectedRoute>
                       <Index />
                     </ProtectedRoute>
                   } />
                   <Route path="/auth" element={<Auth />} />
+                  
+                  {/* Onboarding routes */}
+                  <Route path="/onboarding/intro" element={<IntroCarousel />} />
+                  <Route path="/onboarding/signup" element={<SignUp />} />
+                  <Route path="/onboarding/gender-select" element={<GenderSelect />} />
+                  <Route path="/onboarding/main-goals" element={<MainGoals />} />
+                  <Route path="/onboarding/referral-source" element={<ReferralSource />} />
+                  <Route path="/onboarding/date-of-birth" element={<DateOfBirth />} />
+                  <Route path="/onboarding/username-setup" element={<UsernameSetup />} />
+                  <Route path="/onboarding/suggested-items" element={<SuggestedItems />} />
+                  <Route path="/onboarding/ai-analyzer-intro" element={<AIAnalyzerIntro />} />
+                  <Route path="/onboarding/community-intro" element={<CommunityIntro />} />
+                  <Route path="/onboarding/notifications" element={<NotificationsRequest />} />
+                  <Route path="/onboarding/location" element={<LocationRequest />} />
+                  <Route path="/onboarding/subscription-features" element={<SubscriptionFeatures />} />
+                  <Route path="/onboarding/plan-selection" element={<PlanSelection />} />
                   
                   
                   <Route path="/select-role" element={<SelectRole />} />

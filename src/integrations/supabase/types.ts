@@ -2060,41 +2060,50 @@ export type Database = {
       }
       subscriptions: {
         Row: {
+          ai_tryon_limit: number | null
           created_at: string
           current_period_end: string | null
           current_period_start: string | null
           id: string
           last_payment_intent_id: string | null
           last_payment_status: string | null
+          nail_salon_reward_eligible: boolean | null
           plan: string
           provider: string
           status: string
+          ugc_collaboration_enabled: boolean | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          ai_tryon_limit?: number | null
           created_at?: string
           current_period_end?: string | null
           current_period_start?: string | null
           id?: string
           last_payment_intent_id?: string | null
           last_payment_status?: string | null
+          nail_salon_reward_eligible?: boolean | null
           plan?: string
           provider?: string
           status?: string
+          ugc_collaboration_enabled?: boolean | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          ai_tryon_limit?: number | null
           created_at?: string
           current_period_end?: string | null
           current_period_start?: string | null
           id?: string
           last_payment_intent_id?: string | null
           last_payment_status?: string | null
+          nail_salon_reward_eligible?: boolean | null
           plan?: string
           provider?: string
           status?: string
+          ugc_collaboration_enabled?: boolean | null
           updated_at?: string
           user_id?: string
         }
@@ -2383,17 +2392,24 @@ export type Database = {
           bio: string | null
           country: string | null
           created_at: string
+          date_of_birth: string | null
           email: string
+          gender_selected: string | null
           id: string
           last_sign_in_at: string | null
+          main_goals: Json | null
           name: string | null
+          onboarding_completed: boolean | null
           preferences: Json | null
+          preferences_completed: boolean | null
           provider: string | null
           provider_id: string | null
+          referral_source: string | null
           role: Database["public"]["Enums"]["user_role"]
           social_links: Json | null
           socials: Json | null
           updated_at: string
+          username: string | null
           website: string | null
         }
         Insert: {
@@ -2401,17 +2417,24 @@ export type Database = {
           bio?: string | null
           country?: string | null
           created_at?: string
+          date_of_birth?: string | null
           email: string
+          gender_selected?: string | null
           id?: string
           last_sign_in_at?: string | null
+          main_goals?: Json | null
           name?: string | null
+          onboarding_completed?: boolean | null
           preferences?: Json | null
+          preferences_completed?: boolean | null
           provider?: string | null
           provider_id?: string | null
+          referral_source?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           social_links?: Json | null
           socials?: Json | null
           updated_at?: string
+          username?: string | null
           website?: string | null
         }
         Update: {
@@ -2419,17 +2442,24 @@ export type Database = {
           bio?: string | null
           country?: string | null
           created_at?: string
+          date_of_birth?: string | null
           email?: string
+          gender_selected?: string | null
           id?: string
           last_sign_in_at?: string | null
+          main_goals?: Json | null
           name?: string | null
+          onboarding_completed?: boolean | null
           preferences?: Json | null
+          preferences_completed?: boolean | null
           provider?: string | null
           provider_id?: string | null
+          referral_source?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           social_links?: Json | null
           socials?: Json | null
           updated_at?: string
+          username?: string | null
           website?: string | null
         }
         Relationships: []
@@ -2915,17 +2945,24 @@ export type Database = {
           bio: string | null
           country: string | null
           created_at: string
+          date_of_birth: string | null
           email: string
+          gender_selected: string | null
           id: string
           last_sign_in_at: string | null
+          main_goals: Json | null
           name: string | null
+          onboarding_completed: boolean | null
           preferences: Json | null
+          preferences_completed: boolean | null
           provider: string | null
           provider_id: string | null
+          referral_source: string | null
           role: Database["public"]["Enums"]["user_role"]
           social_links: Json | null
           socials: Json | null
           updated_at: string
+          username: string | null
           website: string | null
         }[]
       }
@@ -2959,17 +2996,24 @@ export type Database = {
           bio: string | null
           country: string | null
           created_at: string
+          date_of_birth: string | null
           email: string
+          gender_selected: string | null
           id: string
           last_sign_in_at: string | null
+          main_goals: Json | null
           name: string | null
+          onboarding_completed: boolean | null
           preferences: Json | null
+          preferences_completed: boolean | null
           provider: string | null
           provider_id: string | null
+          referral_source: string | null
           role: Database["public"]["Enums"]["user_role"]
           social_links: Json | null
           socials: Json | null
           updated_at: string
+          username: string | null
           website: string | null
         }[]
       }
@@ -3466,6 +3510,10 @@ export type Database = {
           swipe_count: number
         }[]
       }
+      get_user_ai_tryon_limit: {
+        Args: { target_user_id: string }
+        Returns: number
+      }
       get_user_analytics_summary: {
         Args: { target_user_id: string }
         Returns: {
@@ -3528,6 +3576,10 @@ export type Database = {
       infer_gender_from_text: {
         Args: { text_input: string }
         Returns: Database["public"]["Enums"]["gender_type"]
+      }
+      is_username_available: {
+        Args: { check_username: string }
+        Returns: boolean
       }
       log_admin_access_with_justification: {
         Args: {
