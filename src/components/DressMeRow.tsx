@@ -62,9 +62,12 @@ export const DressMeRow: React.FC<DressMeRowProps> = ({
                 }`}
               >
                 <img
-                  src={item.image_bg_removed_url || item.image_url}
+                  src={item.image_bg_removed_url || item.image_url || '/placeholder.svg'}
                   alt={item.category}
                   className="w-full h-full object-contain bg-muted"
+                  onError={(e) => {
+                    e.currentTarget.src = '/placeholder.svg';
+                  }}
                 />
               </button>
             ))}
