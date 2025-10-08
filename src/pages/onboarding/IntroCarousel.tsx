@@ -76,7 +76,7 @@ export default function IntroCarousel() {
           
           {/* Text Content */}
           <div className="text-center space-y-2 px-2">
-            <h2 className="text-xl font-bold text-foreground leading-tight">
+            <h2 className="text-lg font-bold text-foreground leading-tight">
               {slides[currentSlide].title}
             </h2>
             <p className="text-sm text-muted-foreground">
