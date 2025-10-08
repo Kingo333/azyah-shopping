@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 import { Mail, ArrowLeft, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
-type FlowStep = 'initial' | 'email-entry' | 'password-login' | 'password-signup';
+type FlowStep = 'initial' | 'email-entry' | 'password-entry';
 
 export default function SignUp() {
   const [step, setStep] = useState<FlowStep>('initial');
@@ -19,62 +19,30 @@ export default function SignUp() {
 
   const handleEmailContinue = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-
-    try {
-      // Try to check if user exists by attempting a password reset
-      // This is a safe way to check without exposing user data
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth?type=recovery`,
-      });
-
-      // Supabase doesn't actually tell us if the email exists or not for security
-      // So we'll show password field and let the actual login/signup determine the flow
-      // For now, we'll assume new user and show signup
-      setStep('password-signup');
-    } catch (error) {
-      // Default to signup flow if there's any error
-      setStep('password-signup');
-    } finally {
-      setLoading(false);
-    }
+    setStep('password-entry');
   };
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      const { error } = await signIn(email, password);
+      // First try to sign up
+      const { error: signUpError } = await signUp(email, password, { role: 'shopper' });
       
-      if (error) {
-        toast.error(error.message || 'Failed to sign in');
-      } else {
-        toast.success('Welcome back!');
-        navigate('/swipe');
-      }
-    } catch (error) {
-      toast.error('Something went wrong');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-
-    try {
-      const { error } = await signUp(email, password, { role: 'shopper' });
-      
-      if (error) {
-        // If user already exists, switch to login mode
-        if (error.message?.includes('already registered') || error.message?.includes('User already registered')) {
-          toast.info('Account already exists. Please log in.');
-          setStep('password-login');
-          setPassword('');
+      if (signUpError) {
+        // If user already exists, try to log in instead
+        if (signUpError.message?.includes('already registered') || signUpError.message?.includes('User already registered')) {
+          const { error: signInError } = await signIn(email, password);
+          
+          if (signInError) {
+            toast.error('Incorrect password. Please try again.');
+          } else {
+            toast.success('Welcome back!');
+            navigate('/swipe');
+          }
         } else {
-          toast.error(error.message || 'Failed to create account');
+          toast.error(signUpError.message || 'Failed to create account');
         }
       } else {
         toast.success('Account created successfully!');
@@ -93,7 +61,7 @@ export default function SignUp() {
   };
 
   const handleBack = () => {
-    if (step === 'password-login' || step === 'password-signup') {
+    if (step === 'password-entry') {
       setStep('email-entry');
       setPassword('');
     } else if (step === 'email-entry') {
@@ -162,8 +130,8 @@ export default function SignUp() {
     );
   }
 
-  // Password login screen
-  if (step === 'password-login') {
+  // Unified password entry screen
+  if (step === 'password-entry') {
     return (
       <div className="h-screen bg-background flex flex-col overflow-hidden">
         <div className="p-4">
@@ -179,16 +147,16 @@ export default function SignUp() {
         <div className="flex-1 flex items-center justify-center px-6">
           <div className="w-full max-w-md">
             <h1 className="text-2xl font-bold mb-2 text-foreground text-center">
-              Welcome back!
+              Continue with your account
             </h1>
             <p className="text-muted-foreground text-center mb-8">
               {email}
             </p>
 
-            <form onSubmit={handleLogin} className="space-y-4">
+            <form onSubmit={handlePasswordSubmit} className="space-y-4">
               <div>
                 <label className="text-sm text-muted-foreground mb-2 block">
-                  Enter password
+                  Enter your password
                 </label>
                 <Input
                   type="password"
@@ -197,68 +165,12 @@ export default function SignUp() {
                   onChange={(e) => setPassword(e.target.value)}
                   className="h-12 rounded-xl"
                   required
-                  autoFocus
-                />
-              </div>
-              <Button
-                type="submit"
-                disabled={loading}
-                className="w-full h-14 text-lg font-semibold rounded-full bg-black hover:bg-black/90 text-white"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                    Signing in...
-                  </>
-                ) : (
-                  'Log in'
-                )}
-              </Button>
-            </form>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Password signup screen
-  if (step === 'password-signup') {
-    return (
-      <div className="h-screen bg-background flex flex-col overflow-hidden">
-        <div className="p-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleBack}
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-        </div>
-
-        <div className="flex-1 flex items-center justify-center px-6">
-          <div className="w-full max-w-md">
-            <h1 className="text-2xl font-bold mb-2 text-foreground text-center">
-              Create your account
-            </h1>
-            <p className="text-muted-foreground text-center mb-8">
-              {email}
-            </p>
-
-            <form onSubmit={handleSignUp} className="space-y-4">
-              <div>
-                <label className="text-sm text-muted-foreground mb-2 block">
-                  Create password
-                </label>
-                <Input
-                  type="password"
-                  placeholder="Password (min. 6 characters)"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="h-12 rounded-xl"
-                  required
                   minLength={6}
                   autoFocus
                 />
+                <p className="text-xs text-muted-foreground mt-2">
+                  If you don't have an account, we'll create one for you
+                </p>
               </div>
               <Button
                 type="submit"
@@ -268,10 +180,10 @@ export default function SignUp() {
                 {loading ? (
                   <>
                     <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                    Creating account...
+                    Processing...
                   </>
                 ) : (
-                  'Create account'
+                  'Continue'
                 )}
               </Button>
             </form>
