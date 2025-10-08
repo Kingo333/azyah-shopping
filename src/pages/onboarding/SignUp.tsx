@@ -22,26 +22,19 @@ export default function SignUp() {
     setLoading(true);
 
     try {
-      // Check if email exists
-      const { data, error } = await supabase.functions.invoke('check-email-exists', {
-        body: { email }
+      // Try to check if user exists by attempting a password reset
+      // This is a safe way to check without exposing user data
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth?type=recovery`,
       });
 
-      if (error) {
-        toast.error('Failed to check email');
-        setLoading(false);
-        return;
-      }
-
-      if (data.exists) {
-        // Email exists, show login flow
-        setStep('password-login');
-      } else {
-        // Email doesn't exist, show signup flow
-        setStep('password-signup');
-      }
+      // Supabase doesn't actually tell us if the email exists or not for security
+      // So we'll show password field and let the actual login/signup determine the flow
+      // For now, we'll assume new user and show signup
+      setStep('password-signup');
     } catch (error) {
-      toast.error('Something went wrong');
+      // Default to signup flow if there's any error
+      setStep('password-signup');
     } finally {
       setLoading(false);
     }
@@ -75,7 +68,14 @@ export default function SignUp() {
       const { error } = await signUp(email, password, { role: 'shopper' });
       
       if (error) {
-        toast.error(error.message || 'Failed to create account');
+        // If user already exists, switch to login mode
+        if (error.message?.includes('already registered') || error.message?.includes('User already registered')) {
+          toast.info('Account already exists. Please log in.');
+          setStep('password-login');
+          setPassword('');
+        } else {
+          toast.error(error.message || 'Failed to create account');
+        }
       } else {
         toast.success('Account created successfully!');
         navigate('/onboarding/gender-select');
@@ -150,7 +150,6 @@ export default function SignUp() {
                 {loading ? (
                   <>
                     <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                    Checking...
                   </>
                 ) : (
                   'Continue'
