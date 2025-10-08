@@ -63,9 +63,9 @@ export default function IntroCarousel() {
       <div className="flex-1 flex items-center justify-center px-6 pb-4 overflow-auto">
         <div className="w-full max-w-sm mx-auto flex flex-col items-center gap-4">
           {/* Phone Mockup with Screenshot */}
-          <div className="relative w-56 h-auto">
-            <div className="relative bg-white rounded-[2rem] shadow-xl border-4 border-gray-800 overflow-hidden">
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-5 bg-gray-800 rounded-b-xl z-10" />
+          <div className="relative w-44 h-auto">
+            <div className="relative bg-white rounded-[1.5rem] shadow-lg border-[3px] border-gray-800 overflow-hidden">
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-20 h-4 bg-gray-800 rounded-b-lg z-10" />
               <img 
                 src={slides[currentSlide].image} 
                 alt={slides[currentSlide].title}
