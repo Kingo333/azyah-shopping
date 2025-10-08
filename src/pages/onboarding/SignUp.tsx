@@ -4,28 +4,41 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import { Mail, ArrowLeft } from 'lucide-react';
+import { Mail, ArrowLeft, Loader2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+
+type FlowStep = 'initial' | 'email-entry' | 'password-login' | 'password-signup';
 
 export default function SignUp() {
-  const [mode, setMode] = useState<'initial' | 'signup' | 'login'>('initial');
+  const [step, setStep] = useState<FlowStep>('initial');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const { signUp, signIn } = useAuth();
   const navigate = useNavigate();
 
-  const handleEmailSignUp = async (e: React.FormEvent) => {
+  const handleEmailContinue = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      const { error } = await signUp(email, password, { role: 'shopper' });
-      
+      // Check if email exists
+      const { data, error } = await supabase.functions.invoke('check-email-exists', {
+        body: { email }
+      });
+
       if (error) {
-        toast.error(error.message || 'Failed to create account');
+        toast.error('Failed to check email');
+        setLoading(false);
+        return;
+      }
+
+      if (data.exists) {
+        // Email exists, show login flow
+        setStep('password-login');
       } else {
-        toast.success('Account created successfully!');
-        navigate('/onboarding/gender-select');
+        // Email doesn't exist, show signup flow
+        setStep('password-signup');
       }
     } catch (error) {
       toast.error('Something went wrong');
@@ -34,7 +47,7 @@ export default function SignUp() {
     }
   };
 
-  const handleEmailLogin = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
@@ -54,20 +67,52 @@ export default function SignUp() {
     }
   };
 
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const { error } = await signUp(email, password, { role: 'shopper' });
+      
+      if (error) {
+        toast.error(error.message || 'Failed to create account');
+      } else {
+        toast.success('Account created successfully!');
+        navigate('/onboarding/gender-select');
+      }
+    } catch (error) {
+      toast.error('Something went wrong');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleOAuthSignIn = (provider: 'google' | 'apple') => async () => {
     toast.info(`${provider.charAt(0).toUpperCase() + provider.slice(1)} sign-in coming soon!`);
     // TODO: Implement OAuth with Supabase
   };
 
-  // Email Form (for both signup and login)
-  if (mode === 'signup' || mode === 'login') {
+  const handleBack = () => {
+    if (step === 'password-login' || step === 'password-signup') {
+      setStep('email-entry');
+      setPassword('');
+    } else if (step === 'email-entry') {
+      setStep('initial');
+      setEmail('');
+    } else {
+      navigate('/');
+    }
+  };
+
+  // Email entry screen
+  if (step === 'email-entry') {
     return (
       <div className="h-screen bg-background flex flex-col overflow-hidden">
         <div className="p-4">
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => setMode('initial')}
+            onClick={handleBack}
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
@@ -75,44 +120,162 @@ export default function SignUp() {
 
         <div className="flex-1 flex items-center justify-center px-6">
           <div className="w-full max-w-md">
-            <h1 className="text-2xl font-bold mb-6 text-foreground text-center">
-              {mode === 'signup' ? 'Sign up with email' : 'Log in with email'}
+            <h1 className="text-2xl font-bold mb-2 text-foreground text-center">
+              Hi there 👋
             </h1>
+            <p className="text-muted-foreground text-center mb-8">
+              Log in or sign up in seconds.
+            </p>
 
-            <form onSubmit={mode === 'signup' ? handleEmailSignUp : handleEmailLogin} className="space-y-4">
-              <Input
-                type="email"
-                placeholder="Email address"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="h-12 rounded-xl"
-                required
-              />
-              <Input
-                type="password"
-                placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="h-12 rounded-xl"
-                required
-              />
+            <form onSubmit={handleEmailContinue} className="space-y-4">
+              <div>
+                <label className="text-sm text-muted-foreground mb-2 block">
+                  Enter your email address
+                </label>
+                <Input
+                  type="email"
+                  placeholder="Email address"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="h-12 rounded-xl"
+                  required
+                  autoFocus
+                />
+              </div>
               <Button
                 type="submit"
                 disabled={loading}
                 className="w-full h-14 text-lg font-semibold rounded-full bg-black hover:bg-black/90 text-white"
               >
-                {loading ? (mode === 'signup' ? 'Creating account...' : 'Signing in...') : (mode === 'signup' ? 'Create Account' : 'Log in')}
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    Checking...
+                  </>
+                ) : (
+                  'Continue'
+                )}
               </Button>
             </form>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-            <div className="mt-6 text-center">
-              <button
-                onClick={() => setMode(mode === 'signup' ? 'login' : 'signup')}
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+  // Password login screen
+  if (step === 'password-login') {
+    return (
+      <div className="h-screen bg-background flex flex-col overflow-hidden">
+        <div className="p-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleBack}
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+        </div>
+
+        <div className="flex-1 flex items-center justify-center px-6">
+          <div className="w-full max-w-md">
+            <h1 className="text-2xl font-bold mb-2 text-foreground text-center">
+              Welcome back!
+            </h1>
+            <p className="text-muted-foreground text-center mb-8">
+              {email}
+            </p>
+
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div>
+                <label className="text-sm text-muted-foreground mb-2 block">
+                  Enter password
+                </label>
+                <Input
+                  type="password"
+                  placeholder="Password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="h-12 rounded-xl"
+                  required
+                  autoFocus
+                />
+              </div>
+              <Button
+                type="submit"
+                disabled={loading}
+                className="w-full h-14 text-lg font-semibold rounded-full bg-black hover:bg-black/90 text-white"
               >
-                {mode === 'signup' ? 'Already have an account? Log in' : 'Don\'t have an account? Sign up'}
-              </button>
-            </div>
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    Signing in...
+                  </>
+                ) : (
+                  'Log in'
+                )}
+              </Button>
+            </form>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Password signup screen
+  if (step === 'password-signup') {
+    return (
+      <div className="h-screen bg-background flex flex-col overflow-hidden">
+        <div className="p-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleBack}
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+        </div>
+
+        <div className="flex-1 flex items-center justify-center px-6">
+          <div className="w-full max-w-md">
+            <h1 className="text-2xl font-bold mb-2 text-foreground text-center">
+              Create your account
+            </h1>
+            <p className="text-muted-foreground text-center mb-8">
+              {email}
+            </p>
+
+            <form onSubmit={handleSignUp} className="space-y-4">
+              <div>
+                <label className="text-sm text-muted-foreground mb-2 block">
+                  Create password
+                </label>
+                <Input
+                  type="password"
+                  placeholder="Password (min. 6 characters)"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="h-12 rounded-xl"
+                  required
+                  minLength={6}
+                  autoFocus
+                />
+              </div>
+              <Button
+                type="submit"
+                disabled={loading}
+                className="w-full h-14 text-lg font-semibold rounded-full bg-black hover:bg-black/90 text-white"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    Creating account...
+                  </>
+                ) : (
+                  'Create account'
+                )}
+              </Button>
+            </form>
           </div>
         </div>
       </div>
@@ -151,7 +314,7 @@ export default function SignUp() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 flex items-center justify-center px-6 relative z-10 overflow-auto">
+      <div className="flex-1 flex items-center justify-center px-6 relative z-10 overflow-auto pb-6">
         <div className="w-full max-w-md text-center">
           <p className="text-white text-lg mb-8 font-medium px-4">
             Create your free account to backup outfits and sync across devices.
@@ -182,20 +345,13 @@ export default function SignUp() {
             </Button>
 
             <Button
-              onClick={() => setMode('signup')}
+              onClick={() => setStep('email-entry')}
               className="w-full h-14 text-base font-semibold rounded-xl bg-white hover:bg-gray-100 text-black"
             >
               <Mail className="w-5 h-5 mr-2" />
               Continue with email
             </Button>
           </div>
-
-          <button
-            onClick={() => setMode('login')}
-            className="w-full text-white hover:text-white/80 transition-colors text-base font-medium mb-6"
-          >
-            Already have an account? Log in
-          </button>
 
           <div className="space-y-3 text-center">
             <div className="flex gap-3 justify-center text-xs text-white/80 flex-wrap px-2">
