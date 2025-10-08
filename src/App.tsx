@@ -22,7 +22,7 @@ import Swipe from './pages/Swipe';
 import Wishlist from './pages/Wishlist';
 import Likes from './pages/Likes';
 import ShoppingCart from './pages/ShoppingCart';
-import Closets from './pages/Closets';
+import DressMe from './pages/DressMe';
 import Feed from './pages/Feed';
 import FashionFeed from './pages/FashionFeed';
 import Forum from './pages/Forum';
@@ -107,9 +107,9 @@ function AppContent() {
                       <ShoppingCart />
                     </ProtectedRoute>
                   } />
-                  <Route path="/closets" element={
+                  <Route path="/dress-me" element={
                     <ProtectedRoute roles={['shopper', 'admin']}>
-                      <Closets />
+                      <DressMe />
                     </ProtectedRoute>
                   } />
                   <Route path="/feed" element={

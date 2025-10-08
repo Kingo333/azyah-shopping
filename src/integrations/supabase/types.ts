@@ -424,136 +424,6 @@ export type Database = {
           },
         ]
       }
-      closet_items: {
-        Row: {
-          added_at: string
-          attrs: Json | null
-          brand: string | null
-          category: string | null
-          closet_id: string
-          color: string | null
-          currency: string | null
-          external_product_id: string | null
-          id: string
-          image_bg_removed_url: string | null
-          image_url: string | null
-          price_cents: number | null
-          product_id: string
-          sort_order: number | null
-          title: string | null
-        }
-        Insert: {
-          added_at?: string
-          attrs?: Json | null
-          brand?: string | null
-          category?: string | null
-          closet_id: string
-          color?: string | null
-          currency?: string | null
-          external_product_id?: string | null
-          id?: string
-          image_bg_removed_url?: string | null
-          image_url?: string | null
-          price_cents?: number | null
-          product_id: string
-          sort_order?: number | null
-          title?: string | null
-        }
-        Update: {
-          added_at?: string
-          attrs?: Json | null
-          brand?: string | null
-          category?: string | null
-          closet_id?: string
-          color?: string | null
-          currency?: string | null
-          external_product_id?: string | null
-          id?: string
-          image_bg_removed_url?: string | null
-          image_url?: string | null
-          price_cents?: number | null
-          product_id?: string
-          sort_order?: number | null
-          title?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "closet_items_closet_id_fkey"
-            columns: ["closet_id"]
-            isOneToOne: false
-            referencedRelation: "closets"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      closet_ratings: {
-        Row: {
-          closet_id: string
-          created_at: string
-          id: string
-          rating: number
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          closet_id: string
-          created_at?: string
-          id?: string
-          rating: number
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          closet_id?: string
-          created_at?: string
-          id?: string
-          rating?: number
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "closet_ratings_closet_id_fkey"
-            columns: ["closet_id"]
-            isOneToOne: false
-            referencedRelation: "closets"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      closets: {
-        Row: {
-          created_at: string
-          description: string | null
-          id: string
-          is_default: boolean | null
-          is_public: boolean
-          title: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          description?: string | null
-          id?: string
-          is_default?: boolean | null
-          is_public?: boolean
-          title?: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          description?: string | null
-          id?: string
-          is_default?: boolean | null
-          is_public?: boolean
-          title?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       collab_applications: {
         Row: {
           collab_id: string
@@ -1373,13 +1243,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "look_items_closet_item_id_fkey"
-            columns: ["closet_item_id"]
-            isOneToOne: false
-            referencedRelation: "closet_items"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "look_items_look_id_fkey"
             columns: ["look_id"]
             isOneToOne: false
@@ -1506,6 +1369,36 @@ export type Database = {
             | null
           title?: string
           updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      outfits: {
+        Row: {
+          created_at: string | null
+          id: string
+          image_preview: string | null
+          name: string | null
+          occasion: string | null
+          outfit_data: Json
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          image_preview?: string | null
+          name?: string | null
+          occasion?: string | null
+          outfit_data?: Json
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          image_preview?: string | null
+          name?: string | null
+          occasion?: string | null
+          outfit_data?: Json
           user_id?: string
         }
         Relationships: []
@@ -2558,6 +2451,45 @@ export type Database = {
           created_at?: string
           id?: string
           seconds_used?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      wardrobe_items: {
+        Row: {
+          brand: string | null
+          category: string
+          color: string | null
+          created_at: string | null
+          id: string
+          image_bg_removed_url: string | null
+          image_url: string
+          is_favorite: boolean | null
+          season: string | null
+          user_id: string
+        }
+        Insert: {
+          brand?: string | null
+          category: string
+          color?: string | null
+          created_at?: string | null
+          id?: string
+          image_bg_removed_url?: string | null
+          image_url: string
+          is_favorite?: boolean | null
+          season?: string | null
+          user_id: string
+        }
+        Update: {
+          brand?: string | null
+          category?: string
+          color?: string | null
+          created_at?: string | null
+          id?: string
+          image_bg_removed_url?: string | null
+          image_url?: string
+          is_favorite?: boolean | null
+          season?: string | null
           user_id?: string
         }
         Relationships: []

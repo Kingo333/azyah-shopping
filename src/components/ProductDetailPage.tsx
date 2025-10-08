@@ -5,7 +5,7 @@ import { Heart, ShoppingBag, ExternalLink, ArrowLeft, Share } from 'lucide-react
 import { Product } from '@/types';
 import { EnhancedProductGallery } from './EnhancedProductGallery';
 import { AdvancedSizeColorSelector } from './AdvancedSizeColorSelector';
-import { AddToClosetModal } from './AddToClosetModal';
+// AddToClosetModal removed - feature deprecated
 import { useToast } from '@/hooks/use-toast';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { getProductImageUrls } from '@/utils/imageHelpers';
@@ -259,8 +259,7 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
         </div>
       </main>
 
-      {/* Add to Closet Modal */}
-      <AddToClosetModal productId={product.id} isOpen={isClosetModalOpen} onClose={() => setIsClosetModalOpen(false)} />
+      {/* Add to Closet Modal - Feature Deprecated */}
     </div>;
 };
 export default ProductDetailPage;

@@ -2,6 +2,7 @@ import React, { useState, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
@@ -23,9 +24,8 @@ import {
 } from 'lucide-react';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import { useCreateLook, useUpdateLook, usePublishLook } from '@/hooks/useLooks';
-import { useEnhancedClosetItems } from '@/hooks/useEnhancedClosets';
+import { useWardrobeItems } from '@/hooks/useWardrobeItems';
 import { toast } from '@/hooks/use-toast';
-import { ClosetGrid } from './ClosetGrid';
 import { AutoLayoutBoardCanvas } from './AutoLayoutBoardCanvas';
 import { TemplateSelector } from './TemplateSelector';
 import { ProductQuickView } from './ProductQuickView';
@@ -43,6 +43,7 @@ export const MoodBoardBuilder: React.FC<MoodBoardBuilderProps> = ({
   onClose
 }) => {
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
   const [boardState, setBoardState] = useState({
     canvas: {
       width: 1080,
@@ -69,12 +70,7 @@ export const MoodBoardBuilder: React.FC<MoodBoardBuilderProps> = ({
   const updateLookMutation = useUpdateLook();
   const publishLookMutation = usePublishLook();
 
-  const { data: closetItems = [] } = useEnhancedClosetItems(
-    closetId, 
-    'all', 
-    searchQuery, 
-    categoryFilter
-  );
+  const { data: wardrobeItems = [] } = useWardrobeItems();
 
   // Auto-save functionality
   const handleAutoSave = useCallback(async () => {
@@ -278,11 +274,10 @@ export const MoodBoardBuilder: React.FC<MoodBoardBuilderProps> = ({
               </div>
               
               <div className={`overflow-auto ${isMobile ? 'h-[calc(100%-60px)]' : 'h-[calc(100%-80px)]'}`}>
-                <ClosetGrid
-                  items={closetItems}
-                  onDragStart={handleDragStart}
-                  onItemClick={setSelectedProduct}
-                />
+                <div className="p-4 text-center text-muted-foreground">
+                  <p>Wardrobe items feature has been moved to "Dress Me"</p>
+                  <Button onClick={() => navigate('/dress-me')} className="mt-2">Go to Dress Me</Button>
+                </div>
               </div>
             </div>
           </ResizablePanel>

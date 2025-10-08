@@ -9,7 +9,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { useWishlistProducts } from '@/hooks/useWishlistProducts';
 import { useLikedProducts } from '@/hooks/useLikedProducts';
 import { useProducts } from '@/hooks/useProducts';
-import { useEnhancedClosetItems } from '@/hooks/useEnhancedClosets';
+import { useWardrobeItems } from '@/hooks/useWardrobeItems';
 import { useCreateLook, useUpdateLook } from '@/hooks/useLooks';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Palette, Heart, ShoppingBag, Plus, Grid3X3, Save, Share2, Square, Undo, Redo } from 'lucide-react';
@@ -111,8 +111,8 @@ export const CreateLookSection: React.FC<CreateLookSectionProps> = ({
   });
 
   const {
-    data: closetItems = []
-  } = useEnhancedClosetItems(closetId || '', 'all', searchQuery);
+    data: wardrobeItems = []
+  } = useWardrobeItems();
 
   // Save board state to history for undo/redo
   const saveToHistory = useCallback((newState: any) => {

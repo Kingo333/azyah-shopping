@@ -270,6 +270,20 @@ const RoleDashboard: React.FC = () => {
             </button>
           </TutorialTooltip>
 
+          {/* Dress Me Chip */}
+          <TutorialTooltip content="Create outfits from your wardrobe. Upload clothing items and shuffle to generate outfit combinations instantly." feature="dress-me">
+            <button
+              onClick={() => navigate('/dress-me')}
+              className="relative flex items-center gap-2 px-3 py-2 h-9 rounded-lg bg-background border border-border hover:bg-accent transition-colors font-medium text-sm whitespace-nowrap flex-shrink-0 min-w-fit"
+            >
+              <WandSparkles className="h-4 w-4" />
+              Dress Me
+              <span className="absolute -top-0.5 -right-0.5 bg-primary text-primary-foreground text-[11px] px-1.5 py-0.5 rounded-full leading-none">
+                NEW
+              </span>
+            </button>
+          </TutorialTooltip>
+
           {/* AI Studio Chip with New Badge */}
           <TutorialTooltip content="Create AI-generated fashion content and try-on experiences. Upload photos and use AI to enhance your style." feature="ai-studio">
             <button

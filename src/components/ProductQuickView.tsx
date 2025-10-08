@@ -3,10 +3,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ExternalLink, Heart, Plus, Info } from 'lucide-react';
-import { EnhancedClosetItem } from '@/hooks/useEnhancedClosets';
+import { WardrobeItem } from '@/hooks/useWardrobeItems';
 
 interface ProductQuickViewProps {
-  product: EnhancedClosetItem | null;
+  product: WardrobeItem | null;
   onClose: () => void;
 }
 
