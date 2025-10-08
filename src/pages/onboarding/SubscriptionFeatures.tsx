@@ -7,7 +7,7 @@ import { ArrowLeft } from 'lucide-react';
 const features = [
   { name: 'Create outfits', free: true, subscription: true },
   { name: 'Connect with community', free: true, subscription: true },
-  { name: 'Unlimited wardrobe items', free: false, subscription: true },
+  { name: 'Unlimited wardrobe items', free: true, subscription: true },
   { name: 'Daily AI outfit suggestions', free: false, subscription: true },
   { name: 'Advanced style insights', free: false, subscription: true },
   { name: 'UGC collaboration', free: false, subscription: true },

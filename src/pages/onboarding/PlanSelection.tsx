@@ -4,20 +4,22 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { ArrowLeft, Star } from 'lucide-react';
+import { X, Star } from 'lucide-react';
 
 export default function PlanSelection() {
   const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'yearly' | null>('yearly');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleSubscribe = async () => {
-    if (!selectedPlan) return;
+  const handleContinue = async () => {
+    if (!selectedPlan) {
+      await handleContinueWithoutSubscription();
+      return;
+    }
 
     setLoading(true);
     try {
       // TODO: Integrate with Stripe checkout
-      // For now, just show a message and complete onboarding
       toast.info('Stripe integration coming soon. Starting with free plan.');
       await completeOnboarding();
     } catch (error) {
@@ -60,69 +62,85 @@ export default function PlanSelection() {
     if (error) throw error;
 
     toast.success('Welcome to Azyah! 🎉');
-    navigate('/dashboard');
+    navigate('/swipe');
   };
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Progress Bar */}
-      <div className="w-full h-1 bg-muted">
+      <div className="w-full h-1 bg-foreground">
         <div className="h-full bg-foreground transition-all" style={{ width: '100%' }} />
       </div>
 
-      {/* Back Button */}
-      <div className="p-4">
+      {/* Header with Close */}
+      <div className="p-4 flex justify-end">
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => navigate(-1)}
+          onClick={() => navigate('/swipe')}
         >
-          <ArrowLeft className="h-5 w-5" />
+          <X className="h-5 w-5" />
         </Button>
       </div>
 
       {/* Content */}
       <div className="flex-1 flex flex-col p-6 overflow-y-auto">
         <div className="w-full max-w-md mx-auto">
-          <div className="text-center mb-6">
-            <h1 className="text-2xl font-bold mb-4 text-foreground">
+          <div className="text-center mb-8">
+            <h1 className="text-2xl font-bold mb-6 text-foreground">
               Choose your plan
             </h1>
             
             {/* Review Snippet */}
             <div className="flex items-center justify-center gap-1 mb-2">
               {[1, 2, 3, 4, 5].map((i) => (
-                <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                <Star key={i} className="h-5 w-5 fill-yellow-400 text-yellow-400" />
               ))}
             </div>
-            <p className="text-sm text-muted-foreground italic">
-              "Best fashion app for daily style inspiration!"
+            <p className="text-sm text-muted-foreground italic mb-8">
+              "I downloaded a few similar apps to choose the best one and this is definitely it!! 💕💕💕"
             </p>
+            <p className="text-xs text-muted-foreground text-right">
+              yasisa
+            </p>
+          </div>
+
+          {/* Trial Toggle */}
+          <div className="bg-muted/30 rounded-xl p-4 flex items-center justify-between mb-6">
+            <span className="text-sm">Not sure yet? Enable trial.</span>
+            <div className="w-12 h-6 bg-muted rounded-full relative cursor-pointer">
+              <div className="w-5 h-5 bg-white rounded-full absolute top-0.5 left-0.5 transition-transform"></div>
+            </div>
           </div>
 
           <div className="space-y-4 mb-6">
             {/* Yearly Plan */}
             <Card
               onClick={() => setSelectedPlan('yearly')}
-              className={`relative cursor-pointer transition-all ${
+              className={`cursor-pointer transition-all relative ${
                 selectedPlan === 'yearly'
-                  ? 'border-foreground ring-2 ring-foreground'
+                  ? 'border-foreground ring-2 ring-foreground bg-accent'
                   : 'border-border hover:border-muted-foreground'
               }`}
             >
-              <div className="p-4">
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-lg">Yearly Plan</h3>
-                    <p className="text-2xl font-bold mt-1">AED 300 <span className="text-sm font-normal text-muted-foreground">/year</span></p>
-                  </div>
-                  <div className="bg-primary text-primary-foreground text-xs px-3 py-1 rounded-full font-semibold">
-                    Most Popular
-                  </div>
+              <div className="absolute -top-2 left-1/2 -translate-x-1/2 bg-black text-white px-3 py-1 rounded-full text-xs font-bold">
+                MOST POPULAR
+              </div>
+              <div className="p-4 flex items-center justify-between">
+                <div>
+                  <h3 className="font-bold text-lg">Yearly Plan</h3>
+                  <p className="text-sm text-muted-foreground">12 mo • AED 300</p>
                 </div>
-                <p className="text-sm text-muted-foreground">
-                  Save AED 180 compared to monthly
-                </p>
+                <div className="text-right">
+                  <div className="text-xl font-bold">AED 25 /mo</div>
+                  {selectedPlan === 'yearly' && (
+                    <div className="w-6 h-6 bg-black rounded-full flex items-center justify-center mt-1">
+                      <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                  )}
+                </div>
               </div>
             </Card>
 
@@ -131,41 +149,44 @@ export default function PlanSelection() {
               onClick={() => setSelectedPlan('monthly')}
               className={`cursor-pointer transition-all ${
                 selectedPlan === 'monthly'
-                  ? 'border-foreground ring-2 ring-foreground'
+                  ? 'border-foreground ring-2 ring-foreground bg-accent'
                   : 'border-border hover:border-muted-foreground'
               }`}
             >
-              <div className="p-4">
-                <h3 className="font-semibold text-lg">Monthly Plan</h3>
-                <p className="text-2xl font-bold mt-1">AED 40 <span className="text-sm font-normal text-muted-foreground">/month</span></p>
+              <div className="p-4 flex items-center justify-between">
+                <div>
+                  <h3 className="font-bold text-lg">Monthly</h3>
+                </div>
+                <div className="text-right">
+                  <div className="text-xl font-bold">AED 40 /mo</div>
+                  {selectedPlan === 'monthly' && (
+                    <div className="w-6 h-6 bg-black rounded-full flex items-center justify-center mt-1">
+                      <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                  )}
+                </div>
               </div>
             </Card>
           </div>
 
-          <div className="space-y-3 mb-6">
-            <Button
-              onClick={handleSubscribe}
-              disabled={!selectedPlan || loading}
-              className="w-full h-12 text-base font-semibold rounded-xl"
-            >
-              {loading ? 'Processing...' : 'Continue'}
-            </Button>
+          <Button
+            onClick={handleContinue}
+            disabled={loading}
+            className="w-full h-12 text-base font-semibold rounded-xl bg-black hover:bg-black/90 text-white mb-4"
+          >
+            {loading ? 'Processing...' : 'Continue'}
+          </Button>
 
-            <button
-              onClick={handleContinueWithoutSubscription}
-              disabled={loading}
-              className="w-full text-muted-foreground hover:text-foreground transition-colors text-sm py-2"
-            >
-              Continue without subscription
-            </button>
-          </div>
+          <p className="text-center text-sm text-muted-foreground mb-4">
+            Cancel your plan any time.
+          </p>
 
-          <div className="text-center text-xs text-muted-foreground space-x-2">
-            <a href="/terms" className="hover:underline">Terms</a>
-            <span>•</span>
-            <a href="/privacy" className="hover:underline">Privacy</a>
-            <span>•</span>
-            <span>Cancel anytime</span>
+          <div className="flex justify-center gap-4 text-xs text-muted-foreground">
+            <button className="underline">Restore purchase</button>
+            <button className="underline">Terms of service</button>
+            <button className="underline">Privacy policy</button>
           </div>
         </div>
       </div>

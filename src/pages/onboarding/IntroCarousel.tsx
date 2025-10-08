@@ -16,7 +16,7 @@ const slides = [
   },
   {
     image: '/onboarding/intro-community.png',
-    title: 'Connect and get inspired',
+    title: 'Connect with friends and see what they\'re wearing',
     subtitle: 'See how others style and share their looks.',
   },
   {
@@ -52,21 +52,32 @@ export default function IntroCarousel() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6">
+      {/* Azyah Branding at Top */}
+      <div className="absolute top-8 left-0 right-0">
+        <h1 className="text-4xl font-bold text-foreground text-center tracking-tight">
+          Azyah
+        </h1>
+      </div>
+
       <div className="w-full max-w-md">
-        {/* Slide Content */}
+        {/* Slide Content with Phone Mockup */}
         <div className="text-center mb-8">
-          <div className="mb-8 flex justify-center">
-            <img 
-              src={slides[currentSlide].image} 
-              alt={slides[currentSlide].title}
-              className="w-64 h-64 object-contain"
-            />
+          <div className="mb-12 flex justify-center relative">
+            {/* Phone frame mockup */}
+            <div className="relative w-80 h-[600px] bg-white rounded-[3rem] shadow-2xl border-8 border-gray-800 overflow-hidden">
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-gray-800 rounded-b-2xl z-10" />
+              <img 
+                src={slides[currentSlide].image} 
+                alt={slides[currentSlide].title}
+                className="w-full h-full object-cover"
+              />
+            </div>
           </div>
           
-          <h1 className="text-2xl font-bold mb-3 text-foreground">
+          <h1 className="text-2xl font-bold mb-3 text-foreground px-4">
             {slides[currentSlide].title}
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-muted-foreground px-4">
             {slides[currentSlide].subtitle}
           </p>
         </div>

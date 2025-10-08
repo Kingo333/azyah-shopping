@@ -9,6 +9,7 @@ import { ArrowLeft } from 'lucide-react';
 const genderOptions = [
   { value: 'woman', label: 'Woman', emoji: '👩' },
   { value: 'man', label: 'Man', emoji: '👨' },
+  { value: 'non_binary', label: 'Non-binary', emoji: '🧑' },
   { value: 'prefer_not_to_say', label: 'Prefer not to say', emoji: '🚫' },
 ];
 
@@ -75,7 +76,7 @@ export default function GenderSelect() {
               What's your gender?
             </h1>
             <p className="text-muted-foreground text-sm">
-              We use this to personalize your styling experience.
+              We ask this to personalize the styling experience for you.
             </p>
           </div>
 
