@@ -9,7 +9,6 @@ import { ArrowLeft } from 'lucide-react';
 const genderOptions = [
   { value: 'woman', label: 'Woman', emoji: '👩' },
   { value: 'man', label: 'Man', emoji: '👨' },
-  { value: 'non_binary', label: 'Non-binary', emoji: '🧑' },
   { value: 'prefer_not_to_say', label: 'Prefer not to say', emoji: '🚫' },
 ];
 

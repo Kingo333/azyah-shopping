@@ -19,9 +19,28 @@ export default function PlanSelection() {
 
     setLoading(true);
     try {
-      // TODO: Integrate with Stripe checkout
-      toast.info('Stripe integration coming soon. Starting with free plan.');
-      await completeOnboarding();
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error('Please sign in first');
+        navigate('/auth');
+        return;
+      }
+
+      // Call Stripe checkout edge function
+      const { data, error } = await supabase.functions.invoke('create-stripe-checkout', {
+        body: { plan_type: selectedPlan }
+      });
+
+      if (error) throw error;
+
+      if (data?.checkout_url) {
+        // Redirect to Stripe checkout
+        window.location.href = data.checkout_url;
+      } else {
+        // Fallback if Stripe not configured yet
+        toast.info('Payment system setup in progress. Starting with free plan for now.');
+        await completeOnboarding();
+      }
     } catch (error) {
       console.error('Error creating subscription:', error);
       toast.error('Failed to create subscription');
