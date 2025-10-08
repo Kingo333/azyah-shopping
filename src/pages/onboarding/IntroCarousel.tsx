@@ -51,91 +51,72 @@ export default function IntroCarousel() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6">
+    <div className="h-screen bg-background flex flex-col overflow-hidden">
       {/* Azyah Branding at Top */}
-      <div className="absolute top-8 left-0 right-0">
-        <h1 className="text-4xl font-bold text-foreground text-center tracking-tight">
+      <div className="pt-6 pb-4">
+        <h1 className="text-3xl font-bold text-foreground text-center tracking-tight">
           Azyah
         </h1>
       </div>
 
-      <div className="w-full max-w-md">
-        {/* Slide Content with Phone Mockup */}
-        <div className="text-center mb-8">
-          <div className="mb-12 flex justify-center relative">
-            {/* Phone frame mockup */}
-            <div className="relative w-80 h-[600px] bg-white rounded-[3rem] shadow-2xl border-8 border-gray-800 overflow-hidden">
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-gray-800 rounded-b-2xl z-10" />
+      {/* Main Content */}
+      <div className="flex-1 flex items-center justify-center px-6 pb-4 overflow-auto">
+        <div className="w-full max-w-sm mx-auto flex flex-col items-center gap-4">
+          {/* Phone Mockup with Screenshot */}
+          <div className="relative w-56 h-auto">
+            <div className="relative bg-white rounded-[2rem] shadow-xl border-4 border-gray-800 overflow-hidden">
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-5 bg-gray-800 rounded-b-xl z-10" />
               <img 
                 src={slides[currentSlide].image} 
                 alt={slides[currentSlide].title}
-                className="w-full h-full object-cover"
+                className="w-full h-auto object-contain"
               />
             </div>
           </div>
           
-          <h1 className="text-2xl font-bold mb-3 text-foreground px-4">
-            {slides[currentSlide].title}
-          </h1>
-          <p className="text-muted-foreground px-4">
-            {slides[currentSlide].subtitle}
-          </p>
-        </div>
+          {/* Text Content */}
+          <div className="text-center space-y-2 px-2">
+            <h2 className="text-xl font-bold text-foreground leading-tight">
+              {slides[currentSlide].title}
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              {slides[currentSlide].subtitle}
+            </p>
+          </div>
 
-        {/* Progress Dots */}
-        <div className="flex justify-center gap-2 mb-8">
-          {slides.map((_, index) => (
-            <button
-              key={index}
-              onClick={() => setCurrentSlide(index)}
-              className={`h-2 rounded-full transition-all ${
-                index === currentSlide 
-                  ? 'w-8 bg-foreground' 
-                  : 'w-2 bg-muted'
-              }`}
-              aria-label={`Go to slide ${index + 1}`}
-            />
-          ))}
+          {/* Progress Dots */}
+          <div className="flex justify-center gap-2">
+            {slides.map((_, index) => (
+              <button
+                key={index}
+                onClick={() => setCurrentSlide(index)}
+                className={`h-2 rounded-full transition-all ${
+                  index === currentSlide 
+                    ? 'w-8 bg-foreground' 
+                    : 'w-2 bg-muted-foreground/30'
+                }`}
+                aria-label={`Go to slide ${index + 1}`}
+              />
+            ))}
+          </div>
         </div>
+      </div>
 
-        {/* Navigation Arrows */}
-        <div className="flex justify-between mb-8">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={prevSlide}
-            disabled={currentSlide === 0}
-            className="opacity-50 disabled:opacity-20"
-          >
-            <ChevronLeft className="h-6 w-6" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={nextSlide}
-            disabled={currentSlide === slides.length - 1}
-            className="opacity-50 disabled:opacity-20"
-          >
-            <ChevronRight className="h-6 w-6" />
-          </Button>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="space-y-3">
-          <Button 
-            onClick={handleJoinFree}
-            className="w-full h-12 text-base font-semibold rounded-xl"
-          >
-            Join for free
-          </Button>
-          
-          <button
-            onClick={handleLogin}
-            className="w-full text-muted-foreground hover:text-foreground transition-colors text-sm"
-          >
-            Already have an account? <span className="font-semibold">Log in</span>
-          </button>
-        </div>
+      {/* Bottom Actions */}
+      <div className="p-6 space-y-3 border-t bg-background">
+        <Button 
+          onClick={handleJoinFree}
+          className="w-full h-12 text-base font-semibold rounded-xl"
+        >
+          Join for free
+        </Button>
+        
+        <button
+          onClick={handleLogin}
+          className="w-full text-muted-foreground hover:text-foreground transition-colors text-sm"
+        >
+          Already have an account? <span className="font-semibold">Log in</span>
+        </button>
       </div>
     </div>
   );
