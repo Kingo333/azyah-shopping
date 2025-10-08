@@ -19,14 +19,14 @@ export default function SubscriptionFeatures() {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="h-screen bg-background flex flex-col overflow-hidden">
       {/* Progress Bar */}
       <div className="w-full h-1 bg-muted">
         <div className="h-full bg-foreground transition-all" style={{ width: '95%' }} />
       </div>
 
       {/* Back Button */}
-      <div className="p-4">
+      <div className="p-3">
         <Button
           variant="ghost"
           size="icon"
@@ -37,15 +37,15 @@ export default function SubscriptionFeatures() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 flex flex-col p-6 overflow-y-auto">
+      <div className="flex-1 flex flex-col px-6 pb-6 overflow-y-auto">
         <div className="w-full max-w-md mx-auto">
-          <div className="text-center mb-8">
-            <h1 className="text-2xl font-bold mb-2 text-foreground">
+          <div className="text-center mb-4">
+            <h1 className="text-xl font-bold mb-2 text-foreground">
               Dress better daily with Azyah Pro
             </h1>
           </div>
 
-          <Card className="mb-8">
+          <Card className="mb-4">
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>

@@ -6,14 +6,14 @@ export default function AIAnalyzerIntro() {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="h-screen bg-background flex flex-col overflow-hidden">
       {/* Progress Bar */}
       <div className="w-full h-1 bg-muted">
         <div className="h-full bg-foreground transition-all" style={{ width: '80%' }} />
       </div>
 
       {/* Back Button */}
-      <div className="p-4">
+      <div className="p-3">
         <Button
           variant="ghost"
           size="icon"
@@ -24,10 +24,10 @@ export default function AIAnalyzerIntro() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 flex flex-col items-center justify-center p-6">
+      <div className="flex-1 flex flex-col items-center justify-center px-6 pb-6 overflow-y-auto">
         <div className="w-full max-w-md text-center">
-          <div className="mb-8">
-            <div className="w-48 h-48 mx-auto mb-8 bg-muted rounded-2xl flex items-center justify-center">
+          <div className="mb-6">
+            <div className="w-40 h-40 mx-auto mb-6 bg-muted rounded-2xl flex items-center justify-center">
               {/* Placeholder for AI analysis visualization */}
               <div className="text-6xl">🤖</div>
             </div>

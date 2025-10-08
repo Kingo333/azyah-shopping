@@ -85,14 +85,14 @@ export default function PlanSelection() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="h-screen bg-background flex flex-col overflow-hidden">
       {/* Progress Bar */}
       <div className="w-full h-1 bg-foreground">
         <div className="h-full bg-foreground transition-all" style={{ width: '100%' }} />
       </div>
 
       {/* Header with Close */}
-      <div className="p-4 flex justify-end">
+      <div className="p-3 flex justify-end">
         <Button
           variant="ghost"
           size="icon"
@@ -103,10 +103,10 @@ export default function PlanSelection() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 flex flex-col p-6 overflow-y-auto">
+      <div className="flex-1 flex flex-col px-6 pb-6 overflow-y-auto">
         <div className="w-full max-w-md mx-auto">
-          <div className="text-center mb-8">
-            <h1 className="text-2xl font-bold mb-6 text-foreground">
+          <div className="text-center mb-4">
+            <h1 className="text-xl font-bold mb-4 text-foreground">
               Choose your plan
             </h1>
             
@@ -116,7 +116,7 @@ export default function PlanSelection() {
                 <Star key={i} className="h-5 w-5 fill-yellow-400 text-yellow-400" />
               ))}
             </div>
-            <p className="text-sm text-muted-foreground italic mb-8">
+            <p className="text-sm text-muted-foreground italic mb-4">
               "I downloaded a few similar apps to choose the best one and this is definitely it!! 💕💕💕"
             </p>
             <p className="text-xs text-muted-foreground text-right">
@@ -125,14 +125,14 @@ export default function PlanSelection() {
           </div>
 
           {/* Trial Toggle */}
-          <div className="bg-muted/30 rounded-xl p-4 flex items-center justify-between mb-6">
+          <div className="bg-muted/30 rounded-xl p-3 flex items-center justify-between mb-4">
             <span className="text-sm">Not sure yet? Enable trial.</span>
             <div className="w-12 h-6 bg-muted rounded-full relative cursor-pointer">
               <div className="w-5 h-5 bg-white rounded-full absolute top-0.5 left-0.5 transition-transform"></div>
             </div>
           </div>
 
-          <div className="space-y-4 mb-6">
+          <div className="space-y-3 mb-4">
             {/* Yearly Plan */}
             <Card
               onClick={() => setSelectedPlan('yearly')}
@@ -193,12 +193,12 @@ export default function PlanSelection() {
           <Button
             onClick={handleContinue}
             disabled={loading}
-            className="w-full h-12 text-base font-semibold rounded-xl bg-black hover:bg-black/90 text-white mb-4"
+            className="w-full h-12 text-base font-semibold rounded-xl bg-black hover:bg-black/90 text-white mb-3"
           >
             {loading ? 'Processing...' : 'Continue'}
           </Button>
 
-          <p className="text-center text-sm text-muted-foreground mb-4">
+          <p className="text-center text-sm text-muted-foreground mb-3">
             Cancel your plan any time.
           </p>
 

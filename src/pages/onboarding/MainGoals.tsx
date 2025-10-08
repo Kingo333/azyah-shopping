@@ -62,14 +62,14 @@ export default function MainGoals() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="h-screen bg-background flex flex-col overflow-hidden">
       {/* Progress Bar */}
       <div className="w-full h-1 bg-muted">
         <div className="h-full bg-foreground transition-all" style={{ width: '14%' }} />
       </div>
 
       {/* Back Button */}
-      <div className="p-4">
+      <div className="p-3">
         <Button
           variant="ghost"
           size="icon"
@@ -80,15 +80,15 @@ export default function MainGoals() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 flex flex-col p-6 overflow-y-auto">
+      <div className="flex-1 flex flex-col px-6 pb-6 overflow-y-auto">
         <div className="w-full max-w-md mx-auto">
-          <div className="mb-8">
+          <div className="mb-4">
             <h1 className="text-2xl font-bold mb-2 text-foreground">
               What do you want the most from Azyah?
             </h1>
           </div>
 
-          <div className="space-y-3 mb-8">
+          <div className="space-y-2 mb-4">
             {goalOptions.map((option) => (
               <Card
                 key={option.value}

@@ -55,14 +55,14 @@ export default function ReferralSource() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="h-screen bg-background flex flex-col overflow-hidden">
       {/* Progress Bar */}
       <div className="w-full h-1 bg-muted">
         <div className="h-full bg-foreground transition-all" style={{ width: '42%' }} />
       </div>
 
       {/* Back Button */}
-      <div className="p-4">
+      <div className="p-3">
         <Button
           variant="ghost"
           size="icon"
@@ -73,15 +73,15 @@ export default function ReferralSource() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 flex flex-col items-center justify-center p-6">
+      <div className="flex-1 flex flex-col items-center justify-center px-6 pb-6 overflow-y-auto">
         <div className="w-full max-w-md">
-          <div className="text-center mb-8">
+          <div className="text-center mb-6">
             <h1 className="text-2xl font-bold mb-2 text-foreground">
               How did you find out about Azyah?
             </h1>
           </div>
 
-          <div className="space-y-3 mb-8">
+          <div className="space-y-2 mb-6">
             {referralOptions.map((option) => (
               <Card
                 key={option}

@@ -29,14 +29,14 @@ export default function LocationRequest() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="h-screen bg-background flex flex-col overflow-hidden">
       {/* Progress Bar */}
       <div className="w-full h-1 bg-muted">
         <div className="h-full bg-foreground transition-all" style={{ width: '92%' }} />
       </div>
 
       {/* Back Button */}
-      <div className="p-4">
+      <div className="p-3">
         <Button
           variant="ghost"
           size="icon"
@@ -47,10 +47,10 @@ export default function LocationRequest() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 flex flex-col items-center justify-center p-6">
+      <div className="flex-1 flex flex-col items-center justify-center px-6 pb-6 overflow-y-auto">
         <div className="w-full max-w-md text-center">
-          <div className="mb-8">
-            <div className="w-24 h-24 mx-auto mb-8 bg-muted rounded-full flex items-center justify-center">
+          <div className="mb-6">
+            <div className="w-20 h-20 mx-auto mb-6 bg-muted rounded-full flex items-center justify-center">
               <div className="text-5xl">📍</div>
             </div>
             

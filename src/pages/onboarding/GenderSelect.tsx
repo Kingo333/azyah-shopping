@@ -50,14 +50,14 @@ export default function GenderSelect() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="h-screen bg-background flex flex-col overflow-hidden">
       {/* Progress Bar */}
       <div className="w-full h-1 bg-muted">
         <div className="h-full bg-foreground transition-all" style={{ width: '14%' }} />
       </div>
 
       {/* Back Button */}
-      <div className="p-4">
+      <div className="p-3">
         <Button
           variant="ghost"
           size="icon"
@@ -68,9 +68,9 @@ export default function GenderSelect() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 flex flex-col items-center justify-center p-6">
+      <div className="flex-1 flex flex-col items-center justify-center px-6 pb-6 overflow-y-auto">
         <div className="w-full max-w-md">
-          <div className="text-center mb-8">
+          <div className="text-center mb-6">
             <h1 className="text-2xl font-bold mb-2 text-foreground">
               What's your gender?
             </h1>
@@ -79,7 +79,7 @@ export default function GenderSelect() {
             </p>
           </div>
 
-          <div className="space-y-3 mb-8">
+          <div className="space-y-3 mb-6">
             {genderOptions.map((option) => (
               <Card
                 key={option.value}
