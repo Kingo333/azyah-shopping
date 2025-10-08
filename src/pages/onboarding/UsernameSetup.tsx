@@ -83,7 +83,7 @@ export default function UsernameSetup() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="h-screen bg-background flex flex-col overflow-hidden">
       {/* Progress Bar */}
       <div className="w-full h-1 bg-muted">
         <div className="h-full bg-foreground transition-all" style={{ width: '70%' }} />
@@ -101,7 +101,7 @@ export default function UsernameSetup() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 flex flex-col items-center justify-center p-6">
+      <div className="flex-1 flex flex-col items-center justify-center p-6 overflow-y-auto">
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
             <h1 className="text-2xl font-bold mb-2 text-foreground">
