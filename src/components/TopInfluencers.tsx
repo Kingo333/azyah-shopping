@@ -21,7 +21,6 @@ interface TopInfluencer {
     likes_given: number;
     likes_received: number;
     followers_count: number;
-    closets_count: number;
   };
 }
 
@@ -84,27 +83,19 @@ const TopInfluencers: React.FC<TopInfluencersProps> = ({ limit = 6, showMore = t
             .select('id', { count: 'exact' })
             .eq('following_id', user.id);
 
-          // Get closets count
-          const { count: closetsCount } = await supabase
-            .from('closets')
-            .select('id', { count: 'exact' })
-            .eq('user_id', user.id);
-
           // Calculate engagement score
           const stats = {
             posts_count: postsCount || 0,
             likes_given: likesGiven || 0,
             likes_received: likesReceived || 0,
             followers_count: followersCount || 0,
-            closets_count: closetsCount || 0,
           };
 
           const engagement_score = (
             stats.posts_count * 10 +
             stats.likes_given * 1 +
             stats.likes_received * 5 +
-            stats.followers_count * 3 +
-            stats.closets_count * 8
+            stats.followers_count * 3
           );
 
           return {
@@ -211,12 +202,6 @@ const TopInfluencers: React.FC<TopInfluencersProps> = ({ limit = 6, showMore = t
                   <Users className="h-3 w-3 text-green-500" />
                   <span className="text-muted-foreground">
                     {influencer.stats.followers_count} followers
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Archive className="h-3 w-3 text-orange-500" />
-                  <span className="text-muted-foreground">
-                    {influencer.stats.closets_count} closets
                   </span>
                 </div>
                 <div className="flex items-center gap-2">

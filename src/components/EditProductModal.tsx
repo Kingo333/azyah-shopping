@@ -232,7 +232,7 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
     setLoading(true);
     try {
       // First try to delete related records to avoid foreign key constraints
-      const deletePromises = [supabase.from('cart_items').delete().eq('product_id', product.id), supabase.from('closet_items').delete().eq('product_id', product.id), supabase.from('likes').delete().eq('product_id', product.id), supabase.from('swipes').delete().eq('product_id', product.id), supabase.from('post_products').delete().eq('product_id', product.id)];
+      const deletePromises = [supabase.from('cart_items').delete().eq('product_id', product.id), supabase.from('likes').delete().eq('product_id', product.id), supabase.from('swipes').delete().eq('product_id', product.id), supabase.from('post_products').delete().eq('product_id', product.id)];
 
       // Execute all deletions
       await Promise.allSettled(deletePromises);

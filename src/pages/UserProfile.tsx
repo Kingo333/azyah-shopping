@@ -131,74 +131,6 @@ const UserProfile: React.FC = () => {
     enabled: !!id
   });
 
-  const { data: userClosets, isLoading: closetsLoading } = useQuery({
-    queryKey: ['user-closets', id],
-    queryFn: async () => {
-      if (!id) return [];
-      
-      const { data: closets, error } = await supabase
-        .from('closets')
-        .select(`
-          id,
-          title,
-          description,
-          is_public,
-          created_at
-        `)
-        .eq('user_id', id)
-        .eq('is_public', true)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-
-      // Get items for each closet
-      const enrichedClosets = await Promise.all(
-        closets.map(async (closet) => {
-          const { data: items, error: itemsError } = await supabase
-            .from('closet_items')
-            .select(`
-              id,
-              product_id
-            `)
-            .eq('closet_id', closet.id)
-            .limit(4); // Show first 4 items as preview
-
-          if (itemsError) throw itemsError;
-
-          // Get product details separately
-          const productDetails = items?.length ? await Promise.all(
-            items.map(async (item) => {
-              const { data: product } = await supabase
-                .from('products')
-                .select('id, title, media_urls, price_cents, currency')
-                .eq('id', item.product_id)
-                .single();
-              
-              return {
-                id: item.id,
-                product: product || {
-                  id: '',
-                  title: 'Unknown Product',
-                  media_urls: [],
-                  price_cents: 0,
-                  currency: 'USD'
-                }
-              };
-            })
-          ) : [];
-
-          return {
-            ...closet,
-            items_count: items?.length || 0,
-            items: productDetails || []
-          };
-        })
-      );
-
-      return enrichedClosets as UserCloset[];
-    },
-    enabled: !!id
-  });
 
   if (profileLoading) {
     return (
@@ -291,9 +223,8 @@ const UserProfile: React.FC = () => {
 
         {/* Content Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-2 glass-panel mb-8">
+          <TabsList className="w-full glass-panel mb-8">
             <TabsTrigger value="posts">Posts</TabsTrigger>
-            <TabsTrigger value="closets">Public Closets</TabsTrigger>
           </TabsList>
 
           <TabsContent value="posts" className="space-y-6 mt-6">
@@ -327,58 +258,6 @@ const UserProfile: React.FC = () => {
                       <div className="flex items-center justify-between text-xs text-muted-foreground">
                         <span>{new Date(post.created_at).toLocaleDateString()}</span>
                         <span>{post.likes_count} likes</span>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </TabsContent>
-
-          <TabsContent value="closets" className="space-y-6 mt-6">
-            {closetsLoading ? (
-              <div className="text-center py-8">
-                <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-                <p>Loading closets...</p>
-              </div>
-            ) : userClosets?.length === 0 ? (
-              <div className="text-center py-12">
-                <Archive className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                <p className="text-muted-foreground">No public closets</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {userClosets?.map((closet) => (
-                  <Card key={closet.id} className="cursor-pointer hover:shadow-lg transition-all duration-300">
-                    <CardHeader>
-                      <CardTitle className="flex items-center justify-between">
-                        <span className="truncate">{closet.title}</span>
-                        <Badge variant="secondary">{closet.items_count} items</Badge>
-                      </CardTitle>
-                      {closet.description && (
-                        <p className="text-sm text-muted-foreground">{closet.description}</p>
-                      )}
-                    </CardHeader>
-                    <CardContent>
-                      {closet.items.length > 0 && (
-                        <div className="grid grid-cols-2 gap-2 mb-4">
-                          {closet.items.slice(0, 4).map((item) => (
-                            <div key={item.id} className="aspect-square relative">
-                              <img
-                                src={item.product?.media_urls?.[0] || '/placeholder.svg'}
-                                alt={item.product?.title || 'Product'}
-                                className="w-full h-full object-cover rounded-md"
-                              />
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                      <div className="flex items-center justify-between text-xs text-muted-foreground">
-                        <span>Created {new Date(closet.created_at).toLocaleDateString()}</span>
-                        <div className="flex items-center gap-1">
-                          <ArrowRight className="h-3 w-3" />
-                          <span>View Closet</span>
-                        </div>
                       </div>
                     </CardContent>
                   </Card>

@@ -427,34 +427,6 @@ export const CreateLookSection: React.FC<CreateLookSectionProps> = ({
           </div>}
       </div>
 
-      {/* Closet Items Grid */}
-      <div className="space-y-4">
-        <div className="flex items-center gap-2">
-          <ShoppingBag className="h-5 w-5" />
-          <h3 className="text-lg font-semibold">Closet Items</h3>
-          <Badge variant="secondary">{closetItems?.length || 0}</Badge>
-        </div>
-        
-        {closetItems && closetItems.length > 0 ? (
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-            {closetItems.map(item => (
-              <ProductCard 
-                key={item.id} 
-                product={item.products || item} 
-                onDragStart={handleDragStart} 
-                onAddToBoard={addToBoard} 
-                onTryOn={handleTryOn} 
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-8 bg-muted/30 rounded-lg">
-            <ShoppingBag className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-            <p className="text-muted-foreground">No items in this closet yet</p>
-            <p className="text-sm text-muted-foreground mt-1">Add items to your closet to use them in looks</p>
-          </div>
-        )}
-      </div>
 
       {/* Liked Products Grid */}
       <div className="space-y-4">

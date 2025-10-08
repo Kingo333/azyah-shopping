@@ -28,7 +28,6 @@ import { useWardrobeItems } from '@/hooks/useWardrobeItems';
 import { toast } from '@/hooks/use-toast';
 import { AutoLayoutBoardCanvas } from './AutoLayoutBoardCanvas';
 import { TemplateSelector } from './TemplateSelector';
-import { ProductQuickView } from './ProductQuickView';
 import { PublishDialog } from './PublishDialog';
 
 interface MoodBoardBuilderProps {
@@ -58,7 +57,6 @@ export const MoodBoardBuilder: React.FC<MoodBoardBuilderProps> = ({
 
   const [showTemplates, setShowTemplates] = useState(false);
   const [showPublishDialog, setShowPublishDialog] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [isDragging, setIsDragging] = useState(false);
@@ -393,10 +391,6 @@ export const MoodBoardBuilder: React.FC<MoodBoardBuilderProps> = ({
         }}
       />
 
-      <ProductQuickView
-        product={selectedProduct}
-        onClose={() => setSelectedProduct(null)}
-      />
 
       <PublishDialog
         open={showPublishDialog}

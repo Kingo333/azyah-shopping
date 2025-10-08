@@ -20,8 +20,6 @@ interface LeaderboardUser {
   stats: {
     likes_given: number;
     posts_created: number;
-    closet_items: number;
-    closets_created: number;
   };
 }
 interface MinimizedLeaderboardProps {
@@ -98,23 +96,12 @@ const MinimizedLeaderboard: React.FC<MinimizedLeaderboardProps> = ({
           data: wishlistItems
         } = await supabase.from('wishlist_items').select('id').eq('wishlist_id', (await supabase.from('wishlists').select('id').eq('user_id', user.id)).data?.[0]?.id);
 
-        // Get closets created by this user
-        const {
-          data: closets
-        } = await supabase.from('closets').select('id').eq('user_id', user.id);
-
-        // Get ALL closet items for this user (count products in their closets)
-        const {
-          data: closetItems
-        } = await supabase.from('closet_items').select('id').in('closet_id', (closets || []).map(c => c.id));
         const likesCount = postLikes?.length || 0;
         const postsCount = posts?.length || 0;
         const savedItemsCount = wishlistItems?.length || 0;
-        const closetsCount = closets?.length || 0;
-        const closetItemsCount = closetItems?.length || 0;
 
-        // Updated scoring: posts (10pts), closet items (2pts each), likes (3pts), wishlist (1pt), closets (5pts)
-        const score = postsCount * 10 + closetItemsCount * 2 + likesCount * 3 + savedItemsCount * 1 + closetsCount * 5;
+        // Updated scoring: posts (10pts), likes (3pts), wishlist (1pt)
+        const score = postsCount * 10 + likesCount * 3 + savedItemsCount * 1;
         scoredUsers.push({
           id: user.id,
           name: user.name || 'Anonymous',
@@ -125,9 +112,7 @@ const MinimizedLeaderboard: React.FC<MinimizedLeaderboardProps> = ({
           // Will be set below
           stats: {
             likes_given: likesCount,
-            posts_created: postsCount,
-            closet_items: closetItemsCount,
-            closets_created: closetsCount
+            posts_created: postsCount
           }
         });
       }
