@@ -7,19 +7,50 @@ import { toast } from 'sonner';
 import { Mail, ArrowLeft, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
-type FlowStep = 'initial' | 'email-entry' | 'password-entry';
+type FlowStep = 'initial' | 'email-entry';
 
 export default function SignUp() {
   const [step, setStep] = useState<FlowStep>('initial');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [emailExists, setEmailExists] = useState<boolean | null>(null);
+  const [checkingEmail, setCheckingEmail] = useState(false);
   const { signUp, signIn } = useAuth();
   const navigate = useNavigate();
 
   const handleEmailContinue = async (e: React.FormEvent) => {
     e.preventDefault();
-    setStep('password-entry');
+    setCheckingEmail(true);
+
+    try {
+      // Check if email exists by querying auth.users via password reset attempt
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/`,
+      });
+      
+      // If no error or specific error, email likely exists
+      // Note: Supabase doesn't reveal if email exists for security, but we can infer
+      // We'll use a different approach: try to sign in with a dummy password
+      const { error: checkError } = await supabase.auth.signInWithPassword({
+        email,
+        password: '___dummy_check___', // This will fail but tells us if user exists
+      });
+
+      // Check the error message to determine if user exists
+      const userExists = checkError?.message?.includes('Invalid login credentials') || 
+                        checkError?.message?.includes('Email not confirmed');
+      
+      setEmailExists(userExists);
+      setShowPassword(true);
+    } catch (error) {
+      // If there's an error checking, assume new user
+      setEmailExists(false);
+      setShowPassword(true);
+    } finally {
+      setCheckingEmail(false);
+    }
   };
 
   const handlePasswordSubmit = async (e: React.FormEvent) => {
@@ -27,26 +58,26 @@ export default function SignUp() {
     setLoading(true);
 
     try {
-      // First try to sign up
-      const { error: signUpError } = await signUp(email, password, { role: 'shopper' });
-      
-      if (signUpError) {
-        // If user already exists, try to log in instead
-        if (signUpError.message?.includes('already registered') || signUpError.message?.includes('User already registered')) {
-          const { error: signInError } = await signIn(email, password);
-          
-          if (signInError) {
-            toast.error('Incorrect password. Please try again.');
-          } else {
-            toast.success('Welcome back!');
-            navigate('/swipe');
-          }
+      if (emailExists) {
+        // Existing user - sign in
+        const { error: signInError } = await signIn(email, password);
+        
+        if (signInError) {
+          toast.error('Incorrect password. Please try again.');
         } else {
-          toast.error(signUpError.message || 'Failed to create account');
+          toast.success('Welcome back!');
+          navigate('/swipe');
         }
       } else {
-        toast.success('Account created successfully!');
-        navigate('/onboarding/gender-select');
+        // New user - sign up
+        const { error: signUpError } = await signUp(email, password, { role: 'shopper' });
+        
+        if (signUpError) {
+          toast.error(signUpError.message || 'Failed to create account');
+        } else {
+          toast.success('Account created successfully!');
+          navigate('/onboarding/gender-select');
+        }
       }
     } catch (error) {
       toast.error('Something went wrong');
@@ -61,9 +92,10 @@ export default function SignUp() {
   };
 
   const handleBack = () => {
-    if (step === 'password-entry') {
-      setStep('email-entry');
+    if (showPassword) {
+      setShowPassword(false);
       setPassword('');
+      setEmailExists(null);
     } else if (step === 'email-entry') {
       setStep('initial');
       setEmail('');
@@ -89,16 +121,19 @@ export default function SignUp() {
         <div className="flex-1 flex items-center justify-center px-6">
           <div className="w-full max-w-md">
             <h1 className="text-2xl font-bold mb-2 text-foreground text-center">
-              Hi there 👋
+              {showPassword ? (emailExists ? 'Welcome back! 👋' : "Let's create your account") : 'Hi there 👋'}
             </h1>
             <p className="text-muted-foreground text-center mb-8">
-              Log in or sign up in seconds.
+              {showPassword 
+                ? (emailExists ? 'Enter your password to continue' : "You don't have an account yet")
+                : 'Log in or sign up in seconds.'
+              }
             </p>
 
-            <form onSubmit={handleEmailContinue} className="space-y-4">
+            <form onSubmit={showPassword ? handlePasswordSubmit : handleEmailContinue} className="space-y-4">
               <div>
                 <label className="text-sm text-muted-foreground mb-2 block">
-                  Enter your email address
+                  Email address
                 </label>
                 <Input
                   type="email"
@@ -107,81 +142,41 @@ export default function SignUp() {
                   onChange={(e) => setEmail(e.target.value)}
                   className="h-12 rounded-xl"
                   required
-                  autoFocus
+                  autoFocus={!showPassword}
+                  disabled={showPassword}
                 />
               </div>
+
+              {showPassword && (
+                <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+                  <label className="text-sm text-muted-foreground mb-2 block">
+                    Password
+                  </label>
+                  <Input
+                    type="password"
+                    placeholder="Password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="h-12 rounded-xl"
+                    required
+                    minLength={6}
+                    autoFocus
+                  />
+                </div>
+              )}
+
               <Button
                 type="submit"
-                disabled={loading}
+                disabled={loading || checkingEmail}
                 className="w-full h-14 text-lg font-semibold rounded-full bg-black hover:bg-black/90 text-white"
               >
-                {loading ? (
+                {loading || checkingEmail ? (
                   <>
                     <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    {checkingEmail ? 'Checking...' : 'Processing...'}
                   </>
-                ) : (
-                  'Continue'
-                )}
-              </Button>
-            </form>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Unified password entry screen
-  if (step === 'password-entry') {
-    return (
-      <div className="h-screen bg-background flex flex-col overflow-hidden">
-        <div className="p-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleBack}
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-        </div>
-
-        <div className="flex-1 flex items-center justify-center px-6">
-          <div className="w-full max-w-md">
-            <h1 className="text-2xl font-bold mb-2 text-foreground text-center">
-              Continue with your account
-            </h1>
-            <p className="text-muted-foreground text-center mb-8">
-              {email}
-            </p>
-
-            <form onSubmit={handlePasswordSubmit} className="space-y-4">
-              <div>
-                <label className="text-sm text-muted-foreground mb-2 block">
-                  Enter your password
-                </label>
-                <Input
-                  type="password"
-                  placeholder="Password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="h-12 rounded-xl"
-                  required
-                  minLength={6}
-                  autoFocus
-                />
-                <p className="text-xs text-muted-foreground mt-2">
-                  If you don't have an account, we'll create one for you
-                </p>
-              </div>
-              <Button
-                type="submit"
-                disabled={loading}
-                className="w-full h-14 text-lg font-semibold rounded-full bg-black hover:bg-black/90 text-white"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                    Processing...
-                  </>
+                ) : showPassword ? (
+                  emailExists ? 'Log in' : 'Create account'
                 ) : (
                   'Continue'
                 )}
