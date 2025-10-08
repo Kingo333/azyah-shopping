@@ -125,10 +125,10 @@ const ProtectedRoute = ({ children, roles }: ProtectedRouteProps) => {
     );
   }
 
-  // Only redirect to auth if we're certain there's no user AND auth is stable
+  // Only redirect to signup if we're certain there's no user AND auth is stable
   if (!user && !loading && authStable) {
-    if (DEBUG_AUTH) console.log('ProtectedRoute: No user detected, redirecting to auth');
-    return <Navigate to="/auth" state={{ from: location }} replace />;
+    if (DEBUG_AUTH) console.log('ProtectedRoute: No user detected, redirecting to signup');
+    return <Navigate to="/onboarding/signup" state={{ from: location }} replace />;
   }
 
   // Strict Role-based access control - ALWAYS apply if we have a user
@@ -153,9 +153,9 @@ const ProtectedRoute = ({ children, roles }: ProtectedRouteProps) => {
   }
 
   // STRICT: If we have a user but no role, block access (except for auth pages)
-  if (user && !userRole && !location.pathname.includes('/auth')) {
-    if (DEBUG_AUTH) console.log('ProtectedRoute: STRICT - User without role, redirecting to auth');
-    return <Navigate to="/auth" replace />;
+  if (user && !userRole && !location.pathname.includes('/onboarding')) {
+    if (DEBUG_AUTH) console.log('ProtectedRoute: STRICT - User without role, redirecting to signup');
+    return <Navigate to="/onboarding/signup" replace />;
   }
 
   return <>{children}</>;

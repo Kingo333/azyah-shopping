@@ -18,7 +18,7 @@ export const RetailerPortalProtectedRoute: React.FC<RetailerPortalProtectedRoute
           <h2 className="text-xl font-semibold mb-2">Access Restricted</h2>
           <p className="text-muted-foreground">Please log in to access the retailer portal.</p>
           <Button 
-            onClick={() => navigate('/auth')} 
+            onClick={() => navigate('/onboarding/signup?role=retailer')} 
             variant="outline"
             className="mt-4"
           >

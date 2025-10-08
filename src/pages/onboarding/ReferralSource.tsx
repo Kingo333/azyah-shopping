@@ -28,7 +28,7 @@ export default function ReferralSource() {
       
       if (!user) {
         toast.error('Not authenticated');
-        navigate('/auth');
+        navigate('/onboarding/signup');
         return;
       }
 

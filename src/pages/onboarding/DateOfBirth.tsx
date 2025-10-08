@@ -31,7 +31,7 @@ export default function DateOfBirth() {
       
       if (!user) {
         toast.error('Not authenticated');
-        navigate('/auth');
+        navigate('/onboarding/signup');
         return;
       }
 

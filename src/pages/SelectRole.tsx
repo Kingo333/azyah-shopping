@@ -21,7 +21,7 @@ const SelectRole = () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) {
-        navigate('/auth', { replace: true });
+        navigate('/onboarding/signup', { replace: true });
         return;
       }
 

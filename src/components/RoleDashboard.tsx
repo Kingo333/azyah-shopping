@@ -219,7 +219,7 @@ const RoleDashboard: React.FC = () => {
         <div className="text-center space-y-4">
           <h2 className="text-2xl font-bold">Welcome to Azyah</h2>
           <p className="text-muted-foreground">Please sign in to access your dashboard</p>
-          <Button onClick={() => navigate('/auth')}>
+          <Button onClick={() => navigate('/onboarding/signup')}>
             Sign In
           </Button>
         </div>

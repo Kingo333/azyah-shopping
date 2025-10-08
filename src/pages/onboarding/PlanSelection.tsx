@@ -22,7 +22,7 @@ export default function PlanSelection() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         toast.error('Please sign in first');
-        navigate('/auth');
+        navigate('/onboarding/signup');
         return;
       }
 
@@ -66,7 +66,7 @@ export default function PlanSelection() {
     
     if (!user) {
       toast.error('Not authenticated');
-      navigate('/auth');
+      navigate('/onboarding/signup');
       return;
     }
 

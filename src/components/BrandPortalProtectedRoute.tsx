@@ -18,7 +18,7 @@ export const BrandPortalProtectedRoute: React.FC<BrandPortalProtectedRouteProps>
           <h2 className="text-xl font-semibold mb-2">Access Restricted</h2>
           <p className="text-muted-foreground">Please log in to access the brand portal.</p>
           <Button 
-            onClick={() => navigate('/auth')} 
+            onClick={() => navigate('/onboarding/signup?role=brand')} 
             variant="outline"
             className="mt-4"
           >

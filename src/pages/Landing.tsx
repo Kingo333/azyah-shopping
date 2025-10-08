@@ -189,10 +189,10 @@ export default function Landing() {
           animationDelay: '0.7s',
           animationFillMode: 'both'
         }}>
-            <Button variant="ghost" size="sm" onClick={() => navigate("/auth")} className="font-light">
+            <Button variant="ghost" size="sm" onClick={() => navigate("/onboarding/signup")} className="font-light">
               Sign In
             </Button>
-            <Button variant="default" size="sm" onClick={() => navigate("/auth")} className="font-medium">
+            <Button variant="default" size="sm" onClick={() => navigate("/onboarding/signup")} className="font-medium">
               Explore
             </Button>
             {/* Debug button - only show if user exists */}
@@ -233,10 +233,10 @@ export default function Landing() {
                 </button>)}
             </nav>
             <div className="border-t border-primary/10 pt-3 sm:pt-4 space-y-2 sm:space-y-3">
-              <Button variant="ghost" size="sm" className="justify-center w-full font-light" onClick={() => navigate("/auth")}>
+              <Button variant="ghost" size="sm" className="justify-center w-full font-light" onClick={() => navigate("/onboarding/signup")}>
                 Sign In
               </Button>
-              <Button variant="default" size="sm" className="justify-center w-full font-medium" onClick={() => navigate("/auth")}>
+              <Button variant="default" size="sm" className="justify-center w-full font-medium" onClick={() => navigate("/onboarding/signup")}>
                 Explore Collection
               </Button>
             </div>
@@ -252,7 +252,7 @@ export default function Landing() {
         <LiveActivityIndicator />
         
         {/* Beauty Assistant Fab */}
-        <BeautyAssistantFab onClick={() => navigate("/auth")} />
+        <BeautyAssistantFab onClick={() => navigate("/onboarding/signup")} />
         
         {/* Enhanced Background Pattern */}
         <div className="absolute inset-0">
@@ -312,7 +312,7 @@ export default function Landing() {
                 <Button size="sm" className="group px-6 py-3 sm:px-8 sm:py-4 lg:px-8 lg:py-4 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg hover:shadow-xl transition-all duration-300 text-sm sm:text-base font-medium animate-scale-bounce" style={{
                 animationDelay: '1.4s',
                 animationFillMode: 'both'
-              }} onClick={() => navigate("/auth")}>
+              }} onClick={() => navigate("/onboarding/signup")}>
                   <span>Explore Our AI &amp; More</span>
                   <ArrowRight className="ml-2 w-4 h-4 lg:w-5 lg:h-5 group-hover:translate-x-1 transition-transform" />
                 </Button>
@@ -455,7 +455,7 @@ export default function Landing() {
 
             {/* Call to Action */}
             <div className="text-center mt-8 sm:mt-12">
-              <Button size="lg" className="px-8 py-4 bg-primary hover:bg-primary/90 text-base font-medium" onClick={() => navigate("/auth")}>
+              <Button size="lg" className="px-8 py-4 bg-primary hover:bg-primary/90 text-base font-medium" onClick={() => navigate("/onboarding/signup")}>
                 <span>Start Your Style Journey</span>
                 <ArrowRight className="ml-2 w-4 h-4" />
               </Button>
@@ -571,7 +571,7 @@ export default function Landing() {
             </div>)}
 
           <div className="text-center">
-            <Button size="lg" className="px-8 py-4 bg-primary hover:bg-primary/90" onClick={() => navigate("/auth")}>
+            <Button size="lg" className="px-8 py-4 bg-primary hover:bg-primary/90" onClick={() => navigate("/onboarding/signup")}>
               Start Discovering
               <ChevronRight className="ml-2 w-4 h-4" />
             </Button>
@@ -668,7 +668,7 @@ export default function Landing() {
                 </p>
               </div>
               
-              <Button size="lg" className="px-8 py-4 bg-primary hover:bg-primary/90 text-white shadow-2xl" onClick={() => navigate("/auth")}>
+              <Button size="lg" className="px-8 py-4 bg-primary hover:bg-primary/90 text-white shadow-2xl" onClick={() => navigate("/onboarding/signup")}>
                 Learn More <ArrowRight className="ml-2 w-5 h-5" />
               </Button>
             </div>
@@ -750,7 +750,7 @@ export default function Landing() {
             </div>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button size="lg" className="px-10 py-4 bg-primary hover:bg-primary/90 text-white shadow-2xl" onClick={() => navigate("/auth")}>
+              <Button size="lg" className="px-10 py-4 bg-primary hover:bg-primary/90 text-white shadow-2xl" onClick={() => navigate("/onboarding/signup")}>
                 Start Your Journey <ArrowRight className="ml-2 w-5 h-5" />
               </Button>
             </div>

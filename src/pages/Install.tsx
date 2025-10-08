@@ -116,7 +116,7 @@ export default function Install() {
           <div className="text-center space-y-4">
             <Button 
               variant="outline" 
-              onClick={() => navigate("/auth")}
+              onClick={() => navigate("/onboarding/signup")}
               className="w-full max-w-sm"
             >
               Continue in Browser

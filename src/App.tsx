@@ -10,7 +10,7 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 import { useSessionMonitor } from '@/hooks/useSessionMonitor';
 
 import Index from './pages/Index';
-import Auth from './pages/Auth';
+
 
 import SelectRole from './pages/SelectRole';
 import Landing from './pages/Landing';
@@ -86,7 +86,7 @@ function AppContent() {
                       <Index />
                     </ProtectedRoute>
                   } />
-                  <Route path="/auth" element={<Auth />} />
+                  
                   
                   {/* Onboarding routes */}
                   <Route path="/onboarding/intro" element={<IntroCarousel />} />

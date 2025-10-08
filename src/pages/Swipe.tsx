@@ -116,7 +116,7 @@ const Swipe = () => {
       </div>;
   }
   if (!user) {
-    navigate("/auth");
+    navigate("/onboarding/signup");
     return null;
   }
   const getCurrentCategoryDisplay = () => {
