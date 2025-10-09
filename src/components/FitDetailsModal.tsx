@@ -76,36 +76,68 @@ export const FitDetailsModal: React.FC<FitDetailsModalProps> = ({
 
   const handleAddItemsToCloset = async () => {
     try {
-      // Check if all items have public_reuse_permitted
-      const layers = fit.canvas_json?.layers || [];
-      
-      for (const layer of layers) {
-        const { data: item } = await supabase
-          .from('wardrobe_items')
-          .select('public_reuse_permitted, user_id')
-          .eq('id', layer.wardrobeItem.id)
-          .single();
-
-        if (!item?.public_reuse_permitted) {
-          toast.error("This item isn't reusable. Try other public items or upload your own.");
-          return;
-        }
-
-        // Copy item to user's closet with attribution
-        const { error } = await supabase
-          .from('wardrobe_items')
-          .insert({
-            ...layer.wardrobeItem,
-            id: undefined,
-            user_id: (await supabase.auth.getUser()).data.user?.id,
-            attribution_user_id: item.user_id,
-            source: 'community_copy'
-          });
-
-        if (error) throw error;
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error('Please sign in to add items');
+        return;
       }
 
-      toast.success('Items added to your closet');
+      // Fetch all fit_items and check permissions
+      const { data: fitItems, error: fitItemsError } = await supabase
+        .from('fit_items')
+        .select(`
+          *,
+          wardrobe_item:wardrobe_items (
+            id,
+            image_url,
+            image_bg_removed_url,
+            category,
+            color,
+            brand,
+            tags,
+            public_reuse_permitted,
+            user_id
+          )
+        `)
+        .eq('fit_id', fit.id);
+
+      if (fitItemsError) throw fitItemsError;
+      if (!fitItems || fitItems.length === 0) {
+        toast.error('No items found in this fit');
+        return;
+      }
+
+      // Check if ALL items are reusable
+      const allReusable = fitItems.every((item: any) => 
+        item.wardrobe_item?.public_reuse_permitted === true
+      );
+
+      if (!allReusable) {
+        toast.error("This item isn't reusable. Try other public items or upload your own.");
+        return;
+      }
+
+      // Copy items with attribution
+      const itemsToAdd = fitItems.map((item: any) => ({
+        user_id: user.id,
+        image_url: item.wardrobe_item.image_url,
+        image_bg_removed_url: item.wardrobe_item.image_bg_removed_url,
+        category: item.wardrobe_item.category,
+        color: item.wardrobe_item.color,
+        brand: item.wardrobe_item.brand,
+        tags: item.wardrobe_item.tags,
+        source: 'community_copy',
+        public_reuse_permitted: false,
+        attribution_user_id: item.wardrobe_item.user_id,
+      }));
+
+      const { error: insertError } = await supabase
+        .from('wardrobe_items')
+        .insert(itemsToAdd);
+
+      if (insertError) throw insertError;
+
+      toast.success(`Added ${itemsToAdd.length} items to your closet`);
       onClose();
     } catch (error) {
       console.error('Error adding items:', error);

@@ -30,21 +30,50 @@ serve(async (req) => {
       });
     }
 
-    const { canvas_json } = await req.json();
+    const { canvas_json, canvas_image_base64 } = await req.json();
 
-    // For now, return a placeholder path
-    // In production, you'd render the canvas server-side using a headless browser
-    // or canvas library, then upload to storage
+    console.log('Fit rendering requested for user:', user.id);
+
+    // If client provides base64 image, use it directly
+    if (canvas_image_base64) {
+      // Extract base64 data
+      const base64Data = canvas_image_base64.replace(/^data:image\/\w+;base64,/, '');
+      const imageBuffer = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
+      
+      // Upload to fits-renders bucket
+      const renderFileName = `${user.id}/${crypto.randomUUID()}_render.png`;
+      const { error: uploadError } = await supabaseClient.storage
+        .from('fits-renders')
+        .upload(renderFileName, imageBuffer, {
+          contentType: 'image/png',
+          upsert: false,
+        });
+
+      if (uploadError) {
+        console.error('Upload error:', uploadError);
+        throw new Error(`Failed to upload render: ${uploadError.message}`);
+      }
+
+      const { data: { publicUrl } } = supabaseClient.storage
+        .from('fits-renders')
+        .getPublicUrl(renderFileName);
+
+      console.log('Fit rendered successfully:', publicUrl);
+
+      return new Response(JSON.stringify({
+        render_path: publicUrl,
+        message: 'Render completed successfully'
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Fallback: return placeholder path for client-side rendering
     const renderPath = `${user.id}/${crypto.randomUUID()}_render.png`;
-
-    console.log('Fit rendering requested:', { canvas_json, renderPath });
-
-    // TODO: Implement actual server-side canvas rendering
-    // For now, client will handle screenshot and upload
-
+    
     return new Response(JSON.stringify({
       render_path: renderPath,
-      message: 'Render queued (client-side fallback active)'
+      message: 'Client-side rendering required - please provide canvas_image_base64'
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

@@ -89,10 +89,10 @@ export const PublicFitsGrid: React.FC<PublicFitsGridProps> = ({ onFitClick }) =>
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <span className="flex items-center gap-1">
                 <Heart className="w-3 h-3" />
-                {fit.like_count}
+                {fit.like_count} likes
               </span>
-              <span>•</span>
-              <span>{formatDistanceToNow(new Date(fit.created_at), { addSuffix: true })}</span>
+              <span>·</span>
+              <span>{formatDistanceToNow(new Date(fit.created_at), { addSuffix: false })}</span>
             </div>
           </div>
         </Card>
