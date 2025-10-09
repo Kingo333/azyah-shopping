@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useMemo, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Plus, Filter, MoreVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -16,14 +16,28 @@ import { useDressMeAnalytics } from '@/hooks/useDressMeAnalytics';
 
 export default function DressMeWardrobe() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { data: allItems = [], isLoading } = useWardrobeItems();
   const { data: userFits = [] } = usePublicFits();
   const analytics = useDressMeAnalytics();
 
-  const [activeTab, setActiveTab] = useState<'clothes' | 'outfits'>('clothes');
-  const [selectedCategory, setSelectedCategory] = useState('all');
+  // Get initial state from URL params
+  const [activeTab, setActiveTab] = useState<'clothes' | 'outfits'>(
+    (searchParams.get('tab') as 'clothes' | 'outfits') || 'clothes'
+  );
+  const [selectedCategory, setSelectedCategory] = useState(
+    searchParams.get('category') || 'all'
+  );
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+
+  // Update URL params when tab or category changes
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (activeTab !== 'clothes') params.set('tab', activeTab);
+    if (selectedCategory !== 'all') params.set('category', selectedCategory);
+    setSearchParams(params, { replace: true });
+  }, [activeTab, selectedCategory, setSearchParams]);
 
   React.useEffect(() => {
     analytics.open();

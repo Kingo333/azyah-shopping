@@ -26,6 +26,7 @@ import DressMe from './pages/DressMe';
 import DressMeWardrobe from './pages/DressMeWardrobe';
 import DressMeCanvas from './pages/DressMeCanvas';
 import DressMeCommunity from './pages/DressMeCommunity';
+import DressMeOutfitDetail from './pages/DressMeOutfitDetail';
 import Feed from './pages/Feed';
 import FashionFeed from './pages/FashionFeed';
 import Forum from './pages/Forum';
@@ -161,6 +162,11 @@ function AppContent() {
                   <Route path="/dress-me/community" element={
                     <ProtectedRoute roles={['shopper', 'admin']}>
                       <DressMeCommunity />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/dress-me/outfit/:id" element={
+                    <ProtectedRoute roles={['shopper', 'admin']}>
+                      <DressMeOutfitDetail />
                     </ProtectedRoute>
                   } />
                   <Route path="/feed" element={
