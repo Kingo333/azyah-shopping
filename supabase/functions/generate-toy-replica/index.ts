@@ -82,8 +82,8 @@ serve(async (req) => {
 
     console.log('🤖 Calling OpenAI to generate LEGO mini-figure...');
 
-    // Call OpenAI to generate LEGO mini-figure
-    const openAIResponse = await fetch('https://api.openai.com/v1/images/generations', {
+    // Call OpenAI chat completions with vision and image generation
+    const openAIResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${openAIApiKey}`,
@@ -91,20 +91,27 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: 'gpt-image-1',
-        prompt: `Transform this person into a LEGO mini-figure character with transparent background. The mini-figure should have:
-- Classic LEGO mini-figure proportions and style
-- Cylindrical head with printed facial features
-- Block-shaped torso and arms
-- Short legs typical of LEGO mini-figures
-- Maintain the person's key characteristics (hair color, style, clothing colors)
-- Professional toy-like appearance
-- Clean transparent background
-- High quality render`,
-        n: 1,
-        size: '1024x1024',
-        quality: 'high',
+        messages: [
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'text',
+                text: 'Transform this person into a LEGO mini-figure character with transparent background. The mini-figure should have: Classic LEGO mini-figure proportions and style, cylindrical head with printed facial features, block-shaped torso and arms, short legs typical of LEGO mini-figures. Maintain the person\'s key characteristics (hair color, style, clothing colors). Professional toy-like appearance with clean transparent background and high quality render.'
+              },
+              {
+                type: 'image_url',
+                image_url: {
+                  url: imageDataUrl
+                }
+              }
+            ]
+          }
+        ],
+        modalities: ['image', 'text'],
         background: 'transparent',
-        output_format: 'png'
+        output_format: 'png',
+        quality: 'high'
       }),
     });
 
@@ -117,11 +124,15 @@ serve(async (req) => {
     const openAIData = await openAIResponse.json();
     console.log('✅ OpenAI generation successful');
 
-    // The response contains base64 image data
-    const generatedImageBase64 = openAIData.data[0].b64_json;
-    if (!generatedImageBase64) {
+    // Extract the base64 image from the response
+    const generatedImage = openAIData.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+    if (!generatedImage) {
       throw new Error('No image data returned from OpenAI');
     }
+
+    // Extract base64 data (remove data:image/png;base64, prefix if present)
+    const base64Match = generatedImage.match(/base64,(.+)/);
+    const generatedImageBase64 = base64Match ? base64Match[1] : generatedImage;
 
     // Convert base64 to blob
     const binaryString = atob(generatedImageBase64);
