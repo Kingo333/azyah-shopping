@@ -87,7 +87,7 @@ const ToyReplica = () => {
     if (!toyReplicaId || !user) {
       toast({
         title: "Error",
-        description: "Please upload an image first and make sure you're logged in",
+        description: "Please upload an image first",
         variant: "destructive"
       });
       return;
@@ -102,35 +102,35 @@ const ToyReplica = () => {
     setResult(null);
     
     try {
-      console.log('Starting toy replica generation for:', toyReplicaId);
+      console.log('🎨 Generating LEGO mini-figure for:', toyReplicaId);
       
-      const response = await supabase.functions.invoke('generate-toy-replica', {
+      const { data, error } = await supabase.functions.invoke('generate-toy-replica', {
         body: { toyReplicaId }
       });
 
-      if (response.error) {
-        throw new Error(response.error.message || 'Generation failed');
+      if (error) {
+        console.error('❌ Generation error:', error);
+        throw new Error(error.message || 'Generation failed');
       }
 
-      const { resultUrl } = response.data;
-      if (!resultUrl) {
+      if (!data?.resultUrl) {
         throw new Error('No result URL returned');
       }
       
-      setResult(resultUrl);
-      // Update the counter after successful generation
+      console.log('✅ Generation successful! Result:', data.resultUrl);
+      setResult(data.resultUrl);
       setGenerationsUsed(prev => prev + 1);
+      setRefreshResults(prev => prev + 1);
       
       toast({
         title: "Success!",
         description: "Your LEGO mini-figure has been created!",
       });
     } catch (error) {
-      console.error('Error generating toy replica:', error);
-      const errorMsg = error instanceof Error ? error.message : 'Unknown error occurred';
+      console.error('❌ Generation failed:', error);
       toast({
         title: "Generation Failed",
-        description: errorMsg,
+        description: error instanceof Error ? error.message : 'Unknown error',
         variant: "destructive"
       });
     } finally {
@@ -341,18 +341,10 @@ const ToyReplica = () => {
                       backgroundSize: '20px 20px'
                     }}
                   >
-                     <SmartImage 
-                      src={result} 
+                    <SmartImage 
+                      src={result}
                       alt="Generated LEGO mini-figure" 
                       className="w-full rounded-lg"
-                      onError={() => {
-                        console.error('Image failed to load:', result);
-                        toast({
-                          title: "Image Load Error",
-                          description: "Failed to load the generated image",
-                          variant: "destructive"
-                        });
-                      }}
                     />
                   </div>
                   <Button 
