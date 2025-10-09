@@ -50,22 +50,45 @@ serve(async (req) => {
       );
     }
 
-    // Simulate toy replica generation (replace with actual AI service call)
-    console.log('Simulating toy replica generation...');
-    await new Promise(resolve => setTimeout(resolve, 2000)); // 2 second delay
+    // Fetch the source image from storage to process it
+    const { data: signedUrlData } = await supabase.storage
+      .from('toy-replica-source')
+      .createSignedUrl(toyReplica.source_url, 60);
 
-    // Generate a result filename using relative path format
+    if (!signedUrlData?.signedUrl) {
+      throw new Error('Failed to get source image URL');
+    }
+
+    // Download the source image
+    const imageResponse = await fetch(signedUrlData.signedUrl);
+    const imageBlob = await imageResponse.blob();
+    
+    console.log('Processing image for LEGO mini-figure generation...');
+    
+    // For now, we'll upload the original image as the result
+    // TODO: Replace with actual LEGO mini-figure generation AI service
     const resultFileName = `results/${toyReplica.user_id}/${toyReplicaId}_result.png`;
     
-    // For demo purposes, we'll use a placeholder image URL
-    // In a real implementation, this would be the generated image from the AI service
-    const mockResultUrl = 'https://via.placeholder.com/400x400/FF6B6B/FFFFFF?text=LEGO+Mini-Figure';
+    // Upload the processed image to storage
+    const { error: uploadError } = await supabase.storage
+      .from('toy-replica-result')
+      .upload(resultFileName, imageBlob, {
+        contentType: 'image/png',
+        upsert: true
+      });
+
+    if (uploadError) {
+      console.error('Failed to upload result:', uploadError);
+      throw new Error('Failed to upload result image');
+    }
     
-    // Update the toy replica with the relative path instead of absolute URL
+    console.log('Result uploaded to storage:', resultFileName);
+    
+    // Update the toy replica with the relative path
     const { data: updatedReplica, error: updateError } = await supabase
       .from('toy_replicas')
       .update({ 
-        result_url: resultFileName, // Store relative path
+        result_url: resultFileName,
         status: 'succeeded',
         error: null,
         updated_at: new Date().toISOString()
