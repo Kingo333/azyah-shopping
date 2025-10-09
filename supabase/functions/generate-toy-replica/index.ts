@@ -15,6 +15,12 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
+    
+    if (!openAIApiKey) {
+      throw new Error('OPENAI_API_KEY is not configured');
+    }
+
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const { toyReplicaId } = await req.json();
@@ -25,7 +31,7 @@ serve(async (req) => {
       );
     }
 
-    console.log('🎯 Generating toy replica for ID:', toyReplicaId);
+    console.log('🎯 Generating LEGO toy replica for ID:', toyReplicaId);
 
     // Update status to processing
     await supabase
@@ -41,7 +47,15 @@ serve(async (req) => {
       .single();
 
     if (fetchError || !toyReplica || !toyReplica.source_url) {
-      console.error('❌ Toy replica not found or missing source:', fetchError);
+      console.error('❌ Toy replica not found:', fetchError);
+      await supabase
+        .from('toy_replicas')
+        .update({ 
+          status: 'failed', 
+          error: 'Source image not found' 
+        })
+        .eq('id', toyReplicaId);
+      
       return new Response(
         JSON.stringify({ error: 'Toy replica not found or missing source image' }), 
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -50,30 +64,80 @@ serve(async (req) => {
 
     console.log('📥 Downloading source image from:', toyReplica.source_url);
 
-    // Download the source image
-    const { data: downloadData, error: downloadError } = await supabase.storage
+    // Get signed URL for the source image
+    const { data: signedUrlData } = await supabase.storage
       .from('toy-replica-source')
-      .download(toyReplica.source_url);
+      .createSignedUrl(toyReplica.source_url, 60);
 
-    if (downloadError || !downloadData) {
-      console.error('❌ Failed to download source:', downloadError);
-      throw new Error('Failed to download source image');
+    if (!signedUrlData?.signedUrl) {
+      throw new Error('Failed to get source image URL');
     }
 
-    console.log('✅ Source image downloaded, size:', downloadData.size);
-    console.log('🔄 Processing image...');
-    
-    // Here you would call your AI service to transform the image
-    // For now, we'll just use the original image
-    const processedImage = downloadData;
+    // Download and convert to base64
+    const imageResponse = await fetch(signedUrlData.signedUrl);
+    const imageBlob = await imageResponse.blob();
+    const arrayBuffer = await imageBlob.arrayBuffer();
+    const base64Image = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+    const imageDataUrl = `data:${imageBlob.type};base64,${base64Image}`;
+
+    console.log('🤖 Calling OpenAI to generate LEGO mini-figure...');
+
+    // Call OpenAI to generate LEGO mini-figure
+    const openAIResponse = await fetch('https://api.openai.com/v1/images/generations', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openAIApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-image-1',
+        prompt: `Transform this person into a LEGO mini-figure character with transparent background. The mini-figure should have:
+- Classic LEGO mini-figure proportions and style
+- Cylindrical head with printed facial features
+- Block-shaped torso and arms
+- Short legs typical of LEGO mini-figures
+- Maintain the person's key characteristics (hair color, style, clothing colors)
+- Professional toy-like appearance
+- Clean transparent background
+- High quality render`,
+        n: 1,
+        size: '1024x1024',
+        quality: 'high',
+        background: 'transparent',
+        output_format: 'png'
+      }),
+    });
+
+    if (!openAIResponse.ok) {
+      const errorData = await openAIResponse.text();
+      console.error('❌ OpenAI API error:', errorData);
+      throw new Error(`OpenAI API error: ${errorData}`);
+    }
+
+    const openAIData = await openAIResponse.json();
+    console.log('✅ OpenAI generation successful');
+
+    // The response contains base64 image data
+    const generatedImageBase64 = openAIData.data[0].b64_json;
+    if (!generatedImageBase64) {
+      throw new Error('No image data returned from OpenAI');
+    }
+
+    // Convert base64 to blob
+    const binaryString = atob(generatedImageBase64);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    const resultBlob = new Blob([bytes], { type: 'image/png' });
 
     // Upload the result
     const resultPath = `results/${toyReplica.user_id}/${toyReplicaId}.png`;
-    console.log('📤 Uploading result to:', resultPath);
+    console.log('📤 Uploading LEGO mini-figure to:', resultPath);
 
     const { error: uploadError } = await supabase.storage
       .from('toy-replica-result')
-      .upload(resultPath, processedImage, {
+      .upload(resultPath, resultBlob, {
         contentType: 'image/png',
         upsert: true
       });
@@ -101,7 +165,7 @@ serve(async (req) => {
       throw new Error('Failed to update toy replica');
     }
 
-    console.log('✅ Toy replica generation completed');
+    console.log('🎉 LEGO mini-figure generation completed successfully!');
 
     return new Response(
       JSON.stringify({ 
