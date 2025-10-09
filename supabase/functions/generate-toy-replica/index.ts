@@ -77,7 +77,16 @@ serve(async (req) => {
     const imageResponse = await fetch(signedUrlData.signedUrl);
     const imageBlob = await imageResponse.blob();
     const arrayBuffer = await imageBlob.arrayBuffer();
-    const base64Image = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+    
+    // Convert array buffer to base64 in chunks to avoid stack overflow
+    const uint8Array = new Uint8Array(arrayBuffer);
+    let binaryString = '';
+    const chunkSize = 0x8000; // 32KB chunks
+    for (let i = 0; i < uint8Array.length; i += chunkSize) {
+      const chunk = uint8Array.subarray(i, Math.min(i + chunkSize, uint8Array.length));
+      binaryString += String.fromCharCode.apply(null, Array.from(chunk));
+    }
+    const base64Image = btoa(binaryString);
     const imageDataUrl = `data:${imageBlob.type};base64,${base64Image}`;
 
     console.log('🤖 Calling OpenAI to generate LEGO mini-figure...');
