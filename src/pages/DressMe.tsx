@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Save, Share2, Upload, Palette, Layers } from 'lucide-react';
 import { InteractiveCanvas, CanvasLayer } from '@/components/InteractiveCanvas';
@@ -7,7 +7,7 @@ import { WardrobeThumbnailRail } from '@/components/WardrobeThumbnailRail';
 import { BackgroundPicker } from '@/components/BackgroundPicker';
 import { WardrobeUploadModal } from '@/components/WardrobeUploadModal';
 import { useWardrobeItems, WardrobeItem } from '@/hooks/useWardrobeItems';
-import { useSaveFit } from '@/hooks/useFits';
+import { useSaveFit, usePublicFits } from '@/hooks/useFits';
 import { toast } from 'sonner';
 import { SEOHead } from '@/components/SEOHead';
 import { Card } from '@/components/ui/card';
@@ -16,10 +16,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { PublicFitsGrid } from '@/components/PublicFitsGrid';
+import { FitDetailsModal } from '@/components/FitDetailsModal';
+import { useDressMeAnalytics } from '@/hooks/useDressMeAnalytics';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function DressMe() {
   const { data: allItems = [], isLoading } = useWardrobeItems();
+  const { data: publicFits = [] } = usePublicFits();
   const saveFit = useSaveFit();
+  const analytics = useDressMeAnalytics();
 
   // State
   const [layers, setLayers] = useState<CanvasLayer[]>([]);
@@ -31,6 +37,13 @@ export default function DressMe() {
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
   const [fitTitle, setFitTitle] = useState('');
   const [isPublic, setIsPublic] = useState(false);
+  const [selectedPublicFit, setSelectedPublicFit] = useState<any>(null);
+  const [isFitDetailsOpen, setIsFitDetailsOpen] = useState(false);
+
+  // Track page open
+  useEffect(() => {
+    analytics.open();
+  }, []);
 
   // Filter items by category
   const filteredItems = useMemo(() => {
@@ -53,6 +66,7 @@ export default function DressMe() {
       zIndex: layers.length,
     };
     setLayers([...layers, newLayer]);
+    analytics.addItem(item.id);
     toast.success('Item added to canvas');
   }, [layers]);
 
@@ -79,16 +93,74 @@ export default function DressMe() {
       transform: layer.transform,
     }));
 
-    saveFit.mutate({
+    const result = await saveFit.mutateAsync({
       title: fitTitle || undefined,
       canvas_json: canvasData,
       is_public: isPublic,
       items: fitItems,
     });
 
+    if (result) {
+      analytics.saveFit(result.id, isPublic);
+    }
+
     setIsSaveModalOpen(false);
     setFitTitle('');
     setIsPublic(false);
+  };
+
+  // Handle using a public fit
+  const handleUsePublicFit = async (fitId: string) => {
+    try {
+      const { data: fit, error } = await supabase
+        .from('fits')
+        .select('canvas_json, user_id')
+        .eq('id', fitId)
+        .single();
+
+      if (error) throw error;
+
+      // Load canvas from JSON
+      if (fit.canvas_json) {
+        const canvasData = fit.canvas_json as any;
+        
+        // Fetch wardrobe items for this fit
+        const wardrobeItemIds = canvasData.layers?.map((l: any) => l.wardrobeItemId) || [];
+        
+        if (wardrobeItemIds.length > 0) {
+          const { data: items, error: itemsError } = await supabase
+            .from('wardrobe_items')
+            .select('*')
+            .in('id', wardrobeItemIds);
+
+          if (!itemsError && items) {
+            const newLayers: CanvasLayer[] = canvasData.layers.map((layer: any) => {
+              const item = items.find(i => i.id === layer.wardrobeItemId);
+              if (!item) return null;
+
+              return {
+                id: `layer-${Date.now()}-${Math.random()}`,
+                wardrobeItem: item,
+                transform: layer.transform,
+                visible: layer.visible !== false,
+                zIndex: layer.zIndex,
+              };
+            }).filter(Boolean);
+
+            setLayers(newLayers);
+            if (canvasData.background) {
+              setBackground(canvasData.background);
+            }
+            
+            analytics.usePublicFit(fitId, fit.user_id);
+            toast.success('Fit loaded! You can now customize it.');
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error loading fit:', error);
+      toast.error('Failed to load fit');
+    }
   };
 
   // Onboarding if no items
@@ -212,11 +284,12 @@ export default function DressMe() {
                 </TabsContent>
 
                 <TabsContent value="community" className="space-y-4">
-                  <div className="h-96 rounded-lg border-2 border-dashed border-border flex items-center justify-center">
-                    <p className="text-sm text-muted-foreground">
-                      Community fits coming soon
-                    </p>
-                  </div>
+                  <PublicFitsGrid 
+                    onFitClick={(fit) => {
+                      setSelectedPublicFit(fit);
+                      setIsFitDetailsOpen(true);
+                    }}
+                  />
                 </TabsContent>
               </Tabs>
             </div>
@@ -266,6 +339,14 @@ export default function DressMe() {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Fit Details Modal */}
+        <FitDetailsModal
+          fit={selectedPublicFit}
+          open={isFitDetailsOpen}
+          onClose={() => setIsFitDetailsOpen(false)}
+          onUseThisFit={handleUsePublicFit}
+        />
       </div>
     </>
   );

@@ -1,1 +1,16 @@
 project_id = "klwolsopucgswhtdlsps"
+
+[functions.bg-remove]
+verify_jwt = true
+
+[functions.auto-tag]
+verify_jwt = true
+
+[functions.render-fit]
+verify_jwt = true
+
+[functions.public-fits]
+verify_jwt = false
+
+[functions.moderation-flag]
+verify_jwt = true

@@ -54,24 +54,12 @@ export const usePublicFits = (limit = 20) => {
   return useQuery({
     queryKey: ['public-fits', limit],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('fits')
-        .select(`
-          *,
-          users:user_id (
-            id,
-            username,
-            name,
-            avatar_url
-          )
-        `)
-        .eq('is_public', true)
-        .order('like_count', { ascending: false })
-        .order('created_at', { ascending: false })
-        .limit(limit);
+      const { data, error } = await supabase.functions.invoke('public-fits', {
+        body: { sort: 'popular', limit, offset: 0 }
+      });
 
       if (error) throw error;
-      return data;
+      return data.fits || [];
     },
   });
 };
