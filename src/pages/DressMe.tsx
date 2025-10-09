@@ -79,14 +79,22 @@ export default function DressMe() {
     return allItems.filter(item => item.category === selectedCategory);
   }, [allItems, selectedCategory]);
 
-  // Handle adding item to canvas
+  // Handle adding item to canvas - with duplicate check
   const handleAddItemToCanvas = useCallback((item: WardrobeItem) => {
+    // Prevent adding the same item multiple times
+    const isDuplicate = layers.some(layer => layer.wardrobeItem.id === item.id);
+    if (isDuplicate) {
+      console.log('Preventing duplicate item from being added to canvas');
+      toast.info('Item is already on the canvas');
+      return;
+    }
+
     const newLayer: CanvasLayer = {
       id: `layer-${Date.now()}-${Math.random()}`,
       wardrobeItem: item,
       transform: {
-        x: 0,
-        y: 0,
+        x: 300,
+        y: 200,
         scale: 1,
         rotation: 0,
       },
@@ -225,13 +233,20 @@ export default function DressMe() {
     }
   }, [analytics]);
 
-  // Handle item added from upload
+  // Handle item added from upload - with safeguard against duplicates
   const handleItemAdded = useCallback((itemId: string) => {
+    // Check if this item is already on the canvas
+    const isAlreadyOnCanvas = layers.some(layer => layer.wardrobeItem.id === itemId);
+    if (isAlreadyOnCanvas) {
+      console.log('Item already on canvas, skipping duplicate add');
+      return;
+    }
+
     const item = allItems.find(i => i.id === itemId);
     if (item) {
       handleAddItemToCanvas(item);
     }
-  }, [allItems, handleAddItemToCanvas]);
+  }, [allItems, layers, handleAddItemToCanvas]);
 
   // Onboarding check
   if (!isLoading && allItems.length === 0) {

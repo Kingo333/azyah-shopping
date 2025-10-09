@@ -172,10 +172,16 @@ export const useAiAssets = () => {
   };
 
   useEffect(() => {
-    if (debouncedUser) {
+    let isMounted = true;
+    
+    if (debouncedUser && isMounted) {
       fetchAssets();
     }
-  }, [debouncedUser?.id]); // Only depend on user ID, not the fetchAssets function
+
+    return () => {
+      isMounted = false;
+    };
+  }, [debouncedUser?.id]); // Only depend on user ID
 
   const deleteAssets = async (assetIds: string[]) => {
     if (!user) {
