@@ -2343,6 +2343,8 @@ export type Database = {
       }
       user_credits: {
         Row: {
+          bg_removals_quota_monthly: number | null
+          bg_removals_used_monthly: number | null
           created_at: string
           credits_remaining: number
           credits_used_today: number
@@ -2352,6 +2354,8 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          bg_removals_quota_monthly?: number | null
+          bg_removals_used_monthly?: number | null
           created_at?: string
           credits_remaining?: number
           credits_used_today?: number
@@ -2361,6 +2365,8 @@ export type Database = {
           user_id: string
         }
         Update: {
+          bg_removals_quota_monthly?: number | null
+          bg_removals_used_monthly?: number | null
           created_at?: string
           credits_remaining?: number
           credits_used_today?: number

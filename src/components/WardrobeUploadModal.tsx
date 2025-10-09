@@ -81,23 +81,47 @@ export const WardrobeUploadModal: React.FC<WardrobeUploadModalProps> = ({
     setCurrentStep('processing');
 
     try {
-      // Call bg-remove edge function
+      // Call bg-remove edge function with timeout
       const formData = new FormData();
       formData.append('file', file);
 
       setProgress(30);
-      const { data: bgRemoveData, error: bgRemoveError } = await supabase.functions.invoke('bg-remove', {
+
+      const bgRemovalPromise = supabase.functions.invoke('bg-remove', {
         body: formData
       });
 
+      // Add 30 second timeout
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Background removal timed out. Please try again.')), 30000)
+      );
+
+      const { data: bgRemoveData, error: bgRemoveError } = await Promise.race([
+        bgRemovalPromise,
+        timeoutPromise
+      ]) as any;
+
       if (bgRemoveError) {
-        if (bgRemoveError.message?.includes('quota')) {
-          toast.error("You've reached your monthly background removals. Upgrade for unlimited.");
+        console.error('Background removal error:', bgRemoveError);
+        
+        // Check for specific error types
+        if (bgRemoveError.message?.includes('Quota exceeded') || bgRemoveError.message?.includes('quota')) {
+          toast.error("You've reached your monthly background removal limit. Upgrade for unlimited.");
+        } else if (bgRemoveError.message?.includes('LOVABLE_API_KEY')) {
+          toast.error('Service configuration error. Please contact support.');
         } else {
-          throw bgRemoveError;
+          toast.error(bgRemoveError.message || 'Failed to remove background. Please try again.');
         }
+        
+        // Reset to allow retry
+        setCurrentStep('upload');
+        setProgress(0);
         setIsProcessing(false);
         return;
+      }
+
+      if (!bgRemoveData?.image_path) {
+        throw new Error('No processed image returned. Please try again.');
       }
 
       setProgress(60);
@@ -110,22 +134,34 @@ export const WardrobeUploadModal: React.FC<WardrobeUploadModalProps> = ({
       setBgRemovedPreview(publicUrl);
       setProgress(70);
 
-      // Call auto-tag edge function
-      const { data: tagData, error: tagError } = await supabase.functions.invoke('auto-tag', {
-        body: { image_path: bgRemoveData.image_path }
-      });
+      // Call auto-tag edge function (optional, don't block on failure)
+      try {
+        const { data: tagData } = await supabase.functions.invoke('auto-tag', {
+          body: { image_path: bgRemoveData.image_path }
+        });
 
-      if (!tagError && tagData) {
-        setCategory(tagData.category || '');
-        setColor(tagData.color_primary || '');
-        setTags(tagData.suggested_tags || []);
+        if (tagData && !tagData.error) {
+          setCategory(tagData.category || '');
+          setColor(tagData.color_primary || '');
+          setTags(tagData.suggested_tags || []);
+        }
+      } catch (tagError) {
+        console.warn('Auto-tagging failed (non-critical):', tagError);
+        // Continue without tags - this is optional
       }
 
       setProgress(100);
       setCurrentStep('metadata');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error processing image:', error);
-      toast.error('We couldn\'t remove the background. Try a clearer photo or different lighting.');
+      toast.error(error.message || 'We couldn\'t remove the background. Try a clearer photo or different lighting.');
+      
+      // Reset to upload state so user can retry
+      setCurrentStep('upload');
+      setProgress(0);
+      setSelectedFile(null);
+      setPreviewUrl(null);
+      setBgRemovedPreview(null);
     } finally {
       setIsProcessing(false);
     }

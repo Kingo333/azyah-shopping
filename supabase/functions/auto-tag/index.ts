@@ -31,16 +31,27 @@ serve(async (req) => {
     }
 
     const { image_path } = await req.json();
+    
+    if (!image_path) {
+      throw new Error('No image_path provided');
+    }
 
-    // Get image URL
+    console.log('Auto-tagging image:', image_path);
+
+    // Get public URL for the image
     const { data: { publicUrl } } = supabaseClient.storage
       .from('closet-items')
       .getPublicUrl(image_path);
 
-    // Use Lovable AI for tagging
+    console.log('Image URL:', publicUrl);
+
+    // Use Lovable AI to analyze the image
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    if (!LOVABLE_API_KEY) {
+      throw new Error('LOVABLE_API_KEY not configured');
+    }
+
+    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${LOVABLE_API_KEY}`,
@@ -51,62 +62,89 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: 'You are a fashion AI assistant. Analyze clothing images and provide categorization.'
+            content: 'You are a fashion expert analyzing clothing items. Return ONLY valid JSON with category, color_primary, and suggested_tags array.'
           },
           {
             role: 'user',
-            content: `Analyze this clothing item image at ${publicUrl} and return JSON with: category (one of: top, bottom, dress, outerwear, shoes, bag, accessory), color_primary (main color), suggested_tags (array of 3-5 style/brand keywords)`
+            content: [
+              {
+                type: 'text',
+                text: 'Analyze this clothing item and provide: 1) category (e.g., "tops", "bottoms", "dresses", "outerwear", "shoes", "accessories"), 2) primary color, 3) suggested tags (e.g., "casual", "formal", "summer", "winter"). Return as JSON: {"category": "...", "color_primary": "...", "suggested_tags": [...]}'
+              },
+              {
+                type: 'image_url',
+                image_url: { url: publicUrl }
+              }
+            ]
           }
         ],
-        tools: [{
-          type: 'function',
-          function: {
-            name: 'tag_clothing',
-            description: 'Tag a clothing item with category and attributes',
-            parameters: {
-              type: 'object',
-              properties: {
-                category: {
-                  type: 'string',
-                  enum: ['top', 'bottom', 'dress', 'outerwear', 'shoes', 'bag', 'accessory']
+        tools: [
+          {
+            type: 'function',
+            function: {
+              name: 'tag_clothing_item',
+              description: 'Tag a clothing item with category, color, and style tags',
+              parameters: {
+                type: 'object',
+                properties: {
+                  category: {
+                    type: 'string',
+                    description: 'Main category of the clothing item'
+                  },
+                  color_primary: {
+                    type: 'string',
+                    description: 'Primary color of the item'
+                  },
+                  suggested_tags: {
+                    type: 'array',
+                    items: { type: 'string' },
+                    description: 'Style and occasion tags'
+                  }
                 },
-                color_primary: { type: 'string' },
-                suggested_tags: {
-                  type: 'array',
-                  items: { type: 'string' }
-                }
-              },
-              required: ['category', 'color_primary', 'suggested_tags']
+                required: ['category', 'color_primary', 'suggested_tags'],
+                additionalProperties: false
+              }
             }
           }
-        }],
-        tool_choice: { type: 'function', function: { name: 'tag_clothing' } }
-      })
+        ],
+        tool_choice: { type: 'function', function: { name: 'tag_clothing_item' } }
+      }),
     });
 
-    const data = await response.json();
-    
-    // Extract function call result
-    const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
-    const result = toolCall ? JSON.parse(toolCall.function.arguments) : {
-      category: 'accessory',
-      color_primary: 'unknown',
-      suggested_tags: []
-    };
+    if (!aiResponse.ok) {
+      console.error('AI analysis failed:', aiResponse.status, await aiResponse.text());
+      throw new Error(`AI analysis failed: ${aiResponse.statusText}`);
+    }
+
+    const aiData = await aiResponse.json();
+    console.log('AI response:', JSON.stringify(aiData, null, 2));
+
+    const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
+    const result = toolCall?.function?.arguments 
+      ? JSON.parse(toolCall.function.arguments)
+      : {
+          category: 'clothing',
+          color_primary: 'unknown',
+          suggested_tags: []
+        };
+
+    console.log('Parsed result:', result);
 
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error) {
-    console.error('Error:', error);
-    return new Response(JSON.stringify({ 
-      error: error.message,
-      category: 'accessory',
+    console.error('Error in auto-tag function:', error);
+    
+    // Return default values instead of error to not block upload
+    return new Response(JSON.stringify({
+      category: 'clothing',
       color_primary: 'unknown',
-      suggested_tags: []
+      suggested_tags: [],
+      error: error.message
     }), {
-      status: 200, // Return 200 with defaults on error
+      status: 200, // Return 200 with defaults to not block workflow
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }

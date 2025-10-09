@@ -193,10 +193,18 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    console.error('Error:', error);
+    const timestamp = new Date().toISOString();
+    console.error(`[${timestamp}] Error in bg-remove:`, error);
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    });
+    
     return new Response(JSON.stringify({ 
       error: error.message,
-      message: 'We couldn\'t remove the background. Try a clearer photo or different lighting.'
+      message: 'We couldn\'t remove the background. Try a clearer photo or different lighting.',
+      timestamp
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
