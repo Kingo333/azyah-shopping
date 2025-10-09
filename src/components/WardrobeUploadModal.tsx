@@ -92,20 +92,24 @@ export const WardrobeUploadModal: React.FC<WardrobeUploadModalProps> = ({
       // Upload processed image to storage
       const fileName = `${user!.id}/${Date.now()}_${file.name.replace(/\.[^/.]+$/, '')}.png`;
       
+      console.log('Uploading to wardrobe bucket:', fileName);
       const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('closet-items')
+        .from('wardrobe')
         .upload(fileName, processedBlob, {
           contentType: 'image/png',
           upsert: false
         });
 
       if (uploadError) {
+        console.error('Upload error:', uploadError);
         throw new Error(`Upload failed: ${uploadError.message}`);
       }
 
+      console.log('Upload successful:', uploadData);
+
       // Get public URL for preview
       const { data: { publicUrl } } = supabase.storage
-        .from('closet-items')
+        .from('wardrobe')
         .getPublicUrl(fileName);
 
       setBgRemovedPreview(publicUrl);
@@ -151,10 +155,8 @@ export const WardrobeUploadModal: React.FC<WardrobeUploadModalProps> = ({
     setIsProcessing(true);
 
     try {
-      // Extract path from preview URL
-      const urlParts = bgRemovedPreview.split('/');
-      const imagePath = `${urlParts[urlParts.length - 2]}/${urlParts[urlParts.length - 1]}`;
-
+      console.log('Saving item to database with URL:', bgRemovedPreview);
+      
       const newItem = await addItem.mutateAsync({
         image_url: bgRemovedPreview,
         image_bg_removed_url: bgRemovedPreview,
@@ -167,10 +169,11 @@ export const WardrobeUploadModal: React.FC<WardrobeUploadModalProps> = ({
         source: 'upload',
         public_reuse_permitted: publicReuse,
         attribution_user_id: null,
-        thumb_path: imagePath.replace('.png', '_thumb.webp'),
+        thumb_path: null,
       });
 
-      toast.success('Added to your closet');
+      console.log('Item saved successfully:', newItem);
+      toast.success('Item added to your wardrobe!');
       
       if (newItem && onItemAdded) {
         onItemAdded(newItem.id);
