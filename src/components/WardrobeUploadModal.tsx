@@ -81,14 +81,23 @@ export const WardrobeUploadModal: React.FC<WardrobeUploadModalProps> = ({
     setCurrentStep('processing');
 
     try {
-      // Call bg-remove edge function with timeout
-      const formData = new FormData();
-      formData.append('file', file);
-
       setProgress(30);
 
+      // Convert file to base64 for edge function
+      const reader = new FileReader();
+      const base64Promise = new Promise<string>((resolve, reject) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      const base64Image = await base64Promise;
+
       const bgRemovalPromise = supabase.functions.invoke('bg-remove', {
-        body: formData
+        body: { 
+          image: base64Image,
+          filename: file.name 
+        }
       });
 
       // Add 30 second timeout
