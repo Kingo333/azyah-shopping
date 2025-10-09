@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import React, { useState, useEffect } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -38,6 +38,27 @@ export const WardrobeUploadModal: React.FC<WardrobeUploadModalProps> = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
   const [currentStep, setCurrentStep] = useState<'upload' | 'processing' | 'metadata'>('upload');
+  const [quota, setQuota] = useState<{ remaining: number; total: number } | null>(null);
+
+  useEffect(() => {
+    if (isOpen && user) {
+      fetchQuota();
+    }
+  }, [isOpen, user]);
+
+  const fetchQuota = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('bg-remove', {
+        body: { action: 'check_quota' }
+      });
+      
+      if (!error && data?.quota) {
+        setQuota(data.quota);
+      }
+    } catch (error) {
+      console.error('Error fetching quota:', error);
+    }
+  };
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     accept: {

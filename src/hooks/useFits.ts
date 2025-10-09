@@ -73,6 +73,7 @@ export const useSaveFit = () => {
     mutationFn: async (fitData: {
       title?: string;
       canvas_json: any;
+      canvas_image_base64?: string;
       render_path?: string;
       is_public?: boolean;
       occasion?: string;
@@ -84,6 +85,21 @@ export const useSaveFit = () => {
     }) => {
       if (!user) throw new Error('User not authenticated');
 
+      // Call render-fit edge function if base64 provided
+      let renderPath = fitData.render_path || 'placeholder.png';
+      if (fitData.canvas_image_base64) {
+        const { data: renderData, error: renderError } = await supabase.functions.invoke('render-fit', {
+          body: { 
+            canvas_json: fitData.canvas_json,
+            canvas_image_base64: fitData.canvas_image_base64
+          }
+        });
+
+        if (!renderError && renderData?.render_path) {
+          renderPath = renderData.render_path;
+        }
+      }
+
       // Insert fit
       const { data: fit, error: fitError } = await supabase
         .from('fits')
@@ -91,7 +107,7 @@ export const useSaveFit = () => {
           user_id: user.id,
           title: fitData.title,
           canvas_json: fitData.canvas_json,
-          render_path: fitData.render_path,
+          render_path: renderPath,
           is_public: fitData.is_public || false,
           occasion: fitData.occasion,
         })

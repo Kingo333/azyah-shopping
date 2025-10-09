@@ -180,6 +180,7 @@ export const EnhancedInteractiveCanvas: React.FC<EnhancedInteractiveCanvasProps>
   };
 
   const handleTouchStart = (e: React.TouchEvent, layerId: string) => {
+    e.preventDefault();
     e.stopPropagation();
     setSelectedLayerId(layerId);
 
@@ -215,6 +216,35 @@ export const EnhancedInteractiveCanvas: React.FC<EnhancedInteractiveCanvasProps>
       setInitialScale(layer.transform.scale || 1);
       setIsPinching(true);
     }
+  };
+
+  const handleMouseDown = (e: React.MouseEvent, layerId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setSelectedLayerId(layerId);
+    setDragStart({ x: e.clientX, y: e.clientY });
+    setIsDragging(true);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging || !selectedLayerId) return;
+    
+    e.preventDefault();
+    const layer = layers.find(l => l.id === selectedLayerId);
+    if (!layer) return;
+
+    const deltaX = e.clientX - dragStart.x;
+    const deltaY = e.clientY - dragStart.y;
+
+    const newX = (layer.transform.x || 0) + deltaX;
+    const newY = (layer.transform.y || 0) + deltaY;
+
+    updateSelectedLayer({ x: newX, y: newY });
+    setDragStart({ x: e.clientX, y: e.clientY });
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
@@ -303,10 +333,13 @@ export const EnhancedInteractiveCanvas: React.FC<EnhancedInteractiveCanvasProps>
     <div className="relative w-full h-full">
       <div
         ref={canvasRef}
-        className="relative w-full aspect-[3/4] overflow-hidden rounded-lg border border-border"
+        className="relative w-full aspect-[3/4] overflow-hidden rounded-lg border border-border touch-none"
         style={getBackgroundStyle()}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
       >
         {/* Snap guides */}
         {showSnapGuides && (
@@ -340,7 +373,7 @@ export const EnhancedInteractiveCanvas: React.FC<EnhancedInteractiveCanvasProps>
           .map((layer) => (
             <div
               key={layer.id}
-              className={`absolute ${selectedLayerId === layer.id ? 'ring-2 ring-primary' : ''}`}
+              className={`absolute select-none ${selectedLayerId === layer.id ? 'ring-2 ring-primary' : ''}`}
               style={{
                 left: `${layer.transform.x || 0}px`,
                 top: `${layer.transform.y || 0}px`,
@@ -348,8 +381,10 @@ export const EnhancedInteractiveCanvas: React.FC<EnhancedInteractiveCanvasProps>
                 opacity: layer.opacity || 1,
                 zIndex: layer.zIndex,
                 touchAction: 'none',
+                cursor: isDragging && selectedLayerId === layer.id ? 'grabbing' : 'grab',
               }}
               onTouchStart={(e) => handleTouchStart(e, layer.id)}
+              onMouseDown={(e) => handleMouseDown(e, layer.id)}
             >
               <img
                 src={layer.wardrobeItem.image_bg_removed_url || layer.wardrobeItem.image_url}

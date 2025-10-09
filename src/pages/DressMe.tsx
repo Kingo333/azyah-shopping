@@ -19,6 +19,9 @@ import { Label } from '@/components/ui/label';
 import { PublicFitsGrid } from '@/components/PublicFitsGrid';
 import { FitDetailsModal } from '@/components/FitDetailsModal';
 import { useDressMeAnalytics } from '@/hooks/useDressMeAnalytics';
+import { renderCanvasToBase64 } from '@/utils/canvasToImage';
+import { BackButton } from '@/components/ui/back-button';
+import { Home } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 export default function DressMe() {
@@ -104,39 +107,63 @@ export default function DressMe() {
       return;
     }
 
-    const canvasData = {
-      layers: layers.map(layer => ({
-        wardrobeItemId: layer.wardrobeItem.id,
+    try {
+      const canvasData = {
+        layers: layers.map(layer => ({
+          wardrobeItemId: layer.wardrobeItem.id,
+          transform: layer.transform,
+          opacity: layer.opacity,
+          flipH: layer.flipH,
+          visible: layer.visible,
+          zIndex: layer.zIndex,
+        })),
+        background,
+      };
+
+      const fitItems = layers.map((layer, index) => ({
+        wardrobe_item_id: layer.wardrobeItem.id,
+        z_index: layer.zIndex,
         transform: layer.transform,
-        opacity: layer.opacity,
-        flipH: layer.flipH,
-        visible: layer.visible,
-        zIndex: layer.zIndex,
-      })),
-      background,
-    };
+      }));
 
-    const fitItems = layers.map((layer, index) => ({
-      wardrobe_item_id: layer.wardrobeItem.id,
-      z_index: layer.zIndex,
-      transform: layer.transform,
-    }));
+      // Render canvas to base64 for server-side storage
+      const canvasImageBase64 = await renderCanvasToBase64(
+        layers.map(l => ({
+          id: l.id,
+          imageUrl: l.wardrobeItem.image_bg_removed_url || l.wardrobeItem.image_url,
+          position: { x: l.transform.x || 0, y: l.transform.y || 0 },
+          scale: l.transform.scale || 1,
+          rotation: l.transform.rotation || 0,
+          flippedH: l.flipH,
+          opacity: l.opacity,
+          visible: l.visible,
+          zIndex: l.zIndex,
+        })),
+        background,
+        800,
+        800
+      );
 
-    const result = await saveFit.mutateAsync({
-      title: fitTitle || undefined,
-      canvas_json: canvasData,
-      is_public: isPublic,
-      items: fitItems,
-    });
+      const result = await saveFit.mutateAsync({
+        title: fitTitle || undefined,
+        canvas_json: canvasData,
+        canvas_image_base64: canvasImageBase64,
+        is_public: isPublic,
+        items: fitItems,
+      });
 
-    if (result) {
-      analytics.saveFit(result.id, isPublic);
-      toast.success('Saved to My Fits. Share with friends?');
-      setIsSaveModalOpen(false);
-      setFitTitle('');
-      setIsPublic(false);
-      // Clear autosave
-      localStorage.removeItem('dressme_autosave');
+      if (result) {
+        analytics.saveFit(result.id, isPublic);
+        toast.success('Saved to My Fits. Share with friends?');
+        setIsSaveModalOpen(false);
+        setFitTitle('');
+        setIsPublic(false);
+        // Clear autosave
+        localStorage.removeItem('dressme_autosave');
+      }
+    } catch (error) {
+      console.error('Error saving fit:', error);
+      toast.error('Failed to save fit');
     }
   };
 
@@ -248,7 +275,12 @@ export default function DressMe() {
         <div className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-40">
           <div className="container max-w-6xl mx-auto p-4">
             <div className="flex items-center justify-between">
-              <h1 className="text-2xl font-bold">Dress Me</h1>
+              <div className="flex items-center gap-2">
+                <BackButton fallbackPath="/" variant="ghost" size="sm" showIcon={false}>
+                  <Home className="h-5 w-5" />
+                </BackButton>
+                <h1 className="text-2xl font-bold">Dress Me</h1>
+              </div>
               <div className="flex gap-2">
                 <Button
                   variant="outline"

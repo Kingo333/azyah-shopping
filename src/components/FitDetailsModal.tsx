@@ -113,7 +113,7 @@ export const FitDetailsModal: React.FC<FitDetailsModalProps> = ({
       );
 
       if (!allReusable) {
-        toast.error("This item isn't reusable. Try other public items or upload your own.");
+      toast.error("This item isn't reusable. Try other public items or upload your own.");
         return;
       }
 
