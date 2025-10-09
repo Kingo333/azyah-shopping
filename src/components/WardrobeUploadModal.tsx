@@ -81,72 +81,39 @@ export const WardrobeUploadModal: React.FC<WardrobeUploadModalProps> = ({
     setCurrentStep('processing');
 
     try {
-      setProgress(30);
-
-      // Convert file to base64 for edge function
-      const reader = new FileReader();
-      const base64Promise = new Promise<string>((resolve, reject) => {
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
+      // Import background removal utility
+      const { removeBackground } = await import('@/utils/backgroundRemoval');
+      
+      // Remove background using in-browser AI
+      const processedBlob = await removeBackground(file, (progress) => {
+        setProgress(progress);
       });
 
-      const base64Image = await base64Promise;
+      // Upload processed image to storage
+      const fileName = `${user!.id}/${Date.now()}_${file.name.replace(/\.[^/.]+$/, '')}.png`;
+      
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('closet-items')
+        .upload(fileName, processedBlob, {
+          contentType: 'image/png',
+          upsert: false
+        });
 
-      const bgRemovalPromise = supabase.functions.invoke('bg-remove', {
-        body: { 
-          image: base64Image,
-          filename: file.name 
-        }
-      });
-
-      // Add 30 second timeout
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Background removal timed out. Please try again.')), 30000)
-      );
-
-      const { data: bgRemoveData, error: bgRemoveError } = await Promise.race([
-        bgRemovalPromise,
-        timeoutPromise
-      ]) as any;
-
-      if (bgRemoveError) {
-        console.error('Background removal error:', bgRemoveError);
-        
-        // Check for specific error types
-        if (bgRemoveError.message?.includes('Quota exceeded') || bgRemoveError.message?.includes('quota')) {
-          toast.error("You've reached your monthly background removal limit. Upgrade for unlimited.");
-        } else if (bgRemoveError.message?.includes('LOVABLE_API_KEY')) {
-          toast.error('Service configuration error. Please contact support.');
-        } else {
-          toast.error(bgRemoveError.message || 'Failed to remove background. Please try again.');
-        }
-        
-        // Reset to allow retry
-        setCurrentStep('upload');
-        setProgress(0);
-        setIsProcessing(false);
-        return;
+      if (uploadError) {
+        throw new Error(`Upload failed: ${uploadError.message}`);
       }
-
-      if (!bgRemoveData?.image_path) {
-        throw new Error('No processed image returned. Please try again.');
-      }
-
-      setProgress(60);
 
       // Get public URL for preview
       const { data: { publicUrl } } = supabase.storage
         .from('closet-items')
-        .getPublicUrl(bgRemoveData.image_path);
+        .getPublicUrl(fileName);
 
       setBgRemovedPreview(publicUrl);
-      setProgress(70);
-
-      // Call auto-tag edge function (optional, don't block on failure)
+      
+      // Try auto-tagging (optional, non-blocking)
       try {
         const { data: tagData } = await supabase.functions.invoke('auto-tag', {
-          body: { image_path: bgRemoveData.image_path }
+          body: { image_path: fileName }
         });
 
         if (tagData && !tagData.error) {
@@ -156,16 +123,15 @@ export const WardrobeUploadModal: React.FC<WardrobeUploadModalProps> = ({
         }
       } catch (tagError) {
         console.warn('Auto-tagging failed (non-critical):', tagError);
-        // Continue without tags - this is optional
       }
 
       setProgress(100);
       setCurrentStep('metadata');
     } catch (error: any) {
       console.error('Error processing image:', error);
-      toast.error(error.message || 'We couldn\'t remove the background. Try a clearer photo or different lighting.');
+      toast.error(error.message || 'Failed to process image. Please try again with a clearer photo.');
       
-      // Reset to upload state so user can retry
+      // Reset to allow retry
       setCurrentStep('upload');
       setProgress(0);
       setSelectedFile(null);
