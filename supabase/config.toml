@@ -14,3 +14,6 @@ verify_jwt = false
 
 [functions.moderation-flag]
 verify_jwt = true
+
+[functions.generate-toy-replica]
+verify_jwt = true
