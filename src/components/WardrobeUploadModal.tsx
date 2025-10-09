@@ -93,6 +93,11 @@ export const WardrobeUploadModal: React.FC<WardrobeUploadModalProps> = ({ isOpen
         season: season as any || null,
         brand: brand || null,
         is_favorite: false,
+        tags: null,
+        source: 'upload',
+        public_reuse_permitted: false,
+        attribution_user_id: null,
+        thumb_path: null,
       });
 
       // Reset form

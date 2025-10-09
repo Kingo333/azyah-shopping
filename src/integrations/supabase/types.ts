@@ -566,6 +566,36 @@ export type Database = {
         }
         Relationships: []
       }
+      community_flags: {
+        Row: {
+          created_at: string
+          id: string
+          reason: string | null
+          reporter_id: string
+          status: string | null
+          target_id: string
+          target_type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          reason?: string | null
+          reporter_id: string
+          status?: string | null
+          target_id: string
+          target_type: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          reason?: string | null
+          reporter_id?: string
+          status?: string | null
+          target_id?: string
+          target_type?: string
+        }
+        Relationships: []
+      }
       crawl_sessions: {
         Row: {
           backoff_until: string | null
@@ -896,6 +926,87 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      fit_items: {
+        Row: {
+          fit_id: string
+          transform: Json
+          wardrobe_item_id: string
+          z_index: number
+        }
+        Insert: {
+          fit_id: string
+          transform?: Json
+          wardrobe_item_id: string
+          z_index: number
+        }
+        Update: {
+          fit_id?: string
+          transform?: Json
+          wardrobe_item_id?: string
+          z_index?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fit_items_fit_id_fkey"
+            columns: ["fit_id"]
+            isOneToOne: false
+            referencedRelation: "fits"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fit_items_wardrobe_item_id_fkey"
+            columns: ["wardrobe_item_id"]
+            isOneToOne: false
+            referencedRelation: "wardrobe_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fits: {
+        Row: {
+          canvas_json: Json
+          created_at: string
+          id: string
+          image_preview: string | null
+          is_public: boolean | null
+          like_count: number
+          name: string | null
+          occasion: string | null
+          outfit_data: Json | null
+          render_path: string | null
+          title: string | null
+          user_id: string
+        }
+        Insert: {
+          canvas_json?: Json
+          created_at?: string
+          id?: string
+          image_preview?: string | null
+          is_public?: boolean | null
+          like_count?: number
+          name?: string | null
+          occasion?: string | null
+          outfit_data?: Json | null
+          render_path?: string | null
+          title?: string | null
+          user_id: string
+        }
+        Update: {
+          canvas_json?: Json
+          created_at?: string
+          id?: string
+          image_preview?: string | null
+          is_public?: boolean | null
+          like_count?: number
+          name?: string | null
+          occasion?: string | null
+          outfit_data?: Json | null
+          render_path?: string | null
+          title?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       follows: {
         Row: {
@@ -1369,36 +1480,6 @@ export type Database = {
             | null
           title?: string
           updated_at?: string | null
-          user_id?: string
-        }
-        Relationships: []
-      }
-      outfits: {
-        Row: {
-          created_at: string | null
-          id: string
-          image_preview: string | null
-          name: string | null
-          occasion: string | null
-          outfit_data: Json
-          user_id: string
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          image_preview?: string | null
-          name?: string | null
-          occasion?: string | null
-          outfit_data?: Json
-          user_id: string
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          image_preview?: string | null
-          name?: string | null
-          occasion?: string | null
-          outfit_data?: Json
           user_id?: string
         }
         Relationships: []
@@ -2487,6 +2568,7 @@ export type Database = {
       }
       wardrobe_items: {
         Row: {
+          attribution_user_id: string | null
           brand: string | null
           category: string
           color: string | null
@@ -2495,10 +2577,15 @@ export type Database = {
           image_bg_removed_url: string | null
           image_url: string
           is_favorite: boolean | null
+          public_reuse_permitted: boolean | null
           season: string | null
+          source: string | null
+          tags: string[] | null
+          thumb_path: string | null
           user_id: string
         }
         Insert: {
+          attribution_user_id?: string | null
           brand?: string | null
           category: string
           color?: string | null
@@ -2507,10 +2594,15 @@ export type Database = {
           image_bg_removed_url?: string | null
           image_url: string
           is_favorite?: boolean | null
+          public_reuse_permitted?: boolean | null
           season?: string | null
+          source?: string | null
+          tags?: string[] | null
+          thumb_path?: string | null
           user_id: string
         }
         Update: {
+          attribution_user_id?: string | null
           brand?: string | null
           category?: string
           color?: string | null
@@ -2519,7 +2611,11 @@ export type Database = {
           image_bg_removed_url?: string | null
           image_url?: string
           is_favorite?: boolean | null
+          public_reuse_permitted?: boolean | null
           season?: string | null
+          source?: string | null
+          tags?: string[] | null
+          thumb_path?: string | null
           user_id?: string
         }
         Relationships: []

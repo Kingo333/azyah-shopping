@@ -8,11 +8,16 @@ export interface WardrobeItem {
   user_id: string;
   image_url: string;
   image_bg_removed_url: string | null;
-  category: 'top' | 'bottom' | 'shoes' | 'accessory' | 'jewelry' | 'bag';
+  category: 'top' | 'bottom' | 'dress' | 'outerwear' | 'shoes' | 'bag' | 'accessory';
   color: string | null;
   season: 'spring' | 'summer' | 'fall' | 'winter' | null;
   brand: string | null;
   is_favorite: boolean;
+  tags: string[] | null;
+  source: string | null;
+  public_reuse_permitted: boolean;
+  attribution_user_id: string | null;
+  thumb_path: string | null;
   created_at: string;
 }
 

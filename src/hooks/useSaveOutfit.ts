@@ -19,12 +19,13 @@ export const useSaveOutfit = () => {
       if (!user) throw new Error('User not authenticated');
 
       const { data, error } = await supabase
-        .from('outfits')
+        .from('fits')
         .insert({
           user_id: user.id,
-          name: params.title,
+          title: params.title,
           occasion: params.occasion,
-          outfit_data: params.canvas_data,
+          canvas_json: params.canvas_data,
+          is_public: params.is_public || false,
         })
         .select()
         .single();
@@ -33,7 +34,7 @@ export const useSaveOutfit = () => {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['outfits'] });
+      queryClient.invalidateQueries({ queryKey: ['fits'] });
       toast.success('Saved to My Fits. Share with friends?');
     },
     onError: (error) => {
