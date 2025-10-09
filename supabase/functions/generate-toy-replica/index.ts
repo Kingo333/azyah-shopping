@@ -67,7 +67,7 @@ serve(async (req) => {
       .update({ 
         result_url: resultFileName, // Store relative path
         status: 'succeeded',
-        error_message: null,
+        error: null,
         updated_at: new Date().toISOString()
       })
       .eq('id', toyReplicaId)
