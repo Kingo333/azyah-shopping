@@ -1,12 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Heart, Share2, Flag, Copy } from 'lucide-react';
+import { Heart, Share2, Flag, Copy, Download } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { useState } from 'react';
 
 interface PublicFit {
   id: string;
@@ -17,6 +16,7 @@ interface PublicFit {
   creator_username: string;
   creator_name: string | null;
   creator_avatar: string | null;
+  canvas_json: any;
 }
 
 interface FitDetailsModalProps {
@@ -33,6 +33,7 @@ export const FitDetailsModal: React.FC<FitDetailsModalProps> = ({
   onUseThisFit,
 }) => {
   const [showReportDialog, setShowReportDialog] = useState(false);
+  const [canAddItems, setCanAddItems] = useState(false);
 
   if (!fit) return null;
 
@@ -45,7 +46,6 @@ export const FitDetailsModal: React.FC<FitDetailsModalProps> = ({
           url: window.location.href,
         });
       } catch (err) {
-        // Fallback to copy link
         await navigator.clipboard.writeText(window.location.href);
         toast.success('Link copied to clipboard');
       }
@@ -71,6 +71,45 @@ export const FitDetailsModal: React.FC<FitDetailsModalProps> = ({
       setShowReportDialog(false);
     } catch (error) {
       toast.error('Failed to submit report');
+    }
+  };
+
+  const handleAddItemsToCloset = async () => {
+    try {
+      // Check if all items have public_reuse_permitted
+      const layers = fit.canvas_json?.layers || [];
+      
+      for (const layer of layers) {
+        const { data: item } = await supabase
+          .from('wardrobe_items')
+          .select('public_reuse_permitted, user_id')
+          .eq('id', layer.wardrobeItem.id)
+          .single();
+
+        if (!item?.public_reuse_permitted) {
+          toast.error("This item isn't reusable. Try other public items or upload your own.");
+          return;
+        }
+
+        // Copy item to user's closet with attribution
+        const { error } = await supabase
+          .from('wardrobe_items')
+          .insert({
+            ...layer.wardrobeItem,
+            id: undefined,
+            user_id: (await supabase.auth.getUser()).data.user?.id,
+            attribution_user_id: item.user_id,
+            source: 'community_copy'
+          });
+
+        if (error) throw error;
+      }
+
+      toast.success('Items added to your closet');
+      onClose();
+    } catch (error) {
+      console.error('Error adding items:', error);
+      toast.error('Failed to add items to closet');
     }
   };
 
@@ -110,12 +149,12 @@ export const FitDetailsModal: React.FC<FitDetailsModalProps> = ({
           </div>
 
           {/* Stats */}
-          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <span className="flex items-center gap-1">
               <Heart className="w-4 h-4" />
               {fit.like_count} likes
             </span>
-            <span>•</span>
+            <span>·</span>
             <span>{formatDistanceToNow(new Date(fit.created_at), { addSuffix: true })}</span>
           </div>
 
@@ -132,13 +171,17 @@ export const FitDetailsModal: React.FC<FitDetailsModalProps> = ({
               Use this fit
             </Button>
             
-            <div className="grid grid-cols-2 gap-2">
-              <Button variant="outline" onClick={handleShare}>
-                <Share2 className="w-4 h-4 mr-2" />
+            <div className="grid grid-cols-3 gap-2">
+              <Button variant="outline" size="sm" onClick={handleAddItemsToCloset}>
+                <Download className="w-4 h-4 mr-1" />
+                Items
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleShare}>
+                <Share2 className="w-4 h-4 mr-1" />
                 Share
               </Button>
-              <Button variant="outline" onClick={() => setShowReportDialog(true)}>
-                <Flag className="w-4 h-4 mr-2" />
+              <Button variant="outline" size="sm" onClick={() => setShowReportDialog(true)}>
+                <Flag className="w-4 h-4 mr-1" />
                 Report
               </Button>
             </div>

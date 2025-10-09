@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Save, Share2, Upload, Palette, Layers } from 'lucide-react';
-import { InteractiveCanvas, CanvasLayer } from '@/components/InteractiveCanvas';
+import { EnhancedInteractiveCanvas, CanvasLayer } from '@/components/EnhancedInteractiveCanvas';
 import { CategoryChips } from '@/components/CategoryChips';
 import { WardrobeThumbnailRail } from '@/components/WardrobeThumbnailRail';
 import { BackgroundPicker } from '@/components/BackgroundPicker';
@@ -31,7 +31,10 @@ export default function DressMe() {
   const [layers, setLayers] = useState<CanvasLayer[]>([]);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [activeTab, setActiveTab] = useState<'closet' | 'community'>('closet');
-  const [background, setBackground] = useState<{ type: 'solid' | 'gradient' | 'pattern' | 'image'; value: string }>({ type: 'solid', value: '#F5F5F5' });
+  const [background, setBackground] = useState<{ type: 'solid' | 'gradient' | 'pattern' | 'image'; value: string }>({ 
+    type: 'solid', 
+    value: 'hsl(var(--muted))' 
+  });
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [isBackgroundPickerOpen, setIsBackgroundPickerOpen] = useState(false);
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
@@ -40,10 +43,32 @@ export default function DressMe() {
   const [selectedPublicFit, setSelectedPublicFit] = useState<any>(null);
   const [isFitDetailsOpen, setIsFitDetailsOpen] = useState(false);
 
-  // Track page open
+  // Track page open and local autosave
   useEffect(() => {
     analytics.open();
+
+    // Load autosaved canvas from localStorage
+    const autosaved = localStorage.getItem('dressme_autosave');
+    if (autosaved) {
+      try {
+        const { layers: savedLayers, background: savedBg } = JSON.parse(autosaved);
+        if (savedLayers && savedLayers.length > 0) {
+          setLayers(savedLayers);
+          setBackground(savedBg || background);
+          toast.info('Recovered unsaved work');
+        }
+      } catch (e) {
+        console.error('Failed to load autosave:', e);
+      }
+    }
   }, []);
+
+  // Autosave to localStorage
+  useEffect(() => {
+    if (layers.length > 0) {
+      localStorage.setItem('dressme_autosave', JSON.stringify({ layers, background }));
+    }
+  }, [layers, background]);
 
   // Filter items by category
   const filteredItems = useMemo(() => {
@@ -62,13 +87,15 @@ export default function DressMe() {
         scale: 1,
         rotation: 0,
       },
+      opacity: 1,
+      flipH: false,
       visible: true,
       zIndex: layers.length,
     };
     setLayers([...layers, newLayer]);
     analytics.addItem(item.id);
     toast.success('Item added to canvas');
-  }, [layers]);
+  }, [layers, analytics]);
 
   // Handle save
   const handleSave = async () => {
@@ -81,6 +108,8 @@ export default function DressMe() {
       layers: layers.map(layer => ({
         wardrobeItemId: layer.wardrobeItem.id,
         transform: layer.transform,
+        opacity: layer.opacity,
+        flipH: layer.flipH,
         visible: layer.visible,
         zIndex: layer.zIndex,
       })),
@@ -102,107 +131,108 @@ export default function DressMe() {
 
     if (result) {
       analytics.saveFit(result.id, isPublic);
+      toast.success('Saved to My Fits. Share with friends?');
+      setIsSaveModalOpen(false);
+      setFitTitle('');
+      setIsPublic(false);
+      // Clear autosave
+      localStorage.removeItem('dressme_autosave');
     }
-
-    setIsSaveModalOpen(false);
-    setFitTitle('');
-    setIsPublic(false);
   };
 
-  // Handle using a public fit
-  const handleUsePublicFit = async (fitId: string) => {
+  // Handle use public fit
+  const handleUsePublicFit = useCallback(async (fitId: string) => {
     try {
-      const { data: fit, error } = await supabase
+      // Fetch the fit data
+      const { data: fitData, error } = await supabase
         .from('fits')
-        .select('canvas_json, user_id')
+        .select('*, creator:users!fits_user_id_fkey(username, name, avatar_url)')
         .eq('id', fitId)
+        .eq('is_public', true)
         .single();
 
       if (error) throw error;
-
-      // Load canvas from JSON
-      if (fit.canvas_json) {
-        const canvasData = fit.canvas_json as any;
-        
-        // Fetch wardrobe items for this fit
-        const wardrobeItemIds = canvasData.layers?.map((l: any) => l.wardrobeItemId) || [];
-        
-        if (wardrobeItemIds.length > 0) {
-          const { data: items, error: itemsError } = await supabase
-            .from('wardrobe_items')
-            .select('*')
-            .in('id', wardrobeItemIds);
-
-          if (!itemsError && items) {
-            const newLayers: CanvasLayer[] = canvasData.layers.map((layer: any) => {
-              const item = items.find(i => i.id === layer.wardrobeItemId);
-              if (!item) return null;
-
-              return {
-                id: `layer-${Date.now()}-${Math.random()}`,
-                wardrobeItem: item,
-                transform: layer.transform,
-                visible: layer.visible !== false,
-                zIndex: layer.zIndex,
-              };
-            }).filter(Boolean);
-
-            setLayers(newLayers);
-            if (canvasData.background) {
-              setBackground(canvasData.background);
-            }
-            
-            analytics.usePublicFit(fitId, fit.user_id);
-            toast.success('Fit loaded! You can now customize it.');
-          }
-        }
+      if (!fitData) {
+        toast.error('Fit not found');
+        return;
       }
+
+      const canvasJson = fitData.canvas_json as any;
+
+      // Fetch all wardrobe items referenced in the fit
+      const itemIds = canvasJson.layers.map((l: any) => l.wardrobeItemId);
+      const { data: items } = await supabase
+        .from('wardrobe_items')
+        .select('*')
+        .in('id', itemIds);
+
+      if (!items || items.length === 0) {
+        toast.error('Could not load fit items');
+        return;
+      }
+
+      // Recreate layers
+      const reconstructedLayers: CanvasLayer[] = canvasJson.layers.map((layerData: any) => {
+        const item = items.find(i => i.id === layerData.wardrobeItemId);
+        if (!item) return null;
+
+        return {
+          id: `layer-${Date.now()}-${Math.random()}`,
+          wardrobeItem: item as WardrobeItem,
+          transform: layerData.transform,
+          opacity: layerData.opacity || 1,
+          flipH: layerData.flipH || false,
+          visible: layerData.visible !== false,
+          zIndex: layerData.zIndex,
+        };
+      }).filter(Boolean);
+
+      setLayers(reconstructedLayers);
+      setBackground(canvasJson.background);
+      
+      analytics.usePublicFit(fitId, fitData.user_id);
+      toast.success('Fit loaded! Customize it and save as your own');
     } catch (error) {
-      console.error('Error loading fit:', error);
+      console.error('Error loading public fit:', error);
       toast.error('Failed to load fit');
     }
-  };
+  }, [analytics]);
 
-  // Onboarding if no items
+  // Handle item added from upload
+  const handleItemAdded = useCallback((itemId: string) => {
+    const item = allItems.find(i => i.id === itemId);
+    if (item) {
+      handleAddItemToCanvas(item);
+    }
+  }, [allItems, handleAddItemToCanvas]);
+
+  // Onboarding check
   if (!isLoading && allItems.length === 0) {
     return (
       <>
         <SEOHead
-          title="Dress Me - Create Outfits"
-          description="Create amazing outfits by mixing and matching items from your wardrobe"
+          title="Dress Me - Create Outfits | Azyah"
+          description="Create stunning outfit combinations with your wardrobe items"
         />
-        <div className="min-h-screen bg-background p-4 flex items-center justify-center">
-          <Card className="max-w-md p-8 text-center space-y-6">
+        <div className="min-h-screen bg-background flex items-center justify-center p-4">
+          <Card className="max-w-md w-full p-8 text-center space-y-6">
             <div className="space-y-2">
-              <h1 className="text-3xl font-bold">Welcome to Dress Me! 🧥</h1>
+              <h1 className="text-3xl font-bold">Welcome to Dress Me!</h1>
               <p className="text-muted-foreground">
-                Upload items to start creating outfits with our interactive canvas
+                Start by uploading your first closet item to create amazing outfits
               </p>
             </div>
-            
-            <div className="space-y-4">
-              <div className="bg-muted/50 rounded-lg p-4 space-y-2 text-left">
-                <h3 className="font-medium">How it works:</h3>
-                <ol className="text-sm text-muted-foreground space-y-1">
-                  <li>1. Upload photos of clothing items</li>
-                  <li>2. AI removes backgrounds automatically</li>
-                  <li>3. Drag, resize, and rotate items on canvas</li>
-                  <li>4. Save and share your favorite fits</li>
-                </ol>
-              </div>
-
-              <Button onClick={() => setIsUploadModalOpen(true)} size="lg" className="w-full">
-                <Upload className="w-4 h-4 mr-2" />
-                Upload Your First Item
-              </Button>
-            </div>
+            <Button onClick={() => setIsUploadModalOpen(true)} size="lg" className="w-full">
+              <Upload className="w-4 h-4 mr-2" />
+              Upload Your First Item
+            </Button>
           </Card>
-          
-          <WardrobeUploadModal
-            isOpen={isUploadModalOpen}
-            onClose={() => setIsUploadModalOpen(false)}
-          />
         </div>
+        <WardrobeUploadModal
+          isOpen={isUploadModalOpen}
+          onClose={() => setIsUploadModalOpen(false)}
+          onItemAdded={handleItemAdded}
+        />
       </>
     );
   }
@@ -210,96 +240,90 @@ export default function DressMe() {
   return (
     <>
       <SEOHead
-        title="Dress Me - Create Outfits"
-        description="Create amazing outfits by mixing and matching items from your wardrobe"
+        title="Dress Me - Create Outfits | Azyah"
+        description="Create stunning outfit combinations with your wardrobe items using our interactive canvas"
       />
-      
-      <div className="min-h-screen bg-background">
-        <div className="max-w-6xl mx-auto p-4 space-y-6">
-          {/* Header */}
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold">Dress Me 🧥</h1>
-              <p className="text-muted-foreground">Create outfits with your wardrobe</p>
-            </div>
-            <Button onClick={() => setIsUploadModalOpen(true)} variant="outline">
-              <Upload className="w-4 h-4 mr-2" />
-              Add Items
-            </Button>
-          </div>
-
-          {/* Main Content */}
-          <div className="grid lg:grid-cols-2 gap-6">
-            {/* Left: Canvas */}
-            <div className="space-y-4">
-              <InteractiveCanvas
-                layers={layers}
-                onLayersChange={setLayers}
-                background={background}
-              />
-              
-              {/* Actions */}
+      <div className="min-h-screen bg-background pb-20">
+        {/* Header */}
+        <div className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-40">
+          <div className="container max-w-6xl mx-auto p-4">
+            <div className="flex items-center justify-between">
+              <h1 className="text-2xl font-bold">Dress Me</h1>
               <div className="flex gap-2">
-                <Button onClick={() => setIsBackgroundPickerOpen(true)} variant="outline" className="flex-1">
-                  <Palette className="w-4 h-4 mr-2" />
-                  Background
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsBackgroundPickerOpen(true)}
+                >
+                  <Palette className="w-4 h-4" />
                 </Button>
-                <Button onClick={() => setIsSaveModalOpen(true)} className="flex-1">
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => setIsSaveModalOpen(true)}
+                  disabled={layers.length === 0}
+                >
                   <Save className="w-4 h-4 mr-2" />
-                  Save Fit
-                </Button>
-                <Button variant="outline">
-                  <Share2 className="w-4 h-4" />
+                  Save
                 </Button>
               </div>
             </div>
-
-            {/* Right: Item Selection */}
-            <div className="space-y-4">
-              {/* Tabs */}
-              <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'closet' | 'community')}>
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="closet">My Closet</TabsTrigger>
-                  <TabsTrigger value="community">Community</TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="closet" className="space-y-4">
-                  {/* Category Chips */}
-                  <CategoryChips
-                    selected={selectedCategory}
-                    onSelect={setSelectedCategory}
-                  />
-
-                  {/* Thumbnail Rail */}
-                  <WardrobeThumbnailRail
-                    items={filteredItems}
-                    onSelectItem={handleAddItemToCanvas}
-                  />
-
-                  {/* Stats */}
-                  <div className="text-sm text-muted-foreground">
-                    {filteredItems.length} items
-                    {selectedCategory !== 'all' && ` in ${selectedCategory}`}
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="community" className="space-y-4">
-                  <PublicFitsGrid 
-                    onFitClick={(fit) => {
-                      setSelectedPublicFit(fit);
-                      setIsFitDetailsOpen(true);
-                    }}
-                  />
-                </TabsContent>
-              </Tabs>
-            </div>
           </div>
+        </div>
+
+        {/* Main Content */}
+        <div className="container max-w-6xl mx-auto p-4 space-y-6">
+          {/* Canvas */}
+          <EnhancedInteractiveCanvas
+            layers={layers}
+            onLayersChange={setLayers}
+            background={background}
+          />
+
+          {/* Source Tabs */}
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
+            <TabsList className="w-full">
+              <TabsTrigger value="closet" className="flex-1">My Closet</TabsTrigger>
+              <TabsTrigger value="community" className="flex-1">Community</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="closet" className="space-y-4 mt-4">
+              <div className="flex items-center justify-between">
+                <CategoryChips
+                  selected={selectedCategory}
+                  onSelect={setSelectedCategory}
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsUploadModalOpen(true)}
+                >
+                  <Upload className="w-4 h-4 mr-2" />
+                  Add Item
+                </Button>
+              </div>
+              <WardrobeThumbnailRail
+                items={filteredItems}
+                onSelectItem={handleAddItemToCanvas}
+              />
+            </TabsContent>
+
+            <TabsContent value="community" className="mt-4">
+              <PublicFitsGrid
+                onFitClick={(fit) => {
+                  setSelectedPublicFit(fit);
+                  setIsFitDetailsOpen(true);
+                }}
+              />
+            </TabsContent>
+          </Tabs>
         </div>
 
         {/* Modals */}
         <WardrobeUploadModal
           isOpen={isUploadModalOpen}
           onClose={() => setIsUploadModalOpen(false)}
+          onItemAdded={handleItemAdded}
         />
 
         <BackgroundPicker
@@ -309,38 +333,39 @@ export default function DressMe() {
           currentBackground={background}
         />
 
-        {/* Save Modal */}
         <Dialog open={isSaveModalOpen} onOpenChange={setIsSaveModalOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Save Your Fit</DialogTitle>
+              <DialogTitle>Save your fit</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label>Title (Optional)</Label>
+                <Label>Title (optional)</Label>
                 <Input
-                  placeholder="Summer vibes..."
                   value={fitTitle}
                   onChange={(e) => setFitTitle(e.target.value)}
+                  placeholder="My awesome fit"
                 />
               </div>
               <div className="flex items-center justify-between">
-                <Label>Make Public</Label>
-                <Switch checked={isPublic} onCheckedChange={setIsPublic} />
+                <div className="space-y-0.5">
+                  <Label>Make Public</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Share with the community
+                  </p>
+                </div>
+                <Switch
+                  checked={isPublic}
+                  onCheckedChange={setIsPublic}
+                />
               </div>
-              <div className="flex gap-2 pt-4">
-                <Button variant="outline" onClick={() => setIsSaveModalOpen(false)} className="flex-1">
-                  Cancel
-                </Button>
-                <Button onClick={handleSave} className="flex-1">
-                  Save Fit
-                </Button>
-              </div>
+              <Button onClick={handleSave} className="w-full" disabled={saveFit.isPending}>
+                {saveFit.isPending ? 'Saving...' : 'Save Fit'}
+              </Button>
             </div>
           </DialogContent>
         </Dialog>
 
-        {/* Fit Details Modal */}
         <FitDetailsModal
           fit={selectedPublicFit}
           open={isFitDetailsOpen}
