@@ -7,6 +7,7 @@ import {
   Eye, EyeOff, ArrowUp, ArrowDown, FlipHorizontal
 } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 export interface CanvasLayer {
   id: string;
@@ -38,9 +39,11 @@ export const EnhancedInteractiveCanvas: React.FC<EnhancedInteractiveCanvasProps>
   background,
 }) => {
   const canvasRef = useRef<HTMLDivElement>(null);
+  const isMobile = useIsMobile();
   const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [initialLayerPos, setInitialLayerPos] = useState({ x: 0, y: 0 });
   const [isPinching, setIsPinching] = useState(false);
   const [initialPinchDistance, setInitialPinchDistance] = useState(0);
   const [initialScale, setInitialScale] = useState(1);
@@ -50,6 +53,9 @@ export const EnhancedInteractiveCanvas: React.FC<EnhancedInteractiveCanvasProps>
   const [showSnapGuides, setShowSnapGuides] = useState(true);
   const [snapLines, setSnapLines] = useState<{ x?: number; y?: number }>({});
   const [showTrashZone, setShowTrashZone] = useState(false);
+  const [showScaleIndicator, setShowScaleIndicator] = useState(false);
+  const [showRotateIndicator, setShowRotateIndicator] = useState(false);
+  const dragThreshold = 5;
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -124,12 +130,16 @@ export const EnhancedInteractiveCanvas: React.FC<EnhancedInteractiveCanvasProps>
   const handleRotate = (delta: number) => {
     if (!selectedLayer) return;
     updateSelectedLayer({ rotation: (selectedLayer.transform.rotation || 0) + delta });
+    setShowRotateIndicator(true);
+    setTimeout(() => setShowRotateIndicator(false), 1000);
   };
 
   const handleScale = (delta: number) => {
     if (!selectedLayer) return;
     const newScale = Math.max(0.1, Math.min(3, (selectedLayer.transform.scale || 1) + delta));
     updateSelectedLayer({ scale: newScale });
+    setShowScaleIndicator(true);
+    setTimeout(() => setShowScaleIndicator(false), 1000);
   };
 
   const handleToggleVisibility = () => {
@@ -182,12 +192,15 @@ export const EnhancedInteractiveCanvas: React.FC<EnhancedInteractiveCanvasProps>
   const handleTouchStart = (e: React.TouchEvent, layerId: string) => {
     e.preventDefault();
     e.stopPropagation();
+    const layer = layers.find(l => l.id === layerId);
+    if (!layer) return;
+    
     setSelectedLayerId(layerId);
 
     if (e.touches.length === 1) {
       const touch = e.touches[0];
       setDragStart({ x: touch.clientX, y: touch.clientY });
-      setIsDragging(true);
+      setInitialLayerPos({ x: layer.transform.x || 0, y: layer.transform.y || 0 });
 
       // Check for double-tap
       const now = Date.now();
@@ -202,9 +215,6 @@ export const EnhancedInteractiveCanvas: React.FC<EnhancedInteractiveCanvasProps>
       }, 500);
       setLongPressTimer(timer);
     } else if (e.touches.length === 2) {
-      const layer = layers.find(l => l.id === layerId);
-      if (!layer) return;
-
       const touch1 = e.touches[0];
       const touch2 = e.touches[1];
       const distance = Math.hypot(
@@ -215,19 +225,24 @@ export const EnhancedInteractiveCanvas: React.FC<EnhancedInteractiveCanvasProps>
       setInitialPinchDistance(distance);
       setInitialScale(layer.transform.scale || 1);
       setIsPinching(true);
+      setIsDragging(false);
+      setShowScaleIndicator(true);
     }
   };
 
   const handleMouseDown = (e: React.MouseEvent, layerId: string) => {
     e.preventDefault();
     e.stopPropagation();
+    const layer = layers.find(l => l.id === layerId);
+    if (!layer) return;
+    
     setSelectedLayerId(layerId);
     setDragStart({ x: e.clientX, y: e.clientY });
-    setIsDragging(true);
+    setInitialLayerPos({ x: layer.transform.x || 0, y: layer.transform.y || 0 });
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging || !selectedLayerId) return;
+    if (!selectedLayerId) return;
     
     e.preventDefault();
     const layer = layers.find(l => l.id === selectedLayerId);
@@ -235,12 +250,19 @@ export const EnhancedInteractiveCanvas: React.FC<EnhancedInteractiveCanvasProps>
 
     const deltaX = e.clientX - dragStart.x;
     const deltaY = e.clientY - dragStart.y;
+    const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
 
-    const newX = (layer.transform.x || 0) + deltaX;
-    const newY = (layer.transform.y || 0) + deltaY;
+    // Only start dragging if moved beyond threshold
+    if (!isDragging && distance > dragThreshold) {
+      setIsDragging(true);
+    }
 
-    updateSelectedLayer({ x: newX, y: newY });
-    setDragStart({ x: e.clientX, y: e.clientY });
+    if (isDragging) {
+      const newX = initialLayerPos.x + deltaX;
+      const newY = initialLayerPos.y + deltaY;
+
+      updateSelectedLayer({ x: newX, y: newY });
+    }
   };
 
   const handleMouseUp = () => {
@@ -255,38 +277,45 @@ export const EnhancedInteractiveCanvas: React.FC<EnhancedInteractiveCanvasProps>
       setLongPressTimer(null);
     }
 
-    if (e.touches.length === 1 && isDragging && selectedLayerId) {
+    if (e.touches.length === 1 && selectedLayerId) {
       const touch = e.touches[0];
       const layer = layers.find(l => l.id === selectedLayerId);
       if (!layer) return;
 
       const deltaX = touch.clientX - dragStart.x;
       const deltaY = touch.clientY - dragStart.y;
+      const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
 
-      const newX = (layer.transform.x || 0) + deltaX;
-      const newY = (layer.transform.y || 0) + deltaY;
-
-      // Show trash zone
-      setShowTrashZone(true);
-
-      // Calculate snap guides
-      if (showSnapGuides) {
-        const canvasCenter = { x: 400, y: 300 };
-        const snapThreshold = 10;
-        const newSnapLines: { x?: number; y?: number } = {};
-
-        if (Math.abs(newX - canvasCenter.x) < snapThreshold) {
-          newSnapLines.x = canvasCenter.x;
-        }
-        if (Math.abs(newY - canvasCenter.y) < snapThreshold) {
-          newSnapLines.y = canvasCenter.y;
-        }
-
-        setSnapLines(newSnapLines);
+      // Only start dragging if moved beyond threshold
+      if (!isDragging && distance > dragThreshold) {
+        setIsDragging(true);
       }
 
-      updateSelectedLayer({ x: newX, y: newY });
-      setDragStart({ x: touch.clientX, y: touch.clientY });
+      if (isDragging) {
+        const newX = initialLayerPos.x + deltaX;
+        const newY = initialLayerPos.y + deltaY;
+
+        // Show trash zone
+        setShowTrashZone(true);
+
+        // Calculate snap guides
+        if (showSnapGuides) {
+          const canvasCenter = { x: 400, y: 300 };
+          const snapThreshold = 10;
+          const newSnapLines: { x?: number; y?: number } = {};
+
+          if (Math.abs(newX - canvasCenter.x) < snapThreshold) {
+            newSnapLines.x = canvasCenter.x;
+          }
+          if (Math.abs(newY - canvasCenter.y) < snapThreshold) {
+            newSnapLines.y = canvasCenter.y;
+          }
+
+          setSnapLines(newSnapLines);
+        }
+
+        updateSelectedLayer({ x: newX, y: newY });
+      }
     } else if (e.touches.length === 2 && isPinching && selectedLayerId) {
       const touch1 = e.touches[0];
       const touch2 = e.touches[1];
@@ -313,6 +342,8 @@ export const EnhancedInteractiveCanvas: React.FC<EnhancedInteractiveCanvasProps>
     setIsPinching(false);
     setShowTrashZone(false);
     setSnapLines({});
+    setShowScaleIndicator(false);
+    setShowRotateIndicator(false);
   };
 
   const getBackgroundStyle = () => {
@@ -333,8 +364,11 @@ export const EnhancedInteractiveCanvas: React.FC<EnhancedInteractiveCanvasProps>
     <div className="relative w-full h-full">
       <div
         ref={canvasRef}
-        className="relative w-full aspect-[3/4] overflow-hidden rounded-lg border border-border touch-none"
-        style={getBackgroundStyle()}
+        className="relative w-full aspect-[3/4] overflow-hidden rounded-lg border border-border"
+        style={{
+          ...getBackgroundStyle(),
+          touchAction: 'manipulation',
+        }}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
         onMouseMove={handleMouseMove}
@@ -346,17 +380,31 @@ export const EnhancedInteractiveCanvas: React.FC<EnhancedInteractiveCanvasProps>
           <>
             {snapLines.x !== undefined && (
               <div
-                className="absolute top-0 bottom-0 w-px bg-primary/50 pointer-events-none z-50"
+                className="absolute top-0 bottom-0 w-1 bg-primary/70 pointer-events-none z-50 shadow-lg"
                 style={{ left: `${snapLines.x}px` }}
               />
             )}
             {snapLines.y !== undefined && (
               <div
-                className="absolute left-0 right-0 h-px bg-primary/50 pointer-events-none z-50"
+                className="absolute left-0 right-0 h-1 bg-primary/70 pointer-events-none z-50 shadow-lg"
                 style={{ top: `${snapLines.y}px` }}
               />
             )}
           </>
+        )}
+
+        {/* Scale indicator */}
+        {showScaleIndicator && selectedLayer && (
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-black/80 text-white px-4 py-2 rounded-full text-sm font-medium z-50 pointer-events-none">
+            {Math.round((selectedLayer.transform.scale || 1) * 100)}%
+          </div>
+        )}
+
+        {/* Rotation indicator */}
+        {showRotateIndicator && selectedLayer && (
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-black/80 text-white px-4 py-2 rounded-full text-sm font-medium z-50 pointer-events-none">
+            {Math.round(selectedLayer.transform.rotation || 0)}°
+          </div>
         )}
 
         {/* Trash zone */}
@@ -378,6 +426,7 @@ export const EnhancedInteractiveCanvas: React.FC<EnhancedInteractiveCanvasProps>
                 left: `${layer.transform.x || 0}px`,
                 top: `${layer.transform.y || 0}px`,
                 transform: `scale(${layer.transform.scale || 1}) rotate(${layer.transform.rotation || 0}deg) scaleX(${layer.flipH ? -1 : 1})`,
+                transformOrigin: 'center',
                 opacity: layer.opacity || 1,
                 zIndex: layer.zIndex,
                 touchAction: 'none',
@@ -428,80 +477,89 @@ export const EnhancedInteractiveCanvas: React.FC<EnhancedInteractiveCanvasProps>
         </div>
       )}
 
-      {/* Transform Controls */}
+      {/* Transform Controls - Mobile Optimized */}
       {selectedLayerId && selectedLayer && (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-background border rounded-lg shadow-lg p-2 flex items-center gap-2 z-50">
+        <div className={`absolute bottom-4 left-1/2 -translate-x-1/2 bg-background border rounded-lg shadow-lg p-2 flex items-center gap-1 z-50 ${isMobile ? 'flex-wrap max-w-[90vw]' : ''}`}>
           <Button
-            size="sm"
+            size={isMobile ? "default" : "sm"}
             variant="outline"
             onClick={() => handleRotate(-15)}
-            title="Rotate Left"
+            className={isMobile ? "min-w-[44px] min-h-[44px] flex flex-col gap-1 p-2" : ""}
           >
             <RotateCw className="w-4 h-4 transform scale-x-[-1]" />
+            {isMobile && <span className="text-[10px]">↶</span>}
           </Button>
           <Button
-            size="sm"
+            size={isMobile ? "default" : "sm"}
             variant="outline"
             onClick={() => handleRotate(15)}
-            title="Rotate Right"
+            className={isMobile ? "min-w-[44px] min-h-[44px] flex flex-col gap-1 p-2" : ""}
           >
             <RotateCw className="w-4 h-4" />
+            {isMobile && <span className="text-[10px]">↷</span>}
           </Button>
           <Button
-            size="sm"
+            size={isMobile ? "default" : "sm"}
             variant="outline"
             onClick={() => handleScale(-0.1)}
-            title="Zoom Out"
+            className={isMobile ? "min-w-[44px] min-h-[44px] flex flex-col gap-1 p-2" : ""}
           >
             <ZoomOut className="w-4 h-4" />
+            {isMobile && <span className="text-[10px]">🔍➖</span>}
           </Button>
           <Button
-            size="sm"
+            size={isMobile ? "default" : "sm"}
             variant="outline"
             onClick={() => handleScale(0.1)}
-            title="Zoom In"
+            className={isMobile ? "min-w-[44px] min-h-[44px] flex flex-col gap-1 p-2" : ""}
           >
             <ZoomIn className="w-4 h-4" />
+            {isMobile && <span className="text-[10px]">🔍➕</span>}
           </Button>
           <Button
-            size="sm"
+            size={isMobile ? "default" : "sm"}
             variant="outline"
             onClick={handleToggleVisibility}
-            title="Toggle Visibility"
+            className={isMobile ? "min-w-[44px] min-h-[44px] flex flex-col gap-1 p-2" : ""}
           >
             {selectedLayer.visible ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+            {isMobile && <span className="text-[10px]">{selectedLayer.visible ? '👁️' : '🙈'}</span>}
           </Button>
           <Button
-            size="sm"
+            size={isMobile ? "default" : "sm"}
             variant="outline"
             onClick={handleBringForward}
-            title="Bring Forward"
+            className={isMobile ? "min-w-[44px] min-h-[44px] flex flex-col gap-1 p-2" : ""}
           >
             <ArrowUp className="w-4 h-4" />
+            {isMobile && <span className="text-[10px]">⬆️</span>}
           </Button>
           <Button
-            size="sm"
+            size={isMobile ? "default" : "sm"}
             variant="outline"
             onClick={handleSendBackward}
-            title="Send Backward"
+            className={isMobile ? "min-w-[44px] min-h-[44px] flex flex-col gap-1 p-2" : ""}
           >
             <ArrowDown className="w-4 h-4" />
+            {isMobile && <span className="text-[10px]">⬇️</span>}
           </Button>
           <Button
-            size="sm"
+            size={isMobile ? "default" : "sm"}
             variant="outline"
             onClick={handleDuplicate}
-            title="Duplicate"
+            className={isMobile ? "min-w-[44px] min-h-[44px] flex flex-col gap-1 p-2" : ""}
           >
             <Copy className="w-4 h-4" />
+            {isMobile && <span className="text-[10px]">📋</span>}
           </Button>
           <Button
-            size="sm"
+            size={isMobile ? "default" : "sm"}
             variant="destructive"
             onClick={handleDelete}
-            title="Delete"
+            className={isMobile ? "min-w-[44px] min-h-[44px] flex flex-col gap-1 p-2" : ""}
           >
             <Trash2 className="w-4 h-4" />
+            {isMobile && <span className="text-[10px]">🗑️</span>}
           </Button>
         </div>
       )}

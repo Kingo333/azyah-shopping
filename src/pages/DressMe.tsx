@@ -21,7 +21,7 @@ import { FitDetailsModal } from '@/components/FitDetailsModal';
 import { useDressMeAnalytics } from '@/hooks/useDressMeAnalytics';
 import { renderCanvasToBase64 } from '@/utils/canvasToImage';
 import { BackButton } from '@/components/ui/back-button';
-import { Home } from 'lucide-react';
+import { Home, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 export default function DressMe() {
@@ -303,6 +303,17 @@ export default function DressMe() {
                   onClick={() => setIsBackgroundPickerOpen(true)}
                 >
                   <Palette className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setLayers([]);
+                    toast.success('Canvas cleared');
+                  }}
+                  disabled={layers.length === 0}
+                >
+                  <Trash2 className="w-4 h-4" />
                 </Button>
                 <Button
                   variant="default"
