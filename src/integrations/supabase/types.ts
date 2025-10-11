@@ -2257,7 +2257,8 @@ export type Database = {
           error: string | null
           id: string
           result_url: string | null
-          source_url: string | null
+          retry_count: number
+          source_url: string
           status: string
           updated_at: string
           user_id: string
@@ -2267,7 +2268,8 @@ export type Database = {
           error?: string | null
           id?: string
           result_url?: string | null
-          source_url?: string | null
+          retry_count?: number
+          source_url: string
           status?: string
           updated_at?: string
           user_id: string
@@ -2277,7 +2279,8 @@ export type Database = {
           error?: string | null
           id?: string
           result_url?: string | null
-          source_url?: string | null
+          retry_count?: number
+          source_url?: string
           status?: string
           updated_at?: string
           user_id?: string

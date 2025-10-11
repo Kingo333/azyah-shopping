@@ -55,24 +55,12 @@ export const ToyReplicaUploader: React.FC<ToyReplicaUploaderProps> = ({
       const previewUrl = URL.createObjectURL(file);
       setPreview(previewUrl);
 
-      // Create toy replica record first
-      const { data: toyReplica, error: createError } = await supabase
-        .from('toy_replicas')
-        .insert({
-          user_id: user.id,
-          status: 'queued'
-        })
-        .select()
-        .single();
-
-      if (createError || !toyReplica) {
-        throw new Error(`Failed to create toy replica record: ${createError?.message}`);
-      }
-
-      // Upload to storage
+      // Generate file path first (use temp UUID for file name)
+      const tempId = crypto.randomUUID();
       const fileExtension = file.name.split('.').pop() || 'jpg';
-      const fileName = `${user.id}/${toyReplica.id}.${fileExtension}`;
-      
+      const fileName = `${user.id}/${tempId}.${fileExtension}`;
+
+      // Upload to storage first
       const { error: uploadError } = await supabase.storage
         .from('toy-replica-source')
         .upload(fileName, file, {
@@ -84,14 +72,23 @@ export const ToyReplicaUploader: React.FC<ToyReplicaUploaderProps> = ({
         throw new Error(`Upload failed: ${uploadError.message}`);
       }
 
-      // Update toy replica with source URL
-      const { error: updateError } = await supabase
+      // Create toy replica record with source_url (now required)
+      const { data: toyReplica, error: createError } = await supabase
         .from('toy_replicas')
-        .update({ source_url: fileName })
-        .eq('id', toyReplica.id);
+        .insert([{
+          user_id: user.id,
+          source_url: fileName,
+          status: 'queued' as const
+        }] as any) // Type will be regenerated after migration
+        .select()
+        .single();
 
-      if (updateError) {
-        throw new Error(`Failed to update toy replica: ${updateError.message}`);
+      if (createError || !toyReplica) {
+        // Clean up uploaded file if record creation fails
+        await supabase.storage
+          .from('toy-replica-source')
+          .remove([fileName]);
+        throw new Error(`Failed to create toy replica record: ${createError?.message}`);
       }
 
       onFileUploaded(toyReplica.id, fileName, previewUrl);
