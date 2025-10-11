@@ -150,7 +150,7 @@ serve(async (req) => {
     const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout
 
     try {
-      const openAIResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+      const openAIResponse = await fetch('https://api.openai.com/v1/images/generations', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${openAIApiKey}`,
@@ -159,24 +159,10 @@ serve(async (req) => {
         signal: controller.signal,
         body: JSON.stringify({
           model: 'gpt-image-1',
-          messages: [
-            {
-              role: 'user',
-              content: [
-                {
-                  type: 'text',
-                  text: 'Transform this person into a LEGO mini-figure character with transparent background. The mini-figure should have: Classic LEGO mini-figure proportions and style, cylindrical head with printed facial features, block-shaped torso and arms, short legs typical of LEGO mini-figures. Maintain the person\'s key characteristics (hair color, style, clothing colors). Professional toy-like appearance with clean transparent background and high quality render.'
-                },
-                {
-                  type: 'image_url',
-                  image_url: {
-                    url: imageDataUrl
-                  }
-                }
-              ]
-            }
-          ],
-          modalities: ['image', 'text'],
+          prompt: 'Transform this person into a LEGO mini-figure character with transparent background. The mini-figure should have: Classic LEGO mini-figure proportions and style, cylindrical head with printed facial features, block-shaped torso and arms, short legs typical of LEGO mini-figures. Maintain the person\'s key characteristics (hair color, style, clothing colors). Professional toy-like appearance with clean transparent background and high quality render.',
+          image: imageDataUrl,
+          n: 1,
+          size: '1024x1024',
           background: 'transparent',
           output_format: 'png',
           quality: 'high'
@@ -203,21 +189,18 @@ serve(async (req) => {
       const openAIData = await openAIResponse.json();
       console.log('✅ OpenAI generation successful');
 
-      // Extract the base64 image from the response with fallback paths
-      const generatedImage = openAIData.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+      // Extract the base64 image from the response
+      const generatedImage = openAIData.data?.[0]?.b64_json;
       if (!generatedImage) {
         console.error('❌ No image data in OpenAI response:', JSON.stringify(openAIData));
         throw new Error('No image data returned from OpenAI');
       }
 
-      console.log('🖼️ Extracting base64 image data');
-      // Extract base64 data (remove data:image/png;base64, prefix if present)
-      const base64Match = generatedImage.match(/base64,(.+)/);
-      const generatedImageBase64 = base64Match ? base64Match[1] : generatedImage;
+      console.log('🖼️ Processing base64 image data');
 
       // Convert base64 to blob
       console.log('🔄 Converting base64 to blob');
-      const binaryString = atob(generatedImageBase64);
+      const binaryString = atob(generatedImage);
       const bytes = new Uint8Array(binaryString.length);
       for (let i = 0; i < binaryString.length; i++) {
         bytes[i] = binaryString.charCodeAt(i);
@@ -282,7 +265,8 @@ serve(async (req) => {
     
     // Try to update the record with failure status and retry logic
     try {
-      const { toyReplicaId } = await req.json();
+      const requestBody = await req.clone().json();
+      const toyReplicaId = requestBody.toyReplicaId;
       if (toyReplicaId) {
         // Get current retry count
         const { data: currentReplica } = await supabase
