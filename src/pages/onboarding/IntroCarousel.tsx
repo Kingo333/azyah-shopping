@@ -60,10 +60,10 @@ export default function IntroCarousel() {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex items-center justify-center px-6 pb-4 overflow-auto">
-        <div className="w-full max-w-sm mx-auto flex flex-col items-center gap-4">
+      <div className="flex items-center justify-center px-6 py-2 overflow-auto">
+        <div className="w-full max-w-sm mx-auto flex flex-col items-center gap-3">
           {/* Phone Mockup with Screenshot */}
-          <div className="relative w-44 h-auto">
+          <div className="relative w-40 h-auto">
             <div className="relative bg-white rounded-[1.5rem] shadow-lg border-[3px] border-gray-800 overflow-hidden">
               <div className="absolute top-0 left-1/2 -translate-x-1/2 w-20 h-4 bg-gray-800 rounded-b-lg z-10" />
               <img 
@@ -75,7 +75,7 @@ export default function IntroCarousel() {
           </div>
           
           {/* Text Content */}
-          <div className="text-center space-y-2 px-2">
+          <div className="text-center space-y-1.5 px-2">
             <h2 className="text-lg font-bold text-foreground leading-tight">
               {slides[currentSlide].title}
             </h2>
@@ -85,7 +85,7 @@ export default function IntroCarousel() {
           </div>
 
           {/* Progress Dots */}
-          <div className="flex justify-center gap-2">
+          <div className="flex justify-center gap-2 mt-1">
             {slides.map((_, index) => (
               <button
                 key={index}
@@ -103,7 +103,7 @@ export default function IntroCarousel() {
       </div>
 
       {/* Bottom Actions */}
-      <div className="p-6 space-y-4 border-t bg-background">
+      <div className="p-4 space-y-3 border-t bg-background mt-auto">
         <Button 
           onClick={handleJoinFree}
           className="w-full h-14 text-lg font-semibold rounded-full bg-black hover:bg-black/90 text-white"
