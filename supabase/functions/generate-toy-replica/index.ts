@@ -155,7 +155,6 @@ serve(async (req) => {
       formData.append('image', imageBlob, 'source.jpg');
       formData.append('background', 'transparent');
       formData.append('size', '1024x1024');
-      formData.append('response_format', 'b64_json');
       formData.append('quality', 'high');
 
       const openAIResponse = await fetch('https://api.openai.com/v1/images/edits', {
