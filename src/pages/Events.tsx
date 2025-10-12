@@ -163,13 +163,17 @@ const Events = () => {
         .select('photo_url')
         .eq('event_id', selectedEvent.id)
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
       
       // Delete old photo from storage if it exists
       if (existingPhoto?.photo_url) {
-        await supabase.storage
+        const { error: deleteError } = await supabase.storage
           .from('event-user-photos')
           .remove([existingPhoto.photo_url]);
+        
+        if (deleteError) {
+          console.warn('Failed to delete old photo from storage:', deleteError);
+        }
       }
       
       // Upload new photo to Supabase Storage
@@ -181,12 +185,12 @@ const Events = () => {
         .from('event-user-photos')
         .upload(filePath, file, {
           contentType: file.type,
-          upsert: false
+          upsert: true
         });
       
       if (uploadError) throw uploadError;
       
-      // Update database with new storage path
+      // Update database with new storage path - specify onConflict for upsert
       const { error: dbError } = await supabase
         .from('event_user_photos')
         .upsert({
@@ -195,6 +199,8 @@ const Events = () => {
           photo_url: filePath,
           vto_provider: 'gemini',
           vto_ready: true
+        }, {
+          onConflict: 'event_id,user_id'
         });
       
       if (dbError) throw dbError;
