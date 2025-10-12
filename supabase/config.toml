@@ -1,5 +1,8 @@
 project_id = "klwolsopucgswhtdlsps"
 
+[functions.gemini-bg-remove]
+verify_jwt = true
+
 [functions.bg-remove]
 verify_jwt = true
 

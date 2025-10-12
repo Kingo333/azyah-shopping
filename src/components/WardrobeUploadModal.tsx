@@ -5,11 +5,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { Upload, Loader2 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Upload, Loader2, Crown } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { useAddWardrobeItem } from '@/hooks/useWardrobeItems';
+import { useAddWardrobeItem, useWardrobeLimit } from '@/hooks/useWardrobeItems';
 import { toast } from 'sonner';
 import { Progress } from '@/components/ui/progress';
 
@@ -26,6 +27,7 @@ export const WardrobeUploadModal: React.FC<WardrobeUploadModalProps> = ({
 }) => {
   const { user } = useAuth();
   const addItem = useAddWardrobeItem();
+  const { data: wardrobeLimit, refetch: refetchLimit } = useWardrobeLimit();
   
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -38,27 +40,7 @@ export const WardrobeUploadModal: React.FC<WardrobeUploadModalProps> = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
   const [currentStep, setCurrentStep] = useState<'upload' | 'processing' | 'metadata'>('upload');
-  const [quota, setQuota] = useState<{ remaining: number; total: number } | null>(null);
 
-  useEffect(() => {
-    if (isOpen && user) {
-      fetchQuota();
-    }
-  }, [isOpen, user]);
-
-  const fetchQuota = async () => {
-    try {
-      const { data, error } = await supabase.functions.invoke('bg-remove', {
-        body: { action: 'check_quota' }
-      });
-      
-      if (!error && data?.quota) {
-        setQuota(data.quota);
-      }
-    } catch (error) {
-      console.error('Error fetching quota:', error);
-    }
-  };
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     accept: {
@@ -76,48 +58,46 @@ export const WardrobeUploadModal: React.FC<WardrobeUploadModalProps> = ({
   });
 
   const processImage = async (file: File) => {
+    // Check limit before processing
+    if (wardrobeLimit && !wardrobeLimit.canAdd) {
+      toast.error(`You've reached your ${wardrobeLimit.max} item limit. ${wardrobeLimit.isPremium ? '' : 'Upgrade to premium for unlimited items.'}`);
+      return;
+    }
+
     setIsProcessing(true);
     setProgress(10);
     setCurrentStep('processing');
 
     try {
-      // Import background removal utility
-      const { removeBackground } = await import('@/utils/backgroundRemoval');
+      console.log('Starting Gemini background removal...');
       
-      // Remove background using in-browser AI
-      const processedBlob = await removeBackground(file, (progress) => {
-        setProgress(progress);
+      // Create FormData with the image
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      setProgress(30);
+
+      // Call Gemini edge function
+      const { data, error } = await supabase.functions.invoke('gemini-bg-remove', {
+        body: formData
       });
 
-      // Upload processed image to storage
-      const fileName = `${user!.id}/${Date.now()}_${file.name.replace(/\.[^/.]+$/, '')}.png`;
+      if (error) throw new Error(error.message);
       
-      console.log('Uploading to wardrobe bucket:', fileName);
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('wardrobe')
-        .upload(fileName, processedBlob, {
-          contentType: 'image/png',
-          upsert: false
-        });
+      setProgress(70);
 
-      if (uploadError) {
-        console.error('Upload error:', uploadError);
-        throw new Error(`Upload failed: ${uploadError.message}`);
+      if (!data.success || !data.image_url) {
+        throw new Error('Background removal failed');
       }
 
-      console.log('Upload successful:', uploadData);
-
-      // Get public URL for preview
-      const { data: { publicUrl } } = supabase.storage
-        .from('wardrobe')
-        .getPublicUrl(fileName);
-
-      setBgRemovedPreview(publicUrl);
+      setBgRemovedPreview(data.image_url);
       
-      // Try auto-tagging (optional, non-blocking)
+      setProgress(90);
+      
+      // Try auto-tagging (optional)
       try {
         const { data: tagData } = await supabase.functions.invoke('auto-tag', {
-          body: { image_path: fileName }
+          body: { image_path: data.image_path }
         });
 
         if (tagData && !tagData.error) {
@@ -133,9 +113,8 @@ export const WardrobeUploadModal: React.FC<WardrobeUploadModalProps> = ({
       setCurrentStep('metadata');
     } catch (error: any) {
       console.error('Error processing image:', error);
-      toast.error(error.message || 'Failed to process image. Please try again with a clearer photo.');
+      toast.error(error.message || 'Failed to process image. Please try again.');
       
-      // Reset to allow retry
       setCurrentStep('upload');
       setProgress(0);
       setSelectedFile(null);
@@ -179,6 +158,9 @@ export const WardrobeUploadModal: React.FC<WardrobeUploadModalProps> = ({
         onItemAdded(newItem.id);
       }
 
+      // Refetch the limit to update the UI
+      refetchLimit();
+
       // Reset form
       setSelectedFile(null);
       setPreviewUrl(null);
@@ -205,6 +187,30 @@ export const WardrobeUploadModal: React.FC<WardrobeUploadModalProps> = ({
         <DialogHeader>
           <DialogTitle>Add to Closet</DialogTitle>
         </DialogHeader>
+
+        {/* Wardrobe Limit Display */}
+        {wardrobeLimit && (
+          <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+            <div>
+              <p className="text-sm font-medium">Wardrobe Items</p>
+              <p className="text-xs text-muted-foreground">
+                {wardrobeLimit.isPremium 
+                  ? `${wardrobeLimit.current} items (Unlimited)` 
+                  : `${wardrobeLimit.current}/${wardrobeLimit.max} items used`}
+              </p>
+            </div>
+            {wardrobeLimit.isPremium ? (
+              <Badge variant="default" className="gap-1">
+                <Crown className="h-3 w-3" />
+                Premium
+              </Badge>
+            ) : wardrobeLimit.current >= wardrobeLimit.max ? (
+              <Badge variant="destructive">Limit Reached</Badge>
+            ) : (
+              <Badge variant="secondary">Free</Badge>
+            )}
+          </div>
+        )}
 
         <div className="space-y-4">
           {/* Step 1: Upload */}

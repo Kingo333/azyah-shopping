@@ -72,6 +72,16 @@ export const useAddWardrobeItem = () => {
     mutationFn: async (item: Omit<WardrobeItem, 'id' | 'user_id' | 'created_at'>) => {
       if (!user) throw new Error('User not authenticated');
 
+      // Check limit before inserting
+      const { data: canAdd, error: checkError } = await supabase
+        .rpc('can_add_wardrobe_item', { target_user_id: user.id });
+
+      if (checkError) throw checkError;
+      
+      if (!canAdd) {
+        throw new Error('Wardrobe item limit reached. Upgrade to premium for unlimited items.');
+      }
+
       const { data, error } = await supabase
         .from('wardrobe_items')
         .insert({
@@ -86,11 +96,16 @@ export const useAddWardrobeItem = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['wardrobe-items'] });
+      queryClient.invalidateQueries({ queryKey: ['wardrobe-limit'] });
       toast.success('Item added to wardrobe');
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('Error adding wardrobe item:', error);
-      toast.error('Failed to add item to wardrobe');
+      if (error.message.includes('limit reached')) {
+        toast.error(error.message);
+      } else {
+        toast.error('Failed to add item to wardrobe');
+      }
     },
   });
 };
@@ -135,11 +150,43 @@ export const useDeleteWardrobeItem = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['wardrobe-items'] });
+      queryClient.invalidateQueries({ queryKey: ['wardrobe-limit'] });
       toast.success('Item removed from wardrobe');
     },
     onError: (error) => {
       console.error('Error deleting wardrobe item:', error);
       toast.error('Failed to remove item');
     },
+  });
+};
+
+// Hook to check wardrobe item limit
+export const useWardrobeLimit = () => {
+  const { user } = useAuth();
+
+  return useQuery({
+    queryKey: ['wardrobe-limit', user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+
+      const [limitResult, countResult] = await Promise.all([
+        supabase.rpc('get_wardrobe_limit', { target_user_id: user.id }),
+        supabase
+          .from('wardrobe_items')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', user.id)
+      ]);
+
+      if (limitResult.error) throw limitResult.error;
+      if (countResult.error) throw countResult.error;
+
+      return {
+        current: countResult.count || 0,
+        max: limitResult.data,
+        isPremium: limitResult.data >= 999,
+        canAdd: (countResult.count || 0) < limitResult.data
+      };
+    },
+    enabled: !!user,
   });
 };

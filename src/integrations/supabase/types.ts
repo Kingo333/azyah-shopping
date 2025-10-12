@@ -2355,6 +2355,7 @@ export type Database = {
           last_reset_date: string
           updated_at: string
           user_id: string
+          wardrobe_items_count: number | null
         }
         Insert: {
           bg_removals_quota_monthly?: number | null
@@ -2366,6 +2367,7 @@ export type Database = {
           last_reset_date?: string
           updated_at?: string
           user_id: string
+          wardrobe_items_count?: number | null
         }
         Update: {
           bg_removals_quota_monthly?: number | null
@@ -2377,6 +2379,7 @@ export type Database = {
           last_reset_date?: string
           updated_at?: string
           user_id?: string
+          wardrobe_items_count?: number | null
         }
         Relationships: []
       }
@@ -3138,6 +3141,10 @@ export type Database = {
         Args: { events_data: Json; target_user_id: string }
         Returns: Json
       }
+      can_add_wardrobe_item: {
+        Args: { target_user_id: string }
+        Returns: boolean
+      }
       check_payment_encryption: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -3677,6 +3684,10 @@ export type Database = {
           remaining_seconds: number
           used_today: number
         }[]
+      }
+      get_wardrobe_limit: {
+        Args: { target_user_id: string }
+        Returns: number
       }
       infer_gender_from_text: {
         Args: { text_input: string }
