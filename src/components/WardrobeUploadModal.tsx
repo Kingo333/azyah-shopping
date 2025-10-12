@@ -238,8 +238,6 @@ export const WardrobeUploadModal: React.FC<WardrobeUploadModalProps> = ({
       return;
     }
 
-    setIsProcessing(true);
-
     try {
       console.log('Saving item to database with URL:', bgRemovedPreview);
       
@@ -259,14 +257,13 @@ export const WardrobeUploadModal: React.FC<WardrobeUploadModalProps> = ({
       });
 
       console.log('Item saved successfully:', newItem);
-      toast.success('Item added to your wardrobe!');
       
       if (newItem && onItemAdded) {
         onItemAdded(newItem.id);
       }
 
       // Refetch the limit to update the UI
-      refetchLimit();
+      await refetchLimit();
 
       // Reset form
       setSelectedFile(null);
@@ -282,9 +279,7 @@ export const WardrobeUploadModal: React.FC<WardrobeUploadModalProps> = ({
       onClose();
     } catch (error) {
       console.error('Error saving item:', error);
-      toast.error('Failed to save item');
-    } finally {
-      setIsProcessing(false);
+      // Error toast is already handled by the mutation hook
     }
   };
 
@@ -433,12 +428,16 @@ export const WardrobeUploadModal: React.FC<WardrobeUploadModalProps> = ({
 
           {/* Actions */}
           <div className="flex gap-2 pt-4">
-            <Button variant="outline" onClick={onClose} className="flex-1" disabled={isProcessing}>
+            <Button variant="outline" onClick={onClose} className="flex-1" disabled={isProcessing || addItem.isPending}>
               Cancel
             </Button>
             {currentStep === 'metadata' && (
-              <Button onClick={handleSave} className="flex-1" disabled={!category || isProcessing}>
-                {isProcessing ? (
+              <Button 
+                onClick={handleSave} 
+                className="flex-1" 
+                disabled={!category || isProcessing || addItem.isPending}
+              >
+                {addItem.isPending ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                     Saving...
