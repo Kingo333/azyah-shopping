@@ -47,6 +47,7 @@ export const WardrobeUploadModal: React.FC<WardrobeUploadModalProps> = ({
       'image/*': ['.png', '.jpg', '.jpeg', '.webp']
     },
     maxFiles: 1,
+    maxSize: 10 * 1024 * 1024, // 10MB max
     onDrop: async (acceptedFiles) => {
       const file = acceptedFiles[0];
       if (file) {
@@ -54,8 +55,70 @@ export const WardrobeUploadModal: React.FC<WardrobeUploadModalProps> = ({
         setPreviewUrl(URL.createObjectURL(file));
         await processImage(file);
       }
+    },
+    onDropRejected: (fileRejections) => {
+      const error = fileRejections[0]?.errors[0];
+      if (error?.code === 'file-too-large') {
+        toast.error('Image is too large', {
+          description: 'Please upload an image smaller than 10MB'
+        });
+      } else if (error?.code === 'file-invalid-type') {
+        toast.error('Invalid file type', {
+          description: 'Please upload a PNG, JPG, JPEG, or WebP image'
+        });
+      }
     }
   });
+
+  const compressImage = async (file: File): Promise<File> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const MAX_WIDTH = 1024;
+          const MAX_HEIGHT = 1024;
+          
+          let width = img.width;
+          let height = img.height;
+          
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height *= MAX_WIDTH / width;
+              width = MAX_WIDTH;
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width *= MAX_HEIGHT / height;
+              height = MAX_HEIGHT;
+            }
+          }
+          
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(img, 0, 0, width, height);
+          
+          canvas.toBlob((blob) => {
+            if (blob) {
+              const compressed = new File([blob], file.name, {
+                type: 'image/jpeg',
+                lastModified: Date.now(),
+              });
+              resolve(compressed);
+            } else {
+              reject(new Error('Compression failed'));
+            }
+          }, 'image/jpeg', 0.85);
+        };
+        img.onerror = reject;
+        img.src = e.target?.result as string;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
 
   const processImage = async (file: File) => {
     // Check limit before processing
@@ -69,11 +132,18 @@ export const WardrobeUploadModal: React.FC<WardrobeUploadModalProps> = ({
     setCurrentStep('processing');
 
     try {
+      console.log('Original file size:', file.size);
+      
+      // Compress image first
+      const compressedFile = await compressImage(file);
+      console.log('Compressed file size:', compressedFile.size);
+      
+      setProgress(20);
       console.log('Starting Gemini background removal...');
       
-      // Create FormData with the image
+      // Create FormData with the compressed image
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append('file', compressedFile);
       
       setProgress(30);
 
@@ -131,7 +201,26 @@ export const WardrobeUploadModal: React.FC<WardrobeUploadModalProps> = ({
       toast.success('Background removed successfully!');
     } catch (error: any) {
       console.error('Error processing image:', error);
-      toast.error(error.message || 'Failed to process image. Please try again.');
+      
+      let errorMessage = 'Failed to process image. Please try again.';
+      let errorDescription = '';
+      
+      if (error.message?.includes('Maximum call stack')) {
+        errorMessage = 'Image is too large';
+        errorDescription = 'Please try a smaller image or contact support.';
+      } else if (error.message?.includes('LOVABLE_API_KEY')) {
+        errorMessage = 'Background removal service is not configured';
+        errorDescription = 'Please contact support.';
+      } else if (error.message?.includes('Not authenticated')) {
+        errorMessage = 'Authentication required';
+        errorDescription = 'Please sign in to upload images.';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      toast.error(errorMessage, {
+        description: errorDescription || 'Try using a smaller image or contact support if the issue persists.'
+      });
       
       setCurrentStep('upload');
       setProgress(0);
