@@ -560,6 +560,77 @@ const Events = () => {
           )}
         </div>
 
+        {/* Try-On Results Banner */}
+        {Object.keys(tryOnResults).length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-xl font-semibold mb-4">Your Try-On Results</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {Object.entries(tryOnResults)
+                .filter(([_, result]) => result.status === 'succeeded' && result.output_path)
+                .map(([productId, result]) => {
+                  const product = eventBrands
+                    .flatMap(b => b.products)
+                    .find(p => p.id === productId);
+                  
+                  return (
+                    <Card key={productId} className="overflow-hidden border-2 border-green-500">
+                      <div className="relative">
+                        <Badge className="absolute top-2 left-2 z-10 bg-green-500 text-white">
+                          ✨ Result Ready
+                        </Badge>
+                        <img
+                          src={supabase.storage
+                            .from('event-tryon-renders')
+                            .getPublicUrl(result.output_path).data.publicUrl}
+                          alt="Try-on result"
+                          className="w-full h-64 object-cover"
+                        />
+                      </div>
+                      <CardContent className="p-4">
+                        <p className="text-sm text-muted-foreground">
+                          Generated {new Date(result.created_at).toLocaleString()}
+                        </p>
+                        {product && (
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="w-full mt-2"
+                            onClick={() => {
+                              setSelectedProduct({
+                                ...product,
+                                event_brand_id: product.event_brand_id,
+                                brand_name: product.brand_name,
+                                brand_logo_url: product.brand_logo_url
+                              });
+                            }}
+                          >
+                            Try Again
+                          </Button>
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+            </div>
+            
+            {/* Processing Jobs Banner */}
+            {Object.entries(tryOnResults).some(([_, r]) => r.status === 'processing') && (
+              <Card className="mt-4 bg-blue-50 border-blue-200">
+                <CardContent className="p-4 flex items-center gap-3">
+                  <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
+                  <div>
+                    <p className="font-medium text-blue-900">Try-on generation in progress</p>
+                    <p className="text-sm text-blue-700">
+                      {Object.entries(tryOnResults).filter(([_, r]) => r.status === 'processing').length} 
+                      {' '}item(s) being processed. Results will appear here automatically.
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        )}
+
         <div>
           <h2 className="text-xl font-semibold mb-4">Featured Brands</h2>
           {isLoadingBrands ? (
@@ -622,68 +693,41 @@ const Events = () => {
                         {brand.products.map((product) => (
                           <Card key={product.id} className="flex-shrink-0 w-64 group hover:shadow-lg transition-shadow">
                             <CardContent className="p-4">
-                              {/* Show try-on result if exists */}
-                              {tryOnResults[product.id] && tryOnResults[product.id].status === 'succeeded' && tryOnResults[product.id].output_path && (
-                                <div className="relative mb-3">
-                                  <img
-                                    src={supabase.storage
-                                      .from('event-tryon-renders')
-                                      .getPublicUrl(tryOnResults[product.id].output_path).data.publicUrl}
-                                    alt="Try-on result"
-                                    className="w-full h-48 object-cover rounded border-2 border-green-500"
-                                  />
+                              {/* Product image with status badge */}
+                              <div className="relative mb-3">
+                                <img
+                                  src={product.image_url}
+                                  alt="Product"
+                                  className="w-full h-48 object-cover rounded"
+                                />
+                                {/* Try-On Ready badge */}
+                                {Object.keys(product.try_on_data || {}).length > 0 && hasPersonImage && !tryOnResults[product.id] && (
                                   <Badge className="absolute top-2 right-2 bg-green-500">
-                                    ✓ Complete
+                                    Try-On Ready
                                   </Badge>
-                                </div>
-                              )}
-                              
-                              {/* Show processing status */}
-                              {tryOnResults[product.id] && tryOnResults[product.id].status === 'processing' && (
-                                <div className="relative mb-3">
-                                  <img
-                                    src={product.image_url}
-                                    alt="Product"
-                                    className="w-full h-48 object-cover rounded opacity-50"
-                                  />
-                                  <div className="absolute inset-0 flex items-center justify-center">
+                                )}
+                                {/* Processing badge */}
+                                {tryOnResults[product.id]?.status === 'processing' && (
+                                  <div className="absolute inset-0 bg-black/40 rounded flex items-center justify-center">
                                     <Badge className="bg-blue-500">
                                       <Loader2 className="mr-1 h-3 w-3 animate-spin" />
                                       Processing...
                                     </Badge>
                                   </div>
-                                </div>
-                              )}
-                              
-                              {/* Show failed status */}
-                              {tryOnResults[product.id] && tryOnResults[product.id].status === 'failed' && (
-                                <div className="relative mb-3">
-                                  <img
-                                    src={product.image_url}
-                                    alt="Product"
-                                    className="w-full h-48 object-cover rounded"
-                                  />
+                                )}
+                                {/* Completed badge */}
+                                {tryOnResults[product.id]?.status === 'succeeded' && (
+                                  <Badge className="absolute top-2 right-2 bg-green-500">
+                                    ✓ Complete
+                                  </Badge>
+                                )}
+                                {/* Failed badge */}
+                                {tryOnResults[product.id]?.status === 'failed' && (
                                   <Badge className="absolute top-2 right-2 bg-red-500">
                                     Failed
                                   </Badge>
-                                </div>
-                              )}
-                              
-                              {/* Show original product image if no result */}
-                              {!tryOnResults[product.id] && (
-                                <div className="relative mb-3">
-                                  <img
-                                    src={product.image_url}
-                                    alt="Product"
-                                    className="w-full h-48 object-cover rounded"
-                                  />
-                                  {Object.keys(product.try_on_data || {}).length > 0 && hasPersonImage && (
-                                    <Badge className="absolute top-2 right-2 bg-green-500">
-                                      Try-On Ready
-                                    </Badge>
-                                  )}
-                                </div>
-                              )}
+                                )}
+                              </div>
                               
                               <Button 
                                 className="w-full"
