@@ -43,7 +43,7 @@ Deno.serve(async (req) => {
 
     const admin = createClient(SUPABASE_URL, SERVICE_KEY);
 
-    // 1. Load job + update status
+    // 1. Load job + validate
     const { data: job, error: jobError } = await admin
       .from('event_tryon_jobs')
       .select('*')
@@ -57,10 +57,13 @@ Deno.serve(async (req) => {
       );
     }
 
-    await admin
-      .from('event_tryon_jobs')
-      .update({ status: 'processing', started_at: new Date().toISOString() })
-      .eq('id', jobId);
+    // Return immediately, process in background
+    const processJob = async () => {
+      try {
+        await admin
+          .from('event_tryon_jobs')
+          .update({ status: 'processing', started_at: new Date().toISOString() })
+          .eq('id', jobId);
 
     // 2. Create signed URLs for input images
     console.log('[vto-gemini] Creating signed URLs for paths:', {
@@ -192,23 +195,42 @@ Focus on natural fit and photorealism.`;
 
     console.log('[vto-gemini] Result uploaded to:', outputPath);
 
-    // 7. Update job status
-    await admin
-      .from('event_tryon_jobs')
-      .update({
-        status: 'succeeded',
-        output_path: outputPath,
-        completed_at: new Date().toISOString()
-      })
-      .eq('id', jobId);
+        // 7. Update job status
+        await admin
+          .from('event_tryon_jobs')
+          .update({
+            status: 'succeeded',
+            output_path: outputPath,
+            completed_at: new Date().toISOString()
+          })
+          .eq('id', jobId);
+
+        console.log('[vto-gemini] Job completed successfully');
+
+      } catch (error: any) {
+        console.error('[vto-gemini] Background processing error:', error);
+        
+        await admin
+          .from('event_tryon_jobs')
+          .update({
+            status: 'failed',
+            error: error.message,
+            completed_at: new Date().toISOString()
+          })
+          .eq('id', jobId);
+      }
+    };
+
+    // Fire and forget
+    processJob();
 
     return new Response(
-      JSON.stringify({ ok: true, output_path: outputPath }),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({ ok: true, jobId, message: 'Job queued for processing' }),
+      { status: 202, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error: any) {
-    console.error('[vto-gemini] Error:', error);
+    console.error('[vto-gemini] Request error:', error);
     
     return new Response(
       JSON.stringify({ error: error.message || 'Internal server error' }),

@@ -404,19 +404,40 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
                                   .getPublicUrl(filePath);
                                 
                                 // Update editing product with storage path
+                                const updatedTryOnData = {
+                                  ...editingProduct.try_on_data,
+                                  outfit_image_path: filePath,
+                                  outfit_image_url: urlData.publicUrl
+                                };
+                                
                                 setEditingProduct(prev => prev ? {
                                   ...prev,
-                                  try_on_data: { 
-                                    ...prev.try_on_data, 
-                                    outfit_image_path: filePath,  // Store path, not URL
-                                    outfit_image_url: urlData.publicUrl  // For preview only
-                                  }
+                                  try_on_data: updatedTryOnData
                                 } : prev);
 
+                                // Auto-save configuration
+                                await supabase
+                                  .from('event_brand_products')
+                                  .update({
+                                    try_on_data: updatedTryOnData,
+                                    try_on_provider: 'gemini',
+                                    try_on_config: {
+                                      outfitImagePath: filePath
+                                    },
+                                    try_on_ready: true,
+                                    updated_at: new Date().toISOString()
+                                  })
+                                  .eq('id', editingProduct.id);
+
                                 toast({
-                                  title: "Outfit image uploaded",
-                                  description: "Ready to configure for try-on"
+                                  title: "Configuration saved",
+                                  description: "Outfit uploaded and try-on configured"
                                 });
+                                
+                                // Refresh products and close modal
+                                await fetchProducts();
+                                setIsEditModalOpen(false);
+                                setEditingProduct(null);
                                 
                               } catch (error: any) {
                                 console.error('[BrandProductManager] Upload error:', error);

@@ -223,7 +223,6 @@ const EventTryOnModal: React.FC<EventTryOnModalProps> = ({
       return;
     }
 
-    // Get outfit path from product configuration
     const outfitPath = product.try_on_config?.outfitImagePath || 
                        product.try_on_data?.outfit_image_path;
 
@@ -243,31 +242,55 @@ const EventTryOnModal: React.FC<EventTryOnModalProps> = ({
         eventId: eventId,
         userId: (await supabase.auth.getUser()).data.user!.id,
         productId: product.id,
-        personImagePath: personImageId,  // Storage path
-        outfitImagePath: outfitPath      // Storage path
+        personImagePath: personImageId,
+        outfitImagePath: outfitPath
       });
 
-      if (result.ok && result.outputPath) {
-        const { data } = supabase.storage
-          .from('event-tryon-renders')
-          .getPublicUrl(result.outputPath);
-        
-        setResultUrl(data.publicUrl);
-        setStatus('done');
-        
-        await saveAsset(
-          data.publicUrl,
-          undefined,
-          `${eventName} - ${product.brand_name} - Try-On`
-        );
-        
-        toast({
-          title: 'Try-on complete!',
-          description: 'Your virtual try-on is ready'
-        });
-      } else {
-        throw new Error(result.error || 'Try-on failed');
+      if (!result.ok || !result.jobId) {
+        throw new Error(result.error || 'Failed to start try-on');
       }
+
+      // Poll for job completion
+      const pollInterval = setInterval(async () => {
+        const { data: job } = await supabase
+          .from('event_tryon_jobs')
+          .select('status, output_path, error')
+          .eq('id', result.jobId)
+          .single();
+
+        if (job?.status === 'succeeded' && job.output_path) {
+          clearInterval(pollInterval);
+          
+          const { data } = supabase.storage
+            .from('event-tryon-renders')
+            .getPublicUrl(job.output_path);
+          
+          setResultUrl(data.publicUrl);
+          setStatus('done');
+          
+          await saveAsset(
+            data.publicUrl,
+            result.jobId,
+            `${eventName} - ${product.brand_name} - Try-On`
+          );
+          
+          toast({
+            title: 'Try-on complete!',
+            description: 'Your virtual try-on is ready'
+          });
+        } else if (job?.status === 'failed') {
+          clearInterval(pollInterval);
+          setStatus('failed');
+          toast({
+            title: 'Try-on failed',
+            description: job.error || 'Generation failed',
+            variant: 'destructive'
+          });
+        }
+      }, 2000); // Poll every 2 seconds
+
+      // Cleanup after 2 minutes max
+      setTimeout(() => clearInterval(pollInterval), 120000);
       
     } catch (err: any) {
       console.error('Try-on error:', err);
