@@ -77,7 +77,7 @@ export default function IntroCarousel() {
             <div className="relative bg-white rounded-[1.5rem] shadow-lg border-[3px] border-gray-800 overflow-hidden">
               <div className="absolute top-0 left-1/2 -translate-x-1/2 w-20 h-4 bg-gray-800 rounded-b-lg z-10" />
               {slides[currentSlide].type === 'slider' ? (
-                <div className="w-full h-[320px]">
+                <div className="w-full h-[450px]">
                   <BeforeAfterSlider />
                 </div>
               ) : (
