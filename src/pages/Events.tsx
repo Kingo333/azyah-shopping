@@ -8,7 +8,6 @@ import { Calendar, MapPin, Store, UserCircle, Upload, ChevronLeft, ChevronRight 
 import { format } from 'date-fns';
 import EventTryOnModal from '@/components/EventTryOnModal';
 import { useToast } from '@/hooks/use-toast';
-import { useBitStudio } from '@/hooks/useBitStudio';
 
 interface RetailEvent {
   id: string;
@@ -42,7 +41,6 @@ interface EventProduct {
 const Events = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { uploadImage, loading: bitStudioLoading } = useBitStudio();
   const [events, setEvents] = useState<RetailEvent[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<RetailEvent | null>(null);
   const [eventBrands, setEventBrands] = useState<EventBrand[]>([]);
@@ -151,29 +149,32 @@ const Events = () => {
     console.log('Starting person image upload:', { file: file.name, size: file.size, type: file.type });
     setIsUploadingPersonImage(true);
     try {
-      // Upload using BitStudio API
-      console.log('Calling uploadImage with file:', file.name, 'type: person');
-      const uploadedImage = await uploadImage(file, 'person');
-      console.log('BitStudio upload result:', uploadedImage);
+      // Upload directly to Supabase Storage (same as EventTryOnModal)
+      const fileExt = file.name.split('.').pop();
+      const fileName = `person_${Date.now()}.${fileExt}`;
+      const filePath = `${selectedEvent.id}/${user.id}/${fileName}`;
       
-      if (!uploadedImage) {
-        throw new Error('Failed to upload image to BitStudio');
-      }
-
-      // Store in event_user_photos
-      console.log('Storing in event_user_photos:', {
-        event_id: selectedEvent.id,
-        user_id: user.id,
-        photo_url: uploadedImage.path
-      });
+      const { error: uploadError } = await supabase.storage
+        .from('event-user-photos')
+        .upload(filePath, file, {
+          contentType: file.type,
+          upsert: true
+        });
       
-      await supabase
+      if (uploadError) throw uploadError;
+      
+      // Store storage path in database
+      const { error: dbError } = await supabase
         .from('event_user_photos')
         .upsert({
           event_id: selectedEvent.id,
           user_id: user.id,
-          photo_url: uploadedImage.path
+          photo_url: filePath,  // Storage path (not URL)
+          vto_provider: 'gemini',
+          vto_ready: true
         });
+      
+      if (dbError) throw dbError;
 
       setHasPersonImage(true);
       toast({
@@ -281,16 +282,16 @@ const Events = () => {
                           if (file) handlePersonImageUpload(file);
                         }}
                         className="hidden"
-                        disabled={isUploadingPersonImage || bitStudioLoading}
+                        disabled={isUploadingPersonImage}
                       />
                       <Button 
                         variant="outline" 
                         size="sm"
-                        disabled={isUploadingPersonImage || bitStudioLoading}
+                        disabled={isUploadingPersonImage}
                         className="relative"
                         onClick={() => document.getElementById('person-image-upload')?.click()}
                       >
-                        {(isUploadingPersonImage || bitStudioLoading) ? (
+                        {isUploadingPersonImage ? (
                           <>
                             <Upload className="w-4 h-4 mr-1 animate-spin" />
                             Uploading...
