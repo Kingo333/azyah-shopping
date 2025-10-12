@@ -10,9 +10,6 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 import { useSessionMonitor } from '@/hooks/useSessionMonitor';
 
 import Index from './pages/Index';
-
-
-import SelectRole from './pages/SelectRole';
 import Landing from './pages/Landing';
 import UserProfile from './pages/UserProfile';
 import ProfileSettings from './pages/ProfileSettings';
@@ -108,8 +105,6 @@ function AppContent() {
                   <Route path="/onboarding/subscription-features" element={<SubscriptionFeatures />} />
                   <Route path="/onboarding/plan-selection" element={<PlanSelection />} />
                   
-                  
-                  <Route path="/select-role" element={<SelectRole />} />
                   <Route path="/profile/:userId" element={
                     <ProtectedRoute>
                       <UserProfile />
