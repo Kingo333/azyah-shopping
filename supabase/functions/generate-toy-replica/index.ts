@@ -15,6 +15,16 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Parse request body BEFORE try/catch for error handling
+  const { toyReplicaId } = await req.json();
+  if (!toyReplicaId) {
+    console.error('❌ Missing toyReplicaId in request');
+    return new Response(
+      JSON.stringify({ error: 'Missing toyReplicaId' }), 
+      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
   try {
     // Validate all required environment variables
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
@@ -32,16 +42,6 @@ serve(async (req) => {
     }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-    const { toyReplicaId } = await req.json();
-    if (!toyReplicaId) {
-      console.error('❌ Missing toyReplicaId in request');
-      return new Response(
-        JSON.stringify({ error: 'Missing toyReplicaId' }), 
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
     console.log('🎯 Starting LEGO toy replica generation for ID:', toyReplicaId);
 
     // Fetch the toy replica record
@@ -136,7 +136,7 @@ serve(async (req) => {
 
     // Call OpenAI Images Edits API with FormData
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout
+    const timeoutId = setTimeout(() => controller.abort(), 120000); // 120s timeout for complex image generation
 
     try {
       // Create FormData for multipart/form-data request
@@ -269,39 +269,36 @@ serve(async (req) => {
     
     // Try to update the record with failure status and retry logic
     try {
-      const requestBody = await req.clone().json();
-      const toyReplicaId = requestBody.toyReplicaId;
-      if (toyReplicaId) {
-        // Get current retry count
-        const { data: currentReplica } = await errorSupabase
-          .from('toy_replicas')
-          .select('retry_count')
-          .eq('id', toyReplicaId)
-          .single();
+      // toyReplicaId is already available from the top of the function
+      // Get current retry count
+      const { data: currentReplica } = await errorSupabase
+        .from('toy_replicas')
+        .select('retry_count')
+        .eq('id', toyReplicaId)
+        .single();
 
-        const currentRetryCount = currentReplica?.retry_count || 0;
-        const newRetryCount = currentRetryCount + 1;
+      const currentRetryCount = currentReplica?.retry_count || 0;
+      const newRetryCount = currentRetryCount + 1;
 
-        // Determine if we should allow retry
-        const shouldRetry = newRetryCount < MAX_RETRIES;
-        const finalStatus = shouldRetry ? 'queued' : 'failed';
+      // Determine if we should allow retry
+      const shouldRetry = newRetryCount < MAX_RETRIES;
+      const finalStatus = shouldRetry ? 'queued' : 'failed';
 
-        await errorSupabase
-          .from('toy_replicas')
-          .update({ 
-            status: finalStatus,
-            error: error.message || 'Generation failed',
-            retry_count: newRetryCount,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', toyReplicaId);
+      await errorSupabase
+        .from('toy_replicas')
+        .update({ 
+          status: finalStatus,
+          error: error.message || 'Generation failed',
+          retry_count: newRetryCount,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', toyReplicaId);
 
-        console.log(
-          shouldRetry 
-            ? `⚠️ Marked for retry (attempt ${newRetryCount}/${MAX_RETRIES})`
-            : `❌ Marked as failed after ${newRetryCount} attempts`
-        );
-      }
+      console.log(
+        shouldRetry 
+          ? `⚠️ Marked for retry (attempt ${newRetryCount}/${MAX_RETRIES})`
+          : `❌ Marked as failed after ${newRetryCount} attempts`
+      );
     } catch (updateError) {
       console.error('❌ Failed to update error status:', updateError);
     }

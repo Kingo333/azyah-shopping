@@ -118,7 +118,7 @@ const ToyReplica = () => {
       
       // Poll database for status updates
       let pollCount = 0;
-      const maxPolls = 30; // 60 seconds max (2s interval)
+      const maxPolls = 75; // 150 seconds max (2s interval) - matches backend 120s timeout + buffer
       
       const pollInterval = setInterval(async () => {
         pollCount++;
@@ -160,9 +160,8 @@ const ToyReplica = () => {
             console.warn('⚠️ Generation timeout');
             setGenerating(false);
             toast({
-              title: "Timeout",
-              description: "Generation is taking longer than expected. Please check your results gallery.",
-              variant: "destructive"
+              title: "Still Processing",
+              description: "Image generation is taking longer than usual. Check your results gallery in a moment.",
             });
           }
         } catch (pollErr) {
