@@ -3,7 +3,10 @@ import { useDropzone } from 'react-dropzone';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { ArrowLeft, Upload, Edit, Trash2, Image, Shirt, Loader2 } from 'lucide-react';
+import { ArrowLeft, Upload, Edit, Trash2, Image, Shirt, Loader2, CheckCircle } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { InfoTooltip } from '@/components/ui/info-tooltip';
+import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -33,6 +36,7 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
   const [editingProduct, setEditingProduct] = useState<EventBrandProduct | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [uploadingOutfit, setUploadingOutfit] = useState(false);
+  const [forceReupload, setForceReupload] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -257,7 +261,7 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {products.map((product) => (
-            <Card key={product.id}>
+            <Card key={product.id} className="relative">
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-sm">Product Image</CardTitle>
@@ -280,12 +284,18 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
+                <div className="space-y-3 relative">
                   <img
                     src={product.image_url}
                     alt="Product"
                     className="w-full h-48 object-cover rounded"
                   />
+                  {product.try_on_data?.outfit_bitstudio_id && (
+                    <Badge variant="outline" className="absolute top-2 right-2 bg-green-50 text-green-700 border-green-200">
+                      <CheckCircle className="w-3 h-3 mr-1" />
+                      Try-On Ready
+                    </Badge>
+                  )}
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
                       <Shirt className="w-4 h-4 text-muted-foreground" />
@@ -338,6 +348,20 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
                        <p className="text-xs text-muted-foreground mb-2">
                          Upload the product outfit image for virtual try-on
                        </p>
+                       
+                       {editingProduct?.try_on_data?.outfit_bitstudio_id && (
+                         <div className="flex items-center gap-2 mb-2 p-3 bg-blue-50 rounded-md">
+                           <Checkbox
+                             id="forceReupload"
+                             checked={forceReupload}
+                             onCheckedChange={(checked) => setForceReupload(checked as boolean)}
+                           />
+                           <label htmlFor="forceReupload" className="text-sm text-gray-700 cursor-pointer flex-1">
+                             Force re-upload to BitStudio (creates new try-on assets)
+                           </label>
+                           <InfoTooltip content="Only check this if you need to regenerate BitStudio assets. This will use API credits." />
+                         </div>
+                       )}
                        
                        <div className="relative">
                           <input
@@ -397,26 +421,42 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
                                   .from('event-assets')
                                   .getPublicUrl(filePath);
 
-                                // Upload to BitStudio to get image ID
-                                toast({
-                                  title: "Uploading to BitStudio",
-                                  description: "Please wait...",
-                                });
-
-                                const { BitStudioClient } = await import('@/lib/bitstudio-client');
-                                const bitstudioImage = await BitStudioClient.uploadImage(file, 'virtual-try-on-outfit');
-
-                                if (!bitstudioImage?.id) {
-                                  throw new Error('Failed to upload to BitStudio');
-                                }
+                                // Check if we need to upload to BitStudio
+                                const existingBitstudioId = editingProduct?.try_on_data?.outfit_bitstudio_id;
+                                const needsBitstudioUpload = !existingBitstudioId || forceReupload;
                                 
-                                // Update editing product with storage path AND BitStudio ID
-                                const updatedTryOnData = {
+                                let updatedTryOnData = {
                                   ...editingProduct.try_on_data,
                                   outfit_image_path: filePath,
                                   outfit_image_url: urlData.publicUrl,
-                                  outfit_bitstudio_id: bitstudioImage.id
                                 };
+                                
+                                if (needsBitstudioUpload) {
+                                  // Upload to BitStudio to get image ID
+                                  toast({
+                                    title: "Uploading to BitStudio",
+                                    description: forceReupload ? "Creating new try-on asset..." : "First time setup...",
+                                  });
+
+                                  const { BitStudioClient } = await import('@/lib/bitstudio-client');
+                                  const bitstudioImage = await BitStudioClient.uploadImage(file, 'virtual-try-on-outfit');
+
+                                  if (!bitstudioImage?.id) {
+                                    throw new Error('Failed to upload to BitStudio');
+                                  }
+                                  
+                                  updatedTryOnData.outfit_bitstudio_id = bitstudioImage.id;
+                                } else {
+                                  // Preserve existing BitStudio ID
+                                  toast({
+                                    title: "Preview Updated",
+                                    description: "BitStudio assets preserved. Image updated in storage only.",
+                                  });
+                                  updatedTryOnData.outfit_bitstudio_id = existingBitstudioId;
+                                }
+                                
+                                // Reset force flag
+                                setForceReupload(false);
                                 
                                 setEditingProduct(prev => prev ? {
                                   ...prev,
