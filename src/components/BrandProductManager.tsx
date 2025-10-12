@@ -357,9 +357,9 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
                              onCheckedChange={(checked) => setForceReupload(checked as boolean)}
                            />
                            <label htmlFor="forceReupload" className="text-sm text-gray-700 cursor-pointer flex-1">
-                             Force re-upload to BitStudio (creates new try-on assets)
+                             Force re-upload to Try-on AI (creates new try-on assets)
                            </label>
-                           <InfoTooltip content="Only check this if you need to regenerate BitStudio assets. This will use API credits." />
+                           <InfoTooltip content="Only check this if you need to regenerate Try-on AI assets. This will use API credits." />
                          </div>
                        )}
                        
@@ -434,8 +434,8 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
                                 if (needsBitstudioUpload) {
                                   // Upload to BitStudio to get image ID
                                   toast({
-                                    title: "Uploading to BitStudio",
-                                    description: forceReupload ? "Creating new try-on asset..." : "First time setup...",
+                                    title: "Uploading to Try-on AI",
+                                    description: forceReupload ? "Creating new try-on asset..." : "Preparing for virtual try-on...",
                                   });
 
                                   const { BitStudioClient } = await import('@/lib/bitstudio-client');
@@ -450,7 +450,7 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
                                   // Preserve existing BitStudio ID
                                   toast({
                                     title: "Preview Updated",
-                                    description: "BitStudio assets preserved. Image updated in storage only.",
+                                    description: "Try-on AI assets preserved. Image updated in storage only.",
                                   });
                                   updatedTryOnData.outfit_bitstudio_id = existingBitstudioId;
                                 }
@@ -476,7 +476,7 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
 
                                 toast({
                                   title: "Configuration saved",
-                                  description: "Outfit uploaded to both Supabase and BitStudio"
+                                  description: "Outfit uploaded successfully and ready for virtual try-on"
                                 });
                                 
                                 // Refresh products and close modal
