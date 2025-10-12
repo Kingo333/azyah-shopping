@@ -380,13 +380,13 @@ const Events = () => {
                     {hasPersonImage ? (
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Badge className="bg-green-500 text-white cursor-pointer hover:bg-green-600">
-                            <UserCircle className="w-4 h-4 mr-1" />
+                          <button className="bg-green-500 text-white px-3 py-1.5 rounded-full text-sm font-medium cursor-pointer hover:bg-green-600 transition-colors inline-flex items-center gap-1">
+                            <UserCircle className="w-4 h-4" />
                             Photo Ready
-                            <ChevronDown className="w-3 h-3 ml-1" />
-                          </Badge>
+                            <ChevronDown className="w-3 h-3" />
+                          </button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent>
+                        <DropdownMenuContent align="end">
                           <DropdownMenuItem onClick={handleViewPhoto}>
                             <Eye className="w-4 h-4 mr-2" />
                             View Photo
