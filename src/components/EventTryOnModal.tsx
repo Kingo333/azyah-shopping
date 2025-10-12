@@ -139,14 +139,28 @@ const EventTryOnModal: React.FC<EventTryOnModalProps> = ({
         });
       
       if (uploadError) throw uploadError;
+
+      // Upload to BitStudio to get image ID
+      toast({
+        title: "Uploading to BitStudio",
+        description: "Please wait...",
+      });
+
+      const { BitStudioClient } = await import('@/lib/bitstudio-client');
+      const bitstudioImage = await BitStudioClient.uploadImage(file, 'virtual-try-on-person');
+
+      if (!bitstudioImage?.id) {
+        throw new Error('Failed to upload to BitStudio');
+      }
       
-      // Store storage path in database
+      // Store storage path AND BitStudio ID in database
       const { error: dbError } = await supabase
         .from('event_user_photos')
         .upsert({
           event_id: eventId,
           user_id: user.user.id,
-          photo_url: filePath,  // Store storage path, not URL
+          photo_url: filePath,
+          bitstudio_image_id: bitstudioImage.id,
           vto_provider: 'bitstudio',
           vto_ready: true
         });
@@ -158,7 +172,7 @@ const EventTryOnModal: React.FC<EventTryOnModalProps> = ({
       
       toast({
         title: 'Person photo uploaded!',
-        description: 'Ready to try on products'
+        description: 'Photo uploaded to both Supabase and BitStudio'
       });
       
     } catch (err: any) {
@@ -166,7 +180,7 @@ const EventTryOnModal: React.FC<EventTryOnModalProps> = ({
       setStatus('failed');
       toast({
         title: 'Upload failed',
-        description: 'Failed to upload photo to storage. Please try again.',
+        description: err.message || 'Failed to upload photo. Please try again.',
         variant: 'destructive'
       });
     }

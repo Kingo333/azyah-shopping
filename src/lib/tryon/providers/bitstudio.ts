@@ -37,21 +37,57 @@ export const bitstudioProvider: ITryOnProvider = {
         .update({ status: 'processing', started_at: new Date().toISOString() })
         .eq('id', job.id);
       
-      // 3. Get public URLs for storage paths
-      const { data: { publicUrl: personUrl } } = supabase.storage
-        .from('event-user-photos')
-        .getPublicUrl(req.personImagePath);
+      // 3. Get BitStudio image IDs from database
+      const { data: productData } = await supabase
+        .from('event_brand_products')
+        .select('try_on_data')
+        .eq('id', req.productId)
+        .single();
       
-      const { data: { publicUrl: outfitUrl } } = supabase.storage
-        .from('event-products')
-        .getPublicUrl(req.outfitImagePath);
+      const { data: personData } = await supabase
+        .from('event_user_photos')
+        .select('bitstudio_image_id')
+        .eq('event_id', req.eventId)
+        .eq('user_id', req.userId)
+        .single();
       
-      console.log('[BitStudioProvider] Using URLs:', { personUrl, outfitUrl });
+      const tryOnData = productData?.try_on_data as { outfit_bitstudio_id?: string } | null;
       
-      // 4. Call BitStudio API
+      if (!tryOnData?.outfit_bitstudio_id) {
+        await supabase
+          .from('event_tryon_jobs')
+          .update({ 
+            status: 'failed', 
+            error: 'Product outfit not uploaded to BitStudio',
+            completed_at: new Date().toISOString()
+          })
+          .eq('id', job.id);
+        
+        return { ok: false, error: 'Product outfit not uploaded to BitStudio' };
+      }
+      
+      if (!personData?.bitstudio_image_id) {
+        await supabase
+          .from('event_tryon_jobs')
+          .update({ 
+            status: 'failed', 
+            error: 'Person photo not uploaded to BitStudio',
+            completed_at: new Date().toISOString()
+          })
+          .eq('id', job.id);
+        
+        return { ok: false, error: 'Person photo not uploaded to BitStudio' };
+      }
+      
+      console.log('[BitStudioProvider] Using BitStudio IDs:', { 
+        personId: personData.bitstudio_image_id, 
+        outfitId: tryOnData.outfit_bitstudio_id 
+      });
+      
+      // 4. Call BitStudio API with image IDs
       const results = await BitStudioClient.virtualTryOn({
-        person_image_url: personUrl,
-        outfit_image_url: outfitUrl,
+        person_image_id: personData.bitstudio_image_id,
+        outfit_image_id: tryOnData.outfit_bitstudio_id,
         resolution: 'standard',
         num_images: 1
       });

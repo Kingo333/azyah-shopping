@@ -888,6 +888,7 @@ export type Database = {
       }
       event_user_photos: {
         Row: {
+          bitstudio_image_id: string | null
           created_at: string
           event_id: string
           id: string
@@ -899,6 +900,7 @@ export type Database = {
           vto_ready: boolean | null
         }
         Insert: {
+          bitstudio_image_id?: string | null
           created_at?: string
           event_id: string
           id?: string
@@ -910,6 +912,7 @@ export type Database = {
           vto_ready?: boolean | null
         }
         Update: {
+          bitstudio_image_id?: string | null
           created_at?: string
           event_id?: string
           id?: string

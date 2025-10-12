@@ -367,7 +367,7 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
 
                               try {
                                 setUploadingOutfit(true);
-                                console.log('[BrandProductManager] Uploading outfit to storage');
+                                console.log('[BrandProductManager] Uploading outfit to storage and BitStudio');
 
                                 // Get event_id from brand
                                 const { data: brandData } = await supabase
@@ -396,12 +396,26 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
                                 const { data: urlData } = supabase.storage
                                   .from('event-assets')
                                   .getPublicUrl(filePath);
+
+                                // Upload to BitStudio to get image ID
+                                toast({
+                                  title: "Uploading to BitStudio",
+                                  description: "Please wait...",
+                                });
+
+                                const { BitStudioClient } = await import('@/lib/bitstudio-client');
+                                const bitstudioImage = await BitStudioClient.uploadImage(file, 'virtual-try-on-outfit');
+
+                                if (!bitstudioImage?.id) {
+                                  throw new Error('Failed to upload to BitStudio');
+                                }
                                 
-                                // Update editing product with storage path
+                                // Update editing product with storage path AND BitStudio ID
                                 const updatedTryOnData = {
                                   ...editingProduct.try_on_data,
                                   outfit_image_path: filePath,
-                                  outfit_image_url: urlData.publicUrl
+                                  outfit_image_url: urlData.publicUrl,
+                                  outfit_bitstudio_id: bitstudioImage.id
                                 };
                                 
                                 setEditingProduct(prev => prev ? {
@@ -409,20 +423,20 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
                                   try_on_data: updatedTryOnData
                                 } : prev);
 
-                // Auto-save configuration
-                await supabase
-                  .from('event_brand_products')
-                  .update({
-                    try_on_data: updatedTryOnData,
-                    try_on_provider: 'bitstudio',
-                    try_on_ready: true,
-                    updated_at: new Date().toISOString()
-                  })
-                  .eq('id', editingProduct.id);
+                                // Auto-save configuration
+                                await supabase
+                                  .from('event_brand_products')
+                                  .update({
+                                    try_on_data: updatedTryOnData,
+                                    try_on_provider: 'bitstudio',
+                                    try_on_ready: true,
+                                    updated_at: new Date().toISOString()
+                                  })
+                                  .eq('id', editingProduct.id);
 
                                 toast({
                                   title: "Configuration saved",
-                                  description: "Outfit uploaded and try-on configured"
+                                  description: "Outfit uploaded to both Supabase and BitStudio"
                                 });
                                 
                                 // Refresh products and close modal
