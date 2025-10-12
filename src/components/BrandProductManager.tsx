@@ -160,7 +160,7 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
         .from('event_brand_products')
         .update({
           try_on_data: tryOnData,
-          try_on_provider: 'gemini',
+          try_on_provider: 'bitstudio',
           try_on_ready: !!tryOnData.outfit_image_path,
           updated_at: new Date().toISOString()
         })
@@ -414,7 +414,7 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
                   .from('event_brand_products')
                   .update({
                     try_on_data: updatedTryOnData,
-                    try_on_provider: 'gemini',
+                    try_on_provider: 'bitstudio',
                     try_on_ready: true,
                     updated_at: new Date().toISOString()
                   })

@@ -147,7 +147,7 @@ const EventTryOnModal: React.FC<EventTryOnModalProps> = ({
           event_id: eventId,
           user_id: user.user.id,
           photo_url: filePath,  // Store storage path, not URL
-          vto_provider: 'gemini',
+          vto_provider: 'bitstudio',
           vto_ready: true
         });
       
