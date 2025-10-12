@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Download, Trash2, X, ExternalLink, CheckCircle, AlertCircle, Clock, Loader } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -27,6 +27,7 @@ export const ToyReplicaResultsPanel: React.FC<ToyReplicaResultsPanelProps> = ({
   const { assets, loading: assetsLoading, deleteAssets } = useToyReplicaAssets();
   const [selectedAssets, setSelectedAssets] = useState<string[]>([]);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [signedUrls, setSignedUrls] = useState<Record<string, string>>({});
   const { toast } = useToast();
 
   const downloadImage = useCallback(async (url: string, filename?: string) => {
@@ -150,7 +151,35 @@ export const ToyReplicaResultsPanel: React.FC<ToyReplicaResultsPanelProps> = ({
     }
   };
 
+  const generateSignedUrls = useCallback(async (assets: ToyReplicaAsset[]) => {
+    const urlMap: Record<string, string> = {};
+    
+    for (const asset of assets) {
+      if (asset.result_url) {
+        try {
+          const { data, error } = await supabase.storage
+            .from('toy-replica-result')
+            .createSignedUrl(asset.result_url, 3600); // 1 hour expiry
+          
+          if (data?.signedUrl && !error) {
+            urlMap[asset.id] = data.signedUrl;
+          }
+        } catch (error) {
+          console.error('Error generating signed URL for asset:', asset.id, error);
+        }
+      }
+    }
+    
+    setSignedUrls(urlMap);
+  }, []);
+
   const completedAssets = assets.filter(asset => asset.status === 'succeeded' && asset.result_url);
+
+  useEffect(() => {
+    if (completedAssets.length > 0) {
+      generateSignedUrls(completedAssets);
+    }
+  }, [completedAssets, generateSignedUrls]);
 
   return (
     <Card className="w-full">
@@ -247,7 +276,7 @@ export const ToyReplicaResultsPanel: React.FC<ToyReplicaResultsPanelProps> = ({
                   )}
                   
                    <SmartImage
-                      src={imageUrlFrom('toy-replica-result', asset.result_url!)}
+                      src={signedUrls[asset.id] || '/placeholder.svg'}
                       alt="Toy replica result"
                       className="w-full aspect-square object-cover"
                       sizes="(max-width: 768px) 50vw, 33vw"
