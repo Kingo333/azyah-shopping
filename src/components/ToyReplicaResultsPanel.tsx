@@ -152,24 +152,37 @@ export const ToyReplicaResultsPanel: React.FC<ToyReplicaResultsPanelProps> = ({
   };
 
   const generateSignedUrls = useCallback(async (assets: ToyReplicaAsset[]) => {
+    console.log('🔑 Generating signed URLs for assets:', assets.length);
     const urlMap: Record<string, string> = {};
     
     for (const asset of assets) {
+      console.log('🔍 Processing asset:', { id: asset.id, result_url: asset.result_url, status: asset.status });
+      
       if (asset.result_url) {
         try {
           const { data, error } = await supabase.storage
             .from('toy-replica-result')
             .createSignedUrl(asset.result_url, 3600); // 1 hour expiry
           
+          if (error) {
+            console.error('❌ Signed URL error for asset:', asset.id, error);
+          }
+          
           if (data?.signedUrl && !error) {
+            console.log('✅ Generated signed URL for asset:', asset.id, data.signedUrl.substring(0, 100) + '...');
             urlMap[asset.id] = data.signedUrl;
+          } else {
+            console.warn('⚠️ No signed URL generated for asset:', asset.id);
           }
         } catch (error) {
-          console.error('Error generating signed URL for asset:', asset.id, error);
+          console.error('💥 Exception generating signed URL for asset:', asset.id, error);
         }
+      } else {
+        console.warn('⚠️ Asset has no result_url:', asset.id);
       }
     }
     
+    console.log('📦 Final signed URLs map:', Object.keys(urlMap).length, 'URLs generated');
     setSignedUrls(urlMap);
   }, []);
 
