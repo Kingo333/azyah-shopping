@@ -185,19 +185,33 @@ const Events = () => {
         .from('event-user-photos')
         .upload(filePath, file, {
           contentType: file.type,
-          upsert: true
+          upsert: false
         });
       
       if (uploadError) throw uploadError;
       
-      // Update database with new storage path - specify onConflict for upsert
+      // Upload to BitStudio to get image ID
+      toast({
+        title: "Uploading to Try-on AI",
+        description: "Please wait...",
+      });
+      
+      const { BitStudioClient } = await import('@/lib/bitstudio-client');
+      const bitstudioImage = await BitStudioClient.uploadImage(file, 'virtual-try-on-person');
+      
+      if (!bitstudioImage?.id) {
+        throw new Error('Failed to upload to Try-on AI');
+      }
+      
+      // Update database with new storage path AND BitStudio ID
       const { error: dbError } = await supabase
         .from('event_user_photos')
         .upsert({
           event_id: selectedEvent.id,
           user_id: user.id,
           photo_url: filePath,
-          vto_provider: 'gemini',
+          bitstudio_image_id: bitstudioImage.id,
+          vto_provider: 'bitstudio',
           vto_ready: true
         }, {
           onConflict: 'event_id,user_id'
