@@ -70,10 +70,10 @@ export default function IntroCarousel() {
       </div>
 
       {/* Main Content */}
-      <div className="flex items-center justify-center px-6 py-2 overflow-auto">
-        <div className="w-full max-w-sm mx-auto flex flex-col items-center gap-3">
+      <div className="flex items-center justify-center px-4 py-1 overflow-auto">
+        <div className="w-full max-w-sm mx-auto flex flex-col items-center gap-2">
           {/* Phone Mockup with Screenshot or Slider */}
-          <div className="relative w-40 h-auto">
+          <div className="relative w-56 h-auto">
             <div className="relative bg-white rounded-[1.5rem] shadow-lg border-[3px] border-gray-800 overflow-hidden">
               <div className="absolute top-0 left-1/2 -translate-x-1/2 w-20 h-4 bg-gray-800 rounded-b-lg z-10" />
               {slides[currentSlide].type === 'slider' ? (
@@ -91,17 +91,17 @@ export default function IntroCarousel() {
           </div>
           
           {/* Text Content */}
-          <div className="text-center space-y-1.5 px-2">
-            <h2 className="text-lg font-bold text-foreground leading-tight">
+          <div className="text-center space-y-1 px-2">
+            <h2 className="text-base font-bold text-foreground leading-tight">
               {slides[currentSlide].title}
             </h2>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-xs text-muted-foreground">
               {slides[currentSlide].subtitle}
             </p>
           </div>
 
           {/* Progress Dots with Arrow Navigation */}
-          <div className="flex items-center justify-center gap-4 mt-1">
+          <div className="flex items-center justify-center gap-4 mt-0.5">
             <button
               onClick={prevSlide}
               disabled={currentSlide === 0}
@@ -139,17 +139,17 @@ export default function IntroCarousel() {
       </div>
 
       {/* Bottom Actions */}
-      <div className="p-4 space-y-3 border-t bg-background mt-auto">
+      <div className="p-3 space-y-2 border-t bg-background mt-auto">
         <Button 
           onClick={handleJoinFree}
-          className="w-full h-14 text-lg font-semibold rounded-full bg-black hover:bg-black/90 text-white"
+          className="w-full h-12 text-base font-semibold rounded-full bg-black hover:bg-black/90 text-white"
         >
           Join for free
         </Button>
         
         <button
           onClick={handleLogin}
-          className="w-full h-14 text-lg font-semibold text-foreground hover:text-foreground/80 transition-colors"
+          className="w-full h-12 text-base font-semibold text-foreground hover:text-foreground/80 transition-colors"
         >
           Log in
         </button>
