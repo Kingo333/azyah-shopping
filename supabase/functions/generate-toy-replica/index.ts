@@ -262,13 +262,19 @@ serve(async (req) => {
   } catch (error) {
     console.error('❌ Fatal error during generation:', error);
     
+    // Re-create supabase client for error handling (was out of scope)
+    const errorSupabase = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    );
+    
     // Try to update the record with failure status and retry logic
     try {
       const requestBody = await req.clone().json();
       const toyReplicaId = requestBody.toyReplicaId;
       if (toyReplicaId) {
         // Get current retry count
-        const { data: currentReplica } = await supabase
+        const { data: currentReplica } = await errorSupabase
           .from('toy_replicas')
           .select('retry_count')
           .eq('id', toyReplicaId)
@@ -281,7 +287,7 @@ serve(async (req) => {
         const shouldRetry = newRetryCount < MAX_RETRIES;
         const finalStatus = shouldRetry ? 'queued' : 'failed';
 
-        await supabase
+        await errorSupabase
           .from('toy_replicas')
           .update({ 
             status: finalStatus,

@@ -102,39 +102,84 @@ const ToyReplica = () => {
     setResult(null);
     
     try {
-      console.log('🎨 Generating LEGO mini-figure for:', toyReplicaId);
+      console.log('🎨 Starting LEGO mini-figure generation for:', toyReplicaId);
       
-      const { data, error } = await supabase.functions.invoke('generate-toy-replica', {
+      // Invoke edge function (don't wait for full completion)
+      const { error } = await supabase.functions.invoke('generate-toy-replica', {
         body: { toyReplicaId }
       });
 
       if (error) {
-        console.error('❌ Generation error:', error);
-        throw new Error(error.message || 'Generation failed');
-      }
-
-      if (!data?.resultUrl) {
-        throw new Error('No result URL returned');
+        console.error('❌ Generation invocation error:', error);
+        throw new Error(error.message || 'Failed to start generation');
       }
       
-      console.log('✅ Generation successful! Result:', data.resultUrl);
-      setResult(data.resultUrl);
-      setGenerationsUsed(prev => prev + 1);
-      setRefreshResults(prev => prev + 1);
+      console.log('✅ Generation started, polling for status...');
       
-      toast({
-        title: "Success!",
-        description: "Your LEGO mini-figure has been created!",
-      });
+      // Poll database for status updates
+      let pollCount = 0;
+      const maxPolls = 30; // 60 seconds max (2s interval)
+      
+      const pollInterval = setInterval(async () => {
+        pollCount++;
+        
+        try {
+          const { data: replica, error: pollError } = await supabase
+            .from('toy_replicas')
+            .select('*')
+            .eq('id', toyReplicaId)
+            .single();
+          
+          if (pollError) {
+            clearInterval(pollInterval);
+            console.error('❌ Poll error:', pollError);
+            throw pollError;
+          }
+          
+          console.log(`📊 Poll ${pollCount}: status = ${replica.status}`);
+          
+          if (replica.status === 'succeeded' && replica.result_url) {
+            clearInterval(pollInterval);
+            console.log('✅ Generation completed!', replica.result_url);
+            setResult(replica.result_url);
+            setGenerationsUsed(prev => prev + 1);
+            setRefreshResults(prev => prev + 1);
+            setGenerating(false);
+            
+            toast({
+              title: "Success!",
+              description: "Your LEGO mini-figure has been created!",
+            });
+          } else if (replica.status === 'failed') {
+            clearInterval(pollInterval);
+            console.error('❌ Generation failed:', replica.error);
+            setGenerating(false);
+            throw new Error(replica.error || 'Generation failed');
+          } else if (pollCount >= maxPolls) {
+            clearInterval(pollInterval);
+            console.warn('⚠️ Generation timeout');
+            setGenerating(false);
+            toast({
+              title: "Timeout",
+              description: "Generation is taking longer than expected. Please check your results gallery.",
+              variant: "destructive"
+            });
+          }
+        } catch (pollErr) {
+          clearInterval(pollInterval);
+          setGenerating(false);
+          throw pollErr;
+        }
+      }, 2000); // Poll every 2 seconds
+      
     } catch (error) {
       console.error('❌ Generation failed:', error);
+      setGenerating(false);
       toast({
         title: "Generation Failed",
         description: error instanceof Error ? error.message : 'Unknown error',
         variant: "destructive"
       });
-    } finally {
-      setGenerating(false);
     }
   };
 
