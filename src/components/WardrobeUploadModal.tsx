@@ -77,12 +77,28 @@ export const WardrobeUploadModal: React.FC<WardrobeUploadModalProps> = ({
       
       setProgress(30);
 
-      // Call Gemini edge function
-      const { data, error } = await supabase.functions.invoke('gemini-bg-remove', {
-        body: formData
-      });
+      // Get auth token
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('Not authenticated');
 
-      if (error) throw new Error(error.message);
+      // Call Gemini edge function using direct fetch (FormData doesn't work with supabase.functions.invoke)
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/gemini-bg-remove`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+          body: formData
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Background removal failed');
+      }
+
+      const data = await response.json();
       
       setProgress(70);
 
@@ -90,6 +106,7 @@ export const WardrobeUploadModal: React.FC<WardrobeUploadModalProps> = ({
         throw new Error('Background removal failed');
       }
 
+      console.log('Background removed successfully:', data.image_url);
       setBgRemovedPreview(data.image_url);
       
       setProgress(90);
@@ -111,6 +128,7 @@ export const WardrobeUploadModal: React.FC<WardrobeUploadModalProps> = ({
 
       setProgress(100);
       setCurrentStep('metadata');
+      toast.success('Background removed successfully!');
     } catch (error: any) {
       console.error('Error processing image:', error);
       toast.error(error.message || 'Failed to process image. Please try again.');
