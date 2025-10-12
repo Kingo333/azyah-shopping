@@ -6,8 +6,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { ArrowLeft, Upload, Edit, Trash2, Image, Shirt, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { useBitStudio } from '@/hooks/useBitStudio';
-import { BITSTUDIO_IMAGE_TYPES } from '@/lib/bitstudio-types';
 
 interface EventBrandProduct {
   id: string;
@@ -36,7 +34,6 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [uploadingOutfit, setUploadingOutfit] = useState(false);
   const { toast } = useToast();
-  const { uploadImage, loading: bitStudioLoading } = useBitStudio();
 
   useEffect(() => {
     fetchProducts();
@@ -452,10 +449,10 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
                               }
                             }}
                            className="w-full p-2 border rounded"
-                           disabled={uploadingOutfit || bitStudioLoading}
+                           disabled={uploadingOutfit}
                          />
                          
-                         {(uploadingOutfit || bitStudioLoading) && (
+                         {uploadingOutfit && (
                            <div className="absolute inset-0 bg-white/80 flex items-center justify-center rounded">
                              <div className="flex items-center gap-2 text-sm">
                                <Loader2 className="h-4 w-4 animate-spin" />
