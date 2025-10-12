@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { BITSTUDIO_IMAGE_TYPES } from '@/lib/bitstudio-types';
 import { useAiAssets } from '@/hooks/useAiAssets';
+import { runTryOn } from '@/lib/tryon';
 
 interface EventProduct {
   id: string;
@@ -221,14 +222,13 @@ const EventTryOnModal: React.FC<EventTryOnModalProps> = ({
       return;
     }
 
-    // Determine outfit source: uploaded outfit > product try-on image > product main image
     const outfitSource = outfitImageId 
-      ? { outfit_image_id: outfitImageId }
+      ? outfitImageId
       : product.try_on_data?.outfit_image_url 
-        ? { outfit_image_url: product.try_on_data.outfit_image_url }
-        : { outfit_image_url: product.image_url };
+        ? product.try_on_data.outfit_image_url
+        : product.image_url;
 
-    if (!outfitSource.outfit_image_id && !outfitSource.outfit_image_url) {
+    if (!outfitSource) {
       toast({
         title: "Missing outfit data",
         description: "Please upload an outfit image or ensure product has try-on data",
@@ -240,32 +240,47 @@ const EventTryOnModal: React.FC<EventTryOnModalProps> = ({
     try {
       setStatus('generating');
       
-      const result = await virtualTryOn({
-        person_image_id: personImageId,
-        ...outfitSource,
-        resolution: 'standard',
-        num_images: 1
+      // Use new provider adapter
+      const result = await runTryOn({
+        eventId: eventId,
+        userId: (await supabase.auth.getUser()).data.user!.id,
+        productId: product.id,
+        personImagePath: personImageId,
+        outfitImagePath: outfitSource
       });
 
-      if (result?.path) {
-        setResultUrl(result.path);
+      if (result.ok && result.outputPath) {
+        // Get public URL from storage
+        const { data } = supabase.storage
+          .from('event-tryon-renders')
+          .getPublicUrl(result.outputPath);
+        
+        setResultUrl(data.publicUrl);
         setStatus('done');
         
-        // Save the result with event and brand context
-        const tryOnType = outfitImageId ? 'Custom Outfit' : 'Product';
-        await saveAsset(result.path, undefined, `${eventName} - ${product.brand_name} - ${tryOnType} Try-On`);
+        // Save to ai_assets
+        await saveAsset(
+          data.publicUrl,
+          undefined,
+          `${eventName} - ${product.brand_name} - Try-On`
+        );
         
         toast({
           title: 'Try-on complete!',
           description: 'Your virtual try-on is ready'
         });
       } else {
-        throw new Error('No result returned from try-on');
+        throw new Error(result.error || 'Try-on failed');
       }
       
     } catch (err: any) {
       console.error('Try-on error:', err);
       setStatus('failed');
+      toast({
+        title: 'Try-on failed',
+        description: err.message || 'Failed to generate try-on',
+        variant: 'destructive'
+      });
     }
   };
 
@@ -291,32 +306,45 @@ const EventTryOnModal: React.FC<EventTryOnModalProps> = ({
     try {
       setStatus('generating');
       
-      // Use the product's main image directly for faster processing
-      const result = await virtualTryOn({
-        person_image_id: personImageId,
-        outfit_image_url: product.image_url,
-        resolution: 'standard',
-        num_images: 1
+      // Use new provider adapter with product main image
+      const result = await runTryOn({
+        eventId: eventId,
+        userId: (await supabase.auth.getUser()).data.user!.id,
+        productId: product.id,
+        personImagePath: personImageId,
+        outfitImagePath: product.image_url
       });
 
-      if (result?.path) {
-        setResultUrl(result.path);
+      if (result.ok && result.outputPath) {
+        const { data } = supabase.storage
+          .from('event-tryon-renders')
+          .getPublicUrl(result.outputPath);
+        
+        setResultUrl(data.publicUrl);
         setStatus('done');
         
-        // Save the result with event and brand context
-        await saveAsset(result.path, undefined, `${eventName} - ${product.brand_name} - Fast Try-On`);
+        await saveAsset(
+          data.publicUrl,
+          undefined,
+          `${eventName} - ${product.brand_name} - Fast Try-On`
+        );
         
         toast({
           title: 'Fast try-on complete!',
           description: 'Your virtual try-on is ready'
         });
       } else {
-        throw new Error('No result returned from try-on');
+        throw new Error(result.error || 'Try-on failed');
       }
       
     } catch (err: any) {
       console.error('Fast try-on error:', err);
       setStatus('failed');
+      toast({
+        title: 'Try-on failed',
+        description: err.message || 'Failed to generate try-on',
+        variant: 'destructive'
+      });
     }
   };
 

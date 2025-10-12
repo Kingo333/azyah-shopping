@@ -163,6 +163,11 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
         .from('event_brand_products')
         .update({
           try_on_data: tryOnData,
+          try_on_provider: 'gemini', // Switch to Gemini
+          try_on_config: {
+            outfitImagePath: tryOnData.outfit_image_url || tryOnData.outfit_image_id
+          },
+          try_on_ready: !!(tryOnData.outfit_image_url || tryOnData.outfit_image_id),
           updated_at: new Date().toISOString()
         })
         .eq('id', editingProduct.id);
@@ -171,7 +176,7 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
 
       toast({
         title: "Success",
-        description: "Try-on data updated successfully"
+        description: "Try-on data updated successfully (Gemini provider)"
       });
 
       setIsEditModalOpen(false);
