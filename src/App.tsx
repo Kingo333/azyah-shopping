@@ -80,7 +80,7 @@ function AppContent() {
   return (
     <>
       <Routes>
-                  <Route path="/" element={<Landing />} />
+                  <Route path="/" element={<IntroCarousel />} />
                   <Route path="/landing" element={<Landing />} />
                   <Route path="/dashboard" element={
                     <ProtectedRoute>
