@@ -13,6 +13,7 @@ export interface TryOnResult {
   jobId?: string;
   outputPath?: string;
   error?: string;
+  message?: string;
 }
 
 export interface ITryOnProvider {

@@ -23,3 +23,6 @@ verify_jwt = true
 
 [functions.vto-gemini]
 verify_jwt = true
+
+[functions.bitstudio-poll-job]
+verify_jwt = false

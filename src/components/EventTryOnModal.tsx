@@ -501,11 +501,28 @@ const EventTryOnModal: React.FC<EventTryOnModalProps> = ({
 
           {(status === 'uploading' || status === 'generating') && (
             <div className="text-center space-y-4">
-              <Loader2 className="h-8 w-8 animate-spin mx-auto" />
-              <p className="text-sm">{getStatusText()}</p>
-              <p className="text-xs text-muted-foreground">
-                This usually takes 30-60 seconds...
-              </p>
+              <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
+              <div>
+                <p className="text-sm font-medium">{getStatusText()}</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  This may take 30-90 seconds
+                </p>
+                {status === 'generating' && (
+                  <>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      <strong>You can safely close this window.</strong>
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Results will appear above the Try On button when complete.
+                    </p>
+                  </>
+                )}
+              </div>
+              {status === 'generating' && (
+                <Button variant="outline" onClick={onClose} className="mt-4">
+                  Close & Continue Browsing
+                </Button>
+              )}
             </div>
           )}
 

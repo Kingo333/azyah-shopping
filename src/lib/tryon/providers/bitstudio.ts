@@ -109,70 +109,21 @@ export const bitstudioProvider: ITryOnProvider = {
       
       console.log('[BitStudioProvider] BitStudio job ID:', bitstudioJobId);
       
-      // 5. Poll for completion
-      const result = await BitStudioClient.pollUntilComplete(bitstudioJobId);
-      
-      if (result.status === 'failed') {
-        await supabase
-          .from('event_tryon_jobs')
-          .update({ 
-            status: 'failed', 
-            error: result.error || 'BitStudio generation failed',
-            completed_at: new Date().toISOString()
-          })
-          .eq('id', job.id);
-        
-        return { ok: false, error: result.error || 'Generation failed' };
-      }
-      
-      // 6. Upload result to Supabase Storage
-      const timestamp = Date.now();
-      const filename = `${req.productId}_${timestamp}.png`;
-      const storagePath = `${req.eventId}/${req.userId}/${filename}`;
-      
-      // Download from BitStudio
-      const imageResponse = await fetch(result.path!);
-      const imageBlob = await imageResponse.blob();
-      
-      // Upload to Supabase
-      const { error: uploadError } = await supabase.storage
-        .from('event-tryon-renders')
-        .upload(storagePath, imageBlob, {
-          contentType: 'image/png',
-          upsert: false
-        });
-      
-      if (uploadError) {
-        console.error('[BitStudioProvider] Upload error:', uploadError);
-        await supabase
-          .from('event_tryon_jobs')
-          .update({ 
-            status: 'failed', 
-            error: `Upload failed: ${uploadError.message}`,
-            completed_at: new Date().toISOString()
-          })
-          .eq('id', job.id);
-        
-        return { ok: false, error: uploadError.message };
-      }
-      
-      // 7. Update job with success
+      // 5. Store BitStudio job ID and return immediately (background processing)
       await supabase
         .from('event_tryon_jobs')
         .update({ 
-          status: 'succeeded', 
-          output_path: storagePath,
-          credits_used: result.credits_used || 2,
-          completed_at: new Date().toISOString()
+          provider_job_id: bitstudioJobId,
+          status: 'processing'
         })
         .eq('id', job.id);
       
-      console.log('[BitStudioProvider] Try-on complete:', storagePath);
+      console.log('[BitStudioProvider] Job queued for background processing:', job.id);
       
       return {
         ok: true,
         jobId: job.id,
-        outputPath: storagePath
+        message: 'Try-on started, processing in background'
       };
       
     } catch (error: any) {

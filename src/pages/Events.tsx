@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, MapPin, Store, UserCircle, Upload, ChevronLeft, ChevronRight, Trash2, Eye, ChevronDown } from 'lucide-react';
+import { Calendar, MapPin, Store, UserCircle, Upload, ChevronLeft, ChevronRight, Trash2, Eye, ChevronDown, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import EventTryOnModal from '@/components/EventTryOnModal';
 import { useToast } from '@/hooks/use-toast';
@@ -59,10 +59,104 @@ const Events = () => {
   const [selectedProduct, setSelectedProduct] = useState<EventProduct | null>(null);
   const [brandScrollPositions, setBrandScrollPositions] = useState<{[key: string]: number}>({});
   const [previewPhotoUrl, setPreviewPhotoUrl] = useState<string | null>(null);
+  const [tryOnResults, setTryOnResults] = useState<Record<string, any>>({});
 
   useEffect(() => {
     fetchUpcomingEvents();
   }, []);
+
+  // Fetch try-on results for the selected event
+  const fetchTryOnResults = async () => {
+    if (!user?.id || !selectedEvent?.id) return;
+    
+    const { data } = await supabase
+      .from('event_tryon_jobs')
+      .select('product_id, status, output_path, created_at, error')
+      .eq('event_id', selectedEvent.id)
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
+    
+    if (data) {
+      const resultsMap = data.reduce((acc: Record<string, any>, job) => {
+        // Only store the most recent job for each product
+        if (!acc[job.product_id] || new Date(job.created_at) > new Date(acc[job.product_id].created_at)) {
+          acc[job.product_id] = job;
+        }
+        return acc;
+      }, {});
+      setTryOnResults(resultsMap);
+    }
+  };
+
+  // Poll background jobs and subscribe to updates
+  useEffect(() => {
+    if (!user?.id || !selectedEvent?.id) return;
+    
+    // Initial fetch
+    fetchTryOnResults();
+    
+    // Set up realtime subscription for job updates
+    const channel = supabase
+      .channel(`event-tryon-updates-${selectedEvent.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'event_tryon_jobs',
+          filter: `user_id=eq.${user.id}`
+        },
+        (payload) => {
+          const job = payload.new as any;
+          
+          if (job.status === 'succeeded' && job.output_path) {
+            fetchTryOnResults();
+            toast({
+              title: "Try-on complete! ✨",
+              description: "Your virtual try-on result is ready"
+            });
+          } else if (job.status === 'failed') {
+            fetchTryOnResults();
+            toast({
+              title: "Try-on failed",
+              description: job.error || "Generation failed",
+              variant: "destructive"
+            });
+          }
+        }
+      )
+      .subscribe();
+    
+    // Poll processing jobs every 10 seconds
+    const pollInterval = setInterval(async () => {
+      const { data: processingJobs } = await supabase
+        .from('event_tryon_jobs')
+        .select('id, provider_job_id')
+        .eq('event_id', selectedEvent.id)
+        .eq('user_id', user.id)
+        .eq('status', 'processing');
+      
+      if (processingJobs && processingJobs.length > 0) {
+        console.log(`Polling ${processingJobs.length} background jobs...`);
+        
+        // Poll each job
+        for (const job of processingJobs) {
+          try {
+            await supabase.functions.invoke('bitstudio-poll-job', {
+              body: { jobId: job.id }
+            });
+          } catch (error) {
+            console.error('Error polling job:', error);
+          }
+        }
+      }
+    }, 10000); // Poll every 10 seconds
+    
+    return () => {
+      channel.unsubscribe();
+      clearInterval(pollInterval);
+    };
+  }, [user?.id, selectedEvent?.id]);
 
   const fetchUpcomingEvents = async () => {
     try {
@@ -528,21 +622,72 @@ const Events = () => {
                         {brand.products.map((product) => (
                           <Card key={product.id} className="flex-shrink-0 w-64 group hover:shadow-lg transition-shadow">
                             <CardContent className="p-4">
-                              <div className="relative mb-3">
-                                <img
-                                  src={product.image_url}
-                                  alt="Product"
-                                  className="w-full h-48 object-cover rounded"
-                                />
-                                {Object.keys(product.try_on_data || {}).length > 0 && hasPersonImage && (
+                              {/* Show try-on result if exists */}
+                              {tryOnResults[product.id] && tryOnResults[product.id].status === 'succeeded' && tryOnResults[product.id].output_path && (
+                                <div className="relative mb-3">
+                                  <img
+                                    src={supabase.storage
+                                      .from('event-tryon-renders')
+                                      .getPublicUrl(tryOnResults[product.id].output_path).data.publicUrl}
+                                    alt="Try-on result"
+                                    className="w-full h-48 object-cover rounded border-2 border-green-500"
+                                  />
                                   <Badge className="absolute top-2 right-2 bg-green-500">
-                                    Try-On Ready
+                                    ✓ Complete
                                   </Badge>
-                                )}
-                              </div>
+                                </div>
+                              )}
+                              
+                              {/* Show processing status */}
+                              {tryOnResults[product.id] && tryOnResults[product.id].status === 'processing' && (
+                                <div className="relative mb-3">
+                                  <img
+                                    src={product.image_url}
+                                    alt="Product"
+                                    className="w-full h-48 object-cover rounded opacity-50"
+                                  />
+                                  <div className="absolute inset-0 flex items-center justify-center">
+                                    <Badge className="bg-blue-500">
+                                      <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                                      Processing...
+                                    </Badge>
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {/* Show failed status */}
+                              {tryOnResults[product.id] && tryOnResults[product.id].status === 'failed' && (
+                                <div className="relative mb-3">
+                                  <img
+                                    src={product.image_url}
+                                    alt="Product"
+                                    className="w-full h-48 object-cover rounded"
+                                  />
+                                  <Badge className="absolute top-2 right-2 bg-red-500">
+                                    Failed
+                                  </Badge>
+                                </div>
+                              )}
+                              
+                              {/* Show original product image if no result */}
+                              {!tryOnResults[product.id] && (
+                                <div className="relative mb-3">
+                                  <img
+                                    src={product.image_url}
+                                    alt="Product"
+                                    className="w-full h-48 object-cover rounded"
+                                  />
+                                  {Object.keys(product.try_on_data || {}).length > 0 && hasPersonImage && (
+                                    <Badge className="absolute top-2 right-2 bg-green-500">
+                                      Try-On Ready
+                                    </Badge>
+                                  )}
+                                </div>
+                              )}
+                              
                               <Button 
                                 className="w-full"
-                                disabled={!hasPersonImage || Object.keys(product.try_on_data || {}).length === 0}
+                                disabled={!hasPersonImage || Object.keys(product.try_on_data || {}).length === 0 || (tryOnResults[product.id]?.status === 'processing')}
                                 onClick={() => {
                                   if (hasPersonImage && Object.keys(product.try_on_data || {}).length > 0) {
                                     setSelectedProduct({
@@ -556,6 +701,10 @@ const Events = () => {
                               >
                                 {!hasPersonImage 
                                   ? 'Upload Photo First' 
+                                  : tryOnResults[product.id]?.status === 'processing' 
+                                  ? 'Processing...'
+                                  : tryOnResults[product.id]?.status === 'succeeded'
+                                  ? 'Try Again'
                                   : Object.keys(product.try_on_data || {}).length > 0 
                                   ? 'Try On' 
                                   : 'Not Available'

@@ -828,6 +828,7 @@ export type Database = {
           output_path: string | null
           product_id: string | null
           provider: string
+          provider_job_id: string | null
           started_at: string | null
           status: string
           updated_at: string | null
@@ -846,6 +847,7 @@ export type Database = {
           output_path?: string | null
           product_id?: string | null
           provider?: string
+          provider_job_id?: string | null
           started_at?: string | null
           status?: string
           updated_at?: string | null
@@ -864,6 +866,7 @@ export type Database = {
           output_path?: string | null
           product_id?: string | null
           provider?: string
+          provider_job_id?: string | null
           started_at?: string | null
           status?: string
           updated_at?: string | null
