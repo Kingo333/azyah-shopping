@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { Download, Trash2, X, ExternalLink, CheckCircle, AlertCircle, Clock, Loader } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -28,6 +28,7 @@ export const ToyReplicaResultsPanel: React.FC<ToyReplicaResultsPanelProps> = ({
   const [selectedAssets, setSelectedAssets] = useState<string[]>([]);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [signedUrls, setSignedUrls] = useState<Record<string, string>>({});
+  const [urlExpiry, setUrlExpiry] = useState<Record<string, number>>({});
   const { toast } = useToast();
 
   const downloadImage = useCallback(async (url: string, filename?: string) => {
@@ -152,11 +153,15 @@ export const ToyReplicaResultsPanel: React.FC<ToyReplicaResultsPanelProps> = ({
   };
 
   const generateSignedUrls = useCallback(async (assets: ToyReplicaAsset[]) => {
-    console.log('🔑 Generating signed URLs for assets:', assets.length);
-    const urlMap: Record<string, string> = {};
+    const now = Date.now();
+    const urlMap: Record<string, string> = { ...signedUrls };
+    const expiryMap: Record<string, number> = { ...urlExpiry };
     
     for (const asset of assets) {
-      console.log('🔍 Processing asset:', { id: asset.id, result_url: asset.result_url, status: asset.status });
+      // Skip if URL exists and hasn't expired (with 5 min buffer)
+      if (urlMap[asset.id] && expiryMap[asset.id] && expiryMap[asset.id] > now + 300000) {
+        continue;
+      }
       
       if (asset.result_url) {
         try {
@@ -164,29 +169,25 @@ export const ToyReplicaResultsPanel: React.FC<ToyReplicaResultsPanelProps> = ({
             .from('toy-replica-result')
             .createSignedUrl(asset.result_url, 3600); // 1 hour expiry
           
-          if (error) {
-            console.error('❌ Signed URL error for asset:', asset.id, error);
-          }
-          
           if (data?.signedUrl && !error) {
-            console.log('✅ Generated signed URL for asset:', asset.id, data.signedUrl.substring(0, 100) + '...');
             urlMap[asset.id] = data.signedUrl;
-          } else {
-            console.warn('⚠️ No signed URL generated for asset:', asset.id);
+            expiryMap[asset.id] = now + 3600000; // 1 hour from now
           }
         } catch (error) {
-          console.error('💥 Exception generating signed URL for asset:', asset.id, error);
+          console.error('Error generating signed URL:', error);
         }
-      } else {
-        console.warn('⚠️ Asset has no result_url:', asset.id);
       }
     }
     
-    console.log('📦 Final signed URLs map:', Object.keys(urlMap).length, 'URLs generated');
     setSignedUrls(urlMap);
-  }, []);
+    setUrlExpiry(expiryMap);
+  }, [signedUrls, urlExpiry]);
 
-  const completedAssets = assets.filter(asset => asset.status === 'succeeded' && asset.result_url);
+  // Memoize completedAssets to prevent infinite re-renders
+  const completedAssets = useMemo(
+    () => assets.filter(asset => asset.status === 'succeeded' && asset.result_url),
+    [assets]
+  );
 
   useEffect(() => {
     if (completedAssets.length > 0) {

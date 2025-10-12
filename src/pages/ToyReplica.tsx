@@ -119,8 +119,9 @@ const ToyReplica = () => {
       // Poll database for status updates
       let pollCount = 0;
       const maxPolls = 75; // 150 seconds max (2s interval) - matches backend 120s timeout + buffer
+      let pollIntervalId: NodeJS.Timeout | null = null;
       
-      const pollInterval = setInterval(async () => {
+      pollIntervalId = setInterval(async () => {
         pollCount++;
         
         try {
@@ -131,7 +132,7 @@ const ToyReplica = () => {
             .single();
           
           if (pollError) {
-            clearInterval(pollInterval);
+            if (pollIntervalId) clearInterval(pollIntervalId);
             console.error('❌ Poll error:', pollError);
             throw pollError;
           }
@@ -139,7 +140,7 @@ const ToyReplica = () => {
           console.log(`📊 Poll ${pollCount}: status = ${replica.status}`);
           
           if (replica.status === 'succeeded' && replica.result_url) {
-            clearInterval(pollInterval);
+            if (pollIntervalId) clearInterval(pollIntervalId);
             console.log('✅ Generation completed!', replica.result_url);
             setResult(replica.result_url);
             setGenerationsUsed(prev => prev + 1);
@@ -151,12 +152,12 @@ const ToyReplica = () => {
               description: "Your LEGO mini-figure has been created!",
             });
           } else if (replica.status === 'failed') {
-            clearInterval(pollInterval);
+            if (pollIntervalId) clearInterval(pollIntervalId);
             console.error('❌ Generation failed:', replica.error);
             setGenerating(false);
             throw new Error(replica.error || 'Generation failed');
           } else if (pollCount >= maxPolls) {
-            clearInterval(pollInterval);
+            if (pollIntervalId) clearInterval(pollIntervalId);
             console.warn('⚠️ Generation timeout');
             setGenerating(false);
             toast({
@@ -165,11 +166,18 @@ const ToyReplica = () => {
             });
           }
         } catch (pollErr) {
-          clearInterval(pollInterval);
+          if (pollIntervalId) clearInterval(pollIntervalId);
           setGenerating(false);
           throw pollErr;
         }
       }, 2000); // Poll every 2 seconds
+      
+      // Cleanup polling on component unmount
+      return () => {
+        if (pollIntervalId) {
+          clearInterval(pollIntervalId);
+        }
+      };
       
     } catch (error) {
       console.error('❌ Generation failed:', error);
