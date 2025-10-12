@@ -45,10 +45,18 @@ serve(async (req) => {
       );
     }
 
-    if (job.status !== 'processing' || !job.provider_job_id) {
+    // If job is queued (no provider_job_id yet), return early
+    if (job.status === 'queued' || !job.provider_job_id) {
       return new Response(
-        JSON.stringify({ error: 'Invalid job status', status: job.status }), 
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ success: true, status: job.status, message: 'Job not yet started by provider' }), 
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (job.status !== 'processing') {
+      return new Response(
+        JSON.stringify({ success: true, status: job.status, message: 'Job already completed or failed' }), 
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 

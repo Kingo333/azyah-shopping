@@ -131,10 +131,10 @@ const Events = () => {
     const pollInterval = setInterval(async () => {
       const { data: processingJobs } = await supabase
         .from('event_tryon_jobs')
-        .select('id, provider_job_id')
+        .select('id, provider_job_id, status')
         .eq('event_id', selectedEvent.id)
         .eq('user_id', user.id)
-        .eq('status', 'processing');
+        .in('status', ['queued', 'processing']);
       
       if (processingJobs && processingJobs.length > 0) {
         console.log(`Polling ${processingJobs.length} background jobs...`);
@@ -142,9 +142,19 @@ const Events = () => {
         // Poll each job
         for (const job of processingJobs) {
           try {
-            await supabase.functions.invoke('bitstudio-poll-job', {
+            const { data, error } = await supabase.functions.invoke('bitstudio-poll-job', {
               body: { jobId: job.id }
             });
+            
+            if (error) {
+              console.error('Error polling job:', error);
+            } else if (data) {
+              console.log('Poll result:', data);
+              // Refresh results when any job updates
+              if (data.status === 'succeeded' || data.status === 'failed') {
+                await fetchTryOnResults();
+              }
+            }
           } catch (error) {
             console.error('Error polling job:', error);
           }
