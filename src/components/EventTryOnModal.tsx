@@ -58,7 +58,7 @@ const EventTryOnModal: React.FC<EventTryOnModalProps> = ({
           .single();
 
         if (data && !error) {
-          // Convert stored URL to person image ID for BitStudio
+          // Store person image path for Gemini try-on
           setPersonImageId(data.photo_url);
         }
       } catch (err) {
@@ -182,8 +182,7 @@ const EventTryOnModal: React.FC<EventTryOnModalProps> = ({
       return;
     }
 
-    const outfitPath = product.try_on_config?.outfitImagePath || 
-                       product.try_on_data?.outfit_image_path;
+    const outfitPath = product.try_on_data?.outfit_image_path;
 
     if (!outfitPath) {
       toast({

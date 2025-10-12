@@ -161,9 +161,6 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
         .update({
           try_on_data: tryOnData,
           try_on_provider: 'gemini',
-          try_on_config: {
-            outfitImagePath: tryOnData.outfit_image_path  // Use path, not URL/ID
-          },
           try_on_ready: !!tryOnData.outfit_image_path,
           updated_at: new Date().toISOString()
         })
@@ -412,19 +409,16 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
                                   try_on_data: updatedTryOnData
                                 } : prev);
 
-                                // Auto-save configuration
-                                await supabase
-                                  .from('event_brand_products')
-                                  .update({
-                                    try_on_data: updatedTryOnData,
-                                    try_on_provider: 'gemini',
-                                    try_on_config: {
-                                      outfitImagePath: filePath
-                                    },
-                                    try_on_ready: true,
-                                    updated_at: new Date().toISOString()
-                                  })
-                                  .eq('id', editingProduct.id);
+                // Auto-save configuration
+                await supabase
+                  .from('event_brand_products')
+                  .update({
+                    try_on_data: updatedTryOnData,
+                    try_on_provider: 'gemini',
+                    try_on_ready: true,
+                    updated_at: new Date().toISOString()
+                  })
+                  .eq('id', editingProduct.id);
 
                                 toast({
                                   title: "Configuration saved",
