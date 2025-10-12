@@ -2,27 +2,37 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { BeforeAfterSlider } from '@/components/BeforeAfterSlider';
 
 const slides = [
   {
     image: '/onboarding/intro-wardrobe.png',
     title: 'Keep track of the clothes you own',
     subtitle: 'Manage and visualize your wardrobe easily.',
+    type: 'image' as const,
+  },
+  {
+    title: 'Try on outfits with AI',
+    subtitle: 'See how clothes look on you before buying.',
+    type: 'slider' as const,
   },
   {
     image: '/onboarding/intro-outfits.png',
     title: 'Discover outfits that match your mood',
     subtitle: 'Get AI-based outfit suggestions daily.',
+    type: 'image' as const,
   },
   {
     image: '/onboarding/intro-community.png',
     title: 'Connect with friends and see what they\'re wearing',
     subtitle: 'See how others style and share their looks.',
+    type: 'image' as const,
   },
   {
     image: '/onboarding/intro-rewards.png',
     title: 'Earn salon & fashion rewards as you engage',
     subtitle: 'Shop, share, and redeem — effortlessly.',
+    type: 'image' as const,
   },
 ];
 
@@ -62,15 +72,21 @@ export default function IntroCarousel() {
       {/* Main Content */}
       <div className="flex items-center justify-center px-6 py-2 overflow-auto">
         <div className="w-full max-w-sm mx-auto flex flex-col items-center gap-3">
-          {/* Phone Mockup with Screenshot */}
+          {/* Phone Mockup with Screenshot or Slider */}
           <div className="relative w-40 h-auto">
             <div className="relative bg-white rounded-[1.5rem] shadow-lg border-[3px] border-gray-800 overflow-hidden">
               <div className="absolute top-0 left-1/2 -translate-x-1/2 w-20 h-4 bg-gray-800 rounded-b-lg z-10" />
-              <img 
-                src={slides[currentSlide].image} 
-                alt={slides[currentSlide].title}
-                className="w-full h-auto object-contain"
-              />
+              {slides[currentSlide].type === 'slider' ? (
+                <div className="w-full aspect-[9/16]">
+                  <BeforeAfterSlider />
+                </div>
+              ) : (
+                <img 
+                  src={slides[currentSlide].image} 
+                  alt={slides[currentSlide].title}
+                  className="w-full h-auto object-contain"
+                />
+              )}
             </div>
           </div>
           
