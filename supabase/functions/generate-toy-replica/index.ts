@@ -131,42 +131,41 @@ serve(async (req) => {
     }
 
     console.log('✅ Image downloaded successfully, size:', (arrayBuffer.byteLength / 1024 / 1024).toFixed(2), 'MB');
-    
-    // Convert array buffer to base64 in chunks to avoid stack overflow
-    const uint8Array = new Uint8Array(arrayBuffer);
-    let binaryString = '';
-    const chunkSize = 0x8000; // 32KB chunks
-    for (let i = 0; i < uint8Array.length; i += chunkSize) {
-      const chunk = uint8Array.subarray(i, Math.min(i + chunkSize, uint8Array.length));
-      binaryString += String.fromCharCode.apply(null, Array.from(chunk));
-    }
-    const base64Image = btoa(binaryString);
-    const imageDataUrl = `data:${imageBlob.type};base64,${base64Image}`;
 
     console.log('🤖 Calling OpenAI gpt-image-1 to generate LEGO mini-figure...');
 
-    // Call OpenAI with proper timeout and error handling
+    // Call OpenAI Images Edits API with FormData
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout
 
     try {
-      const openAIResponse = await fetch('https://api.openai.com/v1/images/generations', {
+      // Create FormData for multipart/form-data request
+      const formData = new FormData();
+      formData.append('model', 'gpt-image-1');
+      formData.append('prompt', [
+        'Transform this person into a LEGO mini-figure character with transparent background.',
+        'The mini-figure should have:',
+        '- Classic LEGO mini-figure proportions and style',
+        '- Cylindrical head with printed facial features',
+        '- Block-shaped torso and arms',
+        '- Short legs typical of LEGO mini-figures',
+        '- Maintain the person\'s key characteristics (hair color, style, clothing colors)',
+        '- Professional toy-like appearance with clean transparent background and high quality render'
+      ].join('\n'));
+      formData.append('image', imageBlob, 'source.jpg');
+      formData.append('background', 'transparent');
+      formData.append('size', '1024x1024');
+      formData.append('response_format', 'b64_json');
+      formData.append('quality', 'high');
+
+      const openAIResponse = await fetch('https://api.openai.com/v1/images/edits', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${openAIApiKey}`,
-          'Content-Type': 'application/json',
+          // Don't set Content-Type - FormData handles it automatically
         },
         signal: controller.signal,
-        body: JSON.stringify({
-          model: 'gpt-image-1',
-          prompt: 'Transform this person into a LEGO mini-figure character with transparent background. The mini-figure should have: Classic LEGO mini-figure proportions and style, cylindrical head with printed facial features, block-shaped torso and arms, short legs typical of LEGO mini-figures. Maintain the person\'s key characteristics (hair color, style, clothing colors). Professional toy-like appearance with clean transparent background and high quality render.',
-          image: imageDataUrl,
-          n: 1,
-          size: '1024x1024',
-          background: 'transparent',
-          output_format: 'png',
-          quality: 'high'
-        }),
+        body: formData
       });
 
       clearTimeout(timeoutId);
