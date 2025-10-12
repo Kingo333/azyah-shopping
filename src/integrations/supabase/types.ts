@@ -672,7 +672,10 @@ export type Database = {
           id: string
           image_url: string
           sort_order: number | null
+          try_on_config: Json | null
           try_on_data: Json | null
+          try_on_provider: string | null
+          try_on_ready: boolean | null
           updated_at: string
         }
         Insert: {
@@ -681,7 +684,10 @@ export type Database = {
           id?: string
           image_url: string
           sort_order?: number | null
+          try_on_config?: Json | null
           try_on_data?: Json | null
+          try_on_provider?: string | null
+          try_on_ready?: boolean | null
           updated_at?: string
         }
         Update: {
@@ -690,7 +696,10 @@ export type Database = {
           id?: string
           image_url?: string
           sort_order?: number | null
+          try_on_config?: Json | null
           try_on_data?: Json | null
+          try_on_provider?: string | null
+          try_on_ready?: boolean | null
           updated_at?: string
         }
         Relationships: [
@@ -805,6 +814,78 @@ export type Database = {
           },
         ]
       }
+      event_tryon_jobs: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          credits_used: number | null
+          error: string | null
+          event_id: string | null
+          id: string
+          input_outfit_path: string
+          input_person_path: string
+          model: string | null
+          output_path: string | null
+          product_id: string | null
+          provider: string
+          started_at: string | null
+          status: string
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          credits_used?: number | null
+          error?: string | null
+          event_id?: string | null
+          id?: string
+          input_outfit_path: string
+          input_person_path: string
+          model?: string | null
+          output_path?: string | null
+          product_id?: string | null
+          provider?: string
+          started_at?: string | null
+          status?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          credits_used?: number | null
+          error?: string | null
+          event_id?: string | null
+          id?: string
+          input_outfit_path?: string
+          input_person_path?: string
+          model?: string | null
+          output_path?: string | null
+          product_id?: string | null
+          provider?: string
+          started_at?: string | null
+          status?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_tryon_jobs_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "retail_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_tryon_jobs_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "event_brand_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_user_photos: {
         Row: {
           created_at: string
@@ -813,6 +894,9 @@ export type Database = {
           photo_url: string
           updated_at: string
           user_id: string
+          vto_features: Json | null
+          vto_provider: string | null
+          vto_ready: boolean | null
         }
         Insert: {
           created_at?: string
@@ -821,6 +905,9 @@ export type Database = {
           photo_url: string
           updated_at?: string
           user_id: string
+          vto_features?: Json | null
+          vto_provider?: string | null
+          vto_ready?: boolean | null
         }
         Update: {
           created_at?: string
@@ -829,6 +916,9 @@ export type Database = {
           photo_url?: string
           updated_at?: string
           user_id?: string
+          vto_features?: Json | null
+          vto_provider?: string | null
+          vto_ready?: boolean | null
         }
         Relationships: []
       }
