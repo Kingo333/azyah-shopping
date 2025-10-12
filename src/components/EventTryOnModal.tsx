@@ -250,47 +250,65 @@ const EventTryOnModal: React.FC<EventTryOnModalProps> = ({
         throw new Error(result.error || 'Failed to start try-on');
       }
 
-      // Poll for job completion
-      const pollInterval = setInterval(async () => {
-        const { data: job } = await supabase
-          .from('event_tryon_jobs')
-          .select('status, output_path, error')
-          .eq('id', result.jobId)
-          .single();
+      // Phase 2: Use Realtime subscriptions instead of polling
+      const channel = supabase
+        .channel(`tryon-${result.jobId}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'event_tryon_jobs',
+            filter: `id=eq.${result.jobId}`
+          },
+          async (payload) => {
+            const job = payload.new as any;
+            
+            if (job.status === 'succeeded' && job.output_path) {
+              channel.unsubscribe();
+              
+              const { data } = supabase.storage
+                .from('event-tryon-renders')
+                .getPublicUrl(job.output_path);
+              
+              setResultUrl(data.publicUrl);
+              setStatus('done');
+              
+              await saveAsset(
+                data.publicUrl,
+                result.jobId,
+                `${eventName} - ${product.brand_name} - Try-On`
+              );
+              
+              toast({
+                title: 'Try-on complete!',
+                description: 'Your virtual try-on is ready'
+              });
+            } else if (job.status === 'failed') {
+              channel.unsubscribe();
+              setStatus('failed');
+              toast({
+                title: 'Try-on failed',
+                description: job.error || 'Generation failed',
+                variant: 'destructive'
+              });
+            }
+          }
+        )
+        .subscribe();
 
-        if (job?.status === 'succeeded' && job.output_path) {
-          clearInterval(pollInterval);
-          
-          const { data } = supabase.storage
-            .from('event-tryon-renders')
-            .getPublicUrl(job.output_path);
-          
-          setResultUrl(data.publicUrl);
-          setStatus('done');
-          
-          await saveAsset(
-            data.publicUrl,
-            result.jobId,
-            `${eventName} - ${product.brand_name} - Try-On`
-          );
-          
-          toast({
-            title: 'Try-on complete!',
-            description: 'Your virtual try-on is ready'
-          });
-        } else if (job?.status === 'failed') {
-          clearInterval(pollInterval);
+      // Cleanup on timeout (2 min)
+      setTimeout(() => {
+        channel.unsubscribe();
+        if (status === 'generating') {
           setStatus('failed');
           toast({
-            title: 'Try-on failed',
-            description: job.error || 'Generation failed',
+            title: 'Try-on timeout',
+            description: 'Generation took too long',
             variant: 'destructive'
           });
         }
-      }, 2000); // Poll every 2 seconds
-
-      // Cleanup after 2 minutes max
-      setTimeout(() => clearInterval(pollInterval), 120000);
+      }, 120000);
       
     } catch (err: any) {
       console.error('Try-on error:', err);

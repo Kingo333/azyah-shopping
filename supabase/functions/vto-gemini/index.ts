@@ -9,6 +9,15 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Phase 1: Outfit image caching
+const outfitCache = new Map<string, { b64: string; timestamp: number }>();
+const CACHE_TTL = 1000 * 60 * 60; // 1 hour
+
+// Phase 3: Simple job queue with rate limiting
+const jobQueue: string[] = [];
+let processingCount = 0;
+const MAX_CONCURRENT_GEMINI_CALLS = 15; // Optimized for 200 concurrent shoppers
+
 interface GeminiRequest {
   contents: Array<{
     parts: Array<{
@@ -24,83 +33,73 @@ interface GeminiRequest {
   };
 }
 
-Deno.serve(async (req) => {
-  // Handle CORS
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+async function getCachedOutfit(outfitPath: string, storage: any): Promise<string> {
+  // Check cache
+  const cached = outfitCache.get(outfitPath);
+  if (cached && (Date.now() - cached.timestamp < CACHE_TTL)) {
+    console.log('[vto-gemini] ✓ Using cached outfit:', outfitPath);
+    return cached.b64;
   }
 
+  // Fetch and cache
+  console.log('[vto-gemini] ⚡ Fetching and caching outfit:', outfitPath);
+  const { data: outfitResult, error } = await storage
+    .from('event-assets')
+    .createSignedUrl(outfitPath, 300);
+  
+  if (!outfitResult?.signedUrl || error) {
+    throw new Error(`Failed to create outfit signed URL: ${error?.message}`);
+  }
+
+  const outfitImg = await fetch(outfitResult.signedUrl).then(r => r.arrayBuffer());
+  const outfitB64 = btoa(String.fromCharCode(...new Uint8Array(outfitImg)));
+  
+  outfitCache.set(outfitPath, { b64: outfitB64, timestamp: Date.now() });
+  console.log('[vto-gemini] ✓ Outfit cached, cache size:', outfitCache.size);
+  
+  return outfitB64;
+}
+
+async function processJobInBackground(jobId: string, admin: any) {
   try {
-    const { jobId } = await req.json();
-    if (!jobId) {
-      return new Response(
-        JSON.stringify({ error: 'jobId required' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    await admin
+      .from('event_tryon_jobs')
+      .update({ status: 'processing', started_at: new Date().toISOString() })
+      .eq('id', jobId);
 
-    console.log('[vto-gemini] Processing job:', jobId);
-
-    const admin = createClient(SUPABASE_URL, SERVICE_KEY);
-
-    // 1. Load job + validate
-    const { data: job, error: jobError } = await admin
+    const { data: job } = await admin
       .from('event_tryon_jobs')
       .select('*')
       .eq('id', jobId)
       .single();
 
-    if (jobError || !job) {
-      return new Response(
-        JSON.stringify({ error: 'Job not found' }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    if (!job) {
+      throw new Error('Job not found');
     }
 
-    // Return immediately, process in background
-    const processJob = async () => {
-      try {
-        await admin
-          .from('event_tryon_jobs')
-          .update({ status: 'processing', started_at: new Date().toISOString() })
-          .eq('id', jobId);
-
-    // 2. Create signed URLs for input images
-    console.log('[vto-gemini] Creating signed URLs for paths:', {
+    console.log('[vto-gemini] Processing job:', jobId, {
       person: job.input_person_path,
       outfit: job.input_outfit_path
     });
 
-    const [personResult, outfitResult] = await Promise.all([
-      admin.storage.from('event-user-photos').createSignedUrl(job.input_person_path, 120),
-      admin.storage.from('event-assets').createSignedUrl(job.input_outfit_path, 120)
-    ]);
+    // Fetch person image (always fresh)
+    const { data: personResult, error: personError } = await admin.storage
+      .from('event-user-photos')
+      .createSignedUrl(job.input_person_path, 300);
 
-    if (!personResult.data?.signedUrl) {
-      throw new Error(`Failed to create person signed URL. Error: ${personResult.error?.message}`);
-    }
-    if (!outfitResult.data?.signedUrl) {
-      throw new Error(`Failed to create outfit signed URL. Error: ${outfitResult.error?.message}`);
+    if (!personResult?.signedUrl || personError) {
+      throw new Error(`Failed to create person signed URL: ${personError?.message}`);
     }
 
-    console.log('[vto-gemini] Signed URLs created successfully');
+    const personImg = await fetch(personResult.signedUrl).then(r => r.arrayBuffer());
+    const personB64 = btoa(String.fromCharCode(...new Uint8Array(personImg)));
 
-    // 3. Fetch images as base64
-    const [personImg, outfitImg] = await Promise.all([
-      fetch(personResult.data.signedUrl).then(r => r.arrayBuffer()),
-      fetch(outfitResult.data.signedUrl).then(r => r.arrayBuffer())
-    ]);
+    // Get outfit from cache (Phase 1 optimization)
+    const outfitB64 = await getCachedOutfit(job.input_outfit_path, admin.storage);
 
-    const personB64 = btoa(
-      String.fromCharCode(...new Uint8Array(personImg))
-    );
-    const outfitB64 = btoa(
-      String.fromCharCode(...new Uint8Array(outfitImg))
-    );
+    console.log('[vto-gemini] Images ready, calling Gemini API');
 
-    console.log('[vto-gemini] Images fetched and encoded');
-
-    // 4. Call Gemini API with strict instructions
+    // Call Gemini API
     const prompt = `You are a professional virtual try-on system. Generate a photorealistic image of the person wearing the outfit.
 
 STRICT REQUIREMENTS:
@@ -150,33 +149,17 @@ Focus on natural fit and photorealism.`;
     if (!geminiResponse.ok) {
       const errorText = await geminiResponse.text();
       console.error('[vto-gemini] Gemini API error:', geminiResponse.status, errorText);
-      
-      await admin
-        .from('event_tryon_jobs')
-        .update({
-          status: 'failed',
-          error: `Gemini API error: ${errorText}`,
-          completed_at: new Date().toISOString()
-        })
-        .eq('id', jobId);
-      
-      return new Response(
-        JSON.stringify({ error: 'Gemini API error', details: errorText }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      throw new Error(`Gemini API error: ${errorText}`);
     }
 
     const geminiResult = await geminiResponse.json();
-    console.log('[vto-gemini] Gemini response received');
-
-    // 5. Extract base64 image from response
     const imageData = geminiResult?.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
     
     if (!imageData) {
       throw new Error('No image data in Gemini response');
     }
 
-    // 6. Upload result to storage
+    // Upload result to storage
     const imageBytes = Uint8Array.from(atob(imageData), c => c.charCodeAt(0));
     const blob = new Blob([imageBytes], { type: 'image/png' });
     
@@ -193,36 +176,84 @@ Focus on natural fit and photorealism.`;
       throw new Error(`Storage upload failed: ${uploadError.message}`);
     }
 
-    console.log('[vto-gemini] Result uploaded to:', outputPath);
+    console.log('[vto-gemini] ✓ Job completed:', jobId);
 
-        // 7. Update job status
-        await admin
-          .from('event_tryon_jobs')
-          .update({
-            status: 'succeeded',
-            output_path: outputPath,
-            completed_at: new Date().toISOString()
-          })
-          .eq('id', jobId);
+    // Update job status (triggers realtime notification)
+    await admin
+      .from('event_tryon_jobs')
+      .update({
+        status: 'succeeded',
+        output_path: outputPath,
+        completed_at: new Date().toISOString()
+      })
+      .eq('id', jobId);
 
-        console.log('[vto-gemini] Job completed successfully');
+  } catch (error: any) {
+    console.error('[vto-gemini] ✗ Job failed:', jobId, error);
+    
+    await admin
+      .from('event_tryon_jobs')
+      .update({
+        status: 'failed',
+        error: error.message,
+        completed_at: new Date().toISOString()
+      })
+      .eq('id', jobId);
+  }
+}
 
-      } catch (error: any) {
-        console.error('[vto-gemini] Background processing error:', error);
-        
-        await admin
-          .from('event_tryon_jobs')
-          .update({
-            status: 'failed',
-            error: error.message,
-            completed_at: new Date().toISOString()
-          })
-          .eq('id', jobId);
-      }
-    };
+async function processQueue(admin: any) {
+  while (jobQueue.length > 0 && processingCount < MAX_CONCURRENT_GEMINI_CALLS) {
+    const jobId = jobQueue.shift();
+    if (!jobId) continue;
+    
+    processingCount++;
+    console.log(`[vto-gemini] Queue: ${processingCount}/${MAX_CONCURRENT_GEMINI_CALLS} active, ${jobQueue.length} waiting`);
+    
+    processJobInBackground(jobId, admin)
+      .finally(() => {
+        processingCount--;
+        processQueue(admin); // Process next
+      });
+  }
+}
 
-    // Fire and forget
-    processJob();
+Deno.serve(async (req) => {
+  // Handle CORS
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const { jobId } = await req.json();
+    if (!jobId) {
+      return new Response(
+        JSON.stringify({ error: 'jobId required' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log('[vto-gemini] Processing job:', jobId);
+
+    const admin = createClient(SUPABASE_URL, SERVICE_KEY);
+
+    // 1. Load job + validate
+    const { data: job, error: jobError } = await admin
+      .from('event_tryon_jobs')
+      .select('*')
+      .eq('id', jobId)
+      .single();
+
+    if (jobError || !job) {
+      return new Response(
+        JSON.stringify({ error: 'Job not found' }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Add to queue and process (Phase 3: Rate limiting)
+    jobQueue.push(jobId);
+    processQueue(admin);
 
     return new Response(
       JSON.stringify({ ok: true, jobId, message: 'Job queued for processing' }),
