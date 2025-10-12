@@ -4,10 +4,18 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, MapPin, Store, UserCircle, Upload, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar, MapPin, Store, UserCircle, Upload, ChevronLeft, ChevronRight, Trash2, Eye, ChevronDown } from 'lucide-react';
 import { format } from 'date-fns';
 import EventTryOnModal from '@/components/EventTryOnModal';
 import { useToast } from '@/hooks/use-toast';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 interface RetailEvent {
   id: string;
@@ -50,6 +58,7 @@ const Events = () => {
   const [isUploadingPersonImage, setIsUploadingPersonImage] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<EventProduct | null>(null);
   const [brandScrollPositions, setBrandScrollPositions] = useState<{[key: string]: number}>({});
+  const [previewPhotoUrl, setPreviewPhotoUrl] = useState<string | null>(null);
 
   useEffect(() => {
     fetchUpcomingEvents();
@@ -146,10 +155,24 @@ const Events = () => {
   const handlePersonImageUpload = async (file: File) => {
     if (!selectedEvent || !user) return;
 
-    console.log('Starting person image upload:', { file: file.name, size: file.size, type: file.type });
     setIsUploadingPersonImage(true);
     try {
-      // Upload directly to Supabase Storage (same as EventTryOnModal)
+      // Check if user already has a photo for this event
+      const { data: existingPhoto } = await supabase
+        .from('event_user_photos')
+        .select('photo_url')
+        .eq('event_id', selectedEvent.id)
+        .eq('user_id', user.id)
+        .single();
+      
+      // Delete old photo from storage if it exists
+      if (existingPhoto?.photo_url) {
+        await supabase.storage
+          .from('event-user-photos')
+          .remove([existingPhoto.photo_url]);
+      }
+      
+      // Upload new photo to Supabase Storage
       const fileExt = file.name.split('.').pop();
       const fileName = `person_${Date.now()}.${fileExt}`;
       const filePath = `${selectedEvent.id}/${user.id}/${fileName}`;
@@ -158,18 +181,18 @@ const Events = () => {
         .from('event-user-photos')
         .upload(filePath, file, {
           contentType: file.type,
-          upsert: true
+          upsert: false
         });
       
       if (uploadError) throw uploadError;
       
-      // Store storage path in database
+      // Update database with new storage path
       const { error: dbError } = await supabase
         .from('event_user_photos')
         .upsert({
           event_id: selectedEvent.id,
           user_id: user.id,
-          photo_url: filePath,  // Storage path (not URL)
+          photo_url: filePath,
           vto_provider: 'gemini',
           vto_ready: true
         });
@@ -178,7 +201,7 @@ const Events = () => {
 
       setHasPersonImage(true);
       toast({
-        title: "Photo uploaded successfully!",
+        title: existingPhoto ? "Photo replaced!" : "Photo uploaded!",
         description: "You can now try on products from this event"
       });
     } catch (error) {
@@ -190,6 +213,77 @@ const Events = () => {
       });
     } finally {
       setIsUploadingPersonImage(false);
+    }
+  };
+
+  const handleDeletePhoto = async () => {
+    if (!selectedEvent || !user) return;
+    
+    try {
+      // Get the current photo data
+      const { data: photoData } = await supabase
+        .from('event_user_photos')
+        .select('photo_url')
+        .eq('event_id', selectedEvent.id)
+        .eq('user_id', user.id)
+        .single();
+      
+      if (photoData?.photo_url) {
+        // Delete from Supabase Storage
+        await supabase.storage
+          .from('event-user-photos')
+          .remove([photoData.photo_url]);
+      }
+      
+      // Delete from database
+      const { error } = await supabase
+        .from('event_user_photos')
+        .delete()
+        .eq('event_id', selectedEvent.id)
+        .eq('user_id', user.id);
+      
+      if (error) throw error;
+      
+      setHasPersonImage(false);
+      toast({
+        title: "Photo deleted",
+        description: "You can upload a new photo anytime"
+      });
+    } catch (error) {
+      console.error('Error deleting photo:', error);
+      toast({
+        title: "Delete failed",
+        description: error instanceof Error ? error.message : "Failed to delete photo",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleReplacePhoto = () => {
+    // Trigger the file input
+    document.getElementById('person-image-upload')?.click();
+  };
+
+  const handleViewPhoto = async () => {
+    if (!selectedEvent || !user) return;
+    
+    try {
+      const { data: photoData } = await supabase
+        .from('event_user_photos')
+        .select('photo_url')
+        .eq('event_id', selectedEvent.id)
+        .eq('user_id', user.id)
+        .single();
+      
+      if (photoData?.photo_url) {
+        const { data } = supabase.storage
+          .from('event-user-photos')
+          .getPublicUrl(photoData.photo_url);
+        
+        setPreviewPhotoUrl(data.publicUrl);
+      }
+    } catch (error) {
+      console.error('Error fetching photo:', error);
     }
   };
 
@@ -261,29 +355,51 @@ const Events = () => {
                 className="w-16 h-16 rounded-lg object-cover"
               />
             )}
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-2">
-                <h1 className="text-3xl font-bold">{selectedEvent.name}</h1>
-                {/* Person Image Upload Button */}
-                <div className="relative">
-                  {hasPersonImage ? (
-                    <Badge className="bg-green-500 text-white">
-                      <UserCircle className="w-4 h-4 mr-1" />
-                      Photo Ready
-                    </Badge>
-                  ) : (
-                    <div>
-                      <input
-                        id="person-image-upload"
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) handlePersonImageUpload(file);
-                        }}
-                        className="hidden"
-                        disabled={isUploadingPersonImage}
-                      />
+              <div className="flex-1">
+                <div className="flex items-center gap-3 mb-2">
+                  <h1 className="text-3xl font-bold">{selectedEvent.name}</h1>
+                  {/* Person Image Upload Button */}
+                  <div className="relative">
+                    <input
+                      id="person-image-upload"
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handlePersonImageUpload(file);
+                      }}
+                      className="hidden"
+                      disabled={isUploadingPersonImage}
+                    />
+                    {hasPersonImage ? (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Badge className="bg-green-500 text-white cursor-pointer hover:bg-green-600">
+                            <UserCircle className="w-4 h-4 mr-1" />
+                            Photo Ready
+                            <ChevronDown className="w-3 h-3 ml-1" />
+                          </Badge>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                          <DropdownMenuItem onClick={handleViewPhoto}>
+                            <Eye className="w-4 h-4 mr-2" />
+                            View Photo
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={handleReplacePhoto}>
+                            <Upload className="w-4 h-4 mr-2" />
+                            Replace Photo
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem 
+                            onClick={handleDeletePhoto}
+                            className="text-red-600 focus:text-red-600"
+                          >
+                            <Trash2 className="w-4 h-4 mr-2" />
+                            Delete Photo
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    ) : (
                       <Button 
                         variant="outline" 
                         size="sm"
@@ -303,10 +419,9 @@ const Events = () => {
                           </>
                         )}
                       </Button>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
-              </div>
               <div className="flex items-center gap-4 text-muted-foreground">
                 <div className="flex items-center gap-1">
                   <Store className="w-4 h-4" />
@@ -448,6 +563,22 @@ const Events = () => {
             eventName={selectedEvent.name}
           />
         )}
+
+        {/* Photo Preview Dialog */}
+        <Dialog open={!!previewPhotoUrl} onOpenChange={() => setPreviewPhotoUrl(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Your Photo</DialogTitle>
+            </DialogHeader>
+            {previewPhotoUrl && (
+              <img 
+                src={previewPhotoUrl} 
+                alt="Your photo" 
+                className="w-full rounded-lg"
+              />
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     );
   }
