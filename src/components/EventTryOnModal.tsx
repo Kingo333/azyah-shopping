@@ -3,10 +3,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Upload, User, Loader2, Download, Eye, UserCircle } from 'lucide-react';
-import { useBitStudio } from '@/hooks/useBitStudio';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { BITSTUDIO_IMAGE_TYPES } from '@/lib/bitstudio-types';
 import { useAiAssets } from '@/hooks/useAiAssets';
 import { runTryOn } from '@/lib/tryon';
 
@@ -39,14 +37,11 @@ const EventTryOnModal: React.FC<EventTryOnModalProps> = ({
 }) => {
   const [file, setFile] = useState<File | null>(null);
   const [personImageId, setPersonImageId] = useState<string | null>(null);
-  const [outfitFile, setOutfitFile] = useState<File | null>(null);
-  const [outfitImageId, setOutfitImageId] = useState<string | null>(null);
   const [status, setStatus] = useState<'idle' | 'uploading' | 'generating' | 'done' | 'failed'>('idle');
   const [resultUrl, setResultUrl] = useState<string | null>(null);
   const [dragActive, setDragActive] = useState(false);
   
   const { toast } = useToast();
-  const { loading, uploadImage, virtualTryOn, error } = useBitStudio();
   const { assets, saveAsset } = useAiAssets();
 
   // Check if user has uploaded person image for this event
@@ -171,43 +166,7 @@ const EventTryOnModal: React.FC<EventTryOnModalProps> = ({
       setStatus('failed');
       toast({
         title: 'Upload failed',
-        description: err.message,
-        variant: 'destructive'
-      });
-    }
-  };
-
-  const uploadOutfitImage = async (file: File) => {
-    try {
-      setStatus('uploading');
-      console.log('EventTryOn: Starting outfit upload with file:', { name: file.name, size: file.size, type: file.type });
-      
-      // Upload to BitStudio and get image ID
-      const result = await uploadImage(file, BITSTUDIO_IMAGE_TYPES.OUTFIT);
-      console.log('EventTryOn: Outfit upload result:', result);
-      
-      if (result?.id) {
-        setOutfitImageId(result.id);
-        setStatus('idle');
-        toast({
-          title: 'Outfit photo uploaded successfully!',
-          description: 'Ready to try on with uploaded outfit'
-        });
-      } else {
-        console.error('EventTryOn: Outfit upload returned no result or no ID');
-        setStatus('failed');
-        toast({
-          title: 'Upload failed',
-          description: 'No image ID returned from outfit upload',
-          variant: 'destructive'
-        });
-      }
-    } catch (err: any) {
-      console.error('EventTryOn: Outfit image upload error:', err);
-      setStatus('failed');
-      toast({
-        title: 'Upload failed',
-        description: err.message || 'Failed to upload outfit image',
+        description: 'Failed to upload photo to storage. Please try again.',
         variant: 'destructive'
       });
     }
@@ -315,7 +274,7 @@ const EventTryOnModal: React.FC<EventTryOnModalProps> = ({
       setStatus('failed');
       toast({
         title: 'Try-on failed',
-        description: err.message,
+        description: err.message || 'Failed to generate try-on. Please try again.',
         variant: 'destructive'
       });
     }
@@ -387,9 +346,7 @@ const EventTryOnModal: React.FC<EventTryOnModalProps> = ({
 
   const resetFlow = () => {
     setFile(null);
-    setOutfitFile(null);
     setPersonImageId(null);
-    setOutfitImageId(null);
     setStatus('idle');
     setResultUrl(null);
   };
@@ -519,84 +476,13 @@ const EventTryOnModal: React.FC<EventTryOnModalProps> = ({
                 </div>
               </div>
 
-              {/* Outfit Image Upload */}
-              <div className="space-y-2">
-                <h4 className="text-sm font-medium">Outfit Photo (Optional)</h4>
-                <div className="relative border-2 border-dashed rounded-lg p-4 text-center transition-colors border-muted-foreground/25 hover:border-muted-foreground/50">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => {
-                      const selectedFile = e.target.files?.[0];
-                      if (selectedFile && validateFile(selectedFile)) {
-                        setOutfitFile(selectedFile);
-                        uploadOutfitImage(selectedFile);
-                      }
-                    }}
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                  />
-                  {outfitFile || outfitImageId ? (
-                    <div className="space-y-2">
-                      {outfitFile && (
-                        <div className="w-16 h-16 mx-auto rounded-lg overflow-hidden">
-                          <img
-                            src={URL.createObjectURL(outfitFile)}
-                            alt="Outfit preview"
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                      )}
-                      <p className="text-xs font-medium">
-                        {outfitImageId ? 'Custom outfit ready' : outfitFile?.name}
-                      </p>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setOutfitFile(null);
-                          setOutfitImageId(null);
-                        }}
-                      >
-                        Remove
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      <Upload className="h-6 w-6 mx-auto text-muted-foreground" />
-                      <div>
-                        <p className="text-xs font-medium">Drop outfit photo here</p>
-                        <p className="text-xs text-muted-foreground">Use custom outfit or default to product image</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <Button
-                  onClick={startTryOn}
-                  disabled={!personImageId || loading}
-                  className="flex-1"
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                      Generating...
-                    </>
-                  ) : (
-                    outfitImageId ? 'Try Custom Outfit' : 'Try Product'
-                  )}
-                </Button>
-                <Button
-                  onClick={fastTryOn}
-                  disabled={!personImageId || !product.image_url || loading}
-                  variant="outline"
-                  className="flex-1"
-                >
-                  Fast Process
-                </Button>
-              </div>
+              <Button
+                onClick={startTryOn}
+                disabled={!personImageId}
+                className="w-full"
+              >
+                Try On Product
+              </Button>
             </>
           )}
 
@@ -643,7 +529,7 @@ const EventTryOnModal: React.FC<EventTryOnModalProps> = ({
             <div className="text-center space-y-4">
               <Alert variant="destructive">
                 <AlertDescription>
-                  {error || 'Try-on failed. Please try again with a clearer full-body photo.'}
+                  Try-on failed. Please try again with a clearer full-body photo.
                 </AlertDescription>
               </Alert>
               <Button onClick={resetFlow} className="w-full">
