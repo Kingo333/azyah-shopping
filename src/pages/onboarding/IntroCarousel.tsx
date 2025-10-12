@@ -77,7 +77,7 @@ export default function IntroCarousel() {
             <div className="relative bg-white rounded-[1.5rem] shadow-lg border-[3px] border-gray-800 overflow-hidden">
               <div className="absolute top-0 left-1/2 -translate-x-1/2 w-20 h-4 bg-gray-800 rounded-b-lg z-10" />
               {slides[currentSlide].type === 'slider' ? (
-                <div className="w-full aspect-[9/16]">
+                <div className="w-full h-[320px]">
                   <BeforeAfterSlider />
                 </div>
               ) : (
@@ -100,20 +100,40 @@ export default function IntroCarousel() {
             </p>
           </div>
 
-          {/* Progress Dots */}
-          <div className="flex justify-center gap-2 mt-1">
-            {slides.map((_, index) => (
-              <button
-                key={index}
-                onClick={() => setCurrentSlide(index)}
-                className={`h-2 rounded-full transition-all ${
-                  index === currentSlide 
-                    ? 'w-8 bg-foreground' 
-                    : 'w-2 bg-muted-foreground/30'
-                }`}
-                aria-label={`Go to slide ${index + 1}`}
-              />
-            ))}
+          {/* Progress Dots with Arrow Navigation */}
+          <div className="flex items-center justify-center gap-4 mt-1">
+            <button
+              onClick={prevSlide}
+              disabled={currentSlide === 0}
+              className="p-1 rounded-full hover:bg-muted disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+              aria-label="Previous slide"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            
+            <div className="flex justify-center gap-2">
+              {slides.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => setCurrentSlide(index)}
+                  className={`h-2 rounded-full transition-all ${
+                    index === currentSlide 
+                      ? 'w-8 bg-foreground' 
+                      : 'w-2 bg-muted-foreground/30'
+                  }`}
+                  aria-label={`Go to slide ${index + 1}`}
+                />
+              ))}
+            </div>
+
+            <button
+              onClick={nextSlide}
+              disabled={currentSlide === slides.length - 1}
+              className="p-1 rounded-full hover:bg-muted disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+              aria-label="Next slide"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
           </div>
         </div>
       </div>
