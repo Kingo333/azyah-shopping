@@ -19,6 +19,7 @@ const ToyReplica = () => {
   const [generating, setGenerating] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [result, setResult] = useState<string | null>(null);
+  const [resultSignedUrl, setResultSignedUrl] = useState<string | null>(null);
   const [generationsUsed, setGenerationsUsed] = useState<number>(0);
   const [loadingCount, setLoadingCount] = useState(true);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
@@ -143,6 +144,16 @@ const ToyReplica = () => {
             if (pollIntervalId) clearInterval(pollIntervalId);
             console.log('✅ Generation completed!', replica.result_url);
             setResult(replica.result_url);
+            
+            // Generate signed URL for display
+            const { data: signedData } = await supabase.storage
+              .from('toy-replica-result')
+              .createSignedUrl(replica.result_url, 3600);
+            
+            if (signedData?.signedUrl) {
+              setResultSignedUrl(signedData.signedUrl);
+            }
+            
             setGenerationsUsed(prev => prev + 1);
             setRefreshResults(prev => prev + 1);
             setGenerating(false);
@@ -242,10 +253,20 @@ const ToyReplica = () => {
     }
     setPreviewUrl(null);
     setResult(null);
+    setResultSignedUrl(null);
   };
 
-  const handleResultSelect = (resultUrl: string) => {
+  const handleResultSelect = async (resultUrl: string) => {
     setResult(resultUrl);
+    
+    // Generate signed URL for the selected result
+    const { data: signedData } = await supabase.storage
+      .from('toy-replica-result')
+      .createSignedUrl(resultUrl, 3600);
+    
+    if (signedData?.signedUrl) {
+      setResultSignedUrl(signedData.signedUrl);
+    }
   };
 
   const handleRefreshResults = () => {
@@ -394,9 +415,10 @@ const ToyReplica = () => {
                     }}
                   >
                     <SmartImage 
-                      src={result}
+                      src={resultSignedUrl || '/placeholder.svg'}
                       alt="Generated LEGO mini-figure" 
                       className="w-full rounded-lg"
+                      onError={() => console.error('Failed to load result image')}
                     />
                   </div>
                   <Button 
