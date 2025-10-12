@@ -63,16 +63,24 @@ Deno.serve(async (req) => {
       .eq('id', jobId);
 
     // 2. Create signed URLs for input images
+    console.log('[vto-gemini] Creating signed URLs for paths:', {
+      person: job.input_person_path,
+      outfit: job.input_outfit_path
+    });
+
     const [personResult, outfitResult] = await Promise.all([
       admin.storage.from('event-user-photos').createSignedUrl(job.input_person_path, 120),
       admin.storage.from('event-assets').createSignedUrl(job.input_outfit_path, 120)
     ]);
 
-    if (!personResult.data?.signedUrl || !outfitResult.data?.signedUrl) {
-      throw new Error('Failed to create signed URLs');
+    if (!personResult.data?.signedUrl) {
+      throw new Error(`Failed to create person signed URL. Error: ${personResult.error?.message}`);
+    }
+    if (!outfitResult.data?.signedUrl) {
+      throw new Error(`Failed to create outfit signed URL. Error: ${outfitResult.error?.message}`);
     }
 
-    console.log('[vto-gemini] Signed URLs created');
+    console.log('[vto-gemini] Signed URLs created successfully');
 
     // 3. Fetch images as base64
     const [personImg, outfitImg] = await Promise.all([

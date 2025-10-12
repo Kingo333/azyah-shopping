@@ -14,6 +14,9 @@ interface EventProduct {
   id: string;
   image_url: string;
   try_on_data: any;
+  try_on_config?: {
+    outfitImagePath?: string;
+  };
   event_brand_id: string;
   brand_name: string;
   brand_logo_url?: string;
@@ -123,54 +126,52 @@ const EventTryOnModal: React.FC<EventTryOnModalProps> = ({
   const uploadPersonImage = async (file: File) => {
     try {
       setStatus('uploading');
-      console.log('EventTryOn: Starting person upload with file:', { name: file.name, size: file.size, type: file.type });
+      console.log('[EventTryOn] Starting person upload:', file.name);
       
-      // Upload to BitStudio and get image ID
-      const result = await uploadImage(file, BITSTUDIO_IMAGE_TYPES.PERSON);
-      console.log('EventTryOn: Person upload result:', result);
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user) throw new Error('Not authenticated');
       
-      if (result?.id) {
-        setPersonImageId(result.id);
-        
-        // Also store in event_user_photos for persistent access
-        const { data: user } = await supabase.auth.getUser();
-        if (user.user) {
-          console.log('EventTryOn: Storing photo reference in database for user:', user.user.id);
-          const { error: dbError } = await supabase
-            .from('event_user_photos')
-            .upsert({
-              event_id: eventId,
-              user_id: user.user.id,
-              photo_url: result.id // Store BitStudio image ID
-            });
-          
-          if (dbError) {
-            console.error('EventTryOn: Database error:', dbError);
-          } else {
-            console.log('EventTryOn: Photo reference stored successfully');
-          }
-        }
-        
-        setStatus('idle');
-        toast({
-          title: 'Person photo uploaded successfully!',
-          description: 'Ready to try on products from this event'
+      // Upload directly to Supabase Storage
+      const fileExt = file.name.split('.').pop();
+      const fileName = `person_${Date.now()}.${fileExt}`;
+      const filePath = `${eventId}/${user.user.id}/${fileName}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('event-user-photos')
+        .upload(filePath, file, {
+          contentType: file.type,
+          upsert: true
         });
-      } else {
-        console.error('EventTryOn: Upload returned no result or no ID');
-        setStatus('failed');
-        toast({
-          title: 'Upload failed',
-          description: 'No image ID returned from upload',
-          variant: 'destructive'
+      
+      if (uploadError) throw uploadError;
+      
+      // Store storage path in database
+      const { error: dbError } = await supabase
+        .from('event_user_photos')
+        .upsert({
+          event_id: eventId,
+          user_id: user.user.id,
+          photo_url: filePath,  // Store storage path, not URL
+          vto_provider: 'gemini',
+          vto_ready: true
         });
-      }
+      
+      if (dbError) throw dbError;
+      
+      setPersonImageId(filePath);
+      setStatus('idle');
+      
+      toast({
+        title: 'Person photo uploaded!',
+        description: 'Ready to try on products'
+      });
+      
     } catch (err: any) {
-      console.error('EventTryOn: Person image upload error:', err);
+      console.error('[EventTryOn] Upload error:', err);
       setStatus('failed');
       toast({
         title: 'Upload failed',
-        description: err.message || 'Failed to upload person image',
+        description: err.message,
         variant: 'destructive'
       });
     }
@@ -222,16 +223,14 @@ const EventTryOnModal: React.FC<EventTryOnModalProps> = ({
       return;
     }
 
-    const outfitSource = outfitImageId 
-      ? outfitImageId
-      : product.try_on_data?.outfit_image_url 
-        ? product.try_on_data.outfit_image_url
-        : product.image_url;
+    // Get outfit path from product configuration
+    const outfitPath = product.try_on_config?.outfitImagePath || 
+                       product.try_on_data?.outfit_image_path;
 
-    if (!outfitSource) {
+    if (!outfitPath) {
       toast({
-        title: "Missing outfit data",
-        description: "Please upload an outfit image or ensure product has try-on data",
+        title: "Product not configured",
+        description: "This product doesn't have try-on configured yet",
         variant: "destructive"
       });
       return;
@@ -240,17 +239,15 @@ const EventTryOnModal: React.FC<EventTryOnModalProps> = ({
     try {
       setStatus('generating');
       
-      // Use new provider adapter
       const result = await runTryOn({
         eventId: eventId,
         userId: (await supabase.auth.getUser()).data.user!.id,
         productId: product.id,
-        personImagePath: personImageId,
-        outfitImagePath: outfitSource
+        personImagePath: personImageId,  // Storage path
+        outfitImagePath: outfitPath      // Storage path
       });
 
       if (result.ok && result.outputPath) {
-        // Get public URL from storage
         const { data } = supabase.storage
           .from('event-tryon-renders')
           .getPublicUrl(result.outputPath);
@@ -258,7 +255,6 @@ const EventTryOnModal: React.FC<EventTryOnModalProps> = ({
         setResultUrl(data.publicUrl);
         setStatus('done');
         
-        // Save to ai_assets
         await saveAsset(
           data.publicUrl,
           undefined,
@@ -278,7 +274,7 @@ const EventTryOnModal: React.FC<EventTryOnModalProps> = ({
       setStatus('failed');
       toast({
         title: 'Try-on failed',
-        description: err.message || 'Failed to generate try-on',
+        description: err.message,
         variant: 'destructive'
       });
     }

@@ -163,11 +163,11 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
         .from('event_brand_products')
         .update({
           try_on_data: tryOnData,
-          try_on_provider: 'gemini', // Switch to Gemini
+          try_on_provider: 'gemini',
           try_on_config: {
-            outfitImagePath: tryOnData.outfit_image_url || tryOnData.outfit_image_id
+            outfitImagePath: tryOnData.outfit_image_path  // Use path, not URL/ID
           },
-          try_on_ready: !!(tryOnData.outfit_image_url || tryOnData.outfit_image_id),
+          try_on_ready: !!tryOnData.outfit_image_path,
           updated_at: new Date().toISOString()
         })
         .eq('id', editingProduct.id);
@@ -176,7 +176,7 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
 
       toast({
         title: "Success",
-        description: "Try-on data updated successfully (Gemini provider)"
+        description: "Try-on data configured (Gemini provider)"
       });
 
       setIsEditModalOpen(false);
@@ -186,7 +186,7 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
       console.error('Error updating try-on data:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to update try-on data",
+        description: error.message,
         variant: "destructive"
       });
     }
@@ -346,74 +346,90 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
                        </p>
                        
                        <div className="relative">
-                         <input
-                           type="file"
-                           accept="image/*"
-                           onChange={async (e) => {
-                             const file = e.target.files?.[0];
-                             if (!file) return;
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (!file) return;
 
-                             // Validate file
-                             if (!file.type.startsWith('image/')) {
-                               toast({
-                                 title: "Invalid file type",
-                                 description: "Please select an image file (JPEG, PNG, WebP)",
-                                 variant: "destructive"
-                               });
-                               return;
-                             }
-                             
-                             if (file.size > 10 * 1024 * 1024) {
-                               toast({
-                                 title: "File too large",
-                                 description: "Please select an image under 10MB",
-                                 variant: "destructive"
-                               });
-                               return;
-                             }
+                              if (!file.type.startsWith('image/')) {
+                                toast({
+                                  title: "Invalid file type",
+                                  description: "Please select an image file",
+                                  variant: "destructive"
+                                });
+                                return;
+                              }
+                              
+                              if (file.size > 10 * 1024 * 1024) {
+                                toast({
+                                  title: "File too large",
+                                  description: "Please select an image under 10MB",
+                                  variant: "destructive"
+                                });
+                                return;
+                              }
 
-                             try {
-                               setUploadingOutfit(true);
-                               console.log('BrandProductManager: Starting outfit upload with file:', { 
-                                 name: file.name, 
-                                 size: file.size, 
-                                 type: file.type 
-                               });
+                              try {
+                                setUploadingOutfit(true);
+                                console.log('[BrandProductManager] Uploading outfit to storage');
 
-                               // Upload to BitStudio API instead of Supabase storage
-                               const result = await uploadImage(file, BITSTUDIO_IMAGE_TYPES.OUTFIT);
-                               console.log('BrandProductManager: Outfit upload result:', result);
+                                // Get event_id from brand
+                                const { data: brandData } = await supabase
+                                  .from('event_brands')
+                                  .select('event_id')
+                                  .eq('id', brand.id)
+                                  .single();
+                                
+                                if (!brandData) throw new Error('Failed to get event_id');
 
-                               if (result?.id) {
-                                 // Update editing product with BitStudio image ID
-                                 setEditingProduct(prev => prev ? {
-                                   ...prev,
-                                   try_on_data: { 
-                                     ...prev.try_on_data, 
-                                     outfit_image_id: result.id,
-                                     outfit_image_url: result.path || result.id // Use path if available, fallback to ID
-                                   }
-                                 } : prev);
+                                // Upload directly to Supabase Storage
+                                const fileExt = file.name.split('.').pop();
+                                const fileName = `outfit_${editingProduct.id}_${Date.now()}.${fileExt}`;
+                                const filePath = `${brandData.event_id}/${brand.id}/${fileName}`;
+                                
+                                const { error: uploadError } = await supabase.storage
+                                  .from('event-assets')
+                                  .upload(filePath, file, {
+                                    contentType: file.type,
+                                    upsert: true
+                                  });
+                                
+                                if (uploadError) throw uploadError;
+                                
+                                // Get public URL for preview
+                                const { data: urlData } = supabase.storage
+                                  .from('event-assets')
+                                  .getPublicUrl(filePath);
+                                
+                                // Update editing product with storage path
+                                setEditingProduct(prev => prev ? {
+                                  ...prev,
+                                  try_on_data: { 
+                                    ...prev.try_on_data, 
+                                    outfit_image_path: filePath,  // Store path, not URL
+                                    outfit_image_url: urlData.publicUrl  // For preview only
+                                  }
+                                } : prev);
 
-                                 toast({
-                                   title: "Outfit image uploaded",
-                                   description: "Outfit image uploaded successfully"
-                                 });
-                               } else {
-                                 throw new Error('No result returned from upload');
-                               }
-                             } catch (error: any) {
-                               console.error('BrandProductManager: Error uploading outfit image:', error);
-                               toast({
-                                 title: "Upload failed",
-                                 description: error.message || "Failed to upload outfit image",
-                                 variant: "destructive"
-                               });
-                             } finally {
-                               setUploadingOutfit(false);
-                               e.target.value = ''; // Reset input
-                             }
-                           }}
+                                toast({
+                                  title: "Outfit image uploaded",
+                                  description: "Ready to configure for try-on"
+                                });
+                                
+                              } catch (error: any) {
+                                console.error('[BrandProductManager] Upload error:', error);
+                                toast({
+                                  title: "Upload failed",
+                                  description: error.message,
+                                  variant: "destructive"
+                                });
+                              } finally {
+                                setUploadingOutfit(false);
+                                e.target.value = '';
+                              }
+                            }}
                            className="w-full p-2 border rounded"
                            disabled={uploadingOutfit || bitStudioLoading}
                          />
