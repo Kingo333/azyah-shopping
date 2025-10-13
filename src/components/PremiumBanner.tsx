@@ -33,8 +33,8 @@ const PremiumBanner: React.FC = () => {
           onClick={() => setIsExpanded(!isExpanded)}
         >
           <div className="flex items-center gap-1.5">
-            <Gift className="h-3.5 w-3.5" />
-            <span className="text-xs font-medium">Premium • 30 AED/month</span>
+            <Sparkles className="h-3.5 w-3.5 text-primary" />
+            <span className="text-xs font-medium">Unlock Azyah Premium</span>
           </div>
           <div className="flex items-center gap-1.5">
             <Button 
@@ -43,7 +43,7 @@ const PremiumBanner: React.FC = () => {
                 handleUpgrade();
               }}
               size="sm"
-              className="h-7 px-2 text-xs"
+              className="h-6 px-2 text-xs"
               disabled={loading}
             >
               {loading ? (
