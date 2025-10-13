@@ -403,20 +403,20 @@ const Events = () => {
             <h2 className="text-xl font-semibold">Your Try-On Results</h2>
             
             {/* Succeeded Results */}
-            {Object.entries(tryOnResults).filter(([_, result]) => result.status === 'succeeded' && result.output_path).length > 0 && <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {Object.entries(tryOnResults).filter(([_, result]) => result.status === 'succeeded' && result.output_path).length > 0 && <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
                   {Object.entries(tryOnResults).filter(([_, result]) => result.status === 'succeeded' && result.output_path).map(([productId, result]) => {
             const product = eventBrands.flatMap(b => b.products).find(p => p.id === productId);
-            return <Card key={productId} className="overflow-hidden border-2 border-green-500">
-                          <div className="relative">
-                            <Badge className="absolute top-2 left-2 z-10 bg-green-500 text-white">
-                              ✨ Ready
+            return <Card key={productId} className="overflow-hidden border border-green-500/50 hover:border-green-500 transition-colors cursor-pointer group">
+                          <div className="relative aspect-square">
+                            <Badge className="absolute top-1.5 left-1.5 z-10 bg-green-500 text-white text-xs px-1.5 py-0.5">
+                              ✨
                             </Badge>
-                            <img src={supabase.storage.from('event-tryon-results').getPublicUrl(result.output_path).data.publicUrl} alt="Try-on result" className="w-full h-40 object-cover" />
+                            <img src={supabase.storage.from('event-tryon-results').getPublicUrl(result.output_path).data.publicUrl} alt="Try-on result" className="w-full h-full object-cover" />
                           </div>
-                          <CardContent className="p-3">
-                            <p className="text-sm font-medium">{product?.brand_name || 'Product'}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {new Date(result.created_at).toLocaleString()}
+                          <CardContent className="p-2">
+                            <p className="text-xs font-medium truncate">{product?.brand_name || 'Product'}</p>
+                            <p className="text-[10px] text-muted-foreground truncate">
+                              {new Date(result.created_at).toLocaleDateString()}
                             </p>
                           </CardContent>
                         </Card>;
