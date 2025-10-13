@@ -658,73 +658,7 @@ const Events = () => {
                 </div>
               )}
             
-            {/* Processing Jobs */}
-            {Object.entries(tryOnResults).some(([_, r]) => r.status === 'processing' || r.status === 'queued') && (
-              <Card className="bg-blue-50 border-blue-200">
-                <CardContent className="p-4 flex items-center gap-3">
-                  <Loader2 className="h-5 w-5 animate-spin text-blue-600 flex-shrink-0" />
-                  <div className="flex-1">
-                    <p className="font-medium text-blue-900">Try-on generation in progress</p>
-                    <p className="text-sm text-blue-700">
-                      {Object.entries(tryOnResults).filter(([_, r]) => 
-                        r.status === 'processing' || r.status === 'queued'
-                      ).length} item(s) being processed. Results will appear automatically (typically 30-60s).
-                    </p>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={async () => {
-                      // Cancel stuck jobs (ones without provider_job_id)
-                      const stuckJobs = Object.entries(tryOnResults)
-                        .filter(([_, r]) => (r.status === 'queued' || r.status === 'processing') && !r.provider_job_id)
-                        .map(([productId, r]) => r);
-                      
-                      if (stuckJobs.length === 0) {
-                        toast({
-                          title: "No stuck jobs",
-                          description: "All jobs are processing normally",
-                        });
-                        return;
-                      }
-                      
-                      for (const job of stuckJobs) {
-                        const jobRecord = await supabase
-                          .from('event_tryon_jobs')
-                          .select('id')
-                          .eq('product_id', job.product_id)
-                          .eq('user_id', user!.id)
-                          .eq('event_id', selectedEvent!.id)
-                          .order('created_at', { ascending: false })
-                          .limit(1)
-                          .single();
-                        
-                        if (jobRecord.data) {
-                          await supabase
-                            .from('event_tryon_jobs')
-                            .update({
-                              status: 'failed',
-                              error: 'Cancelled - job stuck in queue',
-                              completed_at: new Date().toISOString()
-                            })
-                            .eq('id', jobRecord.data.id);
-                        }
-                      }
-                      
-                      await fetchTryOnResults();
-                      toast({
-                        title: "Stuck jobs cancelled",
-                        description: `Cancelled ${stuckJobs.length} stuck job(s)`,
-                      });
-                    }}
-                  >
-                    Cancel Stuck Jobs
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
-            
-            {/* Failed Jobs */}
+            {/* Failed Jobs - Simple display only */}
             {Object.entries(tryOnResults).some(([_, r]) => r.status === 'failed') && (
               <Card className="bg-red-50 border-red-200">
                 <CardContent className="p-4">
@@ -737,17 +671,8 @@ const Events = () => {
                         .find(p => p.id === productId);
                       
                       return (
-                        <div key={productId} className="text-sm text-red-700 flex justify-between items-center py-2">
-                          <span>{product?.brand_name || 'Product'}: {result.error || 'Generation failed'}</span>
-                          {product && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setSelectedProduct(product)}
-                            >
-                              Retry
-                            </Button>
-                          )}
+                        <div key={productId} className="text-sm text-red-700 py-1">
+                          {product?.brand_name || 'Product'}: {result.error || 'Generation failed'}
                         </div>
                       );
                     })}
