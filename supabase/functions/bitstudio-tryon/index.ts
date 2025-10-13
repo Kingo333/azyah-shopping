@@ -123,8 +123,11 @@ serve(async (req) => {
       num_images: 1
     };
 
-    if (outfitId) payload['outfit_image_id'] = outfitId;
-    if (outfitUrl) payload['outfit_image_url'] = outfitUrl;
+    if (outfitId) {
+      payload['outfit_image_id'] = outfitId;
+    } else if (outfitUrl) {
+      payload['outfit_image_url'] = outfitUrl;
+    }
 
     console.log('[BitStudio-Tryon] Calling BitStudio API with:', {
       person_image_id: personId,
