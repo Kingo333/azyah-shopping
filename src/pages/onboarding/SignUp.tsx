@@ -2,10 +2,12 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import { Mail, ArrowLeft, Loader2 } from 'lucide-react';
+import { Mail, ArrowLeft, Loader2, CheckCircle, XCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { trackOnboardingEvent } from '@/lib/analytics/onboarding';
 
 type FlowStep = 'initial' | 'email-entry';
 type UserRole = 'shopper' | 'brand' | 'retailer';
@@ -15,10 +17,16 @@ export default function SignUp() {
   const [step, setStep] = useState<FlowStep>('initial');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [username, setUsername] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showUsernameFields, setShowUsernameFields] = useState(false);
   const [emailExists, setEmailExists] = useState<boolean | null>(null);
   const [checkingEmail, setCheckingEmail] = useState(false);
+  const [checkingUsername, setCheckingUsername] = useState(false);
+  const [isUsernameAvailable, setIsUsernameAvailable] = useState<boolean | null>(null);
+  const [usernameSuggestions, setUsernameSuggestions] = useState<string[]>([]);
   const [userRole, setUserRole] = useState<UserRole>('shopper');
   const { signUp, signIn } = useAuth();
   const navigate = useNavigate();
@@ -37,24 +45,66 @@ export default function SignUp() {
     setCheckingEmail(true);
 
     try {
-      // Try to sign in with dummy password to check if email exists
-      const { error: checkError } = await supabase.auth.signInWithPassword({
-        email,
-        password: '___dummy_check___',
+      // Call auth-check-email edge function
+      const { data, error } = await supabase.functions.invoke('auth-check-email', {
+        body: { email }
       });
 
-      // Check the error message to determine if user exists
-      const userExists = checkError?.message?.includes('Invalid login credentials') || 
-                        checkError?.message?.includes('Email not confirmed');
-      
-      setEmailExists(userExists);
-      setShowPassword(true);
+      await trackOnboardingEvent('auth_check_email', { email_exists: data?.exists });
+
+      if (error) {
+        toast.error('Failed to check email. Please try again.');
+        return;
+      }
+
+      const exists = data?.exists || false;
+      setEmailExists(exists);
+
+      if (exists) {
+        // Existing user - show password field
+        setShowPassword(true);
+      } else {
+        // New user - show username + password fields
+        setShowUsernameFields(true);
+        await trackOnboardingEvent('signup_started', { role: userRole });
+      }
     } catch (error) {
-      // If there's an error checking, assume new user
-      setEmailExists(false);
-      setShowPassword(true);
+      console.error('Error checking email:', error);
+      toast.error('Something went wrong. Please try again.');
     } finally {
       setCheckingEmail(false);
+    }
+  };
+
+  const checkUsernameAvailability = async (value: string) => {
+    if (!value || value.length < 3) {
+      setIsUsernameAvailable(null);
+      return;
+    }
+
+    setCheckingUsername(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('username-availability', {
+        body: { username: value }
+      });
+
+      await trackOnboardingEvent('username_available_check', { 
+        username: value, 
+        available: data?.available 
+      });
+
+      if (error) {
+        setIsUsernameAvailable(null);
+        return;
+      }
+
+      setIsUsernameAvailable(data?.available || false);
+      setUsernameSuggestions(data?.suggestions || []);
+    } catch (error) {
+      console.error('Error checking username:', error);
+      setIsUsernameAvailable(null);
+    } finally {
+      setCheckingUsername(false);
     }
   };
 
@@ -81,21 +131,23 @@ export default function SignUp() {
           }
         }
       } else {
-        // New user - sign up
-        const { error: signUpError } = await signUp(email, password, { role: userRole });
+        // New user - sign up with username
+        if (password !== confirmPassword) {
+          toast.error('Passwords do not match');
+          return;
+        }
+
+        const { error: signUpError } = await signUp(email, password, { 
+          role: userRole,
+          username: username.toLowerCase()
+        });
         
         if (signUpError) {
           toast.error(signUpError.message || 'Failed to create account');
         } else {
-          toast.success('Account created successfully!');
-          // Redirect based on role
-          if (userRole === 'brand') {
-            navigate('/brand-portal');
-          } else if (userRole === 'retailer') {
-            navigate('/retailer-portal');
-          } else {
-            navigate('/onboarding/gender-select');
-          }
+          toast.success('Check your email to verify your account');
+          await trackOnboardingEvent('signup_completed', { has_username: !!username });
+          // Don't navigate - wait for email confirmation
         }
       }
     } catch (error) {
@@ -133,10 +185,14 @@ export default function SignUp() {
   };
 
   const handleBack = () => {
-    if (showPassword) {
+    if (showPassword || showUsernameFields) {
       setShowPassword(false);
+      setShowUsernameFields(false);
       setPassword('');
+      setConfirmPassword('');
+      setUsername('');
       setEmailExists(null);
+      setIsUsernameAvailable(null);
     } else if (step === 'email-entry') {
       setStep('initial');
       setEmail('');
@@ -167,17 +223,21 @@ export default function SignUp() {
             <h1 className="text-2xl font-bold mb-2 text-foreground text-center">
               {isBrandOrRetailer 
                 ? `Create your ${roleTitle} account`
-                : showPassword 
-                  ? (emailExists ? 'Welcome back! 👋' : "Let's create your account") 
-                  : 'Hi there 👋'
+                : showUsernameFields
+                  ? "Let's create your account"
+                  : showPassword 
+                    ? (emailExists ? 'Welcome back! 👋' : "Let's create your account") 
+                    : 'Hi there 👋'
               }
             </h1>
             <p className="text-muted-foreground text-center mb-8">
               {isBrandOrRetailer
                 ? 'Get started with your business account'
-                : showPassword 
-                  ? (emailExists ? 'Enter your password to continue' : "You don't have an account yet")
-                  : 'Log in or sign up in seconds.'
+                : showUsernameFields
+                  ? "We couldn't find an account with this email"
+                  : showPassword 
+                    ? (emailExists ? 'Enter your password to continue' : "You don't have an account yet")
+                    : 'Log in or sign up in seconds.'
               }
             </p>
 
@@ -198,7 +258,92 @@ export default function SignUp() {
                 />
               </div>
 
-              {showPassword && (
+              {showUsernameFields && (
+                <div className="animate-in fade-in slide-in-from-top-2 duration-300 space-y-4">
+                  <div>
+                    <Label className="text-sm text-muted-foreground mb-2 block">
+                      Choose a unique username
+                    </Label>
+                    <div className="relative">
+                      <Input
+                        type="text"
+                        placeholder="yourname123"
+                        value={username}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          setUsername(value);
+                          checkUsernameAvailability(value);
+                        }}
+                        pattern="[a-zA-Z0-9_]{3,20}"
+                        className="h-12 rounded-xl pr-10"
+                        required
+                        minLength={3}
+                        maxLength={20}
+                      />
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                        {checkingUsername && <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />}
+                        {!checkingUsername && isUsernameAvailable === true && <CheckCircle className="h-5 w-5 text-green-600" />}
+                        {!checkingUsername && isUsernameAvailable === false && <XCircle className="h-5 w-5 text-red-600" />}
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      3-20 characters, letters, numbers, and underscore only
+                    </p>
+                    {isUsernameAvailable === false && usernameSuggestions.length > 0 && (
+                      <div className="mt-2">
+                        <p className="text-xs text-muted-foreground mb-1">Suggestions:</p>
+                        <div className="flex gap-2 flex-wrap">
+                          {usernameSuggestions.map((suggestion) => (
+                            <button
+                              key={suggestion}
+                              type="button"
+                              onClick={() => {
+                                setUsername(suggestion);
+                                checkUsernameAvailability(suggestion);
+                              }}
+                              className="text-xs px-2 py-1 bg-muted rounded hover:bg-muted/80"
+                            >
+                              {suggestion}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div>
+                    <Label className="text-sm text-muted-foreground mb-2 block">
+                      Password
+                    </Label>
+                    <Input
+                      type="password"
+                      placeholder="Password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="h-12 rounded-xl"
+                      required
+                      minLength={6}
+                    />
+                  </div>
+
+                  <div>
+                    <Label className="text-sm text-muted-foreground mb-2 block">
+                      Confirm Password
+                    </Label>
+                    <Input
+                      type="password"
+                      placeholder="Confirm Password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      className="h-12 rounded-xl"
+                      required
+                      minLength={6}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {showPassword && !showUsernameFields && (
                 <div className="animate-in fade-in slide-in-from-top-2 duration-300">
                   <label className="text-sm text-muted-foreground mb-2 block">
                     Password
@@ -218,7 +363,7 @@ export default function SignUp() {
 
               <Button
                 type="submit"
-                disabled={loading || checkingEmail}
+                disabled={loading || checkingEmail || checkingUsername || (showUsernameFields && !isUsernameAvailable)}
                 className="w-full h-14 text-lg font-semibold rounded-full bg-black hover:bg-black/90 text-white"
               >
                 {loading || checkingEmail ? (
@@ -226,6 +371,8 @@ export default function SignUp() {
                     <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                     {checkingEmail ? 'Checking...' : 'Processing...'}
                   </>
+                ) : showUsernameFields ? (
+                  'Create account'
                 ) : showPassword ? (
                   emailExists ? 'Log in' : 'Create account'
                 ) : (

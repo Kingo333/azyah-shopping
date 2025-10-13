@@ -2262,14 +2262,19 @@ export type Database = {
         Row: {
           ai_tryon_limit: number | null
           created_at: string
+          currency: string | null
           current_period_end: string | null
           current_period_start: string | null
+          features_granted: Json | null
           id: string
           last_payment_intent_id: string | null
           last_payment_status: string | null
           nail_salon_reward_eligible: boolean | null
           plan: string
+          plan_tier: string | null
+          price_cents: number | null
           provider: string
+          renewal_at: string | null
           status: string
           ugc_collaboration_enabled: boolean | null
           updated_at: string
@@ -2278,14 +2283,19 @@ export type Database = {
         Insert: {
           ai_tryon_limit?: number | null
           created_at?: string
+          currency?: string | null
           current_period_end?: string | null
           current_period_start?: string | null
+          features_granted?: Json | null
           id?: string
           last_payment_intent_id?: string | null
           last_payment_status?: string | null
           nail_salon_reward_eligible?: boolean | null
           plan?: string
+          plan_tier?: string | null
+          price_cents?: number | null
           provider?: string
+          renewal_at?: string | null
           status?: string
           ugc_collaboration_enabled?: boolean | null
           updated_at?: string
@@ -2294,14 +2304,19 @@ export type Database = {
         Update: {
           ai_tryon_limit?: number | null
           created_at?: string
+          currency?: string | null
           current_period_end?: string | null
           current_period_start?: string | null
+          features_granted?: Json | null
           id?: string
           last_payment_intent_id?: string | null
           last_payment_status?: string | null
           nail_salon_reward_eligible?: boolean | null
           plan?: string
+          plan_tier?: string | null
+          price_cents?: number | null
           provider?: string
+          renewal_at?: string | null
           status?: string
           ugc_collaboration_enabled?: boolean | null
           updated_at?: string

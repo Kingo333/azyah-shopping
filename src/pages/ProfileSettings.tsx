@@ -122,6 +122,7 @@ const ProfileSettings: React.FC = () => {
         .from('users')
         .update({
           name: profileData.name,
+          username: profileData.username.toLowerCase(),
           bio: profileData.bio,
           country: profileData.country,
           city: profileData.city,
@@ -257,11 +258,12 @@ const ProfileSettings: React.FC = () => {
                     id="username"
                     value={profileData.username}
                     onChange={(e) => handleInputChange('username', e.target.value)}
-                    placeholder="@username"
-                    disabled
+                    placeholder="yourname123"
+                    pattern="[a-zA-Z0-9_]{3,20}"
+                    maxLength={20}
                   />
                   <p className="text-xs text-muted-foreground">
-                    Username cannot be changed
+                    3-20 characters, letters, numbers, and underscore only
                   </p>
                 </div>
               </div>
@@ -694,12 +696,12 @@ const ProfileSettings: React.FC = () => {
                   </div>
 
                   <Button 
-                    onClick={() => createPaymentIntent()}
+                    onClick={() => window.location.href = '/dashboard/upgrade'}
                     className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
                     size="lg"
                   >
                     <Crown className="h-4 w-4 mr-2" />
-                    Upgrade to Premium - 30 AED/month
+                    Upgrade to Premium
                   </Button>
                 </div>
               )}

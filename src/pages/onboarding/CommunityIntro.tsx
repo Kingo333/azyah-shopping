@@ -1,3 +1,9 @@
+/**
+ * @deprecated This component is no longer used in the onboarding flow.
+ * Kept for backward compatibility with existing users only.
+ * DO NOT use in new features.
+ * Planned for removal in v3.0
+ */
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';

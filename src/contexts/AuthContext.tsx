@@ -108,11 +108,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return { error };
     }
 
-    // Dynamic redirect based on role - go directly to appropriate dashboard
+    // Dynamic redirect based on role - go directly to dashboard
     const userRole = userData?.role || 'shopper';
-    const redirectUrl = `${window.location.origin}${getRedirectRoute(userRole as UserRole)}`;
+    const redirectUrl = `${window.location.origin}/dashboard`;
     
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -120,6 +120,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         data: userData
       }
     });
+
+    // If signup successful and username provided, store it
+    if (!error && data.user && userData?.username) {
+      const { error: usernameError } = await supabase
+        .from('users')
+        .update({
+          username: userData.username.toLowerCase(),
+          onboarding_completed: true
+        })
+        .eq('id', data.user.id);
+
+      if (usernameError?.code === '23505') {
+        return { error: { message: 'Username already taken' } };
+      }
+    }
 
     if (error) {
       let errorMessage = error.message;
