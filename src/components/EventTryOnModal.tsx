@@ -13,6 +13,8 @@ interface EventProduct {
   image_url: string;
   try_on_data: any;
   try_on_config?: {
+    outfit_image_id?: string;
+    outfit_image_url?: string;
     outfitImagePath?: string;
   };
   event_brand_id: string;
@@ -196,9 +198,10 @@ const EventTryOnModal: React.FC<EventTryOnModalProps> = ({
       return;
     }
 
-    const outfitPath = product.try_on_data?.outfit_image_path;
+    const outfitPath = product.try_on_config?.outfitImagePath || product.try_on_data?.outfit_image_path;
+    const outfitId = product.try_on_config?.outfit_image_id;
 
-    if (!outfitPath) {
+    if (!outfitPath && !outfitId) {
       toast({
         title: "Product not configured",
         description: "This product doesn't have try-on configured yet",
@@ -281,7 +284,7 @@ const EventTryOnModal: React.FC<EventTryOnModalProps> = ({
             clearInterval(pollInterval);
             
             const { data } = supabase.storage
-              .from('event-tryon-renders')
+              .from('event-tryon-results')
               .getPublicUrl(job.output_path);
             
             setResultUrl(data.publicUrl);
@@ -375,7 +378,7 @@ const EventTryOnModal: React.FC<EventTryOnModalProps> = ({
 
       if (result.ok && result.outputPath) {
         const { data } = supabase.storage
-          .from('event-tryon-renders')
+          .from('event-tryon-results')
           .getPublicUrl(result.outputPath);
         
         setResultUrl(data.publicUrl);

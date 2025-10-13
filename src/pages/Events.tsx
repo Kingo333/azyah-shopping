@@ -41,6 +41,7 @@ interface EventProduct {
   id: string;
   image_url: string;
   try_on_data: any;
+  try_on_config?: any;
   try_on_ready?: boolean;
   event_brand_id: string;
   brand_name: string;
@@ -56,7 +57,6 @@ const Events = () => {
   const [loading, setLoading] = useState(true);
   const [isLoadingBrands, setIsLoadingBrands] = useState(false);
   const [hasPersonImage, setHasPersonImage] = useState(false);
-  const [isUploadingPersonImage, setIsUploadingPersonImage] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<EventProduct | null>(null);
   const [brandScrollPositions, setBrandScrollPositions] = useState<{[key: string]: number}>({});
   const [previewPhotoUrl, setPreviewPhotoUrl] = useState<string | null>(null);
@@ -288,89 +288,6 @@ const Events = () => {
     }
   };
 
-  const handlePersonImageUpload = async (file: File) => {
-    if (!selectedEvent || !user) return;
-
-    setIsUploadingPersonImage(true);
-    try {
-      // Check if user already has a photo for this event
-      const { data: existingPhoto } = await supabase
-        .from('event_user_photos')
-        .select('photo_url')
-        .eq('event_id', selectedEvent.id)
-        .eq('user_id', user.id)
-        .maybeSingle();
-      
-      // Delete old photo from storage if it exists
-      if (existingPhoto?.photo_url) {
-        const { error: deleteError } = await supabase.storage
-          .from('event-user-photos')
-          .remove([existingPhoto.photo_url]);
-        
-        if (deleteError) {
-          console.warn('Failed to delete old photo from storage:', deleteError);
-        }
-      }
-      
-      // Upload new photo to Supabase Storage
-      const fileExt = file.name.split('.').pop();
-      const fileName = `person_${Date.now()}.${fileExt}`;
-      const filePath = `${selectedEvent.id}/${user.id}/${fileName}`;
-      
-      const { error: uploadError } = await supabase.storage
-        .from('event-user-photos')
-        .upload(filePath, file, {
-          contentType: file.type,
-          upsert: false
-        });
-      
-      if (uploadError) throw uploadError;
-      
-      // Upload to BitStudio to get image ID
-      toast({
-        title: "Uploading to Try-on AI",
-        description: "Please wait...",
-      });
-      
-      const { BitStudioClient } = await import('@/lib/bitstudio-client');
-      const bitstudioImage = await BitStudioClient.uploadImage(file, 'virtual-try-on-person');
-      
-      if (!bitstudioImage?.id) {
-        throw new Error('Failed to upload to Try-on AI');
-      }
-      
-      // Update database with new storage path AND BitStudio ID
-      const { error: dbError } = await supabase
-        .from('event_user_photos')
-        .upsert({
-          event_id: selectedEvent.id,
-          user_id: user.id,
-          photo_url: filePath,
-          bitstudio_image_id: bitstudioImage.id,
-          vto_provider: 'bitstudio',
-          vto_ready: true
-        }, {
-          onConflict: 'event_id,user_id'
-        });
-      
-      if (dbError) throw dbError;
-
-      setHasPersonImage(true);
-      toast({
-        title: existingPhoto ? "Photo replaced!" : "Photo uploaded!",
-        description: "You can now try on products from this event"
-      });
-    } catch (error) {
-      console.error('Error uploading person image:', error);
-      toast({
-        title: "Upload failed",
-        description: error instanceof Error ? error.message : "Failed to upload your photo",
-        variant: "destructive"
-      });
-    } finally {
-      setIsUploadingPersonImage(false);
-    }
-  };
 
   const handleDeletePhoto = async () => {
     if (!selectedEvent || !user) return;
@@ -514,69 +431,21 @@ const Events = () => {
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-2">
                   <h1 className="text-3xl font-bold">{selectedEvent.name}</h1>
-                  {/* Person Image Upload Button */}
-                  <div className="relative">
-                    <input
-                      id="person-image-upload"
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) handlePersonImageUpload(file);
-                      }}
-                      className="hidden"
-                      disabled={isUploadingPersonImage}
-                    />
-                    {hasPersonImage ? (
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <button className="bg-green-500 text-white px-3 py-1.5 rounded-full text-sm font-medium cursor-pointer hover:bg-green-600 transition-colors inline-flex items-center gap-1">
-                            <UserCircle className="w-4 h-4" />
-                            Photo Ready
-                            <ChevronDown className="w-3 h-3" />
-                          </button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={handleViewPhoto}>
-                            <Eye className="w-4 h-4 mr-2" />
-                            View Photo
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={handleReplacePhoto}>
-                            <Upload className="w-4 h-4 mr-2" />
-                            Replace Photo
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem 
-                            onClick={handleDeletePhoto}
-                            className="text-red-600 focus:text-red-600"
-                          >
-                            <Trash2 className="w-4 h-4 mr-2" />
-                            Delete Photo
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    ) : (
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        disabled={isUploadingPersonImage}
-                        className="relative"
-                        onClick={() => document.getElementById('person-image-upload')?.click()}
-                      >
-                        {isUploadingPersonImage ? (
-                          <>
-                            <Upload className="w-4 h-4 mr-1 animate-spin" />
-                            Uploading...
-                          </>
-                        ) : (
-                          <>
-                            <UserCircle className="w-4 h-4 mr-1" />
-                            Upload Photo
-                          </>
-                        )}
-                      </Button>
-                    )}
-                  </div>
+                  {/* Photo Status Badge */}
+                  {hasPersonImage ? (
+                    <Badge className="bg-green-500 text-white">
+                      <UserCircle className="w-4 h-4 mr-1" />
+                      Photo Ready ✓
+                    </Badge>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="text-muted-foreground">
+                        <UserCircle className="w-4 h-4 mr-1" />
+                        No Photo Yet
+                      </Badge>
+                      <span className="text-xs text-muted-foreground">Upload in product try-on</span>
+                    </div>
+                  )}
                 </div>
               <div className="flex items-center gap-4 text-muted-foreground">
                 <div className="flex items-center gap-1">
