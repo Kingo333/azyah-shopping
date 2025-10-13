@@ -222,56 +222,76 @@ const EventTryOnModal: React.FC<EventTryOnModalProps> = ({
         throw new Error(result.error || 'Failed to start try-on');
       }
 
-      // Phase 2: Use Realtime subscriptions instead of polling
-      const channel = supabase
-        .channel(`tryon-${result.jobId}`)
-        .on(
-          'postgres_changes',
-          {
-            event: 'UPDATE',
-            schema: 'public',
-            table: 'event_tryon_jobs',
-            filter: `id=eq.${result.jobId}`
-          },
-          async (payload) => {
-            const job = payload.new as any;
-            
-            if (job.status === 'succeeded' && job.output_path) {
-              channel.unsubscribe();
-              
-              const { data } = supabase.storage
-                .from('event-tryon-renders')
-                .getPublicUrl(job.output_path);
-              
-              setResultUrl(data.publicUrl);
-              setStatus('done');
-              
-              await saveAsset(
-                data.publicUrl,
-                result.jobId,
-                `${eventName} - ${product.brand_name} - Try-On`
-              );
-              
-              toast({
-                title: 'Try-on complete!',
-                description: 'Your virtual try-on is ready'
-              });
-            } else if (job.status === 'failed') {
-              channel.unsubscribe();
-              setStatus('failed');
-              toast({
-                title: 'Try-on failed',
-                description: job.error || 'Generation failed',
-                variant: 'destructive'
-              });
-            }
+      // Poll for completion using bitstudio-poll-job edge function
+      console.log('[EventTryOn] Starting polling for job:', result.jobId);
+      
+      const pollInterval = setInterval(async () => {
+        console.log('[EventTryOn] Polling job:', result.jobId);
+        
+        try {
+          // Call the bitstudio-poll-job edge function
+          const { data: pollData, error: pollError } = await supabase.functions.invoke('bitstudio-poll-job', {
+            body: { jobId: result.jobId }
+          });
+          
+          if (pollError) {
+            console.error('[EventTryOn] Poll error:', pollError);
+            return;
           }
-        )
-        .subscribe();
+          
+          console.log('[EventTryOn] Poll result:', pollData);
+          
+          // Check job status in database
+          const { data: job, error: jobError } = await supabase
+            .from('event_tryon_jobs')
+            .select('status, output_path, error')
+            .eq('id', result.jobId)
+            .single();
+          
+          if (jobError) {
+            console.error('[EventTryOn] Job query error:', jobError);
+            return;
+          }
+          
+          console.log('[EventTryOn] Job status:', job.status);
+          
+          if (job.status === 'succeeded' && job.output_path) {
+            clearInterval(pollInterval);
+            
+            const { data } = supabase.storage
+              .from('event-tryon-renders')
+              .getPublicUrl(job.output_path);
+            
+            setResultUrl(data.publicUrl);
+            setStatus('done');
+            
+            await saveAsset(
+              data.publicUrl,
+              result.jobId,
+              `${eventName} - ${product.brand_name} - Try-On`
+            );
+            
+            toast({
+              title: 'Try-on complete!',
+              description: 'Your virtual try-on is ready'
+            });
+          } else if (job.status === 'failed') {
+            clearInterval(pollInterval);
+            setStatus('failed');
+            toast({
+              title: 'Try-on failed',
+              description: job.error || 'Generation failed',
+              variant: 'destructive'
+            });
+          }
+        } catch (err) {
+          console.error('[EventTryOn] Polling exception:', err);
+        }
+      }, 3000); // Poll every 3 seconds
 
-      // Cleanup on timeout (2 min)
+      // Cleanup on timeout (3 min)
       setTimeout(() => {
-        channel.unsubscribe();
+        clearInterval(pollInterval);
         if (status === 'generating') {
           setStatus('failed');
           toast({
@@ -280,7 +300,7 @@ const EventTryOnModal: React.FC<EventTryOnModalProps> = ({
             variant: 'destructive'
           });
         }
-      }, 120000);
+      }, 180000);
       
     } catch (err: any) {
       console.error('Try-on error:', err);
