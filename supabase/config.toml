@@ -1,1 +1,40 @@
 project_id = "klwolsopucgswhtdlsps"
+
+[functions.gemini-bg-remove]
+verify_jwt = true
+
+[functions.bg-remove]
+verify_jwt = true
+
+[functions.auto-tag]
+verify_jwt = true
+
+[functions.render-fit]
+verify_jwt = true
+
+[functions.public-fits]
+verify_jwt = false
+
+[functions.moderation-flag]
+verify_jwt = true
+
+[functions.generate-toy-replica]
+verify_jwt = true
+
+[functions.vto-gemini]
+verify_jwt = true
+
+[functions.bitstudio-tryon]
+verify_jwt = true
+
+[functions.bitstudio-poll-job]
+verify_jwt = false
+
+[functions.bitstudio-upload]
+verify_jwt = true
+
+[functions.bitstudio-status]
+verify_jwt = true
+
+[functions.bitstudio-health]
+verify_jwt = true

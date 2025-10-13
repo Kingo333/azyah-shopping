@@ -98,15 +98,30 @@ export const bitstudioProvider: ITryOnProvider = {
         
         console.log('[BitStudioProvider] BitStudio API returned:', JSON.stringify(results, null, 2));
         
-        bitstudioJobId = Array.isArray(results) && results.length > 0 ? results[0].id : null;
-        
-        if (!bitstudioJobId) {
-          console.error('[BitStudioProvider] Invalid results structure:', results);
+        // Validate results structure
+        if (!Array.isArray(results) || results.length === 0) {
+          console.error('[BitStudioProvider] Invalid or empty results:', results);
           await supabase
             .from('event_tryon_jobs')
             .update({ 
               status: 'failed', 
-              error: `No job ID in BitStudio response: ${JSON.stringify(results).substring(0, 200)}`,
+              error: `Invalid BitStudio response: ${JSON.stringify(results).substring(0, 200)}`,
+              completed_at: new Date().toISOString()
+            })
+            .eq('id', job.id);
+          
+          return { ok: false, error: 'Invalid response from BitStudio API' };
+        }
+        
+        bitstudioJobId = results[0]?.id;
+        
+        if (!bitstudioJobId) {
+          console.error('[BitStudioProvider] Missing job ID in results[0]:', results[0]);
+          await supabase
+            .from('event_tryon_jobs')
+            .update({ 
+              status: 'failed', 
+              error: `No job ID in BitStudio response: ${JSON.stringify(results[0]).substring(0, 200)}`,
               completed_at: new Date().toISOString()
             })
             .eq('id', job.id);
@@ -117,16 +132,30 @@ export const bitstudioProvider: ITryOnProvider = {
       } catch (apiError: any) {
         console.error('[BitStudioProvider] BitStudio API call failed:', apiError);
         
+        // Extract user-friendly error message based on error code
+        let errorMessage = 'BitStudio API call failed';
+        if (apiError.code === 'RATE_LIMITED') {
+          errorMessage = 'Rate limit exceeded. Please try again in a moment.';
+        } else if (apiError.code === 'insufficient_credits') {
+          errorMessage = 'Insufficient credits. Please add credits to your BitStudio account.';
+        } else if (apiError.code === 'upgrade_required') {
+          errorMessage = 'This feature requires a higher plan tier.';
+        } else if (apiError.error) {
+          errorMessage = apiError.error;
+        } else if (apiError.message) {
+          errorMessage = apiError.message;
+        }
+        
         await supabase
           .from('event_tryon_jobs')
           .update({ 
             status: 'failed', 
-            error: `API call failed: ${apiError.message || apiError.error || 'Unknown error'}`,
+            error: errorMessage,
             completed_at: new Date().toISOString()
           })
           .eq('id', job.id);
         
-        return { ok: false, error: apiError.message || apiError.error || 'BitStudio API call failed' };
+        return { ok: false, error: errorMessage };
       }
       
       console.log('[BitStudioProvider] BitStudio job ID:', bitstudioJobId);

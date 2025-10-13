@@ -122,6 +122,15 @@ export class BitStudioClient {
         throw { error: 'Empty response from BitStudio API', code: 'EMPTY_RESPONSE' };
       }
       
+      // Handle error responses from edge function
+      if (resp.error) {
+        throw { 
+          error: resp.error, 
+          code: resp.code || 'BITSTUDIO_ERROR',
+          details: resp.details
+        };
+      }
+      
       if (Array.isArray(resp)) {
         if (resp.length === 0) {
           throw { error: 'BitStudio returned empty results array', code: 'EMPTY_ARRAY' };
@@ -138,11 +147,24 @@ export class BitStudioClient {
       
       // Log the unexpected structure
       console.error('[BitStudioClient] Unexpected try-on response shape:', JSON.stringify(resp, null, 2));
-      throw { error: 'Invalid response from try-on', code: 'INVALID_RESPONSE', raw_response: resp };
+      throw { error: 'Invalid response structure from BitStudio', code: 'INVALID_RESPONSE', raw_response: resp };
       
     } catch (error: any) {
       console.error('[BitStudioClient] virtualTryOn error:', error);
-      throw error; // Re-throw with full context
+      
+      // Check for specific BitStudio error codes
+      if (error.code === 'RATE_LIMITED') {
+        throw { error: 'Rate limit exceeded. Please wait a moment and try again.', code: 'RATE_LIMITED' };
+      }
+      if (error.code === 'insufficient_credits') {
+        throw { error: 'Insufficient credits. Please add credits to your BitStudio account.', code: 'insufficient_credits' };
+      }
+      if (error.code === 'upgrade_required') {
+        throw { error: 'This feature requires a higher plan tier.', code: 'upgrade_required' };
+      }
+      
+      // Re-throw with full context
+      throw error;
     }
   }
 

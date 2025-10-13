@@ -222,11 +222,15 @@ const EventTryOnModal: React.FC<EventTryOnModalProps> = ({
         throw new Error(result.error || 'Failed to start try-on');
       }
 
-      // Poll for completion using bitstudio-poll-job edge function
+      // Poll for completion using bitstudio-poll-job edge function (per BitStudio docs: 2s polling)
       console.log('[EventTryOn] Starting polling for job:', result.jobId);
       
+      let pollAttempts = 0;
+      const maxPollAttempts = 90; // 3 minutes / 2s = 90 attempts
+      
       const pollInterval = setInterval(async () => {
-        console.log('[EventTryOn] Polling job:', result.jobId);
+        pollAttempts++;
+        console.log('[EventTryOn] Poll attempt', pollAttempts, '/', maxPollAttempts, 'for job:', result.jobId);
         
         try {
           // Call the bitstudio-poll-job edge function
@@ -236,6 +240,15 @@ const EventTryOnModal: React.FC<EventTryOnModalProps> = ({
           
           if (pollError) {
             console.error('[EventTryOn] Poll error:', pollError);
+            if (pollAttempts >= maxPollAttempts) {
+              clearInterval(pollInterval);
+              setStatus('failed');
+              toast({
+                title: 'Try-on timeout',
+                description: 'Polling timed out after 3 minutes',
+                variant: 'destructive'
+              });
+            }
             return;
           }
           
@@ -250,6 +263,15 @@ const EventTryOnModal: React.FC<EventTryOnModalProps> = ({
           
           if (jobError) {
             console.error('[EventTryOn] Job query error:', jobError);
+            if (pollAttempts >= maxPollAttempts) {
+              clearInterval(pollInterval);
+              setStatus('failed');
+              toast({
+                title: 'Try-on failed',
+                description: 'Could not retrieve job status',
+                variant: 'destructive'
+              });
+            }
             return;
           }
           
@@ -272,7 +294,7 @@ const EventTryOnModal: React.FC<EventTryOnModalProps> = ({
             );
             
             toast({
-              title: 'Try-on complete!',
+              title: 'Try-on complete! ✨',
               description: 'Your virtual try-on is ready'
             });
           } else if (job.status === 'failed') {
@@ -283,24 +305,31 @@ const EventTryOnModal: React.FC<EventTryOnModalProps> = ({
               description: job.error || 'Generation failed',
               variant: 'destructive'
             });
+          } else if (pollAttempts >= maxPollAttempts) {
+            clearInterval(pollInterval);
+            setStatus('failed');
+            toast({
+              title: 'Try-on timeout',
+              description: 'Processing took longer than expected (3 minutes)',
+              variant: 'destructive'
+            });
           }
         } catch (err) {
           console.error('[EventTryOn] Polling exception:', err);
+          if (pollAttempts >= maxPollAttempts) {
+            clearInterval(pollInterval);
+            setStatus('failed');
+            toast({
+              title: 'Try-on error',
+              description: 'An error occurred while checking status',
+              variant: 'destructive'
+            });
+          }
         }
-      }, 3000); // Poll every 3 seconds
-
-      // Cleanup on timeout (3 min)
-      setTimeout(() => {
-        clearInterval(pollInterval);
-        if (status === 'generating') {
-          setStatus('failed');
-          toast({
-            title: 'Try-on timeout',
-            description: 'Generation took too long',
-            variant: 'destructive'
-          });
-        }
-      }, 180000);
+      }, 2000); // Poll every 2 seconds per BitStudio docs
+      
+      // Store interval for cleanup
+      return () => clearInterval(pollInterval);
       
     } catch (err: any) {
       console.error('Try-on error:', err);

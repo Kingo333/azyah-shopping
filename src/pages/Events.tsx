@@ -71,7 +71,7 @@ const Events = () => {
     
     const { data } = await supabase
       .from('event_tryon_jobs')
-      .select('product_id, status, output_path, created_at, error')
+      .select('product_id, status, output_path, created_at, error, provider_job_id')
       .eq('event_id', selectedEvent.id)
       .eq('user_id', user.id)
       .order('created_at', { ascending: false });
@@ -575,71 +575,143 @@ const Events = () => {
           )}
         </div>
 
-        {/* Try-On Results Banner */}
+        {/* Try-On Results Banner - Enhanced to show all states */}
         {Object.keys(tryOnResults).length > 0 && (
-          <div className="mb-8">
-            <h2 className="text-xl font-semibold mb-4">Your Try-On Results</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {Object.entries(tryOnResults)
-                .filter(([_, result]) => result.status === 'succeeded' && result.output_path)
-                .map(([productId, result]) => {
-                  const product = eventBrands
-                    .flatMap(b => b.products)
-                    .find(p => p.id === productId);
-                  
-                  return (
-                    <Card key={productId} className="overflow-hidden border-2 border-green-500">
-                      <div className="relative">
-                        <Badge className="absolute top-2 left-2 z-10 bg-green-500 text-white">
-                          ✨ Result Ready
-                        </Badge>
-                        <img
-                          src={supabase.storage
-                            .from('event-tryon-renders')
-                            .getPublicUrl(result.output_path).data.publicUrl}
-                          alt="Try-on result"
-                          className="w-full h-64 object-cover"
-                        />
-                      </div>
-                      <CardContent className="p-4">
-                        <p className="text-sm text-muted-foreground">
-                          Generated {new Date(result.created_at).toLocaleString()}
-                        </p>
-                        {product && (
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            className="w-full mt-2"
-                            onClick={() => {
-                              setSelectedProduct({
-                                ...product,
-                                event_brand_id: product.event_brand_id,
-                                brand_name: product.brand_name,
-                                brand_logo_url: product.brand_logo_url
-                              });
-                            }}
-                          >
-                            Try Again
-                          </Button>
-                        )}
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-            </div>
+          <div className="mb-8 space-y-4">
+            <h2 className="text-xl font-semibold">Your Try-On Results</h2>
             
-            {/* Processing Jobs Banner */}
-            {Object.entries(tryOnResults).some(([_, r]) => r.status === 'processing') && (
-              <Card className="mt-4 bg-blue-50 border-blue-200">
+            {/* Succeeded Results */}
+            {Object.entries(tryOnResults)
+              .filter(([_, result]) => result.status === 'succeeded' && result.output_path)
+              .length > 0 && (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {Object.entries(tryOnResults)
+                    .filter(([_, result]) => result.status === 'succeeded' && result.output_path)
+                    .map(([productId, result]) => {
+                      const product = eventBrands
+                        .flatMap(b => b.products)
+                        .find(p => p.id === productId);
+                      
+                      return (
+                        <Card key={productId} className="overflow-hidden border-2 border-green-500">
+                          <div className="relative">
+                            <Badge className="absolute top-2 left-2 z-10 bg-green-500 text-white">
+                              ✨ Ready
+                            </Badge>
+                            <img
+                              src={supabase.storage
+                                .from('event-tryon-renders')
+                                .getPublicUrl(result.output_path).data.publicUrl}
+                              alt="Try-on result"
+                              className="w-full h-64 object-cover"
+                            />
+                          </div>
+                          <CardContent className="p-4">
+                            <p className="text-sm font-medium">{product?.brand_name || 'Product'}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {new Date(result.created_at).toLocaleString()}
+                            </p>
+                            <div className="flex gap-2 mt-3">
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="flex-1"
+                                onClick={() => {
+                                  const link = document.createElement('a');
+                                  link.href = supabase.storage
+                                    .from('event-tryon-renders')
+                                    .getPublicUrl(result.output_path).data.publicUrl;
+                                  link.download = `try-on-${productId}.png`;
+                                  link.click();
+                                }}
+                              >
+                                Download
+                              </Button>
+                              {product && (
+                                <Button 
+                                  variant="default" 
+                                  size="sm" 
+                                  className="flex-1"
+                                  onClick={() => setSelectedProduct(product)}
+                                >
+                                  Try Again
+                                </Button>
+                              )}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                </div>
+              )}
+            
+            {/* Processing Jobs */}
+            {Object.entries(tryOnResults).some(([_, r]) => r.status === 'processing' || r.status === 'queued') && (
+              <Card className="bg-blue-50 border-blue-200">
                 <CardContent className="p-4 flex items-center gap-3">
-                  <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
-                  <div>
+                  <Loader2 className="h-5 w-5 animate-spin text-blue-600 flex-shrink-0" />
+                  <div className="flex-1">
                     <p className="font-medium text-blue-900">Try-on generation in progress</p>
                     <p className="text-sm text-blue-700">
-                      {Object.entries(tryOnResults).filter(([_, r]) => r.status === 'processing').length} 
-                      {' '}item(s) being processed. Results will appear here automatically.
+                      {Object.entries(tryOnResults).filter(([_, r]) => 
+                        r.status === 'processing' || r.status === 'queued'
+                      ).length} item(s) being processed. Results will appear automatically (typically 30-60s).
                     </p>
                   </div>
+                </CardContent>
+              </Card>
+            )}
+            
+            {/* Failed Jobs */}
+            {Object.entries(tryOnResults).some(([_, r]) => r.status === 'failed') && (
+              <Card className="bg-red-50 border-red-200">
+                <CardContent className="p-4">
+                  <p className="font-medium text-red-900 mb-2">Some try-ons failed</p>
+                  {Object.entries(tryOnResults)
+                    .filter(([_, r]) => r.status === 'failed')
+                    .map(([productId, result]) => {
+                      const product = eventBrands
+                        .flatMap(b => b.products)
+                        .find(p => p.id === productId);
+                      
+                      return (
+                        <div key={productId} className="text-sm text-red-700 flex justify-between items-center py-2">
+                          <span>{product?.brand_name || 'Product'}: {result.error || 'Generation failed'}</span>
+                          {product && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setSelectedProduct(product)}
+                            >
+                              Retry
+                            </Button>
+                          )}
+                        </div>
+                      );
+                    })}
+                </CardContent>
+              </Card>
+            )}
+            
+            {/* Debug Panel */}
+            {user && selectedEvent && Object.keys(tryOnResults).length > 0 && (
+              <Card className="bg-gray-50">
+                <CardContent className="p-4">
+                  <details>
+                    <summary className="cursor-pointer font-medium text-sm">Debug: Job Status</summary>
+                    <div className="mt-2 space-y-2 text-xs font-mono">
+                      {Object.entries(tryOnResults).map(([productId, result]) => (
+                        <div key={productId} className="border-l-2 border-gray-300 pl-2">
+                          <div><strong>Product:</strong> {productId.slice(0, 8)}...</div>
+                          <div><strong>Status:</strong> {result.status}</div>
+                          <div><strong>Provider Job ID:</strong> {result.provider_job_id || 'null'}</div>
+                          <div><strong>Output Path:</strong> {result.output_path || 'null'}</div>
+                          <div><strong>Error:</strong> {result.error || 'none'}</div>
+                          <div><strong>Created:</strong> {new Date(result.created_at).toLocaleTimeString()}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </details>
                 </CardContent>
               </Card>
             )}
