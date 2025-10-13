@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { storePaymentSessionBackup } from '@/utils/paymentSessionManager';
+
 
 interface Subscription {
   id: string;
@@ -79,72 +79,11 @@ export function useSubscription(): UseSubscriptionReturn {
   }, [user]);
 
   const createPaymentIntent = async (test = false) => {
-    if (!user) {
-      toast({
-        title: "Authentication Required",
-        description: "Please sign in to upgrade to premium",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    try {
-      setLoading(true);
-      
-      // Refresh session before payment to ensure it's valid
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      
-      if (sessionError || !session) {
-        console.error('Session validation failed:', sessionError);
-        toast({
-          title: "Authentication Error",
-          description: "Please refresh the page and try again",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      const { data, error } = await supabase.functions.invoke('create-payment-intent', {
-        body: { amountAed: 30, test, message: "Azyah Premium" },
-        headers: {
-          Authorization: `Bearer ${session.access_token}`
-        }
-      });
-
-      if (error) {
-        console.error('Payment intent creation error:', error);
-        toast({
-          title: "Payment Error",
-          description: error.message || 'Failed to create payment',
-          variant: "destructive"
-        });
-        return;
-      }
-
-      // Handle new response format: { redirectUrl, pi }
-      if (data?.redirectUrl) {
-        // Store session backup before redirect
-        storePaymentSessionBackup(session, user, data.pi);
-        
-        // Redirect to Ziina checkout
-        window.location.href = data.redirectUrl;
-      } else {
-        toast({
-          title: "Payment Error", 
-          description: "No payment URL received",
-          variant: "destructive"
-        });
-      }
-    } catch (err) {
-      console.error('Unexpected error creating payment intent:', err);
-      toast({
-        title: "Payment Error",
-        description: "An unexpected error occurred",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
+    toast({
+      title: "Payment Integration Required",
+      description: "Payment integration is being updated. Please check back soon.",
+      variant: "default"
+    });
   };
 
   const cancelSubscription = async () => {

@@ -14,7 +14,7 @@ import GlobalSearch from '@/components/GlobalSearch';
 import DashboardHeader from '@/components/DashboardHeader';
 import AffiliateHub from '@/components/AffiliateHub';
 import AiStudioModal from '@/components/AiStudioModal';
-import PremiumBanner from '@/components/PremiumBanner';
+
 import { Heart, ShoppingBag, Search, Sparkles, Package, BarChart3, Users, Settings, Store, TrendingUp, Plus, Eye, DollarSign, Globe, Bell, LogOut, User, Archive, Trophy, MapPin, Blocks, WandSparkles, ChevronDown, ChevronUp, Gift, ChevronLeft, ChevronRight, Home, Filter, CalendarIcon, Crown, Check } from 'lucide-react';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import MinimizedLeaderboard from '@/components/MinimizedLeaderboard';
@@ -239,9 +239,6 @@ const RoleDashboard: React.FC = () => {
   const renderShopperDashboard = () => <div className="space-y-6">
       {/* Profile Completion Banner */}
       <ProfileCompletionBanner />
-      
-      {/* Premium Banner */}
-      <PremiumBanner />
 
       {/* Upgrade Card */}
       <section className="px-4">
