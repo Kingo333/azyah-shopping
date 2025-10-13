@@ -238,13 +238,20 @@ export const WardrobeUploadModal: React.FC<WardrobeUploadModalProps> = ({
       return;
     }
 
+    // Validate category matches DB enum
+    const validCategories = ['top', 'bottom', 'dress', 'outerwear', 'shoes', 'bag', 'accessory'];
+    if (!validCategories.includes(category)) {
+      toast.error('Please select a valid category');
+      return;
+    }
+
     try {
       console.log('Saving item to database with URL:', bgRemovedPreview);
       
       const newItem = await addItem.mutateAsync({
         image_url: bgRemovedPreview,
         image_bg_removed_url: bgRemovedPreview,
-        category: category as any,
+        category: category as 'top' | 'bottom' | 'dress' | 'outerwear' | 'shoes' | 'bag' | 'accessory',
         color: color || null,
         season: null,
         brand: brand || null,
