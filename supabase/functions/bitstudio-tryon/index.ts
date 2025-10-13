@@ -87,9 +87,17 @@ serve(async (req) => {
       return json(422, { error: 'Missing person_image_id' });
     }
 
+    // Priority: try_on_data > try_on_config > product.image_url
+    const tryOnData = product?.try_on_data ?? {};
     const cfg = product?.try_on_config ?? {};
-    const outfitId = cfg?.outfit_image_id;
-    const outfitUrl = cfg?.outfit_image_url || product?.image_url;
+    const outfitId = tryOnData?.outfit_bitstudio_id || cfg?.outfit_image_id;
+    const outfitUrl = tryOnData?.outfit_image_url || cfg?.outfit_image_url || product?.image_url;
+    
+    console.log('[BitStudio-Tryon] Using outfit:', {
+      bitstudio_id: outfitId,
+      image_url: outfitUrl ? 'present' : 'missing',
+      source: outfitId ? (tryOnData?.outfit_bitstudio_id ? 'try_on_data' : 'try_on_config') : 'product.image_url'
+    });
 
     if (!outfitId && !outfitUrl) {
       console.error('[BitStudio-Tryon] Missing outfit reference - product:', product);

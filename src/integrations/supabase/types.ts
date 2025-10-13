@@ -671,6 +671,7 @@ export type Database = {
           event_brand_id: string
           id: string
           image_url: string
+          product_id: string | null
           sort_order: number | null
           try_on_config: Json | null
           try_on_data: Json | null
@@ -683,6 +684,7 @@ export type Database = {
           event_brand_id: string
           id?: string
           image_url: string
+          product_id?: string | null
           sort_order?: number | null
           try_on_config?: Json | null
           try_on_data?: Json | null
@@ -695,6 +697,7 @@ export type Database = {
           event_brand_id?: string
           id?: string
           image_url?: string
+          product_id?: string | null
           sort_order?: number | null
           try_on_config?: Json | null
           try_on_data?: Json | null
@@ -708,6 +711,20 @@ export type Database = {
             columns: ["event_brand_id"]
             isOneToOne: false
             referencedRelation: "event_brands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_brand_products_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_brand_products_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_public"
             referencedColumns: ["id"]
           },
         ]

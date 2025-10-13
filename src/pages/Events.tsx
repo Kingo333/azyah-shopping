@@ -118,9 +118,22 @@ const Events = () => {
             });
           } else if (job.status === 'failed') {
             fetchTryOnResults();
+            
+            // Parse error for user-friendly message
+            let errorMsg = job.error || "Generation failed";
+            if (errorMsg.includes('not configured') || errorMsg.includes('Not Configured')) {
+              errorMsg = "This product isn't set up for try-on yet. Please contact the retailer.";
+            } else if (errorMsg.includes('person') || errorMsg.includes('Missing person')) {
+              errorMsg = "Please upload your photo first";
+            } else if (errorMsg.includes('API key') || errorMsg.includes('not configured')) {
+              errorMsg = "Try-on service temporarily unavailable. Please try again later.";
+            } else if (errorMsg.includes('Edge function')) {
+              errorMsg = "Try-on service error. Please try again.";
+            }
+            
             toast({
               title: "Try-on failed",
-              description: job.error || "Generation failed",
+              description: errorMsg,
               variant: "destructive"
             });
           }

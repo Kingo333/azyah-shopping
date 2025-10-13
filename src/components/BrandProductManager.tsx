@@ -16,6 +16,7 @@ interface EventBrandProduct {
   try_on_data: any;
   sort_order: number;
   created_at: string;
+  product_id?: string;
 }
 
 interface EventBrand {
@@ -431,6 +432,8 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
                                   outfit_image_url: urlData.publicUrl,
                                 };
                                 
+                                let bitstudioImageId: string | undefined;
+                                
                                 if (needsBitstudioUpload) {
                                   // Upload to BitStudio to get image ID
                                   toast({
@@ -445,6 +448,7 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
                                     throw new Error('Failed to upload to BitStudio');
                                   }
                                   
+                                  bitstudioImageId = bitstudioImage.id;
                                   updatedTryOnData.outfit_bitstudio_id = bitstudioImage.id;
                                 } else {
                                   // Preserve existing BitStudio ID
@@ -452,6 +456,7 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
                                     title: "Preview Updated",
                                     description: "Try-on AI assets preserved. Image updated in storage only.",
                                   });
+                                  bitstudioImageId = existingBitstudioId;
                                   updatedTryOnData.outfit_bitstudio_id = existingBitstudioId;
                                 }
                                 
@@ -463,21 +468,45 @@ export const BrandProductManager = ({ brand, onBack }: BrandProductManagerProps)
                                   try_on_data: updatedTryOnData
                                 } : prev);
 
-                                // Auto-save configuration
+                                // Auto-save configuration (populate both try_on_data and try_on_config)
                                 await supabase
                                   .from('event_brand_products')
                                   .update({
                                     try_on_data: updatedTryOnData,
+                                    try_on_config: {
+                                      outfit_image_id: updatedTryOnData.outfit_bitstudio_id,
+                                      outfit_image_url: updatedTryOnData.outfit_image_url,
+                                      outfitImagePath: updatedTryOnData.outfit_image_path
+                                    },
                                     try_on_provider: 'bitstudio',
                                     try_on_ready: true,
                                     updated_at: new Date().toISOString()
                                   })
                                   .eq('id', editingProduct.id);
 
-                                toast({
-                                  title: "Configuration saved",
-                                  description: "Outfit uploaded successfully and ready for virtual try-on"
-                                });
+                                // Save to product_outfit_assets for cross-event reuse if product_id exists
+                                if (editingProduct.product_id && bitstudioImageId) {
+                                  const { data: { user } } = await supabase.auth.getUser();
+                                  await supabase
+                                    .from('product_outfit_assets')
+                                    .upsert({
+                                      product_id: editingProduct.product_id,
+                                      brand_id: brand.id,
+                                      outfit_bitstudio_id: bitstudioImageId,
+                                      outfit_image_url: urlData.publicUrl,
+                                      created_by: user?.id
+                                    });
+                                  
+                                  toast({
+                                    title: "Outfit saved for reuse!",
+                                    description: "This outfit will be available for future events"
+                                  });
+                                } else {
+                                  toast({
+                                    title: "Configuration saved",
+                                    description: "Outfit uploaded successfully and ready for virtual try-on"
+                                  });
+                                }
                                 
                                 // Refresh products and close modal
                                 await fetchProducts();

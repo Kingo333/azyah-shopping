@@ -39,11 +39,31 @@ export const bitstudioProvider: ITryOnProvider = {
       
       if (invokeError) {
         console.error('[BitStudioProvider] Edge function error:', invokeError);
+        
+        // Update job with error
+        await supabase
+          .from('event_tryon_jobs')
+          .update({
+            status: 'failed',
+            error: `Edge function failed: ${invokeError.message}`
+          })
+          .eq('id', job.id);
+        
         return { ok: false, jobId: job.id, error: invokeError.message };
       }
       
       if (!result?.ok) {
         console.error('[BitStudioProvider] Edge function returned error:', result);
+        
+        // Update job with error
+        await supabase
+          .from('event_tryon_jobs')
+          .update({
+            status: 'failed',
+            error: result?.error || 'Failed to start try-on'
+          })
+          .eq('id', job.id);
+        
         return { ok: false, jobId: job.id, error: result?.error || 'Failed to start try-on' };
       }
       
