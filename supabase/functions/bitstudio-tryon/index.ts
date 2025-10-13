@@ -60,31 +60,33 @@ serve(async (req) => {
     }
 
     const bitStudioResponse = await response.json();
-    console.log('BitStudio try-on response:', bitStudioResponse);
+    console.log('BitStudio raw response:', JSON.stringify(bitStudioResponse, null, 2));
 
-    // Map BitStudio response to our expected format
-    // Based on the docs, virtual try-on should return image objects with id, status, etc.
-    const mappedResponse = Array.isArray(bitStudioResponse) 
-      ? bitStudioResponse.map(item => ({
-          id: item.id || item.job_id,
-          type: 'virtual-try-on',
-          status: item.status || 'pending',
-          path: item.path || item.url,
-          credits_used: item.credits_used || 1,
-          task: item.task || 'virtual-try-on',
-          versions: item.versions || []
-        }))
-      : [{
-          id: bitStudioResponse.id || bitStudioResponse.job_id,
-          type: 'virtual-try-on',
-          status: bitStudioResponse.status || 'pending',
-          path: bitStudioResponse.path || bitStudioResponse.url,
-          credits_used: bitStudioResponse.credits_used || 1,
-          task: bitStudioResponse.task || 'virtual-try-on',
-          versions: bitStudioResponse.versions || []
-        }];
+    // BitStudio returns an array of job objects with { id, status, task, etc }
+    let resultsArray = Array.isArray(bitStudioResponse) ? bitStudioResponse : [bitStudioResponse];
 
-    console.log('Mapped try-on response:', mappedResponse);
+    const mappedResponse = resultsArray.map(item => {
+      // Extract job ID - could be 'id' or nested
+      const jobId = item.id || item.job_id || item.generation_id;
+      
+      if (!jobId) {
+        console.error('BitStudio response missing job ID:', item);
+      }
+      
+      return {
+        id: jobId,
+        type: item.type || 'virtual-try-on',
+        status: item.status || 'pending',
+        task: item.task || 'virtual-try-on',
+        path: item.path || item.url || null,
+        credits_used: item.credits_used || 1,
+        versions: item.versions || [],
+        created_timestamp: item.created_timestamp,
+        estimated_completion: item.estimated_completion
+      };
+    });
+
+    console.log('Mapped try-on response:', JSON.stringify(mappedResponse, null, 2));
 
     return new Response(
       JSON.stringify(mappedResponse),

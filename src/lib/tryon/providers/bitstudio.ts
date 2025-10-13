@@ -85,26 +85,48 @@ export const bitstudioProvider: ITryOnProvider = {
       });
       
       // 4. Call BitStudio API with image IDs
-      const results = await BitStudioClient.virtualTryOn({
-        person_image_id: personData.bitstudio_image_id,
-        outfit_image_id: tryOnData.outfit_bitstudio_id,
-        resolution: 'standard',
-        num_images: 1
-      });
+      let bitstudioJobId: string | null = null;
       
-      const bitstudioJobId = Array.isArray(results) && results.length > 0 ? results[0].id : null;
-      
-      if (!bitstudioJobId) {
+      try {
+        console.log('[BitStudioProvider] Calling BitStudio API...');
+        const results = await BitStudioClient.virtualTryOn({
+          person_image_id: personData.bitstudio_image_id,
+          outfit_image_id: tryOnData.outfit_bitstudio_id,
+          resolution: 'standard',
+          num_images: 1
+        });
+        
+        console.log('[BitStudioProvider] BitStudio API returned:', JSON.stringify(results, null, 2));
+        
+        bitstudioJobId = Array.isArray(results) && results.length > 0 ? results[0].id : null;
+        
+        if (!bitstudioJobId) {
+          console.error('[BitStudioProvider] Invalid results structure:', results);
+          await supabase
+            .from('event_tryon_jobs')
+            .update({ 
+              status: 'failed', 
+              error: `No job ID in BitStudio response: ${JSON.stringify(results).substring(0, 200)}`,
+              completed_at: new Date().toISOString()
+            })
+            .eq('id', job.id);
+          
+          return { ok: false, error: 'No job ID returned from BitStudio' };
+        }
+        
+      } catch (apiError: any) {
+        console.error('[BitStudioProvider] BitStudio API call failed:', apiError);
+        
         await supabase
           .from('event_tryon_jobs')
           .update({ 
             status: 'failed', 
-            error: 'No job ID returned from BitStudio',
+            error: `API call failed: ${apiError.message || apiError.error || 'Unknown error'}`,
             completed_at: new Date().toISOString()
           })
           .eq('id', job.id);
         
-        return { ok: false, error: 'No job ID returned from BitStudio' };
+        return { ok: false, error: apiError.message || apiError.error || 'BitStudio API call failed' };
       }
       
       console.log('[BitStudioProvider] BitStudio job ID:', bitstudioJobId);

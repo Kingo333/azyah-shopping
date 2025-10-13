@@ -111,21 +111,39 @@ export class BitStudioClient {
     num_images?: number;
     seed?: number;
   }): Promise<BitStudioImage[]> {
-    console.log('[BitStudioClient] Starting virtual try-on with params:', params);
-    
-    // The edge function returns an object: { job_id, provider_job_id, result }
-    // Normalize to always return the underlying array as the hook expects.
-    const resp = await this.makeSupabaseRequest('bitstudio-tryon', params);
-    console.log('[BitStudioClient] VTO response:', resp);
-    
-    if (Array.isArray(resp)) {
-      return resp as BitStudioImage[];
+    try {
+      console.log('[BitStudioClient] Starting virtual try-on with params:', params);
+      
+      const resp = await this.makeSupabaseRequest('bitstudio-tryon', params);
+      console.log('[BitStudioClient] VTO response:', resp);
+      
+      // Validate response structure
+      if (!resp) {
+        throw { error: 'Empty response from BitStudio API', code: 'EMPTY_RESPONSE' };
+      }
+      
+      if (Array.isArray(resp)) {
+        if (resp.length === 0) {
+          throw { error: 'BitStudio returned empty results array', code: 'EMPTY_ARRAY' };
+        }
+        return resp as BitStudioImage[];
+      }
+      
+      if (resp && Array.isArray(resp.result)) {
+        if (resp.result.length === 0) {
+          throw { error: 'BitStudio returned empty results array', code: 'EMPTY_ARRAY' };
+        }
+        return resp.result as BitStudioImage[];
+      }
+      
+      // Log the unexpected structure
+      console.error('[BitStudioClient] Unexpected try-on response shape:', JSON.stringify(resp, null, 2));
+      throw { error: 'Invalid response from try-on', code: 'INVALID_RESPONSE', raw_response: resp };
+      
+    } catch (error: any) {
+      console.error('[BitStudioClient] virtualTryOn error:', error);
+      throw error; // Re-throw with full context
     }
-    if (resp && Array.isArray(resp.result)) {
-      return resp.result as BitStudioImage[];
-    }
-    console.error('[BitStudioClient] Unexpected try-on response shape:', resp);
-    throw { error: 'Invalid response from try-on', code: 'INVALID_RESPONSE' } as BitStudioError;
   }
 
   static async pollUntilComplete(id: string, maxWaitMs = 180000): Promise<BitStudioImage> {

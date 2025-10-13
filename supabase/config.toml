@@ -26,3 +26,15 @@ verify_jwt = true
 
 [functions.bitstudio-poll-job]
 verify_jwt = false
+
+[functions.bitstudio-tryon]
+verify_jwt = true
+
+[functions.bitstudio-upload]
+verify_jwt = true
+
+[functions.bitstudio-status]
+verify_jwt = true
+
+[functions.bitstudio-health]
+verify_jwt = true

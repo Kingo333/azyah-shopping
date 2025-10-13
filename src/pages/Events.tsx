@@ -127,40 +127,45 @@ const Events = () => {
       )
       .subscribe();
     
-    // Poll processing jobs every 10 seconds
+    // Poll processing jobs every 5 seconds with automatic edge function invocation
     const pollInterval = setInterval(async () => {
-      const { data: processingJobs } = await supabase
+      const { data: pendingJobs } = await supabase
         .from('event_tryon_jobs')
-        .select('id, provider_job_id, status')
+        .select('id, status, provider_job_id')
         .eq('event_id', selectedEvent.id)
         .eq('user_id', user.id)
         .in('status', ['queued', 'processing']);
       
-      if (processingJobs && processingJobs.length > 0) {
-        console.log(`Polling ${processingJobs.length} background jobs...`);
+      if (pendingJobs && pendingJobs.length > 0) {
+        console.log(`[Events] Found ${pendingJobs.length} pending jobs, polling...`);
         
-        // Poll each job
-        for (const job of processingJobs) {
-          try {
-            const { data, error } = await supabase.functions.invoke('bitstudio-poll-job', {
-              body: { jobId: job.id }
-            });
-            
-            if (error) {
-              console.error('Error polling job:', error);
-            } else if (data) {
-              console.log('Poll result:', data);
-              // Refresh results when any job updates
-              if (data.status === 'succeeded' || data.status === 'failed') {
-                await fetchTryOnResults();
+        for (const job of pendingJobs) {
+          // Only poll if job has a provider_job_id
+          if (job.provider_job_id) {
+            try {
+              const { data, error } = await supabase.functions.invoke('bitstudio-poll-job', {
+                body: { jobId: job.id }
+              });
+              
+              if (error) {
+                console.error(`[Events] Poll error for job ${job.id}:`, error);
+              } else {
+                console.log(`[Events] Poll result for job ${job.id}:`, data);
+                
+                // Refresh results on completion or failure
+                if (data?.status === 'succeeded' || data?.status === 'failed') {
+                  await fetchTryOnResults();
+                }
               }
+            } catch (err) {
+              console.error(`[Events] Poll exception for job ${job.id}:`, err);
             }
-          } catch (error) {
-            console.error('Error polling job:', error);
+          } else {
+            console.warn(`[Events] Job ${job.id} has no provider_job_id yet (status: ${job.status})`);
           }
         }
       }
-    }, 10000); // Poll every 10 seconds
+    }, 5000); // Poll every 5 seconds
     
     return () => {
       channel.unsubscribe();
