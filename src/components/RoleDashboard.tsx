@@ -243,46 +243,29 @@ const RoleDashboard: React.FC = () => {
       {/* Upgrade Card */}
       <section className="px-4">
         <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Crown className="h-5 w-5 text-primary" />
-              {isPremium ? 'Manage Your Plan' : 'Unlock Azyah Premium'}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {!isPremium && (
-              <ul className="space-y-2 text-sm">
-                <li className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-primary" />
-                  UGC collaboration opportunities
-                </li>
-                <li className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-primary" />
-                  Priority AI try-on (up to 10/day)
-                </li>
-                <li className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-primary" />
-                  Exclusive community perks
-                </li>
-                <li className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-primary" />
-                  Early access to new drops
-                </li>
-              </ul>
-            )}
-            
-            <Button 
-              onClick={() => navigate('/dashboard/upgrade')}
-              className="w-full"
-            >
-              {isPremium ? 'Manage Plan' : 'Upgrade Now'}
-            </Button>
-            
-            {!isPremium && (
-              <p className="text-xs text-muted-foreground text-center">
-                Starting from AED 25/month
-              </p>
-            )}
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                <Crown className="h-4 w-4 text-primary flex-shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold truncate">
+                    {isPremium ? 'Premium Active' : 'Unlock Premium'}
+                  </p>
+                  {!isPremium && (
+                    <p className="text-xs text-muted-foreground">
+                      From AED 25/month
+                    </p>
+                  )}
+                </div>
+              </div>
+              <Button 
+                onClick={() => navigate('/dashboard/upgrade')}
+                size="sm"
+                className="flex-shrink-0"
+              >
+                {isPremium ? 'Manage' : 'Upgrade'}
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </section>
