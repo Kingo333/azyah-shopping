@@ -132,7 +132,7 @@ export const bitstudioProvider: ITryOnProvider = {
       console.log('[BitStudioProvider] BitStudio job ID:', bitstudioJobId);
       
       // 5. Store BitStudio job ID and return immediately (background processing)
-      await supabase
+      const { error: updateError } = await supabase
         .from('event_tryon_jobs')
         .update({ 
           provider_job_id: bitstudioJobId,
@@ -140,7 +140,12 @@ export const bitstudioProvider: ITryOnProvider = {
         })
         .eq('id', job.id);
       
-      console.log('[BitStudioProvider] Job queued for background processing:', job.id);
+      if (updateError) {
+        console.error('[BitStudioProvider] Failed to update job with provider_job_id:', updateError);
+        return { ok: false, error: 'Failed to save BitStudio job ID' };
+      }
+      
+      console.log('[BitStudioProvider] Job queued for background processing:', job.id, 'BitStudio ID:', bitstudioJobId);
       
       return {
         ok: true,
