@@ -457,37 +457,37 @@ const Events = () => {
                         </>}
                       
                       {/* Products carousel */}
-                      <div id={`brand-products-${brand.id}`} className="flex gap-4 overflow-x-auto scrollbar-hide pb-2" style={{
+                      <div id={`brand-products-${brand.id}`} className="flex gap-3 overflow-x-auto scrollbar-hide pb-2" style={{
                 scrollbarWidth: 'none',
                 msOverflowStyle: 'none'
               }}>
-                        {brand.products.map(product => <Card key={product.id} className="flex-shrink-0 w-64 group hover:shadow-lg transition-shadow">
-                            <CardContent className="p-4">
+                        {brand.products.map(product => <Card key={product.id} className="flex-shrink-0 w-36 group hover:shadow-lg transition-shadow">
+                            <CardContent className="p-2">
                               {/* Product image with status badge */}
-                              <div className="relative mb-3">
-                                <img src={product.image_url} alt="Product" className="w-full h-48 object-cover rounded" />
+                              <div className="relative mb-2">
+                                <img src={product.image_url} alt="Product" className="w-full aspect-square object-cover rounded" />
                                 {/* Try-On Ready badge */}
-                                {product.try_on_ready && hasPersonImage && !tryOnResults[product.id] && <Badge className="absolute top-2 right-2 bg-green-500">
-                                    Try-On Ready
+                                {product.try_on_ready && hasPersonImage && !tryOnResults[product.id] && <Badge className="absolute top-1 right-1 bg-green-500 text-xs px-1 py-0.5">
+                                    Ready
                                   </Badge>}
                                 {/* Processing badge */}
                                 {tryOnResults[product.id]?.status === 'processing' && <div className="absolute inset-0 bg-black/40 rounded flex items-center justify-center">
-                                    <Badge className="bg-blue-500">
-                                      <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-                                      Processing...
+                                    <Badge className="bg-blue-500 text-xs px-1.5 py-0.5">
+                                      <Loader2 className="mr-1 h-2.5 w-2.5 animate-spin" />
+                                      Processing
                                     </Badge>
                                   </div>}
                                 {/* Completed badge */}
-                                {tryOnResults[product.id]?.status === 'succeeded' && <Badge className="absolute top-2 right-2 bg-green-500">
-                                    ✓ Complete
+                                {tryOnResults[product.id]?.status === 'succeeded' && <Badge className="absolute top-1 right-1 bg-green-500 text-xs px-1 py-0.5">
+                                    ✓
                                   </Badge>}
                                 {/* Failed badge */}
-                                {tryOnResults[product.id]?.status === 'failed' && <Badge className="absolute top-2 right-2 bg-red-500">
-                                    Failed
+                                {tryOnResults[product.id]?.status === 'failed' && <Badge className="absolute top-1 right-1 bg-red-500 text-xs px-1 py-0.5">
+                                    ✗
                                   </Badge>}
                               </div>
                               
-                              <Button className="w-full" disabled={!hasPersonImage || !product.try_on_ready || tryOnResults[product.id]?.status === 'processing'} onClick={() => {
+                              <Button size="sm" className="w-full text-xs h-7" disabled={!hasPersonImage || !product.try_on_ready || tryOnResults[product.id]?.status === 'processing'} onClick={() => {
                       if (hasPersonImage && product.try_on_ready) {
                         setSelectedProduct({
                           ...product,
@@ -497,7 +497,7 @@ const Events = () => {
                         });
                       }
                     }}>
-                                {!hasPersonImage ? 'Upload Photo First' : tryOnResults[product.id]?.status === 'processing' ? 'Processing...' : tryOnResults[product.id]?.status === 'succeeded' ? 'Try Again' : product.try_on_ready ? 'Try On' : 'Not Configured Yet'}
+                                {!hasPersonImage ? 'Photo First' : tryOnResults[product.id]?.status === 'processing' ? 'Processing' : tryOnResults[product.id]?.status === 'succeeded' ? 'Try Again' : product.try_on_ready ? 'Try On' : 'Not Ready'}
                               </Button>
                             </CardContent>
                           </Card>)}
