@@ -27,9 +27,11 @@ serve(async (req) => {
   const auth = req.headers.get('Authorization');
   if (!auth) return json(401, { error: 'Missing auth' });
 
-  const admin = createClient(SUPABASE_URL, SERVICE_ROLE, {
+  // Separate clients: userClient for auth, adminClient for DB operations
+  const userClient = createClient(SUPABASE_URL, SERVICE_ROLE, {
     global: { headers: { Authorization: auth } }
   });
+  const adminClient = createClient(SUPABASE_URL, SERVICE_ROLE);
 
   try {
     const { jobId, timeoutMs = 180000 } = await req.json();
@@ -40,7 +42,7 @@ serve(async (req) => {
       return json(500, { error: 'BitStudio API key not configured' });
     }
 
-    const { data: job } = await admin
+    const { data: job } = await adminClient
       .from('event_tryon_jobs')
       .select('*')
       .eq('id', jobId)
@@ -57,7 +59,7 @@ serve(async (req) => {
     }
 
     // Owner check
-    const { data: me } = await admin.auth.getUser();
+    const { data: me } = await userClient.auth.getUser();
     if (!me?.user || me.user.id !== job.user_id) {
       console.error('[Poll] Forbidden - user mismatch');
       return json(403, { error: 'Forbidden' });
@@ -72,7 +74,7 @@ serve(async (req) => {
     while (true) {
       if (Date.now() - start > timeoutMs) {
         console.error('[Poll] Polling timeout');
-        await admin
+        await adminClient
           .from('event_tryon_jobs')
           .update({ status: 'failed', error: 'Polling timeout' })
           .eq('id', jobId);
@@ -92,7 +94,7 @@ serve(async (req) => {
       console.log('[Poll] BitStudio status:', info?.status);
 
       // Persist provider status for observability
-      await admin
+      await adminClient
         .from('event_tryon_jobs')
         .update({
           provider_status: info?.status ?? null,
@@ -114,7 +116,7 @@ serve(async (req) => {
         const outPath = `event_tryon_results/${job.event_id}/${job.user_id}/${job.product_id}.jpg`;
         console.log('[Poll] Uploading to storage:', outPath);
         
-        const up = await admin.storage
+        const up = await adminClient.storage
           .from('event-tryon-results')
           .upload(outPath, blob, {
             upsert: true,
@@ -126,7 +128,7 @@ serve(async (req) => {
           throw new Error(up.error.message);
         }
 
-        await admin
+        await adminClient
           .from('event_tryon_jobs')
           .update({
             status: 'succeeded',
@@ -141,7 +143,7 @@ serve(async (req) => {
 
       if (info?.status === 'failed') {
         console.error('[Poll] Provider failed:', info?.error);
-        await admin
+        await adminClient
           .from('event_tryon_jobs')
           .update({
             status: 'failed',

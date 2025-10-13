@@ -25,9 +25,11 @@ serve(async (req) => {
   const auth = req.headers.get('Authorization');
   if (!auth) return json(401, { error: 'Missing auth' });
 
-  const admin = createClient(SUPABASE_URL, SERVICE_ROLE, {
+  // Separate clients: userClient for auth, adminClient for DB operations
+  const userClient = createClient(SUPABASE_URL, SERVICE_ROLE, {
     global: { headers: { Authorization: auth } }
   });
+  const adminClient = createClient(SUPABASE_URL, SERVICE_ROLE);
 
   try {
     const { jobId, idempotencyKey } = await req.json();
@@ -41,7 +43,7 @@ serve(async (req) => {
     console.log('[BitStudio-Tryon] Processing job:', jobId);
 
     // 1) Load job, person, product
-    const { data: job, error: jErr } = await admin
+    const { data: job, error: jErr } = await adminClient
       .from('event_tryon_jobs')
       .select('*')
       .eq('id', jobId)
@@ -53,21 +55,21 @@ serve(async (req) => {
     }
 
     const [{ data: person }, { data: product }] = await Promise.all([
-      admin
+      adminClient
         .from('event_user_photos')
         .select('bitstudio_image_id, photo_url')
         .eq('event_id', job.event_id)
         .eq('user_id', job.user_id)
         .single(),
-      admin
+      adminClient
         .from('event_brand_products')
-        .select('try_on_provider, try_on_config, image_url')
+        .select('try_on_provider, try_on_config, try_on_data, image_url')
         .eq('id', job.product_id)
         .single()
     ]);
 
     // Owner check
-    const { data: me } = await admin.auth.getUser();
+    const { data: me } = await userClient.auth.getUser();
     if (!me?.user || me.user.id !== job.user_id) {
       console.error('[BitStudio-Tryon] Forbidden - user mismatch');
       return json(403, { error: 'Forbidden' });
@@ -77,7 +79,7 @@ serve(async (req) => {
     const personId = person?.bitstudio_image_id;
     if (!personId) {
       console.error('[BitStudio-Tryon] Missing person bitstudio_image_id');
-      await admin
+      await adminClient
         .from('event_tryon_jobs')
         .update({
           status: 'failed',
@@ -101,7 +103,7 @@ serve(async (req) => {
 
     if (!outfitId && !outfitUrl) {
       console.error('[BitStudio-Tryon] Missing outfit reference - product:', product);
-      await admin
+      await adminClient
         .from('event_tryon_jobs')
         .update({
           status: 'failed',
@@ -160,7 +162,7 @@ serve(async (req) => {
 
     if (!tryRes.ok || !providerJobId) {
       console.error('[BitStudio-Tryon] Failed to get provider_job_id');
-      await admin
+      await adminClient
         .from('event_tryon_jobs')
         .update({
           status: 'failed',
@@ -176,7 +178,7 @@ serve(async (req) => {
 
     // 4) Persist provider_job_id and set processing
     console.log('[BitStudio-Tryon] Success! provider_job_id:', providerJobId);
-    await admin
+    await adminClient
       .from('event_tryon_jobs')
       .update({
         provider: 'bitstudio',

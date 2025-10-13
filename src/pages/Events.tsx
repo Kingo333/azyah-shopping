@@ -627,7 +627,7 @@ const Events = () => {
                             </Badge>
                             <img
                               src={supabase.storage
-                                .from('event-tryon-renders')
+                                .from('event-tryon-results')
                                 .getPublicUrl(result.output_path).data.publicUrl}
                               alt="Try-on result"
                               className="w-full h-64 object-cover"
@@ -646,7 +646,7 @@ const Events = () => {
                                 onClick={() => {
                                   const link = document.createElement('a');
                                   link.href = supabase.storage
-                                    .from('event-tryon-renders')
+                                    .from('event-tryon-results')
                                     .getPublicUrl(result.output_path).data.publicUrl;
                                   link.download = `try-on-${productId}.png`;
                                   link.click();
