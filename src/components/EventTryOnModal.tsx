@@ -229,6 +229,7 @@ const EventTryOnModal: React.FC<EventTryOnModalProps> = ({
       console.log('[EventTryOn] Starting polling for job:', result.jobId);
       
       let pollAttempts = 0;
+      let hasNotified = false;
       const maxPollAttempts = 90; // 3 minutes / 2s = 90 attempts
       
       const pollInterval = setInterval(async () => {
@@ -296,10 +297,13 @@ const EventTryOnModal: React.FC<EventTryOnModalProps> = ({
               `${eventName} - ${product.brand_name} - Try-On`
             );
             
-            toast({
-              title: 'Try-on complete! ✨',
-              description: 'Your virtual try-on is ready'
-            });
+            if (!hasNotified) {
+              hasNotified = true;
+              toast({
+                title: 'Try-on complete! ✨',
+                description: 'Your virtual try-on is ready'
+              });
+            }
           } else if (job.status === 'failed') {
             clearInterval(pollInterval);
             setStatus('failed');
