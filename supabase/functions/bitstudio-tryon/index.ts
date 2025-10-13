@@ -1,173 +1,195 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
+const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+const BITSTUDIO_API_KEY = Deno.env.get('BITSTUDIO_API_KEY');
+const BITSTUDIO_BASE = 'https://api.bitstudio.ai';
+
+const json = (status: number, body: unknown) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+  });
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const auth = req.headers.get('Authorization');
+  if (!auth) return json(401, { error: 'Missing auth' });
+
+  const admin = createClient(SUPABASE_URL, SERVICE_ROLE, {
+    global: { headers: { Authorization: auth } }
+  });
+
   try {
-    const bitStudioApiKey = Deno.env.get('BITSTUDIO_API_KEY');
-    if (!bitStudioApiKey) {
-      throw new Error('BitStudio API key not configured');
+    const { jobId, idempotencyKey } = await req.json();
+
+    if (!jobId) return json(400, { error: 'jobId required' });
+    if (!BITSTUDIO_API_KEY) {
+      console.error('[BitStudio-Tryon] BITSTUDIO_API_KEY not configured');
+      return json(500, { error: 'BitStudio API key not configured' });
     }
 
-    const params = await req.json();
-    console.log('[BitStudio-Tryon] Request params:', {
-      person_image_id: params.person_image_id ? 'present' : 'missing',
-      person_image_url: params.person_image_url ? 'present' : 'missing',
-      outfit_image_id: params.outfit_image_id ? 'present' : 'missing',
-      outfit_image_url: params.outfit_image_url ? 'present' : 'missing',
-      resolution: params.resolution || 'standard',
-      num_images: params.num_images || 1
+    console.log('[BitStudio-Tryon] Processing job:', jobId);
+
+    // 1) Load job, person, product
+    const { data: job, error: jErr } = await admin
+      .from('event_tryon_jobs')
+      .select('*')
+      .eq('id', jobId)
+      .single();
+
+    if (jErr || !job) {
+      console.error('[BitStudio-Tryon] Job not found:', jobId, jErr);
+      return json(404, { error: 'Job not found', details: jErr });
+    }
+
+    const [{ data: person }, { data: product }] = await Promise.all([
+      admin
+        .from('event_user_photos')
+        .select('bitstudio_image_id, photo_url')
+        .eq('event_id', job.event_id)
+        .eq('user_id', job.user_id)
+        .single(),
+      admin
+        .from('event_brand_products')
+        .select('try_on_provider, try_on_config, image_url')
+        .eq('id', job.product_id)
+        .single()
+    ]);
+
+    // Owner check
+    const { data: me } = await admin.auth.getUser();
+    if (!me?.user || me.user.id !== job.user_id) {
+      console.error('[BitStudio-Tryon] Forbidden - user mismatch');
+      return json(403, { error: 'Forbidden' });
+    }
+
+    // Preconditions
+    const personId = person?.bitstudio_image_id;
+    if (!personId) {
+      console.error('[BitStudio-Tryon] Missing person bitstudio_image_id');
+      await admin
+        .from('event_tryon_jobs')
+        .update({
+          status: 'failed',
+          error: 'Missing person bitstudio_image_id. Upload person photo first.'
+        })
+        .eq('id', jobId);
+      return json(422, { error: 'Missing person_image_id' });
+    }
+
+    const cfg = product?.try_on_config ?? {};
+    const outfitId = cfg?.outfit_image_id;
+    const outfitUrl = cfg?.outfit_image_url;
+
+    if (!outfitId && !outfitUrl) {
+      console.error('[BitStudio-Tryon] Missing outfit reference');
+      await admin
+        .from('event_tryon_jobs')
+        .update({
+          status: 'failed',
+          error: 'Missing outfit reference (outfit_image_id or outfit_image_url).'
+        })
+        .eq('id', jobId);
+      return json(422, { error: 'Missing outfit image reference' });
+    }
+
+    // idempotency to prevent duplicate jobs
+    const idem = idempotencyKey ?? `vto:${jobId}`;
+
+    // 2) Call BitStudio VTO
+    const payload: Record<string, unknown> = {
+      person_image_id: personId,
+      resolution: 'standard',
+      num_images: 1
+    };
+
+    if (outfitId) payload['outfit_image_id'] = outfitId;
+    if (outfitUrl) payload['outfit_image_url'] = outfitUrl;
+
+    console.log('[BitStudio-Tryon] Calling BitStudio API with:', {
+      person_image_id: personId,
+      outfit_image_id: outfitId,
+      outfit_image_url: outfitUrl ? 'present' : 'missing'
     });
 
-    // Validate required parameters (must have IDs, not URLs for this setup)
-    if (!params.person_image_id) {
-      console.error('[BitStudio-Tryon] Missing person_image_id');
-      return new Response(
-        JSON.stringify({ 
-          error: 'Missing person_image_id',
-          code: 'MISSING_PERSON_ID',
-          details: { person_image_id: !!params.person_image_id }
-        }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    if (!params.outfit_image_id) {
-      console.error('[BitStudio-Tryon] Missing outfit_image_id');
-      return new Response(
-        JSON.stringify({ 
-          error: 'Missing outfit_image_id',
-          code: 'MISSING_OUTFIT_ID',
-          details: { outfit_image_id: !!params.outfit_image_id }
-        }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Call actual BitStudio virtual try-on API (correct endpoint from docs)
-    console.log('[BitStudio-Tryon] Calling BitStudio API...');
-    const response = await fetch('https://api.bitstudio.ai/images/virtual-try-on', {
+    const tryRes = await fetch(`${BITSTUDIO_BASE}/images/virtual-try-on`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${bitStudioApiKey}`,
+        'Authorization': `Bearer ${BITSTUDIO_API_KEY}`,
         'Content-Type': 'application/json',
+        'Idempotency-Key': idem
       },
-      body: JSON.stringify({
-        person_image_id: params.person_image_id,
-        outfit_image_id: params.outfit_image_id,
-        prompt: params.prompt,
-        resolution: params.resolution || 'standard',
-        num_images: params.num_images || 1,
-        seed: params.seed,
-      }),
+      body: JSON.stringify(payload)
     });
 
-    console.log('[BitStudio-Tryon] BitStudio HTTP status:', response.status);
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('[BitStudio-Tryon] BitStudio API error:', response.status, errorText);
-      
-      // Handle specific error codes from BitStudio docs
-      if (response.status === 429) {
-        return new Response(
-          JSON.stringify({ 
-            error: 'Rate limit exceeded. Please try again in a few moments.',
-            code: 'RATE_LIMITED'
-          }),
-          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      
-      if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ 
-            error: 'Insufficient credits or subscription required',
-            code: 'insufficient_credits'
-          }),
-          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      
-      if (response.status === 403) {
-        return new Response(
-          JSON.stringify({ 
-            error: 'Feature requires upgrade',
-            code: 'upgrade_required'
-          }),
-          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      
-      throw new Error(`BitStudio API returned ${response.status}: ${errorText}`);
+    const raw = await tryRes.text();
+    let parsed: any;
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      console.error('[BitStudio-Tryon] Failed to parse response:', raw);
     }
 
-    const bitStudioResponse = await response.json();
-    console.log('[BitStudio-Tryon] BitStudio raw response:', JSON.stringify(bitStudioResponse, null, 2));
+    console.log('[BitStudio-Tryon] BitStudio HTTP status:', tryRes.status);
+    console.log('[BitStudio-Tryon] BitStudio response:', parsed ?? raw);
 
-    // BitStudio returns an array of job objects with { id, status, task, etc }
-    let resultsArray = Array.isArray(bitStudioResponse) ? bitStudioResponse : [bitStudioResponse];
-    
-    if (resultsArray.length === 0) {
-      console.error('[BitStudio-Tryon] Empty results array from BitStudio');
-      return new Response(
-        JSON.stringify({ 
-          error: 'BitStudio returned empty results',
-          code: 'EMPTY_RESULTS'
-        }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    // 3) Robust response parsing: array or object
+    const providerJobId =
+      (Array.isArray(parsed) && parsed[0]?.id) ||
+      parsed?.id ||
+      parsed?.data?.[0]?.id ||
+      null;
+
+    if (!tryRes.ok || !providerJobId) {
+      console.error('[BitStudio-Tryon] Failed to get provider_job_id');
+      await admin
+        .from('event_tryon_jobs')
+        .update({
+          status: 'failed',
+          provider_status: parsed?.status ?? null,
+          provider_raw: safeJson(parsed ?? raw),
+          error: !tryRes.ok
+            ? parsed?.error?.message ?? `BitStudio ${tryRes.status}`
+            : 'Could not parse provider job id'
+        })
+        .eq('id', jobId);
+      return json(500, { error: 'BitStudio VTO failed', details: parsed ?? raw });
     }
 
-    const mappedResponse = resultsArray.map(item => {
-      // Extract job ID - could be 'id' or nested
-      const jobId = item.id || item.job_id || item.generation_id;
-      
-      if (!jobId) {
-        console.error('[BitStudio-Tryon] CRITICAL: BitStudio response missing job ID:', JSON.stringify(item, null, 2));
-      }
-      
-      return {
-        id: jobId,
-        type: item.type || 'virtual-try-on',
-        status: item.status || 'pending',
-        task: item.task || 'virtual-try-on',
-        path: item.path || item.url || null,
-        credits_used: item.credits_used || 1,
-        versions: item.versions || [],
-        created_timestamp: item.created_timestamp,
-        estimated_completion: item.estimated_completion
-      };
-    });
+    // 4) Persist provider_job_id and set processing
+    console.log('[BitStudio-Tryon] Success! provider_job_id:', providerJobId);
+    await admin
+      .from('event_tryon_jobs')
+      .update({
+        provider: 'bitstudio',
+        provider_job_id: providerJobId,
+        provider_status: parsed?.status ?? 'pending',
+        provider_raw: safeJson(parsed ?? raw),
+        status: 'processing'
+      })
+      .eq('id', jobId);
 
-    console.log('[BitStudio-Tryon] Mapped try-on response:', JSON.stringify(mappedResponse, null, 2));
-
-    return new Response(
-      JSON.stringify(mappedResponse),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-  } catch (error) {
-    console.error('[BitStudio-Tryon] Catch block error:', error);
-    
-    // Preserve error codes if present
-    const errorCode = error.code || 'UNKNOWN_ERROR';
-    const errorMessage = error.message || error.error || 'Try-on failed';
-    
-    return new Response(
-      JSON.stringify({ 
-        error: errorMessage,
-        code: errorCode,
-        details: error.details || null,
-        bitstudio_error: error.cause || null
-      }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    return json(200, { ok: true, provider_job_id: providerJobId });
+  } catch (e) {
+    console.error('[BitStudio-Tryon] Catch block error:', e);
+    return json(500, { error: String(e) });
   }
 });
+
+function safeJson(x: any) {
+  try {
+    return typeof x === 'string' ? JSON.parse(x) : x;
+  } catch {
+    return { raw: String(x) };
+  }
+}

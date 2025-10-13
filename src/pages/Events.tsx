@@ -147,6 +147,13 @@ const Events = () => {
                 body: { jobId: job.id }
               });
               
+              // Handle 404 gracefully (job was deleted)
+              if (error?.message?.includes('404') || error?.message?.includes('not found')) {
+                console.log(`[Events] Job ${job.id} no longer exists, skipping`);
+                await fetchTryOnResults();
+                continue;
+              }
+              
               if (error) {
                 console.error(`[Events] Poll error for job ${job.id}:`, error);
               } else {
@@ -157,8 +164,14 @@ const Events = () => {
                   await fetchTryOnResults();
                 }
               }
-            } catch (err) {
-              console.error(`[Events] Poll exception for job ${job.id}:`, err);
+            } catch (err: any) {
+              // Handle 404/406 errors (deleted jobs) gracefully
+              if (err?.status === 404 || err?.status === 406) {
+                console.log(`[Events] Job ${job.id} deleted, skipping poll`);
+                await fetchTryOnResults();
+              } else {
+                console.error(`[Events] Poll exception for job ${job.id}:`, err);
+              }
             }
           } else {
             console.warn(`[Events] Job ${job.id} has no provider_job_id yet (status: ${job.status})`);

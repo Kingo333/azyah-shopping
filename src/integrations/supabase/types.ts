@@ -829,6 +829,8 @@ export type Database = {
           product_id: string | null
           provider: string
           provider_job_id: string | null
+          provider_raw: Json | null
+          provider_status: string | null
           started_at: string | null
           status: string
           updated_at: string | null
@@ -848,6 +850,8 @@ export type Database = {
           product_id?: string | null
           provider?: string
           provider_job_id?: string | null
+          provider_raw?: Json | null
+          provider_status?: string | null
           started_at?: string | null
           status?: string
           updated_at?: string | null
@@ -867,6 +871,8 @@ export type Database = {
           product_id?: string | null
           provider?: string
           provider_job_id?: string | null
+          provider_raw?: Json | null
+          provider_status?: string | null
           started_at?: string | null
           status?: string
           updated_at?: string | null
