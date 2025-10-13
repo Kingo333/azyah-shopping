@@ -499,41 +499,14 @@ const Events = () => {
                                 .from('event-tryon-results')
                                 .getPublicUrl(result.output_path).data.publicUrl}
                               alt="Try-on result"
-                              className="w-full h-64 object-cover"
+                              className="w-full h-40 object-cover"
                             />
                           </div>
-                          <CardContent className="p-4">
+                          <CardContent className="p-3">
                             <p className="text-sm font-medium">{product?.brand_name || 'Product'}</p>
                             <p className="text-xs text-muted-foreground">
                               {new Date(result.created_at).toLocaleString()}
                             </p>
-                            <div className="flex gap-2 mt-3">
-                              <Button 
-                                variant="outline" 
-                                size="sm" 
-                                className="flex-1"
-                                onClick={() => {
-                                  const link = document.createElement('a');
-                                  link.href = supabase.storage
-                                    .from('event-tryon-results')
-                                    .getPublicUrl(result.output_path).data.publicUrl;
-                                  link.download = `try-on-${productId}.png`;
-                                  link.click();
-                                }}
-                              >
-                                Download
-                              </Button>
-                              {product && (
-                                <Button 
-                                  variant="default" 
-                                  size="sm" 
-                                  className="flex-1"
-                                  onClick={() => setSelectedProduct(product)}
-                                >
-                                  Try Again
-                                </Button>
-                              )}
-                            </div>
                           </CardContent>
                         </Card>
                       );
