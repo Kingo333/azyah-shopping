@@ -15,7 +15,7 @@ import DashboardHeader from '@/components/DashboardHeader';
 import AffiliateHub from '@/components/AffiliateHub';
 import AiStudioModal from '@/components/AiStudioModal';
 import PremiumBanner from '@/components/PremiumBanner';
-import { Heart, ShoppingBag, Search, Sparkles, Package, BarChart3, Users, Settings, Store, TrendingUp, Plus, Eye, DollarSign, Globe, Bell, LogOut, User, Archive, Trophy, MapPin, Blocks, WandSparkles, ChevronDown, ChevronUp, Gift, ChevronLeft, ChevronRight, Home, Filter, CalendarIcon } from 'lucide-react';
+import { Heart, ShoppingBag, Search, Sparkles, Package, BarChart3, Users, Settings, Store, TrendingUp, Plus, Eye, DollarSign, Globe, Bell, LogOut, User, Archive, Trophy, MapPin, Blocks, WandSparkles, ChevronDown, ChevronUp, Gift, ChevronLeft, ChevronRight, Home, Filter, CalendarIcon, Crown, Check } from 'lucide-react';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import MinimizedLeaderboard from '@/components/MinimizedLeaderboard';
 import TrendingStylesCarousel from '@/components/TrendingStylesCarousel';
@@ -27,6 +27,7 @@ import { ProfileCompletionBanner } from '@/components/ProfileCompletionBanner';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CATEGORY_TREE, getCategoryDisplayName } from '@/lib/categories';
 import type { TopCategory } from '@/lib/categories';
+import { useSubscription } from '@/hooks/useSubscription';
 interface UserProfile {
   id: string;
   name: string;
@@ -56,6 +57,7 @@ const RoleDashboard: React.FC = () => {
   const {
     isEnabled
   } = useFeatureFlags();
+  const { isPremium } = useSubscription();
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [stats, setStats] = useState<DashboardStats>({});
   const [loading, setLoading] = useState(true);
@@ -240,6 +242,53 @@ const RoleDashboard: React.FC = () => {
       
       {/* Premium Banner */}
       <PremiumBanner />
+
+      {/* Upgrade Card */}
+      <section className="px-4">
+        <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Crown className="h-5 w-5 text-primary" />
+              {isPremium ? 'Manage Your Plan' : 'Unlock Azyah Premium'}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {!isPremium && (
+              <ul className="space-y-2 text-sm">
+                <li className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-primary" />
+                  UGC collaboration opportunities
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-primary" />
+                  Priority AI try-on (up to 10/day)
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-primary" />
+                  Exclusive community perks
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-primary" />
+                  Early access to new drops
+                </li>
+              </ul>
+            )}
+            
+            <Button 
+              onClick={() => navigate('/dashboard/upgrade')}
+              className="w-full"
+            >
+              {isPremium ? 'Manage Plan' : 'Upgrade Now'}
+            </Button>
+            
+            {!isPremium && (
+              <p className="text-xs text-muted-foreground text-center">
+                Starting from AED 25/month
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      </section>
 
       {/* Quick Actions - Horizontal Pills */}
       <section className="px-4 pt-3">

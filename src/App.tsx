@@ -37,6 +37,7 @@ import Affiliate from './pages/Affiliate';
 import ToyReplica from './pages/ToyReplica';
 import BeautyConsultant from './pages/BeautyConsultant';
 import Events from './pages/Events';
+import Upgrade from './pages/dashboard/Upgrade';
 import Terms from './pages/Terms';
 import Privacy from './pages/Privacy';
 
@@ -87,11 +88,19 @@ function AppContent() {
                       <Index />
                     </ProtectedRoute>
                   } />
+                  <Route path="/dashboard/upgrade" element={
+                    <ProtectedRoute>
+                      <Upgrade />
+                    </ProtectedRoute>
+                  } />
                   
                   
                   {/* Onboarding routes */}
                   <Route path="/onboarding/intro" element={<IntroCarousel />} />
                   <Route path="/onboarding/signup" element={<SignUp />} />
+                  
+                  {/* DEPRECATED: Legacy onboarding routes - kept for backward compatibility */}
+                  {/* These routes are no longer used in the main onboarding flow */}
                   <Route path="/onboarding/gender-select" element={<GenderSelect />} />
                   <Route path="/onboarding/main-goals" element={<MainGoals />} />
                   <Route path="/onboarding/referral-source" element={<ReferralSource />} />

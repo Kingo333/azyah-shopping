@@ -1,3 +1,10 @@
+/**
+ * @deprecated This component is no longer used in the main onboarding flow.
+ * Subscription features and plan selection have been combined into /dashboard/upgrade.
+ * Kept for backward compatibility only.
+ * DO NOT use in new features.
+ * Planned for removal in v3.0
+ */
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';

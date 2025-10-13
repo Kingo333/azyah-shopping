@@ -1,3 +1,10 @@
+/**
+ * @deprecated This component is no longer used in the main onboarding flow.
+ * Plan selection has been moved to /dashboard/upgrade and combined with subscription features.
+ * Kept for backward compatibility only.
+ * DO NOT use in new features.
+ * Planned for removal in v3.0
+ */
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
