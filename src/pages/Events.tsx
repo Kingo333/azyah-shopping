@@ -41,6 +41,7 @@ interface EventProduct {
   id: string;
   image_url: string;
   try_on_data: any;
+  try_on_ready?: boolean;
   event_brand_id: string;
   brand_name: string;
   brand_logo_url?: string;
@@ -775,7 +776,7 @@ const Events = () => {
                                   className="w-full h-48 object-cover rounded"
                                 />
                                 {/* Try-On Ready badge */}
-                                {Object.keys(product.try_on_data || {}).length > 0 && hasPersonImage && !tryOnResults[product.id] && (
+                                {product.try_on_ready && hasPersonImage && !tryOnResults[product.id] && (
                                   <Badge className="absolute top-2 right-2 bg-green-500">
                                     Try-On Ready
                                   </Badge>
@@ -805,9 +806,9 @@ const Events = () => {
                               
                               <Button 
                                 className="w-full"
-                                disabled={!hasPersonImage || Object.keys(product.try_on_data || {}).length === 0 || (tryOnResults[product.id]?.status === 'processing')}
+                                disabled={!hasPersonImage || !product.try_on_ready || (tryOnResults[product.id]?.status === 'processing')}
                                 onClick={() => {
-                                  if (hasPersonImage && Object.keys(product.try_on_data || {}).length > 0) {
+                                  if (hasPersonImage && product.try_on_ready) {
                                     setSelectedProduct({
                                       ...product,
                                       event_brand_id: brand.id,
@@ -823,9 +824,9 @@ const Events = () => {
                                   ? 'Processing...'
                                   : tryOnResults[product.id]?.status === 'succeeded'
                                   ? 'Try Again'
-                                  : Object.keys(product.try_on_data || {}).length > 0 
+                                  : product.try_on_ready 
                                   ? 'Try On' 
-                                  : 'Not Available'
+                                  : 'Not Configured Yet'
                                 }
                               </Button>
                             </CardContent>
