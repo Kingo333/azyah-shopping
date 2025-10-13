@@ -213,14 +213,29 @@ const ProductTryOnModal: React.FC<ProductTryOnModalProps> = ({
     setResultUrl(null);
   };
 
-  const handleDownload = () => {
-    if (resultUrl) {
+  const handleDownload = async () => {
+    if (!resultUrl) return;
+    
+    try {
+      const response = await fetch(resultUrl);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      
       const link = document.createElement('a');
-      link.href = resultUrl;
+      link.href = url;
       link.download = `tryon-${product.title}-${Date.now()}.png`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Download failed:', err);
+      toast({
+        title: 'Download failed',
+        description: 'Could not download image',
+        variant: 'destructive'
+      });
     }
   };
 
@@ -476,13 +491,27 @@ const ProductTryOnModal: React.FC<ProductTryOnModalProps> = ({
             <div className="grid grid-cols-2 gap-2">
               <Button 
                 variant="outline" 
-                onClick={() => {
-                  const link = document.createElement('a');
-                  link.href = selectedThumbnail;
-                  link.download = `tryon-${product.title}-${Date.now()}.png`;
-                  document.body.appendChild(link);
-                  link.click();
-                  document.body.removeChild(link);
+                onClick={async () => {
+                  try {
+                    const response = await fetch(selectedThumbnail);
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = `tryon-${product.title}-${Date.now()}.png`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    
+                    window.URL.revokeObjectURL(url);
+                  } catch (err) {
+                    toast({
+                      title: 'Download failed',
+                      description: 'Could not download image',
+                      variant: 'destructive'
+                    });
+                  }
                 }}
               >
                 <Download className="h-4 w-4 mr-2" />

@@ -416,14 +416,29 @@ const EventTryOnModal: React.FC<EventTryOnModalProps> = ({
     setResultUrl(null);
   };
 
-  const handleDownload = () => {
-    if (resultUrl) {
+  const handleDownload = async () => {
+    if (!resultUrl) return;
+    
+    try {
+      const response = await fetch(resultUrl);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      
       const link = document.createElement('a');
-      link.href = resultUrl;
+      link.href = url;
       link.download = `event-tryon-${eventName}-${product.brand_name}-${Date.now()}.png`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Download failed:', err);
+      toast({
+        title: 'Download failed',
+        description: 'Could not download image',
+        variant: 'destructive'
+      });
     }
   };
 
