@@ -127,7 +127,7 @@ export default function SignUp() {
           } else if (userRole === 'retailer') {
             navigate('/retailer-portal');
           } else {
-            navigate('/swipe');
+            navigate('/dashboard');
           }
         }
       } else {
@@ -160,7 +160,7 @@ export default function SignUp() {
   const handleOAuthSignIn = async (provider: 'google' | 'apple') => {
     try {
       const redirectUrl = userRole === 'shopper' 
-        ? `${window.location.origin}/swipe`
+        ? `${window.location.origin}/dashboard`
         : userRole === 'brand'
         ? `${window.location.origin}/brand-portal`
         : `${window.location.origin}/retailer-portal`;
