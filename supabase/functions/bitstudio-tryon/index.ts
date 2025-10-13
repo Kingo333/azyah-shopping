@@ -89,18 +89,18 @@ serve(async (req) => {
 
     const cfg = product?.try_on_config ?? {};
     const outfitId = cfg?.outfit_image_id;
-    const outfitUrl = cfg?.outfit_image_url;
+    const outfitUrl = cfg?.outfit_image_url || product?.image_url;
 
     if (!outfitId && !outfitUrl) {
-      console.error('[BitStudio-Tryon] Missing outfit reference');
+      console.error('[BitStudio-Tryon] Missing outfit reference - product:', product);
       await admin
         .from('event_tryon_jobs')
         .update({
           status: 'failed',
-          error: 'Missing outfit reference (outfit_image_id or outfit_image_url).'
+          error: 'Product is not configured for try-on yet. Retailer needs to set up try-on images.'
         })
         .eq('id', jobId);
-      return json(422, { error: 'Missing outfit image reference' });
+      return json(422, { error: 'Product not configured for try-on' });
     }
 
     // idempotency to prevent duplicate jobs
