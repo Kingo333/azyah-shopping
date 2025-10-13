@@ -658,6 +658,55 @@ const Events = () => {
                       ).length} item(s) being processed. Results will appear automatically (typically 30-60s).
                     </p>
                   </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={async () => {
+                      // Cancel stuck jobs (ones without provider_job_id)
+                      const stuckJobs = Object.entries(tryOnResults)
+                        .filter(([_, r]) => (r.status === 'queued' || r.status === 'processing') && !r.provider_job_id)
+                        .map(([productId, r]) => r);
+                      
+                      if (stuckJobs.length === 0) {
+                        toast({
+                          title: "No stuck jobs",
+                          description: "All jobs are processing normally",
+                        });
+                        return;
+                      }
+                      
+                      for (const job of stuckJobs) {
+                        const jobRecord = await supabase
+                          .from('event_tryon_jobs')
+                          .select('id')
+                          .eq('product_id', job.product_id)
+                          .eq('user_id', user!.id)
+                          .eq('event_id', selectedEvent!.id)
+                          .order('created_at', { ascending: false })
+                          .limit(1)
+                          .single();
+                        
+                        if (jobRecord.data) {
+                          await supabase
+                            .from('event_tryon_jobs')
+                            .update({
+                              status: 'failed',
+                              error: 'Cancelled - job stuck in queue',
+                              completed_at: new Date().toISOString()
+                            })
+                            .eq('id', jobRecord.data.id);
+                        }
+                      }
+                      
+                      await fetchTryOnResults();
+                      toast({
+                        title: "Stuck jobs cancelled",
+                        description: `Cancelled ${stuckJobs.length} stuck job(s)`,
+                      });
+                    }}
+                  >
+                    Cancel Stuck Jobs
+                  </Button>
                 </CardContent>
               </Card>
             )}
