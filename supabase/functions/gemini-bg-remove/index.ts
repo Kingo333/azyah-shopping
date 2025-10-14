@@ -61,8 +61,10 @@ serve(async (req) => {
     }
     
     const base64 = btoa(binary);
-    const mimeType = file.type || 'image/jpeg';
+    const mimeType = 'image/png'; // Force PNG to ensure transparency support
     const imageDataUrl = `data:${mimeType};base64,${base64}`;
+    
+    console.log('Input image type:', file.type, 'forced to:', mimeType);
 
     console.log('Calling Gemini for background removal...');
 
@@ -80,7 +82,7 @@ serve(async (req) => {
           content: [
             {
               type: 'text',
-              text: 'Remove the entire background from this photo. Keep only the main subject (the person or clothing item) with all original colors and edges sharp. Make the background fully transparent so the output is a clean PNG sticker with no background. Center the subject and crop tightly around it.'
+              text: 'Remove all background from this clothing image and output as a transparent PNG (RGBA) file. Keep the original lighting, texture, and clothing shape intact with smooth edges. Do not add any background, shadow, checker pattern, gradient, or color fill. The output must have true alpha channel transparency - not a simulated white or gray background. If the subject has transparent or semi-transparent areas, preserve them. Output only the cut-out subject as a clean sticker with fully transparent background.'
             },
             {
               type: 'image_url',
@@ -108,9 +110,16 @@ serve(async (req) => {
       throw new Error('No image returned from Gemini');
     }
 
+    // Validate PNG format
+    if (!generatedImageUrl.startsWith('data:image/png')) {
+      console.warn('Warning: Gemini returned non-PNG format:', generatedImageUrl.substring(0, 30));
+    }
+
     // Convert base64 to blob
     const base64Data = generatedImageUrl.split(',')[1];
     const binaryData = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
+    
+    console.log('Output format:', generatedImageUrl.substring(0, 30), 'size:', binaryData.length);
 
     // Upload to Supabase Storage
     const fileName = `${user.id}/${crypto.randomUUID()}.png`;
