@@ -219,16 +219,31 @@ export const WardrobeUploadModal: React.FC<WardrobeUploadModalProps> = ({
 
       setProgress(85);
 
-      // Get public URL and replace local preview
+      // Get public URL
       const { data: { publicUrl } } = supabase.storage
         .from('wardrobe-items')
         .getPublicUrl(fileName);
 
       console.log('Image uploaded successfully:', publicUrl);
       
-      // Clean up local preview URL and use storage URL
-      URL.revokeObjectURL(localPreviewUrl);
-      setBgRemovedPreview(publicUrl);
+      // Preload the storage URL before switching to ensure smooth transition
+      const storageImage = new Image();
+      await new Promise<void>((resolve, reject) => {
+        storageImage.onload = () => {
+          console.log('Storage image preloaded successfully');
+          // Now it's safe to switch from blob URL to storage URL
+          URL.revokeObjectURL(localPreviewUrl);
+          setBgRemovedPreview(publicUrl);
+          resolve();
+        };
+        storageImage.onerror = () => {
+          console.warn('Storage image preload failed, keeping blob URL');
+          // Keep the blob URL if storage fails to load
+          setBgRemovedPreview(publicUrl); // Still set it, but blob URL stays as fallback
+          resolve();
+        };
+        storageImage.src = publicUrl;
+      });
       
       setProgress(100);
       setCurrentStep('metadata');
