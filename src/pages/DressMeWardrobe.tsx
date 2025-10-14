@@ -280,7 +280,6 @@ export default function DressMeWardrobe() {
                       onToggleItem={handleToggleItem}
                       onPinToggle={() => handlePinToggle(layer.id, layer.is_pinned)}
                       onRemoveLayer={() => handleRemoveLayer(layer.id)}
-                      onAddItem={() => handleAddItemToLayer(layer.category)}
                     />
                   </div>
                 ))}

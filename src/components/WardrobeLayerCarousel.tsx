@@ -1,8 +1,8 @@
-import React, { useRef } from 'react';
+import React, { useState } from 'react';
 import { WardrobeItemCard } from './WardrobeItemCard';
 import { WardrobeItem } from '@/hooks/useWardrobeItems';
 import { WardrobeLayer } from '@/hooks/useWardrobeLayers';
-import { Plus, Pin, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Pin, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -13,7 +13,6 @@ interface WardrobeLayerCarouselProps {
   onToggleItem: (itemId: string) => void;
   onPinToggle: () => void;
   onRemoveLayer: () => void;
-  onAddItem: () => void;
 }
 
 export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
@@ -23,19 +22,18 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
   onToggleItem,
   onPinToggle,
   onRemoveLayer,
-  onAddItem,
 }) => {
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const [currentIndex, setCurrentIndex] = useState(0);
 
-  const scroll = (direction: 'left' | 'right') => {
-    if (scrollRef.current) {
-      const scrollAmount = 300;
-      scrollRef.current.scrollBy({
-        left: direction === 'left' ? -scrollAmount : scrollAmount,
-        behavior: 'smooth',
-      });
-    }
+  const handlePrevious = () => {
+    setCurrentIndex((prev) => (prev > 0 ? prev - 1 : items.length - 1));
   };
+
+  const handleNext = () => {
+    setCurrentIndex((prev) => (prev < items.length - 1 ? prev + 1 : 0));
+  };
+
+  const currentItem = items[currentIndex];
 
   const categoryLabels: Record<string, string> = {
     top: 'Tops',
@@ -87,59 +85,54 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
         </div>
       </div>
 
-      {/* Carousel */}
-      <div className="relative group">
-        {/* Scroll Buttons */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-background/80 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity"
-          onClick={() => scroll('left')}
-        >
-          <ChevronLeft className="w-5 h-5" />
-        </Button>
-        
-        <Button
-          variant="ghost"
-          size="icon"
-          className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-background/80 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity"
-          onClick={() => scroll('right')}
-        >
-          <ChevronRight className="w-5 h-5" />
-        </Button>
+      {/* Single Item Display */}
+      <div className="relative flex items-center justify-center" style={{ height: '200px' }}>
+        {items.length === 0 ? (
+          <div className="text-sm text-muted-foreground italic">
+            No items in this category yet
+          </div>
+        ) : (
+          <>
+            {/* Navigation Buttons */}
+            {items.length > 1 && (
+              <>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-background/80 backdrop-blur-sm hover:bg-background"
+                  onClick={handlePrevious}
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </Button>
+                
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-background/80 backdrop-blur-sm hover:bg-background"
+                  onClick={handleNext}
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </Button>
+              </>
+            )}
 
-        {/* Scrollable Container */}
-        <div
-          ref={scrollRef}
-          className="flex gap-3 overflow-x-auto scrollbar-hide scroll-smooth snap-x snap-mandatory"
-          style={{ height: '180px' }}
-        >
-          {/* Add Item Card */}
-          <button
-            onClick={onAddItem}
-            className="flex-shrink-0 w-[120px] border-2 border-dashed border-muted-foreground/30 rounded-lg flex flex-col items-center justify-center gap-2 hover:border-primary hover:bg-muted/50 transition-all snap-start"
-          >
-            <Plus className="w-6 h-6 text-muted-foreground" />
-            <span className="text-xs text-muted-foreground">Add Item</span>
-          </button>
-
-          {/* Item Cards */}
-          {items.map((item) => (
-            <div key={item.id} className="flex-shrink-0 w-[120px] snap-start">
+            {/* Current Item */}
+            <div className="w-[140px]">
               <WardrobeItemCard
-                item={item}
-                isSelected={selectedItems.includes(item.id)}
-                onToggle={() => onToggleItem(item.id)}
+                item={currentItem}
+                isSelected={selectedItems.includes(currentItem.id)}
+                onToggle={() => onToggleItem(currentItem.id)}
               />
             </div>
-          ))}
 
-          {items.length === 0 && (
-            <div className="flex-shrink-0 flex items-center justify-center text-sm text-muted-foreground italic px-4">
-              No items in this category yet
-            </div>
-          )}
-        </div>
+            {/* Item Counter */}
+            {items.length > 1 && (
+              <div className="absolute bottom-2 left-1/2 -translate-x-1/2 text-xs text-muted-foreground bg-background/80 backdrop-blur-sm px-2 py-1 rounded-full">
+                {currentIndex + 1} / {items.length}
+              </div>
+            )}
+          </>
+        )}
       </div>
     </div>
   );
