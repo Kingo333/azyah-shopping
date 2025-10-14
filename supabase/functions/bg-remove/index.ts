@@ -112,11 +112,10 @@ serve(async (req) => {
 
     const formDataAI = new FormData();
     formDataAI.append('image', new Blob([imageBlob], { type: imageFile.type }));
-    formDataAI.append('model', 'gpt-4o-mini');
+    formDataAI.append('model', 'dall-e-2');
     formDataAI.append('prompt', 'Remove all background from this clothing image and export as transparent PNG (RGBA). Keep lighting and textures intact.');
     formDataAI.append('size', '1024x1024');
     formDataAI.append('n', '1');
-    formDataAI.append('response_format', 'b64_json');
 
     const aiResponse = await fetch('https://api.openai.com/v1/images/edits', {
       method: 'POST',
@@ -133,14 +132,26 @@ serve(async (req) => {
     }
 
     const aiData = await aiResponse.json();
+    
+    // DALL-E returns URLs by default, handle both URL and b64_json formats
+    const imageUrl = aiData.data?.[0]?.url;
     const base64Image = aiData.data?.[0]?.b64_json;
     
-    if (!base64Image) {
-      throw new Error('No processed image returned from ChatGPT');
+    let processedBlob: Uint8Array;
+    
+    if (base64Image) {
+      // Decode base64 to binary
+      processedBlob = Uint8Array.from(atob(base64Image), c => c.charCodeAt(0));
+    } else if (imageUrl) {
+      // Fetch the image from URL
+      const imageResponse = await fetch(imageUrl);
+      if (!imageResponse.ok) {
+        throw new Error('Failed to fetch processed image from OpenAI');
+      }
+      processedBlob = new Uint8Array(await imageResponse.arrayBuffer());
+    } else {
+      throw new Error('No processed image returned from OpenAI');
     }
-
-    // Decode base64 to binary
-    const processedBlob = Uint8Array.from(atob(base64Image), c => c.charCodeAt(0));
 
     // Upload to wardrobe-items bucket
     const fileName = `${user.id}/${crypto.randomUUID()}.png`;
