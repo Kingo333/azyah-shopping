@@ -51,19 +51,7 @@ export default function DressMeWardrobe() {
     analytics.open();
   }, []);
 
-  // Auto-create layers for categories that have items but no layer
-  useEffect(() => {
-    if (layersLoading || !allItems.length) return;
-    
-    const categoriesWithItems = [...new Set(allItems.map(item => item.category))];
-    const existingLayerCategories = new Set(layers.map(l => l.category));
-    
-    categoriesWithItems.forEach(category => {
-      if (!existingLayerCategories.has(category)) {
-        addLayerMutation.mutate(category as any);
-      }
-    });
-  }, [allItems, layers, layersLoading]);
+  // No auto-layer creation - users control layers manually
 
   // Get items for each layer
   const getLayerItems = (category: string) => {
@@ -126,18 +114,10 @@ export default function DressMeWardrobe() {
       return;
     }
     
-    // Find or create layer for this category
-    const existingLayer = layers.find(l => l.category === category);
-    
-    if (existingLayer) {
-      // Scroll to existing layer
-      const layerElement = document.getElementById(`layer-${category}`);
-      if (layerElement) {
-        layerElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-    } else {
-      // Create new layer
-      addLayerMutation.mutate(category as any);
+    // Scroll to layer if it exists
+    const layerElement = document.getElementById(`layer-${category}`);
+    if (layerElement) {
+      layerElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   };
 
