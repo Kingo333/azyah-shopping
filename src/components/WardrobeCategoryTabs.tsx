@@ -11,9 +11,10 @@ const categories = [
   { value: 'all', label: 'All' },
   { value: 'top', label: 'Tops' },
   { value: 'bottom', label: 'Bottoms' },
-  { value: 'shoes', label: 'Shoes' },
-  { value: 'full_body', label: 'Full Body' },
+  { value: 'dress', label: 'Dresses' },
   { value: 'outerwear', label: 'Outerwear' },
+  { value: 'shoes', label: 'Shoes' },
+  { value: 'bag', label: 'Bags' },
   { value: 'accessory', label: 'Accessories' },
 ];
 
