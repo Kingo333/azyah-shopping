@@ -162,20 +162,8 @@ serve(async (req) => {
 
     console.log('Image uploaded successfully:', publicUrl);
 
-    // Generate WebP thumbnail (basic implementation)
-    const thumbFileName = `${user.id}/${crypto.randomUUID()}_thumb.webp`;
-    
-    // For production, use proper image processing
-    // This is a placeholder that creates a smaller version
-    const thumbBlob = new Blob([new Uint8Array(processedBlob).slice(0, Math.floor(processedBlob.byteLength / 8))], 
-      { type: 'image/webp' });
-    
-    await supabaseClient.storage
-      .from('wardrobe-thumbs')
-      .upload(thumbFileName, thumbBlob, {
-        contentType: 'image/webp',
-        upsert: false,
-      });
+    // Use the same image for thumbnail (proper resizing can be added later)
+    const thumbFileName = fileName;
 
     // Update user credits
     await supabaseClient
