@@ -188,7 +188,17 @@ export const WardrobeUploadModal: React.FC<WardrobeUploadModalProps> = ({
         });
 
         if (tagData && !tagData.error) {
-          setCategory(tagData.category || '');
+          // Map AI category to valid DB category
+          const validCategories = ['top', 'bottom', 'dress', 'outerwear', 'shoes', 'bag', 'accessory'];
+          let mappedCategory = tagData.category || '';
+          
+          // If AI returns 'clothing', don't set it - let user choose manually
+          if (mappedCategory === 'clothing' || !validCategories.includes(mappedCategory)) {
+            console.log('Auto-tag returned invalid category:', mappedCategory, '- user must select manually');
+            mappedCategory = '';
+          }
+          
+          setCategory(mappedCategory);
           setColor(tagData.color_primary || '');
           setTags(tagData.suggested_tags || []);
         }
