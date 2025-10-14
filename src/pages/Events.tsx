@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, MapPin, Store, UserCircle, Upload, ChevronLeft, ChevronRight, Trash2, Eye, ChevronDown, Loader2 } from 'lucide-react';
+import { Calendar, MapPin, Store, UserCircle, Upload, ChevronLeft, ChevronRight, Trash2, Eye, ChevronDown, Loader2, Home } from 'lucide-react';
 import { format } from 'date-fns';
 import EventTryOnModal from '@/components/EventTryOnModal';
 import { useToast } from '@/hooks/use-toast';
@@ -39,6 +40,7 @@ interface EventProduct {
   brand_logo_url?: string;
 }
 const Events = () => {
+  const navigate = useNavigate();
   const {
     user
   } = useAuth();
@@ -522,7 +524,17 @@ const Events = () => {
       </div>;
   }
   return <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-8">Upcoming Events</h1>
+      <div className="flex items-center gap-4 mb-8">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => navigate('/')}
+          className="flex-shrink-0"
+        >
+          <Home className="h-5 w-5" />
+        </Button>
+        <h1 className="text-3xl font-bold">Upcoming Events</h1>
+      </div>
       
       {events.length === 0 ? <Card>
           <CardContent className="pt-6">
