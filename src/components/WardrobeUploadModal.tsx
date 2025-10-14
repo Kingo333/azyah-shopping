@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { Upload, Loader2, Crown } from 'lucide-react';
+import { Upload, Loader2, Crown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -43,6 +43,33 @@ export const WardrobeUploadModal: React.FC<WardrobeUploadModalProps> = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
   const [currentStep, setCurrentStep] = useState<'upload' | 'processing' | 'metadata'>('upload');
+  const [colorCarouselIndex, setColorCarouselIndex] = useState(0);
+
+  const colorOptions = [
+    { name: 'Black', value: 'black', hex: '#000000' },
+    { name: 'White', value: 'white', hex: '#FFFFFF' },
+    { name: 'Gray', value: 'gray', hex: '#9CA3AF' },
+    { name: 'Red', value: 'red', hex: '#EF4444' },
+    { name: 'Pink', value: 'pink', hex: '#EC4899' },
+    { name: 'Orange', value: 'orange', hex: '#F97316' },
+    { name: 'Yellow', value: 'yellow', hex: '#EAB308' },
+    { name: 'Green', value: 'green', hex: '#22C55E' },
+    { name: 'Blue', value: 'blue', hex: '#3B82F6' },
+    { name: 'Purple', value: 'purple', hex: '#A855F7' },
+    { name: 'Brown', value: 'brown', hex: '#92400E' },
+    { name: 'Beige', value: 'beige', hex: '#D4C5B9' },
+    { name: 'Navy', value: 'navy', hex: '#1E3A8A' },
+    { name: 'Cream', value: 'cream', hex: '#FFFBEB' },
+    { name: 'Olive', value: 'olive', hex: '#84CC16' },
+    { name: 'Maroon', value: 'maroon', hex: '#991B1B' },
+  ];
+
+  const colorsPerPage = 5;
+  const totalPages = Math.ceil(colorOptions.length / colorsPerPage);
+  const visibleColors = colorOptions.slice(
+    colorCarouselIndex * colorsPerPage,
+    (colorCarouselIndex + 1) * colorsPerPage
+  );
 
   // Update category when preset changes
   useEffect(() => {
@@ -397,53 +424,60 @@ export const WardrobeUploadModal: React.FC<WardrobeUploadModalProps> = ({
 
               <div className="space-y-2">
                 <Label className="text-sm">Color</Label>
-                <div className="flex gap-1.5 overflow-x-auto pb-2 scrollbar-hide">
-                  {[
-                    { name: 'Black', value: 'black', hex: '#000000' },
-                    { name: 'White', value: 'white', hex: '#FFFFFF' },
-                    { name: 'Gray', value: 'gray', hex: '#9CA3AF' },
-                    { name: 'Red', value: 'red', hex: '#EF4444' },
-                    { name: 'Pink', value: 'pink', hex: '#EC4899' },
-                    { name: 'Orange', value: 'orange', hex: '#F97316' },
-                    { name: 'Yellow', value: 'yellow', hex: '#EAB308' },
-                    { name: 'Green', value: 'green', hex: '#22C55E' },
-                    { name: 'Blue', value: 'blue', hex: '#3B82F6' },
-                    { name: 'Purple', value: 'purple', hex: '#A855F7' },
-                    { name: 'Brown', value: 'brown', hex: '#92400E' },
-                    { name: 'Beige', value: 'beige', hex: '#D4C5B9' },
-                    { name: 'Navy', value: 'navy', hex: '#1E3A8A' },
-                    { name: 'Cream', value: 'cream', hex: '#FFFBEB' },
-                    { name: 'Olive', value: 'olive', hex: '#84CC16' },
-                    { name: 'Maroon', value: 'maroon', hex: '#991B1B' },
-                  ].map((colorOption) => (
-                    <button
-                      key={colorOption.value}
-                      type="button"
-                      onClick={() => setColor(colorOption.value)}
-                      className={cn(
-                        "flex flex-col items-center gap-0.5 shrink-0 transition-all",
-                        color === colorOption.value && "scale-105"
-                      )}
-                    >
-                      <div
+                <div className="relative flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 shrink-0"
+                    onClick={() => setColorCarouselIndex(Math.max(0, colorCarouselIndex - 1))}
+                    disabled={colorCarouselIndex === 0}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  
+                  <div className="flex gap-2 flex-1 justify-center">
+                    {visibleColors.map((colorOption) => (
+                      <button
+                        key={colorOption.value}
+                        type="button"
+                        onClick={() => setColor(colorOption.value)}
                         className={cn(
-                          "w-9 h-9 rounded-full border-2 transition-all",
-                          color === colorOption.value 
-                            ? "border-primary ring-2 ring-primary/20" 
-                            : "border-muted-foreground/30 hover:border-muted-foreground/50"
+                          "flex flex-col items-center gap-0.5 shrink-0 transition-all",
+                          color === colorOption.value && "scale-105"
                         )}
-                        style={{ 
-                          backgroundColor: colorOption.hex,
-                          boxShadow: colorOption.value === 'white' || colorOption.value === 'cream' 
-                            ? 'inset 0 0 0 1px rgba(0,0,0,0.1)' 
-                            : undefined 
-                        }}
-                      />
-                      <span className="text-[10px] text-muted-foreground">
-                        {colorOption.name}
-                      </span>
-                    </button>
-                  ))}
+                      >
+                        <div
+                          className={cn(
+                            "w-9 h-9 rounded-full border-2 transition-all",
+                            color === colorOption.value 
+                              ? "border-primary ring-2 ring-primary/20" 
+                              : "border-muted-foreground/30 hover:border-muted-foreground/50"
+                          )}
+                          style={{ 
+                            backgroundColor: colorOption.hex,
+                            boxShadow: colorOption.value === 'white' || colorOption.value === 'cream' 
+                              ? 'inset 0 0 0 1px rgba(0,0,0,0.1)' 
+                              : undefined 
+                          }}
+                        />
+                        <span className="text-[10px] text-muted-foreground">
+                          {colorOption.name}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 shrink-0"
+                    onClick={() => setColorCarouselIndex(Math.min(totalPages - 1, colorCarouselIndex + 1))}
+                    disabled={colorCarouselIndex === totalPages - 1}
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
                 </div>
               </div>
 
