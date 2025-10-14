@@ -115,8 +115,6 @@ serve(async (req) => {
     formDataAI.append('model', 'gpt-image-1');
     formDataAI.append('prompt', 'Remove the entire background from this photo and output a transparent PNG (RGBA). Keep only the subject (clothing item or person) with original colors, texture, and smooth edges. Do not add any background, shadow, gradient, or checkerboard. Maintain full resolution and aspect ratio.');
     formDataAI.append('background', 'transparent');
-    formDataAI.append('output_format', 'png');
-    formDataAI.append('quality', 'high');
     formDataAI.append('size', '1024x1024');
     formDataAI.append('n', '1');
 
