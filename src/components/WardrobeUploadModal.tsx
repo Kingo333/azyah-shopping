@@ -13,6 +13,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useAddWardrobeItem, useWardrobeLimit } from '@/hooks/useWardrobeItems';
 import { toast } from 'sonner';
 import { Progress } from '@/components/ui/progress';
+import { cn } from '@/lib/utils';
 
 interface WardrobeUploadModalProps {
   isOpen: boolean;
@@ -394,24 +395,66 @@ export const WardrobeUploadModal: React.FC<WardrobeUploadModalProps> = ({
                 </Select>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Color</Label>
-                  <Input
-                    value={color}
-                    onChange={(e) => setColor(e.target.value)}
-                    placeholder="e.g., Blue"
-                  />
+              <div className="space-y-2">
+                <Label>Color</Label>
+                <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                  {[
+                    { name: 'Black', value: 'black', hex: '#000000' },
+                    { name: 'White', value: 'white', hex: '#FFFFFF' },
+                    { name: 'Gray', value: 'gray', hex: '#9CA3AF' },
+                    { name: 'Red', value: 'red', hex: '#EF4444' },
+                    { name: 'Pink', value: 'pink', hex: '#EC4899' },
+                    { name: 'Orange', value: 'orange', hex: '#F97316' },
+                    { name: 'Yellow', value: 'yellow', hex: '#EAB308' },
+                    { name: 'Green', value: 'green', hex: '#22C55E' },
+                    { name: 'Blue', value: 'blue', hex: '#3B82F6' },
+                    { name: 'Purple', value: 'purple', hex: '#A855F7' },
+                    { name: 'Brown', value: 'brown', hex: '#92400E' },
+                    { name: 'Beige', value: 'beige', hex: '#D4C5B9' },
+                    { name: 'Navy', value: 'navy', hex: '#1E3A8A' },
+                    { name: 'Cream', value: 'cream', hex: '#FFFBEB' },
+                    { name: 'Olive', value: 'olive', hex: '#84CC16' },
+                    { name: 'Maroon', value: 'maroon', hex: '#991B1B' },
+                  ].map((colorOption) => (
+                    <button
+                      key={colorOption.value}
+                      type="button"
+                      onClick={() => setColor(colorOption.value)}
+                      className={cn(
+                        "flex flex-col items-center gap-1 shrink-0 transition-all",
+                        color === colorOption.value && "scale-110"
+                      )}
+                    >
+                      <div
+                        className={cn(
+                          "w-12 h-12 rounded-full border-2 transition-all",
+                          color === colorOption.value 
+                            ? "border-primary ring-2 ring-primary/20 shadow-lg" 
+                            : "border-muted-foreground/30 hover:border-muted-foreground/50"
+                        )}
+                        style={{ 
+                          backgroundColor: colorOption.hex,
+                          boxShadow: colorOption.value === 'white' || colorOption.value === 'cream' 
+                            ? 'inset 0 0 0 1px rgba(0,0,0,0.1)' 
+                            : undefined 
+                        }}
+                      />
+                      <span className="text-xs text-muted-foreground">
+                        {colorOption.name}
+                      </span>
+                    </button>
+                  ))}
                 </div>
+              </div>
 
-                <div className="space-y-2">
-                  <Label>Brand</Label>
-                  <Input
-                    value={brand}
-                    onChange={(e) => setBrand(e.target.value)}
-                    placeholder="Optional"
-                  />
-                </div>
+              <div className="space-y-2">
+                <Label>Brand (Optional)</Label>
+                <Input
+                  value={brand}
+                  onChange={(e) => setBrand(e.target.value)}
+                  placeholder="e.g., Nike, Zara"
+                  maxLength={50}
+                />
               </div>
 
               <div className="flex items-center justify-between">
