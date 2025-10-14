@@ -181,31 +181,8 @@ export const WardrobeUploadModal: React.FC<WardrobeUploadModalProps> = ({
       
       setProgress(90);
       
-      // Try auto-tagging (optional)
-      try {
-        const { data: tagData } = await supabase.functions.invoke('auto-tag', {
-          body: { image_path: data.image_path }
-        });
-
-        if (tagData && !tagData.error) {
-          // Map AI category to valid DB category
-          const validCategories = ['top', 'bottom', 'dress', 'outerwear', 'shoes', 'bag', 'accessory'];
-          let mappedCategory = tagData.category || '';
-          
-          // If AI returns 'clothing', don't set it - let user choose manually
-          if (mappedCategory === 'clothing' || !validCategories.includes(mappedCategory)) {
-            console.log('Auto-tag returned invalid category:', mappedCategory, '- user must select manually');
-            mappedCategory = '';
-          }
-          
-          setCategory(mappedCategory);
-          setColor(tagData.color_primary || '');
-          setTags(tagData.suggested_tags || []);
-        }
-      } catch (tagError) {
-        console.warn('Auto-tagging failed (non-critical):', tagError);
-      }
-
+      // Users will manually select category, color, and other details
+      
       setProgress(100);
       setCurrentStep('metadata');
       toast.success('Background removed successfully!');
