@@ -289,7 +289,7 @@ export const WardrobeUploadModal: React.FC<WardrobeUploadModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-sm max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Add to Closet</DialogTitle>
         </DialogHeader>
@@ -343,8 +343,8 @@ export const WardrobeUploadModal: React.FC<WardrobeUploadModalProps> = ({
 
           {/* Step 2: Processing */}
           {currentStep === 'processing' && (
-            <div className="space-y-4">
-              <div className="aspect-square rounded-lg bg-muted/30 flex items-center justify-center"
+            <div className="space-y-3">
+              <div className="h-48 rounded-lg bg-muted/30 flex items-center justify-center"
                 style={{
                   backgroundImage: bgRemovedPreview ? 'repeating-conic-gradient(hsl(var(--muted)) 0% 25%, transparent 0% 50%) 50% / 20px 20px' : 'none'
                 }}
@@ -352,7 +352,7 @@ export const WardrobeUploadModal: React.FC<WardrobeUploadModalProps> = ({
                 {bgRemovedPreview ? (
                   <img src={bgRemovedPreview} alt="Preview" className="max-h-full object-contain" />
                 ) : (
-                  <Loader2 className="w-12 h-12 animate-spin text-muted-foreground" />
+                  <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
                 )}
               </div>
               <div className="space-y-2">
@@ -368,7 +368,7 @@ export const WardrobeUploadModal: React.FC<WardrobeUploadModalProps> = ({
           {currentStep === 'metadata' && (
             <>
               {bgRemovedPreview && (
-                <div className="aspect-square rounded-lg bg-muted/30 overflow-hidden flex items-center justify-center"
+                <div className="h-40 rounded-lg bg-muted/30 overflow-hidden flex items-center justify-center"
                   style={{
                     backgroundImage: 'repeating-conic-gradient(hsl(var(--muted)) 0% 25%, transparent 0% 50%) 50% / 20px 20px'
                   }}
@@ -396,8 +396,8 @@ export const WardrobeUploadModal: React.FC<WardrobeUploadModalProps> = ({
               </div>
 
               <div className="space-y-2">
-                <Label>Color</Label>
-                <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                <Label className="text-sm">Color</Label>
+                <div className="flex gap-1.5 overflow-x-auto pb-2 scrollbar-hide">
                   {[
                     { name: 'Black', value: 'black', hex: '#000000' },
                     { name: 'White', value: 'white', hex: '#FFFFFF' },
@@ -421,15 +421,15 @@ export const WardrobeUploadModal: React.FC<WardrobeUploadModalProps> = ({
                       type="button"
                       onClick={() => setColor(colorOption.value)}
                       className={cn(
-                        "flex flex-col items-center gap-1 shrink-0 transition-all",
-                        color === colorOption.value && "scale-110"
+                        "flex flex-col items-center gap-0.5 shrink-0 transition-all",
+                        color === colorOption.value && "scale-105"
                       )}
                     >
                       <div
                         className={cn(
-                          "w-12 h-12 rounded-full border-2 transition-all",
+                          "w-9 h-9 rounded-full border-2 transition-all",
                           color === colorOption.value 
-                            ? "border-primary ring-2 ring-primary/20 shadow-lg" 
+                            ? "border-primary ring-2 ring-primary/20" 
                             : "border-muted-foreground/30 hover:border-muted-foreground/50"
                         )}
                         style={{ 
@@ -439,7 +439,7 @@ export const WardrobeUploadModal: React.FC<WardrobeUploadModalProps> = ({
                             : undefined 
                         }}
                       />
-                      <span className="text-xs text-muted-foreground">
+                      <span className="text-[10px] text-muted-foreground">
                         {colorOption.name}
                       </span>
                     </button>
@@ -447,20 +447,21 @@ export const WardrobeUploadModal: React.FC<WardrobeUploadModalProps> = ({
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label>Brand (Optional)</Label>
+              <div className="space-y-1.5">
+                <Label className="text-sm">Brand (Optional)</Label>
                 <Input
                   value={brand}
                   onChange={(e) => setBrand(e.target.value)}
                   placeholder="e.g., Nike, Zara"
                   maxLength={50}
+                  className="h-9"
                 />
               </div>
 
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between py-2">
                 <div className="space-y-0.5">
-                  <Label>Allow public reuse</Label>
-                  <p className="text-xs text-muted-foreground">
+                  <Label className="text-sm">Allow public reuse</Label>
+                  <p className="text-[11px] text-muted-foreground">
                     Let others use this item in their fits
                   </p>
                 </div>
@@ -473,23 +474,23 @@ export const WardrobeUploadModal: React.FC<WardrobeUploadModalProps> = ({
           )}
 
           {/* Actions */}
-          <div className="flex gap-2 pt-4">
-            <Button variant="outline" onClick={onClose} className="flex-1" disabled={isProcessing || addItem.isPending}>
+          <div className="flex gap-2 pt-2">
+            <Button variant="outline" onClick={onClose} className="flex-1 h-9" disabled={isProcessing || addItem.isPending}>
               Cancel
             </Button>
             {currentStep === 'metadata' && (
               <Button 
                 onClick={handleSave} 
-                className="flex-1" 
+                className="flex-1 h-9" 
                 disabled={!category || isProcessing || addItem.isPending}
               >
                 {addItem.isPending ? (
                   <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
                     Saving...
                   </>
                 ) : (
-                  'Save to My Closet'
+                  'Save to Closet'
                 )}
               </Button>
             )}
