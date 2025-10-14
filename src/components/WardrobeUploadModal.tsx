@@ -14,6 +14,7 @@ import { useAddWardrobeItem, useWardrobeLimit } from '@/hooks/useWardrobeItems';
 import { toast } from 'sonner';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
+import { removeBackground, loadImage } from '@/utils/backgroundRemoval';
 
 interface WardrobeUploadModalProps {
   isOpen: boolean;
@@ -171,54 +172,55 @@ export const WardrobeUploadModal: React.FC<WardrobeUploadModalProps> = ({
     try {
       console.log('Original file size:', file.size);
       
-      // Compress image first
-      const compressedFile = await compressImage(file);
-      console.log('Compressed file size:', compressedFile.size);
-      
+      // Load image for browser-based processing
       setProgress(20);
-      console.log('Starting Gemini background removal...');
-      
-      // Create FormData with the compressed image
-      const formData = new FormData();
-      formData.append('file', compressedFile);
+      const imageElement = await loadImage(file);
       
       setProgress(30);
+      console.log('Starting browser-based background removal (first time will download AI model ~50MB)...');
+      
+      // Remove background using Transformers.js in the browser
+      const transparentBlob = await removeBackground(imageElement);
+      
+      setProgress(60);
+      
+      // Convert blob to file
+      const processedFile = new File(
+        [transparentBlob], 
+        file.name.replace(/\.[^.]+$/, '.png'),
+        { type: 'image/png' }
+      );
+
+      console.log('Background removed. Processed file size:', processedFile.size);
+      setProgress(70);
 
       // Get auth token
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('Not authenticated');
 
-      // Call Gemini edge function using direct fetch (FormData doesn't work with supabase.functions.invoke)
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/gemini-bg-remove`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-          },
-          body: formData
-        }
-      );
+      // Upload to Supabase Storage
+      const fileName = `${session.user.id}/${crypto.randomUUID()}.png`;
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('wardrobe-items')
+        .upload(fileName, processedFile, {
+          contentType: 'image/png',
+          upsert: false
+        });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Background removal failed');
+      if (uploadError) {
+        console.error('Upload error:', uploadError);
+        throw new Error('Failed to upload processed image');
       }
 
-      const data = await response.json();
-      
-      setProgress(70);
+      setProgress(85);
 
-      if (!data.success || !data.image_url) {
-        throw new Error('Background removal failed');
-      }
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('wardrobe-items')
+        .getPublicUrl(fileName);
 
-      console.log('Background removed successfully:', data.image_url);
-      setBgRemovedPreview(data.image_url);
-      
-      setProgress(90);
-      
-      // Users will manually select category, color, and other details
+      console.log('Image uploaded successfully:', publicUrl);
+      setBgRemovedPreview(publicUrl);
       
       setProgress(100);
       setCurrentStep('metadata');
@@ -229,12 +231,9 @@ export const WardrobeUploadModal: React.FC<WardrobeUploadModalProps> = ({
       let errorMessage = 'Failed to process image. Please try again.';
       let errorDescription = '';
       
-      if (error.message?.includes('Maximum call stack')) {
-        errorMessage = 'Image is too large';
-        errorDescription = 'Please try a smaller image or contact support.';
-      } else if (error.message?.includes('LOVABLE_API_KEY')) {
-        errorMessage = 'Background removal service is not configured';
-        errorDescription = 'Please contact support.';
+      if (error.message?.includes('WebGPU') || error.message?.includes('device')) {
+        errorMessage = 'Browser compatibility issue';
+        errorDescription = 'Please use Chrome, Edge, or another modern browser with WebGPU support.';
       } else if (error.message?.includes('Not authenticated')) {
         errorMessage = 'Authentication required';
         errorDescription = 'Please sign in to upload images.';
@@ -243,7 +242,7 @@ export const WardrobeUploadModal: React.FC<WardrobeUploadModalProps> = ({
       }
       
       toast.error(errorMessage, {
-        description: errorDescription || 'Try using a smaller image or contact support if the issue persists.'
+        description: errorDescription || 'Try using a smaller image or a different browser if the issue persists.'
       });
       
       setCurrentStep('upload');
@@ -385,7 +384,7 @@ export const WardrobeUploadModal: React.FC<WardrobeUploadModalProps> = ({
               <div className="space-y-2">
                 <Progress value={progress} />
                 <p className="text-xs text-center text-muted-foreground">
-                  Looking sharp… removing background.
+                  {progress < 30 ? 'Preparing image...' : progress < 70 ? 'Removing background with AI...' : 'Uploading...'}
                 </p>
               </div>
             </div>
