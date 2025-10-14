@@ -3,10 +3,13 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Plus, Filter, MoreVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { WardrobeGrid } from '@/components/WardrobeGrid';
+import { WardrobeAllItemsGrid } from '@/components/WardrobeAllItemsGrid';
+import { WardrobeLayerCarousel } from '@/components/WardrobeLayerCarousel';
+import { AddLayerButton } from '@/components/AddLayerButton';
 import { WardrobeCategoryTabs } from '@/components/WardrobeCategoryTabs';
 import { WardrobeUploadModal } from '@/components/WardrobeUploadModal';
 import { useWardrobeItems, WardrobeItem } from '@/hooks/useWardrobeItems';
+import { useWardrobeLayers, useAddWardrobeLayer, useUpdateWardrobeLayer, useDeleteWardrobeLayer } from '@/hooks/useWardrobeLayers';
 import { SEOHead } from '@/components/SEOHead';
 import { BackButton } from '@/components/ui/back-button';
 import { Card } from '@/components/ui/card';
@@ -19,6 +22,10 @@ export default function DressMeWardrobe() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { data: allItems = [], isLoading } = useWardrobeItems();
   const { data: userFits = [] } = usePublicFits();
+  const { data: layers = [], isLoading: layersLoading } = useWardrobeLayers();
+  const addLayerMutation = useAddWardrobeLayer();
+  const updateLayerMutation = useUpdateWardrobeLayer();
+  const deleteLayerMutation = useDeleteWardrobeLayer();
   const analytics = useDressMeAnalytics();
 
   // Get initial state from URL params
@@ -30,6 +37,7 @@ export default function DressMeWardrobe() {
   );
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [uploadCategory, setUploadCategory] = useState<string | undefined>();
 
   // Update URL params when tab or category changes
   useEffect(() => {
@@ -43,10 +51,40 @@ export default function DressMeWardrobe() {
     analytics.open();
   }, []);
 
-  const filteredItems = useMemo(() => {
-    if (selectedCategory === 'all') return allItems;
-    return allItems.filter(item => item.category === selectedCategory);
-  }, [allItems, selectedCategory]);
+  // Auto-create layers for categories that have items but no layer
+  useEffect(() => {
+    if (layersLoading || !allItems.length) return;
+    
+    const categoriesWithItems = [...new Set(allItems.map(item => item.category))];
+    const existingLayerCategories = new Set(layers.map(l => l.category));
+    
+    categoriesWithItems.forEach(category => {
+      if (!existingLayerCategories.has(category)) {
+        addLayerMutation.mutate(category as any);
+      }
+    });
+  }, [allItems, layers, layersLoading]);
+
+  // Get items for each layer
+  const getLayerItems = (category: string) => {
+    return allItems.filter(item => item.category === category);
+  };
+
+  // Available categories for adding new layers
+  const allCategories = [
+    { value: 'top', label: 'Tops' },
+    { value: 'bottom', label: 'Bottoms' },
+    { value: 'dress', label: 'Dresses' },
+    { value: 'outerwear', label: 'Outerwear' },
+    { value: 'shoes', label: 'Shoes' },
+    { value: 'bag', label: 'Bags' },
+    { value: 'accessory', label: 'Accessories' },
+  ];
+
+  const availableCategories = useMemo(() => {
+    const existingCategories = new Set(layers.map(l => l.category));
+    return allCategories.filter(cat => !existingCategories.has(cat.value as any));
+  }, [layers]);
 
   const handleToggleItem = (itemId: string) => {
     setSelectedItems(prev => 
@@ -57,7 +95,7 @@ export default function DressMeWardrobe() {
   };
 
   const handleSelectAll = () => {
-    setSelectedItems(filteredItems.map(item => item.id));
+    setSelectedItems(allItems.map(item => item.id));
   };
 
   const handleDeselectAll = () => {
@@ -78,6 +116,46 @@ export default function DressMeWardrobe() {
   const handleItemAdded = (itemId: string) => {
     // Automatically select newly added item
     setSelectedItems(prev => [...prev, itemId]);
+  };
+
+  const handleCategoryClick = (category: string) => {
+    setSelectedCategory(category);
+    
+    if (category === 'all') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+    
+    // Find or create layer for this category
+    const existingLayer = layers.find(l => l.category === category);
+    
+    if (existingLayer) {
+      // Scroll to existing layer
+      const layerElement = document.getElementById(`layer-${category}`);
+      if (layerElement) {
+        layerElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    } else {
+      // Create new layer
+      addLayerMutation.mutate(category as any);
+    }
+  };
+
+  const handlePinToggle = (layerId: string, currentPinState: boolean) => {
+    updateLayerMutation.mutate({ id: layerId, is_pinned: !currentPinState });
+  };
+
+  const handleRemoveLayer = (layerId: string) => {
+    deleteLayerMutation.mutate(layerId);
+  };
+
+  const handleAddLayer = (category: string) => {
+    addLayerMutation.mutate(category as any);
+  };
+
+  const handleAddItemToLayer = (category?: string) => {
+    setUploadCategory(category);
+    setIsUploadModalOpen(true);
   };
 
   // Onboarding state
@@ -157,16 +235,12 @@ export default function DressMeWardrobe() {
               <div className="flex items-center justify-between gap-4">
                 <WardrobeCategoryTabs
                   selected={selectedCategory}
-                  onSelect={setSelectedCategory}
+                  onSelect={handleCategoryClick}
                 />
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsUploadModalOpen(true)}
-                  className="shrink-0"
-                >
-                  <Plus className="w-4 h-4" />
-                </Button>
+                <AddLayerButton
+                  availableCategories={availableCategories}
+                  onAddLayer={handleAddLayer}
+                />
               </div>
 
               {/* Selection controls */}
@@ -183,24 +257,47 @@ export default function DressMeWardrobe() {
                     >
                       Clear
                     </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={handleSelectAll}
-                    >
-                      Select All
-                    </Button>
                   </div>
                 </div>
               )}
 
-              {/* Wardrobe Grid */}
-              <WardrobeGrid
-                items={filteredItems}
+              {/* All Items Grid */}
+              <WardrobeAllItemsGrid
+                items={allItems}
                 selectedItems={selectedItems}
                 onToggleItem={handleToggleItem}
-                onAddNew={() => setIsUploadModalOpen(true)}
+                onAddNew={() => handleAddItemToLayer()}
               />
+
+              {/* Layered Carousels */}
+              <div className="space-y-4">
+                {layers.map((layer) => (
+                  <div key={layer.id} id={`layer-${layer.category}`}>
+                    <WardrobeLayerCarousel
+                      layer={layer}
+                      items={getLayerItems(layer.category)}
+                      selectedItems={selectedItems}
+                      onToggleItem={handleToggleItem}
+                      onPinToggle={() => handlePinToggle(layer.id, layer.is_pinned)}
+                      onRemoveLayer={() => handleRemoveLayer(layer.id)}
+                      onAddItem={() => handleAddItemToLayer(layer.category)}
+                    />
+                  </div>
+                ))}
+              </div>
+
+              {/* Empty state for when no layers exist */}
+              {layers.length === 0 && !layersLoading && (
+                <Card className="p-8 text-center">
+                  <p className="text-muted-foreground mb-4">
+                    Add items to your wardrobe to organize them into layers
+                  </p>
+                  <Button onClick={() => handleAddItemToLayer()}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Your First Item
+                  </Button>
+                </Card>
+              )}
             </TabsContent>
 
             <TabsContent value="outfits" className="mt-4 space-y-4">
@@ -264,8 +361,12 @@ export default function DressMeWardrobe() {
       {/* Upload Modal */}
       <WardrobeUploadModal
         isOpen={isUploadModalOpen}
-        onClose={() => setIsUploadModalOpen(false)}
+        onClose={() => {
+          setIsUploadModalOpen(false);
+          setUploadCategory(undefined);
+        }}
         onItemAdded={handleItemAdded}
+        presetCategory={uploadCategory}
       />
     </>
   );

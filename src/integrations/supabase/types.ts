@@ -2766,6 +2766,36 @@ export type Database = {
         }
         Relationships: []
       }
+      wardrobe_layers: {
+        Row: {
+          category: string
+          created_at: string | null
+          id: string
+          is_pinned: boolean | null
+          layer_order: number
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          id?: string
+          is_pinned?: boolean | null
+          layer_order?: number
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          id?: string
+          is_pinned?: boolean | null
+          layer_order?: number
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       webhook_events: {
         Row: {
           created_at: string | null
@@ -3108,24 +3138,13 @@ export type Database = {
           | { justification: string; target_payment_id: string }
         Returns: {
           amount_fils: number
-          cancel_url: string | null
-          created_at: string | null
-          currency: string | null
-          failure_url: string | null
-          fee_amount_fils: number | null
+          created_at: string
+          currency: string
           id: string
-          latest_error_code: string | null
-          latest_error_message: string | null
-          operation_id: string
-          payment_intent_id: string
           product: string
-          provider: string | null
-          redirect_url: string | null
+          provider: string
           status: string
-          success_url: string | null
-          tip_amount_fils: number | null
-          updated_at: string | null
-          user_id: string | null
+          user_id: string
         }[]
       }
       admin_access_payment_with_enhanced_security: {

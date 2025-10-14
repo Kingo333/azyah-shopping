@@ -18,12 +18,14 @@ interface WardrobeUploadModalProps {
   isOpen: boolean;
   onClose: () => void;
   onItemAdded?: (itemId: string) => void;
+  presetCategory?: string;
 }
 
 export const WardrobeUploadModal: React.FC<WardrobeUploadModalProps> = ({ 
   isOpen, 
   onClose,
-  onItemAdded 
+  onItemAdded,
+  presetCategory
 }) => {
   const { user } = useAuth();
   const addItem = useAddWardrobeItem();
@@ -32,7 +34,7 @@ export const WardrobeUploadModal: React.FC<WardrobeUploadModalProps> = ({
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [bgRemovedPreview, setBgRemovedPreview] = useState<string | null>(null);
-  const [category, setCategory] = useState<string>('');
+  const [category, setCategory] = useState<string>(presetCategory || '');
   const [color, setColor] = useState('');
   const [brand, setBrand] = useState('');
   const [tags, setTags] = useState<string[]>([]);
@@ -40,6 +42,13 @@ export const WardrobeUploadModal: React.FC<WardrobeUploadModalProps> = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
   const [currentStep, setCurrentStep] = useState<'upload' | 'processing' | 'metadata'>('upload');
+
+  // Update category when preset changes
+  useEffect(() => {
+    if (presetCategory) {
+      setCategory(presetCategory);
+    }
+  }, [presetCategory]);
 
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
