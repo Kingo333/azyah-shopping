@@ -182,7 +182,12 @@ export const WardrobeUploadModal: React.FC<WardrobeUploadModalProps> = ({
       // Remove background using Transformers.js in the browser
       const transparentBlob = await removeBackground(imageElement);
       
-      setProgress(60);
+      setProgress(50);
+      
+      // Create local preview URL immediately so user can see the result
+      const localPreviewUrl = URL.createObjectURL(transparentBlob);
+      setBgRemovedPreview(localPreviewUrl);
+      console.log('Background removed successfully, showing preview');
       
       // Convert blob to file
       const processedFile = new File(
@@ -191,7 +196,7 @@ export const WardrobeUploadModal: React.FC<WardrobeUploadModalProps> = ({
         { type: 'image/png' }
       );
 
-      console.log('Background removed. Processed file size:', processedFile.size);
+      console.log('Processed file size:', processedFile.size);
       setProgress(70);
 
       // Get auth token
@@ -209,17 +214,20 @@ export const WardrobeUploadModal: React.FC<WardrobeUploadModalProps> = ({
 
       if (uploadError) {
         console.error('Upload error:', uploadError);
-        throw new Error('Failed to upload processed image');
+        throw new Error(`Upload failed: ${uploadError.message}`);
       }
 
       setProgress(85);
 
-      // Get public URL
+      // Get public URL and replace local preview
       const { data: { publicUrl } } = supabase.storage
         .from('wardrobe-items')
         .getPublicUrl(fileName);
 
       console.log('Image uploaded successfully:', publicUrl);
+      
+      // Clean up local preview URL and use storage URL
+      URL.revokeObjectURL(localPreviewUrl);
       setBgRemovedPreview(publicUrl);
       
       setProgress(100);
@@ -313,8 +321,18 @@ export const WardrobeUploadModal: React.FC<WardrobeUploadModalProps> = ({
     }
   };
 
+  const handleOpenChange = (open: boolean) => {
+    if (!open) {
+      // Clean up any object URLs to prevent memory leaks
+      if (bgRemovedPreview && bgRemovedPreview.startsWith('blob:')) {
+        URL.revokeObjectURL(bgRemovedPreview);
+      }
+      onClose();
+    }
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-sm max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Add to Closet</DialogTitle>
