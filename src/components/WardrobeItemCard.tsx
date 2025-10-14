@@ -18,7 +18,7 @@ export const WardrobeItemCard: React.FC<WardrobeItemCardProps> = ({
     <button
       onClick={onToggle}
       className={cn(
-        "relative aspect-[3/4] transition-all group",
+        "relative aspect-[3/4] transition-all group bg-transparent",
         isSelected && "scale-95"
       )}
     >
