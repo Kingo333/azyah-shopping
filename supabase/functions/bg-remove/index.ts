@@ -175,7 +175,7 @@ serve(async (req) => {
 
     return new Response(JSON.stringify({
       image_path: publicUrl,
-      thumb_path: thumbFileName,
+      thumb_path: publicUrl, // Use full image as thumbnail
       quota: {
         used: bgRemovalsUsed + 1,
         total: bgRemovalQuota,
