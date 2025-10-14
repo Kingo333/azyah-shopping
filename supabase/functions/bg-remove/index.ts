@@ -104,43 +104,48 @@ serve(async (req) => {
 
     const imageBlob = await imageFile.arrayBuffer();
     
-    // Call Lovable AI for background removal
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY not configured');
+    // Call OpenAI ChatGPT for background removal
+    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
+    if (!OPENAI_API_KEY) {
+      throw new Error('OPENAI_API_KEY not configured');
     }
 
     const formDataAI = new FormData();
-    formDataAI.append('file', new Blob([imageBlob]));
-    formDataAI.append('prompt', 'Remove the background from this clothing item image, keeping only the garment');
+    formDataAI.append('image', new Blob([imageBlob], { type: imageFile.type }));
+    formDataAI.append('model', 'gpt-4o-mini');
+    formDataAI.append('prompt', 'Remove all background from this clothing image and export as transparent PNG (RGBA). Keep lighting and textures intact.');
+    formDataAI.append('size', '1024x1024');
+    formDataAI.append('n', '1');
+    formDataAI.append('response_format', 'b64_json');
 
-    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/images/edit', {
+    const aiResponse = await fetch('https://api.openai.com/v1/images/edits', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+        'Authorization': `Bearer ${OPENAI_API_KEY}`,
       },
       body: formDataAI,
     });
 
     if (!aiResponse.ok) {
-      throw new Error(`AI background removal failed: ${aiResponse.statusText}`);
+      const errorText = await aiResponse.text();
+      console.error('OpenAI API error:', errorText);
+      throw new Error(`ChatGPT background removal failed: ${aiResponse.statusText}`);
     }
 
     const aiData = await aiResponse.json();
-    const processedImageUrl = aiData.data?.[0]?.url;
+    const base64Image = aiData.data?.[0]?.b64_json;
     
-    if (!processedImageUrl) {
-      throw new Error('No processed image returned from AI');
+    if (!base64Image) {
+      throw new Error('No processed image returned from ChatGPT');
     }
 
-    // Download the processed image
-    const processedResponse = await fetch(processedImageUrl);
-    const processedBlob = await processedResponse.arrayBuffer();
+    // Decode base64 to binary
+    const processedBlob = Uint8Array.from(atob(base64Image), c => c.charCodeAt(0));
 
-    // Upload to closet-items bucket
+    // Upload to wardrobe-items bucket
     const fileName = `${user.id}/${crypto.randomUUID()}.png`;
     const { error: uploadError } = await supabaseClient.storage
-      .from('closet-items')
+      .from('wardrobe-items')
       .upload(fileName, processedBlob, {
         contentType: 'image/png',
         upsert: false,
@@ -152,7 +157,7 @@ serve(async (req) => {
     }
 
     const { data: { publicUrl } } = supabaseClient.storage
-      .from('closet-items')
+      .from('wardrobe-items')
       .getPublicUrl(fileName);
 
     console.log('Image uploaded successfully:', publicUrl);
@@ -166,7 +171,7 @@ serve(async (req) => {
       { type: 'image/webp' });
     
     await supabaseClient.storage
-      .from('closet-thumbs')
+      .from('wardrobe-thumbs')
       .upload(thumbFileName, thumbBlob, {
         contentType: 'image/webp',
         upsert: false,

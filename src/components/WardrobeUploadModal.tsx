@@ -14,7 +14,6 @@ import { useAddWardrobeItem, useWardrobeLimit } from '@/hooks/useWardrobeItems';
 import { toast } from 'sonner';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
-import { removeBackground, loadImage } from '@/utils/backgroundRemoval';
 
 interface WardrobeUploadModalProps {
   isOpen: boolean;
@@ -170,76 +169,66 @@ export const WardrobeUploadModal: React.FC<WardrobeUploadModalProps> = ({
     setCurrentStep('processing');
 
     try {
-      console.log('Original file size:', file.size);
+      console.log('Starting image processing with ChatGPT...');
       
-      // Load image for browser-based processing
+      // Compress the image first
+      const compressedBlob = await compressImage(file);
+      const compressedFile = new File([compressedBlob], file.name, { type: 'image/jpeg' });
+      
       setProgress(20);
-      const imageElement = await loadImage(file);
+      console.log('Image compressed, uploading to server...');
       
-      setProgress(30);
-      console.log('Starting browser-based background removal (first time will download AI model ~50MB)...');
-      
-      // Remove background using Transformers.js in the browser
-      const transparentBlob = await removeBackground(imageElement);
-      
-      setProgress(50);
-      
-      // Create local preview URL immediately so user can see the result
-      const localPreviewUrl = URL.createObjectURL(transparentBlob);
-      setBgRemovedPreview(localPreviewUrl);
-      console.log('Background removed successfully, showing preview');
-      
-      // Convert blob to file
-      const processedFile = new File(
-        [transparentBlob], 
-        file.name.replace(/\.[^.]+$/, '.png'),
-        { type: 'image/png' }
-      );
-
-      console.log('Processed file size:', processedFile.size);
-      setProgress(70);
-
-      // Get auth token
+      // Get authentication token
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('Not authenticated');
-
-      // Upload to Supabase Storage
-      const fileName = `${session.user.id}/${crypto.randomUUID()}.png`;
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('wardrobe-items')
-        .upload(fileName, processedFile, {
-          contentType: 'image/png',
-          upsert: false
-        });
-
-      if (uploadError) {
-        console.error('Upload error:', uploadError);
-        throw new Error(`Upload failed: ${uploadError.message}`);
-      }
-
-      setProgress(85);
-
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('wardrobe-items')
-        .getPublicUrl(fileName);
-
-      console.log('Image uploaded successfully:', publicUrl);
       
-      // Preload the storage URL before switching to ensure smooth transition
+      setProgress(30);
+      console.log('Sending to ChatGPT for background removal...');
+      
+      // Call bg-remove edge function
+      const formData = new FormData();
+      formData.append('file', compressedFile);
+      
+      const response = await fetch(
+        `https://klwolsopucgswhtdlsps.supabase.co/functions/v1/bg-remove`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtsd29sc29wdWNnc3dodGRsc3BzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQyNTQ4NTIsImV4cCI6MjA2OTgzMDg1Mn0.t1GFgR9xiIh7PBmoYs_xKLi1fF1iLTF6pqMlLMHowHQ'
+          },
+          body: formData
+        }
+      );
+      
+      setProgress(70);
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        if (response.status === 429) {
+          throw new Error(errorData.message || "You've reached your monthly background removals. Upgrade for unlimited.");
+        }
+        throw new Error(errorData.error || 'Background removal failed');
+      }
+      
+      const result = await response.json();
+      console.log('Background removed successfully:', result);
+      
+      setProgress(85);
+      
+      // Set the storage URL as preview
+      const publicUrl = result.image_path;
+      setBgRemovedPreview(publicUrl);
+      
+      // Preload the storage image for smooth display
       const storageImage = new Image();
-      await new Promise<void>((resolve, reject) => {
+      await new Promise<void>((resolve) => {
         storageImage.onload = () => {
           console.log('Storage image preloaded successfully');
-          // Now it's safe to switch from blob URL to storage URL
-          URL.revokeObjectURL(localPreviewUrl);
-          setBgRemovedPreview(publicUrl);
           resolve();
         };
         storageImage.onerror = () => {
-          console.warn('Storage image preload failed, keeping blob URL');
-          // Keep the blob URL if storage fails to load
-          setBgRemovedPreview(publicUrl); // Still set it, but blob URL stays as fallback
+          console.warn('Storage image preload failed');
           resolve();
         };
         storageImage.src = publicUrl;
@@ -254,18 +243,18 @@ export const WardrobeUploadModal: React.FC<WardrobeUploadModalProps> = ({
       let errorMessage = 'Failed to process image. Please try again.';
       let errorDescription = '';
       
-      if (error.message?.includes('WebGPU') || error.message?.includes('device')) {
-        errorMessage = 'Browser compatibility issue';
-        errorDescription = 'Please use Chrome, Edge, or another modern browser with WebGPU support.';
-      } else if (error.message?.includes('Not authenticated')) {
+      if (error.message?.includes('Not authenticated')) {
         errorMessage = 'Authentication required';
         errorDescription = 'Please sign in to upload images.';
+      } else if (error.message?.includes('monthly background removals')) {
+        errorMessage = 'Quota exceeded';
+        errorDescription = error.message;
       } else if (error.message) {
         errorMessage = error.message;
       }
       
       toast.error(errorMessage, {
-        description: errorDescription || 'Try using a smaller image or a different browser if the issue persists.'
+        description: errorDescription || 'Please try again with a different image.'
       });
       
       setCurrentStep('upload');
@@ -417,7 +406,7 @@ export const WardrobeUploadModal: React.FC<WardrobeUploadModalProps> = ({
               <div className="space-y-2">
                 <Progress value={progress} />
                 <p className="text-xs text-center text-muted-foreground">
-                  {progress < 30 ? 'Preparing image...' : progress < 70 ? 'Removing background with AI...' : 'Uploading...'}
+                  {progress < 30 ? 'Preparing image...' : progress < 70 ? 'AI removing background with ChatGPT...' : 'Saving...'}
                 </p>
               </div>
             </div>
