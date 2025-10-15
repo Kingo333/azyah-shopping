@@ -204,66 +204,88 @@ export const WardrobeUploadModal: React.FC<WardrobeUploadModalProps> = ({
       setProgress(70);
       
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorText = await response.text();
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch {
+          errorData = { error: errorText };
+        }
+        
+        console.error('Background removal error:', response.status, errorData);
+        
         if (response.status === 429) {
           throw new Error(errorData.message || "You've reached your monthly background removals. Upgrade for unlimited.");
+        } else if (response.status === 400) {
+          throw new Error(errorData.error || 'Invalid image format. Please use JPG or PNG.');
+        } else if (response.status === 402) {
+          throw new Error('Out of credits. Please check your Picsart account.');
+        } else if (response.status === 415) {
+          throw new Error('Unsupported image format. Please use JPG or PNG.');
         }
-        throw new Error(errorData.error || 'Background removal failed');
+        
+        throw new Error(errorData.error || errorData.message || 'Background removal failed');
       }
       
       const result = await response.json();
       console.log('Background removed successfully:', result);
       
+      if (!result.image_path) {
+        throw new Error('No processed image URL returned');
+      }
+      
       setProgress(85);
       
       // Set the storage URL as preview
       const publicUrl = result.image_path;
+      console.log('Setting preview URL:', publicUrl);
       setBgRemovedPreview(publicUrl);
       
-      // Preload the storage image for smooth display
-      const storageImage = new Image();
-      await new Promise<void>((resolve) => {
-        storageImage.onload = () => {
-          console.log('Storage image preloaded successfully');
-          resolve();
-        };
-        storageImage.onerror = () => {
-          console.warn('Storage image preload failed');
-          resolve();
-        };
-        storageImage.src = publicUrl;
-      });
+      // Wait a moment before transitioning to metadata step
+      await new Promise(resolve => setTimeout(resolve, 500));
       
       setProgress(100);
       setCurrentStep('metadata');
+      setIsProcessing(false);
+      
+      console.log('Successfully transitioned to metadata step');
       toast.success('Background removed successfully!');
     } catch (error: any) {
       console.error('Error processing image:', error);
       
-      let errorMessage = 'Failed to process image. Please try again.';
-      let errorDescription = '';
+      let errorMessage = 'Background removal failed';
+      let errorDescription = 'Please try again with a different image.';
       
       if (error.message?.includes('Not authenticated')) {
         errorMessage = 'Authentication required';
         errorDescription = 'Please sign in to upload images.';
+      } else if (error.message?.includes('Bucket not found')) {
+        errorMessage = 'Storage error';
+        errorDescription = 'Please refresh the page and try again.';
       } else if (error.message?.includes('monthly background removals')) {
         errorMessage = 'Quota exceeded';
         errorDescription = error.message;
+      } else if (error.message?.includes('Invalid image format')) {
+        errorMessage = 'Invalid image format';
+        errorDescription = 'Please use JPG or PNG images only.';
+      } else if (error.message?.includes('Rate limit')) {
+        errorMessage = 'Rate limit exceeded';
+        errorDescription = 'Please wait a moment and try again.';
       } else if (error.message) {
-        errorMessage = error.message;
+        errorDescription = error.message;
       }
       
       toast.error(errorMessage, {
-        description: errorDescription || 'Please try again with a different image.'
+        description: errorDescription
       });
       
+      // Reset to upload state on error
       setCurrentStep('upload');
       setProgress(0);
+      setIsProcessing(false);
       setSelectedFile(null);
       setPreviewUrl(null);
       setBgRemovedPreview(null);
-    } finally {
-      setIsProcessing(false);
     }
   };
 
