@@ -183,7 +183,7 @@ export const WardrobeUploadModal: React.FC<WardrobeUploadModalProps> = ({
       if (!session) throw new Error('Not authenticated');
       
       setProgress(30);
-      console.log('Sending to ChatGPT for background removal...');
+      console.log('Sending to Picsart AI for background removal...');
       
       // Call bg-remove edge function
       const formData = new FormData();
@@ -406,7 +406,7 @@ export const WardrobeUploadModal: React.FC<WardrobeUploadModalProps> = ({
               <div className="space-y-2">
                 <Progress value={progress} />
                 <p className="text-xs text-center text-muted-foreground">
-                  {progress < 30 ? 'Preparing image...' : progress < 70 ? 'AI removing background with ChatGPT...' : 'Saving...'}
+                  {progress < 30 ? 'Preparing image...' : progress < 70 ? 'AI removing background with Picsart...' : 'Saving...'}
                 </p>
               </div>
             </div>

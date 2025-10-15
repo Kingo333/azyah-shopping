@@ -104,44 +104,64 @@ serve(async (req) => {
 
     const imageBlob = await imageFile.arrayBuffer();
     
-    // Call OpenAI ChatGPT for background removal
-    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
-    if (!OPENAI_API_KEY) {
-      throw new Error('OPENAI_API_KEY not configured');
+    // Call Picsart for background removal
+    const PICSART_API_KEY = Deno.env.get('PICSART_API_KEY');
+    if (!PICSART_API_KEY) {
+      throw new Error('PICSART_API_KEY not configured');
     }
 
-    const formDataAI = new FormData();
-    formDataAI.append('image', new Blob([imageBlob], { type: imageFile.type }));
-    formDataAI.append('model', 'gpt-image-1');
-    formDataAI.append('prompt', 'Remove the entire background from this photo and output a transparent PNG (RGBA). Keep only the subject (clothing item or person) with original colors, texture, and smooth edges. Do not add any background, shadow, gradient, or checkerboard. Maintain full resolution and aspect ratio.');
-    formDataAI.append('background', 'transparent');
-    formDataAI.append('size', '1024x1024');
-    formDataAI.append('n', '1');
+    const formDataPicsart = new FormData();
+    formDataPicsart.append('image', new Blob([imageBlob], { type: imageFile.type }));
+    formDataPicsart.append('output_type', 'cutout');
+    formDataPicsart.append('format', 'PNG');
+    formDataPicsart.append('scale', 'fit');
+    formDataPicsart.append('auto_center', 'true');
 
-    const aiResponse = await fetch('https://api.openai.com/v1/images/edits', {
+    const picsartResponse = await fetch('https://api.picsart.io/tools/1.0/removebg', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+        'X-Picsart-API-Key': PICSART_API_KEY,
       },
-      body: formDataAI,
+      body: formDataPicsart,
     });
 
-    if (!aiResponse.ok) {
-      const errorText = await aiResponse.text();
-      console.error('OpenAI API error:', errorText);
-      throw new Error(`ChatGPT background removal failed: ${aiResponse.statusText}`);
+    if (!picsartResponse.ok) {
+      const errorText = await picsartResponse.text();
+      console.error('Picsart API error:', picsartResponse.status, errorText);
+      
+      // Handle specific Picsart error codes
+      if (picsartResponse.status === 400) {
+        throw new Error('Invalid image format. Please use JPG or PNG.');
+      } else if (picsartResponse.status === 401) {
+        throw new Error('Invalid API key.');
+      } else if (picsartResponse.status === 402) {
+        throw new Error('Out of credits. Please check your Picsart account.');
+      } else if (picsartResponse.status === 415) {
+        throw new Error('Unsupported image format. Please use JPG or PNG.');
+      } else if (picsartResponse.status === 429) {
+        throw new Error('Rate limit exceeded. Please try again in a moment.');
+      }
+      
+      throw new Error(`Picsart background removal failed: ${picsartResponse.statusText}`);
     }
 
-    const aiData = await aiResponse.json();
+    const picsartData = await picsartResponse.json();
     
-    const base64Image = aiData.data?.[0]?.b64_json;
+    const processedImageUrl = picsartData.data?.url;
     
-    if (!base64Image) {
-      throw new Error('No processed image returned from OpenAI');
+    if (!processedImageUrl) {
+      throw new Error('No processed image URL returned from Picsart');
     }
 
-    // Decode base64 to binary
-    const processedBlob = Uint8Array.from(atob(base64Image), c => c.charCodeAt(0));
+    console.log('Picsart processed image URL:', processedImageUrl);
+
+    // Download the processed image from Picsart CDN
+    const processedImageResponse = await fetch(processedImageUrl);
+    if (!processedImageResponse.ok) {
+      throw new Error('Failed to download processed image from Picsart');
+    }
+
+    const processedBlob = new Uint8Array(await processedImageResponse.arrayBuffer());
 
     // Upload to wardrobe-items bucket
     const fileName = `${user.id}/${crypto.randomUUID()}.png`;
