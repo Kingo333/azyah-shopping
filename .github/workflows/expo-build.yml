@@ -3,25 +3,45 @@ name: Expo EAS Build
 on:
   push:
     branches:
-      - main   # change if your main branch has a different name (e.g., production)
+      - main  # Change this if your default branch has another name (like 'master')
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Install Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: 18
+          cache: 'npm'
 
       - name: Install dependencies
+        run: npm install
+
+      - name: Install EAS CLI
         run: npm install -g eas-cli
 
       - name: Login to Expo
-        run: eas whoami || eas login --token ${{ secrets.EXPO_TOKEN }}
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          echo "Using Expo token for authentication"
+          eas whoami || echo "Authenticated via EXPO_TOKEN"
 
-      - name: Run iOS build
-        run: eas build -p ios --non-interactive --profile production
+      - name: Build iOS app
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          echo "Starting iOS build..."
+          eas build -p ios --non-interactive --profile production
+
+      - name: Build Android app
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          echo "Starting Android build..."
+          eas build -p android --non-interactive --profile production
