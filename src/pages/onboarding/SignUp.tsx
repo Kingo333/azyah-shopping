@@ -344,7 +344,7 @@ export default function SignUp() {
               )}
 
               {showPassword && !showUsernameFields && (
-                <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+                <div className="animate-in fade-in slide-in-from-top-2 duration-300 space-y-2">
                   <label className="text-sm text-muted-foreground mb-2 block">
                     Password
                   </label>
@@ -358,6 +358,15 @@ export default function SignUp() {
                     minLength={6}
                     autoFocus
                   />
+                  {emailExists && (
+                    <button
+                      type="button"
+                      onClick={() => navigate('/reset-password-request')}
+                      className="text-sm text-primary hover:underline"
+                    >
+                      Forgot password?
+                    </button>
+                  )}
                 </div>
               )}
 

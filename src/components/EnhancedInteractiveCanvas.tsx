@@ -55,7 +55,7 @@ export const EnhancedInteractiveCanvas: React.FC<EnhancedInteractiveCanvasProps>
   const [showTrashZone, setShowTrashZone] = useState(false);
   const [showScaleIndicator, setShowScaleIndicator] = useState(false);
   const [showRotateIndicator, setShowRotateIndicator] = useState(false);
-  const dragThreshold = 5;
+  const dragThreshold = 2; // Reduced from 5px to 2px for more responsive touch
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -209,9 +209,11 @@ export const EnhancedInteractiveCanvas: React.FC<EnhancedInteractiveCanvasProps>
       }
       setLastTap(now);
 
-      // Long press for context menu
+      // Long press for context menu (only if not moving)
       const timer = setTimeout(() => {
-        setShowQuickMenu(true);
+        if (!isDragging) {
+          setShowQuickMenu(true);
+        }
       }, 500);
       setLongPressTimer(timer);
     } else if (e.touches.length === 2) {
@@ -252,17 +254,21 @@ export const EnhancedInteractiveCanvas: React.FC<EnhancedInteractiveCanvasProps>
     const deltaY = e.clientY - dragStart.y;
     const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
 
-    // Only start dragging if moved beyond threshold
-    if (!isDragging && distance > dragThreshold) {
-      setIsDragging(true);
-    }
+      // Only start dragging if moved beyond threshold
+      if (!isDragging && distance > dragThreshold) {
+        setIsDragging(true);
+        if (longPressTimer) {
+          clearTimeout(longPressTimer);
+          setLongPressTimer(null);
+        }
+      }
 
-    if (isDragging) {
-      const newX = initialLayerPos.x + deltaX;
-      const newY = initialLayerPos.y + deltaY;
+      if (isDragging) {
+        const newX = initialLayerPos.x + deltaX;
+        const newY = initialLayerPos.y + deltaY;
 
-      updateSelectedLayer({ x: newX, y: newY });
-    }
+        updateSelectedLayer({ x: newX, y: newY });
+      }
   };
 
   const handleMouseUp = () => {
@@ -289,6 +295,10 @@ export const EnhancedInteractiveCanvas: React.FC<EnhancedInteractiveCanvasProps>
       // Only start dragging if moved beyond threshold
       if (!isDragging && distance > dragThreshold) {
         setIsDragging(true);
+        if (longPressTimer) {
+          clearTimeout(longPressTimer);
+          setLongPressTimer(null);
+        }
       }
 
       if (isDragging) {
@@ -477,89 +487,102 @@ export const EnhancedInteractiveCanvas: React.FC<EnhancedInteractiveCanvasProps>
         </div>
       )}
 
-      {/* Transform Controls - Mobile Optimized */}
+      {/* Transform Controls - Horizontal Scrollable on Mobile */}
       {selectedLayerId && selectedLayer && (
-        <div className={`absolute bottom-4 left-1/2 -translate-x-1/2 bg-background border rounded-lg shadow-lg p-2 flex items-center gap-1 z-50 ${isMobile ? 'flex-wrap max-w-[90vw]' : ''}`}>
+        <div className={`absolute bottom-4 left-1/2 -translate-x-1/2 bg-background/95 backdrop-blur-sm border rounded-full shadow-lg p-2 z-50 ${
+          isMobile 
+            ? 'flex overflow-x-auto max-w-[90vw] gap-1 scrollbar-hide' 
+            : 'flex items-center gap-1'
+        }`}>
           <Button
-            size={isMobile ? "default" : "sm"}
+            size="icon"
             variant="outline"
             onClick={() => handleRotate(-15)}
-            className={isMobile ? "min-w-[44px] min-h-[44px] flex flex-col gap-1 p-2" : ""}
+            className="min-w-[44px] min-h-[44px] shrink-0 rounded-full"
+            title="Rotate Left"
           >
             <RotateCw className="w-4 h-4 transform scale-x-[-1]" />
-            {isMobile && <span className="text-[10px]">↶</span>}
           </Button>
           <Button
-            size={isMobile ? "default" : "sm"}
+            size="icon"
             variant="outline"
             onClick={() => handleRotate(15)}
-            className={isMobile ? "min-w-[44px] min-h-[44px] flex flex-col gap-1 p-2" : ""}
+            className="min-w-[44px] min-h-[44px] shrink-0 rounded-full"
+            title="Rotate Right"
           >
             <RotateCw className="w-4 h-4" />
-            {isMobile && <span className="text-[10px]">↷</span>}
           </Button>
           <Button
-            size={isMobile ? "default" : "sm"}
+            size="icon"
             variant="outline"
             onClick={() => handleScale(-0.1)}
-            className={isMobile ? "min-w-[44px] min-h-[44px] flex flex-col gap-1 p-2" : ""}
+            className="min-w-[44px] min-h-[44px] shrink-0 rounded-full"
+            title="Zoom Out"
           >
             <ZoomOut className="w-4 h-4" />
-            {isMobile && <span className="text-[10px]">🔍➖</span>}
           </Button>
           <Button
-            size={isMobile ? "default" : "sm"}
+            size="icon"
             variant="outline"
             onClick={() => handleScale(0.1)}
-            className={isMobile ? "min-w-[44px] min-h-[44px] flex flex-col gap-1 p-2" : ""}
+            className="min-w-[44px] min-h-[44px] shrink-0 rounded-full"
+            title="Zoom In"
           >
             <ZoomIn className="w-4 h-4" />
-            {isMobile && <span className="text-[10px]">🔍➕</span>}
           </Button>
           <Button
-            size={isMobile ? "default" : "sm"}
+            size="icon"
             variant="outline"
             onClick={handleToggleVisibility}
-            className={isMobile ? "min-w-[44px] min-h-[44px] flex flex-col gap-1 p-2" : ""}
+            className="min-w-[44px] min-h-[44px] shrink-0 rounded-full"
+            title={selectedLayer.visible ? "Hide" : "Show"}
           >
             {selectedLayer.visible ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-            {isMobile && <span className="text-[10px]">{selectedLayer.visible ? '👁️' : '🙈'}</span>}
           </Button>
           <Button
-            size={isMobile ? "default" : "sm"}
+            size="icon"
             variant="outline"
             onClick={handleBringForward}
-            className={isMobile ? "min-w-[44px] min-h-[44px] flex flex-col gap-1 p-2" : ""}
+            className="min-w-[44px] min-h-[44px] shrink-0 rounded-full"
+            title="Bring Forward"
           >
             <ArrowUp className="w-4 h-4" />
-            {isMobile && <span className="text-[10px]">⬆️</span>}
           </Button>
           <Button
-            size={isMobile ? "default" : "sm"}
+            size="icon"
             variant="outline"
             onClick={handleSendBackward}
-            className={isMobile ? "min-w-[44px] min-h-[44px] flex flex-col gap-1 p-2" : ""}
+            className="min-w-[44px] min-h-[44px] shrink-0 rounded-full"
+            title="Send Backward"
           >
             <ArrowDown className="w-4 h-4" />
-            {isMobile && <span className="text-[10px]">⬇️</span>}
           </Button>
           <Button
-            size={isMobile ? "default" : "sm"}
+            size="icon"
+            variant="outline"
+            onClick={handleFlipH}
+            className="min-w-[44px] min-h-[44px] shrink-0 rounded-full"
+            title="Flip Horizontal"
+          >
+            <FlipHorizontal className="w-4 h-4" />
+          </Button>
+          <Button
+            size="icon"
             variant="outline"
             onClick={handleDuplicate}
-            className={isMobile ? "min-w-[44px] min-h-[44px] flex flex-col gap-1 p-2" : ""}
+            className="min-w-[44px] min-h-[44px] shrink-0 rounded-full"
+            title="Duplicate"
           >
             <Copy className="w-4 h-4" />
-            {isMobile && <span className="text-[10px]">📋</span>}
           </Button>
           <Button
-            size={isMobile ? "default" : "sm"}
+            size="icon"
             variant="destructive"
             onClick={handleDelete}
-            className={isMobile ? "min-w-[44px] min-h-[44px] flex flex-col gap-1 p-2" : ""}
+            className="min-w-[44px] min-h-[44px] shrink-0 rounded-full"
+            title="Delete"
           >
             <Trash2 className="w-4 h-4" />
-            {isMobile && <span className="text-[10px]">🗑️</span>}
           </Button>
         </div>
       )}

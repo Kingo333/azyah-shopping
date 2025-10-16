@@ -52,6 +52,8 @@ import { DebugHealthPage } from './components/DebugHealthPage';
 // Onboarding pages
 import IntroCarousel from './pages/onboarding/IntroCarousel';
 import SignUp from './pages/onboarding/SignUp';
+import ResetPasswordRequest from './pages/ResetPasswordRequest';
+import ResetPassword from './pages/ResetPassword';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -84,6 +86,8 @@ function AppContent() {
                   {/* Onboarding routes */}
                   <Route path="/onboarding/intro" element={<IntroCarousel />} />
                   <Route path="/onboarding/signup" element={<SignUp />} />
+                  <Route path="/reset-password-request" element={<ResetPasswordRequest />} />
+                  <Route path="/reset-password" element={<ResetPassword />} />
                   
                   <Route path="/profile/:userId" element={
                     <ProtectedRoute>

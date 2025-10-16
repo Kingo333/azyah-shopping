@@ -39,7 +39,7 @@ export default function DressMeCanvas() {
   const [fitTitle, setFitTitle] = useState('');
   const [isPublic, setIsPublic] = useState(false);
 
-  // Load selected items or fit on mount
+  // Load selected items or fit on mount - DON'T auto-load from autosave
   useEffect(() => {
     const selectedItemsStr = sessionStorage.getItem('dressme_selected_items');
     const loadFitId = sessionStorage.getItem('dressme_load_fit');
@@ -74,22 +74,8 @@ export default function DressMeCanvas() {
       } catch (e) {
         console.error('Failed to load selected items:', e);
       }
-    } else {
-      // Try to load autosave
-      const autosaved = localStorage.getItem('dressme_autosave');
-      if (autosaved) {
-        try {
-          const { layers: savedLayers, background: savedBg } = JSON.parse(autosaved);
-          if (savedLayers && savedLayers.length > 0) {
-            setLayers(savedLayers);
-            setBackground(savedBg || background);
-            toast.info('Recovered unsaved work');
-          }
-        } catch (e) {
-          console.error('Failed to load autosave:', e);
-        }
-      }
     }
+    // Removed auto-load from autosave - canvas starts empty
   }, [allItems]);
 
   // Autosave to localStorage
