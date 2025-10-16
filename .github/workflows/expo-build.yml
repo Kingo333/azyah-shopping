@@ -1,0 +1,27 @@
+name: Expo EAS Build
+
+on:
+  push:
+    branches:
+      - main   # change if your main branch has a different name (e.g., production)
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: npm install -g eas-cli
+
+      - name: Login to Expo
+        run: eas whoami || eas login --token ${{ secrets.EXPO_TOKEN }}
+
+      - name: Run iOS build
+        run: eas build -p ios --non-interactive --profile production
