@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save, Palette, Plus, Smile, Droplet } from 'lucide-react';
+import { ArrowLeft, Save, Palette, Plus, Smile, Droplet, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { EnhancedInteractiveCanvas, CanvasLayer } from '@/components/EnhancedInteractiveCanvas';
 import { BackgroundPicker } from '@/components/BackgroundPicker';
@@ -27,6 +27,7 @@ export default function DressMeCanvas() {
   const analytics = useDressMeAnalytics();
 
   const [layers, setLayers] = useState<CanvasLayer[]>([]);
+  const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
   const [background, setBackground] = useState<{ type: 'solid' | 'gradient' | 'pattern' | 'image'; value: string }>({ 
     type: 'solid', 
     value: '#FFFFFF' 
@@ -267,6 +268,8 @@ export default function DressMeCanvas() {
             layers={layers}
             onLayersChange={setLayers}
             background={background}
+            selectedLayerId={selectedLayerId}
+            onSelectedLayerIdChange={setSelectedLayerId}
           />
         </div>
       </div>
@@ -282,21 +285,43 @@ export default function DressMeCanvas() {
       <Sheet open={isWardrobeSheetOpen} onOpenChange={setIsWardrobeSheetOpen}>
         <SheetContent side="bottom" className="h-[80vh]">
           <SheetHeader>
-            <SheetTitle>Add Clothes</SheetTitle>
+            <div className="flex items-center justify-between gap-2">
+              <SheetTitle>All Items</SheetTitle>
+              <div className="flex items-center gap-2">
+                <Button
+                  onClick={() => setSelectedLayerId(null)}
+                  variant="outline"
+                  size="sm"
+                >
+                  Select
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setIsWardrobeSheetOpen(false);
+                    setIsUploadModalOpen(true);
+                  }}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Layer
+                </Button>
+                {selectedLayerId && (
+                  <Button
+                    onClick={() => {
+                      setLayers(layers.filter(l => l.id !== selectedLayerId));
+                      setSelectedLayerId(null);
+                    }}
+                    variant="destructive"
+                    size="sm"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                )}
+              </div>
+            </div>
           </SheetHeader>
           <div className="mt-4 space-y-4 overflow-y-auto h-[calc(100%-60px)]">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setIsWardrobeSheetOpen(false);
-                setIsUploadModalOpen(true);
-              }}
-              className="w-full"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Upload New Item
-            </Button>
             <WardrobeThumbnailRail
               items={allItems}
               onSelectItem={handleAddItemToCanvas}

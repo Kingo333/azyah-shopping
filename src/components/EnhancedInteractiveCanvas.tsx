@@ -31,16 +31,23 @@ interface EnhancedInteractiveCanvasProps {
     type: 'solid' | 'gradient' | 'pattern' | 'image';
     value: string;
   };
+  selectedLayerId?: string | null;
+  onSelectedLayerIdChange?: (id: string | null) => void;
 }
 
 export const EnhancedInteractiveCanvas: React.FC<EnhancedInteractiveCanvasProps> = ({
   layers,
   onLayersChange,
   background,
+  selectedLayerId: externalSelectedLayerId,
+  onSelectedLayerIdChange,
 }) => {
   const canvasRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
-  const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
+  const [internalSelectedLayerId, setInternalSelectedLayerId] = useState<string | null>(null);
+  
+  const selectedLayerId = externalSelectedLayerId !== undefined ? externalSelectedLayerId : internalSelectedLayerId;
+  const setSelectedLayerId = onSelectedLayerIdChange || setInternalSelectedLayerId;
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [initialLayerPos, setInitialLayerPos] = useState({ x: 0, y: 0 });
@@ -489,100 +496,98 @@ export const EnhancedInteractiveCanvas: React.FC<EnhancedInteractiveCanvasProps>
 
       {/* Transform Controls - Horizontal Scrollable on Mobile */}
       {selectedLayerId && selectedLayer && (
-        <div className={`absolute bottom-4 left-1/2 -translate-x-1/2 bg-background/95 backdrop-blur-sm border rounded-full shadow-lg p-2 z-50 ${
-          isMobile 
-            ? 'flex overflow-x-auto max-w-[90vw] gap-1 scrollbar-hide' 
-            : 'flex items-center gap-1'
+        <div className={`absolute bottom-4 left-1/2 -translate-x-1/2 bg-background/95 backdrop-blur-sm border rounded-full shadow-lg p-1.5 z-50 flex items-center gap-0.5 ${
+          isMobile ? 'max-w-[95vw]' : ''
         }`}>
           <Button
             size="icon"
             variant="outline"
             onClick={() => handleRotate(-15)}
-            className="min-w-[44px] min-h-[44px] shrink-0 rounded-full"
+            className="w-8 h-8 shrink-0 rounded-full p-0"
             title="Rotate Left"
           >
-            <RotateCw className="w-4 h-4 transform scale-x-[-1]" />
+            <RotateCw className="w-3.5 h-3.5 transform scale-x-[-1]" />
           </Button>
           <Button
             size="icon"
             variant="outline"
             onClick={() => handleRotate(15)}
-            className="min-w-[44px] min-h-[44px] shrink-0 rounded-full"
+            className="w-8 h-8 shrink-0 rounded-full p-0"
             title="Rotate Right"
           >
-            <RotateCw className="w-4 h-4" />
+            <RotateCw className="w-3.5 h-3.5" />
           </Button>
           <Button
             size="icon"
             variant="outline"
             onClick={() => handleScale(-0.1)}
-            className="min-w-[44px] min-h-[44px] shrink-0 rounded-full"
+            className="w-8 h-8 shrink-0 rounded-full p-0"
             title="Zoom Out"
           >
-            <ZoomOut className="w-4 h-4" />
+            <ZoomOut className="w-3.5 h-3.5" />
           </Button>
           <Button
             size="icon"
             variant="outline"
             onClick={() => handleScale(0.1)}
-            className="min-w-[44px] min-h-[44px] shrink-0 rounded-full"
+            className="w-8 h-8 shrink-0 rounded-full p-0"
             title="Zoom In"
           >
-            <ZoomIn className="w-4 h-4" />
+            <ZoomIn className="w-3.5 h-3.5" />
           </Button>
           <Button
             size="icon"
             variant="outline"
             onClick={handleToggleVisibility}
-            className="min-w-[44px] min-h-[44px] shrink-0 rounded-full"
+            className="w-8 h-8 shrink-0 rounded-full p-0"
             title={selectedLayer.visible ? "Hide" : "Show"}
           >
-            {selectedLayer.visible ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+            {selectedLayer.visible ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
           </Button>
           <Button
             size="icon"
             variant="outline"
             onClick={handleBringForward}
-            className="min-w-[44px] min-h-[44px] shrink-0 rounded-full"
+            className="w-8 h-8 shrink-0 rounded-full p-0"
             title="Bring Forward"
           >
-            <ArrowUp className="w-4 h-4" />
+            <ArrowUp className="w-3.5 h-3.5" />
           </Button>
           <Button
             size="icon"
             variant="outline"
             onClick={handleSendBackward}
-            className="min-w-[44px] min-h-[44px] shrink-0 rounded-full"
+            className="w-8 h-8 shrink-0 rounded-full p-0"
             title="Send Backward"
           >
-            <ArrowDown className="w-4 h-4" />
+            <ArrowDown className="w-3.5 h-3.5" />
           </Button>
           <Button
             size="icon"
             variant="outline"
             onClick={handleFlipH}
-            className="min-w-[44px] min-h-[44px] shrink-0 rounded-full"
+            className="w-8 h-8 shrink-0 rounded-full p-0"
             title="Flip Horizontal"
           >
-            <FlipHorizontal className="w-4 h-4" />
+            <FlipHorizontal className="w-3.5 h-3.5" />
           </Button>
           <Button
             size="icon"
             variant="outline"
             onClick={handleDuplicate}
-            className="min-w-[44px] min-h-[44px] shrink-0 rounded-full"
+            className="w-8 h-8 shrink-0 rounded-full p-0"
             title="Duplicate"
           >
-            <Copy className="w-4 h-4" />
+            <Copy className="w-3.5 h-3.5" />
           </Button>
           <Button
             size="icon"
             variant="destructive"
             onClick={handleDelete}
-            className="min-w-[44px] min-h-[44px] shrink-0 rounded-full"
+            className="w-8 h-8 shrink-0 rounded-full p-0"
             title="Delete"
           >
-            <Trash2 className="w-4 h-4" />
+            <Trash2 className="w-3.5 h-3.5" />
           </Button>
         </div>
       )}
