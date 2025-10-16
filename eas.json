@@ -1,0 +1,20 @@
+{
+  "cli": {
+    "version": ">= 3.13.0"
+  },
+  "build": {
+    "production": {
+      "developmentClient": false,
+      "distribution": "store",
+      "ios": {
+        "simulator": false
+      },
+      "android": {
+        "buildType": "apk"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}
