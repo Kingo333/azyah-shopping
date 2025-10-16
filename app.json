@@ -1,5 +1,16 @@
 {
   "expo": {
+    "name": "Azyah Style",
+    "slug": "azyah-style",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "platforms": ["ios", "android", "web"],
+    "ios": {
+      "bundleIdentifier": "com.azyah.style"
+    },
+    "android": {
+      "package": "com.azyah.style"
+    },
     "extra": {
       "eas": {
         "projectId": "dce00b54-92bd-4043-b11a-7d86f832213f"
