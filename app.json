@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Azyah Style",
-    "slug": "azyah-style",
+    "slug": "vite_react_shadcn_ts",
     "version": "1.0.0",
     "orientation": "portrait",
     "platforms": ["ios", "android", "web"],
