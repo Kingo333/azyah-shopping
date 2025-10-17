@@ -4,12 +4,13 @@ import { cn } from '@/lib/utils';
 
 const categories = [
   { value: 'all', label: 'All' },
-  { value: 'tops', label: 'Tops' },
-  { value: 'bottoms', label: 'Bottoms' },
-  { value: 'shoes', label: 'Shoes' },
+  { value: 'top', label: 'Tops' },
+  { value: 'bottom', label: 'Bottoms' },
+  { value: 'dress', label: 'Dresses' },
   { value: 'outerwear', label: 'Outerwear' },
-  { value: 'full_body', label: 'Full Body' },
-  { value: 'accessories', label: 'Accessories' },
+  { value: 'shoes', label: 'Shoes' },
+  { value: 'bag', label: 'Bags' },
+  { value: 'accessory', label: 'Accessories' },
 ];
 
 interface CategoryFilterChipsProps {
