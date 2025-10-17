@@ -16,6 +16,8 @@ import { Card } from '@/components/ui/card';
 import { usePublicFits } from '@/hooks/useFits';
 import { OutfitPreviewCard } from '@/components/OutfitPreviewCard';
 import { useDressMeAnalytics } from '@/hooks/useDressMeAnalytics';
+import { CommunityOutfits } from './CommunityOutfits';
+import { CommunityClothes } from './CommunityClothes';
 
 export default function DressMeWardrobe() {
   const navigate = useNavigate();
@@ -29,9 +31,10 @@ export default function DressMeWardrobe() {
   const analytics = useDressMeAnalytics();
 
   // Get initial state from URL params
-  const [activeTab, setActiveTab] = useState<'clothes' | 'outfits'>(
-    (searchParams.get('tab') as 'clothes' | 'outfits') || 'clothes'
+  const [activeTab, setActiveTab] = useState<'clothes' | 'outfits' | 'community'>(
+    (searchParams.get('tab') as 'clothes' | 'outfits' | 'community') || 'clothes'
   );
+  const [communitySubTab, setCommunitySubTab] = useState<'outfits' | 'clothes'>('outfits');
   const [selectedCategory, setSelectedCategory] = useState(
     searchParams.get('category') || 'all'
   );
@@ -194,12 +197,15 @@ export default function DressMeWardrobe() {
           </div>
 
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
-            <TabsList className="w-full grid grid-cols-2">
+            <TabsList className="w-full grid grid-cols-3">
               <TabsTrigger value="clothes" className="text-sm md:text-base">
                 Clothes
               </TabsTrigger>
               <TabsTrigger value="outfits" className="text-sm md:text-base">
                 Outfits
+              </TabsTrigger>
+              <TabsTrigger value="community" className="text-sm md:text-base">
+                Community
               </TabsTrigger>
             </TabsList>
           </Tabs>
@@ -316,6 +322,23 @@ export default function DressMeWardrobe() {
                   ))}
                 </div>
               )}
+            </TabsContent>
+
+            <TabsContent value="community" className="mt-4 space-y-4">
+              <Tabs value={communitySubTab} onValueChange={(v) => setCommunitySubTab(v as any)} className="w-full">
+                <TabsList className="w-full grid grid-cols-2">
+                  <TabsTrigger value="outfits">Outfits</TabsTrigger>
+                  <TabsTrigger value="clothes">Clothes</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="outfits" className="mt-6">
+                  <CommunityOutfits />
+                </TabsContent>
+
+                <TabsContent value="clothes" className="mt-6">
+                  <CommunityClothes />
+                </TabsContent>
+              </Tabs>
             </TabsContent>
           </Tabs>
         </div>
