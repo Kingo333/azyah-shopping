@@ -1046,6 +1046,41 @@ export type Database = {
           },
         ]
       }
+      fit_comments: {
+        Row: {
+          comment_text: string
+          created_at: string
+          fit_id: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          comment_text: string
+          created_at?: string
+          fit_id: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          comment_text?: string
+          created_at?: string
+          fit_id?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fit_comments_fit_id_fkey"
+            columns: ["fit_id"]
+            isOneToOne: false
+            referencedRelation: "fits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fit_items: {
         Row: {
           fit_id: string
@@ -1085,6 +1120,7 @@ export type Database = {
       fits: {
         Row: {
           canvas_json: Json
+          comment_count: number
           created_at: string
           id: string
           image_preview: string | null
@@ -1099,6 +1135,7 @@ export type Database = {
         }
         Insert: {
           canvas_json?: Json
+          comment_count?: number
           created_at?: string
           id?: string
           image_preview?: string | null
@@ -1113,6 +1150,7 @@ export type Database = {
         }
         Update: {
           canvas_json?: Json
+          comment_count?: number
           created_at?: string
           id?: string
           image_preview?: string | null
@@ -2723,6 +2761,7 @@ export type Database = {
           image_bg_removed_url: string | null
           image_url: string
           is_favorite: boolean | null
+          name: string | null
           public_reuse_permitted: boolean | null
           season: string | null
           source: string | null
@@ -2740,6 +2779,7 @@ export type Database = {
           image_bg_removed_url?: string | null
           image_url: string
           is_favorite?: boolean | null
+          name?: string | null
           public_reuse_permitted?: boolean | null
           season?: string | null
           source?: string | null
@@ -2757,6 +2797,7 @@ export type Database = {
           image_bg_removed_url?: string | null
           image_url?: string
           is_favorite?: boolean | null
+          name?: string | null
           public_reuse_permitted?: boolean | null
           season?: string | null
           source?: string | null

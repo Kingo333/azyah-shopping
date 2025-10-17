@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Heart, Search, Camera, ArrowLeft, type LucideIcon } from 'lucide-react';
+import { Heart, Search, Camera, ArrowLeft, Users, type LucideIcon } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 type Tab = {
   id: string;
@@ -27,6 +27,11 @@ const ShopperNavigation: React.FC = () => {
     label: 'Explore',
     icon: Search,
     path: '/explore'
+  }, {
+    id: 'community',
+    label: 'Community',
+    icon: Users,
+    path: '/community'
   }, {
     id: 'fashion-feed',
     label: 'Feed',
