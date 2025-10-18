@@ -357,7 +357,12 @@ const Events = () => {
         if (error) throw error;
       }
       
-      await fetchTryOnResults();
+      // Immediately remove from state instead of refetching
+      setTryOnResults(prev => {
+        const updated = { ...prev };
+        delete updated[productId];
+        return updated;
+      });
       
       toast({
         title: "Result deleted",
