@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAiAssets } from '@/hooks/useAiAssets';
 import { runTryOn } from '@/lib/tryon';
+import { shouldShowNotification, markNotified } from '@/utils/tryonNotifications';
 
 interface EventProduct {
   id: string;
@@ -298,11 +299,14 @@ const EventTryOnModal: React.FC<EventTryOnModalProps> = ({
             );
             
             if (!hasNotified) {
-              hasNotified = true;
-              toast({
-                title: 'Try-on complete! ✨',
-                description: 'Your virtual try-on is ready'
-              });
+              if (shouldShowNotification(result.jobId)) {
+                hasNotified = true;
+                markNotified(result.jobId);
+                toast({
+                  title: 'Try-on complete! ✨',
+                  description: 'Your virtual try-on is ready'
+                });
+              }
             }
           } else if (job.status === 'failed') {
             clearInterval(pollInterval);
