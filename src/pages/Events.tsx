@@ -11,6 +11,7 @@ import EventTryOnModal from '@/components/EventTryOnModal';
 import { useToast } from '@/hooks/use-toast';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { shouldShowNotification, markNotified } from '@/utils/tryonNotifications';
 interface RetailEvent {
   id: string;
   name: string;
@@ -98,12 +99,16 @@ const Events = () => {
       filter: `user_id=eq.${user.id}`
     }, payload => {
       const job = payload.new as any;
+      
       if (job.status === 'succeeded' && job.output_path) {
         fetchTryOnResults();
-        toast({
-          title: "Try-on complete! ✨",
-          description: "Your virtual try-on result is ready"
-        });
+        if (shouldShowNotification(job.id)) {
+          markNotified(job.id);
+          toast({
+            title: "Try-on complete! ✨",
+            description: "Your virtual try-on result is ready"
+          });
+        }
       } else if (job.status === 'failed') {
         fetchTryOnResults();
 
@@ -315,6 +320,59 @@ const Events = () => {
       console.error('Error fetching photo:', error);
     }
   };
+  const handleDeleteResult = async (productId: string) => {
+    if (!user?.id || !selectedEvent?.id) return;
+    
+    const result = tryOnResults[productId];
+    if (!result) return;
+    
+    try {
+      // Delete from storage
+      if (result.output_path) {
+        const { error: storageError } = await supabase.storage
+          .from('event-tryon-results')
+          .remove([result.output_path]);
+        
+        if (storageError) {
+          console.error('Storage delete error:', storageError);
+        }
+      }
+      
+      // Delete from database - find the job ID first
+      const { data: jobs } = await supabase
+        .from('event_tryon_jobs')
+        .select('id')
+        .eq('event_id', selectedEvent.id)
+        .eq('user_id', user.id)
+        .eq('product_id', productId)
+        .order('created_at', { ascending: false })
+        .limit(1);
+      
+      if (jobs && jobs.length > 0) {
+        const { error } = await supabase
+          .from('event_tryon_jobs')
+          .delete()
+          .eq('id', jobs[0].id);
+        
+        if (error) throw error;
+      }
+      
+      await fetchTryOnResults();
+      
+      toast({
+        title: "Result deleted",
+        description: "Try-on result has been removed"
+      });
+    } catch (error) {
+      console.error('Delete error:', error);
+      toast({
+        title: "Delete failed",
+        description: error instanceof Error ? error.message : "Failed to delete result",
+        variant: "destructive"
+      });
+    }
+  };
+
   const scrollBrandProducts = (brandId: string, direction: 'left' | 'right') => {
     const container = document.getElementById(`brand-products-${brandId}`);
     if (!container) return;
@@ -413,6 +471,21 @@ const Events = () => {
                             <Badge className="absolute top-1.5 left-1.5 z-10 bg-green-500 text-white text-xs px-1.5 py-0.5">
                               ✨
                             </Badge>
+                            
+                            <Button
+                              variant="destructive"
+                              size="icon"
+                              className="absolute top-1.5 right-1.5 z-10 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (confirm('Delete this try-on result?')) {
+                                  handleDeleteResult(productId);
+                                }
+                              }}
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                            
                             <img src={supabase.storage.from('event-tryon-results').getPublicUrl(result.output_path).data.publicUrl} alt="Try-on result" className="w-full h-full object-cover" />
                           </div>
                           <CardContent className="p-2">
