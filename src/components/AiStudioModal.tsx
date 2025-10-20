@@ -8,6 +8,8 @@ import { BITSTUDIO_IMAGE_TYPES } from '@/lib/bitstudio-types';
 import { useToast } from '@/hooks/use-toast';
 import { useAiAssets } from '@/hooks/useAiAssets';
 import { useSubscription } from '@/hooks/useSubscription';
+import { useUserCredits } from '@/hooks/useUserCredits';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface AiStudioModalProps {
   open: boolean;
@@ -47,21 +49,13 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
   const { toast } = useToast();
   const { assets, loading: assetsLoading, fetchAssets, saveAsset, deleteAssets } = useAiAssets();
   const { isPremium, createPaymentIntent } = useSubscription();
+  const { credits, loading: creditsLoading, refetch: refetchCredits } = useUserCredits();
 
   // Generation limits based on user type
   const maxGenerations = isPremium ? 20 : 4;
   
-  // For premium users, count today's generations; for free users, count all lifetime generations
-  const relevantAssets = isPremium 
-    ? assets.filter(asset => {
-        const assetDate = new Date(asset.created_at);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        return assetDate >= today;
-      })
-    : assets;
-    
-  const remainingGenerations = maxGenerations - relevantAssets.length;
+  // Use credits from user_credits table
+  const remainingGenerations = credits?.credits_remaining ?? 0;
   const canUpload = personImageId && outfitImageId && !loading && remainingGenerations > 0;
 
   useEffect(() => {
@@ -153,6 +147,19 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
         if (result.path) {
           const savedAsset = await saveAsset(result.path, result.id, `Virtual Try-On ${new Date().toLocaleDateString()}`);
           if (savedAsset) {
+            // Deduct a credit from the database
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user && credits) {
+              const newCreditsRemaining = Math.max(0, credits.credits_remaining - 1);
+              await supabase
+                .from('user_credits')
+                .update({ credits_remaining: newCreditsRemaining })
+                .eq('user_id', user.id);
+              
+              // Refetch to update UI
+              await refetchCredits();
+            }
+            
             toast({
               title: 'Try-On Complete',
               description: 'Result saved successfully',
