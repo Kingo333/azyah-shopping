@@ -13,7 +13,7 @@ import { useWardrobeLayers, useAddWardrobeLayer, useUpdateWardrobeLayer, useDele
 import { SEOHead } from '@/components/SEOHead';
 import { BackButton } from '@/components/ui/back-button';
 import { Card } from '@/components/ui/card';
-import { usePublicFits } from '@/hooks/useFits';
+import { useFits, usePublicFits } from '@/hooks/useFits';
 import { OutfitPreviewCard } from '@/components/OutfitPreviewCard';
 import { useDressMeAnalytics } from '@/hooks/useDressMeAnalytics';
 import { CommunityOutfits } from './CommunityOutfits';
@@ -23,7 +23,7 @@ export default function DressMeWardrobe() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { data: allItems = [], isLoading } = useWardrobeItems();
-  const { data: userFits = [] } = usePublicFits();
+  const { data: userFits = [] } = useFits();
   const { data: layers = [], isLoading: layersLoading } = useWardrobeLayers();
   const addLayerMutation = useAddWardrobeLayer();
   const updateLayerMutation = useUpdateWardrobeLayer();
