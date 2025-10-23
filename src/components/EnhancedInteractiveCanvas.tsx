@@ -317,7 +317,11 @@ export const EnhancedInteractiveCanvas: React.FC<EnhancedInteractiveCanvasProps>
 
         // Calculate snap guides
         if (showSnapGuides) {
-          const canvasCenter = { x: 400, y: 300 };
+          const rect = canvasRef.current?.getBoundingClientRect();
+          const canvasCenter = { 
+            x: (rect?.width || 800) / 2, 
+            y: (rect?.height || 600) / 2 
+          };
           const snapThreshold = 10;
           const newSnapLines: { x?: number; y?: number } = {};
 

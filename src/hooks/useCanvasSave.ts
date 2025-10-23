@@ -97,6 +97,17 @@ export const useCanvasSave = (): UseCanvasSaveResult => {
       const imageMap = new Map<string, HTMLImageElement>();
       loaded.forEach(({ id, image }) => imageMap.set(id, image));
 
+      // Get visual canvas dimensions to calculate scale
+      const canvasElement = document.querySelector('[class*="aspect-\\[9\\/16\\]"]') as HTMLElement;
+      const visualWidth = canvasElement?.clientWidth || CANVAS_WIDTH;
+      const visualHeight = canvasElement?.clientHeight || CANVAS_HEIGHT;
+
+      // Calculate scale factors from visual canvas to save canvas
+      const scaleX = CANVAS_WIDTH / visualWidth;
+      const scaleY = CANVAS_HEIGHT / visualHeight;
+
+      console.log(`📐 Visual canvas: ${visualWidth}x${visualHeight}, Save canvas: ${CANVAS_WIDTH}x${CANVAS_HEIGHT}, Scale: ${scaleX.toFixed(2)}x${scaleY.toFixed(2)}`);
+
       const canvasImageBase64 = await renderCanvasToBase64(
         params.layers
           .filter(l => l.visible && imageMap.has(l.id))
@@ -104,7 +115,10 @@ export const useCanvasSave = (): UseCanvasSaveResult => {
             id: l.id,
             imageUrl: '', // Not used anymore
             preloadedImage: imageMap.get(l.id)!,
-            position: { x: l.transform.x || 0, y: l.transform.y || 0 },
+            position: { 
+              x: (l.transform.x || 0) * scaleX, 
+              y: (l.transform.y || 0) * scaleY 
+            },
             scale: l.transform.scale || 1,
             rotation: l.transform.rotation || 0,
             flippedH: l.flipH,
