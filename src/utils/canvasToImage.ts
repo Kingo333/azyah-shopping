@@ -55,16 +55,18 @@ export async function renderCanvasToBase64(
     .filter(l => l.visible)
     .sort((a, b) => a.zIndex - b.zIndex);
 
+  console.log(`🎨 Rendering ${sortedLayers.length} layers to canvas`);
+
   // Load and render each layer sequentially for proper z-index ordering
   for (const layer of sortedLayers) {
     try {
       const img = new Image();
-      img.crossOrigin = 'anonymous';
+      // Removed crossOrigin to fix CORS issues with Supabase storage
       
       await new Promise<void>((resolve, reject) => {
         img.onload = () => resolve();
         img.onerror = (e) => {
-          console.warn(`Failed to load image for layer ${layer.id}:`, layer.imageUrl, e);
+          console.warn(`❌ Failed to load image for layer ${layer.id}:`, layer.imageUrl, e);
           resolve(); // Continue instead of rejecting
         };
         img.src = layer.imageUrl;
@@ -72,6 +74,7 @@ export async function renderCanvasToBase64(
 
       // Only draw if image loaded successfully
       if (img.complete && img.naturalWidth > 0) {
+        console.log(`✅ Layer ${layer.id}: Image loaded successfully (${img.naturalWidth}x${img.naturalHeight})`);
         ctx.save();
         
         // Move to layer position
@@ -100,5 +103,7 @@ export async function renderCanvasToBase64(
   }
 
   // Convert to base64
-  return canvas.toDataURL('image/jpeg', 0.9);
+  const base64Result = canvas.toDataURL('image/jpeg', 0.9);
+  console.log(`📸 Canvas rendered: ${base64Result.length} bytes, starts with: ${base64Result.substring(0, 50)}`);
+  return base64Result;
 }

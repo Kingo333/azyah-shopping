@@ -197,16 +197,26 @@ export default function DressMeCanvas() {
           zIndex: l.zIndex,
         })),
         background,
-        800,
-        800
+        600,
+        600
       );
 
-      // Validate base64 image
-      if (!canvasImageBase64 || !canvasImageBase64.startsWith('data:image')) {
-        throw new Error('Failed to generate outfit preview image');
+      // Validate base64 image with detailed checks
+      if (!canvasImageBase64) {
+        throw new Error('Canvas rendering returned empty result');
       }
 
-      console.log('Canvas rendered successfully, base64 length:', canvasImageBase64.length);
+      if (!canvasImageBase64.startsWith('data:image')) {
+        console.error('Invalid base64 format:', canvasImageBase64.substring(0, 100));
+        throw new Error('Failed to generate valid outfit preview image');
+      }
+
+      if (canvasImageBase64.length < 1000) {
+        console.error('Base64 too small, likely empty canvas:', canvasImageBase64.length);
+        throw new Error('Canvas appears to be empty. Make sure items are visible.');
+      }
+
+      console.log('✅ Canvas rendered successfully, base64 length:', canvasImageBase64.length);
 
       const result = await saveFit.mutateAsync({
         title: fitTitle || undefined,
