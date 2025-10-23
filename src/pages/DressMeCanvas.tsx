@@ -20,6 +20,7 @@ import { renderCanvasToBase64 } from '@/utils/canvasToImage';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { WardrobeThumbnailRail } from '@/components/WardrobeThumbnailRail';
 import { supabase } from '@/integrations/supabase/client';
+import { displaySrc } from '@/lib/displaySrc';
 
 export default function DressMeCanvas() {
   const navigate = useNavigate();
@@ -187,7 +188,7 @@ export default function DressMeCanvas() {
       const canvasImageBase64 = await renderCanvasToBase64(
         layers.map(l => ({
           id: l.id,
-          imageUrl: l.wardrobeItem.image_bg_removed_url || l.wardrobeItem.image_url,
+          imageUrl: displaySrc(l.wardrobeItem.image_bg_removed_url || l.wardrobeItem.image_url),
           position: { x: l.transform.x || 0, y: l.transform.y || 0 },
           scale: l.transform.scale || 1,
           rotation: l.transform.rotation || 0,

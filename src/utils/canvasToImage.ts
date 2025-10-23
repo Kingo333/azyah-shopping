@@ -59,12 +59,14 @@ export async function renderCanvasToBase64(
   for (const layer of sortedLayers) {
     try {
       const img = new Image();
-      img.crossOrigin = 'anonymous';
       
       await new Promise<void>((resolve, reject) => {
-        img.onload = () => resolve();
+        img.onload = () => {
+          console.log(`Layer ${layer.id}: Image loaded (${img.width}x${img.height})`);
+          resolve();
+        };
         img.onerror = (e) => {
-          console.warn(`Failed to load image for layer ${layer.id}:`, layer.imageUrl, e);
+          console.warn(`Layer ${layer.id}: Failed to load image - ${layer.imageUrl}`, e);
           resolve(); // Continue instead of rejecting
         };
         img.src = layer.imageUrl;
