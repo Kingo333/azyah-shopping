@@ -201,6 +201,13 @@ export default function DressMeCanvas() {
         800
       );
 
+      // Validate base64 image
+      if (!canvasImageBase64 || !canvasImageBase64.startsWith('data:image')) {
+        throw new Error('Failed to generate outfit preview image');
+      }
+
+      console.log('Canvas rendered successfully, base64 length:', canvasImageBase64.length);
+
       const result = await saveFit.mutateAsync({
         title: fitTitle || undefined,
         occasion: fitOccasion,

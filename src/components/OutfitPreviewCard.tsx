@@ -26,17 +26,29 @@ export const OutfitPreviewCard: React.FC<OutfitPreviewCardProps> = ({
             alt={fit.title || 'Outfit'}
             className="w-full h-full object-cover"
             loading="lazy"
+            onError={(e) => {
+              console.error('Failed to load outfit image:', fit.id);
+              e.currentTarget.style.display = 'none';
+              const parent = e.currentTarget.parentElement;
+              if (parent) {
+                parent.innerHTML = '<div class="w-full h-full flex items-center justify-center text-muted-foreground">Image failed to load</div>';
+              }
+            }}
           />
-        ) : fit.render_path ? (
+        ) : fit.render_path && fit.render_path !== 'placeholder.png' ? (
           <img
             src={fit.render_path}
             alt={fit.title || 'Outfit'}
             className="w-full h-full object-cover"
             loading="lazy"
+            onError={(e) => {
+              console.error('Failed to load render path:', fit.id);
+              e.currentTarget.style.display = 'none';
+            }}
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-            No preview
+            No preview available
           </div>
         )}
       </div>

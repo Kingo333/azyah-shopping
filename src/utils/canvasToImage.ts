@@ -55,40 +55,49 @@ export async function renderCanvasToBase64(
     .filter(l => l.visible)
     .sort((a, b) => a.zIndex - b.zIndex);
 
-  // Load and render each layer
-  await Promise.all(
-    sortedLayers.map(async (layer) => {
+  // Load and render each layer sequentially for proper z-index ordering
+  for (const layer of sortedLayers) {
+    try {
       const img = new Image();
       img.crossOrigin = 'anonymous';
       
-      await new Promise((resolve, reject) => {
-        img.onload = resolve;
-        img.onerror = reject;
+      await new Promise<void>((resolve, reject) => {
+        img.onload = () => resolve();
+        img.onerror = (e) => {
+          console.warn(`Failed to load image for layer ${layer.id}:`, layer.imageUrl, e);
+          resolve(); // Continue instead of rejecting
+        };
         img.src = layer.imageUrl;
       });
 
-      ctx.save();
-      
-      // Move to layer position
-      ctx.translate(layer.position.x, layer.position.y);
-      
-      // Apply rotation
-      ctx.rotate((layer.rotation * Math.PI) / 180);
-      
-      // Apply scale and flip
-      const scaleX = layer.scale * (layer.flippedH ? -1 : 1);
-      const scaleY = layer.scale;
-      ctx.scale(scaleX, scaleY);
-      
-      // Apply opacity
-      ctx.globalAlpha = layer.opacity;
-      
-      // Draw image centered at current position
-      ctx.drawImage(img, -img.width / 2, -img.height / 2);
-      
-      ctx.restore();
-    })
-  );
+      // Only draw if image loaded successfully
+      if (img.complete && img.naturalWidth > 0) {
+        ctx.save();
+        
+        // Move to layer position
+        ctx.translate(layer.position.x, layer.position.y);
+        
+        // Apply rotation
+        ctx.rotate((layer.rotation * Math.PI) / 180);
+        
+        // Apply scale and flip
+        const scaleX = layer.scale * (layer.flippedH ? -1 : 1);
+        const scaleY = layer.scale;
+        ctx.scale(scaleX, scaleY);
+        
+        // Apply opacity
+        ctx.globalAlpha = layer.opacity;
+        
+        // Draw image centered at current position
+        ctx.drawImage(img, -img.width / 2, -img.height / 2);
+        
+        ctx.restore();
+      }
+    } catch (error) {
+      console.error(`Error rendering layer ${layer.id}:`, error);
+      // Continue to next layer
+    }
+  }
 
   // Convert to base64
   return canvas.toDataURL('image/jpeg', 0.9);
