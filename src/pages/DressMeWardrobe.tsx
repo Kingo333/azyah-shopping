@@ -41,6 +41,7 @@ export default function DressMeWardrobe() {
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [uploadCategory, setUploadCategory] = useState<string | undefined>();
+  const [selectedOccasion, setSelectedOccasion] = useState<string>('All');
 
   // Update URL params when tab or category changes
   useEffect(() => {
@@ -291,9 +292,10 @@ export default function DressMeWardrobe() {
                 {['All', 'Work', 'Casual', 'Home', 'School', 'Date'].map((occasion) => (
                   <Button
                     key={occasion}
-                    variant={occasion === 'All' ? 'default' : 'outline'}
+                    variant={selectedOccasion === occasion ? 'default' : 'outline'}
                     size="sm"
                     className="shrink-0 rounded-full"
+                    onClick={() => setSelectedOccasion(occasion)}
                   >
                     {occasion}
                   </Button>
@@ -301,27 +303,39 @@ export default function DressMeWardrobe() {
               </div>
 
               {/* Outfits Grid */}
-              {userFits.length === 0 ? (
-                <Card className="p-8 text-center">
-                  <p className="text-muted-foreground mb-4">No saved outfits yet</p>
-                  <Button onClick={handleDone}>
-                    Create Your First Outfit
-                  </Button>
-                </Card>
-              ) : (
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  {userFits.map((fit) => (
-                    <OutfitPreviewCard
-                      key={fit.id}
-                      fit={fit}
-                      onClick={() => {
-                        sessionStorage.setItem('dressme_load_fit', fit.id);
-                        navigate('/dress-me/canvas');
-                      }}
-                    />
-                  ))}
-                </div>
-              )}
+              {(() => {
+                const filteredFits = selectedOccasion === 'All' 
+                  ? userFits 
+                  : userFits.filter(fit => fit.occasion === selectedOccasion);
+
+                return filteredFits.length === 0 ? (
+                  <Card className="p-8 text-center">
+                    <p className="text-muted-foreground mb-4">
+                      {selectedOccasion === 'All' 
+                        ? "You haven't saved any outfits yet"
+                        : `No ${selectedOccasion} outfits saved yet`
+                      }
+                    </p>
+                    <Button onClick={handleDone}>
+                      <Plus className="w-4 h-4 mr-2" />
+                      Create Your First Outfit
+                    </Button>
+                  </Card>
+                ) : (
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {filteredFits.map((fit) => (
+                      <OutfitPreviewCard
+                        key={fit.id}
+                        fit={fit}
+                        onClick={() => {
+                          sessionStorage.setItem('dressme_load_fit', fit.id);
+                          navigate('/dress-me/canvas');
+                        }}
+                      />
+                    ))}
+                  </div>
+                );
+              })()}
             </TabsContent>
 
             <TabsContent value="community" className="mt-4 space-y-4">

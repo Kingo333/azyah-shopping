@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 
 interface SaveFitParams {
   title?: string;
+  occasion?: string;
   canvas_json: any;
   canvas_image_base64?: string;
   is_public: boolean;
@@ -39,6 +40,7 @@ export const useSaveFit = () => {
         .insert({
           user_id: user.id,
           title: params.title,
+          occasion: params.occasion,
           canvas_json: params.canvas_json,
           render_path: renderData?.render_path || 'placeholder.png',
           is_public: params.is_public,

@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useDressMeAnalytics } from '@/hooks/useDressMeAnalytics';
 import { renderCanvasToBase64 } from '@/utils/canvasToImage';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -38,6 +39,7 @@ export default function DressMeCanvas() {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
   const [fitTitle, setFitTitle] = useState('');
+  const [fitOccasion, setFitOccasion] = useState<string>('Casual');
   const [isPublic, setIsPublic] = useState(false);
 
   // Load selected items or fit on mount - DON'T auto-load from autosave
@@ -201,6 +203,7 @@ export default function DressMeCanvas() {
 
       const result = await saveFit.mutateAsync({
         title: fitTitle || undefined,
+        occasion: fitOccasion,
         canvas_json: canvasData,
         canvas_image_base64: canvasImageBase64,
         is_public: isPublic,
@@ -212,6 +215,7 @@ export default function DressMeCanvas() {
         toast.success('Outfit saved!');
         setIsSaveModalOpen(false);
         setFitTitle('');
+        setFitOccasion('Casual');
         setIsPublic(false);
         localStorage.removeItem('dressme_autosave');
         navigate('/dress-me/wardrobe?tab=outfits');
@@ -360,6 +364,23 @@ export default function DressMeCanvas() {
                 placeholder="My awesome outfit"
               />
             </div>
+            
+            <div className="space-y-2">
+              <Label>Occasion</Label>
+              <Select value={fitOccasion} onValueChange={setFitOccasion}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select occasion" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Work">Work</SelectItem>
+                  <SelectItem value="Casual">Casual</SelectItem>
+                  <SelectItem value="Home">Home</SelectItem>
+                  <SelectItem value="School">School</SelectItem>
+                  <SelectItem value="Date">Date</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
                 <Label>Make Public</Label>
