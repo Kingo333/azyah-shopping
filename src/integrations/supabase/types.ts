@@ -958,7 +958,7 @@ export type Database = {
           event_data: Json | null
           event_type: string
           id: number
-          ip_address: unknown | null
+          ip_address: unknown
           product_id: string | null
           referrer: string | null
           retailer_id: string | null
@@ -972,7 +972,7 @@ export type Database = {
           event_data?: Json | null
           event_type: string
           id?: number
-          ip_address?: unknown | null
+          ip_address?: unknown
           product_id?: string | null
           referrer?: string | null
           retailer_id?: string | null
@@ -986,7 +986,7 @@ export type Database = {
           event_data?: Json | null
           event_type?: string
           id?: number
-          ip_address?: unknown | null
+          ip_address?: unknown
           product_id?: string | null
           referrer?: string | null
           retailer_id?: string | null
@@ -2272,7 +2272,7 @@ export type Database = {
           action: string
           created_at: string | null
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           table_name: string
           user_id: string | null
         }
@@ -2281,7 +2281,7 @@ export type Database = {
           action: string
           created_at?: string | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           table_name: string
           user_id?: string | null
         }
@@ -2290,7 +2290,7 @@ export type Database = {
           action?: string
           created_at?: string | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           table_name?: string
           user_id?: string | null
         }
@@ -2842,7 +2842,7 @@ export type Database = {
           created_at: string | null
           event: string
           id: string
-          ip: unknown | null
+          ip: unknown
           pi_id: string
           processed: boolean | null
           provider: string | null
@@ -2853,7 +2853,7 @@ export type Database = {
           created_at?: string | null
           event: string
           id?: string
-          ip?: unknown | null
+          ip?: unknown
           pi_id: string
           processed?: boolean | null
           provider?: string | null
@@ -2864,7 +2864,7 @@ export type Database = {
           created_at?: string | null
           event?: string
           id?: string
-          ip?: unknown | null
+          ip?: unknown
           pi_id?: string
           processed?: boolean | null
           provider?: string | null
@@ -3141,10 +3141,7 @@ export type Database = {
       }
     }
     Functions: {
-      __is_read_only_tx: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
+      __is_read_only_tx: { Args: never; Returns: boolean }
       admin_access_payment_data: {
         Args: { payment_id: string }
         Returns: {
@@ -3168,26 +3165,61 @@ export type Database = {
           updated_at: string | null
           user_id: string | null
         }[]
+        SetofOptions: {
+          from: "*"
+          to: "payments"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
-      admin_access_payment_secure: {
-        Args:
-          | {
+      admin_access_payment_secure:
+        | {
+            Args: { justification: string; target_payment_id: string }
+            Returns: {
+              amount_fils: number
+              created_at: string
+              currency: string
+              id: string
+              product: string
+              provider: string
+              status: string
+              user_id: string
+            }[]
+          }
+        | {
+            Args: {
               justification: string
               operation_type?: string
               payment_id_param: string
             }
-          | { justification: string; target_payment_id: string }
-        Returns: {
-          amount_fils: number
-          created_at: string
-          currency: string
-          id: string
-          product: string
-          provider: string
-          status: string
-          user_id: string
-        }[]
-      }
+            Returns: {
+              amount_fils: number
+              cancel_url: string | null
+              created_at: string | null
+              currency: string | null
+              failure_url: string | null
+              fee_amount_fils: number | null
+              id: string
+              latest_error_code: string | null
+              latest_error_message: string | null
+              operation_id: string
+              payment_intent_id: string
+              product: string
+              provider: string | null
+              redirect_url: string | null
+              status: string
+              success_url: string | null
+              tip_amount_fils: number | null
+              updated_at: string | null
+              user_id: string | null
+            }[]
+            SetofOptions: {
+              from: "*"
+              to: "payments"
+              isOneToOne: false
+              isSetofReturn: true
+            }
+          }
       admin_access_payment_with_enhanced_security: {
         Args: {
           justification: string
@@ -3215,6 +3247,12 @@ export type Database = {
           updated_at: string | null
           user_id: string | null
         }[]
+        SetofOptions: {
+          from: "*"
+          to: "payments"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       admin_access_payment_with_justification: {
         Args: { justification: string; payment_id_param: string }
@@ -3239,6 +3277,12 @@ export type Database = {
           updated_at: string | null
           user_id: string | null
         }[]
+        SetofOptions: {
+          from: "*"
+          to: "payments"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       admin_access_user_data: {
         Args: { target_user_id: string }
@@ -3267,6 +3311,12 @@ export type Database = {
           username: string | null
           website: string | null
         }[]
+        SetofOptions: {
+          from: "*"
+          to: "users"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       admin_access_user_profile: {
         Args: { justification: string; target_user_id: string }
@@ -3318,6 +3368,12 @@ export type Database = {
           username: string | null
           website: string | null
         }[]
+        SetofOptions: {
+          from: "*"
+          to: "users"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       admin_get_user_email: {
         Args: { justification: string; target_user_id: string }
@@ -3339,24 +3395,12 @@ export type Database = {
         Args: { target_user_id: string }
         Returns: boolean
       }
-      check_payment_encryption: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      check_retailer_data_security: {
-        Args: Record<PropertyKey, never>
-        Returns: Json
-      }
-      check_security_definer_views: {
-        Args: Record<PropertyKey, never>
-        Returns: Json
-      }
-      cleanup_expired_sessions: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
+      check_payment_encryption: { Args: never; Returns: string }
+      check_retailer_data_security: { Args: never; Returns: Json }
+      check_security_definer_views: { Args: never; Returns: Json }
+      cleanup_expired_sessions: { Args: never; Returns: number }
       cleanup_old_ai_assets: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           cleanup_summary: string
           deleted_assets_count: number
@@ -3364,33 +3408,24 @@ export type Database = {
           deleted_jobs_count: number
         }[]
       }
-      cleanup_old_analytics: {
-        Args: { days_to_keep?: number }
-        Returns: Json
-      }
+      cleanup_old_analytics: { Args: { days_to_keep?: number }; Returns: Json }
       cleanup_old_events: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           cleanup_summary: string
           deleted_count: number
         }[]
       }
-      create_admin_user: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      deduct_user_credit: {
-        Args: { target_user_id: string }
-        Returns: boolean
-      }
-      delete_user_completely: {
-        Args:
-          | { force_orphaned_deletion?: boolean; target_email: string }
-          | { target_email: string }
-        Returns: Json
-      }
+      create_admin_user: { Args: never; Returns: undefined }
+      deduct_user_credit: { Args: { target_user_id: string }; Returns: boolean }
+      delete_user_completely:
+        | { Args: { target_email: string }; Returns: Json }
+        | {
+            Args: { force_orphaned_deletion?: boolean; target_email: string }
+            Returns: Json
+          }
       detect_orphaned_users: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           brand_count: number
           created_at: string
@@ -3400,18 +3435,9 @@ export type Database = {
           user_id: string
         }[]
       }
-      embed_query: {
-        Args: { query_text: string }
-        Returns: number[]
-      }
-      ensure_payment_data_encryption: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      ensure_payment_security: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
+      embed_query: { Args: { query_text: string }; Returns: number[] }
+      ensure_payment_data_encryption: { Args: never; Returns: string }
+      ensure_payment_security: { Args: never; Returns: string }
       get_beauty_profile: {
         Args: { target_user_id: string }
         Returns: {
@@ -3474,7 +3500,7 @@ export type Database = {
         }[]
       }
       get_cleanup_stats: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           assets_eligible_for_cleanup: number
           jobs_eligible_for_cleanup: number
@@ -3484,7 +3510,7 @@ export type Database = {
         }[]
       }
       get_current_user_role: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: Database["public"]["Enums"]["user_role"]
       }
       get_fallback_trending_categories: {
@@ -3497,7 +3523,7 @@ export type Database = {
         }[]
       }
       get_minimal_brand_directory: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           id: string
           logo_url: string
@@ -3506,7 +3532,7 @@ export type Database = {
         }[]
       }
       get_minimal_category_list: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           name: string
           slug: string
@@ -3525,7 +3551,7 @@ export type Database = {
         }[]
       }
       get_minimal_retailer_directory: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           id: string
           logo_url: string
@@ -3534,7 +3560,7 @@ export type Database = {
         }[]
       }
       get_my_payment_summary: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           amount_fils: number
           created_at: string
@@ -3545,7 +3571,7 @@ export type Database = {
         }[]
       }
       get_my_profile: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           user_avatar_url: string
           user_bio: string
@@ -3558,7 +3584,7 @@ export type Database = {
         }[]
       }
       get_my_subscription_status: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           expires_at: string
           is_active: boolean
@@ -3621,20 +3647,37 @@ export type Database = {
           weight_grams: number
         }[]
       }
-      get_public_brands: {
-        Args: Record<PropertyKey, never> | { limit_param?: number }
-        Returns: {
-          bio: string
-          created_at: string
-          id: string
-          logo_url: string
-          name: string
-          slug: string
-          updated_at: string
-        }[]
-      }
+      get_public_brands:
+        | {
+            Args: { limit_param?: number }
+            Returns: {
+              bio: string
+              created_at: string
+              id: string
+              logo_url: string
+              name: string
+              slug: string
+              updated_at: string
+            }[]
+          }
+        | {
+            Args: never
+            Returns: {
+              bio: string
+              cover_image_url: string
+              created_at: string
+              id: string
+              logo_url: string
+              name: string
+              shipping_regions: string[]
+              slug: string
+              socials: Json
+              updated_at: string
+              website: string
+            }[]
+          }
       get_public_categories: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           description: string | null
           image_url: string | null
@@ -3642,6 +3685,12 @@ export type Database = {
           slug: string | null
           sort_order: number | null
         }[]
+        SetofOptions: {
+          from: "*"
+          to: "categories_public"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       get_public_products: {
         Args: { p_category?: string; p_limit?: number; p_offset?: number }
@@ -3660,6 +3709,12 @@ export type Database = {
             | null
           title: string | null
         }[]
+        SetofOptions: {
+          from: "*"
+          to: "products_public"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       get_public_products_secure: {
         Args: {
@@ -3703,18 +3758,35 @@ export type Database = {
           website: string
         }[]
       }
-      get_public_retailers: {
-        Args: Record<PropertyKey, never> | { limit_param?: number }
-        Returns: {
-          bio: string
-          created_at: string
-          id: string
-          logo_url: string
-          name: string
-          slug: string
-          updated_at: string
-        }[]
-      }
+      get_public_retailers:
+        | {
+            Args: { limit_param?: number }
+            Returns: {
+              bio: string
+              created_at: string
+              id: string
+              logo_url: string
+              name: string
+              slug: string
+              updated_at: string
+            }[]
+          }
+        | {
+            Args: never
+            Returns: {
+              bio: string
+              cover_image_url: string
+              created_at: string
+              id: string
+              logo_url: string
+              name: string
+              shipping_regions: string[]
+              slug: string
+              socials: Json
+              updated_at: string
+              website: string
+            }[]
+          }
       get_retailer_contact_info: {
         Args: { retailer_id_param: string }
         Returns: {
@@ -3781,10 +3853,7 @@ export type Database = {
           user_website: string
         }[]
       }
-      get_security_status_summary: {
-        Args: Record<PropertyKey, never>
-        Returns: Json
-      }
+      get_security_status_summary: { Args: never; Returns: Json }
       get_similar_products: {
         Args: {
           limit_count?: number
@@ -3879,10 +3948,7 @@ export type Database = {
           used_today: number
         }[]
       }
-      get_wardrobe_limit: {
-        Args: { target_user_id: string }
-        Returns: number
-      }
+      get_wardrobe_limit: { Args: { target_user_id: string }; Returns: number }
       infer_gender_from_text: {
         Args: { text_input: string }
         Returns: Database["public"]["Enums"]["gender_type"]
@@ -3958,10 +4024,7 @@ export type Database = {
         }
         Returns: boolean
       }
-      tier_from_price_aed: {
-        Args: { aed_price: number }
-        Returns: string
-      }
+      tier_from_price_aed: { Args: { aed_price: number }; Returns: string }
       upsert_beauty_profile: {
         Args: { profile_updates: Json; target_user_id: string }
         Returns: string
@@ -3989,22 +4052,13 @@ export type Database = {
         Args: { payment_user_id: string }
         Returns: boolean
       }
-      validate_payment_security_compliance: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      validate_payment_security_status: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
+      validate_payment_security_compliance: { Args: never; Returns: string }
+      validate_payment_security_status: { Args: never; Returns: string }
       validate_secure_user_access: {
         Args: { operation_type: string; target_user_id: string }
         Returns: boolean
       }
-      validate_session_security: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
+      validate_session_security: { Args: never; Returns: boolean }
       validate_user_data_access: {
         Args: { target_user_id: string }
         Returns: boolean
