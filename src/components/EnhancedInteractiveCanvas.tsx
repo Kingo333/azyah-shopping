@@ -381,7 +381,7 @@ export const EnhancedInteractiveCanvas: React.FC<EnhancedInteractiveCanvasProps>
     <div className="relative w-full h-full">
       <div
         ref={canvasRef}
-        className="relative w-full aspect-[3/4] overflow-hidden rounded-lg border border-border"
+        className="relative w-full aspect-[9/16] overflow-hidden rounded-lg border border-border"
         style={{
           ...getBackgroundStyle(),
           touchAction: 'manipulation',

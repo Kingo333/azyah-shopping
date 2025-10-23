@@ -33,8 +33,8 @@ interface SaveOutfitParams {
 }
 
 const MAX_IMAGE_SIZE_MB = 5;
-const CANVAS_WIDTH = 800;
-const CANVAS_HEIGHT = 800;
+const CANVAS_WIDTH = 900;
+const CANVAS_HEIGHT = 1600;
 
 export const useCanvasSave = (): UseCanvasSaveResult => {
   const navigate = useNavigate();
