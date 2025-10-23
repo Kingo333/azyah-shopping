@@ -13,11 +13,12 @@ import { useWardrobeLayers, useAddWardrobeLayer, useUpdateWardrobeLayer, useDele
 import { SEOHead } from '@/components/SEOHead';
 import { BackButton } from '@/components/ui/back-button';
 import { Card } from '@/components/ui/card';
-import { useFits, usePublicFits } from '@/hooks/useFits';
+import { useFits, usePublicFits, useDeleteFit } from '@/hooks/useFits';
 import { OutfitPreviewCard } from '@/components/OutfitPreviewCard';
 import { useDressMeAnalytics } from '@/hooks/useDressMeAnalytics';
 import { CommunityOutfits } from './CommunityOutfits';
 import { CommunityClothes } from './CommunityClothes';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 export default function DressMeWardrobe() {
   const navigate = useNavigate();
@@ -42,6 +43,9 @@ export default function DressMeWardrobe() {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [uploadCategory, setUploadCategory] = useState<string | undefined>();
   const [selectedOccasion, setSelectedOccasion] = useState<string>('All');
+  const [fitToDelete, setFitToDelete] = useState<string | null>(null);
+  
+  const deleteFit = useDeleteFit();
 
   // Update URL params when tab or category changes
   useEffect(() => {
@@ -140,6 +144,12 @@ export default function DressMeWardrobe() {
   const handleAddItemToLayer = (category?: string) => {
     setUploadCategory(category);
     setIsUploadModalOpen(true);
+  };
+
+  const handleDeleteFit = async () => {
+    if (!fitToDelete) return;
+    await deleteFit.mutateAsync(fitToDelete);
+    setFitToDelete(null);
   };
 
   // Onboarding state
@@ -331,6 +341,7 @@ export default function DressMeWardrobe() {
                           sessionStorage.setItem('dressme_load_fit', fit.id);
                           navigate('/dress-me/canvas');
                         }}
+                        onDelete={(fitId) => setFitToDelete(fitId)}
                       />
                     ))}
                   </div>
@@ -384,6 +395,27 @@ export default function DressMeWardrobe() {
         onItemAdded={handleItemAdded}
         presetCategory={uploadCategory}
       />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!fitToDelete} onOpenChange={(open) => !open && setFitToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Outfit?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete your outfit.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteFit}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

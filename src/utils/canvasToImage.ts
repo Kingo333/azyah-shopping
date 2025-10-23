@@ -91,5 +91,5 @@ export async function renderCanvasToBase64(
   );
 
   // Convert to base64
-  return canvas.toDataURL('image/png');
+  return canvas.toDataURL('image/jpeg', 0.9);
 }

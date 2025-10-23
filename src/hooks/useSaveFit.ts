@@ -24,17 +24,7 @@ export const useSaveFit = () => {
     mutationFn: async (params: SaveFitParams) => {
       if (!user) throw new Error('Not authenticated');
 
-      // Call render-fit edge function with base64 image if provided
-      const { data: renderData, error: renderError } = await supabase.functions.invoke('render-fit', {
-        body: { 
-          canvas_json: params.canvas_json,
-          canvas_image_base64: params.canvas_image_base64
-        }
-      });
-
-      if (renderError) throw renderError;
-
-      // Insert fit record
+      // Insert fit record with base64 image preview
       const { data: fit, error: fitError } = await supabase
         .from('fits')
         .insert({
@@ -42,7 +32,8 @@ export const useSaveFit = () => {
           title: params.title,
           occasion: params.occasion,
           canvas_json: params.canvas_json,
-          render_path: renderData?.render_path || 'placeholder.png',
+          image_preview: params.canvas_image_base64,
+          render_path: null,
           is_public: params.is_public,
         })
         .select()

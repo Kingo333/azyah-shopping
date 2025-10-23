@@ -1,15 +1,18 @@
 import React from 'react';
 import { Card } from '@/components/ui/card';
-import { Heart } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Heart, Trash2 } from 'lucide-react';
 
 interface OutfitPreviewCardProps {
   fit: any;
   onClick: () => void;
+  onDelete?: (fitId: string) => void;
 }
 
 export const OutfitPreviewCard: React.FC<OutfitPreviewCardProps> = ({
   fit,
   onClick,
+  onDelete,
 }) => {
   return (
     <Card
@@ -17,16 +20,16 @@ export const OutfitPreviewCard: React.FC<OutfitPreviewCardProps> = ({
       className="relative overflow-hidden cursor-pointer hover:shadow-lg transition-all group"
     >
       <div className="aspect-[3/4] bg-muted/30">
-        {fit.render_path ? (
+        {fit.image_preview ? (
           <img
-            src={fit.render_path}
+            src={fit.image_preview}
             alt={fit.title || 'Outfit'}
             className="w-full h-full object-cover"
             loading="lazy"
           />
-        ) : fit.image_preview ? (
+        ) : fit.render_path ? (
           <img
-            src={fit.image_preview}
+            src={fit.render_path}
             alt={fit.title || 'Outfit'}
             className="w-full h-full object-cover"
             loading="lazy"
@@ -37,6 +40,23 @@ export const OutfitPreviewCard: React.FC<OutfitPreviewCardProps> = ({
           </div>
         )}
       </div>
+
+      {/* Delete Button */}
+      {onDelete && (
+        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+          <Button
+            variant="destructive"
+            size="icon"
+            className="h-8 w-8"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(fit.id);
+            }}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
 
       {/* Overlay */}
       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
