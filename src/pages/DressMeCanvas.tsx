@@ -7,7 +7,6 @@ import { BackgroundPicker } from '@/components/BackgroundPicker';
 import { CanvasBottomToolbar } from '@/components/CanvasBottomToolbar';
 import { WardrobeUploadModal } from '@/components/WardrobeUploadModal';
 import { useWardrobeItems, WardrobeItem } from '@/hooks/useWardrobeItems';
-import { useSaveFit } from '@/hooks/useFits';
 import { toast } from 'sonner';
 import { SEOHead } from '@/components/SEOHead';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -16,17 +15,17 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useDressMeAnalytics } from '@/hooks/useDressMeAnalytics';
-import { renderCanvasToBase64 } from '@/utils/canvasToImage';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { WardrobeThumbnailRail } from '@/components/WardrobeThumbnailRail';
 import { supabase } from '@/integrations/supabase/client';
-import { displaySrc } from '@/lib/displaySrc';
+import { useCanvasSave } from '@/hooks/useCanvasSave';
+import { SaveProgressModal } from '@/components/SaveProgressModal';
 
 export default function DressMeCanvas() {
   const navigate = useNavigate();
   const { data: allItems = [] } = useWardrobeItems();
-  const saveFit = useSaveFit();
   const analytics = useDressMeAnalytics();
+  const { saveOutfit, currentStep, progress, errorMessage, reset } = useCanvasSave();
 
   const [layers, setLayers] = useState<CanvasLayer[]>([]);
   const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
@@ -166,72 +165,27 @@ export default function DressMeCanvas() {
       return;
     }
 
-    try {
-      const canvasData = {
-        layers: layers.map(layer => ({
-          wardrobeItemId: layer.wardrobeItem.id,
-          transform: layer.transform,
-          opacity: layer.opacity,
-          flipH: layer.flipH,
-          visible: layer.visible,
-          zIndex: layer.zIndex,
-        })),
-        background,
-      };
+    // Close the save modal and show progress modal
+    setIsSaveModalOpen(false);
+    
+    // Start the save process
+    await saveOutfit({
+      layers,
+      background,
+      title: fitTitle || undefined,
+      occasion: fitOccasion,
+      isPublic,
+    });
 
-      const fitItems = layers.map((layer) => ({
-        wardrobe_item_id: layer.wardrobeItem.id,
-        z_index: layer.zIndex,
-        transform: layer.transform,
-      }));
-
-      const canvasImageBase64 = await renderCanvasToBase64(
-        layers.map(l => ({
-          id: l.id,
-          imageUrl: displaySrc(l.wardrobeItem.image_bg_removed_url || l.wardrobeItem.image_url),
-          position: { x: l.transform.x || 0, y: l.transform.y || 0 },
-          scale: l.transform.scale || 1,
-          rotation: l.transform.rotation || 0,
-          flippedH: l.flipH,
-          opacity: l.opacity,
-          visible: l.visible,
-          zIndex: l.zIndex,
-        })),
-        background,
-        800,
-        800
-      );
-
-      // Validate base64 image
-      if (!canvasImageBase64 || !canvasImageBase64.startsWith('data:image')) {
-        throw new Error('Failed to generate outfit preview image');
-      }
-
-      console.log('Canvas rendered successfully, base64 length:', canvasImageBase64.length);
-
-      const result = await saveFit.mutateAsync({
-        title: fitTitle || undefined,
-        occasion: fitOccasion,
-        canvas_json: canvasData,
-        canvas_image_base64: canvasImageBase64,
-        is_public: isPublic,
-        items: fitItems,
-      });
-
-      if (result) {
-        analytics.saveFit(result.id, isPublic);
-        toast.success('Outfit saved!');
-        setIsSaveModalOpen(false);
-        setFitTitle('');
-        setFitOccasion('Casual');
-        setIsPublic(false);
-        localStorage.removeItem('dressme_autosave');
-        navigate('/dress-me/wardrobe?tab=outfits');
-      }
-    } catch (error) {
-      console.error('Error saving outfit:', error);
-      toast.error('Failed to save outfit');
+    // Track analytics on success
+    if (currentStep === 'success') {
+      analytics.saveFit('saved', isPublic);
     }
+
+    // Reset form
+    setFitTitle('');
+    setFitOccasion('Casual');
+    setIsPublic(false);
   };
 
   const handleItemAdded = useCallback((itemId: string) => {
@@ -401,12 +355,27 @@ export default function DressMeCanvas() {
                 onCheckedChange={setIsPublic}
               />
             </div>
-            <Button onClick={handleSave} className="w-full" disabled={saveFit.isPending}>
-              {saveFit.isPending ? 'Saving...' : 'Save Outfit'}
+            <Button onClick={handleSave} className="w-full">
+              Save Outfit
             </Button>
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Save Progress Modal */}
+      <SaveProgressModal
+        isOpen={currentStep !== 'idle'}
+        currentStep={currentStep === 'idle' ? 'preparing' : currentStep}
+        progress={progress}
+        errorMessage={errorMessage || undefined}
+        onRetry={handleSave}
+        onClose={() => {
+          reset();
+          if (currentStep === 'success') {
+            navigate('/dress-me/wardrobe?tab=outfits');
+          }
+        }}
+      />
     </>
   );
 }

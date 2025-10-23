@@ -1,6 +1,7 @@
 export interface CanvasLayer {
   id: string;
-  imageUrl: string;
+  imageUrl?: string; // Legacy support
+  preloadedImage?: HTMLImageElement; // New: pre-loaded image
   position: { x: number; y: number };
   scale: number;
   rotation: number;
@@ -55,22 +56,35 @@ export async function renderCanvasToBase64(
     .filter(l => l.visible)
     .sort((a, b) => a.zIndex - b.zIndex);
 
-  // Load and render each layer sequentially for proper z-index ordering
+  // Render each layer using pre-loaded images
   for (const layer of sortedLayers) {
     try {
-      const img = new Image();
-      
-      await new Promise<void>((resolve, reject) => {
-        img.onload = () => {
-          console.log(`Layer ${layer.id}: Image loaded (${img.width}x${img.height})`);
-          resolve();
-        };
-        img.onerror = (e) => {
-          console.warn(`Layer ${layer.id}: Failed to load image - ${layer.imageUrl}`, e);
-          resolve(); // Continue instead of rejecting
-        };
-        img.src = layer.imageUrl;
-      });
+      let img: HTMLImageElement;
+
+      // Use pre-loaded image if available, otherwise load on demand (legacy)
+      if (layer.preloadedImage) {
+        img = layer.preloadedImage;
+        console.log(`Layer ${layer.id}: Using pre-loaded image (${img.width}x${img.height})`);
+      } else if (layer.imageUrl) {
+        // Legacy fallback - load image on demand
+        img = new Image();
+        img.crossOrigin = 'anonymous';
+        
+        await new Promise<void>((resolve, reject) => {
+          img.onload = () => {
+            console.log(`Layer ${layer.id}: Image loaded on-demand (${img.width}x${img.height})`);
+            resolve();
+          };
+          img.onerror = (e) => {
+            console.warn(`Layer ${layer.id}: Failed to load image - ${layer.imageUrl}`, e);
+            resolve(); // Continue instead of rejecting
+          };
+          img.src = layer.imageUrl!;
+        });
+      } else {
+        console.warn(`Layer ${layer.id}: No image source available`);
+        continue;
+      }
 
       // Only draw if image loaded successfully
       if (img.complete && img.naturalWidth > 0) {

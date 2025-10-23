@@ -41,17 +41,38 @@ export const useSaveFit = () => {
 
       // Upload JPEG to storage if base64 provided
       if (params.canvas_image_base64) {
+        console.log('📤 Uploading outfit image to storage...');
+        
+        // Validate base64 format
+        if (!params.canvas_image_base64.startsWith('data:image')) {
+          throw new Error('Invalid image format - must be base64 data URL');
+        }
+
         const blob = base64ToBlob(params.canvas_image_base64, 'image/jpeg');
+        
+        // Validate blob size (max 5MB)
+        const sizeInMB = blob.size / (1024 * 1024);
+        console.log(`📦 Image blob size: ${Math.round(sizeInMB * 100) / 100}MB`);
+        
+        if (sizeInMB > 5) {
+          throw new Error(`Image too large: ${Math.round(sizeInMB)}MB (max 5MB)`);
+        }
+
         const filePath = `${user.id}/${fitId}.jpg`;
 
-        const { error: uploadError } = await supabase.storage
+        const { data: uploadData, error: uploadError } = await supabase.storage
           .from('saved-outfits')
           .upload(filePath, blob, {
             contentType: 'image/jpeg',
             upsert: false,
           });
 
-        if (uploadError) throw uploadError;
+        if (uploadError) {
+          console.error('❌ Storage upload error:', uploadError);
+          throw new Error(`Upload failed: ${uploadError.message}`);
+        }
+
+        console.log('✅ Upload successful:', uploadData);
 
         // Get public URL
         const { data: urlData } = supabase.storage
@@ -59,6 +80,7 @@ export const useSaveFit = () => {
           .getPublicUrl(filePath);
 
         imageUrl = urlData.publicUrl;
+        console.log('🔗 Public URL:', imageUrl);
       }
 
       // Insert fit record with storage URL
