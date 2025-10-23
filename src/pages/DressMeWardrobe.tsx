@@ -338,8 +338,7 @@ export default function DressMeWardrobe() {
                         key={fit.id}
                         fit={fit}
                         onClick={() => {
-                          sessionStorage.setItem('dressme_load_fit', fit.id);
-                          navigate('/dress-me/canvas');
+                          navigate(`/dress-me/outfit/${fit.id}`);
                         }}
                         onDelete={(fitId) => setFitToDelete(fitId)}
                       />

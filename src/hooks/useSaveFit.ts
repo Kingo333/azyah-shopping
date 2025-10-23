@@ -16,6 +16,17 @@ interface SaveFitParams {
   }>;
 }
 
+// Helper to convert base64 to Blob
+function base64ToBlob(base64: string, mimeType: string = 'image/jpeg'): Blob {
+  const byteString = atob(base64.split(',')[1]);
+  const ab = new ArrayBuffer(byteString.length);
+  const ia = new Uint8Array(ab);
+  for (let i = 0; i < byteString.length; i++) {
+    ia[i] = byteString.charCodeAt(i);
+  }
+  return new Blob([ab], { type: mimeType });
+}
+
 export const useSaveFit = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -24,16 +35,43 @@ export const useSaveFit = () => {
     mutationFn: async (params: SaveFitParams) => {
       if (!user) throw new Error('Not authenticated');
 
-      // Insert fit record with base64 image preview
+      // Generate fit ID early
+      const fitId = crypto.randomUUID();
+      let imageUrl: string | null = null;
+
+      // Upload JPEG to storage if base64 provided
+      if (params.canvas_image_base64) {
+        const blob = base64ToBlob(params.canvas_image_base64, 'image/jpeg');
+        const filePath = `${user.id}/${fitId}.jpg`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('saved-outfits')
+          .upload(filePath, blob, {
+            contentType: 'image/jpeg',
+            upsert: false,
+          });
+
+        if (uploadError) throw uploadError;
+
+        // Get public URL
+        const { data: urlData } = supabase.storage
+          .from('saved-outfits')
+          .getPublicUrl(filePath);
+
+        imageUrl = urlData.publicUrl;
+      }
+
+      // Insert fit record with storage URL
       const { data: fit, error: fitError } = await supabase
         .from('fits')
         .insert({
+          id: fitId,
           user_id: user.id,
           title: params.title,
           occasion: params.occasion,
           canvas_json: params.canvas_json,
-          image_preview: params.canvas_image_base64,
-          render_path: null,
+          image_preview: imageUrl,
+          render_path: imageUrl,
           is_public: params.is_public,
         })
         .select()

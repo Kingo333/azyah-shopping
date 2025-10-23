@@ -1,16 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Heart, Share2 } from 'lucide-react';
+import { ArrowLeft, Heart, Share2, Edit } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { SEOHead } from '@/components/SEOHead';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function DressMeOutfitDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [outfit, setOutfit] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -30,7 +32,6 @@ export default function DressMeOutfitDetail() {
           creator:users!fits_user_id_fkey(username, name, avatar_url)
         `)
         .eq('id', outfitId)
-        .eq('is_public', true)
         .single();
 
       if (error) throw error;
@@ -38,10 +39,17 @@ export default function DressMeOutfitDetail() {
     } catch (error) {
       console.error('Error loading outfit:', error);
       toast.error('Failed to load outfit');
-      navigate('/dress-me/community');
+      navigate('/dress-me/wardrobe');
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleEditOutfit = () => {
+    if (!outfit) return;
+    sessionStorage.setItem('dressme_load_fit', outfit.id);
+    navigate('/dress-me/canvas');
+    toast.success('Loading outfit for editing...');
   };
 
   const handleUseOutfit = () => {
@@ -194,9 +202,16 @@ export default function DressMeOutfitDetail() {
       {/* Bottom Action Bar */}
       <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t p-4 z-40">
         <div className="container max-w-4xl mx-auto">
-          <Button onClick={handleUseOutfit} size="lg" className="w-full">
-            Use This Outfit
-          </Button>
+          {outfit.user_id === user?.id ? (
+            <Button onClick={handleEditOutfit} size="lg" className="w-full">
+              <Edit className="w-4 h-4 mr-2" />
+              Edit This Outfit
+            </Button>
+          ) : (
+            <Button onClick={handleUseOutfit} size="lg" className="w-full">
+              Use This Outfit
+            </Button>
+          )}
         </div>
       </div>
     </>
