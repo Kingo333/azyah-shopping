@@ -18,7 +18,39 @@ serve(async (req) => {
     // Create admin client with service role
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { email, user_id, force_delete, justification } = await req.json();
+    const { email, user_id, force_delete, justification, checkOnly } = await req.json();
+
+    // If checkOnly is true, just return user status
+    if (checkOnly) {
+      let targetUserId = user_id;
+      
+      if (email && !user_id) {
+        const { data: publicUser } = await supabaseAdmin
+          .from('users')
+          .select('id')
+          .ilike('email', email)
+          .single();
+        
+        if (publicUser) {
+          targetUserId = publicUser.id;
+        }
+      }
+
+      const userFound = {
+        inPublic: !!targetUserId,
+        inAuth: false
+      };
+
+      if (targetUserId) {
+        const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(targetUserId);
+        userFound.inAuth = !!authUser;
+      }
+
+      return new Response(
+        JSON.stringify({ userFound }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     console.log(`🗑️ Delete request for email: ${email}, user_id: ${user_id}, force: ${force_delete}`);
 
