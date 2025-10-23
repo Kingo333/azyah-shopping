@@ -1,4 +1,1 @@
 project_id = "klwolsopucgswhtdlsps"
-
-[functions.admin-delete-user]
-verify_jwt = false
