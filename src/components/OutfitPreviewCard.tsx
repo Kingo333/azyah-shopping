@@ -19,12 +19,12 @@ export const OutfitPreviewCard: React.FC<OutfitPreviewCardProps> = ({
       onClick={onClick}
       className="relative overflow-hidden cursor-pointer hover:shadow-lg transition-all group"
     >
-      <div className="aspect-[3/4] bg-muted/30 flex items-center justify-center p-4">
+      <div className="aspect-[3/4] bg-muted/30">
         {fit.image_preview ? (
           <img
             src={fit.image_preview}
             alt={fit.title || 'Outfit'}
-            className="w-full h-full object-contain"
+            className="w-full h-full object-cover"
             loading="lazy"
             onError={(e) => {
               console.error('Failed to load outfit image:', fit.id);
@@ -39,7 +39,7 @@ export const OutfitPreviewCard: React.FC<OutfitPreviewCardProps> = ({
           <img
             src={fit.render_path}
             alt={fit.title || 'Outfit'}
-            className="w-full h-full object-contain"
+            className="w-full h-full object-cover"
             loading="lazy"
             onError={(e) => {
               console.error('Failed to load render path:', fit.id);
