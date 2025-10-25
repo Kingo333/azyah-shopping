@@ -139,12 +139,15 @@ export default function DressMeCanvas() {
       return;
     }
 
+    const STAGE_WIDTH = 1080;
+    const STAGE_HEIGHT = 1920;
+
     const newLayer: CanvasLayer = {
       id: `layer-${Date.now()}-${Math.random()}`,
       wardrobeItem: item,
       transform: {
-        x: 300,
-        y: 200,
+        x: STAGE_WIDTH / 2,  // Center horizontally
+        y: STAGE_HEIGHT / 2, // Center vertically
         scale: 1,
         rotation: 0,
       },
@@ -153,6 +156,23 @@ export default function DressMeCanvas() {
       visible: true,
       zIndex: layers.length,
     };
+    
+    // Check if image needs downscaling (only if >90% of stage width)
+    const img = new Image();
+    img.onload = () => {
+      const maxWidth = STAGE_WIDTH * 0.9;
+      if (img.naturalWidth > maxWidth) {
+        const downscale = maxWidth / img.naturalWidth;
+        setLayers(prevLayers => 
+          prevLayers.map(l => 
+            l.id === newLayer.id 
+              ? { ...l, transform: { ...l.transform, scale: downscale } }
+              : l
+          )
+        );
+      }
+    };
+    img.src = item.image_bg_removed_url || item.image_url;
     
     setLayers([...layers, newLayer]);
     analytics.addItem(item.id);
@@ -230,13 +250,15 @@ export default function DressMeCanvas() {
       {/* Canvas */}
       <div className="min-h-screen bg-background pb-32">
         <div className="container max-w-6xl mx-auto p-4">
-          <EnhancedInteractiveCanvas
-            layers={layers}
-            onLayersChange={setLayers}
-            background={background}
-            selectedLayerId={selectedLayerId}
-            onSelectedLayerIdChange={setSelectedLayerId}
-          />
+          <div className="w-full max-w-2xl mx-auto">
+            <EnhancedInteractiveCanvas
+              layers={layers}
+              onLayersChange={setLayers}
+              background={background}
+              selectedLayerId={selectedLayerId}
+              onSelectedLayerIdChange={setSelectedLayerId}
+            />
+          </div>
         </div>
       </div>
 

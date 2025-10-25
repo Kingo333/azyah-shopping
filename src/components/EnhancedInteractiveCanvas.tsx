@@ -9,6 +9,10 @@ import {
 import { Slider } from '@/components/ui/slider';
 import { useIsMobile } from '@/hooks/use-mobile';
 
+// Fixed logical stage dimensions (9:16 aspect ratio for Instagram)
+const STAGE_WIDTH = 1080;
+const STAGE_HEIGHT = 1920;
+
 export interface CanvasLayer {
   id: string;
   wardrobeItem: WardrobeItem;
@@ -43,6 +47,7 @@ export const EnhancedInteractiveCanvas: React.FC<EnhancedInteractiveCanvasProps>
   onSelectedLayerIdChange,
 }) => {
   const canvasRef = useRef<HTMLDivElement>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
   const [internalSelectedLayerId, setInternalSelectedLayerId] = useState<string | null>(null);
   
@@ -62,7 +67,49 @@ export const EnhancedInteractiveCanvas: React.FC<EnhancedInteractiveCanvasProps>
   const [showTrashZone, setShowTrashZone] = useState(false);
   const [showScaleIndicator, setShowScaleIndicator] = useState(false);
   const [showRotateIndicator, setShowRotateIndicator] = useState(false);
-  const dragThreshold = 2; // Reduced from 5px to 2px for more responsive touch
+  const dragThreshold = 2;
+  
+  // Stage scaling state
+  const [stageScale, setStageScale] = useState(1);
+  const [stagePosition, setStagePosition] = useState({ x: 0, y: 0 });
+
+  // Handle window resize to scale the stage
+  useEffect(() => {
+    const handleResize = () => {
+      if (!wrapperRef.current) return;
+      
+      const wrapperWidth = wrapperRef.current.clientWidth;
+      const wrapperHeight = wrapperRef.current.clientHeight;
+      
+      // Calculate scale to fit wrapper while maintaining 9:16 aspect ratio
+      const scale = Math.min(
+        wrapperWidth / STAGE_WIDTH,
+        wrapperHeight / STAGE_HEIGHT
+      );
+      
+      // Center the stage in the wrapper
+      const x = (wrapperWidth - STAGE_WIDTH * scale) / 2;
+      const y = (wrapperHeight - STAGE_HEIGHT * scale) / 2;
+      
+      setStageScale(scale);
+      setStagePosition({ x, y });
+    };
+    
+    handleResize();
+    
+    // Debounce resize handler
+    let timeoutId: NodeJS.Timeout;
+    const debouncedResize = () => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(handleResize, 120);
+    };
+    
+    window.addEventListener('resize', debouncedResize);
+    return () => {
+      window.removeEventListener('resize', debouncedResize);
+      clearTimeout(timeoutId);
+    };
+  }, []);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -196,6 +243,15 @@ export const EnhancedInteractiveCanvas: React.FC<EnhancedInteractiveCanvasProps>
     );
   };
 
+  // Convert client coordinates to stage coordinates
+  const clientToStageCoords = (clientX: number, clientY: number) => {
+    if (!canvasRef.current) return { x: 0, y: 0 };
+    const rect = canvasRef.current.getBoundingClientRect();
+    const x = (clientX - rect.left) / stageScale;
+    const y = (clientY - rect.top) / stageScale;
+    return { x, y };
+  };
+
   const handleTouchStart = (e: React.TouchEvent, layerId: string) => {
     e.preventDefault();
     e.stopPropagation();
@@ -257,25 +313,25 @@ export const EnhancedInteractiveCanvas: React.FC<EnhancedInteractiveCanvasProps>
     const layer = layers.find(l => l.id === selectedLayerId);
     if (!layer) return;
 
-    const deltaX = e.clientX - dragStart.x;
-    const deltaY = e.clientY - dragStart.y;
+    const deltaX = (e.clientX - dragStart.x) / stageScale;
+    const deltaY = (e.clientY - dragStart.y) / stageScale;
     const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
 
-      // Only start dragging if moved beyond threshold
-      if (!isDragging && distance > dragThreshold) {
-        setIsDragging(true);
-        if (longPressTimer) {
-          clearTimeout(longPressTimer);
-          setLongPressTimer(null);
-        }
+    // Only start dragging if moved beyond threshold
+    if (!isDragging && distance > dragThreshold) {
+      setIsDragging(true);
+      if (longPressTimer) {
+        clearTimeout(longPressTimer);
+        setLongPressTimer(null);
       }
+    }
 
-      if (isDragging) {
-        const newX = initialLayerPos.x + deltaX;
-        const newY = initialLayerPos.y + deltaY;
+    if (isDragging) {
+      const newX = initialLayerPos.x + deltaX;
+      const newY = initialLayerPos.y + deltaY;
 
-        updateSelectedLayer({ x: newX, y: newY });
-      }
+      updateSelectedLayer({ x: newX, y: newY });
+    }
   };
 
   const handleMouseUp = () => {
@@ -295,8 +351,8 @@ export const EnhancedInteractiveCanvas: React.FC<EnhancedInteractiveCanvasProps>
       const layer = layers.find(l => l.id === selectedLayerId);
       if (!layer) return;
 
-      const deltaX = touch.clientX - dragStart.x;
-      const deltaY = touch.clientY - dragStart.y;
+      const deltaX = (touch.clientX - dragStart.x) / stageScale;
+      const deltaY = (touch.clientY - dragStart.y) / stageScale;
       const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
 
       // Only start dragging if moved beyond threshold
@@ -315,21 +371,20 @@ export const EnhancedInteractiveCanvas: React.FC<EnhancedInteractiveCanvasProps>
         // Show trash zone
         setShowTrashZone(true);
 
-        // Calculate snap guides
+        // Calculate snap guides (in stage coordinates)
         if (showSnapGuides) {
-          const rect = canvasRef.current?.getBoundingClientRect();
-          const canvasCenter = { 
-            x: (rect?.width || 800) / 2, 
-            y: (rect?.height || 600) / 2 
+          const stageCenter = { 
+            x: STAGE_WIDTH / 2, 
+            y: STAGE_HEIGHT / 2 
           };
-          const snapThreshold = 10;
+          const snapThreshold = 20 / stageScale; // Adaptive threshold
           const newSnapLines: { x?: number; y?: number } = {};
 
-          if (Math.abs(newX - canvasCenter.x) < snapThreshold) {
-            newSnapLines.x = canvasCenter.x;
+          if (Math.abs(newX - stageCenter.x) < snapThreshold) {
+            newSnapLines.x = stageCenter.x;
           }
-          if (Math.abs(newY - canvasCenter.y) < snapThreshold) {
-            newSnapLines.y = canvasCenter.y;
+          if (Math.abs(newY - stageCenter.y) < snapThreshold) {
+            newSnapLines.y = stageCenter.y;
           }
 
           setSnapLines(newSnapLines);
@@ -382,13 +437,28 @@ export const EnhancedInteractiveCanvas: React.FC<EnhancedInteractiveCanvasProps>
   };
 
   return (
-    <div className="relative w-full h-full">
+    <div 
+      ref={wrapperRef}
+      className="relative w-full mx-auto overflow-hidden"
+      style={{
+        aspectRatio: '9/16',
+        maxHeight: isMobile 
+          ? 'min(85vh, calc(100vh - 12rem - env(safe-area-inset-bottom)))' 
+          : 'min(85vh, calc(100vh - 12rem))',
+      }}
+    >
       <div
         ref={canvasRef}
-        className="relative w-full aspect-[9/16] overflow-hidden rounded-lg border border-border"
+        className="absolute rounded-lg border border-border"
         style={{
+          width: `${STAGE_WIDTH}px`,
+          height: `${STAGE_HEIGHT}px`,
+          transform: `scale(${stageScale})`,
+          transformOrigin: 'top left',
+          left: `${stagePosition.x}px`,
+          top: `${stagePosition.y}px`,
           ...getBackgroundStyle(),
-          touchAction: 'manipulation',
+          touchAction: isDragging ? 'none' : 'manipulation',
         }}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
@@ -396,19 +466,25 @@ export const EnhancedInteractiveCanvas: React.FC<EnhancedInteractiveCanvasProps>
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
       >
-        {/* Snap guides */}
+        {/* Snap guides (in stage coordinates) */}
         {showSnapGuides && (
           <>
             {snapLines.x !== undefined && (
               <div
-                className="absolute top-0 bottom-0 w-1 bg-primary/70 pointer-events-none z-50 shadow-lg"
-                style={{ left: `${snapLines.x}px` }}
+                className="absolute top-0 w-px bg-primary/70 pointer-events-none z-50 shadow-lg"
+                style={{ 
+                  left: `${snapLines.x}px`,
+                  height: `${STAGE_HEIGHT}px`
+                }}
               />
             )}
             {snapLines.y !== undefined && (
               <div
-                className="absolute left-0 right-0 h-1 bg-primary/70 pointer-events-none z-50 shadow-lg"
-                style={{ top: `${snapLines.y}px` }}
+                className="absolute left-0 h-px bg-primary/70 pointer-events-none z-50 shadow-lg"
+                style={{ 
+                  top: `${snapLines.y}px`,
+                  width: `${STAGE_WIDTH}px`
+                }}
               />
             )}
           </>

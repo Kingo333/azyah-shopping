@@ -33,8 +33,8 @@ interface SaveOutfitParams {
 }
 
 const MAX_IMAGE_SIZE_MB = 5;
-const CANVAS_WIDTH = 900;
-const CANVAS_HEIGHT = 1600;
+const CANVAS_WIDTH = 1080;  // Match stage width
+const CANVAS_HEIGHT = 1920; // Match stage height
 
 export const useCanvasSave = (): UseCanvasSaveResult => {
   const navigate = useNavigate();
@@ -97,16 +97,8 @@ export const useCanvasSave = (): UseCanvasSaveResult => {
       const imageMap = new Map<string, HTMLImageElement>();
       loaded.forEach(({ id, image }) => imageMap.set(id, image));
 
-      // Get visual canvas dimensions to calculate scale
-      const canvasElement = document.querySelector('[class*="aspect-\\[9\\/16\\]"]') as HTMLElement;
-      const visualWidth = canvasElement?.clientWidth || CANVAS_WIDTH;
-      const visualHeight = canvasElement?.clientHeight || CANVAS_HEIGHT;
-
-      // Calculate scale factors from visual canvas to save canvas
-      const scaleX = CANVAS_WIDTH / visualWidth;
-      const scaleY = CANVAS_HEIGHT / visualHeight;
-
-      console.log(`📐 Visual canvas: ${visualWidth}x${visualHeight}, Save canvas: ${CANVAS_WIDTH}x${CANVAS_HEIGHT}, Scale: ${scaleX.toFixed(2)}x${scaleY.toFixed(2)}`);
+      // No scaling needed - stage is already 1080x1920, export is 1080x1920
+      console.log(`📐 Rendering canvas at ${CANVAS_WIDTH}x${CANVAS_HEIGHT} (matches stage dimensions)`);
 
       const canvasImageBase64 = await renderCanvasToBase64(
         params.layers
@@ -116,8 +108,8 @@ export const useCanvasSave = (): UseCanvasSaveResult => {
             imageUrl: '', // Not used anymore
             preloadedImage: imageMap.get(l.id)!,
             position: { 
-              x: (l.transform.x || 0) * scaleX, 
-              y: (l.transform.y || 0) * scaleY 
+              x: l.transform.x || 0,  // Use directly - no scaling needed!
+              y: l.transform.y || 0
             },
             scale: l.transform.scale || 1,
             rotation: l.transform.rotation || 0,
