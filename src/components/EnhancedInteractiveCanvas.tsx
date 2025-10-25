@@ -443,8 +443,8 @@ export const EnhancedInteractiveCanvas: React.FC<EnhancedInteractiveCanvasProps>
       style={{
         aspectRatio: '9/16',
         maxHeight: isMobile 
-          ? 'min(85vh, calc(100vh - 12rem - env(safe-area-inset-bottom)))' 
-          : 'min(85vh, calc(100vh - 12rem))',
+          ? 'min(85vh, calc(100vh - 9.25rem - env(safe-area-inset-bottom)))' 
+          : 'min(85vh, calc(100vh - 8.5rem))',
       }}
     >
       <div
@@ -576,8 +576,8 @@ export const EnhancedInteractiveCanvas: React.FC<EnhancedInteractiveCanvasProps>
 
       {/* Transform Controls - Horizontal Scrollable on Mobile */}
       {selectedLayerId && selectedLayer && (
-        <div className={`absolute bottom-4 left-1/2 -translate-x-1/2 bg-background/95 backdrop-blur-sm border rounded-full shadow-lg p-1.5 z-50 flex items-center gap-0.5 ${
-          isMobile ? 'max-w-[95vw]' : ''
+        <div className={`absolute left-1/2 -translate-x-1/2 bg-background/95 backdrop-blur-sm border rounded-full shadow-lg p-1.5 z-50 flex items-center gap-0.5 ${
+          isMobile ? 'bottom-2 max-w-[95vw]' : 'bottom-4'
         }`}>
           <Button
             size="icon"

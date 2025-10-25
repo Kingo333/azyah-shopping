@@ -14,7 +14,8 @@ export const CanvasBottomToolbar: React.FC<CanvasBottomToolbarProps> = ({
   onBackground,
 }) => {
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t p-4 z-40">
+    <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t p-4 z-40" 
+         style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}>
       <div className="container max-w-6xl mx-auto">
         <div className="grid grid-cols-3 gap-4">
           <Button

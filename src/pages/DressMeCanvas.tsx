@@ -248,7 +248,7 @@ export default function DressMeCanvas() {
       </div>
 
       {/* Canvas */}
-      <div className="min-h-screen bg-background pb-32">
+      <div className="min-h-screen bg-background pb-24">
         <div className="container max-w-6xl mx-auto p-4">
           <div className="w-full max-w-2xl mx-auto">
             <EnhancedInteractiveCanvas
