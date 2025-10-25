@@ -68,45 +68,7 @@ export const EnhancedInteractiveCanvas: React.FC<EnhancedInteractiveCanvasProps>
   const [showScaleIndicator, setShowScaleIndicator] = useState(false);
   const [showRotateIndicator, setShowRotateIndicator] = useState(false);
   const dragThreshold = 2;
-  
-  // Stage scaling state
-  const [stageScale, setStageScale] = useState(1);
-  const [stagePosition, setStagePosition] = useState({ x: 0, y: 0 });
-
-  // Handle window resize to scale the stage
-  useEffect(() => {
-  const handleResize = () => {
-    if (!wrapperRef.current) return;
-    
-    const wrapperWidth = wrapperRef.current.clientWidth;
-    const wrapperHeight = wrapperRef.current.clientHeight;
-    
-    // Always fill width, let height adapt naturally
-    const scale = wrapperWidth / STAGE_WIDTH;
-    
-    // Center the stage - no vertical centering needed on mobile
-    const x = 0;
-    const y = isMobile ? 0 : Math.max(0, (wrapperHeight - STAGE_HEIGHT * scale) / 2);
-    
-    setStageScale(scale);
-    setStagePosition({ x, y });
-  };
-    
-    handleResize();
-    
-    // Debounce resize handler
-    let timeoutId: NodeJS.Timeout;
-    const debouncedResize = () => {
-      clearTimeout(timeoutId);
-      timeoutId = setTimeout(handleResize, 120);
-    };
-    
-    window.addEventListener('resize', debouncedResize);
-    return () => {
-      window.removeEventListener('resize', debouncedResize);
-      clearTimeout(timeoutId);
-    };
-  }, [isMobile]);
+  // Canvas is now fully responsive - no need for scaling logic
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -240,13 +202,14 @@ export const EnhancedInteractiveCanvas: React.FC<EnhancedInteractiveCanvasProps>
     );
   };
 
-  // Convert client coordinates to stage coordinates
-  const clientToStageCoords = (clientX: number, clientY: number) => {
+  // Convert client coordinates to canvas coordinates (now percentage-based)
+  const clientToCanvasCoords = (clientX: number, clientY: number) => {
     if (!canvasRef.current) return { x: 0, y: 0 };
     const rect = canvasRef.current.getBoundingClientRect();
-    const x = (clientX - rect.left) / stageScale;
-    const y = (clientY - rect.top) / stageScale;
-    return { x, y };
+    // Convert to percentage within canvas
+    const xPercent = ((clientX - rect.left) / rect.width) * STAGE_WIDTH;
+    const yPercent = ((clientY - rect.top) / rect.height) * STAGE_HEIGHT;
+    return { x: xPercent, y: yPercent };
   };
 
   const handleTouchStart = (e: React.TouchEvent, layerId: string) => {
@@ -310,8 +273,10 @@ export const EnhancedInteractiveCanvas: React.FC<EnhancedInteractiveCanvasProps>
     const layer = layers.find(l => l.id === selectedLayerId);
     if (!layer) return;
 
-    const deltaX = (e.clientX - dragStart.x) / stageScale;
-    const deltaY = (e.clientY - dragStart.y) / stageScale;
+    if (!canvasRef.current) return;
+    const rect = canvasRef.current.getBoundingClientRect();
+    const deltaX = ((e.clientX - dragStart.x) / rect.width) * STAGE_WIDTH;
+    const deltaY = ((e.clientY - dragStart.y) / rect.height) * STAGE_HEIGHT;
     const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
 
     // Only start dragging if moved beyond threshold
@@ -348,8 +313,10 @@ export const EnhancedInteractiveCanvas: React.FC<EnhancedInteractiveCanvasProps>
       const layer = layers.find(l => l.id === selectedLayerId);
       if (!layer) return;
 
-      const deltaX = (touch.clientX - dragStart.x) / stageScale;
-      const deltaY = (touch.clientY - dragStart.y) / stageScale;
+      if (!canvasRef.current) return;
+      const rect = canvasRef.current.getBoundingClientRect();
+      const deltaX = ((touch.clientX - dragStart.x) / rect.width) * STAGE_WIDTH;
+      const deltaY = ((touch.clientY - dragStart.y) / rect.height) * STAGE_HEIGHT;
       const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
 
       // Only start dragging if moved beyond threshold
@@ -374,7 +341,7 @@ export const EnhancedInteractiveCanvas: React.FC<EnhancedInteractiveCanvasProps>
             x: STAGE_WIDTH / 2, 
             y: STAGE_HEIGHT / 2 
           };
-          const snapThreshold = 20 / stageScale; // Adaptive threshold
+          const snapThreshold = 40; // Fixed pixel threshold
           const newSnapLines: { x?: number; y?: number } = {};
 
           if (Math.abs(newX - stageCenter.x) < snapThreshold) {
@@ -444,14 +411,10 @@ export const EnhancedInteractiveCanvas: React.FC<EnhancedInteractiveCanvasProps>
     >
       <div
         ref={canvasRef}
-        className="absolute rounded-lg border border-border"
+        className="w-full h-full rounded-lg border border-border relative"
         style={{
-          width: `${STAGE_WIDTH}px`,
-          height: `${STAGE_HEIGHT}px`,
-          transform: `scale(${stageScale})`,
-          transformOrigin: 'top left',
-          left: `${stagePosition.x}px`,
-          top: `${stagePosition.y}px`,
+          aspectRatio: '9/16',
+          maxHeight: '100%',
           ...getBackgroundStyle(),
           touchAction: isDragging ? 'none' : 'manipulation',
         }}
@@ -510,31 +473,39 @@ export const EnhancedInteractiveCanvas: React.FC<EnhancedInteractiveCanvasProps>
         {layers
           .filter(layer => layer.visible)
           .sort((a, b) => a.zIndex - b.zIndex)
-          .map((layer) => (
-            <div
-              key={layer.id}
-              className={`absolute select-none ${selectedLayerId === layer.id ? 'ring-2 ring-primary' : ''}`}
-              style={{
-                left: `${layer.transform.x || 0}px`,
-                top: `${layer.transform.y || 0}px`,
-                transform: `scale(${layer.transform.scale || 1}) rotate(${layer.transform.rotation || 0}deg) scaleX(${layer.flipH ? -1 : 1})`,
-                transformOrigin: 'center',
-                opacity: layer.opacity || 1,
-                zIndex: layer.zIndex,
-                touchAction: 'none',
-                cursor: isDragging && selectedLayerId === layer.id ? 'grabbing' : 'grab',
-              }}
-              onTouchStart={(e) => handleTouchStart(e, layer.id)}
-              onMouseDown={(e) => handleMouseDown(e, layer.id)}
-            >
-              <img
-                src={layer.wardrobeItem.image_bg_removed_url || layer.wardrobeItem.image_url}
-                alt={layer.wardrobeItem.category}
-                className="max-w-full max-h-full object-contain pointer-events-none select-none"
-                draggable={false}
-              />
-            </div>
-          ))}
+          .map((layer) => {
+            // Convert from absolute positioning (0-1920 height) to percentage
+            const leftPercent = ((layer.transform.x || 0) / STAGE_WIDTH) * 100;
+            const topPercent = ((layer.transform.y || 0) / STAGE_HEIGHT) * 100;
+            
+            return (
+              <div
+                key={layer.id}
+                className={`absolute select-none ${selectedLayerId === layer.id ? 'ring-2 ring-primary' : ''}`}
+                style={{
+                  left: `${leftPercent}%`,
+                  top: `${topPercent}%`,
+                  transform: `scale(${layer.transform.scale || 1}) rotate(${layer.transform.rotation || 0}deg) scaleX(${layer.flipH ? -1 : 1})`,
+                  transformOrigin: 'center',
+                  opacity: layer.opacity || 1,
+                  zIndex: layer.zIndex,
+                  touchAction: 'none',
+                  cursor: isDragging && selectedLayerId === layer.id ? 'grabbing' : 'grab',
+                  maxWidth: '50%',
+                  maxHeight: '50%',
+                }}
+                onTouchStart={(e) => handleTouchStart(e, layer.id)}
+                onMouseDown={(e) => handleMouseDown(e, layer.id)}
+              >
+                <img
+                  src={layer.wardrobeItem.image_bg_removed_url || layer.wardrobeItem.image_url}
+                  alt={layer.wardrobeItem.category}
+                  className="max-w-full max-h-full object-contain pointer-events-none select-none"
+                  draggable={false}
+                />
+              </div>
+            );
+          })}
       </div>
 
       {/* Quick Menu */}
