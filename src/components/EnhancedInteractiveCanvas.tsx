@@ -477,6 +477,7 @@ export const EnhancedInteractiveCanvas: React.FC<EnhancedInteractiveCanvasProps>
             // Convert from absolute positioning (0-1920 height) to percentage
             const leftPercent = ((layer.transform.x || 0) / STAGE_WIDTH) * 100;
             const topPercent = ((layer.transform.y || 0) / STAGE_HEIGHT) * 100;
+            const sizePercent = (layer.transform.scale || 1) * 25; // Base size 25% of canvas
             
             return (
               <div
@@ -485,14 +486,18 @@ export const EnhancedInteractiveCanvas: React.FC<EnhancedInteractiveCanvasProps>
                 style={{
                   left: `${leftPercent}%`,
                   top: `${topPercent}%`,
-                  transform: `scale(${layer.transform.scale || 1}) rotate(${layer.transform.rotation || 0}deg) scaleX(${layer.flipH ? -1 : 1})`,
+                  width: `${sizePercent}%`,
+                  height: 'auto',
+                  transform: `
+                    translate(-50%, -50%)
+                    rotate(${layer.transform.rotation || 0}deg)
+                    scaleX(${layer.flipH ? -1 : 1})
+                  `,
                   transformOrigin: 'center',
                   opacity: layer.opacity || 1,
                   zIndex: layer.zIndex,
                   touchAction: 'none',
                   cursor: isDragging && selectedLayerId === layer.id ? 'grabbing' : 'grab',
-                  maxWidth: '50%',
-                  maxHeight: '50%',
                 }}
                 onTouchStart={(e) => handleTouchStart(e, layer.id)}
                 onMouseDown={(e) => handleMouseDown(e, layer.id)}
@@ -500,7 +505,7 @@ export const EnhancedInteractiveCanvas: React.FC<EnhancedInteractiveCanvasProps>
                 <img
                   src={layer.wardrobeItem.image_bg_removed_url || layer.wardrobeItem.image_url}
                   alt={layer.wardrobeItem.category}
-                  className="max-w-full max-h-full object-contain pointer-events-none select-none"
+                  className="w-full h-auto object-contain pointer-events-none select-none"
                   draggable={false}
                 />
               </div>
