@@ -193,6 +193,13 @@ export const useCanvasEditor = () => {
       const imageMap = new Map<string, HTMLImageElement>();
       loaded.forEach(({ id, image }) => imageMap.set(id, image));
 
+      // Debug: Log layer positions before rendering
+      console.log('📸 Rendering canvas with layers:', layers.map(l => ({
+        id: l.id,
+        position: { x: l.transform.x, y: l.transform.y },
+        scale: l.transform.scale,
+      })));
+
       const canvasImageBase64 = await renderCanvasToBase64(
         layers
           .filter(l => l.visible && imageMap.has(l.id))
@@ -200,7 +207,10 @@ export const useCanvasEditor = () => {
             id: l.id,
             imageUrl: '',
             preloadedImage: imageMap.get(l.id)!,
-            position: { x: l.transform.x || 0, y: l.transform.y || 0 },
+            position: { 
+              x: l.transform.x || CANVAS_WIDTH / 2,
+              y: l.transform.y || CANVAS_HEIGHT / 2
+            },
             scale: l.transform.scale || 1,
             rotation: l.transform.rotation || 0,
             flippedH: l.flipH,
