@@ -196,7 +196,7 @@ const Events = () => {
       } = await supabase.from('retail_events').select(`
           *,
           retailer:retailers(name, logo_url)
-        `).eq('status', 'active').gte('event_date', new Date().toISOString().split('T')[0]).order('event_date', {
+        `).eq('status', 'active').gte('end_date', new Date().toISOString().split('T')[0]).order('event_date', {
         ascending: true
       });
       if (error) throw error;

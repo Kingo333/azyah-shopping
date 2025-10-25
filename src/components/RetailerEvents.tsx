@@ -423,19 +423,21 @@ export const RetailerEvents: React.FC<RetailerEventsProps> = ({ retailerId }) =>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-sm font-medium">Start Date</label>
+                <label className="text-sm font-medium">Start Date *</label>
                 <Input
                   type="date"
                   value={formData.event_date}
                   onChange={(e) => setFormData(prev => ({ ...prev, event_date: e.target.value }))}
+                  required
                 />
               </div>
               <div>
-                <label className="text-sm font-medium">End Date (Optional)</label>
+                <label className="text-sm font-medium">End Date *</label>
                 <Input
                   type="date"
                   value={formData.end_date}
                   onChange={(e) => setFormData(prev => ({ ...prev, end_date: e.target.value }))}
+                  required
                 />
               </div>
             </div>
@@ -470,7 +472,11 @@ export const RetailerEvents: React.FC<RetailerEventsProps> = ({ retailerId }) =>
               >
                 Cancel
               </Button>
-              <Button onClick={handleCreate} disabled={uploadingBanner} className="flex-1">
+              <Button 
+                onClick={handleCreate} 
+                disabled={uploadingBanner || !formData.name || !formData.event_date || !formData.end_date} 
+                className="flex-1"
+              >
                 {uploadingBanner ? 'Uploading...' : 'Create Event'}
               </Button>
             </div>
@@ -541,19 +547,21 @@ export const RetailerEvents: React.FC<RetailerEventsProps> = ({ retailerId }) =>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-sm font-medium">Start Date</label>
+                <label className="text-sm font-medium">Start Date *</label>
                 <Input
                   type="date"
                   value={formData.event_date}
                   onChange={(e) => setFormData(prev => ({ ...prev, event_date: e.target.value }))}
+                  required
                 />
               </div>
               <div>
-                <label className="text-sm font-medium">End Date (Optional)</label>
+                <label className="text-sm font-medium">End Date *</label>
                 <Input
                   type="date"
                   value={formData.end_date}
                   onChange={(e) => setFormData(prev => ({ ...prev, end_date: e.target.value }))}
+                  required
                 />
               </div>
             </div>
@@ -589,7 +597,11 @@ export const RetailerEvents: React.FC<RetailerEventsProps> = ({ retailerId }) =>
               >
                 Cancel
               </Button>
-              <Button onClick={handleEdit} disabled={uploadingBanner} className="flex-1">
+              <Button 
+                onClick={handleEdit} 
+                disabled={uploadingBanner || !formData.name || !formData.event_date || !formData.end_date} 
+                className="flex-1"
+              >
                 {uploadingBanner ? 'Uploading...' : 'Update Event'}
               </Button>
             </div>
