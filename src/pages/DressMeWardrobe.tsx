@@ -232,27 +232,6 @@ export default function DressMeWardrobe() {
               <BackButton fallbackPath="/" variant="ghost" size="sm" />
               <h1 className="text-2xl font-bold">My Wardrobe</h1>
             </div>
-            
-            {activeTab === 'clothes' && !selectionMode && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleEnterSelectionMode}
-              >
-                <CheckSquare className="w-4 h-4 mr-2" />
-                Select
-              </Button>
-            )}
-            
-            {activeTab === 'clothes' && selectionMode && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleExitSelectionMode}
-              >
-                Cancel
-              </Button>
-            )}
           </div>
 
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
@@ -277,16 +256,10 @@ export default function DressMeWardrobe() {
           <Tabs value={activeTab} className="w-full">
             <TabsContent value="clothes" className="mt-4 space-y-4">
               {/* Category Filter */}
-              <div className="flex items-center justify-between gap-4">
-                <WardrobeCategoryTabs
-                  selected={selectedCategory}
-                  onSelect={handleCategoryClick}
-                />
-                <AddLayerButton
-                  availableCategories={availableCategories}
-                  onAddLayer={handleAddLayer}
-                />
-              </div>
+              <WardrobeCategoryTabs
+                selected={selectedCategory}
+                onSelect={handleCategoryClick}
+              />
 
               {/* Selection controls */}
               {selectionMode && selectedItems.length > 0 && (
