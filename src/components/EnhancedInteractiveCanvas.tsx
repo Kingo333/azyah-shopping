@@ -581,91 +581,91 @@ export const EnhancedInteractiveCanvas: React.FC<EnhancedInteractiveCanvasProps>
             size="icon"
             variant="outline"
             onClick={() => handleRotate(-15)}
-            className="w-8 h-8 shrink-0 rounded-full p-0"
+            className="w-7 h-7 shrink-0 rounded-full p-0"
             title="Rotate Left"
           >
-            <RotateCw className="w-3.5 h-3.5 transform scale-x-[-1]" />
+            <RotateCw className="w-3 h-3 transform scale-x-[-1]" />
           </Button>
           <Button
             size="icon"
             variant="outline"
             onClick={() => handleRotate(15)}
-            className="w-8 h-8 shrink-0 rounded-full p-0"
+            className="w-7 h-7 shrink-0 rounded-full p-0"
             title="Rotate Right"
           >
-            <RotateCw className="w-3.5 h-3.5" />
+            <RotateCw className="w-3 h-3" />
           </Button>
           <Button
             size="icon"
             variant="outline"
             onClick={() => handleScale(-0.1)}
-            className="w-8 h-8 shrink-0 rounded-full p-0"
+            className="w-7 h-7 shrink-0 rounded-full p-0"
             title="Zoom Out"
           >
-            <ZoomOut className="w-3.5 h-3.5" />
+            <ZoomOut className="w-3 h-3" />
           </Button>
           <Button
             size="icon"
             variant="outline"
             onClick={() => handleScale(0.1)}
-            className="w-8 h-8 shrink-0 rounded-full p-0"
+            className="w-7 h-7 shrink-0 rounded-full p-0"
             title="Zoom In"
           >
-            <ZoomIn className="w-3.5 h-3.5" />
+            <ZoomIn className="w-3 h-3" />
           </Button>
           <Button
             size="icon"
             variant="outline"
             onClick={handleToggleVisibility}
-            className="w-8 h-8 shrink-0 rounded-full p-0"
+            className="w-7 h-7 shrink-0 rounded-full p-0"
             title={selectedLayer.visible ? "Hide" : "Show"}
           >
-            {selectedLayer.visible ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+            {selectedLayer.visible ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
           </Button>
           <Button
             size="icon"
             variant="outline"
             onClick={handleBringForward}
-            className="w-8 h-8 shrink-0 rounded-full p-0"
+            className="w-7 h-7 shrink-0 rounded-full p-0"
             title="Bring Forward"
           >
-            <ArrowUp className="w-3.5 h-3.5" />
+            <ArrowUp className="w-3 h-3" />
           </Button>
           <Button
             size="icon"
             variant="outline"
             onClick={handleSendBackward}
-            className="w-8 h-8 shrink-0 rounded-full p-0"
+            className="w-7 h-7 shrink-0 rounded-full p-0"
             title="Send Backward"
           >
-            <ArrowDown className="w-3.5 h-3.5" />
+            <ArrowDown className="w-3 h-3" />
           </Button>
           <Button
             size="icon"
             variant="outline"
             onClick={handleFlipH}
-            className="w-8 h-8 shrink-0 rounded-full p-0"
+            className="w-7 h-7 shrink-0 rounded-full p-0"
             title="Flip Horizontal"
           >
-            <FlipHorizontal className="w-3.5 h-3.5" />
+            <FlipHorizontal className="w-3 h-3" />
           </Button>
           <Button
             size="icon"
             variant="outline"
             onClick={handleDuplicate}
-            className="w-8 h-8 shrink-0 rounded-full p-0"
+            className="w-7 h-7 shrink-0 rounded-full p-0"
             title="Duplicate"
           >
-            <Copy className="w-3.5 h-3.5" />
+            <Copy className="w-3 h-3" />
           </Button>
           <Button
             size="icon"
             variant="destructive"
             onClick={handleDelete}
-            className="w-8 h-8 shrink-0 rounded-full p-0"
+            className="w-7 h-7 shrink-0 rounded-full p-0"
             title="Delete"
           >
-            <Trash2 className="w-3.5 h-3.5" />
+            <Trash2 className="w-3 h-3" />
           </Button>
         </div>
       )}
