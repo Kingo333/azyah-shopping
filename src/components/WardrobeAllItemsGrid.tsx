@@ -14,6 +14,7 @@ interface WardrobeAllItemsGridProps {
   selectionMode?: boolean;
   onToggleSelectionMode?: () => void;
   onAddLayer?: (category: string) => void;
+  availableCategories?: Array<{ value: string; label: string }>;
 }
 
 export const WardrobeAllItemsGrid: React.FC<WardrobeAllItemsGridProps> = ({
@@ -25,30 +26,23 @@ export const WardrobeAllItemsGrid: React.FC<WardrobeAllItemsGridProps> = ({
   selectionMode = false,
   onToggleSelectionMode,
   onAddLayer,
+  availableCategories = [],
 }) => {
-  // Get list of categories already in wardrobe
-  const existingCategories = new Set(items.map(item => item.category));
-  
-  // All available wardrobe categories
-  const allWardrobeCategories = [
-    { value: 'top', label: 'Top' },
-    { value: 'bottom', label: 'Bottom' },
-    { value: 'dress', label: 'Dress' },
-    { value: 'outerwear', label: 'Outerwear' },
-    { value: 'shoes', label: 'Shoes' },
-    { value: 'bag', label: 'Bag' },
-    { value: 'accessory', label: 'Accessory' },
-  ];
-  
-  // Filter out categories that already exist
-  const availableCategories = allWardrobeCategories
-    .filter(cat => !existingCategories.has(cat.value as any));
 
   return (
     <div className="mb-6">
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-lg font-semibold">All Items</h2>
         <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onAddNew}
+            className="gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            Add Item
+          </Button>
           {onToggleSelectionMode && (
             <Button
               variant="outline"
@@ -67,15 +61,6 @@ export const WardrobeAllItemsGrid: React.FC<WardrobeAllItemsGridProps> = ({
         </div>
       </div>
       <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4">
-        {/* Add New Item Card */}
-        <button
-          onClick={onAddNew}
-          className="aspect-[3/4] border-2 border-dashed border-muted-foreground/30 rounded-lg flex flex-col items-center justify-center gap-2 hover:border-primary hover:bg-muted/50 transition-all"
-        >
-          <Plus className="w-8 h-8 text-muted-foreground" />
-          <span className="text-xs text-muted-foreground">Add Item</span>
-        </button>
-
         {/* Item Cards */}
         {items.map((item) => (
           <div key={item.id} className="group">
