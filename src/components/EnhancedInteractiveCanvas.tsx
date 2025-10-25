@@ -575,7 +575,7 @@ export const EnhancedInteractiveCanvas: React.FC<EnhancedInteractiveCanvasProps>
       {/* Transform Controls - Horizontal Scrollable on Mobile */}
       {selectedLayerId && selectedLayer && (
         <div className={`absolute left-1/2 -translate-x-1/2 bg-background/95 backdrop-blur-sm border rounded-full shadow-lg p-1.5 z-50 flex items-center gap-0.5 ${
-          isMobile ? 'bottom-2 max-w-[95vw]' : 'bottom-4'
+          isMobile ? 'bottom-14 max-w-[95vw]' : 'bottom-4'
         }`}>
           <Button
             size="icon"
