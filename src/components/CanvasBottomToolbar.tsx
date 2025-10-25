@@ -14,38 +14,28 @@ export const CanvasBottomToolbar: React.FC<CanvasBottomToolbarProps> = ({
   onBackground,
 }) => {
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t p-4 z-40" 
-         style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}>
+    <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t p-2 z-40" 
+         style={{ paddingBottom: 'calc(0.5rem + env(safe-area-inset-bottom))' }}>
       <div className="container max-w-6xl mx-auto">
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 gap-2">
           <Button
             variant="outline"
-            size="lg"
+            size="sm"
             onClick={onAddClothes}
-            className="flex flex-col gap-2 h-20 md:h-16"
+            className="flex flex-col gap-1 h-10 md:h-16"
           >
-            <Shirt className="w-6 h-6" />
-            <span className="text-xs">Add Clothes</span>
+            <Shirt className="w-4 h-4 md:w-6 md:h-6" />
+            <span className="text-[10px] md:text-xs">Add Clothes</span>
           </Button>
           
           <Button
             variant="outline"
-            size="lg"
-            onClick={onStickers}
-            className="flex flex-col gap-2 h-20 md:h-16"
-          >
-            <Smile className="w-6 h-6" />
-            <span className="text-xs">Stickers</span>
-          </Button>
-          
-          <Button
-            variant="outline"
-            size="lg"
+            size="sm"
             onClick={onBackground}
-            className="flex flex-col gap-2 h-20 md:h-16"
+            className="flex flex-col gap-1 h-10 md:h-16"
           >
-            <Droplet className="w-6 h-6" />
-            <span className="text-xs">Background</span>
+            <Droplet className="w-4 h-4 md:w-6 md:h-6" />
+            <span className="text-[10px] md:text-xs">Background</span>
           </Button>
         </div>
       </div>

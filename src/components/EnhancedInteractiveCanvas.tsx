@@ -149,7 +149,7 @@ export const EnhancedInteractiveCanvas: React.FC<EnhancedInteractiveCanvasProps>
 
   const handleScale = (delta: number) => {
     if (!selectedLayer) return;
-    const newScale = Math.max(0.1, Math.min(3, (selectedLayer.transform.scale || 1) + delta));
+    const newScale = Math.max(0.1, Math.min(4, (selectedLayer.transform.scale || 1) + delta));
     updateSelectedLayer({ scale: newScale });
     setShowScaleIndicator(true);
     setTimeout(() => setShowScaleIndicator(false), 1000);
@@ -366,7 +366,7 @@ export const EnhancedInteractiveCanvas: React.FC<EnhancedInteractiveCanvasProps>
       );
 
       const scaleFactor = currentDistance / initialPinchDistance;
-      const newScale = Math.max(0.1, Math.min(3, initialScale * scaleFactor));
+      const newScale = Math.max(0.1, Math.min(4, initialScale * scaleFactor));
 
       updateSelectedLayer({ scale: newScale });
     }
