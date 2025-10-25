@@ -423,6 +423,34 @@ export const EnhancedInteractiveCanvas: React.FC<EnhancedInteractiveCanvasProps>
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
       >
+        {/* 9:16 Safe Area Overlay - Shows capture bounds */}
+        <div 
+          className="absolute inset-0 pointer-events-none flex items-center justify-center"
+          style={{ zIndex: 0 }}
+        >
+          <div 
+            className="relative border-2 border-dashed border-primary/40 rounded-lg"
+            style={{
+              aspectRatio: '9/16',
+              width: 'auto',
+              height: '100%',
+              maxWidth: '100%',
+              maxHeight: '100%',
+            }}
+          >
+            {/* Corner markers for better visibility */}
+            <div className="absolute top-2 left-2 w-4 h-4 border-l-2 border-t-2 border-primary/60" />
+            <div className="absolute top-2 right-2 w-4 h-4 border-r-2 border-t-2 border-primary/60" />
+            <div className="absolute bottom-2 left-2 w-4 h-4 border-l-2 border-b-2 border-primary/60" />
+            <div className="absolute bottom-2 right-2 w-4 h-4 border-r-2 border-b-2 border-primary/60" />
+            
+            {/* Label */}
+            <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-primary/20 backdrop-blur-sm px-3 py-1 rounded-full text-xs text-primary font-medium">
+              9:16 Safe Area
+            </div>
+          </div>
+        </div>
+
         {/* Snap guides (in stage coordinates) */}
         {showSnapGuides && (
           <>
