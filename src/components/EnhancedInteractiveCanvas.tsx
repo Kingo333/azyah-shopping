@@ -413,7 +413,6 @@ export const EnhancedInteractiveCanvas: React.FC<EnhancedInteractiveCanvasProps>
         ref={canvasRef}
         className="w-full h-full rounded-lg border border-border relative"
         style={{
-          aspectRatio: '9/16',
           maxHeight: '100%',
           ...getBackgroundStyle(),
           touchAction: isDragging ? 'none' : 'manipulation',
