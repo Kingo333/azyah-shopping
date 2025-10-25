@@ -288,7 +288,7 @@ export default function DressMeWardrobe() {
                 onItemClick={handleItemClick}
                 selectionMode={selectionMode}
                 onToggleSelectionMode={selectionMode ? handleExitSelectionMode : handleEnterSelectionMode}
-                onAddLayer={() => setIsUploadModalOpen(true)}
+                onAddLayer={(category) => handleAddLayer(category)}
               />
 
               {/* Layered Carousels */}

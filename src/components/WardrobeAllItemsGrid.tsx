@@ -3,6 +3,7 @@ import { WardrobeItemCard } from './WardrobeItemCard';
 import { WardrobeItem } from '@/hooks/useWardrobeItems';
 import { Plus } from 'lucide-react';
 import { Button } from './ui/button';
+import { AddLayerButton } from './AddLayerButton';
 
 interface WardrobeAllItemsGridProps {
   items: WardrobeItem[];
@@ -12,7 +13,7 @@ interface WardrobeAllItemsGridProps {
   onItemClick: (item: WardrobeItem) => void;
   selectionMode?: boolean;
   onToggleSelectionMode?: () => void;
-  onAddLayer?: () => void;
+  onAddLayer?: (category: string) => void;
 }
 
 export const WardrobeAllItemsGrid: React.FC<WardrobeAllItemsGridProps> = ({
@@ -25,6 +26,24 @@ export const WardrobeAllItemsGrid: React.FC<WardrobeAllItemsGridProps> = ({
   onToggleSelectionMode,
   onAddLayer,
 }) => {
+  // Get list of categories already in wardrobe
+  const existingCategories = new Set(items.map(item => item.category));
+  
+  // All available wardrobe categories
+  const allWardrobeCategories = [
+    { value: 'top', label: 'Top' },
+    { value: 'bottom', label: 'Bottom' },
+    { value: 'dress', label: 'Dress' },
+    { value: 'outerwear', label: 'Outerwear' },
+    { value: 'shoes', label: 'Shoes' },
+    { value: 'bag', label: 'Bag' },
+    { value: 'accessory', label: 'Accessory' },
+  ];
+  
+  // Filter out categories that already exist
+  const availableCategories = allWardrobeCategories
+    .filter(cat => !existingCategories.has(cat.value as any));
+
   return (
     <div className="mb-6">
       <div className="flex items-center justify-between mb-3">
@@ -40,13 +59,10 @@ export const WardrobeAllItemsGrid: React.FC<WardrobeAllItemsGridProps> = ({
             </Button>
           )}
           {onAddLayer && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onAddLayer}
-            >
-              Add Layer
-            </Button>
+            <AddLayerButton
+              availableCategories={availableCategories}
+              onAddLayer={onAddLayer}
+            />
           )}
         </div>
       </div>

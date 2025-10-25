@@ -17,6 +17,7 @@ export const useEnhanceWardrobeItem = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['wardrobe-items'] });
+      queryClient.invalidateQueries({ queryKey: ['user-credits'] });
     },
   });
 };

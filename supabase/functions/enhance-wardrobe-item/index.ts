@@ -58,6 +58,34 @@ serve(async (req) => {
       throw new Error('Item not found or access denied');
     }
 
+    // Check and deduct credits (20 credits required)
+    const CREDITS_REQUIRED = 20;
+    const { data: userProfile, error: profileError } = await supabaseClient
+      .from('users')
+      .select('credits_remaining, is_premium')
+      .eq('id', user.id)
+      .single();
+
+    if (profileError) {
+      throw new Error('Failed to fetch user profile');
+    }
+
+    if (!userProfile.is_premium && userProfile.credits_remaining < CREDITS_REQUIRED) {
+      throw new Error(`Insufficient credits. You need ${CREDITS_REQUIRED} credits to enhance an item.`);
+    }
+
+    // Deduct credits for non-premium users
+    if (!userProfile.is_premium) {
+      const { error: creditError } = await supabaseClient
+        .from('users')
+        .update({ credits_remaining: userProfile.credits_remaining - CREDITS_REQUIRED })
+        .eq('id', user.id);
+
+      if (creditError) {
+        throw new Error('Failed to deduct credits');
+      }
+    }
+
     console.log('Enhancing item:', item_id, 'Category:', item.category);
 
     // Get The New Black credentials
