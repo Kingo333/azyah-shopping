@@ -75,25 +75,34 @@ export const EnhancedInteractiveCanvas: React.FC<EnhancedInteractiveCanvasProps>
 
   // Handle window resize to scale the stage
   useEffect(() => {
-    const handleResize = () => {
-      if (!wrapperRef.current) return;
-      
-      const wrapperWidth = wrapperRef.current.clientWidth;
-      const wrapperHeight = wrapperRef.current.clientHeight;
-      
-      // Calculate scale to fit wrapper while maintaining 9:16 aspect ratio
-      const scale = Math.min(
+  const handleResize = () => {
+    if (!wrapperRef.current) return;
+    
+    const wrapperWidth = wrapperRef.current.clientWidth;
+    const wrapperHeight = wrapperRef.current.clientHeight;
+    
+    // On mobile, prioritize width to fill the screen
+    // On desktop, use the smaller scale to fit everything
+    let scale: number;
+    
+    if (isMobile) {
+      // Fill width on mobile, height will fit due to aspect ratio and maxHeight
+      scale = wrapperWidth / STAGE_WIDTH;
+    } else {
+      // On desktop, fit both dimensions
+      scale = Math.min(
         wrapperWidth / STAGE_WIDTH,
         wrapperHeight / STAGE_HEIGHT
       );
-      
-      // Center the stage in the wrapper
-      const x = (wrapperWidth - STAGE_WIDTH * scale) / 2;
-      const y = (wrapperHeight - STAGE_HEIGHT * scale) / 2;
-      
-      setStageScale(scale);
-      setStagePosition({ x, y });
-    };
+    }
+    
+    // Center the stage in the wrapper
+    const x = (wrapperWidth - STAGE_WIDTH * scale) / 2;
+    const y = (wrapperHeight - STAGE_HEIGHT * scale) / 2;
+    
+    setStageScale(scale);
+    setStagePosition({ x, y });
+  };
     
     handleResize();
     
@@ -109,7 +118,7 @@ export const EnhancedInteractiveCanvas: React.FC<EnhancedInteractiveCanvasProps>
       window.removeEventListener('resize', debouncedResize);
       clearTimeout(timeoutId);
     };
-  }, []);
+  }, [isMobile]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
