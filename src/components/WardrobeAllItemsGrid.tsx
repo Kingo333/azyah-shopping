@@ -2,6 +2,7 @@ import React from 'react';
 import { WardrobeItemCard } from './WardrobeItemCard';
 import { WardrobeItem } from '@/hooks/useWardrobeItems';
 import { Plus } from 'lucide-react';
+import { Button } from './ui/button';
 
 interface WardrobeAllItemsGridProps {
   items: WardrobeItem[];
@@ -10,6 +11,8 @@ interface WardrobeAllItemsGridProps {
   onAddNew: () => void;
   onItemClick: (item: WardrobeItem) => void;
   selectionMode?: boolean;
+  onToggleSelectionMode?: () => void;
+  onAddLayer?: () => void;
 }
 
 export const WardrobeAllItemsGrid: React.FC<WardrobeAllItemsGridProps> = ({
@@ -19,10 +22,34 @@ export const WardrobeAllItemsGrid: React.FC<WardrobeAllItemsGridProps> = ({
   onAddNew,
   onItemClick,
   selectionMode = false,
+  onToggleSelectionMode,
+  onAddLayer,
 }) => {
   return (
     <div className="mb-6">
-      <h2 className="text-lg font-semibold mb-3">All Items</h2>
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-lg font-semibold">All Items</h2>
+        <div className="flex items-center gap-2">
+          {onToggleSelectionMode && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onToggleSelectionMode}
+            >
+              {selectionMode ? 'Cancel' : 'Select'}
+            </Button>
+          )}
+          {onAddLayer && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onAddLayer}
+            >
+              Add Layer
+            </Button>
+          )}
+        </div>
+      </div>
       <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4">
         {/* Add New Item Card */}
         <button
