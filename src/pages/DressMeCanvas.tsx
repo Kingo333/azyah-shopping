@@ -222,35 +222,35 @@ export default function DressMeCanvas() {
         description="Create and customize your outfit combinations"
       />
       
-      {/* Header */}
-      <div className="sticky top-0 z-40 bg-background/95 backdrop-blur-sm border-b">
-        <div className="container max-w-6xl mx-auto p-4">
-          <div className="flex items-center justify-between">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate('/dress-me/wardrobe')}
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back
-            </Button>
-            <Button
-              variant="default"
-              size="sm"
-              onClick={() => setIsSaveModalOpen(true)}
-              disabled={layers.length === 0}
-            >
-              <Save className="w-4 h-4 mr-2" />
-              Save
-            </Button>
+      <div className="h-screen overflow-hidden flex flex-col">
+        {/* Header */}
+        <div className="sticky top-0 z-40 bg-background/95 backdrop-blur-sm border-b flex-shrink-0">
+          <div className="container max-w-6xl mx-auto p-4">
+            <div className="flex items-center justify-between">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate('/dress-me/wardrobe')}
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back
+              </Button>
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => setIsSaveModalOpen(true)}
+                disabled={layers.length === 0}
+              >
+                <Save className="w-4 h-4 mr-2" />
+                Save
+              </Button>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Canvas */}
-      <div className="min-h-screen bg-background pb-24">
-        <div className="container max-w-6xl mx-auto p-4">
-          <div className="w-full max-w-2xl mx-auto">
+        {/* Canvas - grows to fill available space */}
+        <div className="flex-1 bg-background overflow-hidden">
+          <div className="container max-w-6xl mx-auto px-4 py-2 h-full flex items-center justify-center">
             <EnhancedInteractiveCanvas
               layers={layers}
               onLayersChange={setLayers}
@@ -260,14 +260,14 @@ export default function DressMeCanvas() {
             />
           </div>
         </div>
-      </div>
 
-      {/* Bottom Toolbar */}
-      <CanvasBottomToolbar
-        onAddClothes={() => setIsWardrobeSheetOpen(true)}
-        onStickers={() => toast.info('Stickers coming soon!')}
-        onBackground={() => setIsBackgroundPickerOpen(true)}
-      />
+        {/* Bottom Toolbar */}
+        <CanvasBottomToolbar
+          onAddClothes={() => setIsWardrobeSheetOpen(true)}
+          onStickers={() => toast.info('Stickers coming soon!')}
+          onBackground={() => setIsBackgroundPickerOpen(true)}
+        />
+      </div>
 
       {/* Wardrobe Sheet */}
       <Sheet open={isWardrobeSheetOpen} onOpenChange={setIsWardrobeSheetOpen}>

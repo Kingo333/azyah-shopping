@@ -443,8 +443,8 @@ export const EnhancedInteractiveCanvas: React.FC<EnhancedInteractiveCanvasProps>
       style={{
         aspectRatio: '9/16',
         maxHeight: isMobile 
-          ? 'min(85vh, calc(100vh - 9.25rem - env(safe-area-inset-bottom)))' 
-          : 'min(85vh, calc(100vh - 8.5rem))',
+          ? 'calc(100vh - 8.5rem - env(safe-area-inset-bottom))' 
+          : 'calc(100vh - 8rem)',
       }}
     >
       <div
