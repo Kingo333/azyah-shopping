@@ -81,24 +81,12 @@ export const EnhancedInteractiveCanvas: React.FC<EnhancedInteractiveCanvasProps>
     const wrapperWidth = wrapperRef.current.clientWidth;
     const wrapperHeight = wrapperRef.current.clientHeight;
     
-    // On mobile, prioritize width to fill the screen
-    // On desktop, use the smaller scale to fit everything
-    let scale: number;
+    // Always fill width, let height adapt naturally
+    const scale = wrapperWidth / STAGE_WIDTH;
     
-    if (isMobile) {
-      // Fill width on mobile, height will fit due to aspect ratio and maxHeight
-      scale = wrapperWidth / STAGE_WIDTH;
-    } else {
-      // On desktop, fit both dimensions
-      scale = Math.min(
-        wrapperWidth / STAGE_WIDTH,
-        wrapperHeight / STAGE_HEIGHT
-      );
-    }
-    
-    // Center the stage in the wrapper
-    const x = (wrapperWidth - STAGE_WIDTH * scale) / 2;
-    const y = (wrapperHeight - STAGE_HEIGHT * scale) / 2;
+    // Center the stage - no vertical centering needed on mobile
+    const x = 0;
+    const y = isMobile ? 0 : Math.max(0, (wrapperHeight - STAGE_HEIGHT * scale) / 2);
     
     setStageScale(scale);
     setStagePosition({ x, y });
@@ -448,12 +436,10 @@ export const EnhancedInteractiveCanvas: React.FC<EnhancedInteractiveCanvasProps>
   return (
     <div 
       ref={wrapperRef}
-      className="relative w-full h-full mx-auto"
+      className="relative w-full h-full"
       style={{
-        ...(isMobile 
-          ? { height: '100%', maxWidth: '100%' } 
-          : { aspectRatio: '9/16', maxHeight: 'calc(100vh - 8rem)' }
-        ),
+        maxWidth: '100%',
+        ...(isMobile ? {} : { aspectRatio: '9/16', maxHeight: 'calc(100vh - 8rem)' }),
       }}
     >
       <div

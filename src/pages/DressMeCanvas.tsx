@@ -249,8 +249,8 @@ export default function DressMeCanvas() {
         </div>
 
         {/* Canvas - grows to fill available space */}
-        <div className="flex-1 bg-background">
-          <div className="container max-w-6xl mx-auto px-4 py-2 h-full">
+        <div className="flex-1 flex items-center justify-center bg-background overflow-hidden">
+          <div className="w-full h-full max-w-6xl px-2 md:px-4">
             <EnhancedInteractiveCanvas
               layers={layers}
               onLayersChange={setLayers}
