@@ -1,1 +1,4 @@
 project_id = "klwolsopucgswhtdlsps"
+
+[functions.enhance-wardrobe-item]
+verify_jwt = true

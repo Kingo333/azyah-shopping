@@ -46,6 +46,36 @@ export const useDressMeAnalytics = () => {
       event_type: 'error_bg_remove',
       event_data: { error_type, message } 
     }),
+
+    selectionModeEntered: () => trackEvent({
+      event_type: 'dressme_selection_mode_entered',
+      event_data: {}
+    }),
+
+    itemsDeleted: (count: number) => trackEvent({
+      event_type: 'dressme_items_deleted',
+      event_data: { count }
+    }),
+
+    itemDetailViewed: (itemId: string) => trackEvent({
+      event_type: 'dressme_item_detail_viewed',
+      event_data: { item_id: itemId }
+    }),
+
+    itemEnhanceStarted: (itemId: string) => trackEvent({
+      event_type: 'dressme_item_enhance_started',
+      event_data: { item_id: itemId }
+    }),
+
+    itemEnhanceCompleted: (itemId: string) => trackEvent({
+      event_type: 'dressme_item_enhance_completed',
+      event_data: { item_id: itemId }
+    }),
+
+    itemEnhanceFailed: (itemId: string, errorType: string) => trackEvent({
+      event_type: 'dressme_item_enhance_failed',
+      event_data: { item_id: itemId, error_type: errorType }
+    }),
   };
 
   return track;

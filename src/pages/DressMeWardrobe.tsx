@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Plus, Filter, MoreVertical } from 'lucide-react';
+import { Plus, Filter, MoreVertical, Trash2, CheckSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { WardrobeAllItemsGrid } from '@/components/WardrobeAllItemsGrid';
@@ -8,7 +8,8 @@ import { WardrobeLayerCarousel } from '@/components/WardrobeLayerCarousel';
 import { AddLayerButton } from '@/components/AddLayerButton';
 import { WardrobeCategoryTabs } from '@/components/WardrobeCategoryTabs';
 import { WardrobeUploadModal } from '@/components/WardrobeUploadModal';
-import { useWardrobeItems, WardrobeItem } from '@/hooks/useWardrobeItems';
+import { WardrobeItemDetailModal } from '@/components/WardrobeItemDetailModal';
+import { useWardrobeItems, WardrobeItem, useDeleteWardrobeItem } from '@/hooks/useWardrobeItems';
 import { useWardrobeLayers, useAddWardrobeLayer, useUpdateWardrobeLayer, useDeleteWardrobeLayer } from '@/hooks/useWardrobeLayers';
 import { SEOHead } from '@/components/SEOHead';
 import { BackButton } from '@/components/ui/back-button';
@@ -19,6 +20,7 @@ import { useDressMeAnalytics } from '@/hooks/useDressMeAnalytics';
 import { CommunityOutfits } from './CommunityOutfits';
 import { CommunityClothes } from './CommunityClothes';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { toast } from 'sonner';
 
 export default function DressMeWardrobe() {
   const navigate = useNavigate();
@@ -44,8 +46,11 @@ export default function DressMeWardrobe() {
   const [uploadCategory, setUploadCategory] = useState<string | undefined>();
   const [selectedOccasion, setSelectedOccasion] = useState<string>('All');
   const [fitToDelete, setFitToDelete] = useState<string | null>(null);
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedItemDetail, setSelectedItemDetail] = useState<WardrobeItem | null>(null);
   
   const deleteFit = useDeleteFit();
+  const deleteItemMutation = useDeleteWardrobeItem();
 
   // Update URL params when tab or category changes
   useEffect(() => {
@@ -152,6 +157,35 @@ export default function DressMeWardrobe() {
     setFitToDelete(null);
   };
 
+  const handleDeleteSelected = async () => {
+    if (selectedItems.length === 0) return;
+    
+    try {
+      await Promise.all(selectedItems.map(itemId => deleteItemMutation.mutateAsync(itemId)));
+      toast.success(`Deleted ${selectedItems.length} item(s)`);
+      setSelectedItems([]);
+      setSelectionMode(false);
+    } catch (error) {
+      toast.error('Failed to delete items');
+    }
+  };
+
+  const handleEnterSelectionMode = () => {
+    setSelectionMode(true);
+    setSelectedItems([]);
+  };
+
+  const handleExitSelectionMode = () => {
+    setSelectionMode(false);
+    setSelectedItems([]);
+  };
+
+  const handleItemClick = (item: WardrobeItem) => {
+    if (!selectionMode) {
+      setSelectedItemDetail(item);
+    }
+  };
+
   // Onboarding state
   if (!isLoading && allItems.length === 0) {
     return (
@@ -198,13 +232,27 @@ export default function DressMeWardrobe() {
               <BackButton fallbackPath="/" variant="ghost" size="sm" />
               <h1 className="text-2xl font-bold">My Wardrobe</h1>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => {/* TODO: Settings */}}
-            >
-              <MoreVertical className="w-5 h-5" />
-            </Button>
+            
+            {activeTab === 'clothes' && !selectionMode && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleEnterSelectionMode}
+              >
+                <CheckSquare className="w-4 h-4 mr-2" />
+                Select
+              </Button>
+            )}
+            
+            {activeTab === 'clothes' && selectionMode && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleExitSelectionMode}
+              >
+                Cancel
+              </Button>
+            )}
           </div>
 
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
@@ -241,7 +289,7 @@ export default function DressMeWardrobe() {
               </div>
 
               {/* Selection controls */}
-              {selectedItems.length > 0 && (
+              {selectionMode && selectedItems.length > 0 && (
                 <div className="flex items-center justify-between bg-muted/50 rounded-lg p-3">
                   <span className="text-sm font-medium">
                     {selectedItems.length} selected
@@ -264,6 +312,8 @@ export default function DressMeWardrobe() {
                 selectedItems={selectedItems}
                 onToggleItem={handleToggleItem}
                 onAddNew={() => handleAddItemToLayer()}
+                onItemClick={handleItemClick}
+                selectionMode={selectionMode}
               />
 
               {/* Layered Carousels */}
@@ -369,20 +419,39 @@ export default function DressMeWardrobe() {
       </div>
 
       {/* Bottom Action Bar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t p-4 z-40">
-        <div className="container max-w-6xl mx-auto">
-          <Button
-            onClick={handleDone}
-            size="lg"
-            className="w-full"
-          >
-            {selectedItems.length > 0 
-              ? `Create Outfit with ${selectedItems.length} items`
-              : 'Go to Canvas'
-            }
-          </Button>
+      {!selectionMode && (
+        <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t p-4 z-40">
+          <div className="container max-w-6xl mx-auto">
+            <Button
+              onClick={handleDone}
+              size="lg"
+              className="w-full"
+            >
+              {selectedItems.length > 0 
+                ? `Create Outfit with ${selectedItems.length} items`
+                : 'Go to Canvas'
+              }
+            </Button>
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* Delete Selected Button - shown in selection mode */}
+      {selectionMode && selectedItems.length > 0 && (
+        <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t p-4 z-40">
+          <div className="container max-w-6xl mx-auto">
+            <Button
+              onClick={handleDeleteSelected}
+              size="lg"
+              variant="destructive"
+              className="w-full"
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Delete {selectedItems.length} Item(s)
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Upload Modal */}
       <WardrobeUploadModal
@@ -393,6 +462,13 @@ export default function DressMeWardrobe() {
         }}
         onItemAdded={handleItemAdded}
         presetCategory={uploadCategory}
+      />
+
+      {/* Item Detail Modal */}
+      <WardrobeItemDetailModal
+        item={selectedItemDetail}
+        isOpen={!!selectedItemDetail}
+        onClose={() => setSelectedItemDetail(null)}
       />
 
       {/* Delete Confirmation Dialog */}

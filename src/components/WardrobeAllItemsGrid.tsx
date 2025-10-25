@@ -1,6 +1,6 @@
 import React from 'react';
 import { WardrobeItemCard } from './WardrobeItemCard';
-import { WardrobeItem, useDeleteWardrobeItem } from '@/hooks/useWardrobeItems';
+import { WardrobeItem } from '@/hooks/useWardrobeItems';
 import { Plus } from 'lucide-react';
 
 interface WardrobeAllItemsGridProps {
@@ -8,6 +8,8 @@ interface WardrobeAllItemsGridProps {
   selectedItems: string[];
   onToggleItem: (itemId: string) => void;
   onAddNew: () => void;
+  onItemClick: (item: WardrobeItem) => void;
+  selectionMode?: boolean;
 }
 
 export const WardrobeAllItemsGrid: React.FC<WardrobeAllItemsGridProps> = ({
@@ -15,15 +17,9 @@ export const WardrobeAllItemsGrid: React.FC<WardrobeAllItemsGridProps> = ({
   selectedItems,
   onToggleItem,
   onAddNew,
+  onItemClick,
+  selectionMode = false,
 }) => {
-  const deleteItemMutation = useDeleteWardrobeItem();
-
-  const handleDelete = (itemId: string) => {
-    if (confirm('Are you sure you want to delete this item?')) {
-      deleteItemMutation.mutate(itemId);
-    }
-  };
-
   return (
     <div className="mb-6">
       <h2 className="text-lg font-semibold mb-3">All Items</h2>
@@ -44,8 +40,8 @@ export const WardrobeAllItemsGrid: React.FC<WardrobeAllItemsGridProps> = ({
               item={item}
               isSelected={selectedItems.includes(item.id)}
               onToggle={() => onToggleItem(item.id)}
-              onDelete={() => handleDelete(item.id)}
-              showDelete={true}
+              onItemClick={() => onItemClick(item)}
+              selectionMode={selectionMode}
             />
           </div>
         ))}
