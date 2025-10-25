@@ -606,7 +606,7 @@ const Events = () => {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => navigate('/')}
+          onClick={() => navigate('/dashboard')}
           className="flex-shrink-0"
         >
           <Home className="h-5 w-5" />
