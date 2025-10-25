@@ -450,7 +450,7 @@ export const EnhancedInteractiveCanvas: React.FC<EnhancedInteractiveCanvasProps>
       ref={wrapperRef}
       className="relative w-full h-full mx-auto overflow-hidden"
       style={{
-        aspectRatio: '9/16',
+        ...(isMobile ? {} : { aspectRatio: '9/16' }),
         maxWidth: '100%',
         maxHeight: isMobile 
           ? 'calc(100vh - 8.5rem - env(safe-area-inset-bottom))' 
