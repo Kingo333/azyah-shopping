@@ -79,7 +79,7 @@ serve(async (req) => {
     formData.append('image', item.image_url);
     formData.append('type', clothingType);
 
-    const newBlackResponse = await fetch('https://thenewblack.ai/api/1.1/wf/image_to_ghost', {
+    const newBlackResponse = await fetch('https://thenewblack.ai/api/1.1/wf/image-to-ghost', {
       method: 'POST',
       body: formData,
     });
