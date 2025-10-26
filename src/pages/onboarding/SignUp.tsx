@@ -207,8 +207,18 @@ export default function SignUp() {
     const roleTitle = userRole === 'brand' ? 'Brand' : userRole === 'retailer' ? 'Retailer' : '';
 
     return (
-      <div className="h-screen bg-background flex flex-col overflow-hidden">
-        <div className="p-4">
+      <div 
+        className="flex flex-col bg-background"
+        style={{
+          height: '100dvh',
+          paddingTop: 'env(safe-area-inset-top)',
+          paddingBottom: 'env(safe-area-inset-bottom)',
+          paddingLeft: 'env(safe-area-inset-left)',
+          paddingRight: 'env(safe-area-inset-right)',
+          overflow: 'hidden',
+        }}
+      >
+        <div className="p-2 md:p-4 flex-shrink-0">
           <Button
             variant="ghost"
             size="icon"
@@ -218,9 +228,12 @@ export default function SignUp() {
           </Button>
         </div>
 
-        <div className="flex-1 flex items-center justify-center px-6">
-          <div className="w-full max-w-md">
-            <h1 className="text-2xl font-bold mb-2 text-foreground text-center">
+        <div 
+          className="flex-1 flex items-center justify-center px-4 md:px-6 overflow-y-auto"
+          style={{ WebkitOverflowScrolling: 'touch' }}
+        >
+          <div className="w-full max-w-md py-4">
+            <h1 className="text-xl md:text-2xl font-bold mb-1 md:mb-2 text-foreground text-center">
               {isBrandOrRetailer 
                 ? `Create your ${roleTitle} account`
                 : showUsernameFields
@@ -230,7 +243,7 @@ export default function SignUp() {
                     : 'Hi there 👋'
               }
             </h1>
-            <p className="text-muted-foreground text-center mb-8">
+            <p className="text-sm md:text-base text-muted-foreground text-center mb-6 md:mb-8">
               {isBrandOrRetailer
                 ? 'Get started with your business account'
                 : showUsernameFields
@@ -241,9 +254,9 @@ export default function SignUp() {
               }
             </p>
 
-            <form onSubmit={showPassword ? handlePasswordSubmit : handleEmailContinue} className="space-y-4">
+            <form onSubmit={showPassword ? handlePasswordSubmit : handleEmailContinue} className="space-y-3 md:space-y-4">
               <div>
-                <label className="text-sm text-muted-foreground mb-2 block">
+                <label className="text-xs md:text-sm text-muted-foreground mb-1 md:mb-2 block">
                   Email address
                 </label>
                 <Input
@@ -251,7 +264,7 @@ export default function SignUp() {
                   placeholder="Email address"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="h-12 rounded-xl"
+                  className="h-11 md:h-12 rounded-xl"
                   required
                   autoFocus={!showPassword}
                   disabled={showPassword}
@@ -259,9 +272,9 @@ export default function SignUp() {
               </div>
 
               {showUsernameFields && (
-                <div className="animate-in fade-in slide-in-from-top-2 duration-300 space-y-4">
+                <div className="animate-in fade-in slide-in-from-top-2 duration-300 space-y-3 md:space-y-4">
                   <div>
-                    <Label className="text-sm text-muted-foreground mb-2 block">
+                    <Label className="text-xs md:text-sm text-muted-foreground mb-1 md:mb-2 block">
                       Choose a unique username
                     </Label>
                     <div className="relative">
@@ -275,7 +288,7 @@ export default function SignUp() {
                           checkUsernameAvailability(value);
                         }}
                         pattern="[a-zA-Z0-9_]{3,20}"
-                        className="h-12 rounded-xl pr-10"
+                        className="h-11 md:h-12 rounded-xl pr-10"
                         required
                         minLength={3}
                         maxLength={20}
@@ -286,13 +299,13 @@ export default function SignUp() {
                         {!checkingUsername && isUsernameAvailable === false && <XCircle className="h-5 w-5 text-red-600" />}
                       </div>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-1">
+                    <p className="text-[10px] md:text-xs text-muted-foreground mt-1">
                       3-20 characters, letters, numbers, and underscore only
                     </p>
                     {isUsernameAvailable === false && usernameSuggestions.length > 0 && (
                       <div className="mt-2">
-                        <p className="text-xs text-muted-foreground mb-1">Suggestions:</p>
-                        <div className="flex gap-2 flex-wrap">
+                        <p className="text-[10px] md:text-xs text-muted-foreground mb-1">Suggestions:</p>
+                        <div className="flex gap-1 md:gap-2 flex-wrap">
                           {usernameSuggestions.map((suggestion) => (
                             <button
                               key={suggestion}
@@ -301,7 +314,7 @@ export default function SignUp() {
                                 setUsername(suggestion);
                                 checkUsernameAvailability(suggestion);
                               }}
-                              className="text-xs px-2 py-1 bg-muted rounded hover:bg-muted/80"
+                              className="text-[10px] md:text-xs px-1.5 md:px-2 py-0.5 md:py-1 bg-muted rounded hover:bg-muted/80"
                             >
                               {suggestion}
                             </button>
@@ -312,7 +325,7 @@ export default function SignUp() {
                   </div>
 
                   <div>
-                    <Label className="text-sm text-muted-foreground mb-2 block">
+                    <Label className="text-xs md:text-sm text-muted-foreground mb-1 md:mb-2 block">
                       Password
                     </Label>
                     <Input
@@ -320,14 +333,14 @@ export default function SignUp() {
                       placeholder="Password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="h-12 rounded-xl"
+                      className="h-11 md:h-12 rounded-xl"
                       required
                       minLength={6}
                     />
                   </div>
 
                   <div>
-                    <Label className="text-sm text-muted-foreground mb-2 block">
+                    <Label className="text-xs md:text-sm text-muted-foreground mb-1 md:mb-2 block">
                       Confirm Password
                     </Label>
                     <Input
@@ -335,7 +348,7 @@ export default function SignUp() {
                       placeholder="Confirm Password"
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="h-12 rounded-xl"
+                      className="h-11 md:h-12 rounded-xl"
                       required
                       minLength={6}
                     />
@@ -345,7 +358,7 @@ export default function SignUp() {
 
               {showPassword && !showUsernameFields && (
                 <div className="animate-in fade-in slide-in-from-top-2 duration-300 space-y-2">
-                  <label className="text-sm text-muted-foreground mb-2 block">
+                  <label className="text-xs md:text-sm text-muted-foreground mb-1 md:mb-2 block">
                     Password
                   </label>
                   <Input
@@ -353,7 +366,7 @@ export default function SignUp() {
                     placeholder="Password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="h-12 rounded-xl"
+                    className="h-11 md:h-12 rounded-xl"
                     required
                     minLength={6}
                     autoFocus
@@ -362,7 +375,7 @@ export default function SignUp() {
                     <button
                       type="button"
                       onClick={() => navigate('/reset-password-request')}
-                      className="text-sm text-primary hover:underline"
+                      className="text-xs md:text-sm text-primary hover:underline"
                     >
                       Forgot password?
                     </button>
@@ -373,7 +386,7 @@ export default function SignUp() {
               <Button
                 type="submit"
                 disabled={loading || checkingEmail || checkingUsername || (showUsernameFields && !isUsernameAvailable)}
-                className="w-full h-14 text-lg font-semibold rounded-full bg-black hover:bg-black/90 text-white"
+                className="w-full h-12 md:h-14 text-base md:text-lg font-semibold rounded-full bg-black hover:bg-black/90 text-white"
               >
                 {loading || checkingEmail ? (
                   <>
@@ -391,7 +404,7 @@ export default function SignUp() {
             </form>
 
             {!isBrandOrRetailer && (
-              <div className="mt-6 text-center text-sm text-muted-foreground space-y-2">
+              <div className="mt-4 md:mt-6 text-center text-xs md:text-sm text-muted-foreground space-y-1 md:space-y-2">
                 <p>
                   Are you a brand?{' '}
                   <button
@@ -425,7 +438,16 @@ export default function SignUp() {
   const isBrandOrRetailer = userRole === 'brand' || userRole === 'retailer';
 
   return (
-    <div className="h-screen bg-background flex flex-col overflow-hidden relative">
+    <div 
+      className="flex flex-col overflow-hidden relative bg-background"
+      style={{
+        height: '100dvh',
+        paddingTop: 'env(safe-area-inset-top)',
+        paddingBottom: 'env(safe-area-inset-bottom)',
+        paddingLeft: 'env(safe-area-inset-left)',
+        paddingRight: 'env(safe-area-inset-right)',
+      }}
+    >
       {/* Background Image Overlay */}
       <div 
         className="absolute inset-0 bg-cover bg-center z-0"
@@ -436,7 +458,7 @@ export default function SignUp() {
       />
       
       {/* Back Button */}
-      <div className="p-4 relative z-10">
+      <div className="p-2 md:p-4 relative z-10 flex-shrink-0">
         <Button
           variant="ghost"
           size="icon"
@@ -448,25 +470,25 @@ export default function SignUp() {
       </div>
 
       {/* Azyah Branding */}
-      <div className="pt-4 pb-8 relative z-10">
-        <h1 className="text-4xl font-bold text-white text-center tracking-tight">
+      <div className="pt-2 pb-4 md:pt-4 md:pb-8 relative z-10 flex-shrink-0">
+        <h1 className="text-3xl md:text-4xl font-bold text-white text-center tracking-tight">
           Azyah
         </h1>
       </div>
 
       {/* Content */}
-      <div className="flex-1 flex items-center justify-center px-6 relative z-10 overflow-auto pb-6">
-        <div className="w-full max-w-md text-center">
-          <p className="text-white text-lg mb-8 font-medium px-4">
+      <div className="flex-1 flex flex-col justify-center items-center px-4 md:px-6 relative z-10 min-h-0">
+        <div className="w-full max-w-md text-center space-y-6 md:space-y-8">
+          <p className="text-white text-base md:text-lg font-medium px-2">
             Create your free account to backup outfits and sync across devices.
           </p>
 
-          <div className="space-y-4">
+          <div className="space-y-3 md:space-y-4">
             {!isBrandOrRetailer && (
               <>
                 <Button
                   onClick={() => handleOAuthSignIn('google')}
-                  className="w-full h-14 text-base font-medium rounded-full border-2"
+                  className="w-full h-12 md:h-14 text-sm md:text-base font-medium rounded-full border-2"
                 >
                   <svg className="mr-3 h-5 w-5" viewBox="0 0 24 24">
                     <path
@@ -491,7 +513,7 @@ export default function SignUp() {
 
                 <Button
                   onClick={() => handleOAuthSignIn('apple')}
-                  className="w-full h-14 text-base font-medium rounded-full border-2"
+                  className="w-full h-12 md:h-14 text-sm md:text-base font-medium rounded-full border-2"
                 >
                   <svg className="mr-3 h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
@@ -502,27 +524,30 @@ export default function SignUp() {
             )}
 
             {!isBrandOrRetailer && (
-              <div className="relative">
+              <div className="relative py-2">
                 <div className="absolute inset-0 flex items-center">
                   <div className="w-full border-t border-white/20"></div>
                 </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="px-4 bg-transparent text-white/80">or</span>
+                <div className="relative flex justify-center text-xs md:text-sm">
+                  <span className="px-3 md:px-4 bg-transparent text-white/80">or</span>
                 </div>
               </div>
             )}
 
             <Button
               onClick={() => setStep('email-entry')}
-              className="w-full h-14 text-base font-semibold rounded-full bg-white hover:bg-gray-100 text-black"
+              className="w-full h-12 md:h-14 text-sm md:text-base font-semibold rounded-full bg-white hover:bg-gray-100 text-black"
             >
-              <Mail className="w-5 h-5 mr-2" />
+              <Mail className="w-4 h-4 md:w-5 md:h-5 mr-2" />
               Continue with email
             </Button>
           </div>
 
           {!isBrandOrRetailer && (
-            <div className="mt-6 text-center text-sm text-white/80 space-y-2">
+            <div 
+              className="relative z-10 text-center text-xs md:text-sm text-white/80 space-y-1 pb-2 flex-shrink-0"
+              style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}
+            >
               <p>
                 Are you a brand?{' '}
                 <button

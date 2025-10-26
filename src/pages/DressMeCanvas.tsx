@@ -222,18 +222,27 @@ export default function DressMeCanvas() {
         description="Create and customize your outfit combinations"
       />
       
-      <div className="h-screen overflow-hidden flex flex-col">
+      <div 
+        className="flex flex-col bg-background"
+        style={{
+          height: '100dvh',
+          overflow: 'hidden',
+        }}
+      >
         {/* Header */}
-        <div className="sticky top-0 z-40 bg-background/95 backdrop-blur-sm border-b flex-shrink-0">
-          <div className="container max-w-6xl mx-auto p-4">
+        <div 
+          className="z-40 bg-background/95 backdrop-blur-sm border-b flex-shrink-0"
+          style={{ paddingTop: 'env(safe-area-inset-top)' }}
+        >
+          <div className="container max-w-6xl mx-auto p-2 md:p-4">
             <div className="flex items-center justify-between">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => navigate('/dress-me/wardrobe')}
               >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back
+                <ArrowLeft className="w-4 h-4 mr-1 md:mr-2" />
+                <span className="text-xs md:text-sm">Back</span>
               </Button>
               <Button
                 variant="default"
@@ -241,16 +250,21 @@ export default function DressMeCanvas() {
                 onClick={() => setIsSaveModalOpen(true)}
                 disabled={layers.length === 0}
               >
-                <Save className="w-4 h-4 mr-2" />
-                Save
+                <Save className="w-4 h-4 mr-1 md:mr-2" />
+                <span className="text-xs md:text-sm">Save</span>
               </Button>
             </div>
           </div>
         </div>
 
         {/* Canvas - grows to fill available space */}
-        <div className="flex-1 flex items-center justify-center bg-background overflow-hidden">
-          <div className="w-full h-full max-w-6xl px-2 md:px-4">
+        <div 
+          className="flex-1 flex items-center justify-center bg-background overflow-hidden min-h-0"
+          style={{
+            paddingBottom: 'calc(60px + env(safe-area-inset-bottom))',
+          }}
+        >
+          <div className="w-full h-full max-w-6xl px-1 md:px-4">
             <EnhancedInteractiveCanvas
               layers={layers}
               onLayersChange={setLayers}
