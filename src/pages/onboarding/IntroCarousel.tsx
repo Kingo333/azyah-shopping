@@ -71,9 +71,9 @@ export default function IntroCarousel() {
 
       {/* Main Content */}
       <div className="flex items-center justify-center px-4 py-1 overflow-auto">
-        <div className="w-full max-w-sm mx-auto flex flex-col items-center gap-2">
+        <div className="w-full max-w-sm mx-auto flex flex-col items-center gap-1">
           {/* Phone Mockup with Screenshot or Slider */}
-          <div className="relative w-56 h-auto">
+          <div className="relative w-48 h-auto">
             <div className="relative bg-white rounded-[1.5rem] shadow-lg border-[3px] border-gray-800 overflow-hidden">
               <div className="absolute top-0 left-1/2 -translate-x-1/2 w-20 h-4 bg-gray-800 rounded-b-lg z-10" />
               {slides[currentSlide].type === 'slider' ? (
@@ -91,8 +91,8 @@ export default function IntroCarousel() {
           </div>
           
           {/* Text Content */}
-          <div className="text-center space-y-1 px-2">
-            <h2 className="text-base font-bold text-foreground leading-tight">
+          <div className="text-center space-y-0.5 px-2">
+            <h2 className="text-sm font-bold text-foreground leading-tight">
               {slides[currentSlide].title}
             </h2>
             <p className="text-xs text-muted-foreground">
@@ -101,7 +101,7 @@ export default function IntroCarousel() {
           </div>
 
           {/* Progress Dots with Arrow Navigation */}
-          <div className="flex items-center justify-center gap-4 mt-0.5">
+          <div className="flex items-center justify-center gap-3 mt-0">
             <button
               onClick={prevSlide}
               disabled={currentSlide === 0}
