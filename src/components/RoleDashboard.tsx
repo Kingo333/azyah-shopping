@@ -328,7 +328,7 @@ const RoleDashboard: React.FC = () => {
       {/* Basics Fits Section */}
       {basicsProducts.length > 0 && (
         <section className="px-4 pt-6">
-          <h2 className="text-lg font-semibold mb-3 text-foreground">Basics Fits</h2>
+          <h2 className="text-lg font-semibold mb-3 text-foreground font-sans">Basics Fits</h2>
           
           <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide [-webkit-overflow-scrolling:touch]">
             {basicsProducts.map(product => (
@@ -352,7 +352,7 @@ const RoleDashboard: React.FC = () => {
       {/* Trending Looks Section */}
       <section className="px-4 pt-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-foreground">Trending Looks</h2>
+          <h2 className="text-lg font-semibold text-foreground font-sans">Trending Looks</h2>
           
           {/* Category Filter */}
           <Popover open={isTrendingFilterOpen} onOpenChange={setIsTrendingFilterOpen}>
@@ -405,20 +405,27 @@ const RoleDashboard: React.FC = () => {
       </section>
 
       {/* Events Section */}
-      {featuredEvent && (
-        <section className="px-4 pt-6">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-lg font-semibold text-foreground">Events</h2>
-            <Button 
-              variant="link" 
-              size="sm" 
-              onClick={() => navigate('/events')}
-              className="text-[hsl(var(--azyah-maroon))] hover:text-[hsl(var(--azyah-maroon))]/80 text-xs p-0 h-auto"
-            >
-              View All
-            </Button>
-          </div>
+      <section className="px-4 pt-6">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-lg font-semibold text-foreground font-sans">Events</h2>
+          <Button 
+            variant="link" 
+            size="sm" 
+            onClick={() => navigate('/events')}
+            className="text-[hsl(var(--azyah-maroon))] hover:text-[hsl(var(--azyah-maroon))]/80 text-xs p-0 h-auto"
+          >
+            View All
+          </Button>
+        </div>
 
+        {!featuredEvent ? (
+          <Card className="bg-white border-[hsl(var(--azyah-border))] shadow-sm">
+            <CardContent className="p-8 text-center">
+              <CalendarIcon className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+              <p className="text-sm text-muted-foreground">No upcoming events</p>
+            </CardContent>
+          </Card>
+        ) : (
           <Card className="bg-white border-[hsl(var(--azyah-border))] shadow-sm overflow-hidden">
             <CardContent className="p-0 flex gap-3">
               {/* Event Image */}
@@ -456,12 +463,12 @@ const RoleDashboard: React.FC = () => {
               </div>
             </CardContent>
           </Card>
-        </section>
-      )}
+        )}
+      </section>
 
       {/* Salons Section */}
       <section className="px-4 pt-6">
-        <h2 className="text-lg font-semibold mb-3 text-foreground">Salons</h2>
+        <h2 className="text-lg font-semibold mb-3 text-foreground font-sans">Salons</h2>
 
         {/* City Filter Pills */}
         <div className="flex gap-2 mb-3">
@@ -514,7 +521,7 @@ const RoleDashboard: React.FC = () => {
       {/* Fashion Leaderboard Section */}
       <section className="px-4 pt-6">
         <div className="mb-2">
-          <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
+          <h2 className="text-lg font-semibold text-foreground flex items-center gap-2 font-sans">
             <Trophy className="h-5 w-5 text-yellow-500" />
             Fashion Leaderboard
           </h2>

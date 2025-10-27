@@ -54,50 +54,48 @@ export function ProfileCompletionBanner() {
   }
 
   return (
-    <Card className="border-l-4 border-l-primary bg-gradient-to-r from-primary/5 to-accent/5 mb-6">
+    <Card className="border border-[#E5E3DF] bg-white shadow-sm mb-6">
       <div className="p-4">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center space-x-3 flex-1">
-            <div className="flex-shrink-0">
-              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                <User className="w-5 h-5 text-primary" />
-              </div>
+        <div className="flex items-center gap-3">
+          {/* User Icon - Simple Line Icon */}
+          <User className="w-5 h-5 text-foreground flex-shrink-0" />
+          
+          {/* Progress Info */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1.5 mb-2">
+              <span className="text-sm font-medium text-foreground font-sans">
+                Complete Your Profile
+              </span>
+              <span className="text-sm font-medium text-muted-foreground">
+                ({percentage}%)
+              </span>
             </div>
             
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-sm font-semibold text-foreground">
-                  Complete Your Profile ({percentage}%)
-                </h3>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-6 w-6 p-0"
-                  onClick={handleDismiss}
-                >
-                  <X className="w-4 h-4" />
-                </Button>
-              </div>
-              
-              <Progress value={percentage} className="mb-3 h-2" />
-              
-              <div className="flex items-center justify-between">
-                <div className="text-xs text-muted-foreground">
-                  Missing: {missingFields.slice(0, 2).join(', ')}
-                  {missingFields.length > 2 && ` +${missingFields.length - 2} more`}
-                </div>
-                
-                <Button
-                  size="sm"
-                  onClick={handleCompleteProfile}
-                  className="h-8 px-3 text-xs"
-                >
-                  Complete Profile
-                  <ArrowRight className="w-3 h-3 ml-1" />
-                </Button>
-              </div>
-            </div>
+            {/* Progress Bar */}
+            <Progress 
+              value={percentage} 
+              className="h-1.5 bg-[#E5E3DF] [&>div]:bg-[#7A143E]"
+            />
           </div>
+          
+          {/* Action Button - Circular Arrow */}
+          <Button
+            size="icon"
+            onClick={handleCompleteProfile}
+            className="h-9 w-9 rounded-full bg-[#7A143E] hover:bg-[#5A0F2E] flex-shrink-0"
+          >
+            <ArrowRight className="w-4 h-4 text-white" />
+          </Button>
+          
+          {/* Close Button */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 flex-shrink-0 hover:bg-transparent"
+            onClick={handleDismiss}
+          >
+            <X className="w-4 h-4 text-muted-foreground" />
+          </Button>
         </div>
       </div>
     </Card>
