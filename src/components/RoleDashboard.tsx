@@ -15,7 +15,7 @@ import DashboardHeader from '@/components/DashboardHeader';
 import AffiliateHub from '@/components/AffiliateHub';
 import AiStudioModal from '@/components/AiStudioModal';
 
-import { Heart, ShoppingBag, Search, Sparkles, Package, BarChart3, Users, Settings, Store, TrendingUp, Plus, Eye, DollarSign, Globe, Bell, LogOut, User, Archive, Trophy, MapPin, Blocks, WandSparkles, ChevronDown, ChevronUp, Gift, ChevronLeft, ChevronRight, Home, Filter, CalendarIcon, Crown, Check } from 'lucide-react';
+import { Heart, ShoppingBag, Search, Shirt, Package, BarChart3, Users, Settings, Store, TrendingUp, Plus, Eye, DollarSign, Globe, Bell, LogOut, User, Archive, Trophy, MapPin, Blocks, WandSparkles, ChevronDown, ChevronUp, Gift, ChevronLeft, ChevronRight, Home, Filter, CalendarIcon, Crown, Check } from 'lucide-react';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import MinimizedLeaderboard from '@/components/MinimizedLeaderboard';
 import TrendingStylesCarousel from '@/components/TrendingStylesCarousel';
@@ -293,7 +293,7 @@ const RoleDashboard: React.FC = () => {
           {/* AI Studio */}
           <button onClick={() => setAiStudioModalOpen(true)} className="flex flex-col items-center gap-1.5">
             <div className="w-14 h-14 rounded-full bg-white border border-[hsl(var(--azyah-border))] shadow-sm flex items-center justify-center hover:shadow-md transition-shadow">
-              <Sparkles className="h-6 w-6 text-[hsl(var(--azyah-maroon))]" />
+              <Shirt className="h-6 w-6 text-[hsl(var(--azyah-maroon))]" />
             </div>
             <span className="text-[10px] font-medium text-foreground">AI Studio</span>
           </button>

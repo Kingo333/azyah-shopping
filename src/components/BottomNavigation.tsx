@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Home, ShoppingBag, Sparkles, User } from 'lucide-react';
+import { Home, ShoppingBag, User } from 'lucide-react';
 
 interface NavItem {
   id: string;
@@ -9,10 +9,28 @@ interface NavItem {
   path: string;
 }
 
+// Custom Hanger Icon Component
+const HangerIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <svg 
+    xmlns="http://www.w3.org/2000/svg" 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    stroke="currentColor" 
+    strokeWidth="2" 
+    strokeLinecap="round" 
+    strokeLinejoin="round" 
+    className={className}
+  >
+    <path d="M12 3a3 3 0 0 0-3 3v1" />
+    <path d="M3 21h18" />
+    <path d="M12 7l9 7v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2l9-7z" />
+  </svg>
+);
+
 const navItems: NavItem[] = [
   { id: 'home', label: 'Home', icon: Home, path: '/dashboard' },
   { id: 'shop', label: 'Shop', icon: ShoppingBag, path: '/swipe' },
-  { id: 'dress-me', label: 'Dress Me', icon: Sparkles, path: '/dress-me' },
+  { id: 'dress-me', label: 'Dress Me', icon: HangerIcon, path: '/dress-me' },
   { id: 'profile', label: 'Profile', icon: User, path: '/settings' },
 ];
 
