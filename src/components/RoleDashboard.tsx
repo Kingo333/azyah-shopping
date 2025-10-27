@@ -28,6 +28,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { CATEGORY_TREE, getCategoryDisplayName } from '@/lib/categories';
 import type { TopCategory } from '@/lib/categories';
 import { useSubscription } from '@/hooks/useSubscription';
+import { BottomNavigation } from '@/components/BottomNavigation';
 interface UserProfile {
   id: string;
   name: string;
@@ -68,6 +69,15 @@ const RoleDashboard: React.FC = () => {
   const [isAffiliateMinimized, setIsAffiliateMinimized] = useState(true);
   const [selectedTrendingCategory, setSelectedTrendingCategory] = useState<TopCategory | null>(null);
   const [isTrendingFilterOpen, setIsTrendingFilterOpen] = useState(false);
+  const [basicsProducts, setBasicsProducts] = useState<any[]>([]);
+  const [featuredEvent, setFeaturedEvent] = useState<any>(null);
+  const [salonCity, setSalonCity] = useState<'dubai' | 'abudhabi'>('dubai');
+  const [salons] = useState<any[]>([
+    { id: 1, name: 'Jane saloon', image_url: '/placeholder.svg', city: 'dubai' },
+    { id: 2, name: 'Shay Nails', image_url: '/placeholder.svg', city: 'dubai' },
+    { id: 3, name: 'Glamour Spa', image_url: '/placeholder.svg', city: 'abudhabi' },
+    { id: 4, name: 'Beauty Lounge', image_url: '/placeholder.svg', city: 'abudhabi' },
+  ]);
 
   // Load saved category selection on component mount
   useEffect(() => {
@@ -95,6 +105,8 @@ const RoleDashboard: React.FC = () => {
       try {
         await fetchUserProfile();
         await fetchDashboardStats();
+        await fetchBasicsFits();
+        await fetchFeaturedEvent();
       } catch (error) {
         console.error('Error initializing dashboard:', error);
       } finally {
@@ -103,6 +115,40 @@ const RoleDashboard: React.FC = () => {
     };
     initializeDashboard();
   }, [user]);
+  
+  const fetchBasicsFits = async () => {
+    try {
+      const { data }: { data: any } = await supabase
+        .from('products')
+        .select('id, title, image_url, price_cents, currency')
+        .in('category_slug', ['clothing', 'footwear', 'accessories'])
+        .eq('status', 'active')
+        .limit(8);
+      
+      setBasicsProducts(data || []);
+    } catch (error) {
+      console.error('Error fetching basics:', error);
+    }
+  };
+  
+  const fetchFeaturedEvent = async () => {
+    try {
+      const { data, error }: { data: any; error: any } = await supabase
+        .from('retail_events')
+        .select('*, retailer:retailers(name, logo_url)')
+        .eq('status', 'active')
+        .gte('end_date', new Date().toISOString().split('T')[0])
+        .order('event_date', { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      
+      if (!error && data) {
+        setFeaturedEvent(data);
+      }
+    } catch (error) {
+      console.error('Error fetching event:', error);
+    }
+  };
 
   // Remove automatic redirects - let users access dashboard or choose their portal
   const fetchUserProfile = async () => {
@@ -236,308 +282,269 @@ const RoleDashboard: React.FC = () => {
       </div>;
   }
   console.log('Rendering dashboard for user:', userProfile);
-  const renderShopperDashboard = () => <div className="space-y-6">
-      {/* Profile Completion Banner */}
-      <ProfileCompletionBanner />
-
-      {/* Upgrade Card */}
-      <section className="px-4">
-        <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2 flex-1 min-w-0">
-                <Crown className="h-4 w-4 text-primary flex-shrink-0" />
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold truncate">
-                    {isPremium ? 'Premium Active' : 'Unlock Premium'}
-                  </p>
-                  {!isPremium && (
-                    <p className="text-xs text-muted-foreground">
-                      From AED 25/month
-                    </p>
-                  )}
-                </div>
-              </div>
-              <Button 
-                onClick={() => navigate('/dashboard/upgrade')}
-                size="sm"
-                className="flex-shrink-0"
-              >
-                {isPremium ? 'Manage' : 'Upgrade'}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+  const renderShopperDashboard = () => <div className="space-y-0 pb-20">
+      {/* Combined Status Banner */}
+      <section className="px-4 pt-4">
+        <ProfileCompletionBanner />
       </section>
 
-      {/* Quick Actions - Horizontal Pills */}
-      <section className="px-4 pt-3">
-        <div className="flex gap-2 overflow-x-auto pb-1 [-webkit-overflow-scrolling:touch] scrollbar-hide">
-          {/* Home Chip */}
-          <TutorialTooltip content="Return to your personalized dashboard with all your fashion insights and recommendations." feature="home">
-            <button
-              onClick={() => navigate('/dashboard')}
-              className={`flex items-center justify-center p-2 h-9 w-9 rounded-lg transition-colors font-medium text-sm flex-shrink-0 ${
-                location.pathname === '/dashboard' 
-                  ? 'bg-primary text-primary-foreground hover:bg-primary/90' 
-                  : 'bg-background border border-border hover:bg-accent'
-              }`}
-            >
-              <Home className="h-4 w-4" />
-            </button>
-          </TutorialTooltip>
+      {/* Feature Strip - 4 Icon Buttons */}
+      <section className="px-4 pt-4">
+        <div className="grid grid-cols-4 gap-3">
+          {/* AI Studio */}
+          <button onClick={() => setAiStudioModalOpen(true)} className="flex flex-col items-center gap-1.5">
+            <div className="w-14 h-14 rounded-full bg-white border border-[hsl(var(--azyah-border))] shadow-sm flex items-center justify-center hover:shadow-md transition-shadow">
+              <Sparkles className="h-6 w-6 text-[hsl(var(--azyah-maroon))]" />
+            </div>
+            <span className="text-[10px] font-medium text-foreground">AI Studio</span>
+          </button>
 
-          {/* Shop Chip */}
-          <TutorialTooltip content="Swipe through fashion items to discover your style. Swipe right to like items and build your personal taste profile." feature="swipe">
-            <button
-              onClick={() => navigate('/swipe')}
-              className="flex items-center gap-2 px-3 py-2 h-9 rounded-lg bg-background border border-border hover:bg-accent transition-colors font-medium text-sm whitespace-nowrap flex-shrink-0 min-w-fit"
-            >
-              <Heart className="h-4 w-4" />
-              Shop
-            </button>
-          </TutorialTooltip>
+          {/* UGC Collab */}
+          <div className="flex flex-col items-center gap-1.5">
+            <div className="w-14 h-14 rounded-full bg-white border border-[hsl(var(--azyah-border))] shadow-sm flex items-center justify-center hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate('/ugc')}>
+              <Users className="h-6 w-6 text-gray-500" />
+            </div>
+            <span className="text-[10px] font-medium text-muted-foreground">UGC Collab</span>
+          </div>
 
-          {/* Dress Me Chip */}
-          <TutorialTooltip content="Create outfits from your wardrobe. Upload clothing items and shuffle to generate outfit combinations instantly." feature="dress-me">
-            <button
-              onClick={() => navigate('/dress-me')}
-              className="relative flex items-center gap-2 px-3 py-2 h-9 rounded-lg bg-background border border-border hover:bg-accent transition-colors font-medium text-sm whitespace-nowrap flex-shrink-0 min-w-fit"
-            >
-              <WandSparkles className="h-4 w-4" />
-              Dress Me
-              <span className="absolute -top-0.5 -right-0.5 bg-primary text-primary-foreground text-[11px] px-1.5 py-0.5 rounded-full leading-none">
-                NEW
-              </span>
-            </button>
-          </TutorialTooltip>
+          {/* Wishlist */}
+          <button onClick={() => navigate('/wishlist')} className="flex flex-col items-center gap-1.5">
+            <div className="w-14 h-14 rounded-full bg-white border border-[hsl(var(--azyah-border))] shadow-sm flex items-center justify-center hover:shadow-md transition-shadow">
+              <Heart className="h-6 w-6 text-gray-500" />
+            </div>
+            <span className="text-[10px] font-medium text-muted-foreground">Wishlist</span>
+          </button>
 
-          {/* AI Studio Chip with New Badge */}
-          <TutorialTooltip content="Create AI-generated fashion content and try-on experiences. Upload photos and use AI to enhance your style." feature="ai-studio">
-            <button
-              onClick={() => setAiStudioModalOpen(true)}
-              className="relative flex items-center gap-2 px-3 py-2 h-9 rounded-lg bg-background border border-border hover:bg-accent transition-colors font-medium text-sm whitespace-nowrap flex-shrink-0 min-w-fit"
-            >
-              <Sparkles className="h-4 w-4" />
-              AI Studio
-              <span className="absolute -top-0.5 -right-0.5 bg-muted text-muted-foreground text-[11px] px-1.5 py-0.5 rounded-full leading-none">
-                New
-              </span>
-            </button>
-          </TutorialTooltip>
-
-          {/* Beauty Chip */}
-          {isEnabled('ai_beauty_consultant') && (
-            <TutorialTooltip content="Get personalized beauty advice from our AI consultant. Upload photos and receive tailored recommendations." feature="beauty-consultant">
-              <button
-                onClick={() => navigate('/beauty-consultant')}
-                className="relative flex items-center gap-2 px-3 py-2 h-9 rounded-lg bg-background border border-border hover:bg-accent transition-colors font-medium text-sm whitespace-nowrap flex-shrink-0 min-w-fit"
-              >
-                <WandSparkles className="h-4 w-4" />
-                Beauty
-                <span className="absolute -top-0.5 -right-0.5 bg-muted text-muted-foreground text-[11px] px-1.5 py-0.5 rounded-full leading-none">
-                  New
-                </span>
-              </button>
-            </TutorialTooltip>
-          )}
-
-          {/* Fashion Feed Chip - when beauty is not enabled */}
-          {!isEnabled('ai_beauty_consultant') && (
-            <TutorialTooltip content="Connect with the fashion community. Share your style and discover what others are wearing." feature="fashion-feed">
-              <button
-                onClick={() => navigate('/fashion-feed')}
-                className="flex items-center gap-2 px-3 py-2 h-9 rounded-lg bg-background border border-border hover:bg-accent transition-colors font-medium text-sm whitespace-nowrap flex-shrink-0 min-w-fit"
-              >
-                <Users className="h-4 w-4" />
-                Feed
-              </button>
-            </TutorialTooltip>
-          )}
-
-          {/* Wishlist Chip */}
-          <TutorialTooltip content="Save items you love to your wishlist. Keep track of favorites and shop them later when you're ready." feature="wishlist">
-            <button
-              onClick={() => navigate('/wishlist')}
-              className="flex items-center gap-2 px-3 py-2 h-9 rounded-lg bg-background border border-border hover:bg-accent transition-colors font-medium text-sm whitespace-nowrap flex-shrink-0 min-w-fit"
-            >
-              <ShoppingBag className="h-4 w-4" />
-              Wishlist
-            </button>
-          </TutorialTooltip>
-
-          {/* Explore Chip */}
-          <TutorialTooltip content="Search and discover products from top brands. Use filters to find exactly what you're looking for." feature="explore">
-            <button
-              onClick={() => navigate('/explore')}
-              className="flex items-center gap-2 px-3 py-2 h-9 rounded-lg bg-background border border-border hover:bg-accent transition-colors font-medium text-sm whitespace-nowrap flex-shrink-0 min-w-fit"
-            >
-              <Search className="h-4 w-4" />
-              Explore
-            </button>
-          </TutorialTooltip>
-
-          {/* UGC Collab Chip */}
-          <TutorialTooltip content="Collaborate with brands on user-generated content. Apply for brand partnerships and create sponsored content." feature="ugc-collab">
-            <UGCCollabButton className="flex items-center gap-2 px-3 py-2 h-9 rounded-lg bg-background border border-border hover:bg-accent transition-colors font-medium text-sm whitespace-nowrap flex-shrink-0 min-w-fit" />
-          </TutorialTooltip>
-
-          {/* Events Chip */}
-          <TutorialTooltip content="Discover upcoming fashion events and try on the latest collections virtually from retailers." feature="events">
-            <button
-              onClick={() => navigate('/events')}
-              className="flex items-center gap-2 px-3 py-2 h-9 rounded-lg bg-background border border-border hover:bg-accent transition-colors font-medium text-sm whitespace-nowrap flex-shrink-0 min-w-fit"
-            >
-              <CalendarIcon className="h-4 w-4" />
-              Events
-            </button>
-          </TutorialTooltip>
-
-          {/* Toy Replica Chip */}
-          <TutorialTooltip content="Create AI-generated toy replicas of fashion items. Upload photos and get miniature versions for play or display." feature="toy-replica">
-            <button
-              onClick={handleToyReplicaClick}
-              className="relative flex items-center gap-2 px-3 py-2 h-9 rounded-lg bg-background border border-border hover:bg-accent transition-colors font-medium text-sm whitespace-nowrap flex-shrink-0 min-w-fit"
-            >
-              <Blocks className="h-4 w-4" />
-              Toy AI
-              <span className="absolute -top-0.5 -right-0.5 bg-primary text-primary-foreground text-[11px] px-1.5 py-0.5 rounded-full leading-none">
-                AI
-              </span>
-            </button>
-          </TutorialTooltip>
-
+          {/* Beauty */}
+          <button onClick={() => navigate('/beauty-consultant')} className="flex flex-col items-center gap-1.5">
+            <div className="w-14 h-14 rounded-full bg-white border border-[hsl(var(--azyah-border))] shadow-sm flex items-center justify-center hover:shadow-md transition-shadow">
+              <WandSparkles className="h-6 w-6 text-gray-500" />
+            </div>
+            <span className="text-[10px] font-medium text-muted-foreground">Beauty</span>
+          </button>
         </div>
       </section>
 
-      {/* Trending Styles Section */}
-      <section className="px-4">
+      {/* Basics Fits Section */}
+      {basicsProducts.length > 0 && (
+        <section className="px-4 pt-6">
+          <h2 className="text-lg font-semibold mb-3 text-foreground">Basics Fits</h2>
+          
+          <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide [-webkit-overflow-scrolling:touch]">
+            {basicsProducts.map(product => (
+              <div key={product.id} className="flex-shrink-0 w-32">
+                <div className="aspect-square rounded-xl bg-white border border-[hsl(var(--azyah-border))] shadow-sm overflow-hidden mb-2">
+                  <img 
+                    src={product.image_url || '/placeholder.svg'} 
+                    alt={product.title}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <p className="text-xs font-medium text-center truncate">
+                  {product.title}
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Trending Looks Section */}
+      <section className="px-4 pt-6">
         <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2 flex-1 min-w-0">
-            <h2 className="text-base font-semibold flex-shrink-0">Trending</h2>
-            
-            {/* Category Filter */}
-            <Popover open={isTrendingFilterOpen} onOpenChange={setIsTrendingFilterOpen}>
-              <PopoverTrigger asChild>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="gap-1.5 h-7 px-2.5 rounded-full text-xs flex-shrink-0"
-                >
-                  <Filter className="h-3 w-3" />
-                  {selectedTrendingCategory ? getCategoryDisplayName(selectedTrendingCategory).substring(0, 8) + '...' : 'All'}
-                  <ChevronDown className="h-3 w-3" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-48 p-3 bg-card/95 backdrop-blur-sm border shadow-lg z-50" align="start">
-                <div className="space-y-2">
-                  <div className="font-medium text-xs">Filter by Category</div>
-                  <div className="grid gap-1">
+          <h2 className="text-lg font-semibold text-foreground">Trending Looks</h2>
+          
+          {/* Category Filter */}
+          <Popover open={isTrendingFilterOpen} onOpenChange={setIsTrendingFilterOpen}>
+            <PopoverTrigger asChild>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="gap-1.5 h-7 px-2.5 rounded-full text-xs"
+              >
+                <Filter className="h-3 w-3" />
+                {selectedTrendingCategory ? getCategoryDisplayName(selectedTrendingCategory).substring(0, 8) + '...' : 'All'}
+                <ChevronDown className="h-3 w-3" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-48 p-3" align="end">
+              <div className="space-y-2">
+                <div className="font-medium text-xs">Filter by Category</div>
+                <div className="grid gap-1">
+                  <Button
+                    variant={selectedTrendingCategory === null ? "default" : "ghost"}
+                    size="sm"
+                    className="justify-start h-7 text-xs"
+                    onClick={() => {
+                      setSelectedTrendingCategory(null);
+                      setIsTrendingFilterOpen(false);
+                    }}
+                  >
+                    All Categories
+                  </Button>
+                  {Object.keys(CATEGORY_TREE).map((category) => (
                     <Button
-                      variant={selectedTrendingCategory === null ? "default" : "ghost"}
+                      key={category}
+                      variant={selectedTrendingCategory === category ? "default" : "ghost"}
                       size="sm"
                       className="justify-start h-7 text-xs"
                       onClick={() => {
-                        setSelectedTrendingCategory(null);
+                        setSelectedTrendingCategory(category as TopCategory);
                         setIsTrendingFilterOpen(false);
                       }}
                     >
-                      All Categories
+                      {getCategoryDisplayName(category as TopCategory)}
                     </Button>
-                    {Object.keys(CATEGORY_TREE).map((category) => (
-                      <Button
-                        key={category}
-                        variant={selectedTrendingCategory === category ? "default" : "ghost"}
-                        size="sm"
-                        className="justify-start h-7 text-xs"
-                        onClick={() => {
-                          setSelectedTrendingCategory(category as TopCategory);
-                          setIsTrendingFilterOpen(false);
-                        }}
-                      >
-                        {getCategoryDisplayName(category as TopCategory)}
-                      </Button>
-                    ))}
-                  </div>
+                  ))}
                 </div>
-              </PopoverContent>
-            </Popover>
-          </div>
-          
+              </div>
+            </PopoverContent>
+          </Popover>
         </div>
         <TrendingStylesCarousel limit={8} categoryFilter={selectedTrendingCategory} />
       </section>
 
+      {/* Events Section */}
+      {featuredEvent && (
+        <section className="px-4 pt-6">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-lg font-semibold text-foreground">Events</h2>
+            <Button 
+              variant="link" 
+              size="sm" 
+              onClick={() => navigate('/events')}
+              className="text-[hsl(var(--azyah-maroon))] hover:text-[hsl(var(--azyah-maroon))]/80 text-xs p-0 h-auto"
+            >
+              View All
+            </Button>
+          </div>
 
-      {/* Affiliate Hub Section */}
-      <section className="px-4">
-        <div className="rounded-2xl border bg-card shadow-sm">
-          <Collapsible open={!isAffiliateMinimized} onOpenChange={open => setIsAffiliateMinimized(!open)}>
-            <CollapsibleTrigger asChild>
-              <button className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors">
-                <div className="flex items-center gap-3">
-                  <Gift className="h-5 w-5" />
-                  <h3 className="font-semibold text-left">Affiliate Hub</h3>
+          <Card className="bg-white border-[hsl(var(--azyah-border))] shadow-sm overflow-hidden">
+            <CardContent className="p-0 flex gap-3">
+              {/* Event Image */}
+              <div className="w-32 h-32 flex-shrink-0 bg-muted">
+                <img 
+                  src={featuredEvent.image_url || '/placeholder.svg'} 
+                  alt={featuredEvent.name}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+
+              {/* Event Info */}
+              <div className="flex-1 py-3 pr-3">
+                <h3 className="font-semibold text-sm mb-2 line-clamp-2">
+                  {featuredEvent.name}
+                </h3>
+                
+                <div className="space-y-1 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-1.5">
+                    <CalendarIcon className="h-3.5 w-3.5" />
+                    <span>
+                      {new Date(featuredEvent.event_date).toLocaleDateString('en-US', { 
+                        month: 'short', 
+                        day: 'numeric', 
+                        year: 'numeric' 
+                      })}
+                    </span>
+                  </div>
+                  
+                  <div className="flex items-center gap-1.5">
+                    <MapPin className="h-3.5 w-3.5" />
+                    <span>{featuredEvent.location || 'Online'}</span>
+                  </div>
                 </div>
-                {isAffiliateMinimized ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
-              </button>
-            </CollapsibleTrigger>
-            <CollapsibleContent className="px-4 pb-4">
-              <AffiliateHub showTitle={false} />
-            </CollapsibleContent>
-          </Collapsible>
+              </div>
+            </CardContent>
+          </Card>
+        </section>
+      )}
+
+      {/* Salons Section */}
+      <section className="px-4 pt-6">
+        <h2 className="text-lg font-semibold mb-3 text-foreground">Salons</h2>
+
+        {/* City Filter Pills */}
+        <div className="flex gap-2 mb-3">
+          <button
+            onClick={() => setSalonCity('dubai')}
+            className={`px-3 py-1 text-xs rounded-full font-medium transition-colors ${
+              salonCity === 'dubai' 
+                ? 'bg-[hsl(var(--azyah-maroon))] text-white' 
+                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+            }`}
+          >
+            Dubai
+          </button>
+          <button
+            onClick={() => setSalonCity('abudhabi')}
+            className={`px-3 py-1 text-xs rounded-full font-medium transition-colors ${
+              salonCity === 'abudhabi' 
+                ? 'bg-[hsl(var(--azyah-maroon))] text-white' 
+                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+            }`}
+          >
+            Abu Dhabi
+          </button>
+        </div>
+
+        {/* Salon Cards */}
+        <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide [-webkit-overflow-scrolling:touch]">
+          {salons
+            .filter(salon => salon.city === salonCity)
+            .map(salon => (
+              <div key={salon.id} className="flex-shrink-0 w-40">
+                <div className="aspect-[4/5] rounded-xl bg-white border border-[hsl(var(--azyah-border))] shadow-sm overflow-hidden mb-2 relative">
+                  <img 
+                    src={salon.image_url} 
+                    alt={salon.name}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute top-2 left-2 bg-[hsl(var(--azyah-maroon))] text-white text-[10px] px-2 py-0.5 rounded-full font-medium">
+                    {salonCity === 'dubai' ? 'Dubai' : 'Abu Dhabi'}
+                  </div>
+                </div>
+                <p className="text-xs font-medium text-center truncate">
+                  {salon.name}
+                </p>
+              </div>
+            ))}
         </div>
       </section>
 
-      {/* My Closets Section */}
-      <section className="px-4">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <Archive className="h-5 w-5" />
-            <h2 className="text-lg font-semibold">My Closets</h2>
-          </div>
-          <Button variant="ghost" size="sm" onClick={() => navigate('/closets')}>
-            View All
-          </Button>
+      {/* Fashion Leaderboard Section */}
+      <section className="px-4 pt-6">
+        <div className="mb-2">
+          <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
+            <Trophy className="h-5 w-5 text-yellow-500" />
+            Fashion Leaderboard
+          </h2>
+          <p className="text-xs text-muted-foreground">
+            Compete with style enthusiasts worldwide
+          </p>
         </div>
-        <div className="grid grid-cols-2 gap-3">
-          {/* Closet Preview Tiles */}
-          <div className="aspect-square rounded-2xl bg-muted border border-border p-4 flex flex-col items-center justify-center text-center">
-            <Archive className="h-8 w-8 text-muted-foreground mb-2" />
-            <p className="text-sm text-muted-foreground">Create your first closet</p>
-          </div>
-          <div className="aspect-square rounded-2xl bg-muted/50 border border-dashed border-border p-4 flex flex-col items-center justify-center text-center">
-            <Plus className="h-8 w-8 text-muted-foreground mb-2" />
-            <p className="text-sm text-muted-foreground">Add items</p>
-          </div>
-        </div>
-      </section>
-
-      {/* Fashion Leaderboards Section */}
-      <section className="px-4">
+        
         {/* Global/Country Toggle */}
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold">Fashion Leaderboards</h2>
-          <div className="flex bg-muted rounded-lg p-1">
+        <div className="flex justify-end mb-4">
+          <div className="flex bg-muted rounded-lg p-1 text-xs">
             <button
               onClick={() => setActiveLeaderboard('global')}
-              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+              className={`px-2.5 py-1 rounded-md transition-colors font-medium ${
                 activeLeaderboard === 'global' 
-                  ? 'bg-background shadow-sm' 
-                  : 'text-muted-foreground hover:text-foreground'
+                  ? 'bg-background shadow-sm text-foreground' 
+                  : 'text-muted-foreground'
               }`}
             >
-              Global
+              global
             </button>
             <button
               onClick={() => setActiveLeaderboard('country')}
-              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+              className={`px-2.5 py-1 rounded-md transition-colors font-medium ${
                 activeLeaderboard === 'country' 
-                  ? 'bg-background shadow-sm' 
-                  : 'text-muted-foreground hover:text-foreground'
+                  ? 'bg-background shadow-sm text-foreground' 
+                  : 'text-muted-foreground'
               }`}
             >
-              Country
+              country
             </button>
           </div>
         </div>
@@ -666,13 +673,10 @@ const RoleDashboard: React.FC = () => {
     </div>;
   };
   return <ErrorBoundary>
-      <SEOHead title="Azyah - Fashion Discovery Platform" description="Discover, shop and create your perfect style with AI-powered fashion recommendations" key="dashboard-seo" // Force re-render to override payment cancel title
-    />
-      <div className="min-h-screen bg-background pb-32">
-        {/* Header with hairline divider */}
-        <header className="px-4 pt-4 pb-2 border-b border-border/20 bg-background/80 backdrop-blur-sm sticky top-0 z-40">
-          <DashboardHeader />
-        </header>
+      <SEOHead title="Azyah - Fashion Discovery Platform" description="Discover, shop and create your perfect style with AI-powered fashion recommendations" key="dashboard-seo" />
+      <div className="min-h-screen bg-[hsl(var(--azyah-ivory))]">
+        {/* New Dashboard Header */}
+        <DashboardHeader />
 
           {/* Role-based Dashboard Content - Only render ONE dashboard */}
           {userProfile?.role === 'shopper' && renderShopperDashboard()}
@@ -680,7 +684,7 @@ const RoleDashboard: React.FC = () => {
           {userProfile?.role === 'retailer' && renderRetailerDashboard()}
           
           {/* Show error if no valid role */}
-          {userProfile && !['shopper', 'brand', 'retailer'].includes(userProfile.role) && <div className="space-y-4">
+          {userProfile && !['shopper', 'brand', 'retailer'].includes(userProfile.role) && <div className="space-y-4 px-4">
               <GlassPanel variant="premium" className="p-8">
                 <div className="text-center space-y-4">
                   <h2 className="text-xl font-semibold text-destructive">Invalid Role</h2>
@@ -691,10 +695,8 @@ const RoleDashboard: React.FC = () => {
               </GlassPanel>
             </div>}
         
-        {/* Floating Support Button */}
-        <div className="fixed bottom-6 right-6 z-50">
-          <FeedbackModal userType="shopper" />
-        </div>
+        {/* Bottom Navigation */}
+        {userProfile?.role === 'shopper' && <BottomNavigation />}
 
         {/* Global Search Modal */}
         <GlobalSearch isOpen={searchOpen} onClose={() => setSearchOpen(false)} />

@@ -85,6 +85,11 @@
     --sidebar-accent-foreground: 240 5.9% 10%;
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 217.2 10.6% 64.9%;
+    
+    /* Azyah Dashboard Colors */
+    --azyah-ivory: 30 11% 97%;      /* #F9F8F6 */
+    --azyah-maroon: 343 75% 32%;    /* #7A143E */
+    --azyah-border: 30 8% 91%;      /* #E5E3DF */
   }
 
   .dark {
@@ -312,6 +317,17 @@
   .card, .carousel-content, .carousel-item {
     max-width: 100%;
     overflow: hidden;
+  }
+}
+
+/* Safe area insets for mobile devices */
+@supports (padding: max(0px)) {
+  .safe-area-pb {
+    padding-bottom: max(env(safe-area-inset-bottom), 16px);
+  }
+  
+  .safe-area-pt {
+    padding-top: max(env(safe-area-inset-top), 16px);
   }
 }
 }

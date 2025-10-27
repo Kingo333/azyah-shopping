@@ -151,11 +151,11 @@ const MinimizedLeaderboard: React.FC<MinimizedLeaderboardProps> = ({
     }
   };
   const getRankBadgeColor = (rank: number) => {
-    if (rank === 1) return 'bg-gradient-to-r from-yellow-400 to-yellow-600';
-    if (rank === 2) return 'bg-gradient-to-r from-gray-300 to-gray-500';
-    if (rank === 3) return 'bg-gradient-to-r from-amber-400 to-amber-600';
-    if (rank <= 10) return 'bg-gradient-to-r from-purple-400 to-purple-600';
-    return 'bg-gradient-to-r from-blue-400 to-blue-600';
+    if (rank === 1) return 'bg-[hsl(var(--azyah-maroon))]';
+    if (rank === 2) return 'bg-gray-400';
+    if (rank === 3) return 'bg-amber-600';
+    if (rank <= 10) return 'bg-[hsl(var(--azyah-maroon))]/80';
+    return 'bg-gray-500';
   };
   if (!user) return null;
   const topThree = leaders.slice(0, 3);
