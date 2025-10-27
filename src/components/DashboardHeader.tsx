@@ -35,7 +35,7 @@ const DashboardHeader: React.FC = () => {
           onClick={() => navigate('/dashboard/upgrade')}
           variant="outline"
           size="sm"
-          className="text-xs px-3 py-1 rounded-full border-[hsl(var(--azyah-border))] hover:bg-[hsl(var(--azyah-ivory))]"
+          className="text-[10px] px-2.5 py-0.5 h-6 rounded-full border-[hsl(var(--azyah-border))] hover:bg-[hsl(var(--azyah-ivory))]"
         >
           Upgrade to Premium
         </Button>

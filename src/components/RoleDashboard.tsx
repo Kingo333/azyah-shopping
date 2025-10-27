@@ -293,7 +293,7 @@ const RoleDashboard: React.FC = () => {
           {/* AI Studio */}
           <button onClick={() => setAiStudioModalOpen(true)} className="flex flex-col items-center gap-1.5">
             <div className="w-14 h-14 rounded-full bg-white border border-[hsl(var(--azyah-border))] shadow-sm flex items-center justify-center hover:shadow-md transition-shadow">
-              <Shirt className="h-6 w-6 text-[hsl(var(--azyah-maroon))]" />
+              <Shirt className="h-6 w-6 text-gray-500" />
             </div>
             <span className="text-[10px] font-medium text-foreground">AI Studio</span>
           </button>
