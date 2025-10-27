@@ -139,14 +139,16 @@ const MinimizedLeaderboard: React.FC<MinimizedLeaderboardProps> = ({
     }
   };
   const getRankIcon = (rank: number) => {
-    if (rank <= 3) {
-      return <div className="w-6 h-6 rounded-full bg-[#7A143E] text-white flex items-center justify-center text-xs font-bold">
-        {rank}
-      </div>;
+    switch (rank) {
+      case 1:
+        return <Crown className="h-4 w-4 text-yellow-500" />;
+      case 2:
+        return <Medal className="h-4 w-4 text-gray-400" />;
+      case 3:
+        return <Medal className="h-4 w-4 text-amber-600" />;
+      default:
+        return <span className="font-bold text-muted-foreground text-sm">#{rank}</span>;
     }
-    return <div className="w-6 h-6 rounded-full bg-gray-200 text-gray-700 flex items-center justify-center text-xs font-bold">
-      {rank}
-    </div>;
   };
   const getRankBadgeColor = (rank: number) => {
     if (rank === 1) return 'bg-gradient-to-r from-yellow-400 to-yellow-600';

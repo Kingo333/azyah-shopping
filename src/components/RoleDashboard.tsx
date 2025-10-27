@@ -68,16 +68,6 @@ const RoleDashboard: React.FC = () => {
   const [isAffiliateMinimized, setIsAffiliateMinimized] = useState(true);
   const [selectedTrendingCategory, setSelectedTrendingCategory] = useState<TopCategory | null>(null);
   const [isTrendingFilterOpen, setIsTrendingFilterOpen] = useState(false);
-  
-  // Dashboard redesign states
-  const [basicsProducts, setBasicsProducts] = useState<any[]>([]);
-  const [featuredEvent, setFeaturedEvent] = useState<any>(null);
-  const [salons, setSalons] = useState<any[]>([
-    { id: 1, name: 'Jane saloon', image_url: '/placeholder.svg', city: 'dubai' },
-    { id: 2, name: 'Shay Nails', image_url: '/placeholder.svg', city: 'dubai' },
-  ]);
-  const [salonCity, setSalonCity] = useState('dubai');
-  const [showProgressCard, setShowProgressCard] = useState(true);
 
   // Load saved category selection on component mount
   useEffect(() => {
@@ -91,47 +81,6 @@ const RoleDashboard: React.FC = () => {
   useEffect(() => {
     localStorage.setItem('selectedTrendingCategory', selectedTrendingCategory || 'null');
   }, [selectedTrendingCategory]);
-
-  // Fetch basics products for dashboard
-  useEffect(() => {
-    const fetchBasics = async () => {
-      try {
-        const { data } = await supabase
-          .from('products')
-          .select('*')
-          .in('category', ['tops', 'jeans', 'jackets'])
-          .limit(8);
-        if (data) {
-          setBasicsProducts(data);
-        }
-      } catch (error) {
-        console.error('Error fetching basics products:', error);
-      }
-    };
-    fetchBasics();
-  }, []);
-
-  // Fetch featured event for dashboard
-  useEffect(() => {
-    const fetchEvent = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('retail_events')
-          .select('*, retailer:retailers(name, logo_url)')
-          .eq('status', 'active')
-          .gte('end_date', new Date().toISOString().split('T')[0])
-          .order('event_date', { ascending: true })
-          .limit(1)
-          .single();
-        if (data && !error) {
-          setFeaturedEvent(data);
-        }
-      } catch (error) {
-        console.error('Error fetching event:', error);
-      }
-    };
-    fetchEvent();
-  }, []);
 
   useEffect(() => {
     // Set correct page title
@@ -287,134 +236,179 @@ const RoleDashboard: React.FC = () => {
       </div>;
   }
   console.log('Rendering dashboard for user:', userProfile);
-  const renderShopperDashboard = () => <div className="space-y-6 bg-[#F9F8F6] min-h-screen pb-20">
-      {/* Combined Profile Progress & Premium Upgrade Card */}
-      {showProgressCard && (
-        <section className="px-4 pt-4">
-          <Card className="bg-white border-[#E5E3DF] shadow-sm">
-            <CardContent className="p-3 relative">
-              {/* Close button */}
-              <button 
-                onClick={() => setShowProgressCard(false)}
-                className="absolute top-2 right-2 text-muted-foreground hover:text-foreground"
-              >
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-              
-              <div className="flex items-center gap-3 pr-6">
-                {/* Profile Icon + Progress */}
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <User className="h-4 w-4 text-[#7A143E]" />
-                    <span className="text-sm font-medium">
-                      Complete Your Profile (25%)
-                    </span>
-                  </div>
-                  {/* Progress Bar */}
-                  <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                    <div className="h-full bg-[#7A143E] rounded-full" style={{ width: '25%' }} />
-                  </div>
-                </div>
-                
-                {/* Upgrade Button */}
-                <Button 
-                  size="sm" 
-                  onClick={() => navigate('/dashboard/upgrade')}
-                  className="bg-[#7A143E] hover:bg-[#5A0F2E] text-white rounded-md flex-shrink-0 h-8 w-8 p-0"
-                >
-                  →
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </section>
-      )}
-      
+  const renderShopperDashboard = () => <div className="space-y-6">
+      {/* Profile Completion Banner */}
+      <ProfileCompletionBanner />
 
-      {/* Icon Navigation - 4 Primary Actions */}
+      {/* Upgrade Card */}
+      <section className="px-4">
+        <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                <Crown className="h-4 w-4 text-primary flex-shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold truncate">
+                    {isPremium ? 'Premium Active' : 'Unlock Premium'}
+                  </p>
+                  {!isPremium && (
+                    <p className="text-xs text-muted-foreground">
+                      From AED 25/month
+                    </p>
+                  )}
+                </div>
+              </div>
+              <Button 
+                onClick={() => navigate('/dashboard/upgrade')}
+                size="sm"
+                className="flex-shrink-0"
+              >
+                {isPremium ? 'Manage' : 'Upgrade'}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </section>
+
+      {/* Quick Actions - Horizontal Pills */}
       <section className="px-4 pt-3">
-        <div className="grid grid-cols-4 gap-3">
-          {/* AI Studio */}
-          <TutorialTooltip content="Create AI-generated fashion content and try-on experiences." feature="ai-studio">
-            <button 
-              onClick={() => setAiStudioModalOpen(true)} 
-              className="flex flex-col items-center gap-1.5"
+        <div className="flex gap-2 overflow-x-auto pb-1 [-webkit-overflow-scrolling:touch] scrollbar-hide">
+          {/* Home Chip */}
+          <TutorialTooltip content="Return to your personalized dashboard with all your fashion insights and recommendations." feature="home">
+            <button
+              onClick={() => navigate('/dashboard')}
+              className={`flex items-center justify-center p-2 h-9 w-9 rounded-lg transition-colors font-medium text-sm flex-shrink-0 ${
+                location.pathname === '/dashboard' 
+                  ? 'bg-primary text-primary-foreground hover:bg-primary/90' 
+                  : 'bg-background border border-border hover:bg-accent'
+              }`}
             >
-              <div className="w-14 h-14 rounded-full bg-white border border-[#E5E3DF] shadow-sm flex items-center justify-center hover:shadow-md transition-shadow">
-                <Sparkles className="h-6 w-6 text-[#7A143E]" />
-              </div>
-              <span className="text-[10px] font-medium text-foreground">AI Studio</span>
+              <Home className="h-4 w-4" />
             </button>
           </TutorialTooltip>
 
-          {/* UGC Collab */}
-          <TutorialTooltip content="Collaborate with brands on user-generated content." feature="ugc-collab">
-            <button 
-              onClick={() => {/* UGC Modal trigger */}} 
-              className="flex flex-col items-center gap-1.5"
+          {/* Shop Chip */}
+          <TutorialTooltip content="Swipe through fashion items to discover your style. Swipe right to like items and build your personal taste profile." feature="swipe">
+            <button
+              onClick={() => navigate('/swipe')}
+              className="flex items-center gap-2 px-3 py-2 h-9 rounded-lg bg-background border border-border hover:bg-accent transition-colors font-medium text-sm whitespace-nowrap flex-shrink-0 min-w-fit"
             >
-              <div className="w-14 h-14 rounded-full bg-white border border-[#E5E3DF] shadow-sm flex items-center justify-center hover:shadow-md transition-shadow">
-                <Users className="h-6 w-6 text-muted-foreground" />
-              </div>
-              <span className="text-[10px] font-medium text-muted-foreground">UGC Collab</span>
+              <Heart className="h-4 w-4" />
+              Shop
             </button>
           </TutorialTooltip>
 
-          {/* Wishlist */}
-          <TutorialTooltip content="Save items you love to your wishlist." feature="wishlist">
-            <button 
-              onClick={() => navigate('/wishlist')} 
-              className="flex flex-col items-center gap-1.5"
+          {/* Dress Me Chip */}
+          <TutorialTooltip content="Create outfits from your wardrobe. Upload clothing items and shuffle to generate outfit combinations instantly." feature="dress-me">
+            <button
+              onClick={() => navigate('/dress-me')}
+              className="relative flex items-center gap-2 px-3 py-2 h-9 rounded-lg bg-background border border-border hover:bg-accent transition-colors font-medium text-sm whitespace-nowrap flex-shrink-0 min-w-fit"
             >
-              <div className="w-14 h-14 rounded-full bg-white border border-[#E5E3DF] shadow-sm flex items-center justify-center hover:shadow-md transition-shadow">
-                <Heart className="h-6 w-6 text-muted-foreground" />
-              </div>
-              <span className="text-[10px] font-medium text-muted-foreground">Wishlist</span>
+              <WandSparkles className="h-4 w-4" />
+              Dress Me
+              <span className="absolute -top-0.5 -right-0.5 bg-primary text-primary-foreground text-[11px] px-1.5 py-0.5 rounded-full leading-none">
+                NEW
+              </span>
             </button>
           </TutorialTooltip>
 
-          {/* Beauty */}
+          {/* AI Studio Chip with New Badge */}
+          <TutorialTooltip content="Create AI-generated fashion content and try-on experiences. Upload photos and use AI to enhance your style." feature="ai-studio">
+            <button
+              onClick={() => setAiStudioModalOpen(true)}
+              className="relative flex items-center gap-2 px-3 py-2 h-9 rounded-lg bg-background border border-border hover:bg-accent transition-colors font-medium text-sm whitespace-nowrap flex-shrink-0 min-w-fit"
+            >
+              <Sparkles className="h-4 w-4" />
+              AI Studio
+              <span className="absolute -top-0.5 -right-0.5 bg-muted text-muted-foreground text-[11px] px-1.5 py-0.5 rounded-full leading-none">
+                New
+              </span>
+            </button>
+          </TutorialTooltip>
+
+          {/* Beauty Chip */}
           {isEnabled('ai_beauty_consultant') && (
-            <TutorialTooltip content="Get personalized beauty advice from our AI consultant." feature="beauty-consultant">
-              <button 
-                onClick={() => navigate('/beauty-consultant')} 
-                className="flex flex-col items-center gap-1.5"
+            <TutorialTooltip content="Get personalized beauty advice from our AI consultant. Upload photos and receive tailored recommendations." feature="beauty-consultant">
+              <button
+                onClick={() => navigate('/beauty-consultant')}
+                className="relative flex items-center gap-2 px-3 py-2 h-9 rounded-lg bg-background border border-border hover:bg-accent transition-colors font-medium text-sm whitespace-nowrap flex-shrink-0 min-w-fit"
               >
-                <div className="w-14 h-14 rounded-full bg-white border border-[#E5E3DF] shadow-sm flex items-center justify-center hover:shadow-md transition-shadow">
-                  <Sparkles className="h-6 w-6 text-muted-foreground" />
-                </div>
-                <span className="text-[10px] font-medium text-muted-foreground">Beauty</span>
+                <WandSparkles className="h-4 w-4" />
+                Beauty
+                <span className="absolute -top-0.5 -right-0.5 bg-muted text-muted-foreground text-[11px] px-1.5 py-0.5 rounded-full leading-none">
+                  New
+                </span>
               </button>
             </TutorialTooltip>
           )}
+
+          {/* Fashion Feed Chip - when beauty is not enabled */}
+          {!isEnabled('ai_beauty_consultant') && (
+            <TutorialTooltip content="Connect with the fashion community. Share your style and discover what others are wearing." feature="fashion-feed">
+              <button
+                onClick={() => navigate('/fashion-feed')}
+                className="flex items-center gap-2 px-3 py-2 h-9 rounded-lg bg-background border border-border hover:bg-accent transition-colors font-medium text-sm whitespace-nowrap flex-shrink-0 min-w-fit"
+              >
+                <Users className="h-4 w-4" />
+                Feed
+              </button>
+            </TutorialTooltip>
+          )}
+
+          {/* Wishlist Chip */}
+          <TutorialTooltip content="Save items you love to your wishlist. Keep track of favorites and shop them later when you're ready." feature="wishlist">
+            <button
+              onClick={() => navigate('/wishlist')}
+              className="flex items-center gap-2 px-3 py-2 h-9 rounded-lg bg-background border border-border hover:bg-accent transition-colors font-medium text-sm whitespace-nowrap flex-shrink-0 min-w-fit"
+            >
+              <ShoppingBag className="h-4 w-4" />
+              Wishlist
+            </button>
+          </TutorialTooltip>
+
+          {/* Explore Chip */}
+          <TutorialTooltip content="Search and discover products from top brands. Use filters to find exactly what you're looking for." feature="explore">
+            <button
+              onClick={() => navigate('/explore')}
+              className="flex items-center gap-2 px-3 py-2 h-9 rounded-lg bg-background border border-border hover:bg-accent transition-colors font-medium text-sm whitespace-nowrap flex-shrink-0 min-w-fit"
+            >
+              <Search className="h-4 w-4" />
+              Explore
+            </button>
+          </TutorialTooltip>
+
+          {/* UGC Collab Chip */}
+          <TutorialTooltip content="Collaborate with brands on user-generated content. Apply for brand partnerships and create sponsored content." feature="ugc-collab">
+            <UGCCollabButton className="flex items-center gap-2 px-3 py-2 h-9 rounded-lg bg-background border border-border hover:bg-accent transition-colors font-medium text-sm whitespace-nowrap flex-shrink-0 min-w-fit" />
+          </TutorialTooltip>
+
+          {/* Events Chip */}
+          <TutorialTooltip content="Discover upcoming fashion events and try on the latest collections virtually from retailers." feature="events">
+            <button
+              onClick={() => navigate('/events')}
+              className="flex items-center gap-2 px-3 py-2 h-9 rounded-lg bg-background border border-border hover:bg-accent transition-colors font-medium text-sm whitespace-nowrap flex-shrink-0 min-w-fit"
+            >
+              <CalendarIcon className="h-4 w-4" />
+              Events
+            </button>
+          </TutorialTooltip>
+
+          {/* Toy Replica Chip */}
+          <TutorialTooltip content="Create AI-generated toy replicas of fashion items. Upload photos and get miniature versions for play or display." feature="toy-replica">
+            <button
+              onClick={handleToyReplicaClick}
+              className="relative flex items-center gap-2 px-3 py-2 h-9 rounded-lg bg-background border border-border hover:bg-accent transition-colors font-medium text-sm whitespace-nowrap flex-shrink-0 min-w-fit"
+            >
+              <Blocks className="h-4 w-4" />
+              Toy AI
+              <span className="absolute -top-0.5 -right-0.5 bg-primary text-primary-foreground text-[11px] px-1.5 py-0.5 rounded-full leading-none">
+                AI
+              </span>
+            </button>
+          </TutorialTooltip>
+
         </div>
       </section>
-
-      {/* Basics Fits Section */}
-      {basicsProducts.length > 0 && (
-        <section className="px-4 pt-4">
-          <h2 className="text-lg font-semibold mb-3 text-foreground">Basics Fits</h2>
-          
-          <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide [-webkit-overflow-scrolling:touch]">
-            {basicsProducts.map(product => (
-              <div key={product.id} className="flex-shrink-0 w-32">
-                <div className="aspect-square rounded-xl bg-white border border-[#E5E3DF] shadow-sm overflow-hidden mb-2">
-                  <img 
-                    src={product.image_url || '/placeholder.svg'} 
-                    alt={product.name}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <p className="text-xs font-medium text-center truncate">
-                  {product.name}
-                </p>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
 
       {/* Trending Styles Section */}
       <section className="px-4">
@@ -475,23 +469,61 @@ const RoleDashboard: React.FC = () => {
       </section>
 
 
+      {/* Affiliate Hub Section */}
+      <section className="px-4">
+        <div className="rounded-2xl border bg-card shadow-sm">
+          <Collapsible open={!isAffiliateMinimized} onOpenChange={open => setIsAffiliateMinimized(!open)}>
+            <CollapsibleTrigger asChild>
+              <button className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors">
+                <div className="flex items-center gap-3">
+                  <Gift className="h-5 w-5" />
+                  <h3 className="font-semibold text-left">Affiliate Hub</h3>
+                </div>
+                {isAffiliateMinimized ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+              </button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="px-4 pb-4">
+              <AffiliateHub showTitle={false} />
+            </CollapsibleContent>
+          </Collapsible>
+        </div>
+      </section>
 
-      {/* Fashion Leaderboard Section */}
-      <section className="px-4 pt-4">
-        <div className="flex items-center justify-between mb-2">
-          <div>
-            <h2 className="text-lg font-semibold text-foreground">Fashion Leaderboard</h2>
-            <p className="text-xs text-muted-foreground">
-              Compete with style enthusiasts worldwide
-            </p>
+      {/* My Closets Section */}
+      <section className="px-4">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Archive className="h-5 w-5" />
+            <h2 className="text-lg font-semibold">My Closets</h2>
           </div>
-          
+          <Button variant="ghost" size="sm" onClick={() => navigate('/closets')}>
+            View All
+          </Button>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          {/* Closet Preview Tiles */}
+          <div className="aspect-square rounded-2xl bg-muted border border-border p-4 flex flex-col items-center justify-center text-center">
+            <Archive className="h-8 w-8 text-muted-foreground mb-2" />
+            <p className="text-sm text-muted-foreground">Create your first closet</p>
+          </div>
+          <div className="aspect-square rounded-2xl bg-muted/50 border border-dashed border-border p-4 flex flex-col items-center justify-center text-center">
+            <Plus className="h-8 w-8 text-muted-foreground mb-2" />
+            <p className="text-sm text-muted-foreground">Add items</p>
+          </div>
+        </div>
+      </section>
+
+      {/* Fashion Leaderboards Section */}
+      <section className="px-4">
+        {/* Global/Country Toggle */}
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold">Fashion Leaderboards</h2>
           <div className="flex bg-muted rounded-lg p-1">
             <button
               onClick={() => setActiveLeaderboard('global')}
               className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
                 activeLeaderboard === 'global' 
-                  ? 'bg-[#7A143E] text-white' 
+                  ? 'bg-background shadow-sm' 
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
@@ -501,7 +533,7 @@ const RoleDashboard: React.FC = () => {
               onClick={() => setActiveLeaderboard('country')}
               className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
                 activeLeaderboard === 'country' 
-                  ? 'bg-[#7A143E] text-white' 
+                  ? 'bg-background shadow-sm' 
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
@@ -672,5 +704,4 @@ const RoleDashboard: React.FC = () => {
       </div>
     </ErrorBoundary>;
 };
-
 export default RoleDashboard;
