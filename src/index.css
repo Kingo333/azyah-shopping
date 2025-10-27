@@ -6,19 +6,24 @@
 
 @layer base {
   :root {
-    /* DressMe Design System - Phase 7 */
+    /* Azyah Dashboard Design System - Ivory & Maroon */
     /* Main Colors */
-    --background: 0 0% 97%;          /* Light gray #F5F5F5 */
+    --background: 32 20% 97%;        /* Ivory #F9F8F6 */
     --foreground: 0 0% 10%;          /* Black #1A1A1A */
     --card: 0 0% 100%;               /* White */
     --card-foreground: 0 0% 10%;     /* Black #1A1A1A */
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 10%;
     
-    /* Brand Colors */
-    --primary: 343 75% 32%;          /* Brand accent color */
+    /* Brand Colors - Maroon Theme */
+    --primary: 338 69% 28%;          /* Maroon #7A143E */
     --primary-foreground: 0 0% 100%;
     --primary-glow: 343 90% 96%;
+    
+    /* Dashboard Specific Colors */
+    --dashboard-ivory: 32 20% 97%;   /* #F9F8F6 */
+    --dashboard-border: 30 9% 90%;   /* #E5E3DF */
+    --dashboard-maroon: 338 69% 28%; /* #7A143E */
     
     /* Secondary & Muted */
     --secondary: 0 0% 95%;           /* Light gray backgrounds */
