@@ -38,6 +38,7 @@ import Affiliate from './pages/Affiliate';
 import ToyReplica from './pages/ToyReplica';
 import BeautyConsultant from './pages/BeautyConsultant';
 import Events from './pages/Events';
+import UGCCollaborations from './pages/UGCCollaborations';
 import Upgrade from './pages/dashboard/Upgrade';
 import Terms from './pages/Terms';
 import Privacy from './pages/Privacy';
@@ -197,6 +198,11 @@ function AppContent() {
                   <Route path="/events" element={
                     <ProtectedRoute roles={['shopper', 'admin']}>
                       <Events />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/ugc" element={
+                    <ProtectedRoute roles={['shopper', 'brand', 'retailer', 'admin']}>
+                      <UGCCollaborations />
                     </ProtectedRoute>
                   } />
                   <Route path="/brand-portal" element={

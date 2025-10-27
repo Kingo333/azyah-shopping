@@ -19,7 +19,6 @@ import { Heart, ShoppingBag, Search, Sparkles, Package, BarChart3, Users, Settin
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import MinimizedLeaderboard from '@/components/MinimizedLeaderboard';
 import TrendingStylesCarousel from '@/components/TrendingStylesCarousel';
-import { UGCCollabButton } from '@/components/ugc/UGCCollabButton';
 import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
 import { FeedbackModal } from '@/components/FeedbackModal';
 import { TutorialTooltip } from '@/components/ui/tutorial-tooltip';
