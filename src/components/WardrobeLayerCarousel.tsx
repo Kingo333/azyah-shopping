@@ -26,6 +26,7 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
 }) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [centerItemId, setCenterItemId] = useState<string | null>(selectedItemId);
+  const hasInitializedRef = useRef(false);
   
   const categoryLabels: Record<string, string> = {
     top: 'Tops',
@@ -102,16 +103,25 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
     const sidePad = Math.round((vw - cardW) / 2);
     rail.style.setProperty('--rail-side-pad', `${sidePad}px`);
 
-    // Initial snap to selected item (inline to avoid dependency issues)
-    const selectedCard = selectedItemId 
-      ? rail.querySelector<HTMLElement>(`[data-item-id="${selectedItemId}"]`)
-      : rail.querySelector<HTMLElement>('[data-item-id]');
-    
-    if (selectedCard) {
-      const targetLeft = selectedCard.offsetLeft - (rail.clientWidth - selectedCard.clientWidth) / 2;
-      rail.scrollTo({ left: Math.round(targetLeft), behavior: 'auto' });
+    // Only snap on initial mount, not on subsequent renders
+    if (!hasInitializedRef.current) {
+      hasInitializedRef.current = true;
+      
+      const selectedCard = selectedItemId 
+        ? rail.querySelector<HTMLElement>(`[data-item-id="${selectedItemId}"]`)
+        : rail.querySelector<HTMLElement>('[data-item-id]');
+      
+      if (selectedCard) {
+        const targetLeft = selectedCard.offsetLeft - (rail.clientWidth - selectedCard.clientWidth) / 2;
+        rail.scrollTo({ left: Math.round(targetLeft), behavior: 'auto' });
+      }
     }
   }, [items.length]); // Only depend on primitive values
+
+  // Reset initialization flag when switching layers
+  useEffect(() => {
+    hasInitializedRef.current = false;
+  }, [layer.id]);
 
   // RAF-based scroll handler with iOS snap fallback
   useEffect(() => {
