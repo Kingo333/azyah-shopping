@@ -842,8 +842,7 @@
   align-items: center;
   justify-content: center;
   padding: 8px;
-  position: relative;
-  opacity: 0.5;
+  opacity: 0.35;
   transform: scale(0.88);
 }
 
@@ -867,29 +866,14 @@
   z-index: 10;
 }
 
-.rail-card.is-center::after {
-  display: none;
-}
-
 .rail-card.is-center:hover {
   transform: scale(1.02);
 }
 
-/* Ghost overlay for non-centered items */
+/* Neighbor card styles - fade out non-centered items */
 .rail-card:not(.is-center) {
-  opacity: 0.5;
+  opacity: 0.35;
   transform: scale(0.88);
-}
-
-.rail-card:not(.is-center)::after {
-  content: '';
-  position: absolute;
-  inset: 8px;
-  background: rgba(255, 255, 255, 0.65);
-  pointer-events: none;
-  border-radius: 12px;
-  z-index: 1;
-  transition: opacity 0.3s ease;
 }
 
 /* Mobile optimizations */

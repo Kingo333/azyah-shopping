@@ -69,11 +69,11 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
     rail.style.setProperty('--rail-side-pad', `${sidePadding}px`);
 
     // Calculate scroll position to center item at 50vw (absolute center)
-    // Items start at position 0 within the scrollable content area
-    const itemLeftEdge = cellWidth * itemIndex;  // Item position in content area
-    const viewportCenter = vw / 2;               // 50vw - absolute center
-    const cardCenter = cardWidth / 2;            // Center of the card
-    const targetScrollLeft = itemLeftEdge - viewportCenter + cardCenter + sidePadding;
+    // Account for padding in the calculation
+    const itemLeftEdge = sidePadding + (cellWidth * itemIndex);  // Item's left edge including padding
+    const viewportCenter = vw / 2;                               // Absolute center of viewport
+    const cardCenter = cardWidth / 2;                            // Center of the card itself
+    const targetScrollLeft = itemLeftEdge - viewportCenter + cardCenter;
 
     // Use double RAF for layout stability - prevents race conditions when multiple carousels update
     requestAnimationFrame(() => {
@@ -135,7 +135,7 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
       // Center first item at 50vw
       const viewportCenter = vw / 2;
       const cardCenter = cardWidth / 2;
-      const targetScrollLeft = -viewportCenter + cardCenter + sidePadding;
+      const targetScrollLeft = sidePadding - viewportCenter + cardCenter;
       
       rail.scrollTo({ left: targetScrollLeft, behavior: 'auto' });
       setLocalCenterId(firstItem.id);
