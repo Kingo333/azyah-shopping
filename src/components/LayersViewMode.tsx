@@ -24,6 +24,7 @@ interface LayersViewModeProps {
   layers: WardrobeLayer[];
   allItems: WardrobeItem[];
   onRemoveLayer: (layerId: string) => void;
+  onExitLayersView: () => void;
 }
 
 type CompositionMode = 'separates' | 'dress';
@@ -51,6 +52,7 @@ export const LayersViewMode: React.FC<LayersViewModeProps> = ({
   layers,
   allItems,
   onRemoveLayer,
+  onExitLayersView,
 }) => {
   const navigate = useNavigate();
 
@@ -324,7 +326,7 @@ export const LayersViewMode: React.FC<LayersViewModeProps> = ({
       .map(l => ({ category: l.category, itemId: l.item!.id }));
     
     sessionStorage.setItem('dressme_outfit_state', JSON.stringify(outfitState));
-    navigate('/dressme/canvas');
+    navigate('/dress-me/canvas');
   };
 
   const hasItems = visibleLayers.some(l => l.item);
@@ -344,7 +346,7 @@ export const LayersViewMode: React.FC<LayersViewModeProps> = ({
     <div className="layers-view fixed inset-0 overflow-hidden bg-background">
       {/* Header */}
       <div className="fixed top-0 left-0 right-0 h-[60px] bg-background border-b border-border z-50 flex items-center justify-between px-4 pt-safe">
-        <BackButton />
+        <BackButton onBack={onExitLayersView} fallbackPath="/dress-me/wardrobe" />
         <h1 className="text-lg font-semibold">Outfit Builder</h1>
         <div className="flex gap-2">
           <Button

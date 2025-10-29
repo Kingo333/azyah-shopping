@@ -233,6 +233,7 @@ export default function DressMeWardrobe() {
           layers={layers}
           allItems={allItems}
           onRemoveLayer={handleRemoveLayer}
+          onExitLayersView={() => setIsLayersView(false)}
         />
         <WardrobeUploadModal
           isOpen={isUploadModalOpen}
