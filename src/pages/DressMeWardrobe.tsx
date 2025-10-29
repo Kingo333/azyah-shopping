@@ -427,14 +427,6 @@ export default function DressMeWardrobe() {
                 ))}
               </div>
 
-              {/* Accessories Tray - only if not promoted to rails */}
-              {!layers.some(l => ['accessory', 'bag'].includes(l.category)) && (
-                <AccessoriesTray
-                  items={allItems.filter(i => ['accessory', 'bag'].includes(i.category))}
-                  onPromote={(cat) => handleAddLayer(cat)}
-                  onAddNew={(cat) => handleAddItemToLayer(cat)}
-                />
-              )}
 
             </TabsContent>
 
