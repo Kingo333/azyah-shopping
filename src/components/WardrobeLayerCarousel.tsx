@@ -26,7 +26,6 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
 }) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [centerItemId, setCenterItemId] = useState<string | null>(selectedItemId);
-  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
   
   const categoryLabels: Record<string, string> = {
     top: 'Tops',
@@ -40,7 +39,7 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
 
   // Auto-scroll to selected item on mount
   useEffect(() => {
-    if (selectedItemId && scrollContainerRef.current && isMobile) {
+    if (selectedItemId && scrollContainerRef.current) {
       const selectedCard = scrollContainerRef.current.querySelector(
         `[data-item-id="${selectedItemId}"]`
       ) as HTMLElement;
@@ -53,11 +52,11 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
         });
       }
     }
-  }, [selectedItemId, isMobile]);
+  }, [selectedItemId]);
 
   // Detect center item on scroll (debounced)
   const detectCenterItem = useCallback(() => {
-    if (!scrollContainerRef.current || layer.is_pinned || !isMobile) return;
+    if (!scrollContainerRef.current || layer.is_pinned) return;
 
     const container = scrollContainerRef.current;
     const containerRect = container.getBoundingClientRect();
@@ -83,12 +82,10 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
       setCenterItemId(closestItem.id);
       onItemSelect(closestItem.id);
     }
-  }, [centerItemId, onItemSelect, layer.is_pinned, isMobile]);
+  }, [centerItemId, onItemSelect, layer.is_pinned]);
 
   // Debounced scroll handler
   useEffect(() => {
-    if (!isMobile) return;
-    
     const container = scrollContainerRef.current;
     if (!container) return;
 
@@ -106,42 +103,15 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
       container.removeEventListener('scrollend', detectCenterItem);
       clearTimeout(timeoutId);
     };
-  }, [detectCenterItem, isMobile]);
+  }, [detectCenterItem]);
 
-  // Calculate card width (58vw for mobile)
-  const cardWidth = isMobile && typeof window !== 'undefined' ? window.innerWidth * 0.58 : 280;
-
-  if (!isMobile) {
-    // Desktop: keep existing vertical list (not implemented - return simple view)
-    return (
-      <div className="layer-rail mb-4 rounded-2xl overflow-hidden border">
-        <div className="flex items-center justify-between px-4 py-3 border-b bg-background/50">
-          <div className="flex items-center gap-2">
-            <h3 className="text-base font-semibold capitalize">
-              {categoryLabels[layer.category] || layer.category}
-            </h3>
-            <span className="text-xs text-muted-foreground">{items.length}</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onPinToggle}>
-              <Pin className={cn('w-4 h-4', layer.is_pinned && 'fill-primary text-primary')} />
-            </Button>
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={onRemoveLayer}>
-              <X className="w-4 h-4" />
-            </Button>
-          </div>
-        </div>
-        <div className="p-4">
-          <p className="text-sm text-muted-foreground">Desktop view - {items.length} items</p>
-        </div>
-      </div>
-    );
-  }
+  // Calculate card width (58vw)
+  const cardWidth = typeof window !== 'undefined' ? window.innerWidth * 0.58 : 280;
 
   return (
-    <div className="mb-6">
+    <div className="mb-0.5">
       {/* Minimal Header - just text */}
-      <div className="flex items-center justify-between px-2 mb-3">
+      <div className="flex items-center justify-between px-2 mb-1">
         <div className="flex items-center gap-2">
           <h3 className="text-sm font-medium text-muted-foreground capitalize">
             {categoryLabels[layer.category] || layer.category}
