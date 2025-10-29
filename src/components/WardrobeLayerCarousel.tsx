@@ -111,7 +111,7 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
   return (
     <div className="mb-0">
       {/* Minimal Header - just text */}
-      <div className="flex items-center justify-between px-2 mb-1">
+      <div className="flex items-center justify-between px-2 mb-0">
         <div className="flex items-center gap-2">
           <h3 className="text-sm font-medium text-muted-foreground capitalize">
             {categoryLabels[layer.category] || layer.category}
@@ -173,7 +173,7 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
             ref={scrollContainerRef}
             className={cn(
               'rail-carousel overflow-x-auto overflow-y-hidden',
-              layer.is_pinned && 'pointer-events-none opacity-60'
+              layer.is_pinned && 'pointer-events-none'
             )}
             style={{
               height: 'clamp(220px, 28vh, 260px)',
