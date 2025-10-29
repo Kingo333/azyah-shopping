@@ -388,16 +388,16 @@ export default function DressMeWardrobe() {
       
       {/* Header */}
       <div className="sticky top-0 z-40 bg-background/95 backdrop-blur-sm border-b">
-        <div className="container max-w-6xl mx-auto py-3 px-4">
-          <div className="flex items-center justify-between mb-3">
+        <div className="container max-w-6xl mx-auto py-2 px-4">
+          <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <BackButton fallbackPath="/" variant="ghost" size="sm" />
-              <h1 className="text-2xl font-bold">My Wardrobe</h1>
+              <h1 className="text-lg font-semibold">My Wardrobe</h1>
             </div>
           </div>
 
           {/* Segmented Control */}
-          <div className="segmented-control">
+          <div className="segmented-control text-sm">
             <button 
               className={activeTab === 'clothes' ? 'segment active' : 'segment'}
               onClick={() => setActiveTab('clothes')}
@@ -422,9 +422,9 @@ export default function DressMeWardrobe() {
 
       {/* Main Content */}
       <div className="page-container bg-background">
-        <div className="container max-w-6xl mx-auto p-4">
+        <div className="container max-w-6xl mx-auto p-3">
           <Tabs value={activeTab} className="w-full">
-            <TabsContent value="clothes" className="mt-4 space-y-5">
+            <TabsContent value="clothes" className="mt-3 space-y-3">
               {/* Category Filter */}
               <WardrobeCategoryTabs
                 selected={selectedCategory}
@@ -489,7 +489,7 @@ export default function DressMeWardrobe() {
 
             </TabsContent>
 
-            <TabsContent value="outfits" className="mt-4 space-y-4">
+            <TabsContent value="outfits" className="mt-3 space-y-3">
               {/* Occasion filter chips */}
               <div className="flex gap-2 overflow-x-auto pb-2">
                 {['All', 'Work', 'Casual', 'Home', 'School', 'Date'].map((occasion) => (
@@ -497,7 +497,7 @@ export default function DressMeWardrobe() {
                     key={occasion}
                     variant={selectedOccasion === occasion ? 'default' : 'outline'}
                     size="sm"
-                    className="shrink-0 rounded-full"
+                    className="shrink-0 rounded-full text-xs px-3 h-8"
                     onClick={() => setSelectedOccasion(occasion)}
                   >
                     {occasion}
@@ -541,7 +541,7 @@ export default function DressMeWardrobe() {
               })()}
             </TabsContent>
 
-            <TabsContent value="community" className="mt-4 space-y-4">
+            <TabsContent value="community" className="mt-3 space-y-3">
               <Tabs value={communitySubTab} onValueChange={(v) => setCommunitySubTab(v as any)} className="w-full">
                 <TabsList className="w-full grid grid-cols-2">
                   <TabsTrigger value="outfits">Outfits</TabsTrigger>
@@ -563,25 +563,25 @@ export default function DressMeWardrobe() {
 
       {/* Bottom Action Bar */}
       {!selectionMode && (
-        <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t p-4 z-40 bottom-action-bar" style={{ paddingBottom: 'env(safe-area-inset-bottom, 16px)' }}>
+        <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t p-3 z-40 bottom-action-bar" style={{ paddingBottom: 'env(safe-area-inset-bottom, 12px)' }}>
           <div className="container max-w-6xl mx-auto flex gap-2">
             <Button
               onClick={handleShuffleAll}
               variant="outline"
-              size="lg"
-              className="w-32"
+              size="default"
+              className="w-28 h-9"
               disabled={layers.filter(l => !l.is_pinned).length === 0}
             >
-              <Shuffle className="w-4 h-4 mr-2" />
-              Shuffle
+              <Shuffle className="w-4 h-4 mr-1.5" />
+              <span className="text-sm">Shuffle</span>
             </Button>
             <Button
               onClick={handleDone}
-              size="lg"
-              className="flex-1"
+              size="default"
+              className="flex-1 h-9 text-sm"
             >
               {selectedItems.length > 0 
-                ? `Create Outfit with ${selectedItems.length} items`
+                ? `Create Outfit (${selectedItems.length})`
                 : 'Go to Canvas'
               }
             </Button>
@@ -591,15 +591,15 @@ export default function DressMeWardrobe() {
 
       {/* Delete Selected Button - shown in selection mode */}
       {selectionMode && selectedItems.length > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t p-4 z-40 bottom-action-bar">
+        <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t p-3 z-40 bottom-action-bar">
           <div className="container max-w-6xl mx-auto">
             <Button
               onClick={handleDeleteSelected}
-              size="lg"
+              size="default"
               variant="destructive"
-              className="w-full"
+              className="w-full h-9 text-sm"
             >
-              <Trash2 className="w-4 h-4 mr-2" />
+              <Trash2 className="w-4 h-4 mr-1.5" />
               Delete {selectedItems.length} Item(s)
             </Button>
           </div>

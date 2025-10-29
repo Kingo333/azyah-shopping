@@ -288,13 +288,13 @@ export default function DressMe() {
       <div className="min-h-screen bg-background pb-20">
         {/* Header */}
         <div className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-40">
-          <div className="container max-w-6xl mx-auto p-4">
+          <div className="container max-w-6xl mx-auto p-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <BackButton fallbackPath="/" variant="ghost" size="sm" showIcon={false}>
-                  <Home className="h-5 w-5" />
+                  <Home className="h-4 w-4" />
                 </BackButton>
-                <h1 className="text-2xl font-bold">Dress Me</h1>
+                <h1 className="text-lg font-semibold">Dress Me</h1>
               </div>
               <div className="flex gap-2">
                 <Button
@@ -321,8 +321,8 @@ export default function DressMe() {
                   onClick={() => setIsSaveModalOpen(true)}
                   disabled={layers.length === 0}
                 >
-                  <Save className="w-4 h-4 mr-2" />
-                  Save
+                  <Save className="w-4 h-4 mr-1.5" />
+                  <span className="text-sm">Save</span>
                 </Button>
               </div>
             </div>
@@ -330,7 +330,7 @@ export default function DressMe() {
         </div>
 
         {/* Main Content */}
-        <div className="container max-w-6xl mx-auto p-4 space-y-6">
+        <div className="container max-w-6xl mx-auto p-3 space-y-4">
           {/* Canvas */}
           <EnhancedInteractiveCanvas
             layers={layers}
@@ -345,7 +345,7 @@ export default function DressMe() {
               <TabsTrigger value="community" className="flex-1">Community</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="closet" className="space-y-4 mt-4">
+            <TabsContent value="closet" className="space-y-3 mt-3">
               <div className="flex items-center justify-between">
                 <CategoryChips
                   selected={selectedCategory}
@@ -356,8 +356,8 @@ export default function DressMe() {
                   size="sm"
                   onClick={() => setIsUploadModalOpen(true)}
                 >
-                  <Upload className="w-4 h-4 mr-2" />
-                  Add Item
+                  <Upload className="w-4 h-4 mr-1.5" />
+                  <span className="text-sm">Add Item</span>
                 </Button>
               </div>
               <WardrobeThumbnailRail
@@ -366,7 +366,7 @@ export default function DressMe() {
               />
             </TabsContent>
 
-            <TabsContent value="community" className="mt-4">
+            <TabsContent value="community" className="mt-3">
               <PublicFitsGrid
                 onFitClick={(fit) => {
                   setSelectedPublicFit(fit);

@@ -169,32 +169,32 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
   return (
     <div className="mb-0">
       {/* Header */}
-      <div className="flex items-center justify-between px-2 mb-0">
-        <div className="flex items-center gap-2">
-          <h3 className="text-sm font-medium text-muted-foreground capitalize">
+      <div className="flex items-center justify-between px-2 mb-1">
+        <div className="flex items-center gap-1.5">
+          <h3 className="text-xs font-semibold text-muted-foreground capitalize">
             {categoryLabels[layer.category] || layer.category}
           </h3>
-          <span className="text-xs text-muted-foreground/60">
+          <span className="text-[10px] text-muted-foreground/60">
             {items.length}
           </span>
           {layer.is_pinned && (
-            <div className="flex items-center gap-1 text-xs text-primary">
-              <Lock className="w-3 h-3" />
+            <div className="flex items-center gap-0.5 text-xs text-primary">
+              <Lock className="w-2.5 h-2.5" />
             </div>
           )}
         </div>
 
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-0.5">
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7"
+            className="h-6 w-6"
             onClick={onPinToggle}
             title={layer.is_pinned ? 'Unpin' : 'Pin'}
           >
             <Pin
               className={cn(
-                'w-3.5 h-3.5',
+                'w-3 h-3',
                 layer.is_pinned && 'fill-primary text-primary'
               )}
             />
@@ -202,10 +202,10 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7 text-destructive"
+            className="h-6 w-6 text-destructive"
             onClick={onRemoveLayer}
           >
-            <X className="w-3.5 h-3.5" />
+            <X className="w-3 h-3" />
           </Button>
         </div>
       </div>
