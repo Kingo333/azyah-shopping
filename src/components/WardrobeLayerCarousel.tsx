@@ -109,7 +109,7 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
   const cardWidth = typeof window !== 'undefined' ? window.innerWidth * 0.58 : 280;
 
   return (
-    <div className="mb-0.5">
+    <div className="mb-0">
       {/* Minimal Header - just text */}
       <div className="flex items-center justify-between px-2 mb-1">
         <div className="flex items-center gap-2">

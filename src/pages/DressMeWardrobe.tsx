@@ -411,7 +411,7 @@ export default function DressMeWardrobe() {
               )}
 
               {/* Layered Carousels */}
-              <div className="space-y-1">
+              <div className="space-y-0">
                 {layers.map((layer) => (
                   <div key={layer.id} id={`layer-${layer.category}`}>
                     <WardrobeLayerCarousel
