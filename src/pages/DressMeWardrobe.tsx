@@ -267,83 +267,49 @@ export default function DressMeWardrobe() {
       console.log('Layer data:', layer);
       
       // Skip pinned layers
+      // Skip pinned layers
       if (layer.is_pinned) {
-        console.log(`⏭️ SKIPPED: ${layer.category} (pinned)`);
-        skipped.push(`${layer.category} (pinned)`);
+        console.log(`📌 Skipped ${layer.category} (pinned)`);
         continue;
       }
 
+      // Get items for this category
       const layerItems = getLayerItems(layer.category);
-      console.log(`📦 Items in ${layer.category}:`, layerItems);
-      console.log(`📊 Count: ${layerItems.length}`);
       
+      // Skip if no items (need at least 1 to shuffle to)
       if (layerItems.length === 0) {
-        console.log(`⏭️ SKIPPED: ${layer.category} (no items)`);
-        skipped.push(`${layer.category} (no items)`);
-        continue;
-      }
-      
-      if (layerItems.length === 1) {
-        console.log(`⏭️ SKIPPED: ${layer.category} (only 1 item)`);
-        skipped.push(`${layer.category} (only 1 item)`);
+        console.log(`⏭️ Skipped ${layer.category} (no items)`);
         continue;
       }
 
-      // Get available items (exclude current selection)
-      const availableItems = layerItems.filter(
-        item => item.id !== layer.selected_item_id
-      );
+      // Pick random item (can be same as current - that's OK for re-centering!)
+      const randomIndex = Math.floor(seededRandom() * layerItems.length);
+      const randomItem = layerItems[randomIndex];
       
-      console.log(`🎯 Available for shuffle:`, availableItems.length);
-      console.log(`Current selection: ${layer.selected_item_id}`);
-
-      if (availableItems.length === 0) {
-        console.log(`⏭️ SKIPPED: ${layer.category} (no alternative items)`);
-        skipped.push(`${layer.category} (no alternatives)`);
-        continue;
-      }
+      console.log(`🔄 ${layer.category}: ${layer.selected_item_id} → ${randomItem.id}`);
 
       try {
-        const randomIndex = Math.floor(seededRandom() * availableItems.length);
-        const randomItem = availableItems[randomIndex];
-        
-        console.log(`🔄 SHUFFLING ${layer.category}:`);
-        console.log(`  From: ${layer.selected_item_id}`);
-        console.log(`  To: ${randomItem.id}`);
-        console.log(`  Item:`, randomItem);
-        
-        // Update database
-        console.log(`🔄 Calling mutation for layer ${layer.id} → item ${randomItem.id}`);
+        // Update database - React Query will refetch and trigger carousel snap
         await updateLayerSelection.mutateAsync({ 
           layerId: layer.id, 
           itemId: randomItem.id 
         });
-        console.log(`✅ Mutation complete for ${layer.category}`);
-        
         shuffled++;
-        console.log(`✅ ${layer.category} shuffled successfully`);
-        
-        // Delay to let carousel animate
-        await new Promise(resolve => setTimeout(resolve, 300));
+        console.log(`✅ ${layer.category} updated`);
       } catch (error) {
-        console.error(`❌ Failed to shuffle ${layer.category}:`, error);
+        console.error(`❌ ${layer.category} failed:`, error);
         errors.push(layer.category);
       }
     }
 
-    console.log('\n🎲 ========== SHUFFLE COMPLETE ==========');
-    console.log(`✅ Shuffled: ${shuffled}`);
-    console.log(`⏭️ Skipped:`, skipped);
-    console.log(`❌ Errors:`, errors);
-
-    // Show final result
+    console.log(`🎲 SHUFFLE COMPLETE: ${shuffled} layers`);
+    
     if (errors.length > 0) {
       toast.error(`Failed to shuffle: ${errors.join(', ')}`);
     } else if (shuffled > 0) {
       toast.success(`Shuffled ${shuffled} ${shuffled === 1 ? 'layer' : 'layers'}`);
     } else {
-      const reasons = skipped.length > 0 ? `\n${skipped.join('\n')}` : '';
-      toast.info(`No layers shuffled${reasons}`);
+      toast.info('No layers to shuffle');
     }
   };
 

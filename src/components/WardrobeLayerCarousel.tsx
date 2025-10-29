@@ -25,10 +25,8 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
   onAddItem,
 }) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const [localCenterId, setLocalCenterId] = useState<string | null>(selectedItemId);
-  const isScrollingRef = useRef(false);
-  const lastSnapIdRef = useRef<string | null>(null);
-  const scrollTimeoutRef = useRef<NodeJS.Timeout>();
+  const scrollTimeoutRef = useRef<NodeJS.Timeout | undefined>();
+  const [localCenterId, setLocalCenterId] = useState<string | null>(null);
   
   const categoryLabels: Record<string, string> = {
     top: 'Tops',
@@ -40,130 +38,90 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
     accessory: 'Accessories',
   };
 
-  // Snap to selected item when it changes externally (shuffle, pin, initial load)
+  // Effect: When selectedItemId changes, ALWAYS scroll to center it
   useEffect(() => {
     const rail = scrollContainerRef.current;
     if (!rail || items.length === 0 || !selectedItemId) return;
 
-    // Set CSS variables for sizing
+    // Calculate card dimensions
     const vw = window.innerWidth;
     const cardW = Math.round(vw * 0.58);
     rail.style.setProperty('--card-w', `${cardW}px`);
     const sidePad = Math.round((vw - cardW) / 2);
     rail.style.setProperty('--rail-side-pad', `${sidePad}px`);
 
-    console.log(`📍 Snap request: ${selectedItemId}`);
+    console.log(`🎯 Center request: ${selectedItemId}`);
     
-    // Use requestAnimationFrame to ensure DOM is ready
+    // Wait for React to finish rendering
     requestAnimationFrame(() => {
       const targetCard = rail.querySelector<HTMLElement>(`[data-item-id="${selectedItemId}"]`);
       if (!targetCard) {
-        console.warn(`⚠️ Target card not found: ${selectedItemId}`);
+        console.warn(`⚠️ Card not found: ${selectedItemId}`);
         return;
       }
 
-      // Cancel any pending scroll handler to prevent interference
+      // Cancel any pending user scroll updates
       if (scrollTimeoutRef.current) {
         clearTimeout(scrollTimeoutRef.current);
         scrollTimeoutRef.current = undefined;
       }
-      
-      // Calculate center position
+
+      // Calculate target scroll position (center the card)
       const targetLeft = targetCard.offsetLeft - (rail.clientWidth - targetCard.clientWidth) / 2;
-      const currentLeft = rail.scrollLeft;
       
-      // Always snap, even if already "close enough"
-      // This ensures shuffle always centers items
-      if (Math.abs(targetLeft - currentLeft) > 5) { // 5px tolerance
-        console.log(`🎯 Snapping: ${currentLeft}px → ${targetLeft}px`);
-        isScrollingRef.current = false; // Mark as programmatic scroll
-        rail.scrollTo({ left: Math.round(targetLeft), behavior: 'smooth' });
-        setLocalCenterId(selectedItemId);
-        lastSnapIdRef.current = selectedItemId;
-        console.log(`✅ Snap complete: ${selectedItemId}`);
-      } else {
-        console.log(`✅ Already centered: ${selectedItemId}`);
-        setLocalCenterId(selectedItemId);
-        lastSnapIdRef.current = selectedItemId;
-      }
+      console.log(`📍 Scrolling to center: ${selectedItemId} at ${targetLeft}px`);
+      
+      // Always scroll, no conditions
+      rail.scrollTo({ left: Math.round(targetLeft), behavior: 'smooth' });
+      setLocalCenterId(selectedItemId);
+      
+      console.log(`✅ Centered: ${selectedItemId}`);
     });
   }, [selectedItemId, items.length]);
 
-  // Handle initial selection when layer has no selected item
+  // Effect: When user scrolls, detect centered item and update database
   useEffect(() => {
     const rail = scrollContainerRef.current;
     if (!rail || items.length === 0) return;
-    
-    // If no item is selected but we have items, snap to first item
-    if (!selectedItemId && !localCenterId && items.length > 0) {
-      console.log('📍 No selection, snapping to first item');
-      const firstItem = items[0];
-      requestAnimationFrame(() => {
-        const targetCard = rail.querySelector<HTMLElement>(`[data-item-id="${firstItem.id}"]`);
-        if (targetCard) {
-          const targetLeft = targetCard.offsetLeft - (rail.clientWidth - targetCard.clientWidth) / 2;
-          rail.scrollTo({ left: Math.round(targetLeft), behavior: 'smooth' });
-          setLocalCenterId(firstItem.id);
-          lastSnapIdRef.current = firstItem.id;
-        }
-      });
-    }
-  }, [items, selectedItemId, localCenterId]);
-
-  // Handle user scroll with immediate visual feedback and debounced updates
-  useEffect(() => {
-    const rail = scrollContainerRef.current;
-    if (!rail) return;
 
     const handleScroll = () => {
-      // Only process user-initiated scrolls (not programmatic snaps)
-      if (!isScrollingRef.current) {
-        isScrollingRef.current = true;
-      }
-      
-      // Clear previous timeout
+      // Clear previous debounce timer
       if (scrollTimeoutRef.current) {
         clearTimeout(scrollTimeoutRef.current);
       }
 
-      // Find centered card (immediate visual feedback)
+      // Find which card is physically centered RIGHT NOW
       const cards = rail.querySelectorAll<HTMLElement>('[data-item-id]');
-      const cx = rail.scrollLeft + rail.clientWidth / 2;
+      const viewportCenter = rail.scrollLeft + rail.clientWidth / 2;
 
-      let bestCard: HTMLElement | null = null;
-      let bestDist = Infinity;
+      let centeredCard: HTMLElement | null = null;
+      let minDistance = Infinity;
 
       cards.forEach((card) => {
-        const cardCx = card.offsetLeft + card.clientWidth / 2;
-        const dist = Math.abs(cardCx - cx);
-        if (dist < bestDist) {
-          bestDist = dist;
-          bestCard = card;
+        const cardCenter = card.offsetLeft + card.clientWidth / 2;
+        const distance = Math.abs(cardCenter - viewportCenter);
+        if (distance < minDistance) {
+          minDistance = distance;
+          centeredCard = card;
         }
       });
 
-      // Update visual state immediately
-      requestAnimationFrame(() => {
-        cards.forEach(c => c.classList.toggle('is-center', c === bestCard));
-        if (bestCard?.dataset.itemId) {
-          setLocalCenterId(bestCard.dataset.itemId);
-        }
-      });
+      // Update visual state immediately (instant feedback)
+      if (centeredCard?.dataset.itemId) {
+        setLocalCenterId(centeredCard.dataset.itemId);
+        
+        // Add visual class to centered card
+        cards.forEach(c => {
+          c.classList.toggle('is-center', c === centeredCard);
+        });
+      }
 
-      // Debounce database update
+      // Debounce database update (500ms after user stops scrolling)
       scrollTimeoutRef.current = setTimeout(() => {
-        if (!bestCard?.dataset.itemId) return;
-        
-        const newItemId = bestCard.dataset.itemId;
-        
-        // Update the snap reference BEFORE calling onItemSelect
-        // This prevents the subsequent prop change from triggering a snap
-        lastSnapIdRef.current = newItemId;
-        
-        onItemSelect(newItemId);
-        
-        // Reset scrolling flag
-        isScrollingRef.current = false;
+        if (centeredCard?.dataset.itemId && centeredCard.dataset.itemId !== selectedItemId) {
+          console.log(`👆 User centered: ${centeredCard.dataset.itemId}`);
+          onItemSelect(centeredCard.dataset.itemId);
+        }
       }, 500);
     };
 
@@ -174,7 +132,26 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
         clearTimeout(scrollTimeoutRef.current);
       }
     };
-  }, [onItemSelect, items]);
+  }, [items, selectedItemId, onItemSelect]);
+
+  // Effect: Initialize - center first item if no selection exists
+  useEffect(() => {
+    const rail = scrollContainerRef.current;
+    if (!rail || items.length === 0) return;
+    
+    // If layer has no selection, center first item visually (don't update DB)
+    if (!selectedItemId && items.length > 0) {
+      console.log('🔷 No selection, centering first item visually');
+      requestAnimationFrame(() => {
+        const firstCard = rail.querySelector<HTMLElement>('[data-item-id]');
+        if (firstCard) {
+          const targetLeft = firstCard.offsetLeft - (rail.clientWidth - firstCard.clientWidth) / 2;
+          rail.scrollTo({ left: Math.round(targetLeft), behavior: 'instant' });
+          setLocalCenterId(firstCard.dataset.itemId || null);
+        }
+      });
+    }
+  }, [items.length, selectedItemId]);
 
   return (
     <div className="mb-0">
