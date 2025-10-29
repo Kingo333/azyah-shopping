@@ -318,18 +318,6 @@ export default function DressMeWardrobe() {
                 ))}
               </div>
 
-              {/* Empty state for when no layers exist */}
-              {layers.length === 0 && !layersLoading && (
-                <Card className="p-8 text-center">
-                  <p className="text-muted-foreground mb-4">
-                    Add items to your wardrobe to organize them into layers
-                  </p>
-                  <Button onClick={() => handleAddItemToLayer()}>
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Your First Item
-                  </Button>
-                </Card>
-              )}
             </TabsContent>
 
             <TabsContent value="outfits" className="mt-4 space-y-4">
