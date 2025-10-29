@@ -24,7 +24,6 @@ export const useWardrobeLayers = () => {
         .from('wardrobe_layers')
         .select('*')
         .eq('user_id', user.id)
-        .order('is_pinned', { ascending: false })
         .order('layer_order', { ascending: true });
 
       if (error) throw error;
