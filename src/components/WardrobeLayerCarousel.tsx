@@ -63,7 +63,7 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
     const cellWidth = vw * GRID_CONFIG.cellWidthVw;
     const sidePadding = (vw - cardWidth) / 2;
 
-    // Set CSS variables
+    // Update CSS variables synchronously
     rail.style.setProperty('--card-w', `${cardWidth}px`);
     rail.style.setProperty('--cell-w', `${cellWidth}px`);
     rail.style.setProperty('--rail-side-pad', `${sidePadding}px`);
@@ -71,11 +71,14 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
     // Calculate exact scroll position using grid math
     const targetScrollLeft = (cellWidth * itemIndex);
 
+    // Use double RAF for layout stability - prevents race conditions when multiple carousels update
     requestAnimationFrame(() => {
-      rail.scrollTo({ left: targetScrollLeft, behavior: 'smooth' });
-      setLocalCenterId(selectedItemId);
+      requestAnimationFrame(() => {
+        rail.scrollTo({ left: targetScrollLeft, behavior: 'smooth' });
+        setLocalCenterId(selectedItemId);
+      });
     });
-  }, [selectedItemId, items.length]); // Only depends on selectedItemId and items.length
+  }, [selectedItemId, items.length, items]); // Depends on items to ensure updates when item order changes
 
   // ✅ SCROLL HANDLER: Visual center indicator only (NO DB updates)
   useEffect(() => {

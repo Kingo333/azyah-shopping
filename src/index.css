@@ -817,12 +817,12 @@
   transform: translateX(-50%);
   pointer-events: none;
   z-index: 100;
-  opacity: 0;
+  opacity: 0.3;
   transition: opacity 0.3s;
 }
 
 .rail-carousel:active::before {
-  opacity: 1; /* Show grid guide while scrolling */
+  opacity: 0.6; /* Show grid guide while scrolling */
 }
 
 /* Card snap alignment - discrete grid cells */
