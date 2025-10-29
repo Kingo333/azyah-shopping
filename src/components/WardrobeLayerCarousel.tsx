@@ -24,14 +24,7 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
   onAddItem,
 }) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const [localCenterId, setLocalCenterId] = useState<string | null>(null);
-
-  // Grid configuration - treats carousel as discrete cells
-  const GRID_CONFIG = {
-    cardWidthVw: 0.55,    // Card takes 55% of viewport width
-    gapVw: 0.08,          // Gap is 8% of viewport width
-    get cellWidthVw() { return this.cardWidthVw + this.gapVw; }  // Total cell = 63vw
-  };
+  const [centeredIndex, setCenteredIndex] = useState<number>(0);
   
   const categoryLabels: Record<string, string> = {
     top: 'Tops',
@@ -43,127 +36,69 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
     accessory: 'Accessories',
   };
 
-  // ✅ SINGLE EFFECT: Programmatic scroll to selected item
+  // Scroll to selected item using native scrollIntoView
   useEffect(() => {
     const rail = scrollContainerRef.current;
     if (!rail || items.length === 0 || !selectedItemId) return;
 
-    // Find item index in array
     const itemIndex = items.findIndex(item => item.id === selectedItemId);
-    if (itemIndex === -1) {
-      console.warn(`⚠️ Item not found: ${selectedItemId}`);
-      return;
-    }
+    if (itemIndex === -1) return;
 
-    console.log(`🎯 Scrolling to grid cell ${itemIndex}: ${selectedItemId}`);
-
-    // Calculate grid dimensions
-    const vw = window.innerWidth;
-    const cardWidth = vw * GRID_CONFIG.cardWidthVw;
-    const cellWidth = vw * GRID_CONFIG.cellWidthVw;
-    const sidePadding = (vw - cardWidth) / 2;
-
-    // Update CSS variables synchronously
-    rail.style.setProperty('--card-w', `${cardWidth}px`);
-    rail.style.setProperty('--cell-w', `${cellWidth}px`);
-    rail.style.setProperty('--rail-side-pad', `${sidePadding}px`);
-
-    // Calculate scroll position to center item at 50vw (absolute center)
-    // Account for padding in the calculation
-    const itemLeftEdge = sidePadding + (cellWidth * itemIndex);  // Item's left edge including padding
-    const viewportCenter = vw / 2;                               // Absolute center of viewport
-    const cardCenter = cardWidth / 2;                            // Center of the card itself
-    const targetScrollLeft = itemLeftEdge - viewportCenter + cardCenter;
-
-    // Use double RAF for layout stability - prevents race conditions when multiple carousels update
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        rail.scrollTo({ left: targetScrollLeft, behavior: 'smooth' });
-        setLocalCenterId(selectedItemId);
+    const card = rail.children[itemIndex] as HTMLElement;
+    if (card) {
+      card.scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'nearest',
+        inline: 'center'
       });
-    });
-  }, [selectedItemId, items.length, items]); // Depends on items to ensure updates when item order changes
+      setCenteredIndex(itemIndex);
+    }
+  }, [selectedItemId, items]);
 
-  // ✅ SCROLL HANDLER: Visual center indicator only (NO DB updates)
+  // Detect which card is centered during manual scroll
   useEffect(() => {
     const rail = scrollContainerRef.current;
     if (!rail || items.length === 0) return;
 
     const handleScroll = () => {
-      // Calculate grid dimensions
-      const vw = window.innerWidth;
-      const cellWidth = vw * GRID_CONFIG.cellWidthVw;
+      const railRect = rail.getBoundingClientRect();
+      const centerX = railRect.left + railRect.width / 2;
 
-      // Determine which grid cell is currently centered
-      const rawIndex = rail.scrollLeft / cellWidth;
-      const snappedIndex = Math.round(rawIndex);
-      const clampedIndex = Math.max(0, Math.min(snappedIndex, items.length - 1));
+      let closestIndex = 0;
+      let closestDistance = Infinity;
 
-      // ✅ ONLY update visual state - NO database updates
-      const centeredItem = items[clampedIndex];
-      if (centeredItem) {
-        setLocalCenterId(centeredItem.id);
+      Array.from(rail.children).forEach((card, index) => {
+        const cardRect = card.getBoundingClientRect();
+        const cardCenterX = cardRect.left + cardRect.width / 2;
+        const distance = Math.abs(cardCenterX - centerX);
 
-        // Visual feedback: update card classes
-        const cards = rail.querySelectorAll<HTMLElement>('[data-item-id]');
-        cards.forEach((card, idx) => {
-          card.classList.toggle('is-center', idx === clampedIndex);
-        });
+        if (distance < closestDistance) {
+          closestDistance = distance;
+          closestIndex = index;
+        }
+      });
+
+      if (closestIndex !== centeredIndex) {
+        setCenteredIndex(closestIndex);
       }
     };
 
-    rail.addEventListener('scroll', handleScroll, { passive: true });
-    return () => rail.removeEventListener('scroll', handleScroll);
-  }, [items]);
-
-  // ✅ INITIAL MOUNT: Center first item visually
-  useEffect(() => {
-    const rail = scrollContainerRef.current;
-    if (!rail || items.length === 0 || selectedItemId) return;
-
-    const firstItem = items[0];
-    requestAnimationFrame(() => {
-      const vw = window.innerWidth;
-      const cardWidth = vw * GRID_CONFIG.cardWidthVw;
-      const cellWidth = vw * GRID_CONFIG.cellWidthVw;
-      const sidePadding = (vw - cardWidth) / 2;
-      
-      rail.style.setProperty('--card-w', `${cardWidth}px`);
-      rail.style.setProperty('--cell-w', `${cellWidth}px`);
-      rail.style.setProperty('--rail-side-pad', `${sidePadding}px`);
-      
-      // Center first item at 50vw
-      const viewportCenter = vw / 2;
-      const cardCenter = cardWidth / 2;
-      const targetScrollLeft = sidePadding - viewportCenter + cardCenter;
-      
-      rail.scrollTo({ left: targetScrollLeft, behavior: 'auto' });
-      setLocalCenterId(firstItem.id);
-    });
-  }, []); // Only run once on mount
-  
-  // ✅ RESIZE HANDLER: Recalculate CSS variables on window resize
-  useEffect(() => {
-    const handleResize = () => {
-      const rail = scrollContainerRef.current;
-      if (!rail) return;
-
-      const vw = window.innerWidth;
-      const cardWidth = vw * GRID_CONFIG.cardWidthVw;
-      const cellWidth = vw * GRID_CONFIG.cellWidthVw;
-      const sidePadding = (vw - cardWidth) / 2;
-
-      rail.style.setProperty('--card-w', `${cardWidth}px`);
-      rail.style.setProperty('--cell-w', `${cellWidth}px`);
-      rail.style.setProperty('--rail-side-pad', `${sidePadding}px`);
+    let timeoutId: number;
+    const debouncedScroll = () => {
+      clearTimeout(timeoutId);
+      timeoutId = window.setTimeout(handleScroll, 100);
     };
 
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+    rail.addEventListener('scroll', debouncedScroll, { passive: true });
+    handleScroll();
 
-  // Determine which item to visually center
-  const visualCenterId = selectedItemId || localCenterId || (items.length > 0 ? items[0].id : null);
+    return () => {
+      rail.removeEventListener('scroll', debouncedScroll);
+      clearTimeout(timeoutId);
+    };
+  }, [items.length, centeredIndex]);
+
+  const visualCenterId = selectedItemId || items[centeredIndex]?.id || items[0]?.id;
 
   return (
     <div className="mb-0">
@@ -230,15 +165,16 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
             </button>
           </div>
         ) : (
-          <div
-            ref={scrollContainerRef}
-            className="rail-carousel"
-            style={{
-              height: 'clamp(180px, 24vh, 240px)',
-            }}
-          >
-            {items.map((item) => {
-              const isCenter = item.id === visualCenterId;
+        <div
+          ref={scrollContainerRef}
+          className="rail-carousel"
+          data-item-count={items.length}
+          style={{
+            height: 'clamp(180px, 24vh, 240px)',
+          }}
+        >
+            {items.map((item, index) => {
+              const isCenter = index === centeredIndex || item.id === selectedItemId;
 
               return (
                 <div
