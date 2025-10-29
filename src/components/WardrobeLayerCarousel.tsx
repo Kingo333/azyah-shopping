@@ -129,20 +129,29 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
 
   return (
     <div className="mb-0">
-      {/* Header */}
+      {/* Header with Category Circle */}
       <div className="flex items-center justify-between px-2 mb-1">
-        <div className="flex items-center gap-1.5">
-          <h3 className="text-xs font-semibold text-muted-foreground capitalize">
-            {categoryLabels[layer.category] || layer.category}
-          </h3>
-          <span className="text-[10px] text-muted-foreground/60">
-            {items.length}
-          </span>
-          {layer.is_pinned && (
-            <div className="flex items-center gap-0.5 text-xs text-primary">
-              <Pin className="w-3 h-3 fill-primary" />
-            </div>
-          )}
+        {/* Category Circle Indicator */}
+        <div className="flex items-center gap-3">
+          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 border border-primary/20">
+            <span className="text-xs font-bold text-primary uppercase">
+              {layer.category[0]}
+            </span>
+          </div>
+          
+          <div className="flex items-center gap-1.5">
+            <h3 className="text-xs font-semibold text-muted-foreground capitalize">
+              {categoryLabels[layer.category] || layer.category}
+            </h3>
+            <span className="text-[10px] text-muted-foreground/60">
+              {items.length}
+            </span>
+            {layer.is_pinned && (
+              <div className="flex items-center gap-0.5 text-xs text-primary">
+                <Pin className="w-3 h-3 fill-primary" />
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="flex items-center gap-0.5">

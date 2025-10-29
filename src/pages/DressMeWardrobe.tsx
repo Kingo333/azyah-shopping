@@ -5,10 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { WardrobeAllItemsGrid } from '@/components/WardrobeAllItemsGrid';
 import { WardrobeLayerCarousel } from '@/components/WardrobeLayerCarousel';
+import { WardrobeLayerPreview } from '@/components/WardrobeLayerPreview';
 import { AddLayerButton } from '@/components/AddLayerButton';
 import { WardrobeCategoryTabs } from '@/components/WardrobeCategoryTabs';
-import { WardrobeLayerScrollView } from '@/components/WardrobeLayerScrollView';
-import { WardrobeLayerActionMenu } from '@/components/WardrobeLayerActionMenu';
 import { WardrobeUploadModal } from '@/components/WardrobeUploadModal';
 import { WardrobeItemDetailModal } from '@/components/WardrobeItemDetailModal';
 import { useWardrobeItems, WardrobeItem, useDeleteWardrobeItem } from '@/hooks/useWardrobeItems';
@@ -54,7 +53,7 @@ export default function DressMeWardrobe() {
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedItemDetail, setSelectedItemDetail] = useState<WardrobeItem | null>(null);
   const [selectedOutfitId, setSelectedOutfitId] = useState<string | null>(null);
-  const [activeLayerIndex, setActiveLayerIndex] = useState(0);
+  
   
   // Layer modes
   type LayerMode = 'topBottomsShoes' | 'dressShoes';
@@ -199,13 +198,6 @@ export default function DressMeWardrobe() {
     }
   };
 
-  const handlePinToggle = (layerId: string, currentPinState: boolean) => {
-    updateLayerMutation.mutate({ id: layerId, is_pinned: !currentPinState });
-  };
-
-  const handleRemoveLayer = (layerId: string) => {
-    deleteLayerMutation.mutate(layerId);
-  };
 
   const handleAddLayer = (category: string) => {
     console.log('🔵 handleAddLayer called:', category);
@@ -364,31 +356,22 @@ export default function DressMeWardrobe() {
     }
   };
 
-  // New layer navigation handlers
-  const activeLayer = layers[activeLayerIndex] || null;
-  
-  const handlePrevLayer = () => {
-    setActiveLayerIndex(prev => Math.max(0, prev - 1));
+  const handleLayerItemSelect = (layerId: string, itemId: string) => {
+    updateLayerSelection.mutate({
+      layerId,
+      itemId,
+    });
   };
-  
-  const handleNextLayer = () => {
-    setActiveLayerIndex(prev => Math.min(layers.length - 1, prev + 1));
+
+  const handleLayerPinToggle = (layerId: string, isPinned: boolean) => {
+    updateLayerMutation.mutate({
+      id: layerId,
+      is_pinned: !isPinned,
+    });
   };
-  
-  const handleActiveLayerItemSelect = (item: WardrobeItem) => {
-    if (!activeLayer) return;
-    updateLayerSelection.mutate({ layerId: activeLayer.id, itemId: item.id });
-  };
-  
-  const handleActiveLayerPinToggle = () => {
-    if (!activeLayer) return;
-    handlePinToggle(activeLayer.id, activeLayer.is_pinned);
-  };
-  
-  const handleDeleteActiveLayerItem = () => {
-    if (!activeLayer || !activeLayer.selected_item_id) return;
-    updateLayerSelection.mutate({ layerId: activeLayer.id, itemId: null });
-    toast.success('Item removed from layer');
+
+  const handleRemoveLayer = (layerId: string) => {
+    deleteLayerMutation.mutate(layerId);
   };
 
   // Build selected items map for preview
@@ -538,28 +521,32 @@ export default function DressMeWardrobe() {
                 </div>
               )}
 
-              {/* Unified Layer Scroll View */}
+              {/* Vertical Layer Carousels */}
               {layers.length > 0 && (
-                <div className="h-[600px] relative pb-24">
-                  <WardrobeLayerScrollView
-                    activeLayer={activeLayer}
-                    items={activeLayer ? itemsByCategory[activeLayer.category] || [] : []}
-                    selectedItemId={activeLayer?.selected_item_id || null}
-                    onItemSelect={handleActiveLayerItemSelect}
-                    onPrevLayer={handlePrevLayer}
-                    onNextLayer={handleNextLayer}
-                    canGoPrev={activeLayerIndex > 0}
-                    canGoNext={activeLayerIndex < layers.length - 1}
-                    allSelectedItems={selectedItemsMap}
-                  />
+                <div className="space-y-6 pb-6">
+                  {layers.map((layer) => (
+                    <WardrobeLayerCarousel
+                      key={layer.id}
+                      layer={layer}
+                      items={itemsByCategory[layer.category] || []}
+                      selectedItemId={layer.selected_item_id}
+                      onItemClick={(itemId) => handleLayerItemSelect(layer.id, itemId)}
+                      onPinToggle={() => handleLayerPinToggle(layer.id, layer.is_pinned)}
+                      onRemoveLayer={() => handleRemoveLayer(layer.id)}
+                      onAddItem={() => {
+                        setSelectedCategory(layer.category);
+                        setIsUploadModalOpen(true);
+                      }}
+                    />
+                  ))}
 
-                  <WardrobeLayerActionMenu
-                    isPinned={activeLayer?.is_pinned || false}
-                    onPinToggle={handleActiveLayerPinToggle}
-                    onShuffle={handleShuffleAll}
-                    onDeleteItem={handleDeleteActiveLayerItem}
-                    hasSelectedItem={!!activeLayer?.selected_item_id}
-                  />
+                  {/* Mannequin Preview */}
+                  <div className="px-4">
+                    <WardrobeLayerPreview
+                      layers={layers}
+                      selectedItems={selectedItemsMap}
+                    />
+                  </div>
                 </div>
               )}
 
