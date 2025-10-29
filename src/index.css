@@ -814,7 +814,7 @@
   justify-content: center;
 }
 
-/* Card styling - simplified */
+/* Card styling - all items visible */
 .rail-card {
   width: 100%;
   height: 100%;
@@ -828,9 +828,9 @@
   border-radius: 16px;
   background: hsl(var(--background));
   
-  /* Default state: faded */
-  opacity: 0.5;
-  transform: scale(0.88);
+  /* Default state: slightly smaller */
+  opacity: 0.85;
+  transform: scale(0.92);
   transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1),
               opacity 0.35s ease,
               box-shadow 0.35s ease;
@@ -854,22 +854,6 @@
   transform: scale(1);
   z-index: 10;
   box-shadow: 0 8px 24px hsl(var(--foreground) / 0.15);
-}
-
-/* WHITE GHOST OVERLAY on non-centered cards */
-.rail-card:not(.is-center)::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: hsl(var(--background) / 0.7);
-  border-radius: 16px;
-  pointer-events: none;
-  z-index: 1;
-  transition: opacity 0.35s ease;
-}
-
-.rail-card.is-center::after {
-  display: none;
 }
 
 /* Mobile safe-area support */
