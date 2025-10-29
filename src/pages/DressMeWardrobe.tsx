@@ -313,16 +313,18 @@ export default function DressMeWardrobe() {
         console.log(`  Item:`, randomItem);
         
         // Update database
+        console.log(`🔄 Calling mutation for layer ${layer.id} → item ${randomItem.id}`);
         await updateLayerSelection.mutateAsync({ 
           layerId: layer.id, 
           itemId: randomItem.id 
         });
+        console.log(`✅ Mutation complete for ${layer.category}`);
         
         shuffled++;
         console.log(`✅ ${layer.category} shuffled successfully`);
         
         // Delay to let carousel animate
-        await new Promise(resolve => setTimeout(resolve, 200));
+        await new Promise(resolve => setTimeout(resolve, 300));
       } catch (error) {
         console.error(`❌ Failed to shuffle ${layer.category}:`, error);
         errors.push(layer.category);

@@ -52,24 +52,56 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
     const sidePad = Math.round((vw - cardW) / 2);
     rail.style.setProperty('--rail-side-pad', `${sidePad}px`);
 
-    // Only snap if this is genuinely a NEW selection (prevents snap-back during user scroll)
+    // ALWAYS snap when selectedItemId changes, even if it was the same before
+    // This handles shuffle correctly even with only 2 items
     if (selectedItemId !== lastSnapIdRef.current) {
-      const targetCard = rail.querySelector<HTMLElement>(`[data-item-id="${selectedItemId}"]`);
-      if (targetCard) {
-        // Cancel any pending scroll handler
-        if (scrollTimeoutRef.current) {
-          clearTimeout(scrollTimeoutRef.current);
-          scrollTimeoutRef.current = undefined;
+      console.log(`📍 External snap: ${selectedItemId} (was: ${lastSnapIdRef.current})`);
+      
+      // Use requestAnimationFrame to ensure DOM is ready
+      requestAnimationFrame(() => {
+        const targetCard = rail.querySelector<HTMLElement>(`[data-item-id="${selectedItemId}"]`);
+        if (targetCard) {
+          // Cancel any pending scroll handler
+          if (scrollTimeoutRef.current) {
+            clearTimeout(scrollTimeoutRef.current);
+            scrollTimeoutRef.current = undefined;
+          }
+          
+          isScrollingRef.current = false; // Allow this snap
+          const targetLeft = targetCard.offsetLeft - (rail.clientWidth - targetCard.clientWidth) / 2;
+          rail.scrollTo({ left: Math.round(targetLeft), behavior: 'smooth' });
+          setLocalCenterId(selectedItemId);
+          lastSnapIdRef.current = selectedItemId;
+          console.log(`✅ Snapped to: ${selectedItemId}`);
+        } else {
+          console.warn(`⚠️ Target card not found: ${selectedItemId}`);
         }
-        
-        isScrollingRef.current = false; // Allow this snap
-        const targetLeft = targetCard.offsetLeft - (rail.clientWidth - targetCard.clientWidth) / 2;
-        rail.scrollTo({ left: Math.round(targetLeft), behavior: 'smooth' });
-        setLocalCenterId(selectedItemId);
-        lastSnapIdRef.current = selectedItemId;
-      }
+      });
+    } else {
+      console.log(`⏭️ Skip snap: ${selectedItemId} already centered`);
     }
   }, [selectedItemId, items.length]);
+
+  // Handle initial selection when layer has no selected item
+  useEffect(() => {
+    const rail = scrollContainerRef.current;
+    if (!rail || items.length === 0) return;
+    
+    // If no item is selected but we have items, snap to first item
+    if (!selectedItemId && !localCenterId && items.length > 0) {
+      console.log('📍 No selection, snapping to first item');
+      const firstItem = items[0];
+      requestAnimationFrame(() => {
+        const targetCard = rail.querySelector<HTMLElement>(`[data-item-id="${firstItem.id}"]`);
+        if (targetCard) {
+          const targetLeft = targetCard.offsetLeft - (rail.clientWidth - targetCard.clientWidth) / 2;
+          rail.scrollTo({ left: Math.round(targetLeft), behavior: 'smooth' });
+          setLocalCenterId(firstItem.id);
+          lastSnapIdRef.current = firstItem.id;
+        }
+      });
+    }
+  }, [items, selectedItemId, localCenterId]);
 
   // Handle user scroll with immediate visual feedback and debounced updates
   useEffect(() => {
