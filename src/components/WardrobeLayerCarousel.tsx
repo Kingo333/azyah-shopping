@@ -196,7 +196,7 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
             className="rail-carousel"
             data-item-count={items.length}
             style={{
-              height: 'clamp(200px, 28vh, 280px)',
+              height: 'clamp(240px, 32vh, 320px)',
             }}
           >
             {items.map((item, index) => (

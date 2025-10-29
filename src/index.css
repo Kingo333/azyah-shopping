@@ -786,8 +786,8 @@
   position: relative;
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: 55vw;
-  gap: 8vw;
+  grid-auto-columns: 45vw;
+  gap: 6vw;
   overflow-x: auto;
   overflow-y: hidden;
   scroll-snap-type: x mandatory;
@@ -796,8 +796,8 @@
   scrollbar-width: none;
   
   /* Padding calculation to center first/last items at 50vw */
-  padding-left: calc(50vw - 27.5vw);
-  padding-right: calc(50vw - 27.5vw);
+  padding-left: calc(50vw - 22.5vw);
+  padding-right: calc(50vw - 22.5vw);
   padding-top: 12px;
   padding-bottom: 12px;
   
@@ -827,10 +827,11 @@
   position: relative;
   border-radius: 16px;
   background: hsl(var(--background));
+  padding: 8px;
   
   /* Default state: slightly smaller */
   opacity: 0.85;
-  transform: scale(0.92);
+  transform: scale(0.95);
   transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1),
               opacity 0.35s ease,
               box-shadow 0.35s ease;
@@ -859,8 +860,8 @@
 /* Mobile safe-area support */
 @media (max-width: 768px) {
   .rail-carousel {
-    padding-left: max(calc(50vw - 27.5vw), env(safe-area-inset-left, 20px));
-    padding-right: max(calc(50vw - 27.5vw), env(safe-area-inset-right, 20px));
+    padding-left: max(calc(50vw - 22.5vw), env(safe-area-inset-left, 20px));
+    padding-right: max(calc(50vw - 22.5vw), env(safe-area-inset-right, 20px));
   }
 }
 
