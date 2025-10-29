@@ -781,87 +781,106 @@
 }
 
 /* Carousel scroll behavior with grid snap points */
-/* Perfect center-snap carousel with CSS Grid */
 .rail-carousel {
   position: relative;
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: 45vw;
-  gap: 6vw;
+  display: flex;
+  gap: calc(var(--cell-w, 250px) - var(--card-w, 230px)); /* Dynamic gap */
   overflow-x: auto;
   overflow-y: hidden;
   scroll-snap-type: x mandatory;
   scroll-snap-stop: always;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
-  
-  /* Padding calculation to center first/last items at 50vw */
-  padding-left: calc(50vw - 22.5vw);
-  padding-right: calc(50vw - 22.5vw);
-  padding-top: 12px;
-  padding-bottom: 12px;
-  
+  padding: 0 var(--rail-side-pad, 24px);
   contain: layout;
+  scroll-padding-inline: var(--rail-side-pad, 24px);
 }
 
 .rail-carousel::-webkit-scrollbar {
   display: none;
 }
 
-/* Handle edge cases for 1-2 items */
-.rail-carousel[data-item-count="1"],
-.rail-carousel[data-item-count="2"] {
-  justify-content: center;
+/* Visual center guide with grid cell indicator */
+.rail-carousel::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    hsl(var(--primary) / 0.3) 20%,
+    hsl(var(--primary) / 0.5) 50%,
+    hsl(var(--primary) / 0.3) 80%,
+    transparent 100%
+  );
+  transform: translateX(-50%);
+  pointer-events: none;
+  z-index: 100;
+  opacity: 0.3;
+  transition: opacity 0.3s;
 }
 
-/* Card styling - all items visible */
+.rail-carousel:active::before {
+  opacity: 0.6; /* Show grid guide while scrolling */
+}
+
+/* Card snap alignment - discrete grid cells */
 .rail-card {
-  width: 100%;
+  flex-shrink: 0;
+  width: var(--card-w, 230px);
   height: 100%;
   scroll-snap-align: center;
   scroll-snap-stop: always;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 0.3s ease;
   box-sizing: border-box;
+  contain: layout size;
   display: flex;
   align-items: center;
   justify-content: center;
-  position: relative;
-  border-radius: 16px;
-  background: hsl(var(--background));
   padding: 8px;
-  
-  /* Default state: slightly smaller */
-  opacity: 0.85;
-  transform: scale(0.95);
-  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1),
-              opacity 0.35s ease,
-              box-shadow 0.35s ease;
+  opacity: 0.35;
+  transform: scale(0.88);
 }
 
-/* Image styling */
 .rail-card img {
   max-width: 100%;
   max-height: 100%;
   width: auto;
   height: auto;
+  aspect-ratio: 3 / 4;
   object-fit: contain;
   object-position: center;
   display: block;
-  border-radius: 12px;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
 }
 
-/* CENTER CARD - Full visibility, larger scale, shadow */
+/* Center card styles */
 .rail-card.is-center {
-  opacity: 1;
   transform: scale(1);
+  opacity: 1;
   z-index: 10;
-  box-shadow: 0 8px 24px hsl(var(--foreground) / 0.15);
 }
 
-/* Mobile safe-area support */
+.rail-card.is-center:hover {
+  transform: scale(1.02);
+}
+
+/* Neighbor card styles - fade out non-centered items */
+.rail-card:not(.is-center) {
+  opacity: 0.35;
+  transform: scale(0.88);
+}
+
+/* Mobile optimizations */
 @media (max-width: 768px) {
   .rail-carousel {
-    padding-left: max(calc(50vw - 22.5vw), env(safe-area-inset-left, 20px));
-    padding-right: max(calc(50vw - 22.5vw), env(safe-area-inset-right, 20px));
+    scroll-padding: env(safe-area-inset-left, 24px) 
+                   env(safe-area-inset-right, 24px);
   }
 }
 
