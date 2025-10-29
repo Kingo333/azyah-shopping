@@ -27,6 +27,7 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const scrollTimeoutRef = useRef<NodeJS.Timeout | undefined>();
   const isProgrammaticScrollRef = useRef(false);
+  const targetItemIdRef = useRef<string | null>(null); // Track intended destination
   const [localCenterId, setLocalCenterId] = useState<string | null>(null);
   const [currentIndex, setCurrentIndex] = useState<number>(0);
 
@@ -84,16 +85,20 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
     console.log(`📐 Grid scroll: cell ${itemIndex} → ${targetScrollLeft}px (cell width: ${cellWidth}px)`);
 
     requestAnimationFrame(() => {
-      isProgrammaticScrollRef.current = true; // 🚩 Mark as programmatic
+      isProgrammaticScrollRef.current = true;
+      targetItemIdRef.current = selectedItemId; // 🎯 Remember where we're going
+      
       rail.scrollTo({ left: targetScrollLeft, behavior: 'smooth' });
       setCurrentIndex(itemIndex);
       setLocalCenterId(selectedItemId);
-      console.log(`✅ Snapped to grid cell ${itemIndex} (programmatic)`);
+      console.log(`✅ Snapped to grid cell ${itemIndex} (programmatic) → target: ${selectedItemId}`);
       
-      // Clear flag after scroll animation completes (~300ms for smooth scroll)
+      // Clear flags after scroll settles (longer timeout for refetch safety)
       setTimeout(() => {
         isProgrammaticScrollRef.current = false;
-      }, 600);
+        targetItemIdRef.current = null;
+        console.log(`🏁 Scroll complete, re-enabling user detection`);
+      }, 1000); // Increased from 600ms to 1000ms to account for refetch delays
     });
   }, [selectedItemId, items.length, items]);
 
@@ -135,12 +140,22 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
 
       // Debounce database update (500ms after user stops scrolling)
       scrollTimeoutRef.current = setTimeout(() => {
-        // ✅ Only update DB if this is a USER scroll, not programmatic
-        if (!isProgrammaticScrollRef.current && centeredItem && centeredItem.id !== selectedItemId) {
+        // ✅ Skip if we're mid-programmatic-scroll
+        if (isProgrammaticScrollRef.current) {
+          console.log(`⏭️ Skipped DB update (programmatic scroll in progress)`);
+          return;
+        }
+        
+        // ✅ Skip if we're still heading toward a target item
+        if (targetItemIdRef.current && targetItemIdRef.current !== centeredItem?.id) {
+          console.log(`🎯 Skipped DB update (still scrolling to target: ${targetItemIdRef.current})`);
+          return;
+        }
+        
+        // ✅ Only update if this is truly a user-initiated change
+        if (centeredItem && centeredItem.id !== selectedItemId) {
           console.log(`👆 User selected grid cell ${clampedIndex}: ${centeredItem.id}`);
           onItemSelect(centeredItem.id);
-        } else if (isProgrammaticScrollRef.current) {
-          console.log(`⏭️ Skipped DB update (programmatic scroll)`);
         }
       }, 500);
     };
@@ -175,7 +190,8 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
           // Instant scroll, shorter timeout
           setTimeout(() => {
             isProgrammaticScrollRef.current = false;
-          }, 100);
+            targetItemIdRef.current = null;
+          }, 200);
         }
       });
     }
