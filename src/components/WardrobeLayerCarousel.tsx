@@ -68,8 +68,12 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
     rail.style.setProperty('--cell-w', `${cellWidth}px`);
     rail.style.setProperty('--rail-side-pad', `${sidePadding}px`);
 
-    // Calculate exact scroll position using grid math
-    const targetScrollLeft = (cellWidth * itemIndex);
+    // Calculate scroll position to center item at 50vw (absolute center)
+    // Formula: scroll = (item_position) - (viewport_center) + (card_center)
+    const itemLeftEdge = cellWidth * itemIndex;  // Item's left edge in scroll container
+    const viewportCenter = vw / 2;                // Absolute center of viewport
+    const cardCenter = cardWidth / 2;             // Center of the card itself
+    const targetScrollLeft = itemLeftEdge - viewportCenter + cardCenter + sidePadding;
 
     // Use double RAF for layout stability - prevents race conditions when multiple carousels update
     requestAnimationFrame(() => {
@@ -121,11 +125,42 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
     requestAnimationFrame(() => {
       const vw = window.innerWidth;
       const cardWidth = vw * GRID_CONFIG.cardWidthVw;
+      const cellWidth = vw * GRID_CONFIG.cellWidthVw;
+      const sidePadding = (vw - cardWidth) / 2;
+      
       rail.style.setProperty('--card-w', `${cardWidth}px`);
-      rail.scrollTo({ left: 0, behavior: 'auto' });
+      rail.style.setProperty('--cell-w', `${cellWidth}px`);
+      rail.style.setProperty('--rail-side-pad', `${sidePadding}px`);
+      
+      // Center first item at 50vw
+      const viewportCenter = vw / 2;
+      const cardCenter = cardWidth / 2;
+      const targetScrollLeft = -viewportCenter + cardCenter + sidePadding;
+      
+      rail.scrollTo({ left: targetScrollLeft, behavior: 'auto' });
       setLocalCenterId(firstItem.id);
     });
   }, []); // Only run once on mount
+  
+  // ✅ RESIZE HANDLER: Recalculate CSS variables on window resize
+  useEffect(() => {
+    const handleResize = () => {
+      const rail = scrollContainerRef.current;
+      if (!rail) return;
+
+      const vw = window.innerWidth;
+      const cardWidth = vw * GRID_CONFIG.cardWidthVw;
+      const cellWidth = vw * GRID_CONFIG.cellWidthVw;
+      const sidePadding = (vw - cardWidth) / 2;
+
+      rail.style.setProperty('--card-w', `${cardWidth}px`);
+      rail.style.setProperty('--cell-w', `${cellWidth}px`);
+      rail.style.setProperty('--rail-side-pad', `${sidePadding}px`);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Determine which item to visually center
   const visualCenterId = selectedItemId || localCenterId || (items.length > 0 ? items[0].id : null);
