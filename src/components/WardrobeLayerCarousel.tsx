@@ -26,7 +26,8 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
 }) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [localCenterId, setLocalCenterId] = useState<string | null>(selectedItemId);
-  const [isUserScrolling, setIsUserScrolling] = useState(false);
+  const isScrollingRef = useRef(false);
+  const lastSnapIdRef = useRef<string | null>(null);
   const scrollTimeoutRef = useRef<NodeJS.Timeout>();
   
   const categoryLabels: Record<string, string> = {
@@ -39,7 +40,7 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
     accessory: 'Accessories',
   };
 
-  // Initialize and respond to external selection changes (including shuffle)
+  // Snap to selected item when it changes externally (shuffle, pin, initial load)
   useEffect(() => {
     const rail = scrollContainerRef.current;
     if (!rail || items.length === 0 || !selectedItemId) return;
@@ -51,16 +52,24 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
     const sidePad = Math.round((vw - cardW) / 2);
     rail.style.setProperty('--rail-side-pad', `${sidePad}px`);
 
-    // Only snap if this is an external update (not from user scrolling)
-    if (!isUserScrolling) {
+    // Only snap if this is genuinely a NEW selection (prevents snap-back during user scroll)
+    if (selectedItemId !== lastSnapIdRef.current) {
       const targetCard = rail.querySelector<HTMLElement>(`[data-item-id="${selectedItemId}"]`);
       if (targetCard) {
+        // Cancel any pending scroll handler
+        if (scrollTimeoutRef.current) {
+          clearTimeout(scrollTimeoutRef.current);
+          scrollTimeoutRef.current = undefined;
+        }
+        
+        isScrollingRef.current = false; // Allow this snap
         const targetLeft = targetCard.offsetLeft - (rail.clientWidth - targetCard.clientWidth) / 2;
         rail.scrollTo({ left: Math.round(targetLeft), behavior: 'smooth' });
         setLocalCenterId(selectedItemId);
+        lastSnapIdRef.current = selectedItemId;
       }
     }
-  }, [items.length, selectedItemId, isUserScrolling]);
+  }, [selectedItemId, items.length]);
 
   // Handle user scroll with immediate visual feedback and debounced updates
   useEffect(() => {
@@ -68,8 +77,10 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
     if (!rail) return;
 
     const handleScroll = () => {
-      // Mark as user scrolling
-      setIsUserScrolling(true);
+      // Only process user-initiated scrolls (not programmatic snaps)
+      if (!isScrollingRef.current) {
+        isScrollingRef.current = true;
+      }
       
       // Clear previous timeout
       if (scrollTimeoutRef.current) {
@@ -105,10 +116,15 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
         if (!bestCard?.dataset.itemId) return;
         
         const newItemId = bestCard.dataset.itemId;
+        
+        // Update the snap reference BEFORE calling onItemSelect
+        // This prevents the subsequent prop change from triggering a snap
+        lastSnapIdRef.current = newItemId;
+        
         onItemSelect(newItemId);
         
-        // Reset scrolling flag after update completes
-        setTimeout(() => setIsUserScrolling(false), 100);
+        // Reset scrolling flag
+        isScrollingRef.current = false;
       }, 500);
     };
 
