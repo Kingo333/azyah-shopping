@@ -37,75 +37,103 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
     accessory: 'Accessories',
   };
 
-  // Auto-scroll to selected item on mount
-  useEffect(() => {
-    if (selectedItemId && scrollContainerRef.current) {
-      const selectedCard = scrollContainerRef.current.querySelector(
-        `[data-item-id="${selectedItemId}"]`
-      ) as HTMLElement;
-      
-      if (selectedCard) {
-        selectedCard.scrollIntoView({ 
-          behavior: 'smooth', 
-          inline: 'center', 
-          block: 'nearest' 
-        });
-      }
-    }
-  }, [selectedItemId]);
+  // Mark centered card based on offsetLeft (immune to parent transforms)
+  const markCenteredCard = useCallback(() => {
+    const rail = scrollContainerRef.current;
+    if (!rail || layer.is_pinned) return;
 
-  // Detect center item on scroll (debounced)
-  const detectCenterItem = useCallback(() => {
-    if (!scrollContainerRef.current || layer.is_pinned) return;
+    const cards = rail.querySelectorAll<HTMLElement>('[data-item-id]');
+    const cx = rail.scrollLeft + rail.clientWidth / 2;
 
-    const container = scrollContainerRef.current;
-    const containerRect = container.getBoundingClientRect();
-    const containerCenter = containerRect.left + containerRect.width / 2;
+    let best: HTMLElement | null = null;
+    let bestDist = Infinity;
 
-    let closestItem: { id: string; distance: number } | null = null;
-
-    container.querySelectorAll('[data-item-id]').forEach((card) => {
-      const cardElement = card as HTMLElement;
-      const cardRect = cardElement.getBoundingClientRect();
-      const cardCenter = cardRect.left + cardRect.width / 2;
-      const distance = Math.abs(containerCenter - cardCenter);
-
-      if (!closestItem || distance < closestItem.distance) {
-        closestItem = {
-          id: cardElement.dataset.itemId!,
-          distance,
-        };
+    cards.forEach((card) => {
+      const cardCx = card.offsetLeft + card.clientWidth / 2;
+      const d = Math.abs(cardCx - cx);
+      if (d < bestDist) {
+        bestDist = d;
+        best = card;
       }
     });
 
-    if (closestItem && closestItem.id !== centerItemId) {
-      setCenterItemId(closestItem.id);
-      onItemSelect(closestItem.id);
+    cards.forEach(c => c.classList.toggle('is-center', c === best));
+    if (best?.dataset.itemId && best.dataset.itemId !== centerItemId) {
+      setCenterItemId(best.dataset.itemId);
+      onItemSelect(best.dataset.itemId);
     }
   }, [centerItemId, onItemSelect, layer.is_pinned]);
 
-  // Debounced scroll handler
+  // Snap to nearest card (iOS Safari fallback)
+  const snapToNearest = useCallback(() => {
+    const rail = scrollContainerRef.current;
+    if (!rail || layer.is_pinned) return;
+
+    const cards = rail.querySelectorAll<HTMLElement>('[data-item-id]');
+    const cx = rail.scrollLeft + rail.clientWidth / 2;
+
+    let target: HTMLElement | null = null;
+    let bestDist = Infinity;
+
+    cards.forEach((card) => {
+      const cardCx = card.offsetLeft + card.clientWidth / 2;
+      const d = Math.abs(cardCx - cx);
+      if (d < bestDist) {
+        bestDist = d;
+        target = card;
+      }
+    });
+
+    if (!target) return;
+
+    const targetLeft = target.offsetLeft - (rail.clientWidth - target.clientWidth) / 2;
+    rail.scrollTo({ left: Math.round(targetLeft), behavior: 'smooth' });
+  }, [layer.is_pinned]);
+
+  // Setup rail with dynamic sizing
   useEffect(() => {
-    const container = scrollContainerRef.current;
-    if (!container) return;
+    const rail = scrollContainerRef.current;
+    if (!rail || items.length === 0) return;
 
-    let timeoutId: NodeJS.Timeout;
-    const handleScroll = () => {
-      clearTimeout(timeoutId);
-      timeoutId = setTimeout(detectCenterItem, 150);
+    // Compute dynamic sizes (58vw for cards, 21vw for side padding)
+    const vw = window.innerWidth;
+    const cardW = Math.round(vw * 0.58);
+    rail.style.setProperty('--card-w', `${cardW}px`);
+    const sidePad = Math.round((vw - cardW) / 2);
+    rail.style.setProperty('--rail-side-pad', `${sidePad}px`);
+
+    // Initial snap
+    markCenteredCard();
+    snapToNearest();
+  }, [items, markCenteredCard, snapToNearest]);
+
+  // RAF-based scroll handler with iOS snap fallback
+  useEffect(() => {
+    const rail = scrollContainerRef.current;
+    if (!rail) return;
+
+    let ticking = false;
+    let snapTimer: NodeJS.Timeout;
+
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        markCenteredCard();
+        ticking = false;
+      });
+
+      // Fallback snap for iOS Safari (no native scrollend)
+      clearTimeout(snapTimer);
+      snapTimer = setTimeout(() => snapToNearest(), 120);
     };
 
-    container.addEventListener('scroll', handleScroll);
-    container.addEventListener('scrollend', detectCenterItem);
-
+    rail.addEventListener('scroll', onScroll, { passive: true });
     return () => {
-      container.removeEventListener('scroll', handleScroll);
-      container.removeEventListener('scrollend', detectCenterItem);
-      clearTimeout(timeoutId);
+      rail.removeEventListener('scroll', onScroll);
+      clearTimeout(snapTimer);
     };
-  }, [detectCenterItem]);
-
-  // Card width is set via CSS class (w-[60vw])
+  }, [markCenteredCard, snapToNearest]);
 
   return (
     <div className="mb-0">
@@ -171,56 +199,39 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
           <div
             ref={scrollContainerRef}
             className={cn(
-              'rail-carousel overflow-x-auto overflow-y-hidden',
+              'rail-carousel',
               layer.is_pinned && 'pointer-events-none'
             )}
             style={{
-              height: 'clamp(160px, 20vh, 200px)',
-              scrollSnapType: 'x mandatory',
-              scrollPadding: '20vw',
-              WebkitOverflowScrolling: 'touch',
+              height: 'clamp(180px, 24vh, 240px)',
             }}
           >
-            <div className="flex items-center px-[20vw]">
-              {items.map((item) => {
-                const isCenter = item.id === (centerItemId || selectedItemId);
+            {items.map((item) => {
+              const isCenter = item.id === (centerItemId || selectedItemId);
 
-                return (
-                  <div
-                    key={item.id}
-                    data-item-id={item.id}
-                    className={cn(
-                      'rail-card flex-shrink-0 mx-0 transition-all duration-300 relative w-[60vw]',
-                      isCenter ? 'scale-100 opacity-100' : 'scale-95 opacity-100'
-                    )}
-                    style={{
-                      scrollSnapAlign: 'center',
-                      scrollSnapStop: 'always',
-                      height: '100%',
-                    }}
-                  >
-                    {/* Pin icon on item */}
-                    {layer.is_pinned && isCenter && (
-                      <div className="absolute top-2 right-2 z-10">
-                        <Pin className="w-4 h-4 fill-primary text-primary drop-shadow" />
-                      </div>
-                    )}
-                    
-                    {/* Clean image - no box */}
-                    <img
-                      src={item.image_bg_removed_url || item.image_url}
-                      alt={item.category}
-                      className={cn(
-                        "w-full h-full object-contain transition-all duration-300",
-                        isCenter && "drop-shadow-xl"
-                      )}
-                      loading="lazy"
-                      draggable={false}
-                    />
-                  </div>
-                );
-              })}
-            </div>
+              return (
+                <div
+                  key={item.id}
+                  data-item-id={item.id}
+                  className="rail-card relative"
+                >
+                  {/* Pin icon on item */}
+                  {layer.is_pinned && isCenter && (
+                    <div className="absolute top-2 right-2 z-10">
+                      <Pin className="w-4 h-4 fill-primary text-primary drop-shadow" />
+                    </div>
+                  )}
+                  
+                  {/* Image with object-fit: contain */}
+                  <img
+                    src={item.image_bg_removed_url || item.image_url}
+                    alt={item.category}
+                    loading="lazy"
+                    draggable={false}
+                  />
+                </div>
+              );
+            })}
           </div>
         )}
       </div>

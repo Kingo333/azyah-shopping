@@ -377,9 +377,48 @@
   transition: transform 0.2s, box-shadow 0.2s;
 }
 
-/* Carousel centering fix */
+/* Rail carousel - Grid layout with perfect centering */
+.rail-carousel {
+  display: grid;
+  grid-auto-flow: column;
+  gap: 12px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  padding-inline: var(--rail-side-pad);
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: var(--rail-side-pad);
+}
+
 .rail-carousel > div {
-  min-width: 100%;
+  display: contents;
+}
+
+.rail-card {
+  width: var(--card-w);
+  flex: 0 0 var(--card-w);
+  scroll-snap-align: center;
+  scroll-snap-stop: always;
+  transition: transform .18s ease, box-shadow .18s;
+}
+
+.rail-card.is-center {
+  transform: scale(1.0);
+  box-shadow: 0 6px 18px rgba(0,0,0,.08);
+}
+
+.rail-card:not(.is-center) {
+  transform: scale(.85);
+}
+
+.rail-card img {
+  display: block;
+  width: 100%;
+  height: clamp(180px, 24vh, 240px);
+  object-fit: contain;
+  background: #fff;
+  border-radius: 16px;
 }
 
 .wardrobe-card:hover {
