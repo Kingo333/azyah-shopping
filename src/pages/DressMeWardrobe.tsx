@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Plus, Filter, MoreVertical, Trash2, CheckSquare, X } from 'lucide-react';
+import { Plus, Filter, MoreVertical, Trash2, CheckSquare, X, Layers2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { WardrobeAllItemsGrid } from '@/components/WardrobeAllItemsGrid';
@@ -21,6 +21,7 @@ import { CommunityOutfits } from './CommunityOutfits';
 import { CommunityClothes } from './CommunityClothes';
 import { OutfitDetailSheet } from '@/components/OutfitDetailSheet';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { LayersViewMode } from '@/components/LayersViewMode';
 import { toast } from 'sonner';
 
 export default function DressMeWardrobe() {
@@ -50,6 +51,7 @@ export default function DressMeWardrobe() {
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedItemDetail, setSelectedItemDetail] = useState<WardrobeItem | null>(null);
   const [selectedOutfitId, setSelectedOutfitId] = useState<string | null>(null);
+  const [isLayersView, setIsLayersView] = useState(false);
   
   const deleteFit = useDeleteFit();
   const deleteItemMutation = useDeleteWardrobeItem();
@@ -219,6 +221,28 @@ export default function DressMeWardrobe() {
     );
   }
 
+  // Show layers view when there are layers and user toggles it
+  if (isLayersView && layers.length > 0) {
+    return (
+      <>
+        <SEOHead
+          title="Outfit Builder - Dress Me | Azyah"
+          description="Build your perfect outfit with our interactive layer system"
+        />
+        <LayersViewMode
+          layers={layers}
+          allItems={allItems}
+          onRemoveLayer={handleRemoveLayer}
+        />
+        <WardrobeUploadModal
+          isOpen={isUploadModalOpen}
+          onClose={() => setIsUploadModalOpen(false)}
+          onItemAdded={handleItemAdded}
+        />
+      </>
+    );
+  }
+
   return (
     <>
       <SEOHead
@@ -234,6 +258,17 @@ export default function DressMeWardrobe() {
               <BackButton fallbackPath="/" variant="ghost" size="sm" />
               <h1 className="text-2xl font-bold">My Wardrobe</h1>
             </div>
+            {activeTab === 'clothes' && layers.length > 0 && (
+              <Button
+                variant={isLayersView ? "default" : "outline"}
+                size="sm"
+                onClick={() => setIsLayersView(!isLayersView)}
+                className="h-8 px-3 text-xs gap-1.5"
+              >
+                <Layers2 className="w-3.5 h-3.5" />
+                Layers
+              </Button>
+            )}
           </div>
 
           {/* Segmented Control */}
