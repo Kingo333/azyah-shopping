@@ -196,6 +196,7 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
                     )}
                     style={{
                       scrollSnapAlign: 'center',
+                      scrollSnapStop: 'always',
                       width: `${cardWidth}px`,
                       height: '100%',
                     }}
