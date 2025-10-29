@@ -84,6 +84,30 @@ export const LayersViewMode: React.FC<LayersViewModeProps> = ({
   // Use canvas save hook
   const { saveOutfit, currentStep, progress, errorMessage, reset } = useCanvasSave();
 
+  // Auto-select first item for each layer on mount (one-time initialization)
+  useEffect(() => {
+    const isFirstLoad = Object.keys(selectedItems).length === 0;
+    
+    if (isFirstLoad && layers.length > 0) {
+      const initialSelections: Record<string, { itemId: string; index: number } | null> = {};
+      
+      layers.forEach(layer => {
+        const categoryItems = allItems.filter(i => i.category === layer.category);
+        if (categoryItems.length > 0) {
+          // Auto-select first item
+          initialSelections[layer.category] = {
+            itemId: categoryItems[0].id,
+            index: 0,
+          };
+        } else {
+          initialSelections[layer.category] = null;
+        }
+      });
+      
+      setSelectedItems(initialSelections);
+    }
+  }, [layers, allItems, selectedItems]);
+
   // Auto-switch mode when dress is selected/removed
   useEffect(() => {
     const hasDress = selectedItems['dress']?.itemId;
@@ -142,10 +166,14 @@ export const LayersViewMode: React.FC<LayersViewModeProps> = ({
     }
   }, [mode, layerStates]);
 
-  // Visible categories for pills
+  // Visible categories for pills - show ALL layers user has created
   const visibleCategories = useMemo(() => {
     const visibleCats = visibleLayers.map(l => l.category);
-    return allCategories.filter(cat => visibleCats.includes(cat.value) && !['accessory', 'bag'].includes(cat.value));
+    return allCategories.filter(cat => {
+      const isInVisibleLayers = visibleCats.includes(cat.value);
+      const isNotDock = !['accessory', 'bag'].includes(cat.value);
+      return isInVisibleLayers && isNotDock;
+    });
   }, [visibleLayers]);
 
   // Handle item change from carousel track

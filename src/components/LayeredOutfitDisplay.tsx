@@ -34,47 +34,34 @@ export const LayeredOutfitDisplay: React.FC<LayeredOutfitDisplayProps> = ({
   activeCategory,
   onItemChange 
 }) => {
-  const activeLayers = layers.filter(l => l.item);
-
   return (
     <div className="composition-canvas fixed top-[60px] left-0 right-0 bottom-[80px] overflow-hidden">
-      {activeLayers.length === 0 ? (
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="text-center space-y-2 px-4">
-            <p className="text-lg font-medium text-muted-foreground">Start building your outfit</p>
-            <p className="text-sm text-muted-foreground">Select a category below to add items</p>
-          </div>
-        </div>
-      ) : (
-        <>
-          {/* Optional mannequin background */}
-          <div 
-            className="absolute inset-0 flex items-center justify-center pointer-events-none"
-            style={{ zIndex: 10 }}
-          >
-            <div 
-              className="w-48 h-[70vh] rounded-full opacity-[0.03]"
-              style={{
-                background: 'radial-gradient(ellipse, rgba(122, 20, 62, 0.3) 0%, transparent 70%)'
-              }}
-            />
-          </div>
+      {/* Optional mannequin background */}
+      <div 
+        className="absolute inset-0 flex items-center justify-center pointer-events-none"
+        style={{ zIndex: 10 }}
+      >
+        <div 
+          className="w-48 h-[70vh] rounded-full opacity-[0.03]"
+          style={{
+            background: 'radial-gradient(ellipse, rgba(122, 20, 62, 0.3) 0%, transparent 70%)'
+          }}
+        />
+      </div>
 
-          {/* Layer tracks */}
-          {activeLayers.map((layer) => (
-            <LayerTrack
-              key={layer.category}
-              category={layer.category}
-              items={layer.items}
-              selectedIndex={layer.selectedIndex}
-              isPinned={layer.isPinned}
-              isActive={activeCategory === layer.category}
-              onItemChange={(item, index) => onItemChange(layer.category, item, index)}
-              zIndex={CATEGORY_Z_INDEX[layer.category] || 20}
-            />
-          ))}
-        </>
-      )}
+      {/* Layer tracks - Show ALL layers regardless of item selection */}
+      {layers.map((layer) => (
+        <LayerTrack
+          key={layer.category}
+          category={layer.category}
+          items={layer.items}
+          selectedIndex={layer.selectedIndex}
+          isPinned={layer.isPinned}
+          isActive={activeCategory === layer.category}
+          onItemChange={(item, index) => onItemChange(layer.category, item, index)}
+          zIndex={CATEGORY_Z_INDEX[layer.category] || 20}
+        />
+      ))}
     </div>
   );
 };

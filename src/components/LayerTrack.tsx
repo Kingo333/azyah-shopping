@@ -51,7 +51,27 @@ export const LayerTrack: React.FC<LayerTrackProps> = ({
     }
   };
 
-  if (items.length === 0 || selectedIndex >= items.length || selectedIndex < 0) {
+  // Show empty state for categories with no items
+  if (items.length === 0) {
+    return (
+      <div
+        className="absolute inset-0 flex items-center justify-center pointer-events-none"
+        style={{ zIndex }}
+      >
+        <div className="text-center space-y-2 px-4 opacity-30">
+          <p className="text-sm font-medium text-muted-foreground">
+            No {category} items yet
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Add items to your wardrobe first
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Validate selectedIndex
+  if (selectedIndex < 0 || selectedIndex >= items.length) {
     return null;
   }
 
