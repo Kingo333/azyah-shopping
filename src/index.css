@@ -857,4 +857,18 @@
                    env(safe-area-inset-right, 24px);
   }
 }
+
+/* Layer Scroll View */
+.layer-scroll-container::-webkit-scrollbar {
+  display: none;
+}
+
+.layer-scroll-container {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.layer-scroll-item {
+  cursor: pointer;
+}
 }

@@ -7,8 +7,7 @@ import { WardrobeAllItemsGrid } from '@/components/WardrobeAllItemsGrid';
 import { WardrobeLayerCarousel } from '@/components/WardrobeLayerCarousel';
 import { AddLayerButton } from '@/components/AddLayerButton';
 import { WardrobeCategoryTabs } from '@/components/WardrobeCategoryTabs';
-import { WardrobeLayerPreview } from '@/components/WardrobeLayerPreview';
-import { WardrobeLayerThumbnailCarousel } from '@/components/WardrobeLayerThumbnailCarousel';
+import { WardrobeLayerScrollView } from '@/components/WardrobeLayerScrollView';
 import { WardrobeLayerActionMenu } from '@/components/WardrobeLayerActionMenu';
 import { WardrobeUploadModal } from '@/components/WardrobeUploadModal';
 import { WardrobeItemDetailModal } from '@/components/WardrobeItemDetailModal';
@@ -103,6 +102,18 @@ export default function DressMeWardrobe() {
   const getLayerItems = (category: string) => {
     return allItems.filter(item => item.category === category);
   };
+
+  // Create a map of items by category for quick access
+  const itemsByCategory = useMemo(() => {
+    const map: Record<string, WardrobeItem[]> = {};
+    allItems.forEach(item => {
+      if (!map[item.category]) {
+        map[item.category] = [];
+      }
+      map[item.category].push(item);
+    });
+    return map;
+  }, [allItems]);
 
   // Available categories for adding new layers
   const allCategories = [
@@ -527,28 +538,21 @@ export default function DressMeWardrobe() {
                 </div>
               )}
 
-              {/* New Layer Preview Section */}
+              {/* Unified Layer Scroll View */}
               {layers.length > 0 && (
-                <div className="space-y-4 pb-24">
-                  {/* Full Outfit Preview */}
-                  <WardrobeLayerPreview
-                    layers={layers}
-                    selectedItems={selectedItemsMap}
-                  />
-
-                  {/* Thumbnail Carousel with Layer Navigation */}
-                  <WardrobeLayerThumbnailCarousel
+                <div className="h-[600px] relative pb-24">
+                  <WardrobeLayerScrollView
                     activeLayer={activeLayer}
-                    items={activeLayer ? getLayerItems(activeLayer.category) : []}
+                    items={activeLayer ? itemsByCategory[activeLayer.category] || [] : []}
                     selectedItemId={activeLayer?.selected_item_id || null}
                     onItemSelect={handleActiveLayerItemSelect}
                     onPrevLayer={handlePrevLayer}
                     onNextLayer={handleNextLayer}
                     canGoPrev={activeLayerIndex > 0}
                     canGoNext={activeLayerIndex < layers.length - 1}
+                    allSelectedItems={selectedItemsMap}
                   />
 
-                  {/* Floating Action Menu */}
                   <WardrobeLayerActionMenu
                     isPinned={activeLayer?.is_pinned || false}
                     onPinToggle={handleActiveLayerPinToggle}
