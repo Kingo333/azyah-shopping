@@ -7,6 +7,9 @@ import { WardrobeAllItemsGrid } from '@/components/WardrobeAllItemsGrid';
 import { WardrobeLayerCarousel } from '@/components/WardrobeLayerCarousel';
 import { AddLayerButton } from '@/components/AddLayerButton';
 import { WardrobeCategoryTabs } from '@/components/WardrobeCategoryTabs';
+import { WardrobeLayerPreview } from '@/components/WardrobeLayerPreview';
+import { WardrobeLayerThumbnailCarousel } from '@/components/WardrobeLayerThumbnailCarousel';
+import { WardrobeLayerActionMenu } from '@/components/WardrobeLayerActionMenu';
 import { WardrobeUploadModal } from '@/components/WardrobeUploadModal';
 import { WardrobeItemDetailModal } from '@/components/WardrobeItemDetailModal';
 import { useWardrobeItems, WardrobeItem, useDeleteWardrobeItem } from '@/hooks/useWardrobeItems';
@@ -52,6 +55,7 @@ export default function DressMeWardrobe() {
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedItemDetail, setSelectedItemDetail] = useState<WardrobeItem | null>(null);
   const [selectedOutfitId, setSelectedOutfitId] = useState<string | null>(null);
+  const [activeLayerIndex, setActiveLayerIndex] = useState(0);
   
   // Layer modes
   type LayerMode = 'topBottomsShoes' | 'dressShoes';
@@ -349,6 +353,47 @@ export default function DressMeWardrobe() {
     }
   };
 
+  // New layer navigation handlers
+  const activeLayer = layers[activeLayerIndex] || null;
+  
+  const handlePrevLayer = () => {
+    setActiveLayerIndex(prev => Math.max(0, prev - 1));
+  };
+  
+  const handleNextLayer = () => {
+    setActiveLayerIndex(prev => Math.min(layers.length - 1, prev + 1));
+  };
+  
+  const handleActiveLayerItemSelect = (item: WardrobeItem) => {
+    if (!activeLayer) return;
+    updateLayerSelection.mutate({ layerId: activeLayer.id, itemId: item.id });
+  };
+  
+  const handleActiveLayerPinToggle = () => {
+    if (!activeLayer) return;
+    handlePinToggle(activeLayer.id, activeLayer.is_pinned);
+  };
+  
+  const handleDeleteActiveLayerItem = () => {
+    if (!activeLayer || !activeLayer.selected_item_id) return;
+    updateLayerSelection.mutate({ layerId: activeLayer.id, itemId: null });
+    toast.success('Item removed from layer');
+  };
+
+  // Build selected items map for preview
+  const selectedItemsMap = useMemo(() => {
+    const map: Record<string, WardrobeItem | null> = {};
+    layers.forEach(layer => {
+      if (layer.selected_item_id) {
+        const item = allItems.find(i => i.id === layer.selected_item_id);
+        map[layer.category] = item || null;
+      } else {
+        map[layer.category] = null;
+      }
+    });
+    return map;
+  }, [layers, allItems]);
+
   // Onboarding state
   if (!isLoading && allItems.length === 0) {
     return (
@@ -482,22 +527,37 @@ export default function DressMeWardrobe() {
                 </div>
               )}
 
-              {/* Layered Carousels */}
-              <div className="space-y-0">
-                {layers.map((layer) => (
-                  <div key={layer.id} id={`layer-${layer.category}`}>
-                    <WardrobeLayerCarousel
-                      layer={layer}
-                      items={getLayerItems(layer.category)}
-                      selectedItemId={layer.selected_item_id}
-                      onItemClick={(itemId) => handleLayerItemClick(layer.id, itemId)}
-                      onPinToggle={() => handlePinToggle(layer.id, layer.is_pinned)}
-                      onRemoveLayer={() => handleRemoveLayer(layer.id)}
-                      onAddItem={() => handleAddItemToLayer(layer.category)}
-                    />
-                  </div>
-                ))}
-              </div>
+              {/* New Layer Preview Section */}
+              {layers.length > 0 && (
+                <div className="space-y-4 pb-24">
+                  {/* Full Outfit Preview */}
+                  <WardrobeLayerPreview
+                    layers={layers}
+                    selectedItems={selectedItemsMap}
+                  />
+
+                  {/* Thumbnail Carousel with Layer Navigation */}
+                  <WardrobeLayerThumbnailCarousel
+                    activeLayer={activeLayer}
+                    items={activeLayer ? getLayerItems(activeLayer.category) : []}
+                    selectedItemId={activeLayer?.selected_item_id || null}
+                    onItemSelect={handleActiveLayerItemSelect}
+                    onPrevLayer={handlePrevLayer}
+                    onNextLayer={handleNextLayer}
+                    canGoPrev={activeLayerIndex > 0}
+                    canGoNext={activeLayerIndex < layers.length - 1}
+                  />
+
+                  {/* Floating Action Menu */}
+                  <WardrobeLayerActionMenu
+                    isPinned={activeLayer?.is_pinned || false}
+                    onPinToggle={handleActiveLayerPinToggle}
+                    onShuffle={handleShuffleAll}
+                    onDeleteItem={handleDeleteActiveLayerItem}
+                    hasSelectedItem={!!activeLayer?.selected_item_id}
+                  />
+                </div>
+              )}
 
 
             </TabsContent>
