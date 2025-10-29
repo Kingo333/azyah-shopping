@@ -40,7 +40,7 @@ export const WardrobeItemCard: React.FC<WardrobeItemCardProps> = ({
           src={item.image_bg_removed_url || item.image_url}
           alt={item.category}
           className={cn(
-            "w-full h-full object-contain transition-all scale-150",
+            "w-full h-full object-contain transition-all scale-110",
             isSelected && "drop-shadow-xl"
           )}
           loading="lazy"
