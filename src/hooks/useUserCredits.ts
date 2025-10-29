@@ -3,7 +3,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 
 interface UserCredits {
-  credits_remaining: number;
+  ai_studio_credits: number;
+  beauty_credits: number;
+  wardrobe_credits: number;
   is_premium: boolean;
 }
 
@@ -30,7 +32,9 @@ export function useUserCredits() {
 
       if (data && data.length > 0) {
         setCredits({
-          credits_remaining: data[0].credits_remaining,
+          ai_studio_credits: data[0].ai_studio_credits,
+          beauty_credits: data[0].beauty_credits,
+          wardrobe_credits: data[0].wardrobe_credits,
           is_premium: data[0].is_premium
         });
       }

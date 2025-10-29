@@ -26,9 +26,9 @@ export const WardrobeItemDetailModal: React.FC<WardrobeItemDetailModalProps> = (
   if (!item) return null;
 
   const handleEnhance = async () => {
-    // Check credits
-    if (!credits || credits.credits_remaining < 20) {
-      toast.error('You need at least 20 AI credits to enhance an item');
+    // Check wardrobe credits
+    if (!credits || credits.wardrobe_credits < 1) {
+      toast.error('You need at least 1 wardrobe credit to enhance an item');
       return;
     }
 
@@ -97,7 +97,7 @@ export const WardrobeItemDetailModal: React.FC<WardrobeItemDetailModalProps> = (
           {/* Enhance Button */}
           <Button
             onClick={handleEnhance}
-            disabled={enhanceMutation.isPending || (credits && credits.credits_remaining < 20)}
+            disabled={enhanceMutation.isPending || (credits && credits.wardrobe_credits < 1)}
             className="w-full"
             size="lg"
             variant={hasEnhanced ? "outline" : "default"}
@@ -110,16 +110,16 @@ export const WardrobeItemDetailModal: React.FC<WardrobeItemDetailModalProps> = (
             ) : (
               <>
                 <Sparkles className="w-4 h-4 mr-2" />
-                Enhance Item {credits && `(${credits.credits_remaining} credits)`}
+                Enhance Item {credits && `(${credits.wardrobe_credits} credits)`}
               </>
             )}
           </Button>
 
           <p className="text-xs text-muted-foreground text-center">
-            {credits && credits.credits_remaining < 20 ? (
-              <span className="text-destructive">Insufficient credits. Need 20 credits to enhance.</span>
+            {credits && credits.wardrobe_credits < 1 ? (
+              <span className="text-destructive">Insufficient credits. Need 1 wardrobe credit to enhance. Credits reset daily.</span>
             ) : (
-              <>Our AI will convert your item to a professional ghost mannequin display. Costs 20 credits.</>
+              <>Our AI will convert your item to a professional ghost mannequin display. Costs 1 wardrobe credit.</>
             )}
           </p>
         </div>

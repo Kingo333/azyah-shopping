@@ -52,10 +52,10 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
   const { credits, loading: creditsLoading, refetch: refetchCredits } = useUserCredits();
 
   // Generation limits based on user type
-  const maxGenerations = isPremium ? 20 : 4;
+  const maxGenerations = isPremium ? 10 : 4;
   
-  // Use credits from user_credits table
-  const remainingGenerations = credits?.credits_remaining ?? 0;
+  // Use AI Studio credits from user_credits table
+  const remainingGenerations = credits?.ai_studio_credits ?? 0;
   const canUpload = personImageId && outfitImageId && !loading && remainingGenerations > 0;
 
   useEffect(() => {
@@ -147,14 +147,15 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
         if (result.path) {
           const savedAsset = await saveAsset(result.path, result.id, `Virtual Try-On ${new Date().toLocaleDateString()}`);
           if (savedAsset) {
-            // Deduct a credit from the database
+            // Deduct AI Studio credit using the database function
             const { data: { user } } = await supabase.auth.getUser();
-            if (user && credits) {
-              const newCreditsRemaining = Math.max(0, credits.credits_remaining - 1);
-              await supabase
-                .from('user_credits')
-                .update({ credits_remaining: newCreditsRemaining })
-                .eq('user_id', user.id);
+            if (user) {
+              const { data: deductResult, error: deductError } = await supabase
+                .rpc('deduct_ai_studio_credit', { target_user_id: user.id });
+              
+              if (deductError || !deductResult) {
+                console.error('Failed to deduct AI Studio credit');
+              }
               
               // Refetch to update UI
               await refetchCredits();

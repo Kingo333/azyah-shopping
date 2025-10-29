@@ -316,9 +316,11 @@ export default function BeautyConsultantPage() {
       if (analysisMode === 'product_analysis') {
         setHasInitialProductResponse(true);
       }
-      if (result.consultation.credits_remaining !== undefined) {
+      if (result.consultation.beauty_credits !== undefined) {
         updateCredits({
-          credits_remaining: result.consultation.credits_remaining,
+          ai_studio_credits: credits?.ai_studio_credits ?? 0,
+          beauty_credits: result.consultation.beauty_credits,
+          wardrobe_credits: credits?.wardrobe_credits ?? 0,
           is_premium: result.consultation.is_premium || false
         });
       }
@@ -476,9 +478,9 @@ export default function BeautyConsultantPage() {
                 <div className="glass-panel rounded-full px-4 py-2 flex items-center gap-2">
                   <div className="flex items-center gap-2">
                     <Sparkles className="w-4 h-4 text-primary" />
-                    <span className="text-sm font-medium">{credits?.credits_remaining || 0}</span>
+                    <span className="text-sm font-medium">{credits?.beauty_credits || 0}</span>
                   </div>
-                  <Progress value={(credits?.credits_remaining || 0) / (credits?.is_premium ? 50 : 10) * 100} className="w-16 h-2" />
+                  <Progress value={(credits?.beauty_credits || 0) / (credits?.is_premium ? 10 : 4) * 100} className="w-16 h-2" />
                 </div>
                 <div className="glass-panel rounded-full px-3 py-1 flex items-center gap-1">
                   <Clock className="w-3 h-3 text-muted-foreground" />

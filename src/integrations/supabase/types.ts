@@ -2518,6 +2518,8 @@ export type Database = {
       }
       user_credits: {
         Row: {
+          ai_studio_credits: number
+          beauty_credits: number
           bg_removals_quota_monthly: number | null
           bg_removals_used_monthly: number | null
           created_at: string
@@ -2527,9 +2529,12 @@ export type Database = {
           last_reset_date: string
           updated_at: string
           user_id: string
+          wardrobe_credits: number
           wardrobe_items_count: number | null
         }
         Insert: {
+          ai_studio_credits?: number
+          beauty_credits?: number
           bg_removals_quota_monthly?: number | null
           bg_removals_used_monthly?: number | null
           created_at?: string
@@ -2539,9 +2544,12 @@ export type Database = {
           last_reset_date?: string
           updated_at?: string
           user_id: string
+          wardrobe_credits?: number
           wardrobe_items_count?: number | null
         }
         Update: {
+          ai_studio_credits?: number
+          beauty_credits?: number
           bg_removals_quota_monthly?: number | null
           bg_removals_used_monthly?: number | null
           created_at?: string
@@ -2551,6 +2559,7 @@ export type Database = {
           last_reset_date?: string
           updated_at?: string
           user_id?: string
+          wardrobe_credits?: number
           wardrobe_items_count?: number | null
         }
         Relationships: []
@@ -3417,7 +3426,19 @@ export type Database = {
         }[]
       }
       create_admin_user: { Args: never; Returns: undefined }
+      deduct_ai_studio_credit: {
+        Args: { target_user_id: string }
+        Returns: boolean
+      }
+      deduct_beauty_credit: {
+        Args: { target_user_id: string }
+        Returns: boolean
+      }
       deduct_user_credit: { Args: { target_user_id: string }; Returns: boolean }
+      deduct_wardrobe_credit: {
+        Args: { amount?: number; target_user_id: string }
+        Returns: boolean
+      }
       delete_user_completely:
         | { Args: { target_email: string }; Returns: Json }
         | {
@@ -3905,8 +3926,10 @@ export type Database = {
       get_user_credits: {
         Args: { target_user_id: string }
         Returns: {
-          credits_remaining: number
+          ai_studio_credits: number
+          beauty_credits: number
           is_premium: boolean
+          wardrobe_credits: number
         }[]
       }
       get_user_email_secure: {

@@ -58,33 +58,36 @@ serve(async (req) => {
       throw new Error('Item not found or access denied');
     }
 
-    // Check and deduct credits (20 credits required)
-    const CREDITS_REQUIRED = 20;
-    const { data: userProfile, error: profileError } = await supabaseClient
-      .from('users')
-      .select('credits_remaining, is_premium')
-      .eq('id', user.id)
-      .single();
+    // Check and deduct credits (1 credit required)
+    const CREDITS_REQUIRED = 1;
 
-    if (profileError) {
-      throw new Error('Failed to fetch user profile');
+    // Get credits from user_credits table
+    const { data: creditsData, error: creditsError } = await supabaseClient
+      .rpc('get_user_credits', { target_user_id: user.id });
+
+    if (creditsError || !creditsData || creditsData.length === 0) {
+      throw new Error('Failed to fetch user credits');
     }
 
-    if (!userProfile.is_premium && userProfile.credits_remaining < CREDITS_REQUIRED) {
-      throw new Error(`Insufficient credits. You need ${CREDITS_REQUIRED} credits to enhance an item.`);
+    const { wardrobe_credits, is_premium } = creditsData[0];
+
+    // Check if user has enough wardrobe credits
+    if (wardrobe_credits < CREDITS_REQUIRED) {
+      throw new Error(`Insufficient credits. You need ${CREDITS_REQUIRED} credit to enhance an item. Wardrobe credits reset daily.`);
     }
 
-    // Deduct credits for non-premium users
-    if (!userProfile.is_premium) {
-      const { error: creditError } = await supabaseClient
-        .from('users')
-        .update({ credits_remaining: userProfile.credits_remaining - CREDITS_REQUIRED })
-        .eq('id', user.id);
+    // Deduct wardrobe credit using the new function
+    const { data: deductResult, error: deductError } = await supabaseClient
+      .rpc('deduct_wardrobe_credit', { 
+        target_user_id: user.id,
+        amount: CREDITS_REQUIRED 
+      });
 
-      if (creditError) {
-        throw new Error('Failed to deduct credits');
-      }
+    if (deductError || !deductResult) {
+      throw new Error('Failed to deduct wardrobe credit');
     }
+
+    console.log(`Wardrobe credit deducted. Remaining: ${wardrobe_credits - CREDITS_REQUIRED}`);
 
     console.log('Enhancing item:', item_id, 'Category:', item.category);
 

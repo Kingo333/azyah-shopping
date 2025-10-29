@@ -3,12 +3,15 @@ import { Clock, Crown, Zap } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 interface CreditsDisplayProps {
-  creditsRemaining: number;
+  feature: 'ai_studio' | 'beauty' | 'wardrobe';
+  aiStudioCredits?: number;
+  beautyCredits?: number;
+  wardrobeCredits?: number;
   isPremium: boolean;
   loading?: boolean;
 }
 
-export function CreditsDisplay({ creditsRemaining, isPremium, loading }: CreditsDisplayProps) {
+export function CreditsDisplay({ feature, aiStudioCredits, beautyCredits, wardrobeCredits, isPremium, loading }: CreditsDisplayProps) {
   if (loading) {
     return (
       <div className="flex items-center gap-2 p-3 bg-card rounded-lg border animate-pulse">
@@ -18,6 +21,18 @@ export function CreditsDisplay({ creditsRemaining, isPremium, loading }: Credits
     );
   }
 
+  const featureLabels = {
+    ai_studio: 'AI Studio',
+    beauty: 'Beauty Consultant',
+    wardrobe: 'Wardrobe Enhancement'
+  };
+
+  const creditCount = feature === 'ai_studio' 
+    ? aiStudioCredits ?? 0
+    : feature === 'beauty'
+    ? beautyCredits ?? 0
+    : wardrobeCredits ?? 0;
+
   return (
     <div className="flex items-center justify-between p-3 bg-card rounded-lg border">
       <div className="flex items-center gap-2">
@@ -25,7 +40,7 @@ export function CreditsDisplay({ creditsRemaining, isPremium, loading }: Credits
           <Zap className="h-4 w-4 text-primary" />
           <div className="absolute -top-1 -right-1 w-2 h-2 bg-primary rounded-full animate-pulse"></div>
         </div>
-        <span className="text-sm font-medium">Credits: {creditsRemaining}</span>
+        <span className="text-sm font-medium">{featureLabels[feature]}: {creditCount} credits</span>
       </div>
       
       <div className="flex items-center gap-2">
