@@ -222,35 +222,68 @@ export default function DressMeWardrobe() {
     return shuffleSeed / 233280;
   };
 
-  const handleShuffleAll = () => {
+  const handleShuffleAll = async () => {
     if (layers.length === 0) {
       toast.info('Add some layers first');
       return;
     }
 
+    console.log('🎲 Starting shuffle...');
     let shuffled = 0;
-    layers.forEach((layer) => {
+    const errors: string[] = [];
+
+    // Process layers sequentially to avoid race conditions
+    for (const layer of layers) {
       const layerItems = getLayerItems(layer.category);
-      if (layerItems.length <= 1) return; // Skip if only 0-1 items
+      console.log(`Layer ${layer.category}: ${layerItems.length} items`);
+      
+      if (layerItems.length <= 1) {
+        console.log(`Skipping ${layer.category} (not enough items)`);
+        continue;
+      }
 
       // Get available items (exclude current selection to ensure change)
       const availableItems = layerItems.filter(
         item => item.id !== layer.selected_item_id
       );
+      
+      console.log(`Available items for ${layer.category}:`, availableItems.length);
 
       if (availableItems.length > 0) {
-        const randomIndex = Math.floor(seededRandom() * availableItems.length);
-        const randomItem = availableItems[randomIndex];
-        updateLayerSelection.mutate({ layerId: layer.id, itemId: randomItem.id });
-        shuffled++;
+        try {
+          const randomIndex = Math.floor(seededRandom() * availableItems.length);
+          const randomItem = availableItems[randomIndex];
+          
+          console.log(`Shuffling ${layer.category}: ${layer.selected_item_id} → ${randomItem.id}`);
+          
+          // Wait for each mutation to complete before moving to next layer
+          await updateLayerSelection.mutateAsync({ 
+            layerId: layer.id, 
+            itemId: randomItem.id 
+          });
+          
+          shuffled++;
+          console.log(`✅ ${layer.category} shuffled successfully`);
+          
+          // Small delay to let carousel respond
+          await new Promise(resolve => setTimeout(resolve, 100));
+        } catch (error) {
+          console.error(`❌ Failed to shuffle ${layer.category}:`, error);
+          errors.push(layer.category);
+        }
       }
-    });
+    }
 
-    if (shuffled > 0) {
+    // Show final result
+    if (errors.length > 0) {
+      toast.error(`Failed to shuffle: ${errors.join(', ')}`);
+    } else if (shuffled > 0) {
       toast.success(`Shuffled ${shuffled} ${shuffled === 1 ? 'layer' : 'layers'}`);
     } else {
       toast.info('No layers to shuffle');
     }
+    
+    console.log(`🎲 Shuffle complete: ${shuffled} shuffled, ${errors.length} errors`);
   };
 
   const handleDeleteFit = async () => {
