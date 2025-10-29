@@ -23,21 +23,23 @@ export const WardrobeCategoryTabs: React.FC<WardrobeCategoryTabsProps> = ({
   onSelect,
 }) => {
   return (
-    <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-      {categories.map((cat) => (
-        <Button
-          key={cat.value}
-          variant={selected === cat.value ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => onSelect(cat.value)}
-          className={cn(
-            "shrink-0 rounded-full transition-all",
-            selected === cat.value ? "shadow-md" : ""
-          )}
-        >
-          {cat.label}
-        </Button>
-      ))}
+    <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
+      <div className="flex gap-2 flex-1">
+        {categories.map((cat) => (
+          <button
+            key={cat.value}
+            onClick={() => onSelect(cat.value)}
+            className={cn(
+              "shrink-0 px-4 py-2 rounded-full font-semibold text-sm transition-all h-9",
+              selected === cat.value
+                ? "bg-[#1C1C1E] text-white shadow-md"
+                : "bg-[#F8F8F9] text-[#6A6A6A] hover:bg-gray-200"
+            )}
+          >
+            {cat.label}
+          </button>
+        ))}
+      </div>
     </div>
   );
 };

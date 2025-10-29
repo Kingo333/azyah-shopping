@@ -60,10 +60,10 @@ export const WardrobeAllItemsGrid: React.FC<WardrobeAllItemsGridProps> = ({
           )}
         </div>
       </div>
-      <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {/* Item Cards */}
         {items.map((item) => (
-          <div key={item.id} className="group">
+          <div key={item.id} className="wardrobe-card">
             <WardrobeItemCard
               item={item}
               isSelected={selectedItems.includes(item.id)}

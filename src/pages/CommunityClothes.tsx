@@ -36,9 +36,10 @@ export const CommunityClothes = () => {
           ))}
         </div>
       ) : !items || items.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-12">
-          <p className="text-muted-foreground">No public items in this category</p>
-          <p className="text-sm text-muted-foreground mt-2">
+        <div className="community-empty-state">
+          <span className="text-5xl mb-3">👗</span>
+          <p className="text-lg font-medium">No public items yet</p>
+          <p className="text-sm text-muted-foreground mt-1">
             Try selecting a different category
           </p>
         </div>

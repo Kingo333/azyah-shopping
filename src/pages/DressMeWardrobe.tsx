@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Plus, Filter, MoreVertical, Trash2, CheckSquare } from 'lucide-react';
+import { Plus, Filter, MoreVertical, Trash2, CheckSquare, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { WardrobeAllItemsGrid } from '@/components/WardrobeAllItemsGrid';
@@ -19,6 +19,7 @@ import { OutfitPreviewCard } from '@/components/OutfitPreviewCard';
 import { useDressMeAnalytics } from '@/hooks/useDressMeAnalytics';
 import { CommunityOutfits } from './CommunityOutfits';
 import { CommunityClothes } from './CommunityClothes';
+import { OutfitDetailSheet } from '@/components/OutfitDetailSheet';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 
@@ -48,6 +49,7 @@ export default function DressMeWardrobe() {
   const [fitToDelete, setFitToDelete] = useState<string | null>(null);
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedItemDetail, setSelectedItemDetail] = useState<WardrobeItem | null>(null);
+  const [selectedOutfitId, setSelectedOutfitId] = useState<string | null>(null);
   
   const deleteFit = useDeleteFit();
   const deleteItemMutation = useDeleteWardrobeItem();
@@ -226,35 +228,43 @@ export default function DressMeWardrobe() {
       
       {/* Header */}
       <div className="sticky top-0 z-40 bg-background/95 backdrop-blur-sm border-b">
-        <div className="container max-w-6xl mx-auto p-4">
-          <div className="flex items-center justify-between mb-4">
+        <div className="container max-w-6xl mx-auto py-3 px-4">
+          <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <BackButton fallbackPath="/" variant="ghost" size="sm" />
               <h1 className="text-2xl font-bold">My Wardrobe</h1>
             </div>
           </div>
 
-          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
-            <TabsList className="w-full grid grid-cols-3">
-              <TabsTrigger value="clothes" className="text-sm md:text-base">
-                Clothes
-              </TabsTrigger>
-              <TabsTrigger value="outfits" className="text-sm md:text-base">
-                Outfits
-              </TabsTrigger>
-              <TabsTrigger value="community" className="text-sm md:text-base">
-                Community
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
+          {/* Segmented Control */}
+          <div className="segmented-control">
+            <button 
+              className={activeTab === 'clothes' ? 'segment active' : 'segment'}
+              onClick={() => setActiveTab('clothes')}
+            >
+              Clothes
+            </button>
+            <button 
+              className={activeTab === 'outfits' ? 'segment active' : 'segment'}
+              onClick={() => setActiveTab('outfits')}
+            >
+              Outfits
+            </button>
+            <button 
+              className={activeTab === 'community' ? 'segment active' : 'segment'}
+              onClick={() => setActiveTab('community')}
+            >
+              Community
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="min-h-screen bg-background pb-24">
+      <div className="page-container bg-background">
         <div className="container max-w-6xl mx-auto p-4">
           <Tabs value={activeTab} className="w-full">
-            <TabsContent value="clothes" className="mt-4 space-y-4">
+            <TabsContent value="clothes" className="mt-4 space-y-5">
               {/* Category Filter */}
               <WardrobeCategoryTabs
                 selected={selectedCategory}
@@ -263,18 +273,18 @@ export default function DressMeWardrobe() {
 
               {/* Selection controls */}
               {selectionMode && selectedItems.length > 0 && (
-                <div className="flex items-center justify-between bg-muted/50 rounded-lg p-3">
-                  <span className="text-sm font-medium">
-                    {selectedItems.length} selected
-                  </span>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={handleDeselectAll}
-                    >
-                      Clear
+                <div className="selection-action-bar">
+                  <div className="action-item">
+                    <Button variant="ghost" size="icon" className="w-14 h-14" onClick={handleSelectAll}>
+                      <CheckSquare className="w-5 h-5" />
                     </Button>
+                    <span className="text-xs">Select All</span>
+                  </div>
+                  <div className="action-item">
+                    <Button variant="ghost" size="icon" className="w-14 h-14" onClick={handleDeselectAll}>
+                      <X className="w-5 h-5" />
+                    </Button>
+                    <span className="text-xs">Clear</span>
                   </div>
                 </div>
               )}
@@ -364,7 +374,7 @@ export default function DressMeWardrobe() {
                         key={fit.id}
                         fit={fit}
                         onClick={() => {
-                          navigate(`/dress-me/outfit/${fit.id}`);
+                          setSelectedOutfitId(fit.id);
                         }}
                         onDelete={(fitId) => setFitToDelete(fitId)}
                       />
@@ -396,7 +406,7 @@ export default function DressMeWardrobe() {
 
       {/* Bottom Action Bar */}
       {!selectionMode && (
-        <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t p-4 z-40">
+        <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t p-4 z-40 bottom-action-bar">
           <div className="container max-w-6xl mx-auto">
             <Button
               onClick={handleDone}
@@ -414,7 +424,7 @@ export default function DressMeWardrobe() {
 
       {/* Delete Selected Button - shown in selection mode */}
       {selectionMode && selectedItems.length > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t p-4 z-40">
+        <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t p-4 z-40 bottom-action-bar">
           <div className="container max-w-6xl mx-auto">
             <Button
               onClick={handleDeleteSelected}
@@ -445,6 +455,13 @@ export default function DressMeWardrobe() {
         item={selectedItemDetail}
         isOpen={!!selectedItemDetail}
         onClose={() => setSelectedItemDetail(null)}
+      />
+
+      {/* Outfit Detail Sheet */}
+      <OutfitDetailSheet
+        fitId={selectedOutfitId}
+        isOpen={!!selectedOutfitId}
+        onClose={() => setSelectedOutfitId(null)}
       />
 
       {/* Delete Confirmation Dialog */}

@@ -91,9 +91,10 @@ export const CommunityOutfits = () => {
 
   if (!fits || fits.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-12">
-        <p className="text-muted-foreground">No public outfits yet</p>
-        <p className="text-sm text-muted-foreground mt-2">
+      <div className="community-empty-state">
+        <span className="text-5xl mb-3">👔</span>
+        <p className="text-lg font-medium">No public outfits yet</p>
+        <p className="text-sm text-muted-foreground mt-1">
           Be the first to share an outfit!
         </p>
       </div>
@@ -103,48 +104,46 @@ export const CommunityOutfits = () => {
   return (
     <div className="grid grid-cols-2 gap-4">
       {fits.map((fit) => (
-        <Card
+        <div
           key={fit.id}
-          className="overflow-hidden cursor-pointer hover:shadow-lg transition-all"
+          className="outfit-card"
           onClick={() => handleFitClick(fit.id)}
         >
-          <div className="aspect-square bg-muted relative">
+          <div className="outfit-image-frame relative">
             {fit.render_path ? (
               <img
                 src={fit.render_path}
                 alt={fit.title || 'Outfit'}
-                className="w-full h-full object-cover"
+                className="outfit-image"
               />
             ) : (
-              <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                No preview
-              </div>
+              <div className="outfit-placeholder">No preview</div>
             )}
 
-            <div className="absolute top-2 left-2 flex items-center gap-2 bg-background/80 backdrop-blur-sm rounded-full px-2 py-1">
+            {/* User avatar overlay */}
+            <div className="outfit-user-badge">
               <Avatar className="w-5 h-5">
                 <AvatarImage src={fit.user.avatar_url || undefined} />
                 <AvatarFallback className="text-xs">
-                  {(fit.user.username || fit.user.name || 'U')[0].toUpperCase()}
+                  {(fit.user.username || 'U')[0].toUpperCase()}
                 </AvatarFallback>
               </Avatar>
               <span className="text-xs font-medium">
-                {fit.user.username || fit.user.name || 'Anonymous'}
+                {fit.user.username || 'Anonymous'}
               </span>
             </div>
           </div>
 
-          <div className="p-3">
-            <div className="flex items-center justify-between">
-              <LikeButton fitId={fit.id} likeCount={fit.like_count} size="sm" />
-              <CommentButton
-                commentCount={fit.comment_count}
-                onClick={(e) => handleCommentClick(e, fit.id)}
-                size="sm"
-              />
-            </div>
+          {/* Social actions */}
+          <div className="outfit-social">
+            <LikeButton fitId={fit.id} likeCount={fit.like_count} size="sm" />
+            <CommentButton
+              commentCount={fit.comment_count}
+              onClick={(e) => handleCommentClick(e, fit.id)}
+              size="sm"
+            />
           </div>
-        </Card>
+        </div>
       ))}
     </div>
   );

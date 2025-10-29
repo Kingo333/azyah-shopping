@@ -1,7 +1,6 @@
 import React from 'react';
-import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Heart, Trash2 } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 
 interface OutfitPreviewCardProps {
   fit: any;
@@ -15,47 +14,24 @@ export const OutfitPreviewCard: React.FC<OutfitPreviewCardProps> = ({
   onDelete,
 }) => {
   return (
-    <Card
-      onClick={onClick}
-      className="relative overflow-hidden cursor-pointer hover:shadow-lg transition-all group"
-    >
-      <div className="aspect-[3/4] bg-muted/30">
-        {fit.image_preview ? (
-          <img
-            src={fit.image_preview}
-            alt={fit.title || 'Outfit'}
-            className="w-full h-full object-cover"
-            loading="lazy"
-            onError={(e) => {
-              console.error('Failed to load outfit image:', fit.id);
-              e.currentTarget.style.display = 'none';
-              const parent = e.currentTarget.parentElement;
-              if (parent) {
-                parent.innerHTML = '<div class="w-full h-full flex items-center justify-center text-muted-foreground">Image failed to load</div>';
-              }
-            }}
-          />
-        ) : fit.render_path && fit.render_path !== 'placeholder.png' ? (
+    <div className="outfit-card" onClick={onClick}>
+      {/* Fixed 3:4 aspect ratio frame */}
+      <div className="outfit-image-frame">
+        {fit.render_path ? (
           <img
             src={fit.render_path}
             alt={fit.title || 'Outfit'}
-            className="w-full h-full object-cover"
+            className="outfit-image"
             loading="lazy"
-            onError={(e) => {
-              console.error('Failed to load render path:', fit.id);
-              e.currentTarget.style.display = 'none';
-            }}
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-            No preview available
-          </div>
+          <div className="outfit-placeholder">No preview</div>
         )}
       </div>
 
-      {/* Delete Button */}
+      {/* Delete button - appears on hover */}
       {onDelete && (
-        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+        <div className="outfit-delete-btn">
           <Button
             variant="destructive"
             size="icon"
@@ -70,21 +46,12 @@ export const OutfitPreviewCard: React.FC<OutfitPreviewCardProps> = ({
         </div>
       )}
 
-      {/* Overlay */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-
-      {/* Info */}
-      <div className="absolute bottom-0 left-0 right-0 p-3 text-white">
-        {fit.title && (
-          <p className="text-sm font-medium truncate">{fit.title}</p>
-        )}
-        {fit.like_count > 0 && (
-          <div className="flex items-center gap-1 text-xs mt-1">
-            <Heart className="w-3 h-3 fill-current" />
-            <span>{fit.like_count}</span>
-          </div>
-        )}
-      </div>
-    </Card>
+      {/* Optional meta row */}
+      {fit.occasion && (
+        <div className="outfit-meta">
+          <span className="meta-chip">{fit.occasion}</span>
+        </div>
+      )}
+    </div>
   );
 };
