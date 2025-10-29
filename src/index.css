@@ -792,6 +792,7 @@
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
   padding: 0 var(--rail-side-pad, 24px);
+  contain: layout;
 }
 
 .rail-carousel::-webkit-scrollbar {
@@ -834,6 +835,17 @@
   scroll-snap-stop: always;
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
               opacity 0.3s ease;
+  box-sizing: border-box;
+  contain: layout size;
+}
+
+.rail-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
 }
 
 /* Center card styles */

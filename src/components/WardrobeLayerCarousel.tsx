@@ -28,9 +28,9 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
 
   // Grid configuration - treats carousel as discrete cells
   const GRID_CONFIG = {
-    cardWidthVw: 0.58,  // Card takes 58% of viewport width
-    gapVw: 0.05,        // 5% gap between cards
-    get cellWidthVw() { return this.cardWidthVw + this.gapVw; }  // Total cell = card + gap
+    cardWidthVw: 0.55,    // Card takes 55% of viewport width
+    gapVw: 0.08,          // Gap is 8% of viewport width
+    get cellWidthVw() { return this.cardWidthVw + this.gapVw; }  // Total cell = 63vw
   };
   
   const categoryLabels: Record<string, string> = {
