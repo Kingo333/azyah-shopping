@@ -463,9 +463,21 @@ export default function DressMeWardrobe() {
                 availableCategories={availableCategories}
               />
 
+              {/* Divider between All Items and Layers */}
+              {layers.length > 0 && (
+                <div className="relative my-6">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-border/40"></div>
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-background px-3 text-muted-foreground/60 font-medium">Layers</span>
+                  </div>
+                </div>
+              )}
+
               {/* Mode hint for Dress */}
               {layerMode === 'dressShoes' && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800 mb-4">
                   <p>👗 <strong>Dress mode:</strong> Dress replaces top & bottoms</p>
                 </div>
               )}

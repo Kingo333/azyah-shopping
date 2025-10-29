@@ -32,13 +32,13 @@ export const WardrobeAllItemsGrid: React.FC<WardrobeAllItemsGridProps> = ({
   return (
     <div className="mb-6">
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-lg font-semibold">All Items</h2>
+        <h2 className="text-base font-semibold">All Items</h2>
         <div className="flex items-center gap-1">
           <Button
             variant="ghost"
             size="sm"
             onClick={onAddNew}
-            className="h-7 px-2 text-xs font-medium hover:bg-accent/50 gap-1"
+            className="h-6 px-2 text-[11px] font-medium hover:bg-accent/50 gap-1"
           >
             <Plus className="w-3 h-3" />
             <span>Item</span>
@@ -48,7 +48,7 @@ export const WardrobeAllItemsGrid: React.FC<WardrobeAllItemsGridProps> = ({
               variant="ghost"
               size="sm"
               onClick={onToggleSelectionMode}
-              className="h-7 px-2 text-xs font-medium hover:bg-accent/50"
+              className="h-6 px-2 text-[11px] font-medium hover:bg-accent/50"
             >
               {selectionMode ? 'Cancel' : 'Select'}
             </Button>
@@ -61,7 +61,7 @@ export const WardrobeAllItemsGrid: React.FC<WardrobeAllItemsGridProps> = ({
           )}
         </div>
       </div>
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-3 gap-3">
         {/* Item Cards */}
         {items.map((item) => (
           <div key={item.id} className="wardrobe-card">
