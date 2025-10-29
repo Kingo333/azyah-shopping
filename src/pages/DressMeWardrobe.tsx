@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Plus, Filter, MoreVertical, Trash2, CheckSquare, X } from 'lucide-react';
+import { Plus, Filter, MoreVertical, Trash2, CheckSquare, X, Shuffle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { WardrobeAllItemsGrid } from '@/components/WardrobeAllItemsGrid';
@@ -10,7 +10,8 @@ import { WardrobeCategoryTabs } from '@/components/WardrobeCategoryTabs';
 import { WardrobeUploadModal } from '@/components/WardrobeUploadModal';
 import { WardrobeItemDetailModal } from '@/components/WardrobeItemDetailModal';
 import { useWardrobeItems, WardrobeItem, useDeleteWardrobeItem } from '@/hooks/useWardrobeItems';
-import { useWardrobeLayers, useAddWardrobeLayer, useUpdateWardrobeLayer, useDeleteWardrobeLayer } from '@/hooks/useWardrobeLayers';
+import { useWardrobeLayers, useAddWardrobeLayer, useUpdateWardrobeLayer, useDeleteWardrobeLayer, useUpdateLayerSelection } from '@/hooks/useWardrobeLayers';
+import { AccessoriesTray } from '@/components/AccessoriesTray';
 import { SEOHead } from '@/components/SEOHead';
 import { BackButton } from '@/components/ui/back-button';
 import { Card } from '@/components/ui/card';
@@ -32,6 +33,7 @@ export default function DressMeWardrobe() {
   const addLayerMutation = useAddWardrobeLayer();
   const updateLayerMutation = useUpdateWardrobeLayer();
   const deleteLayerMutation = useDeleteWardrobeLayer();
+  const updateLayerSelection = useUpdateLayerSelection();
   const analytics = useDressMeAnalytics();
 
   // Get initial state from URL params
@@ -51,6 +53,10 @@ export default function DressMeWardrobe() {
   const [selectedItemDetail, setSelectedItemDetail] = useState<WardrobeItem | null>(null);
   const [selectedOutfitId, setSelectedOutfitId] = useState<string | null>(null);
   
+  // Layer modes
+  type LayerMode = 'topBottomsShoes' | 'dressShoes';
+  const [layerMode, setLayerMode] = useState<LayerMode>('topBottomsShoes');
+  
   const deleteFit = useDeleteFit();
   const deleteItemMutation = useDeleteWardrobeItem();
 
@@ -65,6 +71,18 @@ export default function DressMeWardrobe() {
   React.useEffect(() => {
     analytics.open();
   }, []);
+
+  // Determine layer mode from active layers
+  useEffect(() => {
+    const hasDress = layers.some(l => l.category === 'dress');
+    const hasTopOrBottom = layers.some(l => ['top', 'bottom'].includes(l.category));
+    
+    if (hasDress && !hasTopOrBottom) {
+      setLayerMode('dressShoes');
+    } else {
+      setLayerMode('topBottomsShoes');
+    }
+  }, [layers]);
 
   // No auto-layer creation - users control layers manually
 
@@ -86,8 +104,25 @@ export default function DressMeWardrobe() {
 
   const availableCategories = useMemo(() => {
     const existingCategories = new Set(layers.map(l => l.category));
-    return allCategories.filter(cat => !existingCategories.has(cat.value as any));
-  }, [layers]);
+    
+    let filteredCategories = allCategories;
+    
+    if (layerMode === 'dressShoes') {
+      // Dress mode: hide Top and Bottom options
+      filteredCategories = allCategories.filter(
+        cat => !['top', 'bottom'].includes(cat.value)
+      );
+    } else if (layerMode === 'topBottomsShoes') {
+      // Top+Bottoms mode: hide Dress option
+      filteredCategories = allCategories.filter(
+        cat => cat.value !== 'dress'
+      );
+    }
+    
+    return filteredCategories.filter(
+      cat => !existingCategories.has(cat.value as any)
+    );
+  }, [layers, layerMode]);
 
   const handleToggleItem = (itemId: string) => {
     setSelectedItems(prev => 
@@ -145,12 +180,78 @@ export default function DressMeWardrobe() {
   };
 
   const handleAddLayer = (category: string) => {
+    const isDress = category === 'dress';
+    const isTopOrBottom = ['top', 'bottom'].includes(category);
+    
+    if (isDress && (layers.some(l => l.category === 'top') || layers.some(l => l.category === 'bottom'))) {
+      toast.info('Switching to Dress mode. Tops and Bottoms will be hidden.', {
+        action: {
+          label: 'OK',
+          onClick: () => addLayerMutation.mutate(category as any),
+        },
+      });
+      return;
+    }
+    
+    if (isTopOrBottom && layers.some(l => l.category === 'dress')) {
+      toast.info('Switching to Tops & Bottoms mode. Dress will be hidden.', {
+        action: {
+          label: 'OK',
+          onClick: () => addLayerMutation.mutate(category as any),
+        },
+      });
+      return;
+    }
+    
     addLayerMutation.mutate(category as any);
   };
 
   const handleAddItemToLayer = (category?: string) => {
     setUploadCategory(category);
     setIsUploadModalOpen(true);
+  };
+
+  const handleLayerItemSelect = (layerId: string, itemId: string) => {
+    updateLayerSelection.mutate({ layerId, itemId });
+  };
+
+  // Seeded RNG for shuffle to avoid immediate repeats
+  let shuffleSeed = Date.now();
+  const seededRandom = () => {
+    shuffleSeed = (shuffleSeed * 9301 + 49297) % 233280;
+    return shuffleSeed / 233280;
+  };
+
+  const handleShuffleAll = () => {
+    const unlocked = layers.filter(l => !l.is_pinned);
+    if (unlocked.length === 0) {
+      toast.info('All layers are pinned');
+      return;
+    }
+
+    let shuffled = 0;
+    unlocked.forEach((layer) => {
+      const layerItems = getLayerItems(layer.category);
+      if (layerItems.length <= 1) return; // Skip if only 0-1 items
+
+      // Get available items (exclude current selection)
+      const availableItems = layerItems.filter(
+        item => item.id !== layer.selected_item_id
+      );
+
+      if (availableItems.length > 0) {
+        const randomIndex = Math.floor(seededRandom() * availableItems.length);
+        const randomItem = availableItems[randomIndex];
+        updateLayerSelection.mutate({ layerId: layer.id, itemId: randomItem.id });
+        shuffled++;
+      }
+    });
+
+    if (shuffled > 0) {
+      toast.success(`Shuffled ${shuffled} ${shuffled === 1 ? 'layer' : 'layers'}`);
+    } else {
+      toast.info('No layers to shuffle');
+    }
   };
 
   const handleDeleteFit = async () => {
@@ -302,6 +403,13 @@ export default function DressMeWardrobe() {
                 availableCategories={availableCategories}
               />
 
+              {/* Mode hint for Dress */}
+              {layerMode === 'dressShoes' && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800">
+                  <p>👗 <strong>Dress mode:</strong> Dress replaces top & bottoms</p>
+                </div>
+              )}
+
               {/* Layered Carousels */}
               <div className="space-y-4">
                 {layers.map((layer) => (
@@ -309,14 +417,24 @@ export default function DressMeWardrobe() {
                     <WardrobeLayerCarousel
                       layer={layer}
                       items={getLayerItems(layer.category)}
-                      selectedItems={selectedItems}
-                      onToggleItem={handleToggleItem}
+                      selectedItemId={layer.selected_item_id}
+                      onItemSelect={(itemId) => handleLayerItemSelect(layer.id, itemId)}
                       onPinToggle={() => handlePinToggle(layer.id, layer.is_pinned)}
                       onRemoveLayer={() => handleRemoveLayer(layer.id)}
+                      onAddItem={() => handleAddItemToLayer(layer.category)}
                     />
                   </div>
                 ))}
               </div>
+
+              {/* Accessories Tray - only if not promoted to rails */}
+              {!layers.some(l => ['accessory', 'bag'].includes(l.category)) && (
+                <AccessoriesTray
+                  items={allItems.filter(i => ['accessory', 'bag'].includes(i.category))}
+                  onPromote={(cat) => handleAddLayer(cat)}
+                  onAddNew={(cat) => handleAddItemToLayer(cat)}
+                />
+              )}
 
             </TabsContent>
 
@@ -394,12 +512,22 @@ export default function DressMeWardrobe() {
 
       {/* Bottom Action Bar */}
       {!selectionMode && (
-        <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t p-4 z-40 bottom-action-bar">
-          <div className="container max-w-6xl mx-auto">
+        <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t p-4 z-40 bottom-action-bar" style={{ paddingBottom: 'env(safe-area-inset-bottom, 16px)' }}>
+          <div className="container max-w-6xl mx-auto flex gap-2">
+            <Button
+              onClick={handleShuffleAll}
+              variant="outline"
+              size="lg"
+              className="w-32"
+              disabled={layers.filter(l => !l.is_pinned).length === 0}
+            >
+              <Shuffle className="w-4 h-4 mr-2" />
+              Shuffle
+            </Button>
             <Button
               onClick={handleDone}
               size="lg"
-              className="w-full"
+              className="flex-1"
             >
               {selectedItems.length > 0 
                 ? `Create Outfit with ${selectedItems.length} items`

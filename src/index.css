@@ -716,4 +716,58 @@
 .bottom-action-bar {
   padding-bottom: calc(env(safe-area-inset-bottom) + 16px);
 }
+
+/* ========================================
+   LAYER CAROUSELS - CENTER SNAP
+   ======================================== */
+
+/* Rail container */
+.layer-rail {
+  background: linear-gradient(to bottom, hsl(var(--background)) 0%, hsl(var(--card)) 100%);
+}
+
+/* Carousel scroll behavior */
+.rail-carousel {
+  display: flex;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.rail-carousel::-webkit-scrollbar {
+  display: none;
+}
+
+/* Card snap alignment */
+.rail-card {
+  scroll-snap-align: center;
+  scroll-snap-stop: always;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 0.3s ease,
+              box-shadow 0.3s ease;
+}
+
+/* Center card styles */
+.rail-card.scale-100 {
+  transform: scale(1);
+  opacity: 1;
+  z-index: 10;
+}
+
+/* Neighbor card styles */
+.rail-card.scale-85 {
+  transform: scale(0.85);
+  opacity: 0.7;
+  z-index: 5;
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+  .rail-carousel {
+    scroll-padding: env(safe-area-inset-left, 24px) 
+                   env(safe-area-inset-right, 24px);
+  }
+}
 }

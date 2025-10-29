@@ -2823,6 +2823,7 @@ export type Database = {
           id: string
           is_pinned: boolean | null
           layer_order: number
+          selected_item_id: string | null
           updated_at: string | null
           user_id: string
         }
@@ -2832,6 +2833,7 @@ export type Database = {
           id?: string
           is_pinned?: boolean | null
           layer_order?: number
+          selected_item_id?: string | null
           updated_at?: string | null
           user_id: string
         }
@@ -2841,10 +2843,19 @@ export type Database = {
           id?: string
           is_pinned?: boolean | null
           layer_order?: number
+          selected_item_id?: string | null
           updated_at?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "wardrobe_layers_selected_item_id_fkey"
+            columns: ["selected_item_id"]
+            isOneToOne: false
+            referencedRelation: "wardrobe_items"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       webhook_events: {
         Row: {

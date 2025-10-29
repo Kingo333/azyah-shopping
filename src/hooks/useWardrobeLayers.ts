@@ -8,6 +8,7 @@ export interface WardrobeLayer {
   category: 'top' | 'bottom' | 'dress' | 'outerwear' | 'shoes' | 'bag' | 'accessory';
   is_pinned: boolean;
   layer_order: number;
+  selected_item_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -132,6 +133,30 @@ export const useDeleteWardrobeLayer = () => {
     },
     onError: () => {
       toast.error('Failed to remove layer');
+    },
+  });
+};
+
+export const useUpdateLayerSelection = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ layerId, itemId }: { layerId: string; itemId: string | null }) => {
+      const { data, error } = await supabase
+        .from('wardrobe_layers')
+        .update({ selected_item_id: itemId })
+        .eq('id', layerId)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data as WardrobeLayer;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['wardrobe-layers'] });
+    },
+    onError: () => {
+      toast.error('Failed to update selection');
     },
   });
 };
