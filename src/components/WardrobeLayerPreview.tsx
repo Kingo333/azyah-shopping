@@ -14,6 +14,22 @@ export const WardrobeLayerPreview: React.FC<WardrobeLayerPreviewProps> = ({
   // Define z-index order for proper layering
   const layerOrder = ['bottom', 'top', 'dress', 'shoes', 'accessory', 'jewelry', 'bag'];
   
+  // Define vertical positioning zones based on category
+  const getVerticalPosition = (category: string) => {
+    const topZone = ['top', 'dress', 'jacket', 'outerwear', 'blazer', 'coat', 'tops', 'blouses', 'shirts'];
+    const middleZone = ['bottom', 'pants', 'jeans', 'skirt', 'shorts', 'trousers'];
+    const bottomZone = ['shoes', 'footwear', 'boots', 'sneakers', 'heels', 'flats', 'sandals'];
+    
+    if (topZone.includes(category.toLowerCase())) {
+      return 'top-[8%]';
+    } else if (middleZone.includes(category.toLowerCase())) {
+      return 'top-[35%]';
+    } else if (bottomZone.includes(category.toLowerCase())) {
+      return 'top-[65%]';
+    }
+    return 'top-1/2 -translate-y-1/2'; // Fallback to center
+  };
+  
   const sortedLayers = layers
     .filter(layer => selectedItems[layer.category])
     .sort((a, b) => layerOrder.indexOf(a.category) - layerOrder.indexOf(b.category));
@@ -36,13 +52,13 @@ export const WardrobeLayerPreview: React.FC<WardrobeLayerPreviewProps> = ({
             return (
               <div
                 key={layer.id}
-                className="absolute inset-0 flex items-center justify-center"
+                className={`absolute inset-x-0 flex justify-center ${getVerticalPosition(layer.category)}`}
                 style={{ zIndex: layerOrder.indexOf(layer.category) }}
               >
                 <img
                   src={item.image_bg_removed_url || item.image_url}
                   alt={layer.category}
-                  className="max-w-full max-h-full object-contain drop-shadow-lg"
+                  className="max-h-[30%] object-contain drop-shadow-lg"
                 />
               </div>
             );
