@@ -27,9 +27,9 @@ export const AddLayerButton: React.FC<AddLayerButtonProps> = ({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="sm" className="h-8 px-2.5 text-xs font-medium hover:bg-accent/50 gap-1">
+        <Button variant="ghost" size="sm" className="h-7 px-2 text-xs font-medium hover:bg-accent/50 gap-0.5">
           <Layers className="w-3 h-3" />
-          <Plus className="w-3.5 h-3.5" />
+          <Plus className="w-3 h-3" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="bg-background">
