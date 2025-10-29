@@ -52,34 +52,41 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
     const sidePad = Math.round((vw - cardW) / 2);
     rail.style.setProperty('--rail-side-pad', `${sidePad}px`);
 
-    // ALWAYS snap when selectedItemId changes, even if it was the same before
-    // This handles shuffle correctly even with only 2 items
-    if (selectedItemId !== lastSnapIdRef.current) {
-      console.log(`📍 External snap: ${selectedItemId} (was: ${lastSnapIdRef.current})`);
+    console.log(`📍 Snap request: ${selectedItemId}`);
+    
+    // Use requestAnimationFrame to ensure DOM is ready
+    requestAnimationFrame(() => {
+      const targetCard = rail.querySelector<HTMLElement>(`[data-item-id="${selectedItemId}"]`);
+      if (!targetCard) {
+        console.warn(`⚠️ Target card not found: ${selectedItemId}`);
+        return;
+      }
+
+      // Cancel any pending scroll handler to prevent interference
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+        scrollTimeoutRef.current = undefined;
+      }
       
-      // Use requestAnimationFrame to ensure DOM is ready
-      requestAnimationFrame(() => {
-        const targetCard = rail.querySelector<HTMLElement>(`[data-item-id="${selectedItemId}"]`);
-        if (targetCard) {
-          // Cancel any pending scroll handler
-          if (scrollTimeoutRef.current) {
-            clearTimeout(scrollTimeoutRef.current);
-            scrollTimeoutRef.current = undefined;
-          }
-          
-          isScrollingRef.current = false; // Allow this snap
-          const targetLeft = targetCard.offsetLeft - (rail.clientWidth - targetCard.clientWidth) / 2;
-          rail.scrollTo({ left: Math.round(targetLeft), behavior: 'smooth' });
-          setLocalCenterId(selectedItemId);
-          lastSnapIdRef.current = selectedItemId;
-          console.log(`✅ Snapped to: ${selectedItemId}`);
-        } else {
-          console.warn(`⚠️ Target card not found: ${selectedItemId}`);
-        }
-      });
-    } else {
-      console.log(`⏭️ Skip snap: ${selectedItemId} already centered`);
-    }
+      // Calculate center position
+      const targetLeft = targetCard.offsetLeft - (rail.clientWidth - targetCard.clientWidth) / 2;
+      const currentLeft = rail.scrollLeft;
+      
+      // Always snap, even if already "close enough"
+      // This ensures shuffle always centers items
+      if (Math.abs(targetLeft - currentLeft) > 5) { // 5px tolerance
+        console.log(`🎯 Snapping: ${currentLeft}px → ${targetLeft}px`);
+        isScrollingRef.current = false; // Mark as programmatic scroll
+        rail.scrollTo({ left: Math.round(targetLeft), behavior: 'smooth' });
+        setLocalCenterId(selectedItemId);
+        lastSnapIdRef.current = selectedItemId;
+        console.log(`✅ Snap complete: ${selectedItemId}`);
+      } else {
+        console.log(`✅ Already centered: ${selectedItemId}`);
+        setLocalCenterId(selectedItemId);
+        lastSnapIdRef.current = selectedItemId;
+      }
+    });
   }, [selectedItemId, items.length]);
 
   // Handle initial selection when layer has no selected item
