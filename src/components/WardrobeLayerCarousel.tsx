@@ -105,8 +105,7 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
     };
   }, [detectCenterItem]);
 
-  // Calculate card width (60vw for larger images)
-  const cardWidth = typeof window !== 'undefined' ? window.innerWidth * 0.60 : 288;
+  // Card width is set via CSS class (w-[60vw])
 
   return (
     <div className="mb-0">
@@ -191,13 +190,12 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
                     key={item.id}
                     data-item-id={item.id}
                     className={cn(
-                      'rail-card flex-shrink-0 mx-0 transition-all duration-300 relative',
+                      'rail-card flex-shrink-0 mx-0 transition-all duration-300 relative w-[60vw]',
                       isCenter ? 'scale-100 opacity-100' : 'scale-95 opacity-100'
                     )}
                     style={{
                       scrollSnapAlign: 'center',
                       scrollSnapStop: 'always',
-                      width: `${cardWidth}px`,
                       height: '100%',
                     }}
                   >
