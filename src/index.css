@@ -781,106 +781,102 @@
 }
 
 /* Carousel scroll behavior with grid snap points */
+/* Perfect center-snap carousel with CSS Grid */
 .rail-carousel {
   position: relative;
-  display: flex;
-  gap: calc(var(--cell-w, 250px) - var(--card-w, 230px)); /* Dynamic gap */
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 55vw;
+  gap: 8vw;
   overflow-x: auto;
   overflow-y: hidden;
   scroll-snap-type: x mandatory;
   scroll-snap-stop: always;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
-  padding: 0 var(--rail-side-pad, 24px);
+  
+  /* Padding calculation to center first/last items at 50vw */
+  padding-left: calc(50vw - 27.5vw);
+  padding-right: calc(50vw - 27.5vw);
+  padding-top: 12px;
+  padding-bottom: 12px;
+  
   contain: layout;
-  scroll-padding-inline: var(--rail-side-pad, 24px);
 }
 
 .rail-carousel::-webkit-scrollbar {
   display: none;
 }
 
-/* Visual center guide with grid cell indicator */
-.rail-carousel::before {
-  content: '';
-  position: absolute;
-  left: 50%;
-  top: 0;
-  bottom: 0;
-  width: 2px;
-  background: linear-gradient(
-    to bottom,
-    transparent 0%,
-    hsl(var(--primary) / 0.3) 20%,
-    hsl(var(--primary) / 0.5) 50%,
-    hsl(var(--primary) / 0.3) 80%,
-    transparent 100%
-  );
-  transform: translateX(-50%);
-  pointer-events: none;
-  z-index: 100;
-  opacity: 0.3;
-  transition: opacity 0.3s;
+/* Handle edge cases for 1-2 items */
+.rail-carousel[data-item-count="1"],
+.rail-carousel[data-item-count="2"] {
+  justify-content: center;
 }
 
-.rail-carousel:active::before {
-  opacity: 0.6; /* Show grid guide while scrolling */
-}
-
-/* Card snap alignment - discrete grid cells */
+/* Card styling - simplified */
 .rail-card {
-  flex-shrink: 0;
-  width: var(--card-w, 230px);
+  width: 100%;
   height: 100%;
   scroll-snap-align: center;
   scroll-snap-stop: always;
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-              opacity 0.3s ease;
   box-sizing: border-box;
-  contain: layout size;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 8px;
-  opacity: 0.35;
+  position: relative;
+  border-radius: 16px;
+  background: hsl(var(--background));
+  
+  /* Default state: faded */
+  opacity: 0.5;
   transform: scale(0.88);
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 0.35s ease,
+              box-shadow 0.35s ease;
 }
 
+/* Image styling */
 .rail-card img {
   max-width: 100%;
   max-height: 100%;
   width: auto;
   height: auto;
-  aspect-ratio: 3 / 4;
   object-fit: contain;
   object-position: center;
   display: block;
-  image-rendering: -webkit-optimize-contrast;
-  image-rendering: crisp-edges;
+  border-radius: 12px;
 }
 
-/* Center card styles */
+/* CENTER CARD - Full visibility, larger scale, shadow */
 .rail-card.is-center {
-  transform: scale(1);
   opacity: 1;
+  transform: scale(1);
   z-index: 10;
+  box-shadow: 0 8px 24px hsl(var(--foreground) / 0.15);
 }
 
-.rail-card.is-center:hover {
-  transform: scale(1.02);
+/* WHITE GHOST OVERLAY on non-centered cards */
+.rail-card:not(.is-center)::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: hsl(var(--background) / 0.7);
+  border-radius: 16px;
+  pointer-events: none;
+  z-index: 1;
+  transition: opacity 0.35s ease;
 }
 
-/* Neighbor card styles - fade out non-centered items */
-.rail-card:not(.is-center) {
-  opacity: 0.35;
-  transform: scale(0.88);
+.rail-card.is-center::after {
+  display: none;
 }
 
-/* Mobile optimizations */
+/* Mobile safe-area support */
 @media (max-width: 768px) {
   .rail-carousel {
-    scroll-padding: env(safe-area-inset-left, 24px) 
-                   env(safe-area-inset-right, 24px);
+    padding-left: max(calc(50vw - 27.5vw), env(safe-area-inset-left, 20px));
+    padding-right: max(calc(50vw - 27.5vw), env(safe-area-inset-right, 20px));
   }
 }
 

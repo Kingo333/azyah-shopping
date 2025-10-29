@@ -24,14 +24,7 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
   onAddItem,
 }) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const [localCenterId, setLocalCenterId] = useState<string | null>(null);
-
-  // Grid configuration - treats carousel as discrete cells
-  const GRID_CONFIG = {
-    cardWidthVw: 0.55,    // Card takes 55% of viewport width
-    gapVw: 0.08,          // Gap is 8% of viewport width
-    get cellWidthVw() { return this.cardWidthVw + this.gapVw; }  // Total cell = 63vw
-  };
+  const [centeredIndex, setCenteredIndex] = useState<number>(0);
   
   const categoryLabels: Record<string, string> = {
     top: 'Tops',
@@ -43,172 +36,140 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
     accessory: 'Accessories',
   };
 
-  // ✅ SINGLE EFFECT: Programmatic scroll to selected item
-  useEffect(() => {
-    const rail = scrollContainerRef.current;
-    if (!rail || items.length === 0 || !selectedItemId) return;
-
-    // Find item index in array
-    const itemIndex = items.findIndex(item => item.id === selectedItemId);
-    if (itemIndex === -1) {
-      console.warn(`⚠️ Item not found: ${selectedItemId}`);
-      return;
-    }
-
-    console.log(`🎯 Scrolling to grid cell ${itemIndex}: ${selectedItemId}`);
-
-    // Calculate grid dimensions
-    const vw = window.innerWidth;
-    const cardWidth = vw * GRID_CONFIG.cardWidthVw;
-    const cellWidth = vw * GRID_CONFIG.cellWidthVw;
-    const sidePadding = (vw - cardWidth) / 2;
-
-    // Update CSS variables synchronously
-    rail.style.setProperty('--card-w', `${cardWidth}px`);
-    rail.style.setProperty('--cell-w', `${cellWidth}px`);
-    rail.style.setProperty('--rail-side-pad', `${sidePadding}px`);
-
-    // Calculate scroll position to center item at 50vw (absolute center)
-    // Account for padding in the calculation
-    const itemLeftEdge = sidePadding + (cellWidth * itemIndex);  // Item's left edge including padding
-    const viewportCenter = vw / 2;                               // Absolute center of viewport
-    const cardCenter = cardWidth / 2;                            // Center of the card itself
-    const targetScrollLeft = itemLeftEdge - viewportCenter + cardCenter;
-
-    // Use double RAF for layout stability - prevents race conditions when multiple carousels update
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        rail.scrollTo({ left: targetScrollLeft, behavior: 'smooth' });
-        setLocalCenterId(selectedItemId);
-      });
-    });
-  }, [selectedItemId, items.length, items]); // Depends on items to ensure updates when item order changes
-
-  // ✅ SCROLL HANDLER: Visual center indicator only (NO DB updates)
+  // ✅ EFFECT 1: Scroll to selected item using native scrollIntoView
   useEffect(() => {
     const rail = scrollContainerRef.current;
     if (!rail || items.length === 0) return;
 
+    let targetIndex = 0;
+    
+    if (selectedItemId) {
+      const foundIndex = items.findIndex(item => item.id === selectedItemId);
+      if (foundIndex !== -1) {
+        targetIndex = foundIndex;
+      }
+    }
+
+    // Scroll the card into center view
+    const targetCard = rail.children[targetIndex] as HTMLElement;
+    if (targetCard) {
+      targetCard.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+        inline: 'center',
+      });
+      setCenteredIndex(targetIndex);
+    }
+  }, [selectedItemId, items]);
+
+  // ✅ EFFECT 2: Detect which card is centered during manual scroll
+  useEffect(() => {
+    const rail = scrollContainerRef.current;
+    if (!rail || items.length === 0) return;
+
+    let scrollTimeout: number;
+
     const handleScroll = () => {
-      // Calculate grid dimensions
-      const vw = window.innerWidth;
-      const cellWidth = vw * GRID_CONFIG.cellWidthVw;
+      clearTimeout(scrollTimeout);
+      
+      // Debounce to wait for scroll to settle
+      scrollTimeout = window.setTimeout(() => {
+        const railRect = rail.getBoundingClientRect();
+        const centerX = railRect.left + railRect.width / 2;
 
-      // Determine which grid cell is currently centered
-      const rawIndex = rail.scrollLeft / cellWidth;
-      const snappedIndex = Math.round(rawIndex);
-      const clampedIndex = Math.max(0, Math.min(snappedIndex, items.length - 1));
+        let closestIndex = 0;
+        let closestDistance = Infinity;
 
-      // ✅ ONLY update visual state - NO database updates
-      const centeredItem = items[clampedIndex];
-      if (centeredItem) {
-        setLocalCenterId(centeredItem.id);
+        // Find which card is closest to center
+        Array.from(rail.children).forEach((card, index) => {
+          const cardRect = card.getBoundingClientRect();
+          const cardCenterX = cardRect.left + cardRect.width / 2;
+          const distance = Math.abs(cardCenterX - centerX);
 
-        // Visual feedback: update card classes
-        const cards = rail.querySelectorAll<HTMLElement>('[data-item-id]');
-        cards.forEach((card, idx) => {
-          card.classList.toggle('is-center', idx === clampedIndex);
+          if (distance < closestDistance) {
+            closestDistance = distance;
+            closestIndex = index;
+          }
+        });
+
+        setCenteredIndex(closestIndex);
+      }, 150);
+    };
+
+    rail.addEventListener('scroll', handleScroll, { passive: true });
+    return () => {
+      rail.removeEventListener('scroll', handleScroll);
+      clearTimeout(scrollTimeout);
+    };
+  }, [items]);
+
+  // ✅ EFFECT 3: Handle resize - recenter current item
+  useEffect(() => {
+    const handleResize = () => {
+      const rail = scrollContainerRef.current;
+      if (!rail || items.length === 0) return;
+
+      const currentCard = rail.children[centeredIndex] as HTMLElement;
+      if (currentCard) {
+        currentCard.scrollIntoView({
+          behavior: 'auto',
+          block: 'nearest',
+          inline: 'center',
         });
       }
     };
 
-    rail.addEventListener('scroll', handleScroll, { passive: true });
-    return () => rail.removeEventListener('scroll', handleScroll);
-  }, [items]);
-
-  // ✅ INITIAL MOUNT: Center first item visually
-  useEffect(() => {
-    const rail = scrollContainerRef.current;
-    if (!rail || items.length === 0 || selectedItemId) return;
-
-    const firstItem = items[0];
-    requestAnimationFrame(() => {
-      const vw = window.innerWidth;
-      const cardWidth = vw * GRID_CONFIG.cardWidthVw;
-      const cellWidth = vw * GRID_CONFIG.cellWidthVw;
-      const sidePadding = (vw - cardWidth) / 2;
-      
-      rail.style.setProperty('--card-w', `${cardWidth}px`);
-      rail.style.setProperty('--cell-w', `${cellWidth}px`);
-      rail.style.setProperty('--rail-side-pad', `${sidePadding}px`);
-      
-      // Center first item at 50vw
-      const viewportCenter = vw / 2;
-      const cardCenter = cardWidth / 2;
-      const targetScrollLeft = sidePadding - viewportCenter + cardCenter;
-      
-      rail.scrollTo({ left: targetScrollLeft, behavior: 'auto' });
-      setLocalCenterId(firstItem.id);
-    });
-  }, []); // Only run once on mount
-  
-  // ✅ RESIZE HANDLER: Recalculate CSS variables on window resize
-  useEffect(() => {
-    const handleResize = () => {
-      const rail = scrollContainerRef.current;
-      if (!rail) return;
-
-      const vw = window.innerWidth;
-      const cardWidth = vw * GRID_CONFIG.cardWidthVw;
-      const cellWidth = vw * GRID_CONFIG.cellWidthVw;
-      const sidePadding = (vw - cardWidth) / 2;
-
-      rail.style.setProperty('--card-w', `${cardWidth}px`);
-      rail.style.setProperty('--cell-w', `${cellWidth}px`);
-      rail.style.setProperty('--rail-side-pad', `${sidePadding}px`);
-    };
-
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  }, [centeredIndex, items]);
 
-  // Determine which item to visually center
-  const visualCenterId = selectedItemId || localCenterId || (items.length > 0 ? items[0].id : null);
+  // Determine which card is visually centered
+  const getCardClasses = (index: number) => {
+    return index === centeredIndex ? 'rail-card is-center' : 'rail-card';
+  };
 
   return (
     <div className="mb-0">
-      {/* Header with Category Circle */}
-      <div className="flex items-center justify-between px-2 mb-1">
-        {/* Category Circle Indicator */}
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 mb-2">
         <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 border border-primary/20">
-            <span className="text-xs font-bold text-primary uppercase">
+          <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 border border-primary/20">
+            <span className="text-sm font-bold text-primary uppercase">
               {layer.category[0]}
             </span>
           </div>
           
-          <div className="flex items-center gap-1.5">
-            <h3 className="text-xs font-semibold text-muted-foreground capitalize">
+          <div className="flex items-center gap-2">
+            <h3 className="text-sm font-semibold text-foreground capitalize">
               {categoryLabels[layer.category] || layer.category}
             </h3>
-            <span className="text-[10px] text-muted-foreground/60">
-              {items.length}
+            <span className="text-xs text-muted-foreground">
+              ({items.length})
             </span>
             {layer.is_pinned && (
-              <div className="flex items-center gap-0.5 text-xs text-primary">
-                <Pin className="w-3 h-3 fill-primary" />
-              </div>
+              <Pin className="w-4 h-4 fill-primary text-primary ml-1" />
             )}
           </div>
         </div>
 
-        <div className="flex items-center gap-0.5">
+        <div className="flex items-center gap-1">
           <Button
             variant="ghost"
             size="icon"
-            className="h-6 w-6"
+            className="h-8 w-8"
             onClick={onPinToggle}
-            title={layer.is_pinned ? 'Unpin' : 'Pin'}
+            title={layer.is_pinned ? 'Unpin layer' : 'Pin layer'}
           >
-            <Pin className={layer.is_pinned ? 'w-3 h-3 fill-primary text-primary' : 'w-3 h-3'} />
+            <Pin className={layer.is_pinned ? 'w-4 h-4 fill-primary text-primary' : 'w-4 h-4'} />
           </Button>
           <Button
             variant="ghost"
             size="icon"
-            className="h-6 w-6 text-destructive"
+            className="h-8 w-8 text-destructive hover:text-destructive"
             onClick={onRemoveLayer}
+            title="Remove layer"
           >
-            <X className="w-3 h-3" />
+            <X className="w-4 h-4" />
           </Button>
         </div>
       </div>
@@ -218,13 +179,13 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
         {items.length === 0 ? (
           <div
             className="flex items-center justify-center"
-            style={{ height: 'clamp(160px, 20vh, 200px)' }}
+            style={{ height: 'clamp(180px, 24vh, 240px)' }}
           >
             <button
               onClick={onAddItem}
-              className="border-2 border-dashed border-gray-300 rounded-xl p-8 hover:border-primary transition-colors"
+              className="border-2 border-dashed border-muted-foreground/30 rounded-xl px-8 py-6 hover:border-primary hover:bg-primary/5 transition-all"
             >
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-muted-foreground font-medium">
                 Add {categoryLabels[layer.category]}
               </p>
             </button>
@@ -233,37 +194,36 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
           <div
             ref={scrollContainerRef}
             className="rail-carousel"
+            data-item-count={items.length}
             style={{
-              height: 'clamp(180px, 24vh, 240px)',
+              height: 'clamp(200px, 28vh, 280px)',
             }}
           >
-            {items.map((item) => {
-              const isCenter = item.id === visualCenterId;
-
-              return (
-                <div
-                  key={item.id}
-                  data-item-id={item.id}
-                  className={isCenter ? 'rail-card is-center' : 'rail-card'}
-                  onClick={() => onItemClick(item.id)}
-                >
-                  {/* Pin icon on item */}
-                  {layer.is_pinned && isCenter && (
-                    <div className="absolute top-2 right-2 z-10">
-                      <Pin className="w-4 h-4 fill-primary text-primary drop-shadow" />
+            {items.map((item, index) => (
+              <div
+                key={item.id}
+                data-item-id={item.id}
+                className={getCardClasses(index)}
+                onClick={() => onItemClick(item.id)}
+              >
+                {/* Pin indicator on centered item */}
+                {layer.is_pinned && index === centeredIndex && (
+                  <div className="absolute top-3 right-3 z-20">
+                    <div className="bg-primary/90 backdrop-blur-sm rounded-full p-1.5">
+                      <Pin className="w-3 h-3 fill-white text-white" />
                     </div>
-                  )}
-                  
-                  {/* Image */}
-                  <img
-                    src={item.image_bg_removed_url || item.image_url}
-                    alt={item.category}
-                    loading="lazy"
-                    draggable={false}
-                  />
-                </div>
-              );
-            })}
+                  </div>
+                )}
+                
+                {/* Image */}
+                <img
+                  src={item.image_bg_removed_url || item.image_url}
+                  alt={item.category}
+                  loading="lazy"
+                  draggable={false}
+                />
+              </div>
+            ))}
           </div>
         )}
       </div>
