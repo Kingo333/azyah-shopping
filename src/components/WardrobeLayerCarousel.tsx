@@ -105,8 +105,8 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
     };
   }, [detectCenterItem]);
 
-  // Calculate card width (50vw)
-  const cardWidth = typeof window !== 'undefined' ? window.innerWidth * 0.50 : 240;
+  // Calculate card width (60vw for larger images)
+  const cardWidth = typeof window !== 'undefined' ? window.innerWidth * 0.60 : 288;
 
   return (
     <div className="mb-0">
@@ -178,11 +178,11 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
             style={{
               height: 'clamp(160px, 20vh, 200px)',
               scrollSnapType: 'x mandatory',
-              scrollPadding: '24px',
+              scrollPadding: '0',
               WebkitOverflowScrolling: 'touch',
             }}
           >
-            <div className="flex items-center px-[10vw]" style={{ minWidth: '100%' }}>
+            <div className="flex items-center px-[20vw]" style={{ minWidth: '100%' }}>
               {items.map((item) => {
                 const isCenter = item.id === (centerItemId || selectedItemId);
 
