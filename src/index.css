@@ -841,7 +841,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 8px;
+  position: relative;
   opacity: 0.35;
   transform: scale(0.88);
 }
