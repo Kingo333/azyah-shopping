@@ -26,6 +26,7 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
 }) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const scrollTimeoutRef = useRef<NodeJS.Timeout | undefined>();
+  const isProgrammaticScrollRef = useRef(false);
   const [localCenterId, setLocalCenterId] = useState<string | null>(null);
   const [currentIndex, setCurrentIndex] = useState<number>(0);
 
@@ -83,10 +84,16 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
     console.log(`📐 Grid scroll: cell ${itemIndex} → ${targetScrollLeft}px (cell width: ${cellWidth}px)`);
 
     requestAnimationFrame(() => {
+      isProgrammaticScrollRef.current = true; // 🚩 Mark as programmatic
       rail.scrollTo({ left: targetScrollLeft, behavior: 'smooth' });
       setCurrentIndex(itemIndex);
       setLocalCenterId(selectedItemId);
-      console.log(`✅ Snapped to grid cell ${itemIndex}`);
+      console.log(`✅ Snapped to grid cell ${itemIndex} (programmatic)`);
+      
+      // Clear flag after scroll animation completes (~300ms for smooth scroll)
+      setTimeout(() => {
+        isProgrammaticScrollRef.current = false;
+      }, 600);
     });
   }, [selectedItemId, items.length, items]);
 
@@ -128,9 +135,12 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
 
       // Debounce database update (500ms after user stops scrolling)
       scrollTimeoutRef.current = setTimeout(() => {
-        if (centeredItem && centeredItem.id !== selectedItemId) {
+        // ✅ Only update DB if this is a USER scroll, not programmatic
+        if (!isProgrammaticScrollRef.current && centeredItem && centeredItem.id !== selectedItemId) {
           console.log(`👆 User selected grid cell ${clampedIndex}: ${centeredItem.id}`);
           onItemSelect(centeredItem.id);
+        } else if (isProgrammaticScrollRef.current) {
+          console.log(`⏭️ Skipped DB update (programmatic scroll)`);
         }
       }, 500);
     };
@@ -155,12 +165,17 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
       requestAnimationFrame(() => {
         const firstCard = rail.querySelector<HTMLElement>('[data-item-id]');
         if (firstCard) {
+          isProgrammaticScrollRef.current = true;
           const vw = window.innerWidth;
           const cardWidth = vw * GRID_CONFIG.cardWidthVw;
           const cellWidth = vw * GRID_CONFIG.cellWidthVw;
           rail.scrollTo({ left: 0, behavior: 'instant' });
           setLocalCenterId(firstCard.dataset.itemId || null);
           setCurrentIndex(0);
+          // Instant scroll, shorter timeout
+          setTimeout(() => {
+            isProgrammaticScrollRef.current = false;
+          }, 100);
         }
       });
     }
