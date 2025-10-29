@@ -232,17 +232,23 @@ export default function DressMeWardrobe() {
     let shuffled = 0;
     const errors: string[] = [];
 
-    // Process layers sequentially to avoid race conditions
+    // Process layers sequentially
     for (const layer of layers) {
+      // Skip pinned layers
+      if (layer.is_pinned) {
+        console.log(`⏭️ Skipping ${layer.category} (pinned)`);
+        continue;
+      }
+
       const layerItems = getLayerItems(layer.category);
       console.log(`Layer ${layer.category}: ${layerItems.length} items`);
       
       if (layerItems.length <= 1) {
-        console.log(`Skipping ${layer.category} (not enough items)`);
+        console.log(`⏭️ Skipping ${layer.category} (not enough items)`);
         continue;
       }
 
-      // Get available items (exclude current selection to ensure change)
+      // Get available items (exclude current selection)
       const availableItems = layerItems.filter(
         item => item.id !== layer.selected_item_id
       );
@@ -254,9 +260,9 @@ export default function DressMeWardrobe() {
           const randomIndex = Math.floor(seededRandom() * availableItems.length);
           const randomItem = availableItems[randomIndex];
           
-          console.log(`Shuffling ${layer.category}: ${layer.selected_item_id} → ${randomItem.id}`);
+          console.log(`🔄 Shuffling ${layer.category}: ${layer.selected_item_id} → ${randomItem.id}`);
           
-          // Wait for each mutation to complete before moving to next layer
+          // Update database
           await updateLayerSelection.mutateAsync({ 
             layerId: layer.id, 
             itemId: randomItem.id 
@@ -265,8 +271,8 @@ export default function DressMeWardrobe() {
           shuffled++;
           console.log(`✅ ${layer.category} shuffled successfully`);
           
-          // Small delay to let carousel respond
-          await new Promise(resolve => setTimeout(resolve, 100));
+          // Delay to let carousel animate
+          await new Promise(resolve => setTimeout(resolve, 200));
         } catch (error) {
           console.error(`❌ Failed to shuffle ${layer.category}:`, error);
           errors.push(layer.category);
@@ -280,7 +286,7 @@ export default function DressMeWardrobe() {
     } else if (shuffled > 0) {
       toast.success(`Shuffled ${shuffled} ${shuffled === 1 ? 'layer' : 'layers'}`);
     } else {
-      toast.info('No layers to shuffle');
+      toast.info('No layers to shuffle (all pinned or insufficient items)');
     }
     
     console.log(`🎲 Shuffle complete: ${shuffled} shuffled, ${errors.length} errors`);

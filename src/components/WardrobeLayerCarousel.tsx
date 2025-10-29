@@ -26,8 +26,8 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
 }) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [localCenterId, setLocalCenterId] = useState<string | null>(selectedItemId);
+  const [isUserScrolling, setIsUserScrolling] = useState(false);
   const scrollTimeoutRef = useRef<NodeJS.Timeout>();
-  const lastSelectedRef = useRef<string | null>(selectedItemId);
   
   const categoryLabels: Record<string, string> = {
     top: 'Tops',
@@ -42,7 +42,7 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
   // Initialize and respond to external selection changes (including shuffle)
   useEffect(() => {
     const rail = scrollContainerRef.current;
-    if (!rail || items.length === 0) return;
+    if (!rail || items.length === 0 || !selectedItemId) return;
 
     // Set CSS variables for sizing
     const vw = window.innerWidth;
@@ -51,18 +51,16 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
     const sidePad = Math.round((vw - cardW) / 2);
     rail.style.setProperty('--rail-side-pad', `${sidePad}px`);
 
-    // Snap to selected item when it changes externally (including after shuffle)
-    // Only if selectedItemId changed from outside (not from our own scroll)
-    if (selectedItemId && selectedItemId !== lastSelectedRef.current) {
+    // Only snap if this is an external update (not from user scrolling)
+    if (!isUserScrolling) {
       const targetCard = rail.querySelector<HTMLElement>(`[data-item-id="${selectedItemId}"]`);
       if (targetCard) {
         const targetLeft = targetCard.offsetLeft - (rail.clientWidth - targetCard.clientWidth) / 2;
         rail.scrollTo({ left: Math.round(targetLeft), behavior: 'smooth' });
         setLocalCenterId(selectedItemId);
-        lastSelectedRef.current = selectedItemId;
       }
     }
-  }, [items.length, selectedItemId]);
+  }, [items.length, selectedItemId, isUserScrolling]);
 
   // Handle user scroll with immediate visual feedback and debounced updates
   useEffect(() => {
@@ -70,12 +68,15 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
     if (!rail) return;
 
     const handleScroll = () => {
+      // Mark as user scrolling
+      setIsUserScrolling(true);
+      
       // Clear previous timeout
       if (scrollTimeoutRef.current) {
         clearTimeout(scrollTimeoutRef.current);
       }
 
-      // Find centered card
+      // Find centered card (immediate visual feedback)
       const cards = rail.querySelectorAll<HTMLElement>('[data-item-id]');
       const cx = rail.scrollLeft + rail.clientWidth / 2;
 
@@ -91,7 +92,7 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
         }
       });
 
-      // Update visual state immediately for smooth feedback
+      // Update visual state immediately
       requestAnimationFrame(() => {
         cards.forEach(c => c.classList.toggle('is-center', c === bestCard));
         if (bestCard?.dataset.itemId) {
@@ -99,16 +100,15 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
         }
       });
 
-      // Debounce selection update only (no snap-back)
+      // Debounce database update
       scrollTimeoutRef.current = setTimeout(() => {
-        if (!bestCard) return;
-
-        // Update selection in database only if changed
+        if (!bestCard?.dataset.itemId) return;
+        
         const newItemId = bestCard.dataset.itemId;
-        if (newItemId && newItemId !== lastSelectedRef.current) {
-          lastSelectedRef.current = newItemId;
-          onItemSelect(newItemId);
-        }
+        onItemSelect(newItemId);
+        
+        // Reset scrolling flag after update completes
+        setTimeout(() => setIsUserScrolling(false), 100);
       }, 500);
     };
 
