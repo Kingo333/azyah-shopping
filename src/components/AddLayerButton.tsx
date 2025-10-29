@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, Layers } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -27,7 +27,8 @@ export const AddLayerButton: React.FC<AddLayerButtonProps> = ({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="sm" className="h-8 px-2.5 text-xs font-medium hover:bg-accent/50">
+        <Button variant="ghost" size="sm" className="h-8 px-2.5 text-xs font-medium hover:bg-accent/50 gap-1">
+          <Layers className="w-3 h-3" />
           <Plus className="w-3.5 h-3.5" />
         </Button>
       </DropdownMenuTrigger>
