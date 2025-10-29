@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState, useCallback } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { WardrobeItem } from '@/hooks/useWardrobeItems';
 import { WardrobeLayer } from '@/hooks/useWardrobeLayers';
 import { Pin, X, Lock } from 'lucide-react';
@@ -25,8 +25,9 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
   onAddItem,
 }) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const [centerItemId, setCenterItemId] = useState<string | null>(selectedItemId);
-  const hasInitializedRef = useRef(false);
+  const [localCenterId, setLocalCenterId] = useState<string | null>(selectedItemId);
+  const scrollTimeoutRef = useRef<NodeJS.Timeout>();
+  const isUserScrollingRef = useRef(false);
   
   const categoryLabels: Record<string, string> = {
     top: 'Tops',
@@ -38,122 +39,98 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
     accessory: 'Accessories',
   };
 
-  // Mark centered card based on offsetLeft (immune to parent transforms)
-  const markCenteredCard = useCallback(() => {
-    const rail = scrollContainerRef.current;
-    if (!rail || layer.is_pinned) return;
-
-    const cards = rail.querySelectorAll<HTMLElement>('[data-item-id]');
-    const cx = rail.scrollLeft + rail.clientWidth / 2;
-
-    let best: HTMLElement | null = null;
-    let bestDist = Infinity;
-
-    cards.forEach((card) => {
-      const cardCx = card.offsetLeft + card.clientWidth / 2;
-      const d = Math.abs(cardCx - cx);
-      if (d < bestDist) {
-        bestDist = d;
-        best = card;
-      }
-    });
-
-    cards.forEach(c => c.classList.toggle('is-center', c === best));
-    if (best?.dataset.itemId && best.dataset.itemId !== centerItemId) {
-      setCenterItemId(best.dataset.itemId);
-      onItemSelect(best.dataset.itemId);
-    }
-  }, [centerItemId, onItemSelect, layer.is_pinned]);
-
-  // Snap to nearest card (iOS Safari fallback)
-  const snapToNearest = useCallback(() => {
-    const rail = scrollContainerRef.current;
-    if (!rail || layer.is_pinned) return;
-
-    const cards = rail.querySelectorAll<HTMLElement>('[data-item-id]');
-    const cx = rail.scrollLeft + rail.clientWidth / 2;
-
-    let target: HTMLElement | null = null;
-    let bestDist = Infinity;
-
-    cards.forEach((card) => {
-      const cardCx = card.offsetLeft + card.clientWidth / 2;
-      const d = Math.abs(cardCx - cx);
-      if (d < bestDist) {
-        bestDist = d;
-        target = card;
-      }
-    });
-
-    if (!target) return;
-
-    const targetLeft = target.offsetLeft - (rail.clientWidth - target.clientWidth) / 2;
-    rail.scrollTo({ left: Math.round(targetLeft), behavior: 'smooth' });
-  }, [layer.is_pinned]);
-
-  // Setup rail with dynamic sizing (only runs when items.length changes)
+  // Initialize scroll position only once on mount
   useEffect(() => {
     const rail = scrollContainerRef.current;
-    if (!rail || items.length === 0) return;
+    if (!rail || items.length === 0 || isUserScrollingRef.current) return;
 
-    // Compute dynamic sizes (58vw for cards, 21vw for side padding)
+    // Set CSS variables for sizing
     const vw = window.innerWidth;
     const cardW = Math.round(vw * 0.58);
     rail.style.setProperty('--card-w', `${cardW}px`);
     const sidePad = Math.round((vw - cardW) / 2);
     rail.style.setProperty('--rail-side-pad', `${sidePad}px`);
 
-    // Only snap on initial mount, not on subsequent renders
-    if (!hasInitializedRef.current) {
-      hasInitializedRef.current = true;
-      
-      const selectedCard = selectedItemId 
-        ? rail.querySelector<HTMLElement>(`[data-item-id="${selectedItemId}"]`)
-        : rail.querySelector<HTMLElement>('[data-item-id]');
-      
-      if (selectedCard) {
-        const targetLeft = selectedCard.offsetLeft - (rail.clientWidth - selectedCard.clientWidth) / 2;
-        rail.scrollTo({ left: Math.round(targetLeft), behavior: 'auto' });
-      }
+    // Snap to selected item only if we're not actively scrolling
+    const targetCard = selectedItemId 
+      ? rail.querySelector<HTMLElement>(`[data-item-id="${selectedItemId}"]`)
+      : rail.querySelector<HTMLElement>('[data-item-id]');
+    
+    if (targetCard) {
+      const targetLeft = targetCard.offsetLeft - (rail.clientWidth - targetCard.clientWidth) / 2;
+      rail.scrollTo({ left: Math.round(targetLeft), behavior: 'auto' });
+      setLocalCenterId(selectedItemId);
     }
-  }, [items.length]); // Only depend on primitive values
+  }, [layer.id]); // Only run when layer changes
 
-  // Reset initialization flag when switching layers
-  useEffect(() => {
-    hasInitializedRef.current = false;
-  }, [layer.id]);
-
-  // RAF-based scroll handler with iOS snap fallback
+  // Handle scroll events with debouncing
   useEffect(() => {
     const rail = scrollContainerRef.current;
-    if (!rail) return;
+    if (!rail || layer.is_pinned) return;
 
-    let ticking = false;
-    let snapTimer: NodeJS.Timeout;
+    const handleScroll = () => {
+      isUserScrollingRef.current = true;
+      
+      // Clear previous timeout
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
 
-    const onScroll = () => {
-      if (ticking) return;
-      ticking = true;
-      requestAnimationFrame(() => {
-        markCenteredCard();
-        ticking = false;
+      // Find centered card
+      const cards = rail.querySelectorAll<HTMLElement>('[data-item-id]');
+      const cx = rail.scrollLeft + rail.clientWidth / 2;
+
+      let bestCard: HTMLElement | null = null;
+      let bestDist = Infinity;
+
+      cards.forEach((card) => {
+        const cardCx = card.offsetLeft + card.clientWidth / 2;
+        const dist = Math.abs(cardCx - cx);
+        if (dist < bestDist) {
+          bestDist = dist;
+          bestCard = card;
+        }
       });
 
-      // Fallback snap for iOS Safari (no native scrollend)
-      clearTimeout(snapTimer);
-      snapTimer = setTimeout(() => snapToNearest(), 120);
+      // Update visual state immediately
+      cards.forEach(c => c.classList.toggle('is-center', c === bestCard));
+      
+      if (bestCard?.dataset.itemId) {
+        setLocalCenterId(bestCard.dataset.itemId);
+      }
+
+      // Debounce the snap and database update
+      scrollTimeoutRef.current = setTimeout(() => {
+        if (!bestCard) return;
+
+        // Snap to center
+        const targetLeft = bestCard.offsetLeft - (rail.clientWidth - bestCard.clientWidth) / 2;
+        rail.scrollTo({ left: Math.round(targetLeft), behavior: 'smooth' });
+
+        // Save to database only after scrolling stops
+        if (bestCard.dataset.itemId && bestCard.dataset.itemId !== selectedItemId) {
+          onItemSelect(bestCard.dataset.itemId);
+        }
+
+        // Reset scrolling flag after a delay
+        setTimeout(() => {
+          isUserScrollingRef.current = false;
+        }, 500);
+      }, 150);
     };
 
-    rail.addEventListener('scroll', onScroll, { passive: true });
+    rail.addEventListener('scroll', handleScroll, { passive: true });
     return () => {
-      rail.removeEventListener('scroll', onScroll);
-      clearTimeout(snapTimer);
+      rail.removeEventListener('scroll', handleScroll);
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
     };
-  }, [markCenteredCard, snapToNearest]);
+  }, [layer.is_pinned, selectedItemId, onItemSelect]);
 
   return (
     <div className="mb-0">
-      {/* Minimal Header - just text */}
+      {/* Header */}
       <div className="flex items-center justify-between px-2 mb-0">
         <div className="flex items-center gap-2">
           <h3 className="text-sm font-medium text-muted-foreground capitalize">
@@ -195,7 +172,7 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
         </div>
       </div>
 
-      {/* Carousel - No box styling */}
+      {/* Carousel */}
       <div className="relative">
         {items.length === 0 ? (
           <div
@@ -223,13 +200,13 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
             }}
           >
             {items.map((item) => {
-              const isCenter = item.id === (centerItemId || selectedItemId);
+              const isCenter = item.id === localCenterId;
 
               return (
                 <div
                   key={item.id}
                   data-item-id={item.id}
-                  className="rail-card relative"
+                  className={cn('rail-card relative', isCenter && 'is-center')}
                 >
                   {/* Pin icon on item */}
                   {layer.is_pinned && isCenter && (
@@ -238,7 +215,7 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
                     </div>
                   )}
                   
-                  {/* Image with object-fit: contain */}
+                  {/* Image */}
                   <img
                     src={item.image_bg_removed_url || item.image_url}
                     alt={item.category}
