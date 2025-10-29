@@ -781,50 +781,56 @@
 }
 
 /* Carousel scroll behavior with grid snap points */
-/* Layer carousel (horizontal rail) - CSS-snap-scroll approach */
 .rail-carousel {
   position: relative;
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: 55vw;
-  gap: 8vw;
-  overflow-x: scroll;
+  display: flex;
+  gap: calc(var(--cell-w, 250px) - var(--card-w, 230px)); /* Dynamic gap */
+  overflow-x: auto;
   overflow-y: hidden;
   scroll-snap-type: x mandatory;
   scroll-snap-stop: always;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
-  padding-left: calc(50vw - 27.5vw);
-  padding-right: calc(50vw - 27.5vw);
+  padding: 0 var(--rail-side-pad, 24px);
   contain: layout;
+  scroll-padding-inline: var(--rail-side-pad, 24px);
 }
 
 .rail-carousel::-webkit-scrollbar {
   display: none;
 }
 
-/* Handle single item centering */
-.rail-carousel[data-item-count="1"] {
-  justify-content: center;
+/* Visual center guide with grid cell indicator */
+.rail-carousel::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    hsl(var(--primary) / 0.3) 20%,
+    hsl(var(--primary) / 0.5) 50%,
+    hsl(var(--primary) / 0.3) 80%,
+    transparent 100%
+  );
+  transform: translateX(-50%);
+  pointer-events: none;
+  z-index: 100;
+  opacity: 0.3;
+  transition: opacity 0.3s;
 }
 
-/* Handle two items with proper spacing */
-.rail-carousel[data-item-count="2"] {
-  justify-content: center;
-  gap: 12vw;
+.rail-carousel:active::before {
+  opacity: 0.6; /* Show grid guide while scrolling */
 }
 
-/* Mobile safe-area support */
-@media (max-width: 768px) {
-  .rail-carousel {
-    padding-left: max(calc(50vw - 27.5vw), env(safe-area-inset-left, 20px));
-    padding-right: max(calc(50vw - 27.5vw), env(safe-area-inset-right, 20px));
-  }
-}
-
-/* Card base state */
+/* Card snap alignment - discrete grid cells */
 .rail-card {
-  width: 100%;
+  flex-shrink: 0;
+  width: var(--card-w, 230px);
   height: 100%;
   scroll-snap-align: center;
   scroll-snap-stop: always;
@@ -835,39 +841,39 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  position: relative;
-  opacity: 0.5;
+  padding: 8px;
+  opacity: 0.35;
   transform: scale(0.88);
 }
 
 .rail-card img {
-  width: 100%;
-  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  aspect-ratio: 3 / 4;
   object-fit: contain;
-  pointer-events: none;
+  object-position: center;
+  display: block;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
 }
 
-/* Center card - full visibility */
+/* Center card styles */
 .rail-card.is-center {
   transform: scale(1);
   opacity: 1;
   z-index: 10;
 }
 
-/* White ghost overlay for non-centered items */
-.rail-card:not(.is-center)::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: rgba(255, 255, 255, 0.65);
-  pointer-events: none;
-  border-radius: 12px;
-  z-index: 1;
-  transition: opacity 0.3s ease;
+.rail-card.is-center:hover {
+  transform: scale(1.02);
 }
 
-.rail-card.is-center::after {
-  display: none;
+/* Neighbor card styles - fade out non-centered items */
+.rail-card:not(.is-center) {
+  opacity: 0.35;
+  transform: scale(0.88);
 }
 
 /* Mobile optimizations */
