@@ -139,25 +139,19 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
   }
 
   return (
-    <div
-      className={cn(
-        "layer-rail mb-4 rounded-2xl overflow-hidden transition-all border",
-        layer.is_pinned && "bg-primary/5 border-primary/30 shadow-md"
-      )}
-    >
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b bg-background/50">
+    <div className="mb-6">
+      {/* Minimal Header - just text */}
+      <div className="flex items-center justify-between px-2 mb-3">
         <div className="flex items-center gap-2">
-          <h3 className="text-base font-semibold capitalize">
+          <h3 className="text-sm font-medium text-muted-foreground capitalize">
             {categoryLabels[layer.category] || layer.category}
           </h3>
-          <span className="text-xs text-muted-foreground">
+          <span className="text-xs text-muted-foreground/60">
             {items.length}
           </span>
           {layer.is_pinned && (
-            <div className="flex items-center gap-1 bg-primary/10 text-primary px-2 py-0.5 rounded-md text-xs font-medium">
+            <div className="flex items-center gap-1 text-xs text-primary">
               <Lock className="w-3 h-3" />
-              Pinned
             </div>
           )}
         </div>
@@ -166,13 +160,13 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8"
+            className="h-7 w-7"
             onClick={onPinToggle}
             title={layer.is_pinned ? 'Unpin' : 'Pin'}
           >
             <Pin
               className={cn(
-                'w-4 h-4',
+                'w-3.5 h-3.5',
                 layer.is_pinned && 'fill-primary text-primary'
               )}
             />
@@ -180,15 +174,15 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 text-destructive"
+            className="h-7 w-7 text-destructive"
             onClick={onRemoveLayer}
           >
-            <X className="w-4 h-4" />
+            <X className="w-3.5 h-3.5" />
           </Button>
         </div>
       </div>
 
-      {/* Carousel Body */}
+      {/* Carousel - No box styling */}
       <div className="relative">
         {items.length === 0 ? (
           <div
@@ -209,7 +203,7 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
             ref={scrollContainerRef}
             className={cn(
               'rail-carousel overflow-x-auto overflow-y-hidden',
-              layer.is_pinned && 'pointer-events-none opacity-75'
+              layer.is_pinned && 'pointer-events-none opacity-60'
             )}
             style={{
               height: 'clamp(220px, 28vh, 260px)',
@@ -227,7 +221,7 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
                     key={item.id}
                     data-item-id={item.id}
                     className={cn(
-                      'rail-card flex-shrink-0 mx-2 transition-all duration-300',
+                      'rail-card flex-shrink-0 mx-2 transition-all duration-300 relative',
                       isCenter ? 'scale-100 opacity-100' : 'scale-85 opacity-70'
                     )}
                     style={{
@@ -236,20 +230,24 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
                       height: '100%',
                     }}
                   >
-                    <div
+                    {/* Pin icon on item */}
+                    {layer.is_pinned && isCenter && (
+                      <div className="absolute top-2 right-2 z-10">
+                        <Pin className="w-4 h-4 fill-primary text-primary drop-shadow" />
+                      </div>
+                    )}
+                    
+                    {/* Clean image - no box */}
+                    <img
+                      src={item.image_bg_removed_url || item.image_url}
+                      alt={item.category}
                       className={cn(
-                        'relative h-full rounded-2xl overflow-hidden bg-white',
-                        isCenter && 'shadow-xl ring-2 ring-primary/20'
+                        "w-full h-full object-contain transition-all duration-300",
+                        isCenter && "drop-shadow-xl"
                       )}
-                    >
-                      <img
-                        src={item.image_bg_removed_url || item.image_url}
-                        alt={item.category}
-                        className="w-full h-full object-contain p-2"
-                        loading="lazy"
-                        draggable={false}
-                      />
-                    </div>
+                      loading="lazy"
+                      draggable={false}
+                    />
                   </div>
                 );
               })}
