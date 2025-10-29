@@ -387,8 +387,6 @@
   overscroll-behavior-x: contain;
   -webkit-overflow-scrolling: touch;
   padding-inline: var(--rail-side-pad);
-  scroll-snap-type: x mandatory;
-  scroll-padding-inline: var(--rail-side-pad);
 }
 
 .rail-carousel > div {
@@ -398,8 +396,6 @@
 .rail-card {
   width: var(--card-w);
   flex: 0 0 var(--card-w);
-  scroll-snap-align: center;
-  scroll-snap-stop: always;
   transition: transform .18s ease, box-shadow .18s;
 }
 

@@ -27,7 +27,7 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [localCenterId, setLocalCenterId] = useState<string | null>(selectedItemId);
   const scrollTimeoutRef = useRef<NodeJS.Timeout>();
-  const isUserScrollingRef = useRef(false);
+  const lastSelectedRef = useRef<string | null>(selectedItemId);
   
   const categoryLabels: Record<string, string> = {
     top: 'Tops',
@@ -39,10 +39,10 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
     accessory: 'Accessories',
   };
 
-  // Initialize scroll position only once on mount
+  // Initialize and respond to external selection changes (including shuffle)
   useEffect(() => {
     const rail = scrollContainerRef.current;
-    if (!rail || items.length === 0 || isUserScrollingRef.current) return;
+    if (!rail || items.length === 0) return;
 
     // Set CSS variables for sizing
     const vw = window.innerWidth;
@@ -51,26 +51,25 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
     const sidePad = Math.round((vw - cardW) / 2);
     rail.style.setProperty('--rail-side-pad', `${sidePad}px`);
 
-    // Snap to selected item only if we're not actively scrolling
-    const targetCard = selectedItemId 
-      ? rail.querySelector<HTMLElement>(`[data-item-id="${selectedItemId}"]`)
-      : rail.querySelector<HTMLElement>('[data-item-id]');
-    
-    if (targetCard) {
-      const targetLeft = targetCard.offsetLeft - (rail.clientWidth - targetCard.clientWidth) / 2;
-      rail.scrollTo({ left: Math.round(targetLeft), behavior: 'auto' });
-      setLocalCenterId(selectedItemId);
+    // Snap to selected item when it changes externally (including after shuffle)
+    // Only if selectedItemId changed from outside (not from our own scroll)
+    if (selectedItemId && selectedItemId !== lastSelectedRef.current) {
+      const targetCard = rail.querySelector<HTMLElement>(`[data-item-id="${selectedItemId}"]`);
+      if (targetCard) {
+        const targetLeft = targetCard.offsetLeft - (rail.clientWidth - targetCard.clientWidth) / 2;
+        rail.scrollTo({ left: Math.round(targetLeft), behavior: 'smooth' });
+        setLocalCenterId(selectedItemId);
+        lastSelectedRef.current = selectedItemId;
+      }
     }
-  }, [layer.id]); // Only run when layer changes
+  }, [items.length, selectedItemId]);
 
-  // Handle scroll events with debouncing
+  // Handle user scroll with immediate visual feedback and debounced updates
   useEffect(() => {
     const rail = scrollContainerRef.current;
-    if (!rail || layer.is_pinned) return;
+    if (!rail) return;
 
     const handleScroll = () => {
-      isUserScrollingRef.current = true;
-      
       // Clear previous timeout
       if (scrollTimeoutRef.current) {
         clearTimeout(scrollTimeoutRef.current);
@@ -92,31 +91,29 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
         }
       });
 
-      // Update visual state immediately
-      cards.forEach(c => c.classList.toggle('is-center', c === bestCard));
-      
-      if (bestCard?.dataset.itemId) {
-        setLocalCenterId(bestCard.dataset.itemId);
-      }
+      // Update visual state immediately for smooth feedback
+      requestAnimationFrame(() => {
+        cards.forEach(c => c.classList.toggle('is-center', c === bestCard));
+        if (bestCard?.dataset.itemId) {
+          setLocalCenterId(bestCard.dataset.itemId);
+        }
+      });
 
-      // Debounce the snap and database update
+      // Debounce snap and selection update
       scrollTimeoutRef.current = setTimeout(() => {
         if (!bestCard) return;
 
-        // Snap to center
+        // Smooth snap to center
         const targetLeft = bestCard.offsetLeft - (rail.clientWidth - bestCard.clientWidth) / 2;
         rail.scrollTo({ left: Math.round(targetLeft), behavior: 'smooth' });
 
-        // Save to database only after scrolling stops
-        if (bestCard.dataset.itemId && bestCard.dataset.itemId !== selectedItemId) {
-          onItemSelect(bestCard.dataset.itemId);
+        // Update selection in database only if changed
+        const newItemId = bestCard.dataset.itemId;
+        if (newItemId && newItemId !== lastSelectedRef.current) {
+          lastSelectedRef.current = newItemId;
+          onItemSelect(newItemId);
         }
-
-        // Reset scrolling flag after a delay
-        setTimeout(() => {
-          isUserScrollingRef.current = false;
-        }, 500);
-      }, 150);
+      }, 300);
     };
 
     rail.addEventListener('scroll', handleScroll, { passive: true });
@@ -126,7 +123,7 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
         clearTimeout(scrollTimeoutRef.current);
       }
     };
-  }, [layer.is_pinned, selectedItemId, onItemSelect]);
+  }, [onItemSelect, items]);
 
   return (
     <div className="mb-0">
@@ -191,10 +188,7 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
         ) : (
           <div
             ref={scrollContainerRef}
-            className={cn(
-              'rail-carousel',
-              layer.is_pinned && 'pointer-events-none'
-            )}
+            className="rail-carousel"
             style={{
               height: 'clamp(180px, 24vh, 240px)',
             }}
