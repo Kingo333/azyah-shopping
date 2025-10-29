@@ -27,6 +27,14 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const scrollTimeoutRef = useRef<NodeJS.Timeout | undefined>();
   const [localCenterId, setLocalCenterId] = useState<string | null>(null);
+  const [currentIndex, setCurrentIndex] = useState<number>(0);
+
+  // Grid configuration - treats carousel as discrete cells
+  const GRID_CONFIG = {
+    cardWidthVw: 0.58,  // Card takes 58% of viewport width
+    gapVw: 0.05,        // 5% gap between cards
+    get cellWidthVw() { return this.cardWidthVw + this.gapVw; }  // Total cell = card + gap
+  };
   
   const categoryLabels: Record<string, string> = {
     top: 'Tops',
@@ -38,48 +46,51 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
     accessory: 'Accessories',
   };
 
-  // Effect: When selectedItemId changes, ALWAYS scroll to center it
+  // Effect: When selectedItemId changes, scroll to its grid cell
   useEffect(() => {
     const rail = scrollContainerRef.current;
     if (!rail || items.length === 0 || !selectedItemId) return;
 
-    // Calculate card dimensions
+    // Find item index in array
+    const itemIndex = items.findIndex(item => item.id === selectedItemId);
+    if (itemIndex === -1) {
+      console.warn(`⚠️ Item not found: ${selectedItemId}`);
+      return;
+    }
+
+    console.log(`🎯 Snap to grid cell ${itemIndex}: ${selectedItemId}`);
+
+    // Calculate grid dimensions
     const vw = window.innerWidth;
-    const cardW = Math.round(vw * 0.58);
-    rail.style.setProperty('--card-w', `${cardW}px`);
-    const sidePad = Math.round((vw - cardW) / 2);
-    rail.style.setProperty('--rail-side-pad', `${sidePad}px`);
+    const cardWidth = vw * GRID_CONFIG.cardWidthVw;
+    const cellWidth = vw * GRID_CONFIG.cellWidthVw;
+    const sidePadding = (vw - cardWidth) / 2;
 
-    console.log(`🎯 Center request: ${selectedItemId}`);
-    
-    // Wait for React to finish rendering
+    // Set CSS variables
+    rail.style.setProperty('--card-w', `${cardWidth}px`);
+    rail.style.setProperty('--cell-w', `${cellWidth}px`);
+    rail.style.setProperty('--rail-side-pad', `${sidePadding}px`);
+
+    // Cancel pending user scroll updates
+    if (scrollTimeoutRef.current) {
+      clearTimeout(scrollTimeoutRef.current);
+      scrollTimeoutRef.current = undefined;
+    }
+
+    // Calculate exact scroll position using grid math
+    const targetScrollLeft = (cellWidth * itemIndex);
+
+    console.log(`📐 Grid scroll: cell ${itemIndex} → ${targetScrollLeft}px (cell width: ${cellWidth}px)`);
+
     requestAnimationFrame(() => {
-      const targetCard = rail.querySelector<HTMLElement>(`[data-item-id="${selectedItemId}"]`);
-      if (!targetCard) {
-        console.warn(`⚠️ Card not found: ${selectedItemId}`);
-        return;
-      }
-
-      // Cancel any pending user scroll updates
-      if (scrollTimeoutRef.current) {
-        clearTimeout(scrollTimeoutRef.current);
-        scrollTimeoutRef.current = undefined;
-      }
-
-      // Calculate target scroll position (center the card)
-      const targetLeft = targetCard.offsetLeft - (rail.clientWidth - targetCard.clientWidth) / 2;
-      
-      console.log(`📍 Scrolling to center: ${selectedItemId} at ${targetLeft}px`);
-      
-      // Always scroll, no conditions
-      rail.scrollTo({ left: Math.round(targetLeft), behavior: 'smooth' });
+      rail.scrollTo({ left: targetScrollLeft, behavior: 'smooth' });
+      setCurrentIndex(itemIndex);
       setLocalCenterId(selectedItemId);
-      
-      console.log(`✅ Centered: ${selectedItemId}`);
+      console.log(`✅ Snapped to grid cell ${itemIndex}`);
     });
-  }, [selectedItemId, items.length]);
+  }, [selectedItemId, items.length, items]);
 
-  // Effect: When user scrolls, detect centered item and update database
+  // Effect: When user scrolls, detect which grid cell is centered
   useEffect(() => {
     const rail = scrollContainerRef.current;
     if (!rail || items.length === 0) return;
@@ -90,37 +101,36 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
         clearTimeout(scrollTimeoutRef.current);
       }
 
-      // Find which card is physically centered RIGHT NOW
-      const cards = rail.querySelectorAll<HTMLElement>('[data-item-id]');
-      const viewportCenter = rail.scrollLeft + rail.clientWidth / 2;
+      // Calculate grid dimensions
+      const vw = window.innerWidth;
+      const cellWidth = vw * GRID_CONFIG.cellWidthVw;
 
-      let centeredCard: HTMLElement | null = null;
-      let minDistance = Infinity;
+      // Determine which grid cell is currently centered
+      // Formula: index = round(scrollLeft / cellWidth)
+      const rawIndex = rail.scrollLeft / cellWidth;
+      const snappedIndex = Math.round(rawIndex);
+      const clampedIndex = Math.max(0, Math.min(snappedIndex, items.length - 1));
 
-      cards.forEach((card) => {
-        const cardCenter = card.offsetLeft + card.clientWidth / 2;
-        const distance = Math.abs(cardCenter - viewportCenter);
-        if (distance < minDistance) {
-          minDistance = distance;
-          centeredCard = card;
-        }
-      });
+      console.log(`📍 Scroll position: ${rail.scrollLeft}px → Grid index: ${clampedIndex}`);
 
-      // Update visual state immediately (instant feedback)
-      if (centeredCard?.dataset.itemId) {
-        setLocalCenterId(centeredCard.dataset.itemId);
-        
-        // Add visual class to centered card
-        cards.forEach(c => {
-          c.classList.toggle('is-center', c === centeredCard);
+      // Update visual state immediately
+      const centeredItem = items[clampedIndex];
+      if (centeredItem) {
+        setLocalCenterId(centeredItem.id);
+        setCurrentIndex(clampedIndex);
+
+        // Visual feedback: update card classes
+        const cards = rail.querySelectorAll<HTMLElement>('[data-item-id]');
+        cards.forEach((card, idx) => {
+          card.classList.toggle('is-center', idx === clampedIndex);
         });
       }
 
       // Debounce database update (500ms after user stops scrolling)
       scrollTimeoutRef.current = setTimeout(() => {
-        if (centeredCard?.dataset.itemId && centeredCard.dataset.itemId !== selectedItemId) {
-          console.log(`👆 User centered: ${centeredCard.dataset.itemId}`);
-          onItemSelect(centeredCard.dataset.itemId);
+        if (centeredItem && centeredItem.id !== selectedItemId) {
+          console.log(`👆 User selected grid cell ${clampedIndex}: ${centeredItem.id}`);
+          onItemSelect(centeredItem.id);
         }
       }, 500);
     };

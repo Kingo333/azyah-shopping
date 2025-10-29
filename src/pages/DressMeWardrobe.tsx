@@ -282,11 +282,11 @@ export default function DressMeWardrobe() {
         continue;
       }
 
-      // Pick random item (can be same as current - that's OK for re-centering!)
+      // Pick random grid index
       const randomIndex = Math.floor(seededRandom() * layerItems.length);
       const randomItem = layerItems[randomIndex];
       
-      console.log(`🔄 ${layer.category}: ${layer.selected_item_id} → ${randomItem.id}`);
+      console.log(`🔄 ${layer.category}: Grid cell ${randomIndex} → ${randomItem.id}`);
 
       try {
         // Update database - React Query will refetch and trigger carousel snap
