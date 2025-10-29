@@ -111,7 +111,7 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
       const targetLeft = selectedCard.offsetLeft - (rail.clientWidth - selectedCard.clientWidth) / 2;
       rail.scrollTo({ left: Math.round(targetLeft), behavior: 'auto' });
     }
-  }, [items.length, selectedItemId]); // Only depend on primitive values
+  }, [items.length]); // Only depend on primitive values
 
   // RAF-based scroll handler with iOS snap fallback
   useEffect(() => {

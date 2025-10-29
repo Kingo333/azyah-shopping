@@ -417,7 +417,7 @@
   width: 100%;
   height: clamp(180px, 24vh, 240px);
   object-fit: contain;
-  background: #fff;
+  background: transparent;
   border-radius: 16px;
 }
 
