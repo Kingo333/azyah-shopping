@@ -144,24 +144,27 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
     };
   }, [items, selectedItemId, onItemSelect]);
 
-  // Effect: Initialize - center first item if no selection exists
+  // Effect: Initialize - center first item ONLY on initial mount if no selection
   useEffect(() => {
     const rail = scrollContainerRef.current;
     if (!rail || items.length === 0) return;
     
-    // If layer has no selection, center first item visually (don't update DB)
-    if (!selectedItemId && items.length > 0) {
-      console.log('🔷 No selection, centering first item visually');
+    // Only initialize if there's NO selection at all (first mount)
+    if (!selectedItemId && items.length > 0 && !localCenterId) {
+      console.log('🔷 Initial mount: centering first item visually');
       requestAnimationFrame(() => {
         const firstCard = rail.querySelector<HTMLElement>('[data-item-id]');
         if (firstCard) {
-          const targetLeft = firstCard.offsetLeft - (rail.clientWidth - firstCard.clientWidth) / 2;
-          rail.scrollTo({ left: Math.round(targetLeft), behavior: 'instant' });
+          const vw = window.innerWidth;
+          const cardWidth = vw * GRID_CONFIG.cardWidthVw;
+          const cellWidth = vw * GRID_CONFIG.cellWidthVw;
+          rail.scrollTo({ left: 0, behavior: 'instant' });
           setLocalCenterId(firstCard.dataset.itemId || null);
+          setCurrentIndex(0);
         }
       });
     }
-  }, [items.length, selectedItemId]);
+  }, []); // Only run once on mount
 
   return (
     <div className="mb-0">
