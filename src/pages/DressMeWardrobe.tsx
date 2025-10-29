@@ -84,6 +84,15 @@ export default function DressMeWardrobe() {
     }
   }, [layers]);
 
+  // Debug: Log layer state on mount and updates
+  useEffect(() => {
+    console.log('📊 DressMeWardrobe State Update:');
+    console.log('  Layers:', layers);
+    console.log('  All Items:', allItems.length);
+    console.log('  Layers Loading:', layersLoading);
+    console.log('  Items Loading:', isLoading);
+  }, [layers, allItems, layersLoading, isLoading]);
+
   // No auto-layer creation - users control layers manually
 
   // Get items for each layer
@@ -180,29 +189,40 @@ export default function DressMeWardrobe() {
   };
 
   const handleAddLayer = (category: string) => {
+    console.log('🔵 handleAddLayer called:', category);
+    
     const isDress = category === 'dress';
     const isTopOrBottom = ['top', 'bottom'].includes(category);
     
     if (isDress && (layers.some(l => l.category === 'top') || layers.some(l => l.category === 'bottom'))) {
+      console.log('⚠️ Dress mode switch required');
       toast.info('Switching to Dress mode. Tops and Bottoms will be hidden.', {
         action: {
           label: 'OK',
-          onClick: () => addLayerMutation.mutate(category as any),
+          onClick: () => {
+            console.log('✅ User confirmed dress mode');
+            addLayerMutation.mutate(category as any);
+          },
         },
       });
       return;
     }
     
     if (isTopOrBottom && layers.some(l => l.category === 'dress')) {
+      console.log('⚠️ Top/Bottom mode switch required');
       toast.info('Switching to Tops & Bottoms mode. Dress will be hidden.', {
         action: {
           label: 'OK',
-          onClick: () => addLayerMutation.mutate(category as any),
+          onClick: () => {
+            console.log('✅ User confirmed top/bottom mode');
+            addLayerMutation.mutate(category as any);
+          },
         },
       });
       return;
     }
     
+    console.log('✅ Adding layer directly:', category);
     addLayerMutation.mutate(category as any);
   };
 
@@ -223,28 +243,45 @@ export default function DressMeWardrobe() {
   };
 
   const handleShuffleAll = async () => {
+    console.log('🎲 ========== SHUFFLE START ==========');
+    console.log('📊 Current layers:', layers);
+    console.log('📊 All items:', allItems);
+    
     if (layers.length === 0) {
+      console.warn('⚠️ No layers found');
       toast.info('Add some layers first');
       return;
     }
 
-    console.log('🎲 Starting shuffle...');
     let shuffled = 0;
     const errors: string[] = [];
+    const skipped: string[] = [];
 
     // Process layers sequentially
     for (const layer of layers) {
+      console.log(`\n--- Processing layer: ${layer.category} ---`);
+      console.log('Layer data:', layer);
+      
       // Skip pinned layers
       if (layer.is_pinned) {
-        console.log(`⏭️ Skipping ${layer.category} (pinned)`);
+        console.log(`⏭️ SKIPPED: ${layer.category} (pinned)`);
+        skipped.push(`${layer.category} (pinned)`);
         continue;
       }
 
       const layerItems = getLayerItems(layer.category);
-      console.log(`Layer ${layer.category}: ${layerItems.length} items`);
+      console.log(`📦 Items in ${layer.category}:`, layerItems);
+      console.log(`📊 Count: ${layerItems.length}`);
       
-      if (layerItems.length <= 1) {
-        console.log(`⏭️ Skipping ${layer.category} (not enough items)`);
+      if (layerItems.length === 0) {
+        console.log(`⏭️ SKIPPED: ${layer.category} (no items)`);
+        skipped.push(`${layer.category} (no items)`);
+        continue;
+      }
+      
+      if (layerItems.length === 1) {
+        console.log(`⏭️ SKIPPED: ${layer.category} (only 1 item)`);
+        skipped.push(`${layer.category} (only 1 item)`);
         continue;
       }
 
@@ -253,32 +290,45 @@ export default function DressMeWardrobe() {
         item => item.id !== layer.selected_item_id
       );
       
-      console.log(`Available items for ${layer.category}:`, availableItems.length);
+      console.log(`🎯 Available for shuffle:`, availableItems.length);
+      console.log(`Current selection: ${layer.selected_item_id}`);
 
-      if (availableItems.length > 0) {
-        try {
-          const randomIndex = Math.floor(seededRandom() * availableItems.length);
-          const randomItem = availableItems[randomIndex];
-          
-          console.log(`🔄 Shuffling ${layer.category}: ${layer.selected_item_id} → ${randomItem.id}`);
-          
-          // Update database
-          await updateLayerSelection.mutateAsync({ 
-            layerId: layer.id, 
-            itemId: randomItem.id 
-          });
-          
-          shuffled++;
-          console.log(`✅ ${layer.category} shuffled successfully`);
-          
-          // Delay to let carousel animate
-          await new Promise(resolve => setTimeout(resolve, 200));
-        } catch (error) {
-          console.error(`❌ Failed to shuffle ${layer.category}:`, error);
-          errors.push(layer.category);
-        }
+      if (availableItems.length === 0) {
+        console.log(`⏭️ SKIPPED: ${layer.category} (no alternative items)`);
+        skipped.push(`${layer.category} (no alternatives)`);
+        continue;
+      }
+
+      try {
+        const randomIndex = Math.floor(seededRandom() * availableItems.length);
+        const randomItem = availableItems[randomIndex];
+        
+        console.log(`🔄 SHUFFLING ${layer.category}:`);
+        console.log(`  From: ${layer.selected_item_id}`);
+        console.log(`  To: ${randomItem.id}`);
+        console.log(`  Item:`, randomItem);
+        
+        // Update database
+        await updateLayerSelection.mutateAsync({ 
+          layerId: layer.id, 
+          itemId: randomItem.id 
+        });
+        
+        shuffled++;
+        console.log(`✅ ${layer.category} shuffled successfully`);
+        
+        // Delay to let carousel animate
+        await new Promise(resolve => setTimeout(resolve, 200));
+      } catch (error) {
+        console.error(`❌ Failed to shuffle ${layer.category}:`, error);
+        errors.push(layer.category);
       }
     }
+
+    console.log('\n🎲 ========== SHUFFLE COMPLETE ==========');
+    console.log(`✅ Shuffled: ${shuffled}`);
+    console.log(`⏭️ Skipped:`, skipped);
+    console.log(`❌ Errors:`, errors);
 
     // Show final result
     if (errors.length > 0) {
@@ -286,10 +336,9 @@ export default function DressMeWardrobe() {
     } else if (shuffled > 0) {
       toast.success(`Shuffled ${shuffled} ${shuffled === 1 ? 'layer' : 'layers'}`);
     } else {
-      toast.info('No layers to shuffle (all pinned or insufficient items)');
+      const reasons = skipped.length > 0 ? `\n${skipped.join('\n')}` : '';
+      toast.info(`No layers shuffled${reasons}`);
     }
-    
-    console.log(`🎲 Shuffle complete: ${shuffled} shuffled, ${errors.length} errors`);
   };
 
   const handleDeleteFit = async () => {

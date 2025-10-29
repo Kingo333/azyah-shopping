@@ -38,8 +38,28 @@ export const useAddWardrobeLayer = () => {
 
   return useMutation({
     mutationFn: async (category: WardrobeLayer['category']) => {
+      console.log('🔵 Adding layer:', category);
+      
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
+      if (!user) {
+        console.error('❌ No user found');
+        throw new Error('Not authenticated');
+      }
+
+      console.log('👤 User ID:', user.id);
+
+      // Check if layer already exists
+      const { data: existingLayer } = await supabase
+        .from('wardrobe_layers')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('category', category)
+        .maybeSingle();
+
+      if (existingLayer) {
+        console.warn('⚠️ Layer already exists:', category);
+        throw new Error(`Layer for ${category} already exists`);
+      }
 
       // Get current max order
       const { data: existing } = await supabase
@@ -50,6 +70,7 @@ export const useAddWardrobeLayer = () => {
         .limit(1);
 
       const nextOrder = existing && existing.length > 0 ? existing[0].layer_order + 1 : 0;
+      console.log('📊 Next layer order:', nextOrder);
 
       const { data, error } = await supabase
         .from('wardrobe_layers')
@@ -62,18 +83,25 @@ export const useAddWardrobeLayer = () => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Insert error:', error);
+        throw error;
+      }
+      
+      console.log('✅ Layer created:', data);
       return data as WardrobeLayer;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('✅ Layer mutation success, invalidating cache');
       queryClient.invalidateQueries({ queryKey: ['wardrobe-layers'] });
-      toast.success('Layer added');
+      toast.success(`${data.category} layer added`);
     },
     onError: (error: any) => {
-      if (error.code === '23505') {
+      console.error('❌ Layer mutation error:', error);
+      if (error.code === '23505' || error.message?.includes('already exists')) {
         toast.error('You already have a layer for this category');
       } else {
-        toast.error('Failed to add layer');
+        toast.error(`Failed to add layer: ${error.message || 'Unknown error'}`);
       }
     },
   });
