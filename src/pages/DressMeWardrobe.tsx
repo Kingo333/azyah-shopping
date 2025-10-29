@@ -116,17 +116,21 @@ export default function DressMeWardrobe() {
     
     let filteredCategories = allCategories;
     
-    if (layerMode === 'dressShoes') {
-      // Dress mode: hide Top and Bottom options
-      filteredCategories = allCategories.filter(
-        cat => !['top', 'bottom'].includes(cat.value)
-      );
-    } else if (layerMode === 'topBottomsShoes') {
-      // Top+Bottoms mode: hide Dress option
-      filteredCategories = allCategories.filter(
-        cat => cat.value !== 'dress'
-      );
+    // Only apply mode filtering if layers actually exist
+    if (layers.length > 0) {
+      if (layerMode === 'dressShoes') {
+        // Dress mode: hide Top and Bottom options
+        filteredCategories = allCategories.filter(
+          cat => !['top', 'bottom'].includes(cat.value)
+        );
+      } else if (layerMode === 'topBottomsShoes') {
+        // Top+Bottoms mode: hide Dress option
+        filteredCategories = allCategories.filter(
+          cat => cat.value !== 'dress'
+        );
+      }
     }
+    // If no layers, show all categories
     
     return filteredCategories.filter(
       cat => !existingCategories.has(cat.value as any)
