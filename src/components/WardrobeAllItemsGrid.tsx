@@ -33,21 +33,23 @@ export const WardrobeAllItemsGrid: React.FC<WardrobeAllItemsGridProps> = ({
     <div className="mb-6">
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-lg font-semibold">All Items</h2>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 md:gap-2">
           <Button
             variant="outline"
             size="sm"
             onClick={onAddNew}
-            className="gap-2"
+            className="gap-1.5 h-9 px-3 text-xs md:text-sm"
           >
-            <Plus className="w-4 h-4" />
-            Add Item
+            <Plus className="w-3.5 h-3.5 md:w-4 md:h-4" />
+            <span className="hidden xs:inline">Add Item</span>
+            <span className="xs:hidden">Add</span>
           </Button>
           {onToggleSelectionMode && (
             <Button
               variant="outline"
               size="sm"
               onClick={onToggleSelectionMode}
+              className="h-9 px-3 text-xs md:text-sm"
             >
               {selectionMode ? 'Cancel' : 'Select'}
             </Button>
