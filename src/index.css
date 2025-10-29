@@ -759,9 +759,38 @@
   padding-top: max(env(safe-area-inset-top), 12px);
 }
 
+/* Layers feature - Mobile-first outfit builder */
 .layers-view {
   height: 100dvh;
-  overflow-y: hidden;
-  overflow-x: hidden;
+  width: 100vw;
+  overflow: hidden;
+  position: fixed;
+  top: 0;
+  left: 0;
+}
+
+.composition-canvas {
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.layer-track-carousel {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+  overscroll-behavior-x: contain;
+}
+
+.dock-card {
+  transition: all 0.2s ease-out;
+}
+
+.dock-card:hover {
+  transform: translateY(-2px);
+}
+
+.scroll-snap-type-x-mandatory {
+  scroll-snap-type: x mandatory;
 }
 }

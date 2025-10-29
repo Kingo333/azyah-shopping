@@ -1,12 +1,11 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { WardrobeItem } from '@/hooks/useWardrobeItems';
 import { WardrobeLayer } from '@/hooks/useWardrobeLayers';
 import { LayeredOutfitDisplay } from './LayeredOutfitDisplay';
-import { LayerCarousel } from './LayerCarousel';
-import { CategoryBottomBar } from './CategoryBottomBar';
+import { AccessoriesDock } from './AccessoriesDock';
+import { MiniCarouselSheet } from './MiniCarouselSheet';
 import { LayerActionMenu } from './LayerActionMenu';
-import { useCarouselMemory } from '@/hooks/useCarouselMemory';
 import { BackButton } from './ui/back-button';
 import { Button } from './ui/button';
 import { SaveProgressModal } from './SaveProgressModal';
@@ -19,6 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Save } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { CanvasLayer } from './EnhancedInteractiveCanvas';
+import { cn } from '@/lib/utils';
 
 interface LayersViewModeProps {
   layers: WardrobeLayer[];
@@ -26,9 +26,13 @@ interface LayersViewModeProps {
   onRemoveLayer: (layerId: string) => void;
 }
 
+type CompositionMode = 'separates' | 'dress';
+
 interface LayerState {
   category: string;
   item: WardrobeItem | null;
+  items: WardrobeItem[];
+  selectedIndex: number;
   isPinned: boolean;
   zIndex: number;
 }
@@ -49,18 +53,27 @@ export const LayersViewMode: React.FC<LayersViewModeProps> = ({
   onRemoveLayer,
 }) => {
   const navigate = useNavigate();
-  const { savePosition, getPosition } = useCarouselMemory();
 
+  // Composition mode
+  const [mode, setMode] = useState<CompositionMode>('separates');
+  
   // Get the first layer's category or default to 'top'
   const [activeCategory, setActiveCategory] = useState<string>(
     layers.length > 0 ? layers[0].category : 'top'
   );
 
-  // Store selected items per category in local state
-  const [selectedItems, setSelectedItems] = useState<Record<string, string | null>>({});
+  // Store selected items per category: { category: { itemId, index } }
+  const [selectedItems, setSelectedItems] = useState<Record<string, { itemId: string; index: number } | null>>({});
   
   // Store pinned state per category
   const [pinnedCategories, setPinnedCategories] = useState<Record<string, boolean>>({});
+  
+  // Store hidden selections when mode switches
+  const [hiddenSelections, setHiddenSelections] = useState<Record<string, { itemId: string; index: number } | null>>({});
+
+  // Accessory sheet states
+  const [isAccessorySheetOpen, setIsAccessorySheetOpen] = useState(false);
+  const [isBagSheetOpen, setIsBagSheetOpen] = useState(false);
 
   // Save dialog state
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
@@ -71,40 +84,76 @@ export const LayersViewMode: React.FC<LayersViewModeProps> = ({
   // Use canvas save hook
   const { saveOutfit, currentStep, progress, errorMessage, reset } = useCanvasSave();
 
+  // Auto-switch mode when dress is selected/removed
+  useEffect(() => {
+    const hasDress = selectedItems['dress']?.itemId;
+    const newMode: CompositionMode = hasDress ? 'dress' : 'separates';
+    
+    if (newMode !== mode) {
+      setMode(newMode);
+      
+      // Store/restore selections when switching
+      if (newMode === 'dress') {
+        // Hide top/bottom but keep in memory
+        setHiddenSelections({
+          top: selectedItems['top'] || null,
+          bottom: selectedItems['bottom'] || null,
+        });
+      } else {
+        // Restore top/bottom
+        if (hiddenSelections.top || hiddenSelections.bottom) {
+          setSelectedItems(prev => ({
+            ...prev,
+            top: hiddenSelections.top || null,
+            bottom: hiddenSelections.bottom || null,
+          }));
+        }
+      }
+    }
+  }, [selectedItems, mode, hiddenSelections]);
+
   // Build layer states from wardrobe layers
   const layerStates: LayerState[] = useMemo(() => {
     return layers.map(layer => {
-      const itemId = selectedItems[layer.category];
-      const item = itemId 
-        ? allItems.find(i => i.id === itemId) || null
+      const categoryItems = allItems.filter(i => i.category === layer.category);
+      const selection = selectedItems[layer.category];
+      const selectedIndex = selection?.index || 0;
+      const item = selection?.itemId 
+        ? allItems.find(i => i.id === selection.itemId) || null
         : null;
 
       return {
         category: layer.category,
         item,
+        items: categoryItems,
+        selectedIndex,
         isPinned: pinnedCategories[layer.category] || layer.is_pinned,
         zIndex: 10,
       };
     });
   }, [layers, allItems, selectedItems, pinnedCategories]);
 
-  // Get items for the active category carousel
-  const activeCategoryItems = useMemo(() => {
-    return allItems.filter(item => item.category === activeCategory);
-  }, [allItems, activeCategory]);
+  // Determine visible layers based on mode
+  const visibleLayers = useMemo(() => {
+    if (mode === 'dress') {
+      return layerStates.filter(l => ['dress', 'shoes', 'accessory', 'bag', 'outerwear'].includes(l.category));
+    } else {
+      return layerStates.filter(l => ['top', 'bottom', 'outerwear', 'shoes', 'accessory', 'bag'].includes(l.category));
+    }
+  }, [mode, layerStates]);
 
-  // Get current item ID for active category
-  const currentItemId = selectedItems[activeCategory] || null;
+  // Visible categories for pills
+  const visibleCategories = useMemo(() => {
+    const visibleCats = visibleLayers.map(l => l.category);
+    return allCategories.filter(cat => visibleCats.includes(cat.value) && !['accessory', 'bag'].includes(cat.value));
+  }, [visibleLayers]);
 
-  // Handle item selection from carousel
-  const handleItemSelect = (item: WardrobeItem, index: number) => {
+  // Handle item change from carousel track
+  const handleItemChange = (category: string, item: WardrobeItem, index: number) => {
     setSelectedItems(prev => ({
       ...prev,
-      [activeCategory]: item.id,
+      [category]: { itemId: item.id, index },
     }));
-
-    // Save carousel position
-    savePosition(activeCategory, index);
   };
 
   // Handle category change
@@ -122,15 +171,13 @@ export const LayersViewMode: React.FC<LayersViewModeProps> = ({
 
   // Handle shuffle (randomize unpinned items)
   const handleShuffle = () => {
-    const newSelected: Record<string, string | null> = { ...selectedItems };
+    const newSelected: Record<string, { itemId: string; index: number } | null> = { ...selectedItems };
     
-    layers.forEach(layer => {
-      if (!pinnedCategories[layer.category]) {
-        const categoryItems = allItems.filter(i => i.category === layer.category);
-        if (categoryItems.length > 0) {
-          const randomItem = categoryItems[Math.floor(Math.random() * categoryItems.length)];
-          newSelected[layer.category] = randomItem.id;
-        }
+    visibleLayers.forEach(layer => {
+      if (!pinnedCategories[layer.category] && layer.items.length > 0) {
+        const randomIndex = Math.floor(Math.random() * layer.items.length);
+        const randomItem = layer.items[randomIndex];
+        newSelected[layer.category] = { itemId: randomItem.id, index: randomIndex };
       }
     });
     
@@ -145,10 +192,37 @@ export const LayersViewMode: React.FC<LayersViewModeProps> = ({
     }));
   };
 
+  // Accessory/Bag handlers
+  const handleAccessorySelect = (item: WardrobeItem) => {
+    const items = allItems.filter(i => i.category === 'accessory');
+    const index = items.findIndex(i => i.id === item.id);
+    setSelectedItems(prev => ({
+      ...prev,
+      accessory: { itemId: item.id, index: index >= 0 ? index : 0 },
+    }));
+  };
+
+  const handleBagSelect = (item: WardrobeItem) => {
+    const items = allItems.filter(i => i.category === 'bag');
+    const index = items.findIndex(i => i.id === item.id);
+    setSelectedItems(prev => ({
+      ...prev,
+      bag: { itemId: item.id, index: index >= 0 ? index : 0 },
+    }));
+  };
+
+  const handleRemoveAccessory = () => {
+    setSelectedItems(prev => ({ ...prev, accessory: null }));
+  };
+
+  const handleRemoveBag = () => {
+    setSelectedItems(prev => ({ ...prev, bag: null }));
+  };
+
   // Handle save outfit
   const handleSave = async () => {
     // Filter layers with items
-    const itemsToSave = layerStates.filter(l => l.item);
+    const itemsToSave = visibleLayers.filter(l => l.item);
     
     if (itemsToSave.length === 0) {
       toast({ variant: 'destructive', title: 'Please select items for your outfit first' });
@@ -173,12 +247,12 @@ export const LayersViewMode: React.FC<LayersViewModeProps> = ({
     // Category-based z-index
     const categoryZIndex: Record<string, number> = {
       'accessory': 60,
-      'outerwear': 50,
-      'top': 45,
-      'dress': 44,
+      'outerwear': 55,
+      'top': 50,
+      'dress': 45,
       'bottom': 40,
-      'shoes': 30,
       'bag': 35,
+      'shoes': 30,
     };
 
     const canvasLayers: CanvasLayer[] = itemsToSave.map((layerState, index) => ({
@@ -217,7 +291,7 @@ export const LayersViewMode: React.FC<LayersViewModeProps> = ({
   // Handle go to canvas
   const handleMoveToCanvas = () => {
     // Store current outfit state in session storage
-    const outfitState = layerStates
+    const outfitState = visibleLayers
       .filter(l => l.item)
       .map(l => ({ category: l.category, itemId: l.item!.id }));
     
@@ -225,15 +299,21 @@ export const LayersViewMode: React.FC<LayersViewModeProps> = ({
     navigate('/dressme/canvas');
   };
 
-  // Filter categories to only show those with layers
-  const availableCategories = allCategories.filter(cat => 
-    layers.some(l => l.category === cat.value)
-  );
+  const hasItems = visibleLayers.some(l => l.item);
+  const activeLayerHasItem = selectedItems[activeCategory]?.itemId;
 
-  const hasItems = layerStates.some(l => l.item);
+  // Get accessory/bag items
+  const accessoryItems = allItems.filter(i => i.category === 'accessory');
+  const bagItems = allItems.filter(i => i.category === 'bag');
+  const selectedAccessory = selectedItems['accessory']?.itemId 
+    ? allItems.find(i => i.id === selectedItems['accessory']?.itemId) || null
+    : null;
+  const selectedBag = selectedItems['bag']?.itemId
+    ? allItems.find(i => i.id === selectedItems['bag']?.itemId) || null
+    : null;
 
   return (
-    <div className="layers-view">
+    <div className="layers-view fixed inset-0 overflow-hidden bg-background">
       {/* Header */}
       <div className="fixed top-0 left-0 right-0 h-[60px] bg-background border-b border-border z-50 flex items-center justify-between px-4 pt-safe">
         <BackButton />
@@ -262,38 +342,79 @@ export const LayersViewMode: React.FC<LayersViewModeProps> = ({
       </div>
 
       {/* Centered Outfit Display */}
-      <LayeredOutfitDisplay layers={layerStates} />
+      <LayeredOutfitDisplay 
+        layers={visibleLayers} 
+        activeCategory={activeCategory}
+        onItemChange={handleItemChange}
+      />
 
-      {/* Category Bottom Bar */}
-      {availableCategories.length > 0 && (
-        <CategoryBottomBar
-          categories={availableCategories}
-          activeCategory={activeCategory}
-          onCategoryChange={handleCategoryChange}
-        />
+      {/* Floating Category Pills */}
+      {visibleCategories.length > 0 && (
+        <div className="fixed bottom-[20px] left-1/2 -translate-x-1/2 z-50">
+          <div className="flex gap-2 bg-background/95 backdrop-blur-sm px-3 py-2 rounded-full shadow-lg border border-border">
+            {visibleCategories.map((cat) => (
+              <button
+                key={cat.value}
+                onClick={() => handleCategoryChange(cat.value)}
+                className={cn(
+                  "px-4 py-1.5 rounded-full font-semibold text-xs transition-all",
+                  activeCategory === cat.value
+                    ? "bg-[#7A143E] text-white shadow-md"
+                    : "bg-transparent text-muted-foreground hover:bg-muted"
+                )}
+              >
+                {cat.label}
+              </button>
+            ))}
+          </div>
+        </div>
       )}
 
-      {/* Bottom Carousel */}
-      <LayerCarousel
-        items={activeCategoryItems}
-        currentItemId={currentItemId}
-        onItemSelect={handleItemSelect}
-        scrollToIndex={getPosition(activeCategory)}
+      {/* Accessories Dock */}
+      <AccessoriesDock
+        selectedAccessory={selectedAccessory}
+        selectedBag={selectedBag}
+        onAccessoryTap={() => setIsAccessorySheetOpen(true)}
+        onBagTap={() => setIsBagSheetOpen(true)}
+        onRemoveAccessory={handleRemoveAccessory}
+        onRemoveBag={handleRemoveBag}
       />
 
       {/* Right Action Menu */}
-      <LayerActionMenu
-        isPinned={pinnedCategories[activeCategory] || false}
-        onPin={handlePin}
-        onShuffle={handleShuffle}
-        onDelete={handleDelete}
-        onSave={() => setIsSaveModalOpen(true)}
-        onMoveToCanvas={handleMoveToCanvas}
-        disabled={!currentItemId}
-        hasItems={hasItems}
+      <div className="fixed right-4 top-[calc(50%-140px)] z-[90]">
+        <LayerActionMenu
+          isPinned={pinnedCategories[activeCategory] || false}
+          onPin={handlePin}
+          onShuffle={handleShuffle}
+          onDelete={handleDelete}
+          onSave={() => setIsSaveModalOpen(true)}
+          onMoveToCanvas={handleMoveToCanvas}
+          disabled={!activeLayerHasItem}
+          hasItems={hasItems}
+        />
+      </div>
+
+      {/* Accessory Mini Carousel Sheet */}
+      <MiniCarouselSheet
+        open={isAccessorySheetOpen}
+        onOpenChange={setIsAccessorySheetOpen}
+        title="Select Accessory"
+        items={accessoryItems}
+        selectedItemId={selectedItems['accessory']?.itemId || null}
+        onSelect={handleAccessorySelect}
       />
 
-      {/* Save Dialog - Exact same as Canvas */}
+      {/* Bag Mini Carousel Sheet */}
+      <MiniCarouselSheet
+        open={isBagSheetOpen}
+        onOpenChange={setIsBagSheetOpen}
+        title="Select Bag"
+        items={bagItems}
+        selectedItemId={selectedItems['bag']?.itemId || null}
+        onSelect={handleBagSelect}
+      />
+
+      {/* Save Dialog */}
       <Dialog open={isSaveModalOpen} onOpenChange={setIsSaveModalOpen}>
         <DialogContent>
           <DialogHeader>
