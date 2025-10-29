@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { WardrobeAllItemsGrid } from '@/components/WardrobeAllItemsGrid';
 import { WardrobeLayerCarousel } from '@/components/WardrobeLayerCarousel';
-import { WardrobeLayerPreview } from '@/components/WardrobeLayerPreview';
 import { AddLayerButton } from '@/components/AddLayerButton';
 import { WardrobeCategoryTabs } from '@/components/WardrobeCategoryTabs';
 import { WardrobeUploadModal } from '@/components/WardrobeUploadModal';
@@ -374,19 +373,6 @@ export default function DressMeWardrobe() {
     deleteLayerMutation.mutate(layerId);
   };
 
-  // Build selected items map for preview
-  const selectedItemsMap = useMemo(() => {
-    const map: Record<string, WardrobeItem | null> = {};
-    layers.forEach(layer => {
-      if (layer.selected_item_id) {
-        const item = allItems.find(i => i.id === layer.selected_item_id);
-        map[layer.category] = item || null;
-      } else {
-        map[layer.category] = null;
-      }
-    });
-    return map;
-  }, [layers, allItems]);
 
   // Onboarding state
   if (!isLoading && allItems.length === 0) {
@@ -539,14 +525,6 @@ export default function DressMeWardrobe() {
                       }}
                     />
                   ))}
-
-                  {/* Mannequin Preview */}
-                  <div className="px-4">
-                    <WardrobeLayerPreview
-                      layers={layers}
-                      selectedItems={selectedItemsMap}
-                    />
-                  </div>
                 </div>
               )}
 
