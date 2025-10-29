@@ -1,5 +1,5 @@
 import React from 'react';
-import { Check, Move, Lock, Unlock, Shuffle, Trash2 } from 'lucide-react';
+import { Move, Lock, Unlock, Trash2, Save } from 'lucide-react';
 import { Button } from './ui/button';
 import { cn } from '@/lib/utils';
 
@@ -8,8 +8,10 @@ interface LayerActionMenuProps {
   onPin: () => void;
   onShuffle: () => void;
   onDelete: () => void;
+  onSave: () => void;
   onMoveToCanvas: () => void;
   disabled?: boolean;
+  hasItems?: boolean;
 }
 
 export const LayerActionMenu: React.FC<LayerActionMenuProps> = ({
@@ -17,16 +19,29 @@ export const LayerActionMenu: React.FC<LayerActionMenuProps> = ({
   onPin,
   onShuffle,
   onDelete,
+  onSave,
   onMoveToCanvas,
   disabled = false,
+  hasItems = false,
 }) => {
   return (
     <div className="fixed right-4 top-1/2 -translate-y-1/2 z-50 flex flex-col gap-3">
       <Button
         size="icon"
         variant="secondary"
+        onClick={onSave}
+        disabled={!hasItems}
+        className="h-12 w-12 rounded-full shadow-lg bg-background hover:bg-accent"
+        title="Save Outfit"
+      >
+        <Save className="h-5 w-5" />
+      </Button>
+
+      <Button
+        size="icon"
+        variant="secondary"
         onClick={onMoveToCanvas}
-        disabled={disabled}
+        disabled={!hasItems}
         className="h-12 w-12 rounded-full shadow-lg bg-background hover:bg-accent"
         title="Move to Canvas"
       >
@@ -53,11 +68,11 @@ export const LayerActionMenu: React.FC<LayerActionMenuProps> = ({
         size="icon"
         variant="secondary"
         onClick={onShuffle}
-        disabled={disabled}
+        disabled={!hasItems}
         className="h-12 w-12 rounded-full shadow-lg bg-background hover:bg-accent"
         title="Shuffle"
       >
-        <Shuffle className="h-5 w-5" />
+        <span className="text-xl">🎲</span>
       </Button>
 
       <Button
