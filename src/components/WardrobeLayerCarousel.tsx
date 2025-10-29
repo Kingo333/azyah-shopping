@@ -178,11 +178,11 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
             style={{
               height: 'clamp(160px, 20vh, 200px)',
               scrollSnapType: 'x mandatory',
-              scrollPadding: '0',
+              scrollPadding: '20vw',
               WebkitOverflowScrolling: 'touch',
             }}
           >
-            <div className="flex items-center px-[20vw]" style={{ minWidth: '100%' }}>
+            <div className="flex items-center px-[20vw]">
               {items.map((item) => {
                 const isCenter = item.id === (centerItemId || selectedItemId);
 
@@ -191,7 +191,7 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
                     key={item.id}
                     data-item-id={item.id}
                     className={cn(
-                      'rail-card flex-shrink-0 mx-0.5 transition-all duration-300 relative',
+                      'rail-card flex-shrink-0 mx-0 transition-all duration-300 relative',
                       isCenter ? 'scale-100 opacity-100' : 'scale-95 opacity-100'
                     )}
                     style={{
