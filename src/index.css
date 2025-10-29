@@ -397,11 +397,25 @@
   width: var(--card-w);
   flex: 0 0 var(--card-w);
   transition: transform .18s ease, box-shadow .18s;
+  cursor: pointer;
+  position: relative;
 }
 
+/* Hover state for clickable affordance */
+.rail-card:hover {
+  transform: scale(.88);
+}
+
+/* Active/centered state */
 .rail-card.is-center {
   transform: scale(1.0);
   box-shadow: 0 6px 18px rgba(0,0,0,.08);
+}
+
+/* Centered item hover (subtle) */
+.rail-card.is-center:hover {
+  transform: scale(1.02);
+  box-shadow: 0 8px 20px rgba(0,0,0,.12);
 }
 
 .rail-card:not(.is-center) {

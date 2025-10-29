@@ -1,15 +1,14 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
+import { Pin, X, Plus } from 'lucide-react';
+import { Button } from './ui/button';
 import { WardrobeItem } from '@/hooks/useWardrobeItems';
 import { WardrobeLayer } from '@/hooks/useWardrobeLayers';
-import { Pin, X, Lock } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
 
 interface WardrobeLayerCarouselProps {
   layer: WardrobeLayer;
   items: WardrobeItem[];
-  selectedItemId: string | null;
-  onItemSelect: (itemId: string) => void;
+  selectedItemId?: string | null;
+  onItemClick: (itemId: string) => void;
   onPinToggle: () => void;
   onRemoveLayer: () => void;
   onAddItem?: () => void;
@@ -19,17 +18,13 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
   layer,
   items,
   selectedItemId,
-  onItemSelect,
+  onItemClick,
   onPinToggle,
   onRemoveLayer,
   onAddItem,
 }) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const scrollTimeoutRef = useRef<NodeJS.Timeout | undefined>();
-  const isProgrammaticScrollRef = useRef(false);
-  const targetItemIdRef = useRef<string | null>(null); // Track intended destination
   const [localCenterId, setLocalCenterId] = useState<string | null>(null);
-  const [currentIndex, setCurrentIndex] = useState<number>(0);
 
   // Grid configuration - treats carousel as discrete cells
   const GRID_CONFIG = {
@@ -48,7 +43,7 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
     accessory: 'Accessories',
   };
 
-  // Effect: When selectedItemId changes, scroll to its grid cell
+  // ✅ SINGLE EFFECT: Programmatic scroll to selected item
   useEffect(() => {
     const rail = scrollContainerRef.current;
     if (!rail || items.length === 0 || !selectedItemId) return;
@@ -60,7 +55,7 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
       return;
     }
 
-    console.log(`🎯 Snap to grid cell ${itemIndex}: ${selectedItemId}`);
+    console.log(`🎯 Scrolling to grid cell ${itemIndex}: ${selectedItemId}`);
 
     // Calculate grid dimensions
     const vw = window.innerWidth;
@@ -73,63 +68,34 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
     rail.style.setProperty('--cell-w', `${cellWidth}px`);
     rail.style.setProperty('--rail-side-pad', `${sidePadding}px`);
 
-    // Cancel pending user scroll updates
-    if (scrollTimeoutRef.current) {
-      clearTimeout(scrollTimeoutRef.current);
-      scrollTimeoutRef.current = undefined;
-    }
-
     // Calculate exact scroll position using grid math
     const targetScrollLeft = (cellWidth * itemIndex);
 
-    console.log(`📐 Grid scroll: cell ${itemIndex} → ${targetScrollLeft}px (cell width: ${cellWidth}px)`);
-
     requestAnimationFrame(() => {
-      isProgrammaticScrollRef.current = true;
-      targetItemIdRef.current = selectedItemId; // 🎯 Remember where we're going
-      
       rail.scrollTo({ left: targetScrollLeft, behavior: 'smooth' });
-      setCurrentIndex(itemIndex);
       setLocalCenterId(selectedItemId);
-      console.log(`✅ Snapped to grid cell ${itemIndex} (programmatic) → target: ${selectedItemId}`);
-      
-      // Clear flags after scroll settles (longer timeout for refetch safety)
-      setTimeout(() => {
-        isProgrammaticScrollRef.current = false;
-        targetItemIdRef.current = null;
-        console.log(`🏁 Scroll complete, re-enabling user detection`);
-      }, 1000); // Increased from 600ms to 1000ms to account for refetch delays
     });
-  }, [selectedItemId, items.length, items]);
+  }, [selectedItemId, items.length]); // Only depends on selectedItemId and items.length
 
-  // Effect: When user scrolls, detect which grid cell is centered
+  // ✅ SCROLL HANDLER: Visual center indicator only (NO DB updates)
   useEffect(() => {
     const rail = scrollContainerRef.current;
     if (!rail || items.length === 0) return;
 
     const handleScroll = () => {
-      // Clear previous debounce timer
-      if (scrollTimeoutRef.current) {
-        clearTimeout(scrollTimeoutRef.current);
-      }
-
       // Calculate grid dimensions
       const vw = window.innerWidth;
       const cellWidth = vw * GRID_CONFIG.cellWidthVw;
 
       // Determine which grid cell is currently centered
-      // Formula: index = round(scrollLeft / cellWidth)
       const rawIndex = rail.scrollLeft / cellWidth;
       const snappedIndex = Math.round(rawIndex);
       const clampedIndex = Math.max(0, Math.min(snappedIndex, items.length - 1));
 
-      console.log(`📍 Scroll position: ${rail.scrollLeft}px → Grid index: ${clampedIndex}`);
-
-      // Update visual state immediately
+      // ✅ ONLY update visual state - NO database updates
       const centeredItem = items[clampedIndex];
       if (centeredItem) {
         setLocalCenterId(centeredItem.id);
-        setCurrentIndex(clampedIndex);
 
         // Visual feedback: update card classes
         const cards = rail.querySelectorAll<HTMLElement>('[data-item-id]');
@@ -137,65 +103,29 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
           card.classList.toggle('is-center', idx === clampedIndex);
         });
       }
-
-      // Debounce database update (500ms after user stops scrolling)
-      scrollTimeoutRef.current = setTimeout(() => {
-        // ✅ Skip if we're mid-programmatic-scroll
-        if (isProgrammaticScrollRef.current) {
-          console.log(`⏭️ Skipped DB update (programmatic scroll in progress)`);
-          return;
-        }
-        
-        // ✅ Skip if we're still heading toward a target item
-        if (targetItemIdRef.current && targetItemIdRef.current !== centeredItem?.id) {
-          console.log(`🎯 Skipped DB update (still scrolling to target: ${targetItemIdRef.current})`);
-          return;
-        }
-        
-        // ✅ Only update if this is truly a user-initiated change
-        if (centeredItem && centeredItem.id !== selectedItemId) {
-          console.log(`👆 User selected grid cell ${clampedIndex}: ${centeredItem.id}`);
-          onItemSelect(centeredItem.id);
-        }
-      }, 500);
     };
 
     rail.addEventListener('scroll', handleScroll, { passive: true });
-    return () => {
-      rail.removeEventListener('scroll', handleScroll);
-      if (scrollTimeoutRef.current) {
-        clearTimeout(scrollTimeoutRef.current);
-      }
-    };
-  }, [items, selectedItemId, onItemSelect]);
+    return () => rail.removeEventListener('scroll', handleScroll);
+  }, [items]);
 
-  // Effect: Initialize - center first item ONLY on initial mount if no selection
+  // ✅ INITIAL MOUNT: Center first item visually
   useEffect(() => {
     const rail = scrollContainerRef.current;
-    if (!rail || items.length === 0) return;
-    
-    // Only initialize if there's NO selection at all (first mount)
-    if (!selectedItemId && items.length > 0 && !localCenterId) {
-      console.log('🔷 Initial mount: centering first item visually');
-      requestAnimationFrame(() => {
-        const firstCard = rail.querySelector<HTMLElement>('[data-item-id]');
-        if (firstCard) {
-          isProgrammaticScrollRef.current = true;
-          const vw = window.innerWidth;
-          const cardWidth = vw * GRID_CONFIG.cardWidthVw;
-          const cellWidth = vw * GRID_CONFIG.cellWidthVw;
-          rail.scrollTo({ left: 0, behavior: 'instant' });
-          setLocalCenterId(firstCard.dataset.itemId || null);
-          setCurrentIndex(0);
-          // Instant scroll, shorter timeout
-          setTimeout(() => {
-            isProgrammaticScrollRef.current = false;
-            targetItemIdRef.current = null;
-          }, 200);
-        }
-      });
-    }
+    if (!rail || items.length === 0 || selectedItemId) return;
+
+    const firstItem = items[0];
+    requestAnimationFrame(() => {
+      const vw = window.innerWidth;
+      const cardWidth = vw * GRID_CONFIG.cardWidthVw;
+      rail.style.setProperty('--card-w', `${cardWidth}px`);
+      rail.scrollTo({ left: 0, behavior: 'auto' });
+      setLocalCenterId(firstItem.id);
+    });
   }, []); // Only run once on mount
+
+  // Determine which item to visually center
+  const visualCenterId = selectedItemId || localCenterId || (items.length > 0 ? items[0].id : null);
 
   return (
     <div className="mb-0">
@@ -210,7 +140,7 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
           </span>
           {layer.is_pinned && (
             <div className="flex items-center gap-0.5 text-xs text-primary">
-              <Lock className="w-2.5 h-2.5" />
+              <Pin className="w-3 h-3 fill-primary" />
             </div>
           )}
         </div>
@@ -223,12 +153,7 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
             onClick={onPinToggle}
             title={layer.is_pinned ? 'Unpin' : 'Pin'}
           >
-            <Pin
-              className={cn(
-                'w-3 h-3',
-                layer.is_pinned && 'fill-primary text-primary'
-              )}
-            />
+            <Pin className={layer.is_pinned ? 'w-3 h-3 fill-primary text-primary' : 'w-3 h-3'} />
           </Button>
           <Button
             variant="ghost"
@@ -266,13 +191,14 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
             }}
           >
             {items.map((item) => {
-              const isCenter = item.id === localCenterId;
+              const isCenter = item.id === visualCenterId;
 
               return (
                 <div
                   key={item.id}
                   data-item-id={item.id}
-                  className={cn('rail-card relative', isCenter && 'is-center')}
+                  className={isCenter ? 'rail-card is-center' : 'rail-card'}
+                  onClick={() => onItemClick(item.id)}
                 >
                   {/* Pin icon on item */}
                   {layer.is_pinned && isCenter && (

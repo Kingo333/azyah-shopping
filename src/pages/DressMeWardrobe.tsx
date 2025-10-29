@@ -235,7 +235,8 @@ export default function DressMeWardrobe() {
     setIsUploadModalOpen(true);
   };
 
-  const handleLayerItemSelect = (layerId: string, itemId: string) => {
+  const handleLayerItemClick = (layerId: string, itemId: string) => {
+    console.log(`👆 User clicked item ${itemId} in layer ${layerId}`);
     updateLayerSelection.mutate({ layerId, itemId });
   };
 
@@ -477,7 +478,7 @@ export default function DressMeWardrobe() {
                       layer={layer}
                       items={getLayerItems(layer.category)}
                       selectedItemId={layer.selected_item_id}
-                      onItemSelect={(itemId) => handleLayerItemSelect(layer.id, itemId)}
+                      onItemClick={(itemId) => handleLayerItemClick(layer.id, itemId)}
                       onPinToggle={() => handlePinToggle(layer.id, layer.is_pinned)}
                       onRemoveLayer={() => handleRemoveLayer(layer.id)}
                       onAddItem={() => handleAddItemToLayer(layer.category)}
