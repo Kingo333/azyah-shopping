@@ -105,8 +105,8 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
     };
   }, [detectCenterItem]);
 
-  // Calculate card width (58vw)
-  const cardWidth = typeof window !== 'undefined' ? window.innerWidth * 0.58 : 280;
+  // Calculate card width (50vw)
+  const cardWidth = typeof window !== 'undefined' ? window.innerWidth * 0.50 : 240;
 
   return (
     <div className="mb-0">
@@ -157,7 +157,7 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
         {items.length === 0 ? (
           <div
             className="flex items-center justify-center"
-            style={{ height: 'clamp(220px, 28vh, 260px)' }}
+            style={{ height: 'clamp(160px, 20vh, 200px)' }}
           >
             <button
               onClick={onAddItem}
@@ -176,13 +176,13 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
               layer.is_pinned && 'pointer-events-none'
             )}
             style={{
-              height: 'clamp(220px, 28vh, 260px)',
+              height: 'clamp(160px, 20vh, 200px)',
               scrollSnapType: 'x mandatory',
               scrollPadding: '24px',
               WebkitOverflowScrolling: 'touch',
             }}
           >
-            <div className="flex items-center px-[21vw]" style={{ minWidth: '100%' }}>
+            <div className="flex items-center px-[10vw]" style={{ minWidth: '100%' }}>
               {items.map((item) => {
                 const isCenter = item.id === (centerItemId || selectedItemId);
 
@@ -191,8 +191,8 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
                     key={item.id}
                     data-item-id={item.id}
                     className={cn(
-                      'rail-card flex-shrink-0 mx-2 transition-all duration-300 relative',
-                      isCenter ? 'scale-100 opacity-100' : 'scale-85 opacity-70'
+                      'rail-card flex-shrink-0 mx-0.5 transition-all duration-300 relative',
+                      isCenter ? 'scale-100 opacity-100' : 'scale-95 opacity-100'
                     )}
                     style={{
                       scrollSnapAlign: 'center',
