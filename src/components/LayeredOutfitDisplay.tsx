@@ -35,7 +35,7 @@ export const LayeredOutfitDisplay: React.FC<LayeredOutfitDisplayProps> = ({
   onItemChange 
 }) => {
   return (
-    <div className="composition-canvas fixed top-[60px] left-0 right-0 bottom-[80px] overflow-hidden">
+    <div className="composition-canvas absolute inset-0 overflow-hidden">
       {/* Optional mannequin background */}
       <div 
         className="absolute inset-0 flex items-center justify-center pointer-events-none"

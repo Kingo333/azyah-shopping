@@ -742,6 +742,43 @@
   }
 }
 
+/* Layers View Split Layout */
+.layers-view-split {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  width: 100vw;
+  overflow: hidden;
+}
+
+.mannequin-panel {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.carousel-panel {
+  position: relative;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+.carousel-panel::-webkit-scrollbar {
+  width: 4px;
+}
+
+.carousel-panel::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.carousel-panel::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.2);
+  border-radius: 2px;
+}
+
 .scrollbar-hide {
   -ms-overflow-style: none;
   scrollbar-width: none;

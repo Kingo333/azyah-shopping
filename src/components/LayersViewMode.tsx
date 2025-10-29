@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { WardrobeItem } from '@/hooks/useWardrobeItems';
 import { WardrobeLayer } from '@/hooks/useWardrobeLayers';
 import { LayeredOutfitDisplay } from './LayeredOutfitDisplay';
-import { AccessoriesDock } from './AccessoriesDock';
-import { MiniCarouselSheet } from './MiniCarouselSheet';
+import { LayerItemCarousel } from './LayerItemCarousel';
+import { ThumbnailStrip } from './ThumbnailStrip';
 import { LayerActionMenu } from './LayerActionMenu';
 import { BackButton } from './ui/back-button';
 import { Button } from './ui/button';
@@ -186,6 +186,16 @@ export const LayersViewMode: React.FC<LayersViewModeProps> = ({
     }));
   };
 
+  const handleItemSelectFromCarousel = (item: WardrobeItem) => {
+    const items = allItems.filter(i => i.category === activeCategory);
+    const index = items.findIndex(i => i.id === item.id);
+    
+    setSelectedItems(prev => ({
+      ...prev,
+      [activeCategory]: { itemId: item.id, index: index >= 0 ? index : 0 },
+    }));
+  };
+
   // Handle category change
   const handleCategoryChange = (category: string) => {
     setActiveCategory(category);
@@ -331,87 +341,67 @@ export const LayersViewMode: React.FC<LayersViewModeProps> = ({
 
   const hasItems = visibleLayers.some(l => l.item);
   const activeLayerHasItem = selectedItems[activeCategory]?.itemId;
+  
+  const activeLayerItems = useMemo(() => {
+    return allItems.filter(i => i.category === activeCategory);
+  }, [allItems, activeCategory]);
 
-  // Get accessory/bag items
-  const accessoryItems = allItems.filter(i => i.category === 'accessory');
-  const bagItems = allItems.filter(i => i.category === 'bag');
-  const selectedAccessory = selectedItems['accessory']?.itemId 
-    ? allItems.find(i => i.id === selectedItems['accessory']?.itemId) || null
-    : null;
-  const selectedBag = selectedItems['bag']?.itemId
-    ? allItems.find(i => i.id === selectedItems['bag']?.itemId) || null
-    : null;
+  const activeSelectedItemId = selectedItems[activeCategory]?.itemId || null;
 
   return (
-    <div className="layers-view fixed inset-0 overflow-hidden bg-background">
+    <div className="layers-view-split fixed inset-0 overflow-hidden bg-background">
       {/* Header */}
       <div className="fixed top-0 left-0 right-0 h-[60px] bg-background border-b border-border z-50 flex items-center justify-between px-4 pt-safe">
         <BackButton onBack={onExitLayersView} fallbackPath="/dress-me/wardrobe" />
-        <h1 className="text-lg font-semibold">Outfit Builder</h1>
+        <h1 className="text-lg font-semibold flex items-center gap-2">
+          <select
+            value={activeCategory}
+            onChange={(e) => handleCategoryChange(e.target.value)}
+            className="bg-transparent border-none font-semibold text-lg focus:outline-none cursor-pointer"
+          >
+            {visibleCategories.map((cat) => (
+              <option key={cat.value} value={cat.value}>
+                {cat.label}
+              </option>
+            ))}
+          </select>
+        </h1>
         <div className="flex gap-2">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => setIsSaveModalOpen(true)}
             disabled={!hasItems}
-            className="h-8 px-3 text-xs"
           >
             <Save className="h-4 w-4 mr-1" />
             Save
           </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleMoveToCanvas}
-            disabled={!hasItems}
-            className="h-8 px-3 text-xs"
-          >
-            Canvas
-          </Button>
         </div>
       </div>
 
-      {/* Centered Outfit Display */}
-      <LayeredOutfitDisplay 
-        layers={visibleLayers} 
-        activeCategory={activeCategory}
-        onItemChange={handleItemChange}
-      />
-
-      {/* Floating Category Pills */}
-      {visibleCategories.length > 0 && (
-        <div className="fixed bottom-[20px] left-1/2 -translate-x-1/2 z-50">
-          <div className="flex gap-2 bg-background/95 backdrop-blur-sm px-3 py-2 rounded-full shadow-lg border border-border">
-            {visibleCategories.map((cat) => (
-              <button
-                key={cat.value}
-                onClick={() => handleCategoryChange(cat.value)}
-                className={cn(
-                  "px-4 py-1.5 rounded-full font-semibold text-xs transition-all",
-                  activeCategory === cat.value
-                    ? "bg-[#7A143E] text-white shadow-md"
-                    : "bg-transparent text-muted-foreground hover:bg-muted"
-                )}
-              >
-                {cat.label}
-              </button>
-            ))}
-          </div>
+      {/* Main Split Content */}
+      <div className="flex fixed top-[60px] left-0 right-0 bottom-[100px]">
+        {/* LEFT PANEL: Mannequin Composition (65%) */}
+        <div className="mannequin-panel flex-[0_0_65%] relative bg-gradient-to-b from-muted/20 to-background">
+          <LayeredOutfitDisplay 
+            layers={visibleLayers} 
+            activeCategory={activeCategory}
+            onItemChange={handleItemChange}
+          />
         </div>
-      )}
 
-      {/* Accessories Dock */}
-      <AccessoriesDock
-        selectedAccessory={selectedAccessory}
-        selectedBag={selectedBag}
-        onAccessoryTap={() => setIsAccessorySheetOpen(true)}
-        onBagTap={() => setIsBagSheetOpen(true)}
-        onRemoveAccessory={handleRemoveAccessory}
-        onRemoveBag={handleRemoveBag}
-      />
+        {/* RIGHT PANEL: Vertical Item Carousel (35%) */}
+        <div className="carousel-panel flex-[0_0_35%] relative bg-background border-l border-border overflow-y-auto">
+          <LayerItemCarousel
+            items={activeLayerItems}
+            selectedItemId={activeSelectedItemId}
+            onItemSelect={handleItemSelectFromCarousel}
+          />
+        </div>
+      </div>
 
-      {/* Right Action Menu */}
-      <div className="fixed right-4 top-[calc(50%-140px)] z-[90]">
+      {/* RIGHT EDGE: Action Buttons */}
+      <div className="fixed right-2 top-[calc(50%-100px)] z-[100]">
         <LayerActionMenu
           isPinned={pinnedCategories[activeCategory] || false}
           onPin={handlePin}
@@ -424,25 +414,14 @@ export const LayersViewMode: React.FC<LayersViewModeProps> = ({
         />
       </div>
 
-      {/* Accessory Mini Carousel Sheet */}
-      <MiniCarouselSheet
-        open={isAccessorySheetOpen}
-        onOpenChange={setIsAccessorySheetOpen}
-        title="Select Accessory"
-        items={accessoryItems}
-        selectedItemId={selectedItems['accessory']?.itemId || null}
-        onSelect={handleAccessorySelect}
-      />
-
-      {/* Bag Mini Carousel Sheet */}
-      <MiniCarouselSheet
-        open={isBagSheetOpen}
-        onOpenChange={setIsBagSheetOpen}
-        title="Select Bag"
-        items={bagItems}
-        selectedItemId={selectedItems['bag']?.itemId || null}
-        onSelect={handleBagSelect}
-      />
+      {/* BOTTOM: Thumbnail Strip */}
+      <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border z-50">
+        <ThumbnailStrip
+          items={activeLayerItems}
+          selectedItemId={activeSelectedItemId}
+          onItemTap={handleItemSelectFromCarousel}
+        />
+      </div>
 
       {/* Save Dialog */}
       <Dialog open={isSaveModalOpen} onOpenChange={setIsSaveModalOpen}>
