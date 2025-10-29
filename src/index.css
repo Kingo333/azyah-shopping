@@ -742,43 +742,6 @@
   }
 }
 
-/* Layers View Split Layout */
-.layers-view-split {
-  display: flex;
-  flex-direction: column;
-  height: 100dvh;
-  width: 100vw;
-  overflow: hidden;
-}
-
-.mannequin-panel {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-}
-
-.carousel-panel {
-  position: relative;
-  overflow-y: auto;
-  overflow-x: hidden;
-  -webkit-overflow-scrolling: touch;
-}
-
-.carousel-panel::-webkit-scrollbar {
-  width: 4px;
-}
-
-.carousel-panel::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.carousel-panel::-webkit-scrollbar-thumb {
-  background: hsl(var(--muted-foreground) / 0.2);
-  border-radius: 2px;
-}
-
 .scrollbar-hide {
   -ms-overflow-style: none;
   scrollbar-width: none;
@@ -796,38 +759,9 @@
   padding-top: max(env(safe-area-inset-top), 12px);
 }
 
-/* Layers feature - Mobile-first outfit builder */
 .layers-view {
   height: 100dvh;
-  width: 100vw;
-  overflow: hidden;
-  position: fixed;
-  top: 0;
-  left: 0;
-}
-
-.composition-canvas {
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.layer-track-carousel {
-  -webkit-overflow-scrolling: touch;
-  scroll-behavior: smooth;
-  overscroll-behavior-x: contain;
-}
-
-.dock-card {
-  transition: all 0.2s ease-out;
-}
-
-.dock-card:hover {
-  transform: translateY(-2px);
-}
-
-.scroll-snap-type-x-mandatory {
-  scroll-snap-type: x mandatory;
+  overflow-y: hidden;
+  overflow-x: hidden;
 }
 }
