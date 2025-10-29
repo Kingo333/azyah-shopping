@@ -793,6 +793,7 @@
   scrollbar-width: none;
   padding: 0 var(--rail-side-pad, 24px);
   contain: layout;
+  scroll-padding-inline: var(--rail-side-pad, 24px);
 }
 
 .rail-carousel::-webkit-scrollbar {
@@ -841,6 +842,8 @@
   align-items: center;
   justify-content: center;
   padding: 8px;
+  opacity: 0.35;
+  transform: scale(0.88);
 }
 
 .rail-card img {
@@ -857,17 +860,20 @@
 }
 
 /* Center card styles */
-.rail-card.scale-100 {
+.rail-card.is-center {
   transform: scale(1);
   opacity: 1;
   z-index: 10;
 }
 
-/* Neighbor card styles */
-.rail-card.scale-95 {
-  transform: scale(0.95);
-  opacity: 1;
-  z-index: 5;
+.rail-card.is-center:hover {
+  transform: scale(1.02);
+}
+
+/* Neighbor card styles - fade out non-centered items */
+.rail-card:not(.is-center) {
+  opacity: 0.35;
+  transform: scale(0.88);
 }
 
 /* Mobile optimizations */
