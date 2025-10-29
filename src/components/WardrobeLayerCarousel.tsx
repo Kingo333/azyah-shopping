@@ -99,13 +99,9 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
         }
       });
 
-      // Debounce snap and selection update
+      // Debounce selection update only (no snap-back)
       scrollTimeoutRef.current = setTimeout(() => {
         if (!bestCard) return;
-
-        // Smooth snap to center
-        const targetLeft = bestCard.offsetLeft - (rail.clientWidth - bestCard.clientWidth) / 2;
-        rail.scrollTo({ left: Math.round(targetLeft), behavior: 'smooth' });
 
         // Update selection in database only if changed
         const newItemId = bestCard.dataset.itemId;
@@ -113,7 +109,7 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
           lastSelectedRef.current = newItemId;
           onItemSelect(newItemId);
         }
-      }, 300);
+      }, 500);
     };
 
     rail.addEventListener('scroll', handleScroll, { passive: true });
