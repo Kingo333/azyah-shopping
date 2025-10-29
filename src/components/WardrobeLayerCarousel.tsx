@@ -90,7 +90,7 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
     rail.scrollTo({ left: Math.round(targetLeft), behavior: 'smooth' });
   }, [layer.is_pinned]);
 
-  // Setup rail with dynamic sizing
+  // Setup rail with dynamic sizing (only runs when items.length changes)
   useEffect(() => {
     const rail = scrollContainerRef.current;
     if (!rail || items.length === 0) return;
@@ -102,10 +102,16 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
     const sidePad = Math.round((vw - cardW) / 2);
     rail.style.setProperty('--rail-side-pad', `${sidePad}px`);
 
-    // Initial snap
-    markCenteredCard();
-    snapToNearest();
-  }, [items, markCenteredCard, snapToNearest]);
+    // Initial snap to selected item (inline to avoid dependency issues)
+    const selectedCard = selectedItemId 
+      ? rail.querySelector<HTMLElement>(`[data-item-id="${selectedItemId}"]`)
+      : rail.querySelector<HTMLElement>('[data-item-id]');
+    
+    if (selectedCard) {
+      const targetLeft = selectedCard.offsetLeft - (rail.clientWidth - selectedCard.clientWidth) / 2;
+      rail.scrollTo({ left: Math.round(targetLeft), behavior: 'auto' });
+    }
+  }, [items.length, selectedItemId]); // Only depend on primitive values
 
   // RAF-based scroll handler with iOS snap fallback
   useEffect(() => {
