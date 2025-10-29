@@ -223,18 +223,17 @@ export default function DressMeWardrobe() {
   };
 
   const handleShuffleAll = () => {
-    const unlocked = layers.filter(l => !l.is_pinned);
-    if (unlocked.length === 0) {
-      toast.info('All layers are pinned');
+    if (layers.length === 0) {
+      toast.info('Add some layers first');
       return;
     }
 
     let shuffled = 0;
-    unlocked.forEach((layer) => {
+    layers.forEach((layer) => {
       const layerItems = getLayerItems(layer.category);
       if (layerItems.length <= 1) return; // Skip if only 0-1 items
 
-      // Get available items (exclude current selection)
+      // Get available items (exclude current selection to ensure change)
       const availableItems = layerItems.filter(
         item => item.id !== layer.selected_item_id
       );
