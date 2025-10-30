@@ -4,7 +4,7 @@ import { Plus, Filter, MoreVertical, Trash2, CheckSquare, X, Shuffle } from 'luc
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { WardrobeAllItemsGrid } from '@/components/WardrobeAllItemsGrid';
-import { SwipeableLayerCarousel } from '@/components/SwipeableLayerCarousel';
+import { WardrobeLayerCarousel } from '@/components/WardrobeLayerCarousel';
 import { AddLayerButton } from '@/components/AddLayerButton';
 import { WardrobeCategoryTabs } from '@/components/WardrobeCategoryTabs';
 import { WardrobeUploadModal } from '@/components/WardrobeUploadModal';
@@ -23,8 +23,7 @@ import { CommunityClothes } from './CommunityClothes';
 import { OutfitDetailSheet } from '@/components/OutfitDetailSheet';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
-import { LayerPositionProvider, useLayerPosition } from '@/contexts/LayerPositionContext';
-import { layerPositionManager } from '@/lib/layerPositionManager';
+import { LayerScrollProvider } from '@/contexts/LayerScrollContext';
 
 export default function DressMeWardrobe() {
   const navigate = useNavigate();
@@ -258,26 +257,78 @@ export default function DressMeWardrobe() {
     return shuffled;
   };
 
-  const handleShuffleAll = () => {
+  const handleShuffleAll = async () => {
+    console.log('🎲 ========== SHUFFLE START ==========');
+    
     if (layers.length === 0) {
       toast.info('Add some layers first');
       return;
     }
 
-    const pinnedLayerIds = new Set(
-      layers.filter(l => l.is_pinned).map(l => l.id)
-    );
-
-    if (pinnedLayerIds.size === layers.length) {
+    const unpinnedLayers = layers.filter(l => !l.is_pinned);
+    
+    if (unpinnedLayers.length === 0) {
       toast.info('All layers are pinned');
       return;
     }
 
-    // Use position manager for shuffle
-    layerPositionManager.shuffleAll(pinnedLayerIds);
+    // Build ALL updates first, then batch them
+    const updates: Array<{ layerId: string; itemId: string; category: string }> = [];
+
+    for (const layer of unpinnedLayers) {
+      const layerItems = getLayerItems(layer.category);
+      
+      if (layerItems.length === 0) {
+        console.log(`⏭️ Skipped ${layer.category} (no items)`);
+        continue;
+      }
+
+      const currentItemId = layer.selected_item_id;
+      let selectedItem: WardrobeItem;
+      
+      if (layerItems.length === 1) {
+        selectedItem = layerItems[0];
+      } else {
+        // Use Fisher-Yates shuffle for TRUE randomization
+        const availableItems = currentItemId 
+          ? layerItems.filter(item => item.id !== currentItemId)
+          : layerItems;
+        
+        // Shuffle entire array, then pick first item - guarantees no correlation
+        const shuffled = shuffleArray(availableItems);
+        selectedItem = shuffled[0];
+      }
+      
+      console.log(`🔄 ${layer.category}: Shuffled and picked ${selectedItem.id}`);
+      updates.push({ 
+        layerId: layer.id, 
+        itemId: selectedItem.id,
+        category: layer.category 
+      });
+    }
+
+    // Execute ALL updates simultaneously
+    try {
+      await Promise.all(
+        updates.map(({ layerId, itemId, category }) => 
+          updateLayerSelection.mutateAsync({ layerId, itemId })
+            .then(() => console.log(`✅ ${category} updated`))
+            .catch(err => {
+              console.error(`❌ ${category} failed:`, err);
+              throw new Error(category);
+            })
+        )
+      );
+      
+      // Give React time to finish all render cycles
+      await new Promise(resolve => setTimeout(resolve, 50));
+      
+      toast.success(`Shuffled ${updates.length} layer${updates.length !== 1 ? 's' : ''}`);
+    } catch (error: any) {
+      toast.error(`Failed to shuffle: ${error.message}`);
+    }
     
-    const unpinnedCount = layers.length - pinnedLayerIds.size;
-    toast.success(`Shuffled ${unpinnedCount} layer${unpinnedCount !== 1 ? 's' : ''}`);
+    console.log('🎲 ========== SHUFFLE END ==========');
   };
 
   const handleDeleteFit = async () => {
@@ -470,18 +521,18 @@ export default function DressMeWardrobe() {
                 </div>
               )}
 
-              {/* Vertical Layer Carousels - Position-based system */}
+              {/* Vertical Layer Carousels - Wrapped in ScrollProvider for sync */}
               {layers.length > 0 && (
-                <LayerPositionProvider>
+                <LayerScrollProvider>
                   <div className="space-y-6 pb-6">
                     {layers.map((layer) => (
-                      <SwipeableLayerCarousel
+                      <WardrobeLayerCarousel
                         key={layer.id}
                         layer={layer}
                         items={itemsByCategory[layer.category] || []}
                         selectedItemId={layer.selected_item_id}
                         onItemClick={(itemId) => handleLayerItemSelect(layer.id, itemId)}
-                        onTogglePin={() => handleLayerPinToggle(layer.id, layer.is_pinned)}
+                        onPinToggle={() => handleLayerPinToggle(layer.id, layer.is_pinned)}
                         onRemoveLayer={() => handleRemoveLayer(layer.id)}
                         onAddItem={() => {
                           setSelectedCategory(layer.category);
@@ -490,7 +541,7 @@ export default function DressMeWardrobe() {
                       />
                     ))}
                   </div>
-                </LayerPositionProvider>
+                </LayerScrollProvider>
               )}
 
 

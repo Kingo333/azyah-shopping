@@ -398,24 +398,20 @@
   display: none;                     /* Hide scrollbar for webkit */
 }
 
-/* Uniform card box - Position-based system with touch optimization */
+/* Uniform card box - same dimensions across all layers */
 .rail-card {
   position: relative;
-  flex-shrink: 0;                    /* CRITICAL: Prevent cards from shrinking */
   width: 42vw;                       /* Must match grid-auto-columns */
-  min-width: 42vw;                   /* Enforce minimum width for scroll */
   height: clamp(200px, 26vh, 260px); /* Slightly taller for better proportions */
   display: grid;
   place-items: center;               /* Center content within box */
   scroll-snap-align: center;         /* Snap to viewport center */
   scroll-snap-stop: always;          /* Force stop at each card */
   transform-origin: center center;
-  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  will-change: transform;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
   cursor: pointer;
   border-radius: 16px;
   background: transparent;           /* Invisible box */
-  touch-action: pan-x;               /* Optimize for horizontal touch */
 }
 
 /* Visual states - all items fully visible */

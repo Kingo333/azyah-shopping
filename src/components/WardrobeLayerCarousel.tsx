@@ -1,0 +1,428 @@
+import React, { useRef, useState, useEffect } from 'react';
+import { Pin, X, Plus } from 'lucide-react';
+import { Button } from './ui/button';
+import { WardrobeItem } from '@/hooks/useWardrobeItems';
+import { WardrobeLayer } from '@/hooks/useWardrobeLayers';
+import { useLayerScroll } from '@/contexts/LayerScrollContext';
+
+interface WardrobeLayerCarouselProps {
+  layer: WardrobeLayer;
+  items: WardrobeItem[];
+  selectedItemId?: string | null;
+  onItemClick: (itemId: string) => void;
+  onPinToggle: () => void;
+  onRemoveLayer: () => void;
+  onAddItem?: () => void;
+}
+
+export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
+  layer,
+  items,
+  selectedItemId,
+  onItemClick,
+  onPinToggle,
+  onRemoveLayer,
+  onAddItem,
+}) => {
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [localCenterId, setLocalCenterId] = useState<string | null>(null);
+  const { activeScrollIndex, setActiveScrollIndex, registerCarousel, unregisterCarousel } = useLayerScroll();
+  const isUserScrollingRef = useRef(false);
+  const scrollDebounceRef = useRef<NodeJS.Timeout>();
+
+  // Create virtual infinite loop by tripling the array
+  const virtualItems = items.length > 0 ? [...items, ...items, ...items] : [];
+  const LOOP_MULTIPLIER = 3;
+  const realItemsLength = items.length;
+
+  // 🔥 FIX: Sync visual center state with selected item
+  useEffect(() => {
+    if (selectedItemId) {
+      setLocalCenterId(selectedItemId);
+      console.log(`🎯 [${layer.category}] Visual center synced: ${selectedItemId}`);
+    }
+  }, [selectedItemId, layer.category]);
+
+  // Grid configuration - treats carousel as discrete cells
+  const GRID_CONFIG = {
+    cardWidthVw: 0.42,    // Card takes 42% of viewport width (matches CSS)
+    gapVw: 0.08,          // Gap is 8% of viewport width (matches CSS)
+    get cellWidthVw() { return this.cardWidthVw + this.gapVw; }  // Total cell = 50vw
+  };
+
+  // Map real item index to virtual array position (always use middle section)
+  const getRealToVirtualIndex = (realIndex: number): number => {
+    if (realItemsLength === 0) return 0;
+    return realIndex + realItemsLength; // Middle section starts at items.length
+  };
+
+  // Map virtual index back to real item index
+  const getVirtualToRealIndex = (virtualIndex: number): number => {
+    if (realItemsLength === 0) return 0;
+    return ((virtualIndex % realItemsLength) + realItemsLength) % realItemsLength;
+  };
+
+  // Map real item ID to virtual index (middle section)
+  const getVirtualIndexForItemId = (itemId: string): number => {
+    const realIndex = items.findIndex(item => item.id === itemId);
+    return realIndex === -1 ? -1 : getRealToVirtualIndex(realIndex);
+  };
+
+  // Calculate exact scroll position for a virtual grid index
+  const getScrollLeftForIndex = (virtualIndex: number, viewportWidth: number) => {
+    const cardWidth = viewportWidth * GRID_CONFIG.cardWidthVw;
+    const cellWidth = viewportWidth * GRID_CONFIG.cellWidthVw;
+    const sidePadding = (viewportWidth - cardWidth) / 2;
+    return (cellWidth * virtualIndex) + sidePadding - (viewportWidth / 2) + (cardWidth / 2);
+  };
+  
+  const categoryLabels: Record<string, string> = {
+    top: 'Tops',
+    bottom: 'Bottoms',
+    dress: 'Dresses',
+    outerwear: 'Outerwear',
+    shoes: 'Shoes',
+    bag: 'Bags',
+    accessory: 'Accessories',
+  };
+
+  // ✅ SINGLE EFFECT: Programmatic scroll to selected item
+  useEffect(() => {
+    const rail = scrollContainerRef.current;
+    if (!rail || items.length === 0 || !selectedItemId) return;
+
+    // Find item in virtual array (use middle section)
+    const virtualIndex = getVirtualIndexForItemId(selectedItemId);
+    if (virtualIndex === -1) {
+      console.warn(`⚠️ Item not found: ${selectedItemId}`);
+      return;
+    }
+
+    console.log(`🎯 [${layer.category}] Scrolling to virtual index ${virtualIndex}: ${selectedItemId}`);
+
+    // Debounce scroll to prevent rapid triggers
+    if (scrollDebounceRef.current) {
+      clearTimeout(scrollDebounceRef.current);
+    }
+
+    scrollDebounceRef.current = setTimeout(() => {
+      setLocalCenterId(selectedItemId);
+      setActiveScrollIndex(getVirtualToRealIndex(virtualIndex)); // Broadcast real index
+
+      const vw = window.innerWidth;
+      const targetScrollLeft = getScrollLeftForIndex(virtualIndex, vw);
+
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          rail.scrollTo({ left: targetScrollLeft, behavior: 'smooth' });
+        });
+      });
+    }, 10);
+
+    return () => {
+      if (scrollDebounceRef.current) {
+        clearTimeout(scrollDebounceRef.current);
+      }
+    };
+  }, [selectedItemId, items.length, layer.category, setActiveScrollIndex, realItemsLength]);
+
+  // ✅ SNAP HANDLER: Ensure cards snap to center after manual scroll ends
+  useEffect(() => {
+    const rail = scrollContainerRef.current;
+    if (!rail || items.length === 0) return;
+
+    let scrollEndTimer: NodeJS.Timeout;
+
+    const handleScrollEnd = () => {
+      clearTimeout(scrollEndTimer);
+      scrollEndTimer = setTimeout(() => {
+        if (isUserScrollingRef.current) {
+          // Calculate which grid cell should be centered
+          const vw = window.innerWidth;
+          const cellWidth = vw * GRID_CONFIG.cellWidthVw;
+          const rawIndex = rail.scrollLeft / cellWidth;
+          const snappedIndex = Math.round(rawIndex);
+          
+          // Snap to exact center position
+          const targetScrollLeft = getScrollLeftForIndex(snappedIndex, vw);
+          rail.scrollTo({ left: targetScrollLeft, behavior: 'smooth' });
+          
+          console.log(`📍 Snap: ${rawIndex.toFixed(2)} → ${snappedIndex}`);
+        }
+      }, 150); // Debounce 150ms after scroll stops
+    };
+
+    rail.addEventListener('scroll', handleScrollEnd, { passive: true });
+    return () => {
+      clearTimeout(scrollEndTimer);
+      rail.removeEventListener('scroll', handleScrollEnd);
+    };
+  }, [items.length]);
+
+  // ✅ INFINITE LOOP: Snap back to middle section when approaching edges
+  useEffect(() => {
+    const rail = scrollContainerRef.current;
+    if (!rail || items.length === 0) return;
+
+    const handleLoopSnap = () => {
+      if (!isUserScrollingRef.current) return;
+
+      const vw = window.innerWidth;
+      const cellWidth = vw * GRID_CONFIG.cellWidthVw;
+      const currentVirtualIndex = Math.round(rail.scrollLeft / cellWidth);
+
+      // If we're in the first or last section, snap to equivalent position in middle
+      const isInFirstSection = currentVirtualIndex < realItemsLength * 0.5;
+      const isInLastSection = currentVirtualIndex > realItemsLength * 2.5;
+
+      if (isInFirstSection || isInLastSection) {
+        const realIndex = getVirtualToRealIndex(currentVirtualIndex);
+        const middleVirtualIndex = getRealToVirtualIndex(realIndex);
+        
+        console.log(`♾️ Loop snap: ${currentVirtualIndex} → ${middleVirtualIndex}`);
+        
+        // Instant snap (no animation) to maintain illusion
+        const targetScrollLeft = getScrollLeftForIndex(middleVirtualIndex, vw);
+        rail.scrollTo({ left: targetScrollLeft, behavior: 'auto' });
+      }
+    };
+
+    rail.addEventListener('scrollend', handleLoopSnap, { passive: true });
+    return () => rail.removeEventListener('scrollend', handleLoopSnap);
+  }, [items.length, realItemsLength]);
+
+  // ✅ SCROLL HANDLER: Sync scroll index across all layers
+  useEffect(() => {
+    const rail = scrollContainerRef.current;
+    if (!rail || items.length === 0) return;
+
+    const handleScroll = () => {
+      if (!isUserScrollingRef.current) return;
+
+      const vw = window.innerWidth;
+      const cellWidth = vw * GRID_CONFIG.cellWidthVw;
+
+      // Get current virtual index
+      const rawVirtualIndex = rail.scrollLeft / cellWidth;
+      const snappedVirtualIndex = Math.round(rawVirtualIndex);
+
+      // Convert to real index for broadcasting
+      const realIndex = getVirtualToRealIndex(snappedVirtualIndex);
+      setActiveScrollIndex(realIndex);
+
+      // Find the corresponding real item
+      const virtualItemIndex = Math.max(0, Math.min(snappedVirtualIndex, virtualItems.length - 1));
+      const centeredItem = virtualItems[virtualItemIndex];
+      
+      if (centeredItem) {
+        setLocalCenterId(centeredItem.id);
+
+        // Visual feedback
+        const cards = rail.querySelectorAll<HTMLElement>('[data-item-id]');
+        cards.forEach((card, idx) => {
+          card.classList.toggle('is-center', idx === virtualItemIndex);
+        });
+      }
+    };
+
+    const handleScrollStart = () => {
+      isUserScrollingRef.current = true;
+    };
+
+    const handleScrollEnd = () => {
+      setTimeout(() => {
+        isUserScrollingRef.current = false;
+      }, 100);
+    };
+
+    rail.addEventListener('scroll', handleScroll, { passive: true });
+    rail.addEventListener('touchstart', handleScrollStart, { passive: true });
+    rail.addEventListener('touchend', handleScrollEnd, { passive: true });
+    rail.addEventListener('mousedown', handleScrollStart);
+    rail.addEventListener('mouseup', handleScrollEnd);
+    
+    return () => {
+      rail.removeEventListener('scroll', handleScroll);
+      rail.removeEventListener('touchstart', handleScrollStart);
+      rail.removeEventListener('touchend', handleScrollEnd);
+      rail.removeEventListener('mousedown', handleScrollStart);
+      rail.removeEventListener('mouseup', handleScrollEnd);
+    };
+  }, [items, setActiveScrollIndex]);
+
+  // ✅ INITIAL CENTER: Center first item on mount (use middle section)
+  useEffect(() => {
+    const rail = scrollContainerRef.current;
+    if (!rail || items.length === 0 || selectedItemId) return;
+
+    console.log(`📌 Initial center for ${layer.category}: first item (middle section)`);
+
+    const vw = window.innerWidth;
+    const middleFirstIndex = getRealToVirtualIndex(0); // First item in middle section
+    const targetScrollLeft = getScrollLeftForIndex(middleFirstIndex, vw);
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        rail.scrollTo({ left: targetScrollLeft, behavior: 'auto' });
+        setLocalCenterId(items[0].id);
+      });
+    });
+  }, [realItemsLength]);
+  
+  // ✅ REGISTER CAROUSEL: Register scroll function with context
+  useEffect(() => {
+    const scrollToIndex = (realIndex: number) => {
+      const rail = scrollContainerRef.current;
+      if (!rail || items.length === 0) return;
+
+      console.log(`🔗 External scroll to real index ${realIndex}`);
+
+      // Convert to virtual index (middle section)
+      const virtualIndex = getRealToVirtualIndex(realIndex);
+      const vw = window.innerWidth;
+      const targetScrollLeft = getScrollLeftForIndex(virtualIndex, vw);
+
+      isUserScrollingRef.current = false;
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          rail.scrollTo({ left: targetScrollLeft, behavior: 'smooth' });
+
+          const clampedRealIndex = Math.max(0, Math.min(realIndex, items.length - 1));
+          if (items[clampedRealIndex]) {
+            setLocalCenterId(items[clampedRealIndex].id);
+          }
+        });
+      });
+    };
+
+    registerCarousel(layer.id, scrollToIndex);
+    return () => unregisterCarousel(layer.id);
+  }, [layer.id, items, registerCarousel, unregisterCarousel]);
+
+  // ✅ RESIZE HANDLER: No CSS variables needed - grid handles it automatically
+  useEffect(() => {
+    const handleResize = () => {
+      const rail = scrollContainerRef.current;
+      if (!rail || !selectedItemId) return;
+
+      // Recenter current item after resize
+      const itemIndex = items.findIndex(item => item.id === selectedItemId);
+      if (itemIndex !== -1) {
+        const vw = window.innerWidth;
+        const targetScrollLeft = getScrollLeftForIndex(itemIndex, vw);
+        rail.scrollTo({ left: targetScrollLeft, behavior: 'auto' });
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [selectedItemId, items]);
+
+  // Determine which item to visually center
+  const visualCenterId = selectedItemId || localCenterId || (items.length > 0 ? items[0].id : null);
+
+  return (
+    <div className="mb-0">
+      {/* Header with Category Circle */}
+      <div className="flex items-center justify-between px-2 mb-1">
+        {/* Category Circle Indicator */}
+        <div className="flex items-center gap-3">
+          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 border border-primary/20">
+            <span className="text-xs font-bold text-primary uppercase">
+              {layer.category[0]}
+            </span>
+          </div>
+          
+          <div className="flex items-center gap-1.5">
+            <h3 className="text-xs font-semibold text-muted-foreground capitalize">
+              {categoryLabels[layer.category] || layer.category}
+            </h3>
+            <span className="text-[10px] text-muted-foreground/60">
+              {items.length}
+            </span>
+            {layer.is_pinned && (
+              <div className="flex items-center gap-0.5 text-xs text-primary">
+                <Pin className="w-3 h-3 fill-primary" />
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="flex items-center gap-0.5">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6"
+            onClick={onPinToggle}
+            title={layer.is_pinned ? 'Unpin' : 'Pin'}
+          >
+            <Pin className={layer.is_pinned ? 'w-3 h-3 fill-primary text-primary' : 'w-3 h-3'} />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6 text-destructive"
+            onClick={onRemoveLayer}
+          >
+            <X className="w-3 h-3" />
+          </Button>
+        </div>
+      </div>
+
+      {/* Carousel */}
+      <div className="relative">
+        {items.length === 0 ? (
+          <div
+            className="flex items-center justify-center"
+            style={{ height: 'clamp(160px, 20vh, 200px)' }}
+          >
+            <button
+              onClick={onAddItem}
+              className="border-2 border-dashed border-gray-300 rounded-xl p-8 hover:border-primary transition-colors"
+            >
+              <p className="text-sm text-muted-foreground">
+                Add {categoryLabels[layer.category]}
+              </p>
+            </button>
+          </div>
+        ) : (
+          <div
+            ref={scrollContainerRef}
+            className="rail-carousel"
+            style={{
+              height: 'clamp(200px, 26vh, 260px)', // 🔥 Match CSS card height
+            }}
+          >
+            {virtualItems.map((item, virtualIndex) => {
+              const isCenter = item.id === visualCenterId;
+
+              return (
+                <div
+                  key={`${item.id}-${virtualIndex}`}
+                  data-item-id={item.id}
+                  data-category={layer.category}
+                  className={isCenter ? 'rail-card is-center' : 'rail-card'}
+                  onClick={() => onItemClick(item.id)}
+                >
+                  {/* Pin icon - only show in middle section */}
+                  {layer.is_pinned && isCenter && virtualIndex >= realItemsLength && virtualIndex < realItemsLength * 2 && (
+                    <div className="absolute top-2 right-2 z-10">
+                      <Pin className="w-4 h-4 fill-primary text-primary drop-shadow" />
+                    </div>
+                  )}
+                  
+                  <img
+                    src={item.image_bg_removed_url || item.image_url}
+                    alt={item.category}
+                    loading="lazy"
+                    draggable={false}
+                  />
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
