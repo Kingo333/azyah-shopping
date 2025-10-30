@@ -377,58 +377,101 @@
   transition: transform 0.2s, box-shadow 0.2s;
 }
 
-/* Rail carousel - Grid layout with perfect centering */
+/* Rail carousel - CSS Grid with scroll snap */
 .rail-carousel {
+  position: relative;
   display: grid;
   grid-auto-flow: column;
-  gap: 12px;
+  grid-auto-columns: 58vw;           /* Card width - matches GRID_CONFIG.cardWidthVw */
+  gap: 8vw;                          /* Gap - matches GRID_CONFIG.gapVw */
   overflow-x: auto;
   overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: calc((100vw - 58vw) / 2);  /* Center alignment padding */
   overscroll-behavior-x: contain;
   -webkit-overflow-scrolling: touch;
-  padding-inline: var(--rail-side-pad);
+  scrollbar-width: none;             /* Hide scrollbar */
+  align-items: center;               /* Vertically center all cards */
 }
 
-.rail-carousel > div {
-  display: contents;
+.rail-carousel::-webkit-scrollbar {
+  display: none;                     /* Hide scrollbar for webkit */
 }
 
+/* Uniform card box - same dimensions across all layers */
 .rail-card {
-  width: var(--card-w);
-  flex: 0 0 var(--card-w);
-  transition: transform .18s ease, box-shadow .18s;
-  cursor: pointer;
   position: relative;
+  width: 58vw;                       /* Must match grid-auto-columns */
+  height: clamp(200px, 26vh, 260px); /* Slightly taller for better proportions */
+  display: grid;
+  place-items: center;               /* Center content within box */
+  scroll-snap-align: center;         /* Snap to viewport center */
+  scroll-snap-stop: always;          /* Force stop at each card */
+  transform-origin: center center;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+  cursor: pointer;
+  border-radius: 16px;
+  background: transparent;           /* Invisible box */
 }
 
-/* Hover state for clickable affordance */
-.rail-card:hover {
-  transform: scale(.88);
+/* Visual states */
+.rail-card {
+  transform: scale(0.85);
+  opacity: 0.75;
 }
 
-/* Active/centered state */
 .rail-card.is-center {
-  transform: scale(1.0);
-  box-shadow: 0 6px 18px rgba(0,0,0,.08);
+  transform: scale(1);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+  opacity: 1;
+  z-index: 1;
 }
 
-/* Centered item hover (subtle) */
+.rail-card:hover:not(.is-center) {
+  transform: scale(0.88);
+  opacity: 0.85;
+}
+
 .rail-card.is-center:hover {
   transform: scale(1.02);
-  box-shadow: 0 8px 20px rgba(0,0,0,.12);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.12);
 }
 
-.rail-card:not(.is-center) {
-  transform: scale(.85);
-}
-
-.rail-card img {
-  display: block;
+/* PNG content - always contained within uniform box */
+.rail-card > img {
   width: 100%;
-  height: clamp(180px, 24vh, 240px);
-  object-fit: contain;
-  background: transparent;
-  border-radius: 16px;
+  height: 100%;
+  object-fit: contain;               /* Never crop */
+  padding: 14px;                     /* Inner padding for breathing room */
+  display: block;
+  pointer-events: none;
+}
+
+/* Category-specific baseline adjustments (optional but improves perceived alignment) */
+.rail-card[data-category="top"] > img {
+  transform: translateY(0%);
+}
+
+.rail-card[data-category="bottom"] > img,
+.rail-card[data-category="bottoms"] > img {
+  transform: translateY(4%);         /* Bottoms sit slightly lower */
+}
+
+.rail-card[data-category="dress"] > img,
+.rail-card[data-category="dresses"] > img {
+  transform: translateY(2%);
+}
+
+.rail-card[data-category="shoes"] > img,
+.rail-card[data-category="footwear"] > img {
+  transform: translateY(10%);        /* Shoes sit on baseline */
+}
+
+.rail-card[data-category="bag"] > img,
+.rail-card[data-category="bags"] > img,
+.rail-card[data-category="accessory"] > img,
+.rail-card[data-category="accessories"] > img {
+  transform: translateY(0%);
 }
 
 .wardrobe-card:hover {

@@ -31,9 +31,17 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
 
   // Grid configuration - treats carousel as discrete cells
   const GRID_CONFIG = {
-    cardWidthVw: 0.55,    // Card takes 55% of viewport width
-    gapVw: 0.08,          // Gap is 8% of viewport width
-    get cellWidthVw() { return this.cardWidthVw + this.gapVw; }  // Total cell = 63vw
+    cardWidthVw: 0.58,    // Card takes 58% of viewport width (matches CSS)
+    gapVw: 0.08,          // Gap is 8% of viewport width (matches CSS)
+    get cellWidthVw() { return this.cardWidthVw + this.gapVw; }  // Total cell = 66vw
+  };
+
+  // Calculate exact scroll position for a grid index
+  const getScrollLeftForIndex = (index: number, viewportWidth: number) => {
+    const cardWidth = viewportWidth * GRID_CONFIG.cardWidthVw;
+    const cellWidth = viewportWidth * GRID_CONFIG.cellWidthVw;
+    const sidePadding = (viewportWidth - cardWidth) / 2;
+    return (cellWidth * index) + sidePadding - (viewportWidth / 2) + (cardWidth / 2);
   };
   
   const categoryLabels: Record<string, string> = {
@@ -60,23 +68,9 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
 
     console.log(`🎯 Scrolling to grid cell ${itemIndex}: ${selectedItemId}`);
 
-    // Calculate grid dimensions
+    // Calculate scroll position using helper
     const vw = window.innerWidth;
-    const cardWidth = vw * GRID_CONFIG.cardWidthVw;
-    const cellWidth = vw * GRID_CONFIG.cellWidthVw;
-    const sidePadding = (vw - cardWidth) / 2;
-
-    // Update CSS variables synchronously
-    rail.style.setProperty('--card-w', `${cardWidth}px`);
-    rail.style.setProperty('--cell-w', `${cellWidth}px`);
-    rail.style.setProperty('--rail-side-pad', `${sidePadding}px`);
-
-    // Calculate scroll position to center item at 50vw (absolute center)
-    // Account for padding in the calculation
-    const itemLeftEdge = sidePadding + (cellWidth * itemIndex);  // Item's left edge including padding
-    const viewportCenter = vw / 2;                               // Absolute center of viewport
-    const cardCenter = cardWidth / 2;                            // Center of the card itself
-    const targetScrollLeft = itemLeftEdge - viewportCenter + cardCenter;
+    const targetScrollLeft = getScrollLeftForIndex(itemIndex, vw);
 
     // Use double RAF for layout stability - prevents race conditions when multiple carousels update
     requestAnimationFrame(() => {
@@ -90,6 +84,39 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
       });
     });
   }, [selectedItemId, items.length, items, setActiveScrollIndex]); // Depends on items to ensure updates when item order changes
+
+  // ✅ SNAP HANDLER: Ensure cards snap to center after manual scroll ends
+  useEffect(() => {
+    const rail = scrollContainerRef.current;
+    if (!rail || items.length === 0) return;
+
+    let scrollEndTimer: NodeJS.Timeout;
+
+    const handleScrollEnd = () => {
+      clearTimeout(scrollEndTimer);
+      scrollEndTimer = setTimeout(() => {
+        if (isUserScrollingRef.current) {
+          // Calculate which grid cell should be centered
+          const vw = window.innerWidth;
+          const cellWidth = vw * GRID_CONFIG.cellWidthVw;
+          const rawIndex = rail.scrollLeft / cellWidth;
+          const snappedIndex = Math.round(rawIndex);
+          
+          // Snap to exact center position
+          const targetScrollLeft = getScrollLeftForIndex(snappedIndex, vw);
+          rail.scrollTo({ left: targetScrollLeft, behavior: 'smooth' });
+          
+          console.log(`📍 Snap: ${rawIndex.toFixed(2)} → ${snappedIndex}`);
+        }
+      }, 150); // Debounce 150ms after scroll stops
+    };
+
+    rail.addEventListener('scroll', handleScrollEnd, { passive: true });
+    return () => {
+      clearTimeout(scrollEndTimer);
+      rail.removeEventListener('scroll', handleScrollEnd);
+    };
+  }, [items.length]);
 
   // ✅ SCROLL HANDLER: Sync scroll index across all layers
   useEffect(() => {
@@ -150,29 +177,21 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
     };
   }, [items, setActiveScrollIndex]);
 
-  // ✅ INITIAL MOUNT: Center first item visually
+  // ✅ INITIAL CENTER: Center first item on mount (only if no selectedItemId)
   useEffect(() => {
     const rail = scrollContainerRef.current;
     if (!rail || items.length === 0 || selectedItemId) return;
 
-    const firstItem = items[0];
+    console.log(`📌 Initial center for ${layer.category}: first item`);
+
+    const vw = window.innerWidth;
+    const targetScrollLeft = getScrollLeftForIndex(0, vw);
+
     requestAnimationFrame(() => {
-      const vw = window.innerWidth;
-      const cardWidth = vw * GRID_CONFIG.cardWidthVw;
-      const cellWidth = vw * GRID_CONFIG.cellWidthVw;
-      const sidePadding = (vw - cardWidth) / 2;
-      
-      rail.style.setProperty('--card-w', `${cardWidth}px`);
-      rail.style.setProperty('--cell-w', `${cellWidth}px`);
-      rail.style.setProperty('--rail-side-pad', `${sidePadding}px`);
-      
-      // Center first item at 50vw
-      const viewportCenter = vw / 2;
-      const cardCenter = cardWidth / 2;
-      const targetScrollLeft = sidePadding - viewportCenter + cardCenter;
-      
-      rail.scrollTo({ left: targetScrollLeft, behavior: 'auto' });
-      setLocalCenterId(firstItem.id);
+      requestAnimationFrame(() => {
+        rail.scrollTo({ left: targetScrollLeft, behavior: 'auto' });
+        setLocalCenterId(items[0].id);
+      });
     });
   }, []); // Only run once on mount
   
@@ -182,54 +201,47 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
       const rail = scrollContainerRef.current;
       if (!rail || items.length === 0) return;
 
-      // DO NOT clamp - use the global index even if this layer has fewer items
-      // This ensures all layers align at the same grid position
-      const vw = window.innerWidth;
-      const cardWidth = vw * GRID_CONFIG.cardWidthVw;
-      const cellWidth = vw * GRID_CONFIG.cellWidthVw;
-      const sidePadding = (vw - cardWidth) / 2;
+      console.log(`🔗 External scroll to index ${index}`);
 
-      // Calculate scroll position for the global grid index
-      // Even if this layer doesn't have an item at this index, 
-      // we scroll to that grid position to maintain alignment
-      const itemLeftEdge = sidePadding + (cellWidth * index);
-      const viewportCenter = vw / 2;
-      const cardCenter = cardWidth / 2;
-      const targetScrollLeft = itemLeftEdge - viewportCenter + cardCenter;
+      const vw = window.innerWidth;
+      const targetScrollLeft = getScrollLeftForIndex(index, vw);
 
       isUserScrollingRef.current = false; // Prevent sync loop
-      rail.scrollTo({ left: targetScrollLeft, behavior: 'smooth' });
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          rail.scrollTo({ left: targetScrollLeft, behavior: 'smooth' });
 
-      // Update visual state only if this layer has an item at this index
-      const actualIndex = Math.max(0, Math.min(index, items.length - 1));
-      if (items[actualIndex]) {
-        setLocalCenterId(items[actualIndex].id);
-      }
+          // Update visual state only if this layer has an item at this index
+          const actualIndex = Math.max(0, Math.min(index, items.length - 1));
+          if (items[actualIndex]) {
+            setLocalCenterId(items[actualIndex].id);
+          }
+        });
+      });
     };
 
     registerCarousel(layer.id, scrollToIndex);
     return () => unregisterCarousel(layer.id);
   }, [layer.id, items, registerCarousel, unregisterCarousel]);
 
-  // ✅ RESIZE HANDLER: Recalculate CSS variables on window resize
+  // ✅ RESIZE HANDLER: No CSS variables needed - grid handles it automatically
   useEffect(() => {
     const handleResize = () => {
       const rail = scrollContainerRef.current;
-      if (!rail) return;
+      if (!rail || !selectedItemId) return;
 
-      const vw = window.innerWidth;
-      const cardWidth = vw * GRID_CONFIG.cardWidthVw;
-      const cellWidth = vw * GRID_CONFIG.cellWidthVw;
-      const sidePadding = (vw - cardWidth) / 2;
-
-      rail.style.setProperty('--card-w', `${cardWidth}px`);
-      rail.style.setProperty('--cell-w', `${cellWidth}px`);
-      rail.style.setProperty('--rail-side-pad', `${sidePadding}px`);
+      // Recenter current item after resize
+      const itemIndex = items.findIndex(item => item.id === selectedItemId);
+      if (itemIndex !== -1) {
+        const vw = window.innerWidth;
+        const targetScrollLeft = getScrollLeftForIndex(itemIndex, vw);
+        rail.scrollTo({ left: targetScrollLeft, behavior: 'auto' });
+      }
     };
 
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  }, [selectedItemId, items]);
 
   // Determine which item to visually center
   const visualCenterId = selectedItemId || localCenterId || (items.length > 0 ? items[0].id : null);
@@ -310,11 +322,12 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
               const isCenter = item.id === visualCenterId;
 
               return (
-                <div
-                  key={item.id}
-                  data-item-id={item.id}
-                  className={isCenter ? 'rail-card is-center' : 'rail-card'}
-                  onClick={() => onItemClick(item.id)}
+          <div
+            key={item.id}
+            data-item-id={item.id}
+            data-category={layer.category}
+            className={isCenter ? 'rail-card is-center' : 'rail-card'}
+            onClick={() => onItemClick(item.id)}
                 >
                   {/* Pin icon on item */}
                   {layer.is_pinned && isCenter && (
