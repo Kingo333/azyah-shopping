@@ -401,28 +401,29 @@
 /* Uniform card box - same dimensions across all layers */
 .rail-card {
   position: relative;
-  width: 42vw;                       /* Must match grid-auto-columns */
-  height: clamp(200px, 26vh, 260px); /* Slightly taller for better proportions */
+  flex-shrink: 0;
+  width: 42vw;
+  min-width: 42vw;
+  height: clamp(200px, 26vh, 260px);
   display: grid;
-  place-items: center;               /* Center content within box */
-  scroll-snap-align: center;         /* Snap to viewport center */
-  scroll-snap-stop: always;          /* Force stop at each card */
+  place-items: center;
+  scroll-snap-align: center;
+  scroll-snap-stop: always;
   transform-origin: center center;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+  transition: transform 0.15s ease-out, opacity 0.15s ease-out;
+  will-change: transform, opacity;
   cursor: pointer;
   border-radius: 16px;
-  background: transparent;           /* Invisible box */
-}
-
-/* Visual states - all items fully visible */
-.rail-card {
-  transform: scale(1);
-  opacity: 1;
+  background: transparent;
+  touch-action: pan-x;
+  opacity: 0.6;
+  transform: scale(0.9);
 }
 
 .rail-card.is-center {
-  transform: scale(1);
   opacity: 1;
+  transform: scale(1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
   z-index: 1;
 }
 
