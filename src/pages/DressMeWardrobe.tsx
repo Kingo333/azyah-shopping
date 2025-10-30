@@ -247,6 +247,16 @@ export default function DressMeWardrobe() {
     updateLayerSelection.mutate({ layerId, itemId });
   };
 
+  // Fisher-Yates shuffle for true randomization
+  const shuffleArray = <T,>(array: T[]): T[] => {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  };
+
   const handleShuffleAll = async () => {
     console.log('🎲 ========== SHUFFLE START ==========');
     
@@ -262,10 +272,9 @@ export default function DressMeWardrobe() {
       return;
     }
 
-    let shuffled = 0;
-    const errors: string[] = [];
+    // Build ALL updates first, then batch them
+    const updates: Array<{ layerId: string; itemId: string; category: string }> = [];
 
-    // Process each layer independently with true randomization
     for (const layer of unpinnedLayers) {
       const layerItems = getLayerItems(layer.category);
       
@@ -274,45 +283,49 @@ export default function DressMeWardrobe() {
         continue;
       }
 
-      // Get current selection to avoid immediate repeats
       const currentItemId = layer.selected_item_id;
-      
       let selectedItem: WardrobeItem;
       
-      // If only 1 item, keep it; otherwise pick randomly but avoid immediate repeat
       if (layerItems.length === 1) {
         selectedItem = layerItems[0];
       } else {
-        // Filter out current item if it exists
+        // Use Fisher-Yates shuffle for TRUE randomization
         const availableItems = currentItemId 
           ? layerItems.filter(item => item.id !== currentItemId)
           : layerItems;
         
-        // Pick random item from available options
-        const randomIndex = Math.floor(Math.random() * availableItems.length);
-        selectedItem = availableItems[randomIndex];
+        // Shuffle entire array, then pick first item - guarantees no correlation
+        const shuffled = shuffleArray(availableItems);
+        selectedItem = shuffled[0];
       }
       
-      console.log(`🔄 ${layer.category}: Randomly picked ${selectedItem.id}`);
-
-      try {
-        await updateLayerSelection.mutateAsync({ 
-          layerId: layer.id, 
-          itemId: selectedItem.id 
-        });
-        shuffled++;
-        console.log(`✅ ${layer.category} updated`);
-      } catch (error) {
-        console.error(`❌ ${layer.category} failed:`, error);
-        errors.push(layer.category);
-      }
+      console.log(`🔄 ${layer.category}: Shuffled and picked ${selectedItem.id}`);
+      updates.push({ 
+        layerId: layer.id, 
+        itemId: selectedItem.id,
+        category: layer.category 
+      });
     }
 
-    // Show result
-    if (errors.length === 0) {
-      toast.success(`Shuffled ${shuffled} layer${shuffled !== 1 ? 's' : ''}`);
-    } else {
-      toast.error(`Failed to shuffle: ${errors.join(', ')}`);
+    // Execute ALL updates simultaneously
+    try {
+      await Promise.all(
+        updates.map(({ layerId, itemId, category }) => 
+          updateLayerSelection.mutateAsync({ layerId, itemId })
+            .then(() => console.log(`✅ ${category} updated`))
+            .catch(err => {
+              console.error(`❌ ${category} failed:`, err);
+              throw new Error(category);
+            })
+        )
+      );
+      
+      // Give React time to finish all render cycles
+      await new Promise(resolve => setTimeout(resolve, 50));
+      
+      toast.success(`Shuffled ${updates.length} layer${updates.length !== 1 ? 's' : ''}`);
+    } catch (error: any) {
+      toast.error(`Failed to shuffle: ${error.message}`);
     }
     
     console.log('🎲 ========== SHUFFLE END ==========');

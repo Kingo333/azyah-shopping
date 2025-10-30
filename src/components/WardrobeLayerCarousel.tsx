@@ -28,6 +28,7 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
   const [localCenterId, setLocalCenterId] = useState<string | null>(null);
   const { activeScrollIndex, setActiveScrollIndex, registerCarousel, unregisterCarousel } = useLayerScroll();
   const isUserScrollingRef = useRef(false);
+  const scrollDebounceRef = useRef<NodeJS.Timeout>();
 
   // 🔥 FIX: Sync visual center state with selected item
   useEffect(() => {
@@ -76,20 +77,31 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
 
     console.log(`🎯 [${layer.category}] Scrolling to grid cell ${itemIndex}: ${selectedItemId}`);
 
-    // 🔥 FIX: Update state FIRST, then scroll - ensures React has correct state before render
-    setLocalCenterId(selectedItemId);
-    setActiveScrollIndex(itemIndex);
+    // Debounce scroll to prevent rapid triggers
+    if (scrollDebounceRef.current) {
+      clearTimeout(scrollDebounceRef.current);
+    }
 
-    const vw = window.innerWidth;
-    const targetScrollLeft = getScrollLeftForIndex(itemIndex, vw);
+    scrollDebounceRef.current = setTimeout(() => {
+      setLocalCenterId(selectedItemId);
+      setActiveScrollIndex(itemIndex);
 
-    // Double RAF for smoother animation timing after React render completes
-    requestAnimationFrame(() => {
+      const vw = window.innerWidth;
+      const targetScrollLeft = getScrollLeftForIndex(itemIndex, vw);
+
       requestAnimationFrame(() => {
-        rail.scrollTo({ left: targetScrollLeft, behavior: 'smooth' });
+        requestAnimationFrame(() => {
+          rail.scrollTo({ left: targetScrollLeft, behavior: 'smooth' });
+        });
       });
-    });
-  }, [selectedItemId, items.length, items, setActiveScrollIndex]); // Depends on items to ensure updates when item order changes
+    }, 10); // 10ms debounce
+
+    return () => {
+      if (scrollDebounceRef.current) {
+        clearTimeout(scrollDebounceRef.current);
+      }
+    };
+  }, [selectedItemId, items.length, layer.category, setActiveScrollIndex]);
 
   // ✅ SNAP HANDLER: Ensure cards snap to center after manual scroll ends
   useEffect(() => {
