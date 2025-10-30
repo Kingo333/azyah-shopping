@@ -401,62 +401,29 @@
 /* Uniform card box - same dimensions across all layers */
 .rail-card {
   position: relative;
-  flex-shrink: 0;
-  
-  /* Mobile: 70vw (large, prominent) */
-  width: 70vw;
-  min-width: 70vw;
-  
-  /* Taller aspect ratio for fashion items (4:5 ratio) */
-  height: clamp(280px, 56vw, 400px);
-  
+  width: 42vw;                       /* Must match grid-auto-columns */
+  height: clamp(200px, 26vh, 260px); /* Slightly taller for better proportions */
   display: grid;
-  place-items: center;
-  scroll-snap-align: center;
-  scroll-snap-stop: always;
+  place-items: center;               /* Center content within box */
+  scroll-snap-align: center;         /* Snap to viewport center */
+  scroll-snap-stop: always;          /* Force stop at each card */
   transform-origin: center center;
-  transition: transform 0.15s ease-out, opacity 0.15s ease-out;
-  will-change: transform, opacity;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
   cursor: pointer;
   border-radius: 16px;
-  background: transparent;
-  touch-action: pan-x;
-  
-  /* Subtle scale for non-centered items */
-  opacity: 0.75;
-  transform: scale(0.95);
+  background: transparent;           /* Invisible box */
 }
 
-/* Tablet & Desktop: smaller cards */
-@media (min-width: 768px) {
-  .rail-card {
-    width: 42vw;
-    min-width: 42vw;
-    height: clamp(300px, 32vh, 380px);
-  }
-}
-
-@media (min-width: 1024px) {
-  .rail-card {
-    width: 32vw;
-    min-width: 32vw;
-  }
+/* Visual states - all items fully visible */
+.rail-card {
+  transform: scale(1);
+  opacity: 1;
 }
 
 .rail-card.is-center {
-  opacity: 1;
   transform: scale(1);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  opacity: 1;
   z-index: 1;
-}
-
-.rail-card.is-center::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border: 2px solid rgba(139, 92, 246, 0.3);
-  border-radius: 16px;
-  pointer-events: none;
 }
 
 .rail-card:hover {
@@ -467,8 +434,8 @@
 .rail-card > img {
   width: 100%;
   height: 100%;
-  object-fit: contain;
-  padding: 20px;
+  object-fit: contain;               /* Never crop */
+  padding: 14px;                     /* Inner padding for breathing room */
   display: block;
   pointer-events: none;
 }
