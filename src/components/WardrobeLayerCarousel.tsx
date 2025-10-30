@@ -29,11 +29,31 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
   const { activeScrollIndex, setActiveScrollIndex, registerCarousel, unregisterCarousel } = useLayerScroll();
   const isUserScrollingRef = useRef(false);
 
+  // 🔥 FIX: Sync visual center state with selected item
+  useEffect(() => {
+    if (selectedItemId) {
+      setLocalCenterId(selectedItemId);
+      console.log(`🎯 [${layer.category}] Visual center synced: ${selectedItemId}`);
+    }
+  }, [selectedItemId, layer.category]);
+
   // Grid configuration - treats carousel as discrete cells
   const GRID_CONFIG = {
-    cardWidthVw: 0.48,    // Card takes 48% of viewport width (matches CSS)
+    cardWidthVw: 0.42,    // Card takes 42% of viewport width (matches CSS)
     gapVw: 0.08,          // Gap is 8% of viewport width (matches CSS)
-    get cellWidthVw() { return this.cardWidthVw + this.gapVw; }  // Total cell = 56vw
+    get cellWidthVw() { return this.cardWidthVw + this.gapVw; }  // Total cell = 50vw
+  };
+
+  // 🔥 Helper function to apply visual classes immediately
+  const applyVisualClasses = (centeredIndex: number) => {
+    const rail = scrollContainerRef.current;
+    if (!rail) return;
+    
+    const cards = rail.querySelectorAll<HTMLElement>('[data-item-id]');
+    cards.forEach((card, idx) => {
+      card.classList.toggle('is-center', idx === centeredIndex);
+    });
+    console.log(`✨ [${layer.category}] Applied is-center to index ${centeredIndex}`);
   };
 
   // Calculate exact scroll position for a grid index
@@ -77,10 +97,13 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
       requestAnimationFrame(() => {
         rail.scrollTo({ left: targetScrollLeft, behavior: 'smooth' });
         setLocalCenterId(selectedItemId);
+        applyVisualClasses(itemIndex); // 🔥 Apply visual state immediately
         
         // 🔥 FIX: Update global scroll index to match this item's position
         // This ensures all OTHER layers align to this grid position
         setActiveScrollIndex(itemIndex);
+        
+        console.log(`🎯 [${layer.category}] Scrolled to item ${itemIndex}: ${selectedItemId}`);
       });
     });
   }, [selectedItemId, items.length, items, setActiveScrollIndex]); // Depends on items to ensure updates when item order changes
@@ -315,7 +338,7 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
             ref={scrollContainerRef}
             className="rail-carousel"
             style={{
-              height: 'clamp(180px, 24vh, 240px)',
+              height: 'clamp(200px, 26vh, 260px)', // 🔥 Match CSS card height
             }}
           >
             {items.map((item) => {

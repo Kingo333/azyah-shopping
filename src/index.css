@@ -382,12 +382,12 @@
   position: relative;
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: 48vw;           /* Card width - matches GRID_CONFIG.cardWidthVw */
+  grid-auto-columns: 42vw;           /* Card width - matches GRID_CONFIG.cardWidthVw */
   gap: 8vw;                          /* Gap - matches GRID_CONFIG.gapVw */
   overflow-x: auto;
   overflow-y: hidden;
   scroll-snap-type: x mandatory;
-  scroll-padding-inline: calc((100vw - 48vw) / 2);  /* Center alignment padding */
+  scroll-padding-inline: calc((100vw - 42vw) / 2);  /* Center alignment padding */
   overscroll-behavior-x: contain;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;             /* Hide scrollbar */
@@ -401,7 +401,7 @@
 /* Uniform card box - same dimensions across all layers */
 .rail-card {
   position: relative;
-  width: 48vw;                       /* Must match grid-auto-columns */
+  width: 42vw;                       /* Must match grid-auto-columns */
   height: clamp(200px, 26vh, 260px); /* Slightly taller for better proportions */
   display: grid;
   place-items: center;               /* Center content within box */
