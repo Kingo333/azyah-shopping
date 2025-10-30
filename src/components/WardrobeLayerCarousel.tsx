@@ -44,18 +44,6 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
     get cellWidthVw() { return this.cardWidthVw + this.gapVw; }  // Total cell = 50vw
   };
 
-  // 🔥 Helper function to apply visual classes immediately
-  const applyVisualClasses = (centeredIndex: number) => {
-    const rail = scrollContainerRef.current;
-    if (!rail) return;
-    
-    const cards = rail.querySelectorAll<HTMLElement>('[data-item-id]');
-    cards.forEach((card, idx) => {
-      card.classList.toggle('is-center', idx === centeredIndex);
-    });
-    console.log(`✨ [${layer.category}] Applied is-center to index ${centeredIndex}`);
-  };
-
   // Calculate exact scroll position for a grid index
   const getScrollLeftForIndex = (index: number, viewportWidth: number) => {
     const cardWidth = viewportWidth * GRID_CONFIG.cardWidthVw;
@@ -86,24 +74,19 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
       return;
     }
 
-    console.log(`🎯 Scrolling to grid cell ${itemIndex}: ${selectedItemId}`);
+    console.log(`🎯 [${layer.category}] Scrolling to grid cell ${itemIndex}: ${selectedItemId}`);
 
-    // Calculate scroll position using helper
+    // 🔥 FIX: Update state FIRST, then scroll - ensures React has correct state before render
+    setLocalCenterId(selectedItemId);
+    setActiveScrollIndex(itemIndex);
+
     const vw = window.innerWidth;
     const targetScrollLeft = getScrollLeftForIndex(itemIndex, vw);
 
-    // Use double RAF for layout stability - prevents race conditions when multiple carousels update
+    // Double RAF for smoother animation timing after React render completes
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         rail.scrollTo({ left: targetScrollLeft, behavior: 'smooth' });
-        setLocalCenterId(selectedItemId);
-        applyVisualClasses(itemIndex); // 🔥 Apply visual state immediately
-        
-        // 🔥 FIX: Update global scroll index to match this item's position
-        // This ensures all OTHER layers align to this grid position
-        setActiveScrollIndex(itemIndex);
-        
-        console.log(`🎯 [${layer.category}] Scrolled to item ${itemIndex}: ${selectedItemId}`);
       });
     });
   }, [selectedItemId, items.length, items, setActiveScrollIndex]); // Depends on items to ensure updates when item order changes
