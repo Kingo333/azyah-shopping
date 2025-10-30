@@ -414,10 +414,10 @@
   background: transparent;           /* Invisible box */
 }
 
-/* Visual states */
+/* Visual states - all items fully visible */
 .rail-card {
-  transform: scale(0.85);
-  opacity: 0.75;
+  transform: scale(1);
+  opacity: 1;
 }
 
 .rail-card.is-center {
@@ -427,12 +427,7 @@
   z-index: 1;
 }
 
-.rail-card:hover:not(.is-center) {
-  transform: scale(0.88);
-  opacity: 0.85;
-}
-
-.rail-card.is-center:hover {
+.rail-card:hover {
   transform: scale(1.02);
   box-shadow: 0 8px 20px rgba(0,0,0,0.12);
 }
@@ -885,8 +880,8 @@
   align-items: center;
   justify-content: center;
   padding: 8px;
-  opacity: 0.35;
-  transform: scale(0.88);
+  opacity: 1;
+  transform: scale(1);
 }
 
 .rail-card img {
@@ -911,12 +906,6 @@
 
 .rail-card.is-center:hover {
   transform: scale(1.02);
-}
-
-/* Neighbor card styles - fade out non-centered items */
-.rail-card:not(.is-center) {
-  opacity: 0.35;
-  transform: scale(0.88);
 }
 
 /* Mobile optimizations */
