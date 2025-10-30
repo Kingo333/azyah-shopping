@@ -28,6 +28,15 @@ export const useDressMe = () => {
   };
 };
 
+// Seeded RNG for consistent shuffle behavior
+const seededRng = (seed: number) => {
+  let t = seed >>> 0;
+  return () => {
+    t = (t + 0x6D2B79F5) | 0;
+    return ((t ^ (t >>> 15)) >>> 0) / 2 ** 32;
+  };
+};
+
 export const useShuffleOutfit = () => {
   const shuffleOutfit = useCallback(async (
     activeCategories: string[],
@@ -36,17 +45,22 @@ export const useShuffleOutfit = () => {
     getItemsByCategory: (category: string) => WardrobeItem[]
   ) => {
     const newOutfit: Record<string, WardrobeItem | null> = {};
+    const rng = seededRng(Date.now());
 
     for (const category of activeCategories) {
       if (pinnedCategories[category] && currentOutfit[category]) {
         // Keep pinned item
         newOutfit[category] = currentOutfit[category];
       } else {
-        // Get random item from category
+        // Get items excluding current selection to ensure new pick
         const items = getItemsByCategory(category);
-        if (items.length > 0) {
-          const randomIndex = Math.floor(Math.random() * items.length);
-          newOutfit[category] = items[randomIndex];
+        if (items.length > 1) {
+          const currentId = currentOutfit[category]?.id;
+          const pool = items.filter(item => item.id !== currentId);
+          const randomIndex = Math.floor(rng() * pool.length);
+          newOutfit[category] = pool[randomIndex] ?? items[0];
+        } else if (items.length === 1) {
+          newOutfit[category] = items[0];
         } else {
           newOutfit[category] = null;
         }

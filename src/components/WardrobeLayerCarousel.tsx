@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { Pin, X, Plus } from 'lucide-react';
 import { Button } from './ui/button';
 import { WardrobeItem } from '@/hooks/useWardrobeItems';
@@ -24,14 +24,7 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
   onAddItem,
 }) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const [localCenterId, setLocalCenterId] = useState<string | null>(null);
-
-  // Grid configuration - treats carousel as discrete cells
-  const GRID_CONFIG = {
-    cardWidthVw: 0.55,    // Card takes 55% of viewport width
-    gapVw: 0.08,          // Gap is 8% of viewport width
-    get cellWidthVw() { return this.cardWidthVw + this.gapVw; }  // Total cell = 63vw
-  };
+  const rafIdRef = useRef<number>();
   
   const categoryLabels: Record<string, string> = {
     top: 'Tops',
@@ -43,127 +36,141 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
     accessory: 'Accessories',
   };
 
-  // ✅ SINGLE EFFECT: Programmatic scroll to selected item
-  useEffect(() => {
-    const rail = scrollContainerRef.current;
-    if (!rail || items.length === 0 || !selectedItemId) return;
+  // Precise center detection
+  const getCenterX = useCallback((scroller: HTMLElement) => {
+    const rect = scroller.getBoundingClientRect();
+    return rect.left + rect.width / 2;
+  }, []);
 
-    // Find item index in array
-    const itemIndex = items.findIndex(item => item.id === selectedItemId);
-    if (itemIndex === -1) {
-      console.warn(`⚠️ Item not found: ${selectedItemId}`);
-      return;
+  const findNearestCenterCard = useCallback((scroller: HTMLElement) => {
+    const centerX = getCenterX(scroller);
+    let bestCard: HTMLElement | null = null;
+    let bestDistance = Infinity;
+
+    scroller.querySelectorAll<HTMLElement>('[data-item-id]').forEach(card => {
+      const cardRect = card.getBoundingClientRect();
+      const cardCenterX = cardRect.left + cardRect.width / 2;
+      const distance = Math.abs(cardCenterX - centerX);
+      
+      if (distance < bestDistance) {
+        bestDistance = distance;
+        bestCard = card;
+      }
+    });
+
+    return bestCard;
+  }, [getCenterX]);
+
+  const applyCenterClasses = useCallback((scroller: HTMLElement) => {
+    const cards = scroller.querySelectorAll<HTMLElement>('[data-item-id]');
+    cards.forEach(card => {
+      card.classList.remove('is-center', 'is-neighbor');
+    });
+
+    const centerCard = findNearestCenterCard(scroller);
+    if (centerCard) {
+      centerCard.classList.add('is-center');
+      (centerCard.previousElementSibling as HTMLElement | null)?.classList.add('is-neighbor');
+      (centerCard.nextElementSibling as HTMLElement | null)?.classList.add('is-neighbor');
+
+      // Update selection if center changed
+      const itemId = centerCard.dataset.itemId;
+      if (itemId && itemId !== selectedItemId) {
+        onItemClick(itemId);
+      }
     }
+  }, [findNearestCenterCard, selectedItemId, onItemClick]);
 
-    console.log(`🎯 Scrolling to grid cell ${itemIndex}: ${selectedItemId}`);
+  const centerCard = useCallback((scroller: HTMLElement, card: HTMLElement) => {
+    const scrollerRect = scroller.getBoundingClientRect();
+    const cardRect = card.getBoundingClientRect();
+    const delta = (cardRect.left + cardRect.width / 2) - (scrollerRect.left + scrollerRect.width / 2);
+    
+    scroller.scrollTo({ 
+      left: scroller.scrollLeft + delta, 
+      behavior: 'smooth' 
+    });
 
-    // Calculate grid dimensions
-    const vw = window.innerWidth;
-    const cardWidth = vw * GRID_CONFIG.cardWidthVw;
-    const cellWidth = vw * GRID_CONFIG.cellWidthVw;
-    const sidePadding = (vw - cardWidth) / 2;
-
-    // Update CSS variables synchronously
-    rail.style.setProperty('--card-w', `${cardWidth}px`);
-    rail.style.setProperty('--cell-w', `${cellWidth}px`);
-    rail.style.setProperty('--rail-side-pad', `${sidePadding}px`);
-
-    // Calculate scroll position to center item at 50vw (absolute center)
-    // Account for padding in the calculation
-    const itemLeftEdge = sidePadding + (cellWidth * itemIndex);  // Item's left edge including padding
-    const viewportCenter = vw / 2;                               // Absolute center of viewport
-    const cardCenter = cardWidth / 2;                            // Center of the card itself
-    const targetScrollLeft = itemLeftEdge - viewportCenter + cardCenter;
-
-    // Use double RAF for layout stability - prevents race conditions when multiple carousels update
+    // Re-apply classes after scroll
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
-        rail.scrollTo({ left: targetScrollLeft, behavior: 'smooth' });
-        setLocalCenterId(selectedItemId);
+        applyCenterClasses(scroller);
       });
     });
-  }, [selectedItemId, items.length, items]); // Depends on items to ensure updates when item order changes
+  }, [applyCenterClasses]);
 
-  // ✅ SCROLL HANDLER: Visual center indicator only (NO DB updates)
+  const centerByItemId = useCallback((scroller: HTMLElement, itemId: string) => {
+    const card = scroller.querySelector<HTMLElement>(`[data-item-id="${itemId}"]`);
+    if (card) {
+      centerCard(scroller, card);
+    }
+  }, [centerCard]);
+
+  // Initialize centering on mount
   useEffect(() => {
-    const rail = scrollContainerRef.current;
-    if (!rail || items.length === 0) return;
+    const scroller = scrollContainerRef.current;
+    if (!scroller || items.length === 0) return;
 
+    // Initial centering
+    if (selectedItemId) {
+      centerByItemId(scroller, selectedItemId);
+    } else {
+      const firstCard = scroller.querySelector<HTMLElement>('[data-item-id]');
+      if (firstCard) {
+        centerCard(scroller, firstCard);
+      }
+    }
+
+    // Bind scroll handler
     const handleScroll = () => {
-      // Calculate grid dimensions
-      const vw = window.innerWidth;
-      const cellWidth = vw * GRID_CONFIG.cellWidthVw;
+      if (rafIdRef.current) {
+        cancelAnimationFrame(rafIdRef.current);
+      }
+      rafIdRef.current = requestAnimationFrame(() => {
+        applyCenterClasses(scroller);
+      });
+    };
 
-      // Determine which grid cell is currently centered
-      const rawIndex = rail.scrollLeft / cellWidth;
-      const snappedIndex = Math.round(rawIndex);
-      const clampedIndex = Math.max(0, Math.min(snappedIndex, items.length - 1));
+    scroller.addEventListener('scroll', handleScroll, { passive: true });
 
-      // ✅ ONLY update visual state - NO database updates
-      const centeredItem = items[clampedIndex];
-      if (centeredItem) {
-        setLocalCenterId(centeredItem.id);
+    // Handle resize
+    const resizeObserver = new ResizeObserver(() => {
+      applyCenterClasses(scroller);
+    });
+    resizeObserver.observe(scroller);
 
-        // Visual feedback: update card classes
-        const cards = rail.querySelectorAll<HTMLElement>('[data-item-id]');
-        cards.forEach((card, idx) => {
-          card.classList.toggle('is-center', idx === clampedIndex);
-        });
+    // Prevent "between items" states
+    const snapIfBetween = () => {
+      const centerCard = findNearestCenterCard(scroller);
+      if (centerCard) {
+        centerCard.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
       }
     };
 
-    rail.addEventListener('scroll', handleScroll, { passive: true });
-    return () => rail.removeEventListener('scroll', handleScroll);
-  }, [items]);
-
-  // ✅ INITIAL MOUNT: Center first item visually
-  useEffect(() => {
-    const rail = scrollContainerRef.current;
-    if (!rail || items.length === 0 || selectedItemId) return;
-
-    const firstItem = items[0];
-    requestAnimationFrame(() => {
-      const vw = window.innerWidth;
-      const cardWidth = vw * GRID_CONFIG.cardWidthVw;
-      const cellWidth = vw * GRID_CONFIG.cellWidthVw;
-      const sidePadding = (vw - cardWidth) / 2;
-      
-      rail.style.setProperty('--card-w', `${cardWidth}px`);
-      rail.style.setProperty('--cell-w', `${cellWidth}px`);
-      rail.style.setProperty('--rail-side-pad', `${sidePadding}px`);
-      
-      // Center first item at 50vw
-      const viewportCenter = vw / 2;
-      const cardCenter = cardWidth / 2;
-      const targetScrollLeft = sidePadding - viewportCenter + cardCenter;
-      
-      rail.scrollTo({ left: targetScrollLeft, behavior: 'auto' });
-      setLocalCenterId(firstItem.id);
+    const events = ['touchend', 'pointerup', 'mouseup'];
+    events.forEach(evt => {
+      scroller.addEventListener(evt, snapIfBetween, { passive: true });
     });
-  }, []); // Only run once on mount
-  
-  // ✅ RESIZE HANDLER: Recalculate CSS variables on window resize
-  useEffect(() => {
-    const handleResize = () => {
-      const rail = scrollContainerRef.current;
-      if (!rail) return;
 
-      const vw = window.innerWidth;
-      const cardWidth = vw * GRID_CONFIG.cardWidthVw;
-      const cellWidth = vw * GRID_CONFIG.cellWidthVw;
-      const sidePadding = (vw - cardWidth) / 2;
-
-      rail.style.setProperty('--card-w', `${cardWidth}px`);
-      rail.style.setProperty('--cell-w', `${cellWidth}px`);
-      rail.style.setProperty('--rail-side-pad', `${sidePadding}px`);
+    return () => {
+      scroller.removeEventListener('scroll', handleScroll);
+      resizeObserver.disconnect();
+      events.forEach(evt => {
+        scroller.removeEventListener(evt, snapIfBetween);
+      });
+      if (rafIdRef.current) {
+        cancelAnimationFrame(rafIdRef.current);
+      }
     };
+  }, [items, selectedItemId, centerByItemId, centerCard, applyCenterClasses, findNearestCenterCard]);
 
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  // Re-center when selectedItemId changes externally (e.g., from Shuffle)
+  useEffect(() => {
+    const scroller = scrollContainerRef.current;
+    if (!scroller || !selectedItemId) return;
 
-  // Determine which item to visually center
-  const visualCenterId = selectedItemId || localCenterId || (items.length > 0 ? items[0].id : null);
+    centerByItemId(scroller, selectedItemId);
+  }, [selectedItemId, centerByItemId]);
 
   return (
     <div className="mb-0">
@@ -237,33 +244,29 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
               height: 'clamp(180px, 24vh, 240px)',
             }}
           >
-            {items.map((item) => {
-              const isCenter = item.id === visualCenterId;
-
-              return (
-                <div
-                  key={item.id}
-                  data-item-id={item.id}
-                  className={isCenter ? 'rail-card is-center' : 'rail-card'}
-                  onClick={() => onItemClick(item.id)}
-                >
-                  {/* Pin icon on item */}
-                  {layer.is_pinned && isCenter && (
-                    <div className="absolute top-2 right-2 z-10">
-                      <Pin className="w-4 h-4 fill-primary text-primary drop-shadow" />
-                    </div>
-                  )}
-                  
-                  {/* Image */}
-                  <img
-                    src={item.image_bg_removed_url || item.image_url}
-                    alt={item.category}
-                    loading="lazy"
-                    draggable={false}
-                  />
-                </div>
-              );
-            })}
+            {items.map((item) => (
+              <div
+                key={item.id}
+                data-item-id={item.id}
+                className="rail-card"
+                onClick={() => onItemClick(item.id)}
+              >
+                {/* Pin icon on item */}
+                {selectedItemId === item.id && layer.is_pinned && (
+                  <div className="absolute top-2 right-2 z-10">
+                    <Pin className="w-4 h-4 fill-primary text-primary drop-shadow" />
+                  </div>
+                )}
+                
+                {/* Image */}
+                <img
+                  src={item.image_bg_removed_url || item.image_url}
+                  alt={item.category}
+                  loading="lazy"
+                  draggable={false}
+                />
+              </div>
+            ))}
           </div>
         )}
       </div>
