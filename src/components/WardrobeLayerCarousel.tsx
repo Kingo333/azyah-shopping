@@ -30,6 +30,11 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
   const isUserScrollingRef = useRef(false);
   const scrollDebounceRef = useRef<NodeJS.Timeout>();
 
+  // Create virtual infinite loop by tripling the array
+  const virtualItems = items.length > 0 ? [...items, ...items, ...items] : [];
+  const LOOP_MULTIPLIER = 3;
+  const realItemsLength = items.length;
+
   // 🔥 FIX: Sync visual center state with selected item
   useEffect(() => {
     if (selectedItemId) {
@@ -45,12 +50,30 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
     get cellWidthVw() { return this.cardWidthVw + this.gapVw; }  // Total cell = 50vw
   };
 
-  // Calculate exact scroll position for a grid index
-  const getScrollLeftForIndex = (index: number, viewportWidth: number) => {
+  // Map real item index to virtual array position (always use middle section)
+  const getRealToVirtualIndex = (realIndex: number): number => {
+    if (realItemsLength === 0) return 0;
+    return realIndex + realItemsLength; // Middle section starts at items.length
+  };
+
+  // Map virtual index back to real item index
+  const getVirtualToRealIndex = (virtualIndex: number): number => {
+    if (realItemsLength === 0) return 0;
+    return ((virtualIndex % realItemsLength) + realItemsLength) % realItemsLength;
+  };
+
+  // Map real item ID to virtual index (middle section)
+  const getVirtualIndexForItemId = (itemId: string): number => {
+    const realIndex = items.findIndex(item => item.id === itemId);
+    return realIndex === -1 ? -1 : getRealToVirtualIndex(realIndex);
+  };
+
+  // Calculate exact scroll position for a virtual grid index
+  const getScrollLeftForIndex = (virtualIndex: number, viewportWidth: number) => {
     const cardWidth = viewportWidth * GRID_CONFIG.cardWidthVw;
     const cellWidth = viewportWidth * GRID_CONFIG.cellWidthVw;
     const sidePadding = (viewportWidth - cardWidth) / 2;
-    return (cellWidth * index) + sidePadding - (viewportWidth / 2) + (cardWidth / 2);
+    return (cellWidth * virtualIndex) + sidePadding - (viewportWidth / 2) + (cardWidth / 2);
   };
   
   const categoryLabels: Record<string, string> = {
@@ -68,14 +91,14 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
     const rail = scrollContainerRef.current;
     if (!rail || items.length === 0 || !selectedItemId) return;
 
-    // Find item index in array
-    const itemIndex = items.findIndex(item => item.id === selectedItemId);
-    if (itemIndex === -1) {
+    // Find item in virtual array (use middle section)
+    const virtualIndex = getVirtualIndexForItemId(selectedItemId);
+    if (virtualIndex === -1) {
       console.warn(`⚠️ Item not found: ${selectedItemId}`);
       return;
     }
 
-    console.log(`🎯 [${layer.category}] Scrolling to grid cell ${itemIndex}: ${selectedItemId}`);
+    console.log(`🎯 [${layer.category}] Scrolling to virtual index ${virtualIndex}: ${selectedItemId}`);
 
     // Debounce scroll to prevent rapid triggers
     if (scrollDebounceRef.current) {
@@ -84,24 +107,24 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
 
     scrollDebounceRef.current = setTimeout(() => {
       setLocalCenterId(selectedItemId);
-      setActiveScrollIndex(itemIndex);
+      setActiveScrollIndex(getVirtualToRealIndex(virtualIndex)); // Broadcast real index
 
       const vw = window.innerWidth;
-      const targetScrollLeft = getScrollLeftForIndex(itemIndex, vw);
+      const targetScrollLeft = getScrollLeftForIndex(virtualIndex, vw);
 
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
           rail.scrollTo({ left: targetScrollLeft, behavior: 'smooth' });
         });
       });
-    }, 10); // 10ms debounce
+    }, 10);
 
     return () => {
       if (scrollDebounceRef.current) {
         clearTimeout(scrollDebounceRef.current);
       }
     };
-  }, [selectedItemId, items.length, layer.category, setActiveScrollIndex]);
+  }, [selectedItemId, items.length, layer.category, setActiveScrollIndex, realItemsLength]);
 
   // ✅ SNAP HANDLER: Ensure cards snap to center after manual scroll ends
   useEffect(() => {
@@ -136,36 +159,68 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
     };
   }, [items.length]);
 
+  // ✅ INFINITE LOOP: Snap back to middle section when approaching edges
+  useEffect(() => {
+    const rail = scrollContainerRef.current;
+    if (!rail || items.length === 0) return;
+
+    const handleLoopSnap = () => {
+      if (!isUserScrollingRef.current) return;
+
+      const vw = window.innerWidth;
+      const cellWidth = vw * GRID_CONFIG.cellWidthVw;
+      const currentVirtualIndex = Math.round(rail.scrollLeft / cellWidth);
+
+      // If we're in the first or last section, snap to equivalent position in middle
+      const isInFirstSection = currentVirtualIndex < realItemsLength * 0.5;
+      const isInLastSection = currentVirtualIndex > realItemsLength * 2.5;
+
+      if (isInFirstSection || isInLastSection) {
+        const realIndex = getVirtualToRealIndex(currentVirtualIndex);
+        const middleVirtualIndex = getRealToVirtualIndex(realIndex);
+        
+        console.log(`♾️ Loop snap: ${currentVirtualIndex} → ${middleVirtualIndex}`);
+        
+        // Instant snap (no animation) to maintain illusion
+        const targetScrollLeft = getScrollLeftForIndex(middleVirtualIndex, vw);
+        rail.scrollTo({ left: targetScrollLeft, behavior: 'auto' });
+      }
+    };
+
+    rail.addEventListener('scrollend', handleLoopSnap, { passive: true });
+    return () => rail.removeEventListener('scrollend', handleLoopSnap);
+  }, [items.length, realItemsLength]);
+
   // ✅ SCROLL HANDLER: Sync scroll index across all layers
   useEffect(() => {
     const rail = scrollContainerRef.current;
     if (!rail || items.length === 0) return;
 
     const handleScroll = () => {
-      if (!isUserScrollingRef.current) return; // Ignore programmatic scrolls
+      if (!isUserScrollingRef.current) return;
 
-      // Calculate grid dimensions
       const vw = window.innerWidth;
       const cellWidth = vw * GRID_CONFIG.cellWidthVw;
 
-      // Determine which grid cell is currently centered (RAW, unclamped)
-      const rawIndex = rail.scrollLeft / cellWidth;
-      const snappedIndex = Math.round(rawIndex);
+      // Get current virtual index
+      const rawVirtualIndex = rail.scrollLeft / cellWidth;
+      const snappedVirtualIndex = Math.round(rawVirtualIndex);
 
-      // 🔥 FIX: Broadcast the UNCLAMPED index to all layers for perfect alignment
-      setActiveScrollIndex(snappedIndex);
+      // Convert to real index for broadcasting
+      const realIndex = getVirtualToRealIndex(snappedVirtualIndex);
+      setActiveScrollIndex(realIndex);
 
-      // 🔥 FIX: Clamp ONLY for local visual state
-      const clampedIndex = Math.max(0, Math.min(snappedIndex, items.length - 1));
-      const centeredItem = items[clampedIndex];
+      // Find the corresponding real item
+      const virtualItemIndex = Math.max(0, Math.min(snappedVirtualIndex, virtualItems.length - 1));
+      const centeredItem = virtualItems[virtualItemIndex];
       
       if (centeredItem) {
         setLocalCenterId(centeredItem.id);
 
-        // Visual feedback: update card classes
+        // Visual feedback
         const cards = rail.querySelectorAll<HTMLElement>('[data-item-id]');
         cards.forEach((card, idx) => {
-          card.classList.toggle('is-center', idx === clampedIndex);
+          card.classList.toggle('is-center', idx === virtualItemIndex);
         });
       }
     };
@@ -195,15 +250,16 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
     };
   }, [items, setActiveScrollIndex]);
 
-  // ✅ INITIAL CENTER: Center first item on mount (only if no selectedItemId)
+  // ✅ INITIAL CENTER: Center first item on mount (use middle section)
   useEffect(() => {
     const rail = scrollContainerRef.current;
     if (!rail || items.length === 0 || selectedItemId) return;
 
-    console.log(`📌 Initial center for ${layer.category}: first item`);
+    console.log(`📌 Initial center for ${layer.category}: first item (middle section)`);
 
     const vw = window.innerWidth;
-    const targetScrollLeft = getScrollLeftForIndex(0, vw);
+    const middleFirstIndex = getRealToVirtualIndex(0); // First item in middle section
+    const targetScrollLeft = getScrollLeftForIndex(middleFirstIndex, vw);
 
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
@@ -211,28 +267,29 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
         setLocalCenterId(items[0].id);
       });
     });
-  }, []); // Only run once on mount
+  }, [realItemsLength]);
   
   // ✅ REGISTER CAROUSEL: Register scroll function with context
   useEffect(() => {
-    const scrollToIndex = (index: number) => {
+    const scrollToIndex = (realIndex: number) => {
       const rail = scrollContainerRef.current;
       if (!rail || items.length === 0) return;
 
-      console.log(`🔗 External scroll to index ${index}`);
+      console.log(`🔗 External scroll to real index ${realIndex}`);
 
+      // Convert to virtual index (middle section)
+      const virtualIndex = getRealToVirtualIndex(realIndex);
       const vw = window.innerWidth;
-      const targetScrollLeft = getScrollLeftForIndex(index, vw);
+      const targetScrollLeft = getScrollLeftForIndex(virtualIndex, vw);
 
-      isUserScrollingRef.current = false; // Prevent sync loop
+      isUserScrollingRef.current = false;
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
           rail.scrollTo({ left: targetScrollLeft, behavior: 'smooth' });
 
-          // Update visual state only if this layer has an item at this index
-          const actualIndex = Math.max(0, Math.min(index, items.length - 1));
-          if (items[actualIndex]) {
-            setLocalCenterId(items[actualIndex].id);
+          const clampedRealIndex = Math.max(0, Math.min(realIndex, items.length - 1));
+          if (items[clampedRealIndex]) {
+            setLocalCenterId(items[clampedRealIndex].id);
           }
         });
       });
@@ -336,25 +393,24 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
               height: 'clamp(200px, 26vh, 260px)', // 🔥 Match CSS card height
             }}
           >
-            {items.map((item) => {
+            {virtualItems.map((item, virtualIndex) => {
               const isCenter = item.id === visualCenterId;
 
               return (
-          <div
-            key={item.id}
-            data-item-id={item.id}
-            data-category={layer.category}
-            className={isCenter ? 'rail-card is-center' : 'rail-card'}
-            onClick={() => onItemClick(item.id)}
+                <div
+                  key={`${item.id}-${virtualIndex}`}
+                  data-item-id={item.id}
+                  data-category={layer.category}
+                  className={isCenter ? 'rail-card is-center' : 'rail-card'}
+                  onClick={() => onItemClick(item.id)}
                 >
-                  {/* Pin icon on item */}
-                  {layer.is_pinned && isCenter && (
+                  {/* Pin icon - only show in middle section */}
+                  {layer.is_pinned && isCenter && virtualIndex >= realItemsLength && virtualIndex < realItemsLength * 2 && (
                     <div className="absolute top-2 right-2 z-10">
                       <Pin className="w-4 h-4 fill-primary text-primary drop-shadow" />
                     </div>
                   )}
                   
-                  {/* Image */}
                   <img
                     src={item.image_bg_removed_url || item.image_url}
                     alt={item.category}
