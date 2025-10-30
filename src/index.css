@@ -401,7 +401,9 @@
 /* Uniform card box - Position-based system with touch optimization */
 .rail-card {
   position: relative;
+  flex-shrink: 0;                    /* CRITICAL: Prevent cards from shrinking */
   width: 42vw;                       /* Must match grid-auto-columns */
+  min-width: 42vw;                   /* Enforce minimum width for scroll */
   height: clamp(200px, 26vh, 260px); /* Slightly taller for better proportions */
   display: grid;
   place-items: center;               /* Center content within box */

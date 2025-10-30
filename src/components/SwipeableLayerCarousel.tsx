@@ -27,6 +27,10 @@ export const SwipeableLayerCarousel: React.FC<SwipeableLayerCarouselProps> = ({
   const [isScrolling, setIsScrolling] = useState(false);
   const scrollTimeoutRef = useRef<NodeJS.Timeout>();
   
+  // Create virtual infinite loop by tripling array
+  const virtualItems = items.length > 0 ? [...items, ...items, ...items] : [];
+  const realItemsLength = items.length;
+  
   const { position, goToPosition, currentItem } = useLayerPosition({
     layerId: layer.id,
     items,
@@ -40,8 +44,12 @@ export const SwipeableLayerCarousel: React.FC<SwipeableLayerCarouselProps> = ({
   useEffect(() => {
     if (items.length === 0 || !scrollContainerRef.current || isScrolling) return;
 
+    console.log(`🔄 [${layer.category}] Syncing position ${position} → visual`);
+
+    // Scroll to middle set of virtual items (index + realItemsLength)
     const targetIndex = ((position % items.length) + items.length) % items.length;
-    const targetElement = scrollContainerRef.current.children[targetIndex] as HTMLElement;
+    const virtualTargetIndex = targetIndex + realItemsLength; // Use middle set
+    const targetElement = scrollContainerRef.current.children[virtualTargetIndex] as HTMLElement;
 
     if (targetElement) {
       targetElement.scrollIntoView({
@@ -50,7 +58,7 @@ export const SwipeableLayerCarousel: React.FC<SwipeableLayerCarouselProps> = ({
         inline: 'center',
       });
     }
-  }, [position, items.length, isScrolling]);
+  }, [position, items.length, isScrolling, layer.category, realItemsLength]);
 
   // Detect centered item via Intersection Observer
   useEffect(() => {
@@ -65,9 +73,13 @@ export const SwipeableLayerCarousel: React.FC<SwipeableLayerCarouselProps> = ({
     const observer = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
         if (entry.isIntersecting) {
-          const itemIndex = Number(entry.target.getAttribute('data-index'));
-          if (!isNaN(itemIndex) && itemIndex !== position) {
-            goToPosition(itemIndex);
+          const virtualIndex = Number(entry.target.getAttribute('data-index'));
+          if (!isNaN(virtualIndex)) {
+            // Convert virtual index to real position
+            const realPosition = ((virtualIndex % realItemsLength) + realItemsLength) % realItemsLength;
+            if (realPosition !== position) {
+              goToPosition(realPosition);
+            }
           }
         }
       });
@@ -134,24 +146,26 @@ export const SwipeableLayerCarousel: React.FC<SwipeableLayerCarouselProps> = ({
         <div
           ref={scrollContainerRef}
           onScroll={handleScroll}
-          className="flex gap-3 overflow-x-auto px-4 py-2 snap-x snap-mandatory scroll-smooth touch-pan-x"
+          className="flex gap-3 overflow-x-scroll px-4 py-2 snap-x snap-mandatory scroll-smooth touch-pan-x"
           style={{
             scrollbarWidth: 'none',
             msOverflowStyle: 'none',
             WebkitOverflowScrolling: 'touch',
+            display: 'flex',
+            width: '100%',
           }}
         >
-          {items.map((item, index) => {
+          {virtualItems.map((item, virtualIndex) => {
             const isCentered = currentItem?.id === item.id;
             
             return (
               <div
-                key={item.id}
-                data-index={index}
+                key={`${item.id}-${virtualIndex}`}
+                data-index={virtualIndex}
                 className={`
-                  flex-shrink-0 snap-center cursor-pointer
+                  rail-card snap-center cursor-pointer
                   transition-all duration-300 ease-out
-                  ${isCentered ? 'rail-card is-center' : 'rail-card'}
+                  ${isCentered ? 'is-center' : ''}
                 `}
                 onClick={() => onItemClick?.(item.id)}
               >

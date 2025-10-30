@@ -48,7 +48,7 @@ export const useLayerPosition = ({
     return unsubscribe;
   }, [layerId]);
 
-  // Debounced database sync
+  // Immediate sync for position changes to DB
   useEffect(() => {
     if (items.length === 0) return;
 
@@ -64,6 +64,8 @@ export const useLayerPosition = ({
 
     // Debounce DB update
     debounceTimerRef.current = setTimeout(() => {
+      console.log(`💾 [${layerId}] Syncing position ${wrappedPosition} → DB (item: ${currentItem.id})`);
+      
       updateLayerPosition.mutate({
         layerId,
         itemId: currentItem.id,
@@ -78,7 +80,7 @@ export const useLayerPosition = ({
         clearTimeout(debounceTimerRef.current);
       }
     };
-  }, [position, items, layerId, onPositionChange]);
+  }, [position, items, layerId, onPositionChange, updateLayerPosition]);
 
   const goToPosition = useCallback((newPosition: number) => {
     layerPositionManager.updatePosition(layerId, newPosition);
