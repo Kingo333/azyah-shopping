@@ -99,13 +99,17 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
       const vw = window.innerWidth;
       const cellWidth = vw * GRID_CONFIG.cellWidthVw;
 
-      // Determine which grid cell is currently centered
+      // Determine which grid cell is currently centered (RAW, unclamped)
       const rawIndex = rail.scrollLeft / cellWidth;
       const snappedIndex = Math.round(rawIndex);
-      const clampedIndex = Math.max(0, Math.min(snappedIndex, items.length - 1));
 
-      // Update local visual state
+      // 🔥 FIX: Broadcast the UNCLAMPED index to all layers for perfect alignment
+      setActiveScrollIndex(snappedIndex);
+
+      // 🔥 FIX: Clamp ONLY for local visual state
+      const clampedIndex = Math.max(0, Math.min(snappedIndex, items.length - 1));
       const centeredItem = items[clampedIndex];
+      
       if (centeredItem) {
         setLocalCenterId(centeredItem.id);
 
@@ -114,9 +118,6 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
         cards.forEach((card, idx) => {
           card.classList.toggle('is-center', idx === clampedIndex);
         });
-
-        // Sync this scroll position to all other layers
-        setActiveScrollIndex(clampedIndex);
       }
     };
 
