@@ -83,9 +83,13 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
       requestAnimationFrame(() => {
         rail.scrollTo({ left: targetScrollLeft, behavior: 'smooth' });
         setLocalCenterId(selectedItemId);
+        
+        // 🔥 FIX: Update global scroll index to match this item's position
+        // This ensures all OTHER layers align to this grid position
+        setActiveScrollIndex(itemIndex);
       });
     });
-  }, [selectedItemId, items.length, items]); // Depends on items to ensure updates when item order changes
+  }, [selectedItemId, items.length, items, setActiveScrollIndex]); // Depends on items to ensure updates when item order changes
 
   // ✅ SCROLL HANDLER: Sync scroll index across all layers
   useEffect(() => {

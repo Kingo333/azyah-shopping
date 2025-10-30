@@ -265,42 +265,50 @@ export default function DressMeWardrobe() {
       return;
     }
 
+    // 🔥 FIX: Pick ONE global grid index for all unpinned layers
+    const unpinnedLayers = layers.filter(l => !l.is_pinned);
+    
+    if (unpinnedLayers.length === 0) {
+      toast.info('All layers are pinned');
+      return;
+    }
+
+    // Find the max item count to determine the global grid range
+    const maxItems = Math.max(...unpinnedLayers.map(l => 
+      getLayerItems(l.category).length
+    ));
+    const globalGridIndex = Math.floor(seededRandom() * maxItems);
+    
+    console.log(`🎯 SHUFFLE: Using global grid index ${globalGridIndex}`);
+
     let shuffled = 0;
     const errors: string[] = [];
-    const skipped: string[] = [];
 
     // Process layers sequentially
-    for (const layer of layers) {
+    for (const layer of unpinnedLayers) {
       console.log(`\n--- Processing layer: ${layer.category} ---`);
       console.log('Layer data:', layer);
-      
-      // Skip pinned layers
-      // Skip pinned layers
-      if (layer.is_pinned) {
-        console.log(`📌 Skipped ${layer.category} (pinned)`);
-        continue;
-      }
 
       // Get items for this category
       const layerItems = getLayerItems(layer.category);
       
-      // Skip if no items (need at least 1 to shuffle to)
+      // Skip if no items
       if (layerItems.length === 0) {
         console.log(`⏭️ Skipped ${layer.category} (no items)`);
         continue;
       }
 
-      // Pick random grid index
-      const randomIndex = Math.floor(seededRandom() * layerItems.length);
-      const randomItem = layerItems[randomIndex];
+      // 🔥 FIX: Use global grid index with wrap-around for alignment
+      const itemIndex = globalGridIndex % layerItems.length;
+      const selectedItem = layerItems[itemIndex];
       
-      console.log(`🔄 ${layer.category}: Grid cell ${randomIndex} → ${randomItem.id}`);
+      console.log(`🔄 ${layer.category}: Grid ${globalGridIndex} → Local ${itemIndex} → ${selectedItem.id}`);
 
       try {
         // Update database - React Query will refetch and trigger carousel snap
         await updateLayerSelection.mutateAsync({ 
           layerId: layer.id, 
-          itemId: randomItem.id 
+          itemId: selectedItem.id 
         });
         shuffled++;
         console.log(`✅ ${layer.category} updated`);
