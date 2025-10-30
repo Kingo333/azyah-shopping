@@ -247,25 +247,14 @@ export default function DressMeWardrobe() {
     updateLayerSelection.mutate({ layerId, itemId });
   };
 
-  // Seeded RNG for shuffle to avoid immediate repeats
-  let shuffleSeed = Date.now();
-  const seededRandom = () => {
-    shuffleSeed = (shuffleSeed * 9301 + 49297) % 233280;
-    return shuffleSeed / 233280;
-  };
-
   const handleShuffleAll = async () => {
     console.log('🎲 ========== SHUFFLE START ==========');
-    console.log('📊 Current layers:', layers);
-    console.log('📊 All items:', allItems);
     
     if (layers.length === 0) {
-      console.warn('⚠️ No layers found');
       toast.info('Add some layers first');
       return;
     }
 
-    // 🔥 FIX: Pick ONE global grid index for all unpinned layers
     const unpinnedLayers = layers.filter(l => !l.is_pinned);
     
     if (unpinnedLayers.length === 0) {
@@ -273,39 +262,40 @@ export default function DressMeWardrobe() {
       return;
     }
 
-    // Find the max item count to determine the global grid range
-    const maxItems = Math.max(...unpinnedLayers.map(l => 
-      getLayerItems(l.category).length
-    ));
-    const globalGridIndex = Math.floor(seededRandom() * maxItems);
-    
-    console.log(`🎯 SHUFFLE: Using global grid index ${globalGridIndex}`);
-
     let shuffled = 0;
     const errors: string[] = [];
 
-    // Process layers sequentially
+    // Process each layer independently with true randomization
     for (const layer of unpinnedLayers) {
-      console.log(`\n--- Processing layer: ${layer.category} ---`);
-      console.log('Layer data:', layer);
-
-      // Get items for this category
       const layerItems = getLayerItems(layer.category);
       
-      // Skip if no items
       if (layerItems.length === 0) {
         console.log(`⏭️ Skipped ${layer.category} (no items)`);
         continue;
       }
 
-      // 🔥 FIX: Use global grid index with wrap-around for alignment
-      const itemIndex = globalGridIndex % layerItems.length;
-      const selectedItem = layerItems[itemIndex];
+      // Get current selection to avoid immediate repeats
+      const currentItemId = layer.selected_item_id;
       
-      console.log(`🔄 ${layer.category}: Grid ${globalGridIndex} → Local ${itemIndex} → ${selectedItem.id}`);
+      let selectedItem: WardrobeItem;
+      
+      // If only 1 item, keep it; otherwise pick randomly but avoid immediate repeat
+      if (layerItems.length === 1) {
+        selectedItem = layerItems[0];
+      } else {
+        // Filter out current item if it exists
+        const availableItems = currentItemId 
+          ? layerItems.filter(item => item.id !== currentItemId)
+          : layerItems;
+        
+        // Pick random item from available options
+        const randomIndex = Math.floor(Math.random() * availableItems.length);
+        selectedItem = availableItems[randomIndex];
+      }
+      
+      console.log(`🔄 ${layer.category}: Randomly picked ${selectedItem.id}`);
 
       try {
-        // Update database - React Query will refetch and trigger carousel snap
         await updateLayerSelection.mutateAsync({ 
           layerId: layer.id, 
           itemId: selectedItem.id 
@@ -318,15 +308,14 @@ export default function DressMeWardrobe() {
       }
     }
 
-    console.log(`🎲 SHUFFLE COMPLETE: ${shuffled} layers`);
-    
-    if (errors.length > 0) {
-      toast.error(`Failed to shuffle: ${errors.join(', ')}`);
-    } else if (shuffled > 0) {
-      toast.success(`Shuffled ${shuffled} ${shuffled === 1 ? 'layer' : 'layers'}`);
+    // Show result
+    if (errors.length === 0) {
+      toast.success(`Shuffled ${shuffled} layer${shuffled !== 1 ? 's' : ''}`);
     } else {
-      toast.info('No layers to shuffle');
+      toast.error(`Failed to shuffle: ${errors.join(', ')}`);
     }
+    
+    console.log('🎲 ========== SHUFFLE END ==========');
   };
 
   const handleDeleteFit = async () => {
