@@ -187,3 +187,46 @@ export const useUpdateLayerSelection = () => {
     },
   });
 };
+
+export const useUpdateLayerPosition = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ layerId, itemId }: { layerId: string; itemId: string }) => {
+      const { data, error } = await supabase
+        .from('wardrobe_layers')
+        .update({ selected_item_id: itemId })
+        .eq('id', layerId)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data as WardrobeLayer;
+    },
+    onMutate: async ({ layerId, itemId }) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['wardrobe-layers'] });
+
+      // Snapshot previous value
+      const previousLayers = queryClient.getQueryData<WardrobeLayer[]>(['wardrobe-layers']);
+
+      // Optimistically update
+      queryClient.setQueryData<WardrobeLayer[]>(['wardrobe-layers'], (old) =>
+        old?.map(layer =>
+          layer.id === layerId ? { ...layer, selected_item_id: itemId } : layer
+        )
+      );
+
+      return { previousLayers };
+    },
+    onError: (err, variables, context) => {
+      // Rollback on error
+      if (context?.previousLayers) {
+        queryClient.setQueryData(['wardrobe-layers'], context.previousLayers);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['wardrobe-layers'] });
+    },
+  });
+};
