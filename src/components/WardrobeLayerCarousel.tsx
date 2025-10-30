@@ -169,8 +169,14 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
     const scroller = scrollContainerRef.current;
     if (!scroller || !selectedItemId) return;
 
-    centerByItemId(scroller, selectedItemId);
-  }, [selectedItemId, centerByItemId]);
+    console.log(`📍 External selection change to: ${selectedItemId} for ${layer.category}`);
+    // Add delay to ensure React Query has updated the DOM
+    setTimeout(() => {
+      if (scrollContainerRef.current) {
+        centerByItemId(scrollContainerRef.current, selectedItemId);
+      }
+    }, 100);
+  }, [selectedItemId, centerByItemId, layer.category]);
 
   return (
     <div className="mb-0">

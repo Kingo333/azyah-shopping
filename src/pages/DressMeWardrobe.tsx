@@ -283,17 +283,26 @@ export default function DressMeWardrobe() {
       // Get items for this category
       const layerItems = getLayerItems(layer.category);
       
-      // Skip if no items (need at least 1 to shuffle to)
-      if (layerItems.length === 0) {
-        console.log(`⏭️ Skipped ${layer.category} (no items)`);
+      // Skip if no items or only 1 item (nothing to shuffle to)
+      if (layerItems.length <= 1) {
+        console.log(`⏭️ Skipped ${layer.category} (${layerItems.length} items)`);
         continue;
       }
 
-      // Pick random grid index
-      const randomIndex = Math.floor(seededRandom() * layerItems.length);
-      const randomItem = layerItems[randomIndex];
+      // Filter out current selection to ensure we pick a DIFFERENT item
+      const currentItemId = layer.selected_item_id;
+      const availableItems = layerItems.filter(item => item.id !== currentItemId);
       
-      console.log(`🔄 ${layer.category}: Grid cell ${randomIndex} → ${randomItem.id}`);
+      if (availableItems.length === 0) {
+        console.log(`⏭️ Skipped ${layer.category} (all items already selected)`);
+        continue;
+      }
+
+      // Pick random from available (excluding current)
+      const randomIndex = Math.floor(seededRandom() * availableItems.length);
+      const randomItem = availableItems[randomIndex];
+      
+      console.log(`🔄 ${layer.category}: ${currentItemId} → ${randomItem.id}`);
 
       try {
         // Update database - React Query will refetch and trigger carousel snap
@@ -303,6 +312,9 @@ export default function DressMeWardrobe() {
         });
         shuffled++;
         console.log(`✅ ${layer.category} updated`);
+        
+        // Small delay for visual feedback
+        await new Promise(r => setTimeout(r, 150));
       } catch (error) {
         console.error(`❌ ${layer.category} failed:`, error);
         errors.push(layer.category);

@@ -784,15 +784,16 @@
 .rail-carousel {
   display: grid;
   grid-auto-flow: column;
+  grid-auto-columns: clamp(180px, 58vw, 300px);
   gap: 16px;
   overflow-x: auto;
   overscroll-behavior-x: contain;
   scroll-snap-type: x mandatory;
   scroll-snap-stop: always;
-  scroll-padding: 24px;
+  scroll-padding: calc(50vw - 29vw);
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
-  padding: 0 24px 8px;
+  padding: 0 calc(50vw - 29vw) 8px;
 }
 
 .rail-carousel::-webkit-scrollbar {
@@ -863,11 +864,6 @@
   opacity: 0.9;
 }
 
-/* Neighbor card styles - fade out non-centered items */
-.rail-card:not(.is-center) {
-  opacity: 0.35;
-  transform: scale(0.88);
-}
 
 /* Mobile optimizations */
 @media (max-width: 768px) {
