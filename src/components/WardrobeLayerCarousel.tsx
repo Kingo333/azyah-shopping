@@ -31,9 +31,9 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
 
   // Grid configuration - treats carousel as discrete cells
   const GRID_CONFIG = {
-    cardWidthVw: 0.58,    // Card takes 58% of viewport width (matches CSS)
+    cardWidthVw: 0.48,    // Card takes 48% of viewport width (matches CSS)
     gapVw: 0.08,          // Gap is 8% of viewport width (matches CSS)
-    get cellWidthVw() { return this.cardWidthVw + this.gapVw; }  // Total cell = 66vw
+    get cellWidthVw() { return this.cardWidthVw + this.gapVw; }  // Total cell = 56vw
   };
 
   // Calculate exact scroll position for a grid index
