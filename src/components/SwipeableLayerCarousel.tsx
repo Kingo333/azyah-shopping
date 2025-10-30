@@ -248,7 +248,7 @@ export const SwipeableLayerCarousel: React.FC<SwipeableLayerCarouselProps> = ({
         onScroll={handleScroll}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
-        className="flex gap-3 overflow-x-auto px-4 py-2 snap-x snap-mandatory scroll-smooth touch-pan-x"
+        className="flex gap-4 overflow-x-auto px-6 py-4 snap-x snap-mandatory scroll-smooth touch-pan-x"
         style={{
           scrollbarWidth: 'none',
           msOverflowStyle: 'none',
