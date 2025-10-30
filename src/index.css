@@ -422,14 +422,12 @@
 
 .rail-card.is-center {
   transform: scale(1);
-  box-shadow: 0 6px 16px rgba(0,0,0,0.08);
   opacity: 1;
   z-index: 1;
 }
 
 .rail-card:hover {
   transform: scale(1.02);
-  box-shadow: 0 8px 20px rgba(0,0,0,0.12);
 }
 
 /* PNG content - always contained within uniform box */
