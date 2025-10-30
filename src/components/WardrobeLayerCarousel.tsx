@@ -3,6 +3,7 @@ import { Pin, X, Plus } from 'lucide-react';
 import { Button } from './ui/button';
 import { WardrobeItem } from '@/hooks/useWardrobeItems';
 import { WardrobeLayer } from '@/hooks/useWardrobeLayers';
+import { useLayerScroll } from '@/contexts/LayerScrollContext';
 
 interface WardrobeLayerCarouselProps {
   layer: WardrobeLayer;
@@ -25,6 +26,8 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
 }) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [localCenterId, setLocalCenterId] = useState<string | null>(null);
+  const { activeScrollIndex, setActiveScrollIndex, registerCarousel, unregisterCarousel } = useLayerScroll();
+  const isUserScrollingRef = useRef(false);
 
   // Grid configuration - treats carousel as discrete cells
   const GRID_CONFIG = {
@@ -84,12 +87,14 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
     });
   }, [selectedItemId, items.length, items]); // Depends on items to ensure updates when item order changes
 
-  // ✅ SCROLL HANDLER: Visual center indicator only (NO DB updates)
+  // ✅ SCROLL HANDLER: Sync scroll index across all layers
   useEffect(() => {
     const rail = scrollContainerRef.current;
     if (!rail || items.length === 0) return;
 
     const handleScroll = () => {
+      if (!isUserScrollingRef.current) return; // Ignore programmatic scrolls
+
       // Calculate grid dimensions
       const vw = window.innerWidth;
       const cellWidth = vw * GRID_CONFIG.cellWidthVw;
@@ -99,7 +104,7 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
       const snappedIndex = Math.round(rawIndex);
       const clampedIndex = Math.max(0, Math.min(snappedIndex, items.length - 1));
 
-      // ✅ ONLY update visual state - NO database updates
+      // Update local visual state
       const centeredItem = items[clampedIndex];
       if (centeredItem) {
         setLocalCenterId(centeredItem.id);
@@ -109,12 +114,36 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
         cards.forEach((card, idx) => {
           card.classList.toggle('is-center', idx === clampedIndex);
         });
+
+        // Sync this scroll position to all other layers
+        setActiveScrollIndex(clampedIndex);
       }
     };
 
+    const handleScrollStart = () => {
+      isUserScrollingRef.current = true;
+    };
+
+    const handleScrollEnd = () => {
+      setTimeout(() => {
+        isUserScrollingRef.current = false;
+      }, 100);
+    };
+
     rail.addEventListener('scroll', handleScroll, { passive: true });
-    return () => rail.removeEventListener('scroll', handleScroll);
-  }, [items]);
+    rail.addEventListener('touchstart', handleScrollStart, { passive: true });
+    rail.addEventListener('touchend', handleScrollEnd, { passive: true });
+    rail.addEventListener('mousedown', handleScrollStart);
+    rail.addEventListener('mouseup', handleScrollEnd);
+    
+    return () => {
+      rail.removeEventListener('scroll', handleScroll);
+      rail.removeEventListener('touchstart', handleScrollStart);
+      rail.removeEventListener('touchend', handleScrollEnd);
+      rail.removeEventListener('mousedown', handleScrollStart);
+      rail.removeEventListener('mouseup', handleScrollEnd);
+    };
+  }, [items, setActiveScrollIndex]);
 
   // ✅ INITIAL MOUNT: Center first item visually
   useEffect(() => {
@@ -142,6 +171,36 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
     });
   }, []); // Only run once on mount
   
+  // ✅ REGISTER CAROUSEL: Register scroll function with context
+  useEffect(() => {
+    const scrollToIndex = (index: number) => {
+      const rail = scrollContainerRef.current;
+      if (!rail || items.length === 0) return;
+
+      const clampedIndex = Math.max(0, Math.min(index, items.length - 1));
+      const vw = window.innerWidth;
+      const cardWidth = vw * GRID_CONFIG.cardWidthVw;
+      const cellWidth = vw * GRID_CONFIG.cellWidthVw;
+      const sidePadding = (vw - cardWidth) / 2;
+
+      const itemLeftEdge = sidePadding + (cellWidth * clampedIndex);
+      const viewportCenter = vw / 2;
+      const cardCenter = cardWidth / 2;
+      const targetScrollLeft = itemLeftEdge - viewportCenter + cardCenter;
+
+      isUserScrollingRef.current = false; // Prevent sync loop
+      rail.scrollTo({ left: targetScrollLeft, behavior: 'smooth' });
+
+      // Update visual state
+      if (items[clampedIndex]) {
+        setLocalCenterId(items[clampedIndex].id);
+      }
+    };
+
+    registerCarousel(layer.id, scrollToIndex);
+    return () => unregisterCarousel(layer.id);
+  }, [layer.id, items, registerCarousel, unregisterCarousel]);
+
   // ✅ RESIZE HANDLER: Recalculate CSS variables on window resize
   useEffect(() => {
     const handleResize = () => {

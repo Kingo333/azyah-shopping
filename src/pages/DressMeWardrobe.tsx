@@ -23,6 +23,7 @@ import { CommunityClothes } from './CommunityClothes';
 import { OutfitDetailSheet } from '@/components/OutfitDetailSheet';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
+import { LayerScrollProvider } from '@/contexts/LayerScrollContext';
 
 export default function DressMeWardrobe() {
   const navigate = useNavigate();
@@ -510,25 +511,27 @@ export default function DressMeWardrobe() {
                 </div>
               )}
 
-              {/* Vertical Layer Carousels */}
+              {/* Vertical Layer Carousels - Wrapped in ScrollProvider for sync */}
               {layers.length > 0 && (
-                <div className="space-y-6 pb-6">
-                  {layers.map((layer) => (
-                    <WardrobeLayerCarousel
-                      key={layer.id}
-                      layer={layer}
-                      items={itemsByCategory[layer.category] || []}
-                      selectedItemId={layer.selected_item_id}
-                      onItemClick={(itemId) => handleLayerItemSelect(layer.id, itemId)}
-                      onPinToggle={() => handleLayerPinToggle(layer.id, layer.is_pinned)}
-                      onRemoveLayer={() => handleRemoveLayer(layer.id)}
-                      onAddItem={() => {
-                        setSelectedCategory(layer.category);
-                        setIsUploadModalOpen(true);
-                      }}
-                    />
-                  ))}
-                </div>
+                <LayerScrollProvider>
+                  <div className="space-y-6 pb-6">
+                    {layers.map((layer) => (
+                      <WardrobeLayerCarousel
+                        key={layer.id}
+                        layer={layer}
+                        items={itemsByCategory[layer.category] || []}
+                        selectedItemId={layer.selected_item_id}
+                        onItemClick={(itemId) => handleLayerItemSelect(layer.id, itemId)}
+                        onPinToggle={() => handleLayerPinToggle(layer.id, layer.is_pinned)}
+                        onRemoveLayer={() => handleRemoveLayer(layer.id)}
+                        onAddItem={() => {
+                          setSelectedCategory(layer.category);
+                          setIsUploadModalOpen(true);
+                        }}
+                      />
+                    ))}
+                  </div>
+                </LayerScrollProvider>
               )}
 
 
