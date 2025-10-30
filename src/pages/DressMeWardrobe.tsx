@@ -418,7 +418,10 @@ export default function DressMeWardrobe() {
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <BackButton fallbackPath="/" variant="ghost" size="sm" />
-              <h1 className="text-lg font-semibold">My Wardrobe</h1>
+              <div>
+                <h1 className="text-lg font-semibold">Digital Closet</h1>
+                <p className="text-xs text-muted-foreground">upload all clothes you own here</p>
+              </div>
             </div>
           </div>
 
@@ -428,7 +431,7 @@ export default function DressMeWardrobe() {
               className={activeTab === 'clothes' ? 'segment active' : 'segment'}
               onClick={() => setActiveTab('clothes')}
             >
-              Clothes
+              Your Clothes
             </button>
             <button 
               className={activeTab === 'outfits' ? 'segment active' : 'segment'}
