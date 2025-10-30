@@ -177,13 +177,17 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
       const rail = scrollContainerRef.current;
       if (!rail || items.length === 0) return;
 
-      const clampedIndex = Math.max(0, Math.min(index, items.length - 1));
+      // DO NOT clamp - use the global index even if this layer has fewer items
+      // This ensures all layers align at the same grid position
       const vw = window.innerWidth;
       const cardWidth = vw * GRID_CONFIG.cardWidthVw;
       const cellWidth = vw * GRID_CONFIG.cellWidthVw;
       const sidePadding = (vw - cardWidth) / 2;
 
-      const itemLeftEdge = sidePadding + (cellWidth * clampedIndex);
+      // Calculate scroll position for the global grid index
+      // Even if this layer doesn't have an item at this index, 
+      // we scroll to that grid position to maintain alignment
+      const itemLeftEdge = sidePadding + (cellWidth * index);
       const viewportCenter = vw / 2;
       const cardCenter = cardWidth / 2;
       const targetScrollLeft = itemLeftEdge - viewportCenter + cardCenter;
@@ -191,9 +195,10 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
       isUserScrollingRef.current = false; // Prevent sync loop
       rail.scrollTo({ left: targetScrollLeft, behavior: 'smooth' });
 
-      // Update visual state
-      if (items[clampedIndex]) {
-        setLocalCenterId(items[clampedIndex].id);
+      // Update visual state only if this layer has an item at this index
+      const actualIndex = Math.max(0, Math.min(index, items.length - 1));
+      if (items[actualIndex]) {
+        setLocalCenterId(items[actualIndex].id);
       }
     };
 
