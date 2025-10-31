@@ -39,7 +39,7 @@ const slides: SlideType[] = [
     type: 'image',
   },
   {
-    image: '/onboarding/slide-events-new.png',
+    image: '/onboarding/slide-events-new.jpg',
     title: "What's happening near you",
     subtitle: 'Find pop-ups and local style events.',
     type: 'image',
