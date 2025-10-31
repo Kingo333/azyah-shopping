@@ -79,7 +79,7 @@ export default function IntroCarousel() {
       <div className="flex items-center justify-center px-4 py-6 overflow-auto">
         <div className="w-full max-w-xs mx-auto flex flex-col items-center gap-0">
           {/* Phone Mockup with Screenshot or Slider */}
-          <div className="relative w-72 h-auto">
+          <div className="relative w-64 h-auto pt-1">
             <div className="relative bg-white rounded-[2rem] shadow-xl border-[2px] border-gray-900 overflow-hidden">
               <div className="absolute top-0 left-1/2 -translate-x-1/2 w-16 h-3 bg-gray-900 rounded-b-xl z-10" />
               {slides[currentSlide].type === 'slider' ? (
