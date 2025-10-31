@@ -96,9 +96,13 @@ export async function renderCanvasToBase64(
         // Apply rotation
         ctx.rotate((layer.rotation * Math.PI) / 180);
         
-        // Apply user's scale and flip directly
-        const scaleX = layer.scale * (layer.flippedH ? -1 : 1);
-        const scaleY = layer.scale;
+        // Match editor display: items shown at 25% of canvas width as base size
+        const baseDisplayWidth = width * 0.25;
+        const displayScale = baseDisplayWidth / img.naturalWidth;
+        
+        // Apply both display scale and user's scale/flip
+        const scaleX = displayScale * layer.scale * (layer.flippedH ? -1 : 1);
+        const scaleY = displayScale * layer.scale;
         ctx.scale(scaleX, scaleY);
         
         // Apply opacity
