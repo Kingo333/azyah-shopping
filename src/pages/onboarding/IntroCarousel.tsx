@@ -29,7 +29,7 @@ const slides = [
     type: 'image' as const,
   },
   {
-    image: '/onboarding/slide-events.png',
+    image: '/onboarding/slide-events-new.png',
     title: "What's happening near you",
     subtitle: 'Find pop-ups and local style events.',
     type: 'image' as const,
