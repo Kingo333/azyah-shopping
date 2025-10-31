@@ -64,7 +64,6 @@ export const EnhancedInteractiveCanvas: React.FC<EnhancedInteractiveCanvasProps>
   const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
   const [showSnapGuides, setShowSnapGuides] = useState(true);
   const [snapLines, setSnapLines] = useState<{ x?: number; y?: number }>({});
-  const [showTrashZone, setShowTrashZone] = useState(false);
   const [showScaleIndicator, setShowScaleIndicator] = useState(false);
   const [showRotateIndicator, setShowRotateIndicator] = useState(false);
   const dragThreshold = 2;
@@ -332,9 +331,6 @@ export const EnhancedInteractiveCanvas: React.FC<EnhancedInteractiveCanvasProps>
         const newX = initialLayerPos.x + deltaX;
         const newY = initialLayerPos.y + deltaY;
 
-        // Show trash zone
-        setShowTrashZone(true);
-
         // Calculate snap guides (in stage coordinates)
         if (showSnapGuides) {
           const stageCenter = { 
@@ -380,7 +376,6 @@ export const EnhancedInteractiveCanvas: React.FC<EnhancedInteractiveCanvasProps>
 
     setIsDragging(false);
     setIsPinching(false);
-    setShowTrashZone(false);
     setSnapLines({});
     setShowScaleIndicator(false);
     setShowRotateIndicator(false);
@@ -488,13 +483,6 @@ export const EnhancedInteractiveCanvas: React.FC<EnhancedInteractiveCanvasProps>
         {showRotateIndicator && selectedLayer && (
           <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-black/80 text-white px-4 py-2 rounded-full text-sm font-medium z-50 pointer-events-none">
             {Math.round(selectedLayer.transform.rotation || 0)}°
-          </div>
-        )}
-
-        {/* Trash zone */}
-        {showTrashZone && (
-          <div className="absolute bottom-0 left-0 right-0 h-24 bg-destructive/20 border-t-2 border-destructive flex items-center justify-center pointer-events-none z-50">
-            <div className="text-destructive text-sm font-medium">Drop here to delete</div>
           </div>
         )}
 

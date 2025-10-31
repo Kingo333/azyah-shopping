@@ -96,13 +96,9 @@ export async function renderCanvasToBase64(
         // Apply rotation
         ctx.rotate((layer.rotation * Math.PI) / 180);
         
-        // Calculate display scale to match editor (items shown at max 25% of canvas width)
-        const maxDisplayWidth = width * 0.25; // 270px for 1080px canvas
-        const displayScale = Math.min(1, maxDisplayWidth / img.naturalWidth);
-        
-        // Apply both display scale and user's scale/flip
-        const scaleX = displayScale * layer.scale * (layer.flippedH ? -1 : 1);
-        const scaleY = displayScale * layer.scale;
+        // Apply user's scale and flip directly
+        const scaleX = layer.scale * (layer.flippedH ? -1 : 1);
+        const scaleY = layer.scale;
         ctx.scale(scaleX, scaleY);
         
         // Apply opacity
