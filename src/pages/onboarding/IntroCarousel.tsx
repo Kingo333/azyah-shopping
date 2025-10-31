@@ -3,42 +3,52 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { BeforeAfterSlider } from '@/components/BeforeAfterSlider';
+import { SwipeableImages } from '@/components/SwipeableImages';
 
-const slides = [
+type SlideType = 
+  | { type: 'image'; image: string; title: string; subtitle: string }
+  | { type: 'slider'; title: string; subtitle: string }
+  | { type: 'swipeable'; images: string[]; title: string; subtitle: string };
+
+const slides: SlideType[] = [
   {
     image: '/onboarding/slide-hero.png',
     title: 'Elegant style, carefully curated',
     subtitle: 'Find styles you love & build looks (earn points for salons)',
-    type: 'image' as const,
+    type: 'image',
   },
   {
     title: 'Try on outfits with AI',
     subtitle: 'See how items look on you before buying.',
-    type: 'slider' as const,
+    type: 'slider',
   },
   {
-    image: '/onboarding/slide-discovery.png',
+    images: [
+      '/onboarding/swipe-outfit-1.png',
+      '/onboarding/swipe-outfit-2.png',
+      '/onboarding/swipe-outfit-3.png',
+    ],
     title: 'Discover your style, faster',
     subtitle: 'Swipe or browse; results adapt to your taste.',
-    type: 'image' as const,
+    type: 'swipeable',
   },
   {
     image: '/onboarding/slide-dressme.png',
     title: 'Build outfits, your way',
     subtitle: 'Add your wardrobe and arrange shareable looks.',
-    type: 'image' as const,
+    type: 'image',
   },
   {
     image: '/onboarding/slide-events-new.png',
     title: "What's happening near you",
     subtitle: 'Find pop-ups and local style events.',
-    type: 'image' as const,
+    type: 'image',
   },
   {
     image: '/onboarding/slide-collabs.png',
     title: '(UGC) Create, collaborate, & earn',
     subtitle: 'Apply for brand collab; earn points (Premium redeems).',
-    type: 'image' as const,
+    type: 'image',
   },
 ];
 
@@ -92,6 +102,10 @@ export default function IntroCarousel() {
               {slides[currentSlide].type === 'slider' ? (
                 <div className="w-full aspect-[9/16]">
                   <BeforeAfterSlider />
+                </div>
+              ) : slides[currentSlide].type === 'swipeable' ? (
+                <div className="w-full aspect-[9/16]">
+                  <SwipeableImages images={slides[currentSlide].images} />
                 </div>
               ) : (
                 <img 
