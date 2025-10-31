@@ -1,44 +1,114 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { BeforeAfterSlider } from '@/components/BeforeAfterSlider';
+import { useServerSideAnalytics } from '@/hooks/useServerSideAnalytics';
 
-const slides = [
+interface Slide {
+  id: string;
+  image?: string;
+  title: string;
+  subtitle: string;
+  type: 'image' | 'slider';
+  cta?: {
+    primary: { text: string; route: string };
+    secondary?: { text: string; route: string };
+  };
+}
+
+const slides: Slide[] = [
   {
-    image: '/onboarding/intro-wardrobe.png',
-    title: 'Keep track of the clothes you own',
-    subtitle: 'Manage and visualize your wardrobe easily.',
-    type: 'image' as const,
+    id: 'hero',
+    image: '/onboarding/slide-hero.png',
+    title: 'Azyah',
+    subtitle: 'Elegant style, discovered by AI.',
+    type: 'image',
+    cta: {
+      primary: { text: 'Join for free', route: '/onboarding/signup' },
+    },
   },
   {
+    id: 'tryon',
     title: 'Try on outfits with AI',
     subtitle: 'See how clothes look on you before buying.',
-    type: 'slider' as const,
+    type: 'slider',
   },
   {
-    image: '/onboarding/intro-outfits.png',
-    title: 'Discover outfits that match your mood',
-    subtitle: 'Get AI-based outfit suggestions daily.',
-    type: 'image' as const,
+    id: 'discovery',
+    image: '/onboarding/slide-discovery.png',
+    title: 'Discover your style, faster',
+    subtitle: 'Swipe or browse—AI learns your taste.',
+    type: 'image',
+    cta: {
+      primary: { text: 'Start discovering', route: '/swipe' },
+    },
   },
   {
-    image: '/onboarding/intro-community.png',
-    title: 'Connect with friends and see what they\'re wearing',
-    subtitle: 'See how others style and share their looks.',
-    type: 'image' as const,
+    id: 'dressme',
+    image: '/onboarding/slide-dressme.png',
+    title: 'Build outfits, your way',
+    subtitle: 'Your closet—now digital.',
+    type: 'image',
+    cta: {
+      primary: { text: 'Open Dress Me', route: '/dress-me' },
+    },
   },
   {
-    image: '/onboarding/intro-rewards.png',
-    title: 'Earn salon & fashion rewards as you engage',
-    subtitle: 'Shop, share, and redeem — effortlessly.',
-    type: 'image' as const,
+    id: 'events',
+    image: '/onboarding/slide-events.png',
+    title: 'What\'s happening near you',
+    subtitle: 'Discover pop-ups and local style.',
+    type: 'image',
+    cta: {
+      primary: { text: 'Explore events', route: '/events' },
+    },
+  },
+  {
+    id: 'collabs',
+    image: '/onboarding/slide-collabs.png',
+    title: 'Create, collaborate, and earn',
+    subtitle: 'For brands, creators, and Premium members.',
+    type: 'image',
+    cta: {
+      primary: { text: 'View collabs', route: '/ugc' },
+      secondary: { text: 'Go Premium', route: '/dashboard/upgrade' },
+    },
   },
 ];
 
 export default function IntroCarousel() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const navigate = useNavigate();
+  const { trackEvent } = useServerSideAnalytics();
+
+  // Track slide impressions
+  useEffect(() => {
+    trackEvent({
+      event_type: 'landing_slide_impression',
+      event_data: {
+        slide_id: slides[currentSlide].id,
+        slide_index: currentSlide,
+      },
+    });
+  }, [currentSlide, trackEvent]);
+
+  // Preload adjacent slide images
+  useEffect(() => {
+    const nextIndex = (currentSlide + 1) % slides.length;
+    const prevIndex = (currentSlide - 1 + slides.length) % slides.length;
+    
+    [nextIndex, prevIndex].forEach(index => {
+      const slide = slides[index];
+      if (slide.image) {
+        const link = document.createElement('link');
+        link.rel = 'preload';
+        link.as = 'image';
+        link.href = slide.image;
+        document.head.appendChild(link);
+      }
+    });
+  }, [currentSlide]);
 
   const nextSlide = () => {
     if (currentSlide < slides.length - 1) {
@@ -52,12 +122,24 @@ export default function IntroCarousel() {
     }
   };
 
+  const handleCtaClick = (slideId: string, ctaType: 'primary' | 'secondary', route: string) => {
+    trackEvent({
+      event_type: 'landing_cta_click',
+      event_data: {
+        slide_id: slideId,
+        cta_type: ctaType,
+        target_route: route,
+      },
+    });
+    navigate(route);
+  };
+
   const handleJoinFree = () => {
-    navigate('/onboarding/signup');
+    handleCtaClick('default', 'primary', '/onboarding/signup');
   };
 
   const handleLogin = () => {
-    navigate('/onboarding/signup');
+    handleCtaClick('default', 'secondary', '/onboarding/signup');
   };
 
   return (
@@ -83,7 +165,7 @@ export default function IntroCarousel() {
               ) : (
                 <img 
                   src={slides[currentSlide].image} 
-                  alt={slides[currentSlide].title}
+                  alt={`${slides[currentSlide].title} - ${slides[currentSlide].subtitle}`}
                   className="w-full h-auto object-contain"
                 />
               )}
@@ -140,19 +222,50 @@ export default function IntroCarousel() {
 
       {/* Bottom Actions */}
       <div className="p-3 space-y-2 border-t bg-background mt-auto">
-        <Button 
-          onClick={handleJoinFree}
-          className="w-full h-12 text-base font-semibold rounded-full bg-black hover:bg-black/90 text-white"
-        >
-          Join for free
-        </Button>
-        
-        <button
-          onClick={handleLogin}
-          className="w-full h-12 text-base font-semibold text-foreground hover:text-foreground/80 transition-colors"
-        >
-          Log in
-        </button>
+        {slides[currentSlide].cta ? (
+          <>
+            <Button 
+              onClick={() => handleCtaClick(
+                slides[currentSlide].id,
+                'primary',
+                slides[currentSlide].cta!.primary.route
+              )}
+              className="w-full h-12 text-base font-semibold rounded-full bg-black hover:bg-black/90 text-white"
+            >
+              {slides[currentSlide].cta.primary.text}
+            </Button>
+            
+            {slides[currentSlide].cta.secondary && (
+              <Button
+                variant="outline"
+                onClick={() => handleCtaClick(
+                  slides[currentSlide].id,
+                  'secondary',
+                  slides[currentSlide].cta!.secondary!.route
+                )}
+                className="w-full h-12 text-base font-semibold"
+              >
+                {slides[currentSlide].cta.secondary.text}
+              </Button>
+            )}
+          </>
+        ) : (
+          <>
+            <Button 
+              onClick={handleJoinFree}
+              className="w-full h-12 text-base font-semibold rounded-full bg-black hover:bg-black/90 text-white"
+            >
+              Join for free
+            </Button>
+            
+            <button
+              onClick={handleLogin}
+              className="w-full h-12 text-base font-semibold text-foreground hover:text-foreground/80 transition-colors"
+            >
+              Log in
+            </button>
+          </>
+        )}
       </div>
     </div>
   );
