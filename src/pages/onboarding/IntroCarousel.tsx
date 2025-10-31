@@ -70,9 +70,16 @@ export default function IntroCarousel() {
     <div className="h-screen bg-white flex flex-col overflow-hidden">
       {/* Azyah Branding at Top */}
       <div className="pt-6 pb-4">
-        <h1 className="text-3xl font-bold text-foreground text-center tracking-tight">
-          Azyah
-        </h1>
+        <div className="flex items-center justify-center gap-2">
+          <img 
+            src="/marketing/azyah-logo.png" 
+            alt="Azyah" 
+            className="h-8 w-8 object-contain"
+          />
+          <h1 className="text-3xl font-serif text-foreground tracking-wider" style={{ fontWeight: 300, letterSpacing: '0.1em' }}>
+            Azyah
+          </h1>
+        </div>
       </div>
 
       {/* Main Content */}
