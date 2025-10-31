@@ -165,10 +165,10 @@ export const recoverFromAuthError = async (): Promise<void> => {
   // Clear all auth data
   clearAllAuthData();
   
-  // Redirect to auth page with recovery flag
+  // Redirect to intro carousel with recovery flag
   const currentPath = window.location.pathname;
-  if (currentPath !== '/auth' && currentPath !== '/') {
+  if (currentPath !== '/') {
     sessionStorage.setItem('auth_recovery_redirect', currentPath);
-    window.location.href = '/auth?recovery=true';
+    window.location.href = '/?recovery=true';
   }
 };
