@@ -10,7 +10,7 @@ interface SmartImageProps {
   className?: string;
   sizes?: string;
   loading?: 'lazy' | 'eager';
-  onLoad?: () => void;
+  onLoad?: (e: React.SyntheticEvent<HTMLImageElement>) => void;
   onError?: () => void;
 }
 
@@ -26,6 +26,7 @@ export const SmartImage = ({
   const [currentSrc, setCurrentSrc] = useState(src);
   const [fallbackIndex, setFallbackIndex] = useState(0);
   const [isError, setIsError] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(false);
 
   const fallbacks = getImageFallbacks(src);
 
@@ -41,9 +42,10 @@ export const SmartImage = ({
     }
   };
 
-  const handleLoad = () => {
+  const handleLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
     setIsError(false);
-    onLoad?.();
+    setIsLoaded(true);
+    onLoad?.(e);
   };
 
   if (isError) {
@@ -73,17 +75,28 @@ export const SmartImage = ({
   }
 
   return (
-    <img
-      src={displaySrc(currentSrc)}
-      srcSet={displaySrcSet(currentSrc)}
-      sizes={sizes}
-      alt={alt}
-      className={className}
-      loading={loading}
-      decoding="async"
-      crossOrigin="anonymous"
-      onLoad={handleLoad}
-      onError={handleError}
-    />
+    <div className={cn("relative", className)}>
+      {/* Blur placeholder */}
+      {!isLoaded && (
+        <div className="absolute inset-0 bg-gradient-to-br from-muted/50 to-muted animate-pulse rounded-inherit" />
+      )}
+      
+      {/* Actual image */}
+      <img
+        src={displaySrc(currentSrc)}
+        srcSet={displaySrcSet(currentSrc)}
+        sizes={sizes}
+        alt={alt}
+        className={cn(
+          "transition-opacity duration-300",
+          isLoaded ? "opacity-100" : "opacity-0"
+        )}
+        loading={loading}
+        decoding="async"
+        crossOrigin="anonymous"
+        onLoad={handleLoad}
+        onError={handleError}
+      />
+    </div>
   );
 };

@@ -1,8 +1,6 @@
 
 import React, { useState, useEffect, useRef, useCallback, useMemo, useLayoutEffect } from 'react';
-import { Button } from '@/components/ui/button';
 import { motion, AnimatePresence, PanInfo, useMotionValue, useTransform, animate } from 'framer-motion';
-import { RotateCcw, Star, Search } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useWishlist } from '@/hooks/useWishlist';
@@ -14,6 +12,11 @@ import { useSwipeMemory } from '@/hooks/useSwipeMemory';
 import { supabase } from '@/integrations/supabase/client';
 import SwipeCard from '@/components/SwipeCard';
 import ProductDetailPage from '@/components/ProductDetailPage';
+import { SwipeInstructions } from '@/components/SwipeInstructions';
+import { SwipeLoadingCard } from '@/components/SwipeLoadingCard';
+import { SwipeEmptyState } from '@/components/SwipeEmptyState';
+import { SwipeCelebration } from '@/components/SwipeCelebration';
+import { swipeHaptics } from '@/utils/haptics';
 
 interface SwipeProduct {
   id: string;
@@ -50,18 +53,30 @@ interface SwipeDeckProps {
 }
 
 const cardVariants = {
-  hidden: { opacity: 1, y: 0, scale: 1 },
-  visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0 } },
-  exit: (x: number) => ({
-    x: x,
+  hidden: { opacity: 0, y: 20, scale: 0.95 },
+  visible: { 
+    opacity: 1, 
+    y: 0, 
+    scale: 1,
+    transition: { type: "spring", stiffness: 300, damping: 30, mass: 0.8 }
+  },
+  exit: (direction: { x: number; y: number }) => ({
+    x: direction.x,
+    y: direction.y,
     opacity: 0,
-    scale: 0.95,
-    transition: { type: "spring" as const, stiffness: 300, damping: 25, duration: 0.2 }
+    scale: 0.9,
+    rotate: direction.x * 0.1,
+    transition: { 
+      type: "spring", 
+      stiffness: 300, 
+      damping: 25,
+      mass: 0.5
+    }
   })
 };
 
-const DISTANCE_THRESHOLD = 100;
-const VERTICAL_THRESHOLD = 100;
+const DISTANCE_THRESHOLD = 120;
+const VERTICAL_THRESHOLD = 120;
 
 const SwipeDeck: React.FC<SwipeDeckProps> = ({
   filter,
@@ -75,20 +90,23 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
   const [index, setIndex] = useState(0);
   const [showProductDetail, setShowProductDetail] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<SwipeProduct | null>(null);
-  const [imageAspectRatio, setImageAspectRatio] = useState<number>(1);
   const [showInstructions, setShowInstructions] = useState(true);
+  const [exitDirection, setExitDirection] = useState({ x: 0, y: 0 });
   
   const { toast } = useToast();
   const { user } = useAuth();
   const navigate = useNavigate();
   const { addToWishlist, isLoading: wishlistLoading } = useWishlist();
   
-  // Motion values
+  // Motion values with improved physics
   const x = useMotionValue(0);
   const y = useMotionValue(0);
-  const rotate = useTransform(x, [-200, 0, 200], [-45, 0, 45]);
-  const opacity = useTransform(x, [-200, 0, 200], [0, 1, 0]);
-  const scale = useTransform(x, [-200, 0, 200], [0.8, 1, 0.8]);
+  const rotate = useTransform(x, [-300, 0, 300], [-20, 0, 20]);
+  const opacity = useTransform(
+    x, 
+    [-300, -150, 0, 150, 300], 
+    [0.5, 1, 1, 1, 0.5]
+  );
 
   // Custom hooks
   const { products, isLoading } = useUnifiedProducts({
@@ -106,82 +124,35 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
 
   const currentProduct = useMemo(() => products[index] || null, [products, index]);
 
-  // Optimized image height calculation with caching
-  const imageHeightCache = useRef<Map<string, number>>(new Map());
-  
-  const getImageHeight = useCallback((aspectRatio: number) => {
-    const currentWidth = window.innerWidth;
-    const currentHeight = window.innerHeight;
-    const cacheKey = `${Math.floor(currentWidth / 50)}-${Math.floor(currentHeight / 50)}-${Math.floor(aspectRatio * 100)}`;
-    
-    if (imageHeightCache.current.has(cacheKey)) {
-      return imageHeightCache.current.get(cacheKey)!;
-    }
-    
-    const isMobile = currentWidth < 640;
-    let calculatedHeight: number;
-    
-    if (isMobile) {
-      const availableHeight = currentHeight * 0.85;
-      const detailsMinHeight = 130;
-      const maxImageHeight = availableHeight - detailsMinHeight;
-      const minHeight = 300;
-      calculatedHeight = Math.max(minHeight, Math.min(maxImageHeight, 380 / aspectRatio));
-    } else {
-      const maxHeight = currentHeight * 0.6;
-      const minHeight = 260;
-      calculatedHeight = Math.max(minHeight, Math.min(maxHeight, 480 / aspectRatio));
-      
-      if (aspectRatio < 0.6) {
-        calculatedHeight = Math.max(minHeight, Math.min(currentHeight * 0.45, 480 / aspectRatio));
-      }
-    }
-    
-    // Limit cache size
-    if (imageHeightCache.current.size > 10) {
-      const firstKey = imageHeightCache.current.keys().next().value;
-      imageHeightCache.current.delete(firstKey);
-    }
-    imageHeightCache.current.set(cacheKey, calculatedHeight);
-    
-    return calculatedHeight;
-  }, []);
-
   const handleImageLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
-    try {
-      const img = e.currentTarget;
-      if (img.naturalWidth && img.naturalHeight) {
-        const ratio = img.naturalWidth / img.naturalHeight;
-        setImageAspectRatio(ratio);
-      }
-    } catch (error) {
-      console.warn('Error calculating image aspect ratio:', error);
-    }
+    // Image loaded - no aspect ratio calculation needed anymore
   }, []);
 
   // Navigation with cleanup and memory optimization
-  const nextCard = useCallback(() => {
+  const nextCard = useCallback((direction?: { x: number; y: number }) => {
     if (currentProduct) {
       addSeenProduct(currentProduct.id);
     }
-    x.set(0);
-    y.set(0);
-    setIndex(prevIndex => Math.min(prevIndex + 1, products.length - 1));
-    performCleanup(); // Trigger cleanup on each swipe
     
-    // Optimize memory every 50 swipes to prevent accumulation
-    if (index % 50 === 0) {
-      optimizeMemory();
+    if (direction) {
+      setExitDirection(direction);
     }
+    
+    // Small delay to allow exit animation
+    setTimeout(() => {
+      x.set(0);
+      y.set(0);
+      setIndex(prevIndex => Math.min(prevIndex + 1, products.length));
+      performCleanup();
+      
+      if (index % 50 === 0) {
+        optimizeMemory();
+      }
+    }, 50);
   }, [x, y, products.length, performCleanup, currentProduct, addSeenProduct, optimizeMemory, index]);
 
-  const prevCard = useCallback(() => {
-    x.set(0);
-    y.set(0);
-    setIndex(prevIndex => Math.max(prevIndex - 1, 0));
-  }, [x, y]);
 
-  // Optimized action handlers
+  // Optimized action handlers with haptics
   const handleLike = useCallback(async (product: SwipeProduct) => {
     if (!user) {
       toast({
@@ -192,14 +163,13 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
       return;
     }
 
-    nextCard();
+    swipeHaptics.like();
+    nextCard({ x: 300, y: 0 });
 
-    // Background operations with minimal impact
     queueMicrotask(async () => {
       try {
         const viewDuration = getViewDuration(product.id);
         
-        // Fire-and-forget tracking
         trackSwipe({
           productId: product.id,
           action: 'right',
@@ -208,7 +178,6 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
           confidence: 1.0
         }).catch(() => {});
 
-        // Quick database operation
         const { error } = await supabase.from('likes').insert([{
           user_id: user.id,
           product_id: product.id
@@ -217,7 +186,10 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
         if (error && error.code !== '23505') {
           console.warn("Like error:", error);
         } else if (!error) {
-          toast({ description: `${product.title} added to your likes!` });
+          toast({ 
+            description: `Added to likes!`,
+            duration: 2000
+          });
         }
       } catch (error) {
         // Silent fail
@@ -226,10 +198,11 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
   }, [user, toast, nextCard, trackSwipe, getViewDuration]);
 
   const handleDislike = useCallback(() => {
+    swipeHaptics.dislike();
+    
     if (currentProduct) {
       const viewDuration = getViewDuration(currentProduct.id);
       
-      // Fire-and-forget tracking
       if (user) {
         queueMicrotask(() => {
           trackSwipe({
@@ -243,7 +216,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
       }
     }
     
-    nextCard();
+    nextCard({ x: -300, y: 0 });
   }, [user, currentProduct, nextCard, trackSwipe, getViewDuration]);
 
   const handleAddToWishlist = useCallback(async (product: SwipeProduct) => {
@@ -256,7 +229,8 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
       return;
     }
 
-    nextCard();
+    swipeHaptics.wishlist();
+    nextCard({ x: 0, y: -300 });
 
     queueMicrotask(async () => {
       try {
@@ -271,13 +245,17 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
         }).catch(() => {});
 
         await addToWishlist(product.id);
-        toast({ description: `${product.title} added to your wishlist!` });
+        toast({ 
+          description: `Added to wishlist!`,
+          duration: 2000
+        });
       } catch (error: any) {
-        const errorMessage = error instanceof Error ? error.message : "Failed to add to wishlist. Please try again.";
+        const errorMessage = error instanceof Error ? error.message : "Failed to add to wishlist.";
         toast({
           title: "Error",
           description: errorMessage,
-          variant: "destructive"
+          variant: "destructive",
+          duration: 3000
         });
       }
     });
@@ -288,16 +266,22 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
     if (!currentProduct) return;
 
     const { x: offsetX, y: offsetY } = info.offset;
+    const { x: velocityX, y: velocityY } = info.velocity;
 
-    if (offsetY < -VERTICAL_THRESHOLD && Math.abs(offsetX) < DISTANCE_THRESHOLD) {
+    // Consider velocity for more natural swipes
+    const effectiveX = offsetX + velocityX * 0.1;
+    const effectiveY = offsetY + velocityY * 0.1;
+
+    if (effectiveY < -VERTICAL_THRESHOLD && Math.abs(effectiveX) < DISTANCE_THRESHOLD) {
       handleAddToWishlist(currentProduct);
-    } else if (offsetX > DISTANCE_THRESHOLD) {
+    } else if (effectiveX > DISTANCE_THRESHOLD) {
       handleLike(currentProduct);
-    } else if (offsetX < -DISTANCE_THRESHOLD) {
+    } else if (effectiveX < -DISTANCE_THRESHOLD) {
       handleDislike();
     } else {
-      animate(x, 0, { type: "spring", stiffness: 150, damping: 20, duration: 0.25 });
-      animate(y, 0, { type: "spring", stiffness: 150, damping: 20, duration: 0.25 });
+      swipeHaptics.return();
+      animate(x, 0, { type: "spring", stiffness: 400, damping: 30 });
+      animate(y, 0, { type: "spring", stiffness: 400, damping: 30 });
     }
   }, [x, y, index, products, handleLike, handleDislike, handleAddToWishlist]);
 
@@ -313,7 +297,6 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
     x.set(0);
     y.set(0);
     clearAll();
-    imageHeightCache.current.clear();
   }, [products, x, y, clearAll]);
 
   // Track view start for current product
@@ -325,39 +308,25 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
 
   // Auto-hide instructions
   useEffect(() => {
-    if (showInstructions) {
-      const timer = setTimeout(() => setShowInstructions(false), 3000);
+    if (showInstructions && index > 0) {
+      const timer = setTimeout(() => setShowInstructions(false), 4000);
       return () => clearTimeout(timer);
     }
-  }, [showInstructions]);
+  }, [showInstructions, index]);
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
       clearAll();
-      imageHeightCache.current.clear();
     };
   }, [clearAll]);
 
   if (isLoading) {
-    return (
-      <div className="flex flex-col items-center justify-center space-y-4 h-full">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-        <p className="text-muted-foreground">Loading products...</p>
-      </div>
-    );
+    return <SwipeLoadingCard />;
   }
 
   if (products.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center space-y-4 h-full">
-        <Search className="h-10 w-10 text-muted-foreground opacity-50" />
-        <p className="text-muted-foreground">No products found matching your criteria.</p>
-        <Button variant="outline" onClick={() => window.location.reload()}>
-          Reset Filters
-        </Button>
-      </div>
-    );
+    return <SwipeEmptyState onReset={() => window.location.reload()} />;
   }
 
   if (showProductDetail && selectedProduct) {
@@ -389,71 +358,71 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
   }
 
   return (
-    <div className="relative w-full h-full">
-      <AnimatePresence initial={false} custom={x.get()}>
-        {currentProduct && (
-          <SwipeCard
-            key={currentProduct.id}
-            product={currentProduct}
-            imageHeight={getImageHeight(imageAspectRatio)}
-            showInstructions={showInstructions}
-            onLike={handleLike}
-            onDislike={handleDislike}
-            onWishlist={handleAddToWishlist}
-            onProductClick={handleProductClick}
-            onInstructionsClick={() => setShowInstructions(true)}
-            onImageLoad={handleImageLoad}
-            wishlistLoading={wishlistLoading}
-            motionProps={{
-              style: { x, y, rotate, opacity, scale },
-              drag: true,
-              dragElastic: false,
-              dragMomentum: false,
-              whileDrag: { scale: 1.02 },
-              onDragEnd: handleSwipeEnd,
-              variants: cardVariants,
-              initial: "hidden",
-              animate: "visible",
-              exit: "exit",
-              custom: x.get()
-            }}
-          />
-        )}
+    <div className="relative w-full h-full flex items-center justify-center">
+      {/* Swipe instructions overlay */}
+      <SwipeInstructions show={showInstructions && index === 0} />
+      
+      {/* Card stack preview effect - show next 2 cards underneath */}
+      <AnimatePresence mode="wait">
+        {products.slice(index, index + 3).map((product, i) => {
+          if (i === 0) {
+            // Current active card
+            return (
+              <SwipeCard
+                key={product.id}
+                product={product}
+                onLike={handleLike}
+                onDislike={handleDislike}
+                onWishlist={handleAddToWishlist}
+                onProductClick={handleProductClick}
+                onImageLoad={handleImageLoad}
+                wishlistLoading={wishlistLoading}
+                motionProps={{
+                  style: { x, y, rotate, opacity },
+                  drag: true,
+                  dragElastic: 0.1,
+                  dragConstraints: { left: 0, right: 0, top: 0, bottom: 0 },
+                  whileDrag: { 
+                    scale: 1.05,
+                    cursor: "grabbing"
+                  },
+                  onDragEnd: handleSwipeEnd,
+                  variants: cardVariants,
+                  initial: "hidden",
+                  animate: "visible",
+                  exit: "exit",
+                  custom: exitDirection
+                }}
+              />
+            );
+          } else {
+            // Stack preview cards (underneath)
+            return (
+              <motion.div
+                key={product.id}
+                className="absolute inset-0"
+                initial={{ scale: 1 - (i * 0.03), y: i * 8, opacity: 1 - (i * 0.3) }}
+                animate={{ scale: 1 - (i * 0.03), y: i * 8, opacity: 1 - (i * 0.3) }}
+                style={{ zIndex: -i }}
+              >
+                <div className="w-full max-w-md mx-auto h-full flex items-center justify-center">
+                  <div className="w-full aspect-[9/16] rounded-3xl bg-card shadow-xl border-0" />
+                </div>
+              </motion.div>
+            );
+          }
+        })}
       </AnimatePresence>
 
+      {/* End of deck celebration */}
       {index >= products.length && products.length > 0 && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-6 bg-background/95 backdrop-blur-sm rounded-3xl">
-          <div className="bg-gradient-accent rounded-full p-4 mb-4">
-            <Star className="h-8 w-8 text-white" />
-          </div>
-          <h3 className="text-xl font-bold mb-2 font-playfair">You've seen everything!</h3>
-          <p className="text-muted-foreground mb-4 text-sm">
-            Great job exploring! Check your likes or try adjusting your filters for more discoveries.
-          </p>
-          <div className="flex gap-2">
-            <Button 
-              onClick={() => navigate("/likes")} 
-              variant="outline" 
-              size="sm"
-              className="gap-2"
-            >
-              <Star className="h-4 w-4" />
-              View Likes
-            </Button>
-            <Button 
-              onClick={() => {
-                setIndex(0);
-                window.location.reload();
-              }} 
-              variant="default" 
-              size="sm"
-              className="gap-2"
-            >
-              <RotateCcw className="h-4 w-4" />
-              Start Over
-            </Button>
-          </div>
-        </div>
+        <SwipeCelebration
+          onViewLikes={() => navigate("/likes")}
+          onStartOver={() => {
+            setIndex(0);
+            window.location.reload();
+          }}
+        />
       )}
     </div>
   );
