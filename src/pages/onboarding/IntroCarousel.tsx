@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { BeforeAfterSlider } from '@/components/BeforeAfterSlider';
-import { SwipeableImages } from '@/components/SwipeableImages';
 
 const slides = [
   {
@@ -15,12 +14,7 @@ const slides = [
   {
     title: 'Try on outfits with AI',
     subtitle: 'See how items look on you before buying.',
-    type: 'swipeable' as const,
-    images: [
-      '/onboarding/swipe-outfit-1.png',
-      '/onboarding/swipe-outfit-2.png',
-      '/onboarding/swipe-outfit-3.png',
-    ],
+    type: 'slider' as const,
   },
   {
     image: '/onboarding/slide-discovery.png',
@@ -46,7 +40,7 @@ const slides = [
     subtitle: 'Apply for brand collab; earn points (Premium redeems).',
     type: 'image' as const,
   },
-] as const;
+];
 
 export default function IntroCarousel() {
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -95,9 +89,9 @@ export default function IntroCarousel() {
           <div className="relative w-64 h-auto pt-1">
             <div className="relative bg-white rounded-[2rem] shadow-xl border-[2px] border-gray-900 overflow-hidden">
               <div className="absolute top-0 left-1/2 -translate-x-1/2 w-16 h-3 bg-gray-900 rounded-b-xl z-10" />
-              {slides[currentSlide].type === 'swipeable' ? (
+              {slides[currentSlide].type === 'slider' ? (
                 <div className="w-full aspect-[9/16]">
-                  <SwipeableImages images={slides[currentSlide].images || []} />
+                  <BeforeAfterSlider />
                 </div>
               ) : (
                 <img 
