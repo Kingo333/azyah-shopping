@@ -1,92 +1,80 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useCallback, useMemo } from 'react';
+import { motion, PanInfo, useMotionValue, useTransform, animate } from 'framer-motion';
 
 interface SwipeableImagesProps {
   images: string[];
 }
 
+const DISTANCE_THRESHOLD = 100;
+
 export const SwipeableImages = ({ images }: SwipeableImagesProps) => {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [touchStart, setTouchStart] = useState(0);
-  const [touchEnd, setTouchEnd] = useState(0);
-  const [isDragging, setIsDragging] = useState(false);
-  const [translateX, setTranslateX] = useState(0);
 
-  const minSwipeDistance = 50;
+  // Motion values for swipe effect
+  const x = useMotionValue(0);
+  const rotate = useTransform(x, [-200, 0, 200], [-15, 0, 15]);
+  const opacity = useTransform(x, [-200, -100, 0, 100, 200], [0.5, 1, 1, 1, 0.5]);
 
-  const onTouchStart = (e: React.TouchEvent) => {
-    setTouchEnd(0);
-    setTouchStart(e.targetTouches[0].clientX);
-    setIsDragging(true);
-  };
+  const currentImage = useMemo(() => images[currentIndex], [images, currentIndex]);
 
-  const onTouchMove = (e: React.TouchEvent) => {
-    if (!isDragging) return;
-    const currentTouch = e.targetTouches[0].clientX;
-    setTouchEnd(currentTouch);
-    const diff = currentTouch - touchStart;
-    setTranslateX(diff);
-  };
+  const handleSwipeEnd = useCallback((event: any, info: PanInfo) => {
+    const { offset } = info;
 
-  const onTouchEnd = () => {
-    if (!touchStart || !touchEnd) {
-      setIsDragging(false);
-      setTranslateX(0);
-      return;
+    if (offset.x > DISTANCE_THRESHOLD && currentIndex > 0) {
+      // Swipe right - go to previous image
+      setCurrentIndex(prev => prev - 1);
+      animate(x, 0, { type: "spring", stiffness: 300, damping: 25 });
+    } else if (offset.x < -DISTANCE_THRESHOLD && currentIndex < images.length - 1) {
+      // Swipe left - go to next image
+      setCurrentIndex(prev => prev + 1);
+      animate(x, 0, { type: "spring", stiffness: 300, damping: 25 });
+    } else {
+      // Return to center
+      animate(x, 0, { type: "spring", stiffness: 150, damping: 20 });
     }
-
-    const distance = touchStart - touchEnd;
-    const isLeftSwipe = distance > minSwipeDistance;
-    const isRightSwipe = distance < -minSwipeDistance;
-
-    if (isLeftSwipe && currentIndex < images.length - 1) {
-      setCurrentIndex(currentIndex + 1);
-    }
-    if (isRightSwipe && currentIndex > 0) {
-      setCurrentIndex(currentIndex - 1);
-    }
-
-    setIsDragging(false);
-    setTranslateX(0);
-    setTouchStart(0);
-    setTouchEnd(0);
-  };
+  }, [currentIndex, images.length, x]);
 
   return (
-    <div className="relative w-full h-full overflow-hidden">
-      <div
-        className="flex transition-transform duration-300 ease-out h-full"
-        style={{
-          transform: isDragging
-            ? `translateX(calc(-${currentIndex * 100}% + ${translateX}px))`
-            : `translateX(-${currentIndex * 100}%)`,
-        }}
-        onTouchStart={onTouchStart}
-        onTouchMove={onTouchMove}
-        onTouchEnd={onTouchEnd}
+    <div className="relative w-full h-full overflow-hidden bg-gradient-to-b from-gray-50 to-gray-100">
+      <motion.div
+        className="w-full h-full flex items-center justify-center cursor-grab active:cursor-grabbing"
+        style={{ x, rotate, opacity }}
+        drag="x"
+        dragElastic={0.2}
+        dragConstraints={{ left: 0, right: 0 }}
+        onDragEnd={handleSwipeEnd}
       >
-        {images.map((image, index) => (
-          <div key={index} className="min-w-full h-full flex-shrink-0">
-            <img
-              src={image}
-              alt={`Swipeable ${index + 1}`}
-              className="w-full h-full object-contain"
-              draggable={false}
-            />
-          </div>
-        ))}
-      </div>
+        <img
+          src={currentImage}
+          alt={`Style ${currentIndex + 1}`}
+          className="w-full h-full object-contain select-none pointer-events-none"
+          draggable={false}
+        />
+      </motion.div>
 
       {/* Indicators */}
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5">
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
         {images.map((_, index) => (
           <div
             key={index}
             className={`h-1.5 rounded-full transition-all ${
-              index === currentIndex ? 'w-6 bg-white' : 'w-1.5 bg-white/50'
+              index === currentIndex ? 'w-6 bg-gray-800' : 'w-1.5 bg-gray-800/30'
             }`}
           />
         ))}
       </div>
+
+      {/* Swipe hints */}
+      {currentIndex > 0 && (
+        <div className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs opacity-50">
+          ←
+        </div>
+      )}
+      {currentIndex < images.length - 1 && (
+        <div className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs opacity-50">
+          →
+        </div>
+      )}
     </div>
   );
 };
