@@ -77,7 +77,7 @@ export default function IntroCarousel() {
 
       {/* Main Content */}
       <div className="flex items-center justify-center px-4 py-6 overflow-auto">
-        <div className="w-full max-w-sm mx-auto flex flex-col items-center gap-0">
+        <div className="w-full max-w-xs mx-auto flex flex-col items-center gap-0">
           {/* Phone Mockup with Screenshot or Slider */}
           <div className="relative w-72 h-auto">
             <div className="relative bg-white rounded-[2rem] shadow-xl border-[2px] border-gray-900 overflow-hidden">
