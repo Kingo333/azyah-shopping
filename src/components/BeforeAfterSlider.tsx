@@ -102,12 +102,14 @@ export const BeforeAfterSlider: React.FC<BeforeAfterSliderProps> = ({ className 
       
       {/* Slider Handle */}
       <motion.div
-        className="absolute top-0 bottom-0 w-1 bg-white shadow-lg z-10 cursor-ew-resize"
+        className="absolute top-0 bottom-0 w-1 bg-white shadow-lg z-10 cursor-ew-resize animate-pulse"
         style={{ left: `${sliderPosition}%`, transform: 'translateX(-50%)' }}
         onMouseDown={handleMouseDown}
         onTouchStart={handleTouchStart}
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.95 }}
+        animate={{ opacity: isDragging ? 1 : [1, 0.7, 1] }}
+        transition={{ duration: 2, repeat: Infinity }}
       >
         {/* Handle Circle with left-right arrows */}
         <motion.div 
