@@ -69,10 +69,18 @@ export default function IntroCarousel() {
   return (
     <div className="h-screen bg-white flex flex-col overflow-hidden">
       {/* Azyah Branding at Top */}
-      <div className="pt-6 pb-4">
-        <h1 className="text-3xl font-bold text-foreground text-center tracking-tight">
-          Azyah
-        </h1>
+      <div className="pt-8 pb-6">
+        <div className="flex items-center justify-center gap-3">
+          <img 
+            src="/marketing/azyah-logo.png" 
+            alt="Azyah" 
+            className="w-10 h-10 object-contain"
+          />
+          <h1 className="text-4xl font-bold text-foreground tracking-tight bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text">
+            Azyah
+          </h1>
+        </div>
+        <div className="w-24 h-px bg-gradient-to-r from-transparent via-foreground/20 to-transparent mx-auto mt-3" />
       </div>
 
       {/* Main Content */}
