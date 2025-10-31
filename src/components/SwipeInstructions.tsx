@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, X, Star } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ArrowUp } from 'lucide-react';
 
 interface SwipeInstructionsProps {
   show: boolean;
@@ -11,43 +11,31 @@ export const SwipeInstructions = memo(({ show }: SwipeInstructionsProps) => {
     <AnimatePresence>
       {show && (
         <motion.div
-          initial={{ opacity: 0, y: -20, scale: 0.9 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: -20, scale: 0.9 }}
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -20 }}
           transition={{ 
             type: "spring",
             stiffness: 300,
             damping: 25
           }}
-          className="absolute top-4 left-1/2 -translate-x-1/2 z-10 px-4 py-3 rounded-2xl glass-premium shadow-xl"
+          className="absolute top-4 left-1/2 -translate-x-1/2 z-10 px-4 py-2 rounded-xl bg-background/20 backdrop-blur-sm border border-border/10"
         >
-          <div className="flex items-center gap-4 text-sm font-medium">
-            <motion.div 
-              className="flex items-center gap-1.5 text-destructive"
-              animate={{ x: [-2, 0, -2] }}
-              transition={{ duration: 1.5, repeat: Infinity }}
-            >
-              <X className="h-4 w-4" />
-              <span className="text-xs">Pass</span>
-            </motion.div>
+          <div className="flex items-center gap-4 text-sm font-medium text-foreground">
+            <div className="flex items-center gap-1.5">
+              <ArrowLeft className="h-4 w-4" />
+              <span className="text-xs">Swipe Left to Pass</span>
+            </div>
             
-            <motion.div 
-              className="flex items-center gap-1.5 text-primary"
-              animate={{ y: [-2, 0, -2] }}
-              transition={{ duration: 1.5, repeat: Infinity, delay: 0.3 }}
-            >
-              <Star className="h-4 w-4" />
-              <span className="text-xs">Save</span>
-            </motion.div>
+            <div className="flex items-center gap-1.5">
+              <ArrowUp className="h-4 w-4" />
+              <span className="text-xs">Up to Save</span>
+            </div>
             
-            <motion.div 
-              className="flex items-center gap-1.5 text-primary"
-              animate={{ x: [2, 0, 2] }}
-              transition={{ duration: 1.5, repeat: Infinity, delay: 0.6 }}
-            >
-              <Heart className="h-4 w-4" />
-              <span className="text-xs">Like</span>
-            </motion.div>
+            <div className="flex items-center gap-1.5">
+              <ArrowRight className="h-4 w-4" />
+              <span className="text-xs">Right to Like</span>
+            </div>
           </div>
         </motion.div>
       )}
