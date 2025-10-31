@@ -6,9 +6,9 @@ import { BeforeAfterSlider } from '@/components/BeforeAfterSlider';
 
 const slides = [
   {
-    image: '/onboarding/intro-wardrobe.png',
-    title: 'Keep track of the clothes you own',
-    subtitle: 'Manage and visualize your wardrobe easily.',
+    image: '/onboarding/slide-hero.png',
+    title: 'Azyah',
+    subtitle: 'Elegant style, discovered by AI.',
     type: 'image' as const,
   },
   {
@@ -17,21 +17,27 @@ const slides = [
     type: 'slider' as const,
   },
   {
-    image: '/onboarding/intro-outfits.png',
-    title: 'Discover outfits that match your mood',
-    subtitle: 'Get AI-based outfit suggestions daily.',
+    image: '/onboarding/slide-discovery.png',
+    title: 'Discover your style, faster',
+    subtitle: 'Swipe or browse—AI learns your taste.',
     type: 'image' as const,
   },
   {
-    image: '/onboarding/intro-community.png',
-    title: 'Connect with friends and see what they\'re wearing',
-    subtitle: 'See how others style and share their looks.',
+    image: '/onboarding/slide-dressme.png',
+    title: 'Build outfits, your way',
+    subtitle: 'Your closet—now digital.',
     type: 'image' as const,
   },
   {
-    image: '/onboarding/intro-rewards.png',
-    title: 'Earn salon & fashion rewards as you engage',
-    subtitle: 'Shop, share, and redeem — effortlessly.',
+    image: '/onboarding/slide-events.png',
+    title: 'What\'s happening near you',
+    subtitle: 'Discover pop-ups and local style.',
+    type: 'image' as const,
+  },
+  {
+    image: '/onboarding/slide-collabs.png',
+    title: 'Create, collaborate, and earn',
+    subtitle: 'For brands, creators, and Premium members.',
     type: 'image' as const,
   },
 ];
