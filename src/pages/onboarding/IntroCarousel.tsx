@@ -7,37 +7,37 @@ import { BeforeAfterSlider } from '@/components/BeforeAfterSlider';
 const slides = [
   {
     image: '/onboarding/slide-hero.png',
-    title: 'Azyah',
-    subtitle: 'Elegant style, discovered by AI.',
+    title: 'Elegant style, carefully curated',
+    subtitle: 'Find styles you love & build looks (earn points for salons)',
     type: 'image' as const,
   },
   {
     title: 'Try on outfits with AI',
-    subtitle: 'See how clothes look on you before buying.',
+    subtitle: 'See how items look on you before buying.',
     type: 'slider' as const,
   },
   {
     image: '/onboarding/slide-discovery.png',
     title: 'Discover your style, faster',
-    subtitle: 'Swipe or browse—AI learns your taste.',
+    subtitle: 'Swipe or browse; results adapt to your taste.',
     type: 'image' as const,
   },
   {
     image: '/onboarding/slide-dressme.png',
     title: 'Build outfits, your way',
-    subtitle: 'Your closet—now digital.',
+    subtitle: 'Add your wardrobe and arrange shareable looks.',
     type: 'image' as const,
   },
   {
     image: '/onboarding/slide-events.png',
-    title: 'What\'s happening near you',
-    subtitle: 'Discover pop-ups and local style.',
+    title: "What's happening near you",
+    subtitle: 'Find pop-ups and local style events.',
     type: 'image' as const,
   },
   {
     image: '/onboarding/slide-collabs.png',
-    title: 'Create, collaborate, and earn',
-    subtitle: 'For brands, creators, and Premium members.',
+    title: '(UGC) Create, collaborate, & earn',
+    subtitle: 'Apply for brand collab; earn points (Premium redeems).',
     type: 'image' as const,
   },
 ];
@@ -98,10 +98,10 @@ export default function IntroCarousel() {
           
           {/* Text Content */}
           <div className="text-center space-y-1 px-2 mt-3">
-            <h2 className="text-base font-bold text-foreground leading-tight">
+            <h2 className="text-base font-bold text-foreground leading-tight line-clamp-1">
               {slides[currentSlide].title}
             </h2>
-            <p className="text-[11px] text-gray-500 leading-relaxed">
+            <p className="text-[11px] text-gray-500 leading-relaxed line-clamp-2">
               {slides[currentSlide].subtitle}
             </p>
           </div>
