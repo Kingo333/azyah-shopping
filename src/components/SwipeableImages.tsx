@@ -1,5 +1,6 @@
 import { useState, useCallback, useMemo } from 'react';
 import { motion, PanInfo, useMotionValue, useTransform, animate } from 'framer-motion';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface SwipeableImagesProps {
   images: string[];
@@ -64,16 +65,38 @@ export const SwipeableImages = ({ images }: SwipeableImagesProps) => {
         ))}
       </div>
 
-      {/* Swipe hints */}
+      {/* Pulsing Swipe Indicators */}
       {currentIndex > 0 && (
-        <div className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs opacity-50">
-          ←
-        </div>
+        <motion.div
+          className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/60 backdrop-blur-sm rounded-full p-3 shadow-lg"
+          animate={{
+            scale: [1, 1.2, 1],
+            opacity: [0.7, 1, 0.7],
+          }}
+          transition={{
+            duration: 2,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+        >
+          <ChevronLeft className="w-6 h-6 text-white" />
+        </motion.div>
       )}
       {currentIndex < images.length - 1 && (
-        <div className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs opacity-50">
-          →
-        </div>
+        <motion.div
+          className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/60 backdrop-blur-sm rounded-full p-3 shadow-lg"
+          animate={{
+            scale: [1, 1.2, 1],
+            opacity: [0.7, 1, 0.7],
+          }}
+          transition={{
+            duration: 2,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+        >
+          <ChevronRight className="w-6 h-6 text-white" />
+        </motion.div>
       )}
     </div>
   );
