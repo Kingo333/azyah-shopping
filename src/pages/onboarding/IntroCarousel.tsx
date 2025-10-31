@@ -67,7 +67,7 @@ export default function IntroCarousel() {
   };
 
   return (
-    <div className="h-screen bg-background flex flex-col overflow-hidden">
+    <div className="h-screen bg-white flex flex-col overflow-hidden">
       {/* Azyah Branding at Top */}
       <div className="pt-6 pb-4">
         <h1 className="text-3xl font-bold text-foreground text-center tracking-tight">
@@ -76,12 +76,12 @@ export default function IntroCarousel() {
       </div>
 
       {/* Main Content */}
-      <div className="flex items-center justify-center px-4 py-1 overflow-auto">
+      <div className="flex items-center justify-center px-4 py-6 overflow-auto">
         <div className="w-full max-w-sm mx-auto flex flex-col items-center gap-0">
           {/* Phone Mockup with Screenshot or Slider */}
-          <div className="relative w-48 h-auto">
-            <div className="relative bg-white rounded-[1.5rem] shadow-lg border-[3px] border-gray-800 overflow-hidden">
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-20 h-4 bg-gray-800 rounded-b-lg z-10" />
+          <div className="relative w-72 h-auto">
+            <div className="relative bg-white rounded-[2rem] shadow-xl border-[2px] border-gray-900 overflow-hidden">
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-16 h-3 bg-gray-900 rounded-b-xl z-10" />
               {slides[currentSlide].type === 'slider' ? (
                 <div className="w-full aspect-[9/16]">
                   <BeforeAfterSlider />
@@ -97,17 +97,17 @@ export default function IntroCarousel() {
           </div>
           
           {/* Text Content */}
-          <div className="text-center space-y-0.5 px-2">
-            <h2 className="text-sm font-bold text-foreground leading-tight">
+          <div className="text-center space-y-1 px-2 mt-3">
+            <h2 className="text-base font-bold text-foreground leading-tight">
               {slides[currentSlide].title}
             </h2>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-[11px] text-gray-500 leading-relaxed">
               {slides[currentSlide].subtitle}
             </p>
           </div>
 
           {/* Progress Dots with Arrow Navigation */}
-          <div className="flex items-center justify-center gap-3 mt-0">
+          <div className="flex items-center justify-center gap-3 mt-4">
             <button
               onClick={prevSlide}
               disabled={currentSlide === 0}
@@ -145,10 +145,10 @@ export default function IntroCarousel() {
       </div>
 
       {/* Bottom Actions */}
-      <div className="p-3 space-y-2 border-t bg-background mt-auto">
+      <div className="px-6 py-4 space-y-2 bg-white mt-auto">
         <Button 
           onClick={handleJoinFree}
-          className="w-full h-12 text-base font-semibold rounded-full bg-black hover:bg-black/90 text-white"
+          className="w-full h-12 text-base font-semibold rounded-full bg-[#8B4567] hover:bg-[#7A3A57] text-white"
         >
           Join for free
         </Button>
