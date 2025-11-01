@@ -821,16 +821,16 @@
 .rail-carousel {
   position: relative;
   display: flex;
-  gap: calc(var(--cell-w, 250px) - var(--card-w, 230px)); /* Dynamic gap */
+  gap: 8vw; /* Gap between cards */
   overflow-x: auto;
   overflow-y: hidden;
   scroll-snap-type: x mandatory;
   scroll-snap-stop: always;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
-  padding: 0 var(--rail-side-pad, 24px);
+  padding: 0;
   contain: layout;
-  scroll-padding-inline: var(--rail-side-pad, 24px);
+  scroll-padding-inline: 29vw; /* Centers 42vw cards */
 }
 
 .rail-carousel::-webkit-scrollbar {
@@ -867,7 +867,9 @@
 /* Card snap alignment - discrete grid cells */
 .rail-card {
   flex-shrink: 0;
-  width: var(--card-w, 230px);
+  width: 42vw; /* Responsive card width */
+  min-width: 160px; /* Minimum size for very small screens */
+  max-width: 400px; /* Maximum size for very large screens */
   height: 100%;
   scroll-snap-align: center;
   scroll-snap-stop: always;
@@ -921,8 +923,20 @@
 /* Mobile optimizations */
 @media (max-width: 768px) {
   .rail-carousel {
-    scroll-padding: env(safe-area-inset-left, 24px) 
-                   env(safe-area-inset-right, 24px);
+    scroll-padding-inline: max(29vw, env(safe-area-inset-left, 0px)) 
+                           max(29vw, env(safe-area-inset-right, 0px));
+  }
+  
+  .rail-card {
+    width: 42vw;
+    min-width: 140px; /* Slightly smaller minimum for mobile */
+  }
+}
+
+/* Very small screens */
+@media (max-width: 320px) {
+  .rail-card {
+    min-width: 120px;
   }
 }
 
