@@ -33,6 +33,7 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
   const [localCenterId, setLocalCenterId] = useState<string | null>(null);
   const { activeScrollIndex, setActiveScrollIndex, registerCarousel, unregisterCarousel } = useLayerScroll();
   const isUserScrollingRef = useRef(false);
+  const isLocalUpdateRef = useRef(false);
   const scrollDebounceRef = useRef<NodeJS.Timeout>();
   const [imageMetrics, setImageMetrics] = useState<Map<string, ImageMetrics>>(new Map());
 
@@ -127,6 +128,13 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
     const rail = scrollContainerRef.current;
     if (!rail || items.length === 0 || !selectedItemId) return;
 
+    // Skip if this carousel just updated the database
+    if (isLocalUpdateRef.current) {
+      console.log(`⏭️ Skipping self-scroll for ${layer.category}`);
+      isLocalUpdateRef.current = false;
+      return;
+    }
+
     // Find item in virtual array (use middle section)
     const virtualIndex = getVirtualIndexForItemId(selectedItemId);
     if (virtualIndex === -1) {
@@ -134,7 +142,7 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
       return;
     }
 
-    console.log(`🎯 [${layer.category}] Scrolling to virtual index ${virtualIndex}: ${selectedItemId}`);
+    console.log(`📥 [${layer.category}] External selection: scrolling to ${selectedItemId}`);
 
     // Debounce scroll to prevent rapid triggers
     if (scrollDebounceRef.current) {
@@ -143,7 +151,6 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
 
     scrollDebounceRef.current = setTimeout(() => {
       setLocalCenterId(selectedItemId);
-      setActiveScrollIndex(getVirtualToRealIndex(virtualIndex)); // Broadcast real index
 
       const vw = window.innerWidth;
       const targetScrollLeft = getScrollLeftForIndex(virtualIndex, vw);
@@ -160,7 +167,7 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
         clearTimeout(scrollDebounceRef.current);
       }
     };
-  }, [selectedItemId, items.length, layer.category, setActiveScrollIndex, realItemsLength]);
+  }, [selectedItemId, items.length, layer.category, realItemsLength]);
 
   // ✅ SNAP HANDLER: Ensure cards snap to center after manual scroll ends + haptic feedback
   useEffect(() => {
@@ -248,8 +255,9 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
         const centeredItem = items[realIndex];
         
         if (centeredItem && centeredItem.id !== selectedItemId) {
-          console.log(`💾 Auto-updating selection to centered item: ${centeredItem.id}`);
-          onItemClick(centeredItem.id); // Update database
+          console.log(`💾 Auto-updating DB selection: ${centeredItem.id}`);
+          isLocalUpdateRef.current = true; // Mark as local update
+          onItemClick(centeredItem.id);
           triggerHaptic('light');
         }
       }, 500); // Debounce to avoid excessive DB writes
@@ -302,7 +310,7 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
 
       // User is scrolling - update visual center AND broadcast to other layers
       const realIndex = updateVisualCenter();
-      setActiveScrollIndex(realIndex); // Broadcast to other carousels
+      setActiveScrollIndex(realIndex, layer.id); // Broadcast to other carousels with source ID
     };
 
     const handleScrollStart = () => {
@@ -494,6 +502,7 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
                   data-category={layer.category}
                   className={isCenter ? 'rail-card is-center' : 'rail-card'}
                   onClick={() => {
+                    isLocalUpdateRef.current = true; // Mark as local update
                     onItemClick(item.id); // Update database
                     
                     // If clicked item is not already centered, scroll it to center

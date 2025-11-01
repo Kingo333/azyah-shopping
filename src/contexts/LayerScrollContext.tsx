@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useCallback, useRef } from 
 
 interface LayerScrollContextType {
   activeScrollIndex: number;
-  setActiveScrollIndex: (index: number) => void;
+  setActiveScrollIndex: (index: number, sourceLayerId?: string) => void;
   syncAllLayers: () => void;
   registerCarousel: (id: string, scrollFn: (index: number) => void) => void;
   unregisterCarousel: (id: string) => void;
@@ -24,14 +24,18 @@ export const LayerScrollProvider: React.FC<{ children: React.ReactNode }> = ({ c
     carouselsRef.current.delete(id);
   }, []);
 
-  const handleSetActiveScrollIndex = useCallback((index: number) => {
-    console.log(`🎯 Global scroll index updated: ${index}`);
+  const handleSetActiveScrollIndex = useCallback((index: number, sourceLayerId?: string) => {
+    console.log(`🎯 Global scroll index updated: ${index} from ${sourceLayerId || 'unknown'}`);
     setActiveScrollIndex(index);
     
-    // Sync all registered carousels
+    // Sync all carousels EXCEPT the source
     carouselsRef.current.forEach((scrollFn, id) => {
-      console.log(`  → Syncing carousel: ${id} to index ${index}`);
-      scrollFn(index);
+      if (id !== sourceLayerId) {
+        console.log(`  → Syncing carousel: ${id} to index ${index}`);
+        scrollFn(index);
+      } else {
+        console.log(`  ⏭️ Skipping source carousel: ${id}`);
+      }
     });
   }, []);
 
