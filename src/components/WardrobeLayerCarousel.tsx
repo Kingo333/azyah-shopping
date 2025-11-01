@@ -1,9 +1,11 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { Pin, X, Plus } from 'lucide-react';
 import { Button } from './ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { WardrobeItem } from '@/hooks/useWardrobeItems';
 import { WardrobeLayer } from '@/hooks/useWardrobeLayers';
 import { useLayerScroll } from '@/contexts/LayerScrollContext';
+import { measurePngTrim, ImageMetrics } from '@/utils/measurePngTrim';
 
 interface WardrobeLayerCarouselProps {
   layer: WardrobeLayer;
@@ -12,6 +14,7 @@ interface WardrobeLayerCarouselProps {
   onItemClick: (itemId: string) => void;
   onPinToggle: () => void;
   onRemoveLayer: () => void;
+  onCategoryChange: (newCategory: WardrobeLayer['category']) => void;
   onAddItem?: () => void;
 }
 
@@ -22,6 +25,7 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
   onItemClick,
   onPinToggle,
   onRemoveLayer,
+  onCategoryChange,
   onAddItem,
 }) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -29,11 +33,37 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
   const { activeScrollIndex, setActiveScrollIndex, registerCarousel, unregisterCarousel } = useLayerScroll();
   const isUserScrollingRef = useRef(false);
   const scrollDebounceRef = useRef<NodeJS.Timeout>();
+  const [imageMetrics, setImageMetrics] = useState<Map<string, ImageMetrics>>(new Map());
 
   // Create virtual infinite loop by tripling the array
   const virtualItems = items.length > 0 ? [...items, ...items, ...items] : [];
   const LOOP_MULTIPLIER = 3;
   const realItemsLength = items.length;
+
+  // Measure image trim for proper spacing
+  useEffect(() => {
+    const measureImages = async () => {
+      const newMetrics = new Map<string, ImageMetrics>();
+      
+      for (const item of items) {
+        const imgSrc = item.image_bg_removed_url || item.image_url;
+        if (!imgSrc) continue;
+        
+        try {
+          const metrics = await measurePngTrim(imgSrc);
+          newMetrics.set(item.id, metrics);
+        } catch (error) {
+          console.error(`Failed to measure ${item.id}:`, error);
+        }
+      }
+      
+      setImageMetrics(newMetrics);
+    };
+    
+    if (items.length > 0) {
+      measureImages();
+    }
+  }, [items]);
 
   // 🔥 FIX: Sync visual center state with selected item
   useEffect(() => {
@@ -323,31 +353,38 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
 
   return (
     <div className="mb-0">
-      {/* Header with Category Circle */}
+      {/* Header with Category Selector */}
       <div className="flex items-center justify-between px-2 mb-1">
-        {/* Category Circle Indicator */}
-        <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 border border-primary/20">
-            <span className="text-xs font-bold text-primary uppercase">
-              {layer.category[0]}
-            </span>
-          </div>
+        {/* Left: Category Dropdown + Count */}
+        <div className="flex items-center gap-2">
+          <Select
+            value={layer.category}
+            onValueChange={(value) => onCategoryChange(value as WardrobeLayer['category'])}
+          >
+            <SelectTrigger className="h-7 w-28 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="bg-background z-50">
+              <SelectItem value="top">Tops</SelectItem>
+              <SelectItem value="bottom">Bottoms</SelectItem>
+              <SelectItem value="dress">Dresses</SelectItem>
+              <SelectItem value="outerwear">Outerwear</SelectItem>
+              <SelectItem value="shoes">Shoes</SelectItem>
+              <SelectItem value="bag">Bags</SelectItem>
+              <SelectItem value="accessory">Accessories</SelectItem>
+            </SelectContent>
+          </Select>
           
-          <div className="flex items-center gap-1.5">
-            <h3 className="text-xs font-semibold text-muted-foreground capitalize">
-              {categoryLabels[layer.category] || layer.category}
-            </h3>
-            <span className="text-[10px] text-muted-foreground/60">
-              {items.length}
-            </span>
-            {layer.is_pinned && (
-              <div className="flex items-center gap-0.5 text-xs text-primary">
-                <Pin className="w-3 h-3 fill-primary" />
-              </div>
-            )}
-          </div>
+          <span className="text-xs text-muted-foreground">
+            ({items.length} items)
+          </span>
+          
+          {layer.is_pinned && (
+            <Pin className="w-3 h-3 fill-primary text-primary" />
+          )}
         </div>
 
+        {/* Right: Pin + Remove buttons */}
         <div className="flex items-center gap-0.5">
           <Button
             variant="ghost"
@@ -376,14 +413,9 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
             className="flex items-center justify-center"
             style={{ height: 'clamp(160px, 20vh, 200px)' }}
           >
-            <button
-              onClick={onAddItem}
-              className="border-2 border-dashed border-gray-300 rounded-xl p-8 hover:border-primary transition-colors"
-            >
-              <p className="text-sm text-muted-foreground">
-                Add {categoryLabels[layer.category]}
-              </p>
-            </button>
+            <div className="text-center text-sm text-muted-foreground">
+              No {categoryLabels[layer.category].toLowerCase()} in your wardrobe
+            </div>
           </div>
         ) : (
           <div
@@ -416,6 +448,23 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
                     alt={item.category}
                     loading="lazy"
                     draggable={false}
+                    style={(() => {
+                      const metrics = imageMetrics.get(item.id);
+                      if (!metrics) return {}; // Fallback to default
+                      
+                      // Calculate trim offsets as percentages
+                      const trimLeft = (metrics.trim.left / metrics.naturalWidth) * 100;
+                      const trimRight = (metrics.trim.right / metrics.naturalWidth) * 100;
+                      const trimTop = (metrics.trim.top / metrics.naturalHeight) * 100;
+                      const trimBottom = (metrics.trim.bottom / metrics.naturalHeight) * 100;
+                      
+                      // Compensate for transparent padding
+                      return {
+                        objectFit: 'contain' as const,
+                        objectPosition: `${50 - (trimLeft - trimRight) / 2}% ${50 - (trimTop - trimBottom) / 2}%`,
+                        scale: 1 + ((trimLeft + trimRight + trimTop + trimBottom) / 400),
+                      };
+                    })()}
                   />
                 </div>
               );

@@ -187,3 +187,37 @@ export const useUpdateLayerSelection = () => {
     },
   });
 };
+
+export const useUpdateLayerCategory = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ 
+      id, 
+      category 
+    }: { 
+      id: string; 
+      category: WardrobeLayer['category'];
+    }) => {
+      const { data, error } = await supabase
+        .from('wardrobe_layers')
+        .update({ 
+          category,
+          selected_item_id: null // Reset selection when category changes
+        })
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data as WardrobeLayer;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['wardrobe-layers'] });
+      toast.success(`Changed to ${data.category}`);
+    },
+    onError: () => {
+      toast.error('Failed to change category');
+    },
+  });
+};

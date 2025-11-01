@@ -10,7 +10,7 @@ import { WardrobeCategoryTabs } from '@/components/WardrobeCategoryTabs';
 import { WardrobeUploadModal } from '@/components/WardrobeUploadModal';
 import { WardrobeItemDetailModal } from '@/components/WardrobeItemDetailModal';
 import { useWardrobeItems, WardrobeItem, useDeleteWardrobeItem } from '@/hooks/useWardrobeItems';
-import { useWardrobeLayers, useAddWardrobeLayer, useUpdateWardrobeLayer, useDeleteWardrobeLayer, useUpdateLayerSelection } from '@/hooks/useWardrobeLayers';
+import { useWardrobeLayers, useAddWardrobeLayer, useUpdateWardrobeLayer, useDeleteWardrobeLayer, useUpdateLayerSelection, useUpdateLayerCategory, WardrobeLayer } from '@/hooks/useWardrobeLayers';
 import { AccessoriesTray } from '@/components/AccessoriesTray';
 import { SEOHead } from '@/components/SEOHead';
 import { BackButton } from '@/components/ui/back-button';
@@ -35,6 +35,7 @@ export default function DressMeWardrobe() {
   const updateLayerMutation = useUpdateWardrobeLayer();
   const deleteLayerMutation = useDeleteWardrobeLayer();
   const updateLayerSelection = useUpdateLayerSelection();
+  const updateLayerCategory = useUpdateLayerCategory();
   const analytics = useDressMeAnalytics();
 
   // Get initial state from URL params
@@ -384,6 +385,10 @@ export default function DressMeWardrobe() {
     deleteLayerMutation.mutate(layerId);
   };
 
+  const handleLayerCategoryChange = (layerId: string, newCategory: WardrobeLayer['category']) => {
+    updateLayerCategory.mutate({ id: layerId, category: newCategory });
+  };
+
 
   // Onboarding state
   if (!isLoading && allItems.length === 0) {
@@ -509,7 +514,7 @@ export default function DressMeWardrobe() {
                     <div className="w-full border-t border-border/40"></div>
                   </div>
                   <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-background px-3 text-muted-foreground/60 font-medium">Layers</span>
+                    <span className="bg-background px-3 text-muted-foreground/60 font-medium">Randomizer</span>
                   </div>
                 </div>
               )}
@@ -534,6 +539,7 @@ export default function DressMeWardrobe() {
                         onItemClick={(itemId) => handleLayerItemSelect(layer.id, itemId)}
                         onPinToggle={() => handleLayerPinToggle(layer.id, layer.is_pinned)}
                         onRemoveLayer={() => handleRemoveLayer(layer.id)}
+                        onCategoryChange={(newCategory) => handleLayerCategoryChange(layer.id, newCategory)}
                         onAddItem={() => {
                           setSelectedCategory(layer.category);
                           setIsUploadModalOpen(true);
