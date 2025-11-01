@@ -21,7 +21,6 @@ export const WardrobeItemDetailModal: React.FC<WardrobeItemDetailModalProps> = (
 }) => {
   const enhanceMutation = useEnhanceWardrobeItem();
   const { credits, refetch: refetchCredits } = useUserCredits();
-  const [hasEnhanced, setHasEnhanced] = useState(false);
 
   if (!item) return null;
 
@@ -33,11 +32,14 @@ export const WardrobeItemDetailModal: React.FC<WardrobeItemDetailModalProps> = (
     }
 
     try {
-      setHasEnhanced(false);
       await enhanceMutation.mutateAsync(item.id);
-      setHasEnhanced(true);
       toast.success('Item enhanced successfully!');
       refetchCredits(); // Refresh credits after enhancement
+      
+      // Auto-close modal after successful enhancement
+      setTimeout(() => {
+        onClose();
+      }, 500);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to enhance item');
     }
@@ -100,19 +102,9 @@ export const WardrobeItemDetailModal: React.FC<WardrobeItemDetailModalProps> = (
             disabled={enhanceMutation.isPending || (credits && credits.wardrobe_credits < 1)}
             className="w-full"
             size="lg"
-            variant={hasEnhanced ? "outline" : "default"}
           >
-            {hasEnhanced ? (
-              <>
-                <CheckCircle className="w-4 h-4 mr-2" />
-                Done (Retry?)
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-4 h-4 mr-2" />
-                Enhance Item {credits && `(${credits.wardrobe_credits} credits)`}
-              </>
-            )}
+            <Sparkles className="w-4 h-4 mr-2" />
+            Enhance Item {credits && `(${credits.wardrobe_credits} credits)`}
           </Button>
 
           <p className="text-xs text-muted-foreground text-center">
