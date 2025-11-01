@@ -527,7 +527,7 @@ export const EnhancedInteractiveCanvas: React.FC<EnhancedInteractiveCanvasProps>
             return (
               <div
                 key={layer.id}
-                className={`absolute select-none ${selectedLayerId === layer.id ? 'shadow-[0_0_0_2px_hsl(var(--primary)/0.6)]' : ''}`}
+                className={`absolute select-none ${selectedLayerId === layer.id ? 'outline outline-2 outline-primary outline-offset-2' : ''}`}
                 style={{
                   left: `${leftPercent}%`,
                   top: `${topPercent}%`,
