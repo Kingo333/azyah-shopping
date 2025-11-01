@@ -18,10 +18,6 @@ export interface WardrobeItem {
   public_reuse_permitted: boolean;
   attribution_user_id: string | null;
   thumb_path: string | null;
-  trim_offset_x: number | null;
-  trim_offset_y: number | null;
-  original_width: number | null;
-  original_height: number | null;
   created_at: string;
 }
 

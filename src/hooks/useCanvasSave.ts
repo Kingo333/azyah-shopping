@@ -4,9 +4,8 @@ import { toast } from 'sonner';
 import { preloadCanvasImages, ImageLoadResult } from '@/utils/canvasImageLoader';
 import { renderCanvasToBase64 } from '@/utils/canvasToImage';
 import { useSaveFit } from '@/hooks/useSaveFit';
-import { STAGE_W, STAGE_H } from '@/utils/canvasLayout';
 import type { CanvasLayer } from '@/components/EnhancedInteractiveCanvas';
-// Trimming now happens at upload
+import { measurePngTrim, type ImageMetrics } from '@/utils/measurePngTrim';
 
 export type SaveStep = 
   | 'idle'
@@ -98,7 +97,30 @@ export const useCanvasSave = (): UseCanvasSaveResult => {
         console.warn(`⚠️ ${failed.length} images failed to load, continuing with ${loaded.length} images`);
       }
 
-      // No metrics needed - images are trimmed at upload
+      // Measure image metrics for precise rendering
+      setProgress(25);
+      const imageMetricsMap = new Map<string, ImageMetrics>();
+      
+      await Promise.all(
+        loaded.map(async ({ id, image }) => {
+          try {
+            const url = imagesToLoad.find(item => item.id === id)?.url;
+            if (url) {
+              const metrics = await measurePngTrim(url);
+              imageMetricsMap.set(id, metrics);
+            }
+          } catch (error) {
+            console.error(`Failed to measure layer ${id}:`, error);
+            // Fallback to basic metrics
+            imageMetricsMap.set(id, {
+              naturalWidth: image.naturalWidth || 1000,
+              naturalHeight: image.naturalHeight || 1000,
+              trim: { left: 0, right: 0, top: 0, bottom: 0 },
+            });
+          }
+        })
+      );
+      
       setProgress(30);
 
       // Step 3: Rendering - Create canvas image
@@ -133,6 +155,7 @@ export const useCanvasSave = (): UseCanvasSaveResult => {
             zIndex: l.zIndex,
           })),
         params.background,
+        imageMetricsMap,
         config.width,
         config.height
       );
@@ -164,18 +187,10 @@ export const useCanvasSave = (): UseCanvasSaveResult => {
       setCurrentStep('saving');
       setProgress(85);
 
-      // Phase 2: Normalize coordinates before saving (0-1 range)
       const canvasData = {
         layers: params.layers.map(layer => ({
           wardrobeItemId: layer.wardrobeItem.id,
-          transform: {
-            x: layer.transform.x / STAGE_W, // Normalize to 0-1
-            y: layer.transform.y / STAGE_H, // Normalize to 0-1
-            width: layer.transform.width,
-            height: layer.transform.height,
-            scale: layer.transform.scale,
-            rotation: layer.transform.rotation,
-          },
+          transform: layer.transform,
           opacity: layer.opacity,
           flipH: layer.flipH,
           visible: layer.visible,

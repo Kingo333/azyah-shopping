@@ -5,10 +5,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { preloadCanvasImages } from '@/utils/canvasImageLoader';
 import { renderCanvasToBase64 } from '@/utils/canvasToImage';
-import { STAGE_W, STAGE_H } from '@/utils/canvasLayout';
 import type { WardrobeItem } from '@/hooks/useWardrobeItems';
 import type { CanvasLayer } from '@/components/EnhancedInteractiveCanvas';
-// Trimming now happens at upload, no need for metrics
+import { measurePngTrim, type ImageMetrics } from '@/utils/measurePngTrim';
 
 const AUTOSAVE_KEY = 'dressme_canvas_autosave';
 const CANVAS_WIDTH = 1080;
@@ -125,7 +124,7 @@ export const useCanvasEditor = () => {
     }
   }, []);
 
-  // Load from cloud - Phase 2: Denormalize coordinates on load
+  // Load from cloud
   const loadFromCloud = useCallback(async (fitId: string) => {
     try {
       const { data: fitData, error } = await supabase
@@ -138,18 +137,7 @@ export const useCanvasEditor = () => {
 
       if (fitData?.canvas_json) {
         const canvasData = fitData.canvas_json as any;
-        
-        // Phase 2: Denormalize coordinates from 0-1 to stage dimensions
-        const denormalizedLayers = (canvasData.layers || []).map((layer: any) => ({
-          ...layer,
-          transform: {
-            ...layer.transform,
-            x: layer.transform.x * STAGE_W, // Denormalize from 0-1
-            y: layer.transform.y * STAGE_H, // Denormalize from 0-1
-          }
-        }));
-        
-        setLayers(denormalizedLayers);
+        setLayers(canvasData.layers || []);
         setBackground(canvasData.background || { type: 'solid', value: '#FFFFFF' });
         toast.success('Loaded outfit from cloud');
       }
@@ -208,7 +196,26 @@ export const useCanvasEditor = () => {
       const imageMap = new Map<string, HTMLImageElement>();
       loaded.forEach(({ id, image }) => imageMap.set(id, image));
 
-      // No metrics needed - images are trimmed at upload
+      // Measure metrics
+      const imageMetricsMap = new Map<string, ImageMetrics>();
+      await Promise.all(
+        loaded.map(async ({ id, image }) => {
+          try {
+            const url = imagesToLoad.find(item => item.id === id)?.url;
+            if (url) {
+              const metrics = await measurePngTrim(url);
+              imageMetricsMap.set(id, metrics);
+            }
+          } catch (error) {
+            console.error(`Failed to measure layer ${id}:`, error);
+            imageMetricsMap.set(id, {
+              naturalWidth: image.naturalWidth || 1000,
+              naturalHeight: image.naturalHeight || 1000,
+              trim: { left: 0, right: 0, top: 0, bottom: 0 },
+            });
+          }
+        })
+      );
 
       // Debug: Log layer positions before rendering
       console.log('📸 Rendering canvas with layers:', layers.map(l => ({
@@ -236,6 +243,7 @@ export const useCanvasEditor = () => {
             zIndex: l.zIndex,
           })),
         background,
+        imageMetricsMap,
         CANVAS_WIDTH,
         CANVAS_HEIGHT
       );
@@ -286,18 +294,10 @@ export const useCanvasEditor = () => {
       // Step 4: Save to database (80-100%)
       toast.loading('Saving outfit...', { id: 'save-toast' });
 
-      // Phase 2: Normalize coordinates before saving (0-1 range)
       const canvasData = {
         layers: layers.map(layer => ({
           wardrobeItemId: layer.wardrobeItem.id,
-          transform: {
-            x: layer.transform.x / STAGE_W, // Normalize to 0-1
-            y: layer.transform.y / STAGE_H, // Normalize to 0-1
-            width: layer.transform.width,
-            height: layer.transform.height,
-            scale: layer.transform.scale,
-            rotation: layer.transform.rotation,
-          },
+          transform: layer.transform,
           opacity: layer.opacity,
           flipH: layer.flipH,
           visible: layer.visible,

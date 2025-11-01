@@ -44,12 +44,6 @@ export const WardrobeUploadModal: React.FC<WardrobeUploadModalProps> = ({
   const [progress, setProgress] = useState(0);
   const [currentStep, setCurrentStep] = useState<'upload' | 'processing' | 'metadata'>('upload');
   const [colorCarouselIndex, setColorCarouselIndex] = useState(0);
-  const [trimMetadata, setTrimMetadata] = useState<{
-    offsetX: number;
-    offsetY: number;
-    originalWidth: number;
-    originalHeight: number;
-  } | null>(null);
 
   const colorOptions = [
     { name: 'Black', value: 'black', hex: '#000000' },
@@ -242,55 +236,10 @@ export const WardrobeUploadModal: React.FC<WardrobeUploadModalProps> = ({
       
       setProgress(85);
       
-      console.log('Trimming transparent padding...');
-      
-      // Download the bg-removed image
-      const bgResponse = await fetch(result.image_path);
-      const bgBlob = await bgResponse.blob();
-      const bgFile = new File([bgBlob], 'bg-removed.png', { type: 'image/png' });
-      
-      // Trim transparent borders
-      const { trimTransparentPadding, dataUrlToFile } = await import('@/utils/imageTrimming');
-      const trimResult = await trimTransparentPadding(bgFile, 5);
-      
-      setProgress(90);
-      
-      // Convert trimmed data URL to File
-      const trimmedFile = dataUrlToFile(trimResult.dataUrl, `${user.id}_${Date.now()}_trimmed.png`);
-      
-      // Upload trimmed version
-      const trimmedPath = `${user.id}/${Date.now()}_trimmed.png`;
-      const { error: uploadError } = await supabase.storage
-        .from('wardrobe')
-        .upload(trimmedPath, trimmedFile, {
-          contentType: 'image/png',
-          cacheControl: '3600',
-          upsert: false
-        });
-      
-      if (uploadError) throw uploadError;
-      
-      const { data: { publicUrl: trimmedUrl } } = supabase.storage
-        .from('wardrobe')
-        .getPublicUrl(trimmedPath);
-      
-      console.log('Trimmed image uploaded:', trimmedUrl);
-      setBgRemovedPreview(trimmedUrl);
-      
-      // Store trim metadata for database insert
-      console.log('Trim result:', trimResult);
-      setTrimMetadata({
-        offsetX: trimResult.offset.x,
-        offsetY: trimResult.offset.y,
-        originalWidth: trimResult.originalSize.w,
-        originalHeight: trimResult.originalSize.h,
-      });
-      console.log('Trim metadata set:', {
-        offsetX: trimResult.offset.x,
-        offsetY: trimResult.offset.y,
-        originalWidth: trimResult.originalSize.w,
-        originalHeight: trimResult.originalSize.h,
-      });
+      // Set the storage URL as preview
+      const publicUrl = result.image_path;
+      console.log('Setting preview URL:', publicUrl);
+      setBgRemovedPreview(publicUrl);
       
       // Wait a moment before transitioning to metadata step
       await new Promise(resolve => setTimeout(resolve, 500));
@@ -300,7 +249,7 @@ export const WardrobeUploadModal: React.FC<WardrobeUploadModalProps> = ({
       setIsProcessing(false);
       
       console.log('Successfully transitioned to metadata step');
-      toast.success('Background removed & trimmed successfully!');
+      toast.success('Background removed successfully!');
     } catch (error: any) {
       console.error('Error processing image:', error);
       
@@ -355,9 +304,8 @@ export const WardrobeUploadModal: React.FC<WardrobeUploadModalProps> = ({
 
     try {
       console.log('Saving item to database with URL:', bgRemovedPreview);
-      console.log('Trim metadata before save:', trimMetadata);
       
-      const itemData = {
+      const newItem = await addItem.mutateAsync({
         image_url: bgRemovedPreview,
         image_bg_removed_url: bgRemovedPreview,
         category: category as 'top' | 'bottom' | 'dress' | 'outerwear' | 'shoes' | 'bag' | 'accessory',
@@ -370,15 +318,7 @@ export const WardrobeUploadModal: React.FC<WardrobeUploadModalProps> = ({
         public_reuse_permitted: publicReuse,
         attribution_user_id: null,
         thumb_path: null,
-        trim_offset_x: trimMetadata?.offsetX ?? null,
-        trim_offset_y: trimMetadata?.offsetY ?? null,
-        original_width: trimMetadata?.originalWidth ?? null,
-        original_height: trimMetadata?.originalHeight ?? null,
-      };
-      
-      console.log('Item data being saved:', itemData);
-      
-      const newItem = await addItem.mutateAsync(itemData);
+      });
 
       console.log('Item saved successfully:', newItem);
       
@@ -400,7 +340,6 @@ export const WardrobeUploadModal: React.FC<WardrobeUploadModalProps> = ({
       setPublicReuse(false);
       setProgress(0);
       setCurrentStep('upload');
-      setTrimMetadata(null);
       onClose();
     } catch (error) {
       console.error('Error saving item:', error);

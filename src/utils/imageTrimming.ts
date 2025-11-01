@@ -1,121 +1,177 @@
+/**
+ * Phase 3: Auto-Trim Transparent Padding
+ * Scans and crops transparent margins from PNG images
+ */
+
 export interface TrimResult {
-  dataUrl: string;
-  offset: { x: number; y: number };
-  trimmedSize: { w: number; h: number };
-  originalSize: { w: number; h: number };
+  trimmedDataUrl: string;
+  offsetX: number; // Pixels trimmed from left
+  offsetY: number; // Pixels trimmed from top
+  originalWidth: number;
+  originalHeight: number;
+  trimmedWidth: number;
+  trimmedHeight: number;
 }
 
 /**
- * Find the content bounds of an image (pixels with alpha > threshold)
+ * Scans image pixels to find bounding box of non-transparent content
  */
 function findContentBounds(
   data: Uint8ClampedArray,
   width: number,
   height: number,
-  alphaThreshold: number
-): { minX: number; minY: number; maxX: number; maxY: number } | null {
-  let minX = width, minY = height, maxX = -1, maxY = -1;
+  threshold: number = 10
+): { top: number; bottom: number; left: number; right: number } | null {
+  let top = height;
+  let bottom = 0;
+  let left = width;
+  let right = 0;
+  let hasContent = false;
 
+  // Scan all pixels
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
-      const alpha = data[(y * width + x) * 4 + 3];
-      if (alpha > alphaThreshold) {
-        if (x < minX) minX = x;
-        if (y < minY) minY = y;
-        if (x > maxX) maxX = x;
-        if (y > maxY) maxY = y;
+      const index = (y * width + x) * 4;
+      const alpha = data[index + 3];
+
+      // If alpha is above threshold, this pixel is part of content
+      if (alpha > threshold) {
+        hasContent = true;
+        if (y < top) top = y;
+        if (y > bottom) bottom = y;
+        if (x < left) left = x;
+        if (x > right) right = x;
       }
     }
   }
 
-  if (maxX < 0) return null; // Image is fully transparent
-  return { minX, minY, maxX, maxY };
+  if (!hasContent) {
+    console.warn('No non-transparent content found in image');
+    return null;
+  }
+
+  return { top, bottom, left, right };
 }
 
 /**
- * Load an image from a File or URL
+ * Loads an image from File or URL
  */
-async function loadImage(source: File | string): Promise<HTMLImageElement> {
+function loadImage(source: File | string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.crossOrigin = 'anonymous';
-    img.onload = () => resolve(img);
-    img.onerror = reject;
     
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error('Failed to load image'));
+
     if (typeof source === 'string') {
       img.src = source;
     } else {
-      img.src = URL.createObjectURL(source);
+      const url = URL.createObjectURL(source);
+      img.src = url;
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        resolve(img);
+      };
     }
   });
 }
 
 /**
- * Trim transparent borders from PNG and return trimmed image as data URL + metadata
+ * Trims transparent padding from an image
+ * @param imageSource - File or URL string
+ * @param threshold - Alpha threshold (0-255) to consider as transparent
+ * @returns TrimResult with trimmed image and offset information
  */
 export async function trimTransparentPadding(
   imageSource: File | string,
-  alphaThreshold = 5
+  threshold: number = 10
 ): Promise<TrimResult> {
-  const img = await loadImage(imageSource);
-  
-  // Draw original image to canvas
-  const sourceCanvas = document.createElement('canvas');
-  sourceCanvas.width = img.width;
-  sourceCanvas.height = img.height;
-  
-  const sourceCtx = sourceCanvas.getContext('2d', { willReadFrequently: true });
-  if (!sourceCtx) throw new Error('Canvas context not available');
-  
-  sourceCtx.drawImage(img, 0, 0);
-  
-  // Get image data and find content bounds
-  const imageData = sourceCtx.getImageData(0, 0, img.width, img.height);
-  const bounds = findContentBounds(imageData.data, img.width, img.height, alphaThreshold);
-  
-  if (!bounds) {
-    throw new Error('Image is fully transparent');
+  try {
+    // Load image
+    const img = await loadImage(imageSource);
+    const originalWidth = img.naturalWidth;
+    const originalHeight = img.naturalHeight;
+
+    // Create canvas and draw image
+    const canvas = document.createElement('canvas');
+    canvas.width = originalWidth;
+    canvas.height = originalHeight;
+    const ctx = canvas.getContext('2d');
+
+    if (!ctx) {
+      throw new Error('Could not get canvas context');
+    }
+
+    ctx.drawImage(img, 0, 0);
+
+    // Get pixel data
+    const imageData = ctx.getImageData(0, 0, originalWidth, originalHeight);
+    const bounds = findContentBounds(imageData.data, originalWidth, originalHeight, threshold);
+
+    if (!bounds) {
+      // No content found, return original
+      console.warn('No content found, returning original image');
+      return {
+        trimmedDataUrl: canvas.toDataURL('image/png'),
+        offsetX: 0,
+        offsetY: 0,
+        originalWidth,
+        originalHeight,
+        trimmedWidth: originalWidth,
+        trimmedHeight: originalHeight,
+      };
+    }
+
+    // Calculate trimmed dimensions
+    const trimmedWidth = bounds.right - bounds.left + 1;
+    const trimmedHeight = bounds.bottom - bounds.top + 1;
+
+    // Create new canvas with trimmed size
+    const trimmedCanvas = document.createElement('canvas');
+    trimmedCanvas.width = trimmedWidth;
+    trimmedCanvas.height = trimmedHeight;
+    const trimmedCtx = trimmedCanvas.getContext('2d');
+
+    if (!trimmedCtx) {
+      throw new Error('Could not get trimmed canvas context');
+    }
+
+    // Draw cropped image
+    trimmedCtx.drawImage(
+      canvas,
+      bounds.left,
+      bounds.top,
+      trimmedWidth,
+      trimmedHeight,
+      0,
+      0,
+      trimmedWidth,
+      trimmedHeight
+    );
+
+    const trimmedDataUrl = trimmedCanvas.toDataURL('image/png');
+
+    console.log(`Trimmed image from ${originalWidth}x${originalHeight} to ${trimmedWidth}x${trimmedHeight}`);
+    console.log(`Offsets: left=${bounds.left}px, top=${bounds.top}px`);
+
+    return {
+      trimmedDataUrl,
+      offsetX: bounds.left,
+      offsetY: bounds.top,
+      originalWidth,
+      originalHeight,
+      trimmedWidth,
+      trimmedHeight,
+    };
+  } catch (error) {
+    console.error('Error trimming image:', error);
+    throw error;
   }
-  
-  const { minX, minY, maxX, maxY } = bounds;
-  
-  // Add 1px padding to avoid edge artifacts
-  const paddedMinX = Math.max(0, minX - 1);
-  const paddedMinY = Math.max(0, minY - 1);
-  const paddedMaxX = Math.min(img.width - 1, maxX + 1);
-  const paddedMaxY = Math.min(img.height - 1, maxY + 1);
-  
-  const trimmedW = paddedMaxX - paddedMinX + 1;
-  const trimmedH = paddedMaxY - paddedMinY + 1;
-  
-  // Create trimmed canvas
-  const trimmedCanvas = document.createElement('canvas');
-  trimmedCanvas.width = trimmedW;
-  trimmedCanvas.height = trimmedH;
-  
-  const trimmedCtx = trimmedCanvas.getContext('2d');
-  if (!trimmedCtx) throw new Error('Canvas context not available');
-  
-  // Draw trimmed region
-  trimmedCtx.drawImage(
-    sourceCanvas,
-    paddedMinX, paddedMinY, trimmedW, trimmedH,
-    0, 0, trimmedW, trimmedH
-  );
-  
-  // Convert to data URL
-  const dataUrl = trimmedCanvas.toDataURL('image/png', 1.0);
-  
-  return {
-    dataUrl,
-    offset: { x: paddedMinX, y: paddedMinY },
-    trimmedSize: { w: trimmedW, h: trimmedH },
-    originalSize: { w: img.width, h: img.height },
-  };
 }
 
 /**
- * Convert data URL to File object
+ * Converts a data URL to a File object
  */
 export function dataUrlToFile(dataUrl: string, filename: string): File {
   const arr = dataUrl.split(',');

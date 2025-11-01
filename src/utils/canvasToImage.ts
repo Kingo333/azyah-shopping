@@ -1,5 +1,5 @@
-import { STAGE_W, STAGE_H } from './canvasLayout';
-import { renderLayers, RenderableLayer, CanvasBackground as UnifiedBackground } from './canvasRenderer';
+import { STAGE_W, STAGE_H, getTargetRect } from './canvasLayout';
+import type { ImageMetrics } from './canvasLayout';
 
 export interface CanvasLayer {
   id: string;
@@ -21,11 +21,11 @@ export interface CanvasBackground {
 
 /**
  * Renders canvas layers and background to a PNG base64 string
- * Now uses the unified renderer for guaranteed WYSIWYG
  */
 export async function renderCanvasToBase64(
   layers: CanvasLayer[],
   background: CanvasBackground,
+  imageMetricsMap: Map<string, ImageMetrics>,
   width: number = STAGE_W,
   height: number = STAGE_H
 ): Promise<string> {
@@ -38,58 +38,108 @@ export async function renderCanvasToBase64(
     throw new Error('Could not get canvas context');
   }
 
-  // Convert CanvasLayer format to RenderableLayer format for unified renderer
-  const renderableLayers: RenderableLayer[] = [];
-  
-  for (const layer of layers) {
-    let img: HTMLImageElement | undefined;
+  // Render background
+  if (background.type === 'solid') {
+    ctx.fillStyle = background.value;
+    ctx.fillRect(0, 0, width, height);
+  } else if (background.type === 'gradient') {
+    // Parse gradient value (e.g., "linear-gradient(180deg, #fff, #000)")
+    const gradient = ctx.createLinearGradient(0, 0, 0, height);
+    gradient.addColorStop(0, '#ffffff');
+    gradient.addColorStop(1, '#f0f0f0');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, width, height);
+  } else {
+    // Default white background
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, width, height);
+  }
 
-    // Use pre-loaded image if available, otherwise load on demand (legacy)
-    if (layer.preloadedImage) {
-      img = layer.preloadedImage;
-      console.log(`Layer ${layer.id}: Using pre-loaded image (${img.width}x${img.height})`);
-    } else if (layer.imageUrl) {
-      // Legacy fallback - load image on demand
-      img = new Image();
-      img.crossOrigin = 'anonymous';
-      
-      await new Promise<void>((resolve, reject) => {
-        img!.onload = () => {
-          console.log(`Layer ${layer.id}: Image loaded on-demand (${img!.width}x${img!.height})`);
-          resolve();
-        };
-        img!.onerror = (e) => {
-          console.warn(`Layer ${layer.id}: Failed to load image - ${layer.imageUrl}`, e);
-          resolve(); // Continue instead of rejecting
-        };
-        img!.src = layer.imageUrl!;
-      });
-    } else {
-      console.warn(`Layer ${layer.id}: No image source available`);
-      continue;
-    }
+  // Sort layers by zIndex
+  const sortedLayers = [...layers]
+    .filter(l => l.visible)
+    .sort((a, b) => a.zIndex - b.zIndex);
 
-    // Only add if image loaded successfully
-    if (img && img.complete && img.naturalWidth > 0) {
-      renderableLayers.push({
-        id: layer.id,
-        preloadedImage: img,
-        transform: {
+  // Render each layer using pre-loaded images
+  for (const layer of sortedLayers) {
+    try {
+      let img: HTMLImageElement;
+
+      // Use pre-loaded image if available, otherwise load on demand (legacy)
+      if (layer.preloadedImage) {
+        img = layer.preloadedImage;
+        console.log(`Layer ${layer.id}: Using pre-loaded image (${img.width}x${img.height})`);
+      } else if (layer.imageUrl) {
+        // Legacy fallback - load image on demand
+        img = new Image();
+        img.crossOrigin = 'anonymous';
+        
+        await new Promise<void>((resolve, reject) => {
+          img.onload = () => {
+            console.log(`Layer ${layer.id}: Image loaded on-demand (${img.width}x${img.height})`);
+            resolve();
+          };
+          img.onerror = (e) => {
+            console.warn(`Layer ${layer.id}: Failed to load image - ${layer.imageUrl}`, e);
+            resolve(); // Continue instead of rejecting
+          };
+          img.src = layer.imageUrl!;
+        });
+      } else {
+        console.warn(`Layer ${layer.id}: No image source available`);
+        continue;
+      }
+
+      // Get metrics for this layer
+      const metrics = imageMetricsMap.get(layer.id);
+      if (!metrics) {
+        console.warn(`Layer ${layer.id}: No metrics available, skipping`);
+        continue;
+      }
+
+      // Only draw if image loaded successfully
+      if (img.complete && img.naturalWidth > 0) {
+        ctx.save();
+        
+        // Use shared math for exact dimensions
+        const transform = {
           x: layer.position.x,
           y: layer.position.y,
           scale: layer.scale,
           rotation: layer.rotation,
-        },
-        flipH: layer.flippedH,
-        opacity: layer.opacity,
-        visible: layer.visible,
-        zIndex: layer.zIndex,
-      });
+        };
+        
+        const { targetW, targetH, offsetX, offsetY } = getTargetRect(transform, metrics);
+        
+        // Apply transforms in SAME ORDER as editor: translate → rotate → scale
+        ctx.translate(
+          Math.round(layer.position.x + offsetX),
+          Math.round(layer.position.y + offsetY)
+        );
+        ctx.rotate((layer.rotation * Math.PI) / 180);
+        ctx.scale(layer.flippedH ? -1 : 1, 1);
+        
+        // High-quality rendering
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.globalAlpha = layer.opacity;
+        
+        // Draw centered on transform origin (same as editor's translate(-50%, -50%))
+        ctx.drawImage(
+          img,
+          Math.round(-targetW / 2),
+          Math.round(-targetH / 2),
+          Math.round(targetW),
+          Math.round(targetH)
+        );
+        
+        ctx.restore();
+      }
+    } catch (error) {
+      console.error(`Error rendering layer ${layer.id}:`, error);
+      // Continue to next layer
     }
   }
-
-  // Use unified renderer - single source of truth
-  renderLayers(ctx, renderableLayers, background);
 
   // Convert to base64
   return canvas.toDataURL('image/jpeg', 0.9);
