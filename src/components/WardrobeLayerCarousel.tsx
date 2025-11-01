@@ -101,10 +101,15 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
 
   // Calculate exact scroll position for a virtual grid index
   const getScrollLeftForIndex = (virtualIndex: number, viewportWidth: number) => {
-    const cardWidth = viewportWidth * GRID_CONFIG.cardWidthVw;
-    const cellWidth = viewportWidth * GRID_CONFIG.cellWidthVw;
-    const sidePadding = (viewportWidth - cardWidth) / 2;
-    return (cellWidth * virtualIndex) + sidePadding - (viewportWidth / 2) + (cardWidth / 2);
+    const cardWidth = viewportWidth * GRID_CONFIG.cardWidthVw; // 42vw
+    const cellWidth = viewportWidth * GRID_CONFIG.cellWidthVw; // 50vw (42vw card + 8vw gap)
+    
+    // CSS Grid scroll-padding-inline centers the cards automatically
+    // We just need to scroll to the card's left edge, and the padding does the rest
+    const scrollPadding = (viewportWidth - cardWidth) / 2; // 29vw on each side
+    
+    // Scroll to position where this card will be centered
+    return (cellWidth * virtualIndex) - scrollPadding;
   };
   
   const categoryLabels: Record<string, string> = {
