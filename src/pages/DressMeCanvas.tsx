@@ -2,7 +2,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Save, Palette, Plus, Smile, Droplet, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { EnhancedInteractiveCanvas, CanvasLayer } from '@/components/EnhancedInteractiveCanvas';
+import { NormalizedCanvas } from '@/components/NormalizedCanvas';
 import { BackgroundPicker } from '@/components/BackgroundPicker';
 import { CanvasBottomToolbar } from '@/components/CanvasBottomToolbar';
 import { WardrobeUploadModal } from '@/components/WardrobeUploadModal';
@@ -20,20 +20,17 @@ import { WardrobeThumbnailRail } from '@/components/WardrobeThumbnailRail';
 import { supabase } from '@/integrations/supabase/client';
 import { useCanvasSave } from '@/hooks/useCanvasSave';
 import { SaveProgressModal } from '@/components/SaveProgressModal';
+import { useCanvasScene } from '@/hooks/useCanvasScene';
+import type { CanvasScene } from '@/types/canvas';
 
 export default function DressMeCanvas() {
   const navigate = useNavigate();
   const { data: allItems = [] } = useWardrobeItems();
   const analytics = useDressMeAnalytics();
   const { saveOutfit, currentStep, progress, errorMessage, reset } = useCanvasSave();
+  const { scene, setScene, addItem, updateItem, deleteItem, setBackground, clearAutosave } = useCanvasScene();
 
-  const [layers, setLayers] = useState<CanvasLayer[]>([]);
-  const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
-  const [background, setBackground] = useState<{ type: 'solid' | 'gradient' | 'pattern' | 'image'; value: string }>({ 
-    type: 'solid', 
-    value: '#FFFFFF' 
-  });
-  
+  const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [isBackgroundPickerOpen, setIsBackgroundPickerOpen] = useState(false);
   const [isWardrobeSheetOpen, setIsWardrobeSheetOpen] = useState(false);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
@@ -42,7 +39,7 @@ export default function DressMeCanvas() {
   const [fitOccasion, setFitOccasion] = useState<string>('Casual');
   const [isPublic, setIsPublic] = useState(false);
 
-  // Load selected items or fit on mount - DON'T auto-load from autosave
+  // Load selected items or fit on mount
   useEffect(() => {
     const selectedItemsStr = sessionStorage.getItem('dressme_selected_items');
     const loadFitId = sessionStorage.getItem('dressme_load_fit');
@@ -57,38 +54,13 @@ export default function DressMeCanvas() {
         const selectedIds = JSON.parse(selectedItemsStr);
         const selectedItems = allItems.filter(item => selectedIds.includes(item.id));
         
-        const newLayers: CanvasLayer[] = selectedItems.map((item, index) => ({
-          id: `layer-${Date.now()}-${index}`,
-          wardrobeItem: item,
-          transform: {
-            x: 200 + (index * 20),
-            y: 150 + (index * 20),
-            width: 1080 * 0.25, // Phase 1: Base width
-            height: 1920 * 0.25, // Placeholder
-            scale: 1,
-            rotation: 0,
-          },
-          opacity: 1,
-          flipH: false,
-          visible: true,
-          zIndex: index,
-        }));
-        
-        setLayers(newLayers);
+        selectedItems.forEach(item => addItem(item));
         sessionStorage.removeItem('dressme_selected_items');
       } catch (e) {
         console.error('Failed to load selected items:', e);
       }
     }
-    // Removed auto-load from autosave - canvas starts empty
-  }, [allItems]);
-
-  // Autosave to localStorage
-  useEffect(() => {
-    if (layers.length > 0) {
-      localStorage.setItem('dressme_autosave', JSON.stringify({ layers, background }));
-    }
-  }, [layers, background]);
+  }, [allItems, addItem]);
 
   const loadFit = async (fitId: string) => {
     try {
@@ -101,32 +73,63 @@ export default function DressMeCanvas() {
       if (error) throw error;
 
       const canvasJson = fitData.canvas_json as any;
-      const itemIds = canvasJson.layers.map((l: any) => l.wardrobeItemId);
       
-      const { data: items } = await supabase
-        .from('wardrobe_items')
-        .select('*')
-        .in('id', itemIds);
+      // Check if it's already in normalized format
+      if (canvasJson.version === 1 && canvasJson.items) {
+        setScene(canvasJson as CanvasScene);
+      } else {
+        // Legacy format - need to migrate
+        const itemIds = canvasJson.layers?.map((l: any) => l.wardrobeItemId) || [];
+        
+        const { data: items } = await supabase
+          .from('wardrobe_items')
+          .select('*')
+          .in('id', itemIds);
 
-      if (!items) return;
+        if (!items) return;
 
-      const reconstructedLayers: CanvasLayer[] = canvasJson.layers.map((layerData: any) => {
-        const item = items.find(i => i.id === layerData.wardrobeItemId);
-        if (!item) return null;
+        // Rebuild scene from legacy format
+        const migratedItems = await Promise.all(
+          (canvasJson.layers || []).map(async (layerData: any) => {
+            const item = items.find(i => i.id === layerData.wardrobeItemId);
+            if (!item) return null;
 
-        return {
-          id: `layer-${Date.now()}-${Math.random()}`,
-          wardrobeItem: item as WardrobeItem,
-          transform: layerData.transform,
-          opacity: layerData.opacity || 1,
-          flipH: layerData.flipH || false,
-          visible: layerData.visible !== false,
-          zIndex: layerData.zIndex,
-        };
-      }).filter(Boolean);
+            const src = item.image_bg_removed_url || item.image_url;
+            const img = new Image();
+            await new Promise((res) => { img.onload = res; img.src = src; });
 
-      setLayers(reconstructedLayers);
-      setBackground(canvasJson.background);
+            return {
+              id: `item-${Date.now()}-${Math.random()}`,
+              src,
+              wardrobeItemId: item.id,
+              x: (layerData.transform.x || 540) / 1080,
+              y: (layerData.transform.y || 960) / 1920,
+              w: 0.25 * (layerData.transform.scale || 1),
+              h: 0.25 * (layerData.transform.scale || 1) * ((img.naturalHeight || 1000) / (img.naturalWidth || 1000)) * (1080 / 1920),
+              naturalW: img.naturalWidth || 1000,
+              naturalH: img.naturalHeight || 1000,
+              rotation: layerData.transform.rotation || 0,
+              scaleX: layerData.flipH ? -1 : 1,
+              scaleY: 1,
+              flipX: layerData.flipH || false,
+              flipY: false,
+              opacity: layerData.opacity || 1,
+              z: layerData.zIndex,
+              visible: layerData.visible !== false,
+              locked: false,
+            };
+          })
+        );
+
+        setScene({
+          version: 1,
+          stageWidth: 1080,
+          stageHeight: 1920,
+          items: migratedItems.filter(Boolean) as any,
+          background: canvasJson.background || { type: 'solid', value: '#FFFFFF' },
+        });
+      }
+      
       toast.success('Outfit loaded');
     } catch (error) {
       console.error('Error loading fit:', error);
@@ -134,57 +137,20 @@ export default function DressMeCanvas() {
     }
   };
 
-  const handleAddItemToCanvas = useCallback((item: WardrobeItem) => {
-    const isDuplicate = layers.some(layer => layer.wardrobeItem.id === item.id);
+  const handleAddItemToCanvas = useCallback(async (item: WardrobeItem) => {
+    const isDuplicate = scene.items.some(sceneItem => sceneItem.wardrobeItemId === item.id);
     if (isDuplicate) {
       toast.info('Item is already on the canvas');
       return;
     }
 
-    const STAGE_WIDTH = 1080;
-    const STAGE_HEIGHT = 1920;
-
-    const newLayer: CanvasLayer = {
-      id: `layer-${Date.now()}-${Math.random()}`,
-      wardrobeItem: item,
-      transform: {
-        x: STAGE_WIDTH / 2,  // Center horizontally
-        y: STAGE_HEIGHT / 2, // Center vertically
-        width: STAGE_WIDTH * 0.25, // Phase 1: Base width 25% of stage
-        height: STAGE_HEIGHT * 0.25, // Placeholder, will be adjusted by aspect ratio
-        scale: 1,
-        rotation: 0,
-      },
-      opacity: 1,
-      flipH: false,
-      visible: true,
-      zIndex: layers.length,
-    };
-    
-    // Check if image needs downscaling (only if >90% of stage width)
-    const img = new Image();
-    img.onload = () => {
-      const maxWidth = STAGE_WIDTH * 0.9;
-      if (img.naturalWidth > maxWidth) {
-        const downscale = maxWidth / img.naturalWidth;
-        setLayers(prevLayers => 
-          prevLayers.map(l => 
-            l.id === newLayer.id 
-              ? { ...l, transform: { ...l.transform, scale: downscale } }
-              : l
-          )
-        );
-      }
-    };
-    img.src = item.image_bg_removed_url || item.image_url;
-    
-    setLayers([...layers, newLayer]);
+    await addItem(item);
     analytics.addItem(item.id);
     setIsWardrobeSheetOpen(false);
-  }, [layers, analytics]);
+  }, [scene.items, addItem, analytics]);
 
   const handleSave = async () => {
-    if (layers.length === 0) {
+    if (scene.items.length === 0) {
       toast.error('Please add items to your outfit first');
       return;
     }
@@ -194,8 +160,7 @@ export default function DressMeCanvas() {
     
     // Start the save process
     await saveOutfit({
-      layers,
-      background,
+      scene,
       title: fitTitle || undefined,
       occasion: fitOccasion,
       isPublic,
@@ -248,15 +213,15 @@ export default function DressMeCanvas() {
                 <ArrowLeft className="w-4 h-4 mr-1 md:mr-2" />
                 <span className="text-xs md:text-sm">Back</span>
               </Button>
-              <Button
-                variant="default"
-                size="sm"
-                onClick={() => setIsSaveModalOpen(true)}
-                disabled={layers.length === 0}
-              >
-                <Save className="w-4 h-4 mr-1 md:mr-2" />
-                <span className="text-xs md:text-sm">Save</span>
-              </Button>
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => setIsSaveModalOpen(true)}
+                  disabled={scene.items.length === 0}
+                >
+                  <Save className="w-4 h-4 mr-1 md:mr-2" />
+                  <span className="text-xs md:text-sm">Save</span>
+                </Button>
             </div>
           </div>
         </div>
@@ -269,12 +234,11 @@ export default function DressMeCanvas() {
           }}
         >
           <div className="w-full h-full max-w-6xl px-1 md:px-4">
-            <EnhancedInteractiveCanvas
-              layers={layers}
-              onLayersChange={setLayers}
-              background={background}
-              selectedLayerId={selectedLayerId}
-              onSelectedLayerIdChange={setSelectedLayerId}
+            <NormalizedCanvas
+              scene={scene}
+              onSceneChange={setScene}
+              selectedItemId={selectedItemId}
+              onSelectedItemIdChange={setSelectedItemId}
             />
           </div>
         </div>
@@ -295,7 +259,7 @@ export default function DressMeCanvas() {
               <SheetTitle>All Items</SheetTitle>
               <div className="flex items-center gap-2">
                 <Button
-                  onClick={() => setSelectedLayerId(null)}
+                  onClick={() => setSelectedItemId(null)}
                   variant="outline"
                   size="sm"
                 >
@@ -312,11 +276,11 @@ export default function DressMeCanvas() {
                   <Plus className="w-4 h-4 mr-2" />
                   Add Layer
                 </Button>
-                {selectedLayerId && (
+                {selectedItemId && (
                   <Button
                     onClick={() => {
-                      setLayers(layers.filter(l => l.id !== selectedLayerId));
-                      setSelectedLayerId(null);
+                      deleteItem(selectedItemId);
+                      setSelectedItemId(null);
                     }}
                     variant="destructive"
                     size="sm"
@@ -341,7 +305,7 @@ export default function DressMeCanvas() {
         isOpen={isBackgroundPickerOpen}
         onClose={() => setIsBackgroundPickerOpen(false)}
         onSelect={setBackground}
-        currentBackground={background}
+        currentBackground={scene.background}
       />
 
       {/* Upload Modal */}
