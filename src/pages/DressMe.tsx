@@ -95,6 +95,8 @@ export default function DressMe() {
       transform: {
         x: 300,
         y: 200,
+        width: 1080 * 0.25, // Phase 1: Base width
+        height: 1920 * 0.25, // Placeholder
         scale: 1,
         rotation: 0,
       },

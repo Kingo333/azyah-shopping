@@ -63,6 +63,8 @@ export default function DressMeCanvas() {
           transform: {
             x: 200 + (index * 20),
             y: 150 + (index * 20),
+            width: 1080 * 0.25, // Phase 1: Base width
+            height: 1920 * 0.25, // Placeholder
             scale: 1,
             rotation: 0,
           },
@@ -148,6 +150,8 @@ export default function DressMeCanvas() {
       transform: {
         x: STAGE_WIDTH / 2,  // Center horizontally
         y: STAGE_HEIGHT / 2, // Center vertically
+        width: STAGE_WIDTH * 0.25, // Phase 1: Base width 25% of stage
+        height: STAGE_HEIGHT * 0.25, // Placeholder, will be adjusted by aspect ratio
         scale: 1,
         rotation: 0,
       },

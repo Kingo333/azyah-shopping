@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { toast } from 'sonner';
 
 // Fixed logical stage dimensions (9:16 aspect ratio for Instagram)
 const STAGE_WIDTH = 1080;
@@ -17,10 +18,12 @@ export interface CanvasLayer {
   id: string;
   wardrobeItem: WardrobeItem;
   transform: {
-    x: number;
-    y: number;
-    scale: number;
-    rotation: number;
+    x: number; // Scene space (0-1080)
+    y: number; // Scene space (0-1920)
+    width: number; // Rendered width in scene space
+    height: number; // Rendered height in scene space
+    scale: number; // User scale multiplier
+    rotation: number; // Degrees
   };
   opacity: number;
   flipH: boolean;
@@ -88,12 +91,37 @@ export const EnhancedInteractiveCanvas: React.FC<EnhancedInteractiveCanvasProps>
   const updateSelectedLayer = (updates: Partial<CanvasLayer['transform']> | { opacity?: number; flipH?: boolean; visible?: boolean }) => {
     if (!selectedLayerId) return;
     
+    // Phase 5: Clamp positions to safe area
+    const clampedUpdates = { ...updates } as any;
+    if ('x' in clampedUpdates) {
+      const newX = clampedUpdates.x;
+      clampedUpdates.x = Math.max(0, Math.min(STAGE_WIDTH, newX));
+      
+      // Warn if near edges
+      if (newX < 50 || newX > STAGE_WIDTH - 50) {
+        toast.warning('Item near edge', {
+          description: 'Item may be cropped in export'
+        });
+      }
+    }
+    if ('y' in clampedUpdates) {
+      const newY = clampedUpdates.y;
+      clampedUpdates.y = Math.max(0, Math.min(STAGE_HEIGHT, newY));
+      
+      // Warn if near edges
+      if (newY < 50 || newY > STAGE_HEIGHT - 50) {
+        toast.warning('Item near edge', {
+          description: 'Item may be cropped in export'
+        });
+      }
+    }
+    
     onLayersChange(
       layers.map(layer =>
         layer.id === selectedLayerId
           ? {
               ...layer,
-              transform: { ...layer.transform, ...(updates as any) },
+              transform: { ...layer.transform, ...clampedUpdates },
               ...('opacity' in updates && { opacity: updates.opacity }),
               ...('flipH' in updates && { flipH: updates.flipH }),
               ...('visible' in updates && { visible: updates.visible }),
@@ -420,9 +448,9 @@ export const EnhancedInteractiveCanvas: React.FC<EnhancedInteractiveCanvasProps>
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
       >
-        {/* 9:16 Safe Area Overlay - Shows capture bounds */}
+        {/* Phase 4: 9:16 Safe Area Overlay - Hidden during export */}
         <div 
-          className="absolute inset-0 pointer-events-none flex items-center justify-center"
+          className="ui-only absolute inset-0 pointer-events-none flex items-center justify-center"
           style={{ zIndex: 0 }}
         >
           <div 
@@ -448,9 +476,9 @@ export const EnhancedInteractiveCanvas: React.FC<EnhancedInteractiveCanvasProps>
           </div>
         </div>
 
-        {/* Snap guides (in stage coordinates) */}
+        {/* Phase 4: Snap guides - Hidden during export */}
         {showSnapGuides && (
-          <>
+          <div className="ui-only">
             {snapLines.x !== undefined && (
               <div
                 className="absolute top-0 w-px bg-primary/70 pointer-events-none z-50 shadow-lg"
@@ -469,19 +497,19 @@ export const EnhancedInteractiveCanvas: React.FC<EnhancedInteractiveCanvasProps>
                 }}
               />
             )}
-          </>
+          </div>
         )}
 
-        {/* Scale indicator */}
+        {/* Phase 4: Scale indicator - Hidden during export */}
         {showScaleIndicator && selectedLayer && (
-          <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-black/80 text-white px-4 py-2 rounded-full text-sm font-medium z-50 pointer-events-none">
+          <div className="ui-only absolute top-4 left-1/2 -translate-x-1/2 bg-black/80 text-white px-4 py-2 rounded-full text-sm font-medium z-50 pointer-events-none">
             {Math.round((selectedLayer.transform.scale || 1) * 100)}%
           </div>
         )}
 
-        {/* Rotation indicator */}
+        {/* Phase 4: Rotation indicator - Hidden during export */}
         {showRotateIndicator && selectedLayer && (
-          <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-black/80 text-white px-4 py-2 rounded-full text-sm font-medium z-50 pointer-events-none">
+          <div className="ui-only absolute top-4 left-1/2 -translate-x-1/2 bg-black/80 text-white px-4 py-2 rounded-full text-sm font-medium z-50 pointer-events-none">
             {Math.round(selectedLayer.transform.rotation || 0)}°
           </div>
         )}

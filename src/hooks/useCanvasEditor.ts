@@ -58,6 +58,8 @@ export const useCanvasEditor = () => {
       transform: {
         x: CANVAS_WIDTH / 2,
         y: CANVAS_HEIGHT / 2,
+        width: CANVAS_WIDTH * 0.25, // Phase 1: Base width
+        height: CANVAS_HEIGHT * 0.25, // Placeholder
         scale: 0.5,
         rotation: 0,
       },

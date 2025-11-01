@@ -30,11 +30,19 @@ interface SaveOutfitParams {
   title?: string;
   occasion?: string;
   isPublic: boolean;
+  exportQuality?: 'high' | 'medium' | 'low'; // Phase 6: Configurable export quality
 }
 
 const MAX_IMAGE_SIZE_MB = 5;
-const CANVAS_WIDTH = 1080;  // Match stage width
-const CANVAS_HEIGHT = 1920; // Match stage height
+
+// Phase 6: Configurable export resolution
+const EXPORT_CONFIGS = {
+  'high': { width: 1080, height: 1920, quality: 0.92 },
+  'medium': { width: 720, height: 1280, quality: 0.88 },
+  'low': { width: 540, height: 960, quality: 0.85 },
+} as const;
+
+const DEFAULT_EXPORT_CONFIG = 'high';
 
 export const useCanvasSave = (): UseCanvasSaveResult => {
   const navigate = useNavigate();
@@ -97,8 +105,9 @@ export const useCanvasSave = (): UseCanvasSaveResult => {
       const imageMap = new Map<string, HTMLImageElement>();
       loaded.forEach(({ id, image }) => imageMap.set(id, image));
 
-      // No scaling needed - stage is already 1080x1920, export is 1080x1920
-      console.log(`📐 Rendering canvas at ${CANVAS_WIDTH}x${CANVAS_HEIGHT} (matches stage dimensions)`);
+      // Phase 6: Use configured export resolution
+      const config = EXPORT_CONFIGS[params.exportQuality ?? DEFAULT_EXPORT_CONFIG];
+      console.log(`📐 Rendering canvas at ${config.width}x${config.height} with quality ${config.quality}`);
 
       const canvasImageBase64 = await renderCanvasToBase64(
         params.layers
@@ -119,8 +128,8 @@ export const useCanvasSave = (): UseCanvasSaveResult => {
             zIndex: l.zIndex,
           })),
         params.background,
-        CANVAS_WIDTH,
-        CANVAS_HEIGHT
+        config.width,
+        config.height
       );
 
       setProgress(60);
