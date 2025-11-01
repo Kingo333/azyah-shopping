@@ -5,7 +5,7 @@ import { preloadCanvasImages, ImageLoadResult } from '@/utils/canvasImageLoader'
 import { renderCanvasToBase64 } from '@/utils/canvasToImage';
 import { useSaveFit } from '@/hooks/useSaveFit';
 import type { CanvasLayer } from '@/components/EnhancedInteractiveCanvas';
-import { measurePngTrim, type ImageMetrics } from '@/utils/measurePngTrim';
+// Trimming now happens at upload
 
 export type SaveStep = 
   | 'idle'
@@ -97,30 +97,7 @@ export const useCanvasSave = (): UseCanvasSaveResult => {
         console.warn(`⚠️ ${failed.length} images failed to load, continuing with ${loaded.length} images`);
       }
 
-      // Measure image metrics for precise rendering
-      setProgress(25);
-      const imageMetricsMap = new Map<string, ImageMetrics>();
-      
-      await Promise.all(
-        loaded.map(async ({ id, image }) => {
-          try {
-            const url = imagesToLoad.find(item => item.id === id)?.url;
-            if (url) {
-              const metrics = await measurePngTrim(url);
-              imageMetricsMap.set(id, metrics);
-            }
-          } catch (error) {
-            console.error(`Failed to measure layer ${id}:`, error);
-            // Fallback to basic metrics
-            imageMetricsMap.set(id, {
-              naturalWidth: image.naturalWidth || 1000,
-              naturalHeight: image.naturalHeight || 1000,
-              trim: { left: 0, right: 0, top: 0, bottom: 0 },
-            });
-          }
-        })
-      );
-      
+      // No metrics needed - images are trimmed at upload
       setProgress(30);
 
       // Step 3: Rendering - Create canvas image
@@ -155,7 +132,6 @@ export const useCanvasSave = (): UseCanvasSaveResult => {
             zIndex: l.zIndex,
           })),
         params.background,
-        imageMetricsMap,
         config.width,
         config.height
       );

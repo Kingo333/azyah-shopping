@@ -23,7 +23,7 @@ import { renderCanvasToBase64 } from '@/utils/canvasToImage';
 import { BackButton } from '@/components/ui/back-button';
 import { Home, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { measurePngTrim, type ImageMetrics } from '@/utils/measurePngTrim';
+// Trimming now happens at upload, no need for metrics
 
 export default function DressMe() {
   const { data: allItems = [], isLoading } = useWardrobeItems();
@@ -137,24 +137,7 @@ export default function DressMe() {
         transform: layer.transform,
       }));
 
-      // Measure metrics for precise rendering
-      const imageMetricsMap = new Map<string, ImageMetrics>();
-      await Promise.all(
-        layers.map(async (l) => {
-          try {
-            const url = l.wardrobeItem.image_bg_removed_url || l.wardrobeItem.image_url;
-            const metrics = await measurePngTrim(url);
-            imageMetricsMap.set(l.id, metrics);
-          } catch (error) {
-            console.error(`Failed to measure layer ${l.id}:`, error);
-            imageMetricsMap.set(l.id, {
-              naturalWidth: 1000,
-              naturalHeight: 1000,
-              trim: { left: 0, right: 0, top: 0, bottom: 0 },
-            });
-          }
-        })
-      );
+      // No metrics needed - images are trimmed at upload
 
       // Render canvas to base64 for server-side storage
       const canvasImageBase64 = await renderCanvasToBase64(
@@ -170,7 +153,6 @@ export default function DressMe() {
           zIndex: l.zIndex,
         })),
         background,
-        imageMetricsMap,
         800,
         800
       );

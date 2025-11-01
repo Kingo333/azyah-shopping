@@ -1,5 +1,4 @@
 import { STAGE_W, STAGE_H, getTargetRect } from './canvasLayout';
-import type { ImageMetrics } from './canvasLayout';
 
 export interface CanvasLayer {
   id: string;
@@ -25,7 +24,6 @@ export interface CanvasBackground {
 export async function renderCanvasToBase64(
   layers: CanvasLayer[],
   background: CanvasBackground,
-  imageMetricsMap: Map<string, ImageMetrics>,
   width: number = STAGE_W,
   height: number = STAGE_H
 ): Promise<string> {
@@ -90,31 +88,26 @@ export async function renderCanvasToBase64(
         continue;
       }
 
-      // Get metrics for this layer
-      const metrics = imageMetricsMap.get(layer.id);
-      if (!metrics) {
-        console.warn(`Layer ${layer.id}: No metrics available, skipping`);
-        continue;
-      }
-
       // Only draw if image loaded successfully
       if (img.complete && img.naturalWidth > 0) {
         ctx.save();
         
-        // Use shared math for exact dimensions
-        const transform = {
-          x: layer.position.x,
-          y: layer.position.y,
-          scale: layer.scale,
-          rotation: layer.rotation,
-        };
+        // Use shared math for exact dimensions (no metrics needed - images are trimmed)
+        const { targetW, targetH } = getTargetRect(
+          {
+            x: layer.position.x,
+            y: layer.position.y,
+            scale: layer.scale,
+            rotation: layer.rotation,
+          },
+          img.naturalWidth,
+          img.naturalHeight
+        );
         
-        const { targetW, targetH, offsetX, offsetY } = getTargetRect(transform, metrics);
-        
-        // Apply transforms in SAME ORDER as editor: translate → rotate → scale
+        // Apply transforms in SAME ORDER as editor
         ctx.translate(
-          Math.round(layer.position.x + offsetX),
-          Math.round(layer.position.y + offsetY)
+          Math.round(layer.position.x),
+          Math.round(layer.position.y)
         );
         ctx.rotate((layer.rotation * Math.PI) / 180);
         ctx.scale(layer.flippedH ? -1 : 1, 1);
@@ -124,7 +117,7 @@ export async function renderCanvasToBase64(
         ctx.imageSmoothingQuality = 'high';
         ctx.globalAlpha = layer.opacity;
         
-        // Draw centered on transform origin (same as editor's translate(-50%, -50%))
+        // Draw centered on transform origin
         ctx.drawImage(
           img,
           Math.round(-targetW / 2),

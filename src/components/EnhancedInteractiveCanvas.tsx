@@ -10,7 +10,7 @@ import { Slider } from '@/components/ui/slider';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from 'sonner';
 import { STAGE_W, STAGE_H, getTargetRect } from '@/utils/canvasLayout';
-import { measurePngTrim, type ImageMetrics } from '@/utils/measurePngTrim';
+// Trimming now happens at upload
 
 // Fixed logical stage dimensions (9:16 aspect ratio for Instagram)
 const STAGE_WIDTH = 1080;
@@ -71,38 +71,8 @@ export const EnhancedInteractiveCanvas: React.FC<EnhancedInteractiveCanvasProps>
   const [snapLines, setSnapLines] = useState<{ x?: number; y?: number }>({});
   const [showScaleIndicator, setShowScaleIndicator] = useState(false);
   const [showRotateIndicator, setShowRotateIndicator] = useState(false);
-  const [metricsCache, setMetricsCache] = useState<Map<string, ImageMetrics>>(new Map());
   const dragThreshold = 2;
   // Canvas is now fully responsive - no need for scaling logic
-
-  // Preload metrics when layers change
-  useEffect(() => {
-    const loadMetrics = async () => {
-      const cache = new Map<string, ImageMetrics>();
-      
-      await Promise.all(
-        layers.map(async (layer) => {
-          const imageUrl = layer.wardrobeItem.image_bg_removed_url || layer.wardrobeItem.image_url;
-          try {
-            const metrics = await measurePngTrim(imageUrl);
-            cache.set(layer.id, metrics);
-          } catch (error) {
-            console.error(`Failed to measure layer ${layer.id}:`, error);
-            // Fallback to basic metrics
-            cache.set(layer.id, {
-              naturalWidth: 1000,
-              naturalHeight: 1000,
-              trim: { left: 0, right: 0, top: 0, bottom: 0 },
-            });
-          }
-        })
-      );
-      
-      setMetricsCache(cache);
-    };
-    
-    loadMetrics();
-  }, [layers]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -551,16 +521,20 @@ export const EnhancedInteractiveCanvas: React.FC<EnhancedInteractiveCanvasProps>
           .filter(layer => layer.visible)
           .sort((a, b) => a.zIndex - b.zIndex)
           .map((layer) => {
-            const metrics = metricsCache.get(layer.id);
+            const imageUrl = layer.wardrobeItem.image_bg_removed_url || layer.wardrobeItem.image_url;
+            const img = new Image();
+            img.src = imageUrl;
             
-            if (!metrics) return null; // Skip until metrics loaded
-            
-            // Use shared math to calculate exact dimensions
-            const { targetW, targetH, offsetX, offsetY } = getTargetRect(layer.transform, metrics);
+            // Use shared math to calculate exact dimensions (no metrics needed - images are trimmed)
+            const { targetW, targetH } = getTargetRect(
+              layer.transform,
+              img.naturalWidth || 1000,
+              img.naturalHeight || 1000
+            );
             
             // Convert to percentages for CSS (maintaining responsiveness)
-            const leftPercent = ((layer.transform.x + offsetX) / STAGE_W) * 100;
-            const topPercent = ((layer.transform.y + offsetY) / STAGE_H) * 100;
+            const leftPercent = (layer.transform.x / STAGE_W) * 100;
+            const topPercent = (layer.transform.y / STAGE_H) * 100;
             const widthPercent = (targetW / STAGE_W) * 100;
             const heightPercent = (targetH / STAGE_H) * 100;
             

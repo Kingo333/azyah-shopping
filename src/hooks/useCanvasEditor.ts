@@ -7,7 +7,7 @@ import { preloadCanvasImages } from '@/utils/canvasImageLoader';
 import { renderCanvasToBase64 } from '@/utils/canvasToImage';
 import type { WardrobeItem } from '@/hooks/useWardrobeItems';
 import type { CanvasLayer } from '@/components/EnhancedInteractiveCanvas';
-import { measurePngTrim, type ImageMetrics } from '@/utils/measurePngTrim';
+// Trimming now happens at upload, no need for metrics
 
 const AUTOSAVE_KEY = 'dressme_canvas_autosave';
 const CANVAS_WIDTH = 1080;
@@ -196,26 +196,7 @@ export const useCanvasEditor = () => {
       const imageMap = new Map<string, HTMLImageElement>();
       loaded.forEach(({ id, image }) => imageMap.set(id, image));
 
-      // Measure metrics
-      const imageMetricsMap = new Map<string, ImageMetrics>();
-      await Promise.all(
-        loaded.map(async ({ id, image }) => {
-          try {
-            const url = imagesToLoad.find(item => item.id === id)?.url;
-            if (url) {
-              const metrics = await measurePngTrim(url);
-              imageMetricsMap.set(id, metrics);
-            }
-          } catch (error) {
-            console.error(`Failed to measure layer ${id}:`, error);
-            imageMetricsMap.set(id, {
-              naturalWidth: image.naturalWidth || 1000,
-              naturalHeight: image.naturalHeight || 1000,
-              trim: { left: 0, right: 0, top: 0, bottom: 0 },
-            });
-          }
-        })
-      );
+      // No metrics needed - images are trimmed at upload
 
       // Debug: Log layer positions before rendering
       console.log('📸 Rendering canvas with layers:', layers.map(l => ({
@@ -243,7 +224,6 @@ export const useCanvasEditor = () => {
             zIndex: l.zIndex,
           })),
         background,
-        imageMetricsMap,
         CANVAS_WIDTH,
         CANVAS_HEIGHT
       );

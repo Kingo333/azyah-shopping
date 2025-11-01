@@ -236,10 +236,40 @@ export const WardrobeUploadModal: React.FC<WardrobeUploadModalProps> = ({
       
       setProgress(85);
       
-      // Set the storage URL as preview
-      const publicUrl = result.image_path;
-      console.log('Setting preview URL:', publicUrl);
-      setBgRemovedPreview(publicUrl);
+      console.log('Trimming transparent padding...');
+      
+      // Download the bg-removed image
+      const bgResponse = await fetch(result.image_path);
+      const bgBlob = await bgResponse.blob();
+      const bgFile = new File([bgBlob], 'bg-removed.png', { type: 'image/png' });
+      
+      // Trim transparent borders
+      const { trimTransparentPadding, dataUrlToFile } = await import('@/utils/imageTrimming');
+      const trimResult = await trimTransparentPadding(bgFile, 5);
+      
+      setProgress(90);
+      
+      // Convert trimmed data URL to File
+      const trimmedFile = dataUrlToFile(trimResult.dataUrl, `${user.id}_${Date.now()}_trimmed.png`);
+      
+      // Upload trimmed version
+      const trimmedPath = `${user.id}/${Date.now()}_trimmed.png`;
+      const { error: uploadError } = await supabase.storage
+        .from('wardrobe')
+        .upload(trimmedPath, trimmedFile, {
+          contentType: 'image/png',
+          cacheControl: '3600',
+          upsert: false
+        });
+      
+      if (uploadError) throw uploadError;
+      
+      const { data: { publicUrl: trimmedUrl } } = supabase.storage
+        .from('wardrobe')
+        .getPublicUrl(trimmedPath);
+      
+      console.log('Trimmed image uploaded:', trimmedUrl);
+      setBgRemovedPreview(trimmedUrl);
       
       // Wait a moment before transitioning to metadata step
       await new Promise(resolve => setTimeout(resolve, 500));
@@ -249,7 +279,7 @@ export const WardrobeUploadModal: React.FC<WardrobeUploadModalProps> = ({
       setIsProcessing(false);
       
       console.log('Successfully transitioned to metadata step');
-      toast.success('Background removed successfully!');
+      toast.success('Background removed & trimmed successfully!');
     } catch (error: any) {
       console.error('Error processing image:', error);
       
