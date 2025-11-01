@@ -1,3 +1,6 @@
+import { STAGE_W, STAGE_H, getTargetRect } from './canvasLayout';
+import type { ImageMetrics } from './canvasLayout';
+
 export interface CanvasLayer {
   id: string;
   imageUrl?: string; // Legacy support
@@ -22,8 +25,9 @@ export interface CanvasBackground {
 export async function renderCanvasToBase64(
   layers: CanvasLayer[],
   background: CanvasBackground,
-  width: number = 600,
-  height: number = 600
+  imageMetricsMap: Map<string, ImageMetrics>,
+  width: number = STAGE_W,
+  height: number = STAGE_H
 ): Promise<string> {
   const canvas = document.createElement('canvas');
   canvas.width = width;
@@ -86,36 +90,47 @@ export async function renderCanvasToBase64(
         continue;
       }
 
+      // Get metrics for this layer
+      const metrics = imageMetricsMap.get(layer.id);
+      if (!metrics) {
+        console.warn(`Layer ${layer.id}: No metrics available, skipping`);
+        continue;
+      }
+
       // Only draw if image loaded successfully
       if (img.complete && img.naturalWidth > 0) {
         ctx.save();
         
-        // Move to layer position (round to avoid sub-pixel issues)
-        ctx.translate(Math.round(layer.position.x), Math.round(layer.position.y));
+        // Use shared math for exact dimensions
+        const transform = {
+          x: layer.position.x,
+          y: layer.position.y,
+          scale: layer.scale,
+          rotation: layer.rotation,
+        };
         
-        // Apply rotation
+        const { targetW, targetH, offsetX, offsetY } = getTargetRect(transform, metrics);
+        
+        // Apply transforms in SAME ORDER as editor: translate → rotate → scale
+        ctx.translate(
+          Math.round(layer.position.x + offsetX),
+          Math.round(layer.position.y + offsetY)
+        );
         ctx.rotate((layer.rotation * Math.PI) / 180);
-        
-        // Calculate target width (25% of canvas width * user's scale)
-        const targetWidth = width * 0.25 * layer.scale;
-        
-        // Preserve aspect ratio using natural dimensions
-        const aspectRatio = img.naturalHeight / img.naturalWidth;
-        const targetHeight = targetWidth * aspectRatio;
-        
-        // Apply flip (scale is 1 or -1 for flip, size is in context already)
         ctx.scale(layer.flippedH ? -1 : 1, 1);
         
-        // Apply opacity
+        // High-quality rendering
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
         ctx.globalAlpha = layer.opacity;
         
-        // Draw at fixed size, centered (round to avoid sub-pixel blur)
+        // Draw centered on transform origin (same as editor's translate(-50%, -50%))
         ctx.drawImage(
           img,
-          Math.round(-targetWidth / 2),
-          Math.round(-targetHeight / 2),
-          Math.round(targetWidth),
-          Math.round(targetHeight)
+          Math.round(-targetW / 2),
+          Math.round(-targetH / 2),
+          Math.round(targetW),
+          Math.round(targetH)
         );
         
         ctx.restore();

@@ -5,6 +5,7 @@ import { preloadCanvasImages, ImageLoadResult } from '@/utils/canvasImageLoader'
 import { renderCanvasToBase64 } from '@/utils/canvasToImage';
 import { useSaveFit } from '@/hooks/useSaveFit';
 import type { CanvasLayer } from '@/components/EnhancedInteractiveCanvas';
+import { measurePngTrim, type ImageMetrics } from '@/utils/measurePngTrim';
 
 export type SaveStep = 
   | 'idle'
@@ -68,7 +69,7 @@ export const useCanvasSave = (): UseCanvasSaveResult => {
         throw new Error('Please add items to your outfit first');
       }
 
-      // Step 2: Preparing - Pre-load all images
+      // Step 2: Preparing - Pre-load all images AND measure metrics
       console.log('🎯 Step 1: Preparing images...');
       setCurrentStep('preparing');
       setProgress(10);
@@ -83,7 +84,7 @@ export const useCanvasSave = (): UseCanvasSaveResult => {
       const { loaded, failed } = await preloadCanvasImages(
         imagesToLoad,
         (loadedCount, total) => {
-          const loadProgress = 10 + (loadedCount / total) * 20; // 10-30%
+          const loadProgress = 10 + (loadedCount / total) * 15; // 10-25%
           setProgress(loadProgress);
         }
       );
@@ -95,6 +96,32 @@ export const useCanvasSave = (): UseCanvasSaveResult => {
       if (failed.length > 0) {
         console.warn(`⚠️ ${failed.length} images failed to load, continuing with ${loaded.length} images`);
       }
+
+      // Measure image metrics for precise rendering
+      setProgress(25);
+      const imageMetricsMap = new Map<string, ImageMetrics>();
+      
+      await Promise.all(
+        loaded.map(async ({ id, image }) => {
+          try {
+            const url = imagesToLoad.find(item => item.id === id)?.url;
+            if (url) {
+              const metrics = await measurePngTrim(url);
+              imageMetricsMap.set(id, metrics);
+            }
+          } catch (error) {
+            console.error(`Failed to measure layer ${id}:`, error);
+            // Fallback to basic metrics
+            imageMetricsMap.set(id, {
+              naturalWidth: image.naturalWidth || 1000,
+              naturalHeight: image.naturalHeight || 1000,
+              trim: { left: 0, right: 0, top: 0, bottom: 0 },
+            });
+          }
+        })
+      );
+      
+      setProgress(30);
 
       // Step 3: Rendering - Create canvas image
       console.log('🎯 Step 2: Rendering canvas...');
@@ -128,6 +155,7 @@ export const useCanvasSave = (): UseCanvasSaveResult => {
             zIndex: l.zIndex,
           })),
         params.background,
+        imageMetricsMap,
         config.width,
         config.height
       );
