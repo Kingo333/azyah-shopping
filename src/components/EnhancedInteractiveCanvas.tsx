@@ -10,6 +10,7 @@ import { Slider } from '@/components/ui/slider';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from 'sonner';
 import { STAGE_W, STAGE_H, getTargetRect } from '@/utils/canvasLayout';
+import { layerMatrix, matrixToCss } from '@/utils/canvasTransforms';
 // Trimming now happens at upload
 
 // Fixed logical stage dimensions (9:16 aspect ratio for Instagram)
@@ -532,7 +533,16 @@ export const EnhancedInteractiveCanvas: React.FC<EnhancedInteractiveCanvasProps>
               img.naturalHeight || 1000
             );
             
-            // Convert to percentages for CSS (maintaining responsiveness)
+            // Use unified transform matrix for CSS (Phase 1)
+            const matrix = layerMatrix({
+              x: layer.transform.x,
+              y: layer.transform.y,
+              scale: layer.transform.scale,
+              rotation: layer.transform.rotation,
+              flipH: layer.flipH,
+            });
+            
+            // Convert to percentages for positioning
             const leftPercent = (layer.transform.x / STAGE_W) * 100;
             const topPercent = (layer.transform.y / STAGE_H) * 100;
             const widthPercent = (targetW / STAGE_W) * 100;
@@ -547,12 +557,8 @@ export const EnhancedInteractiveCanvas: React.FC<EnhancedInteractiveCanvasProps>
                   top: `${topPercent}%`,
                   width: `${widthPercent}%`,
                   height: `${heightPercent}%`,
-                  transform: `
-                    translate(-50%, -50%)
-                    rotate(${layer.transform.rotation || 0}deg)
-                    scaleX(${layer.flipH ? -1 : 1})
-                  `,
-                  transformOrigin: 'center',
+                  transform: matrixToCss(matrix),
+                  transformOrigin: '0 0',
                   opacity: layer.opacity || 1,
                   zIndex: layer.zIndex,
                   touchAction: 'none',

@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { preloadCanvasImages, ImageLoadResult } from '@/utils/canvasImageLoader';
 import { renderCanvasToBase64 } from '@/utils/canvasToImage';
 import { useSaveFit } from '@/hooks/useSaveFit';
+import { STAGE_W, STAGE_H } from '@/utils/canvasLayout';
 import type { CanvasLayer } from '@/components/EnhancedInteractiveCanvas';
 // Trimming now happens at upload
 
@@ -163,10 +164,18 @@ export const useCanvasSave = (): UseCanvasSaveResult => {
       setCurrentStep('saving');
       setProgress(85);
 
+      // Phase 2: Normalize coordinates before saving (0-1 range)
       const canvasData = {
         layers: params.layers.map(layer => ({
           wardrobeItemId: layer.wardrobeItem.id,
-          transform: layer.transform,
+          transform: {
+            x: layer.transform.x / STAGE_W, // Normalize to 0-1
+            y: layer.transform.y / STAGE_H, // Normalize to 0-1
+            width: layer.transform.width,
+            height: layer.transform.height,
+            scale: layer.transform.scale,
+            rotation: layer.transform.rotation,
+          },
           opacity: layer.opacity,
           flipH: layer.flipH,
           visible: layer.visible,

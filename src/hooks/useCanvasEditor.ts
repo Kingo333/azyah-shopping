@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { preloadCanvasImages } from '@/utils/canvasImageLoader';
 import { renderCanvasToBase64 } from '@/utils/canvasToImage';
+import { STAGE_W, STAGE_H } from '@/utils/canvasLayout';
 import type { WardrobeItem } from '@/hooks/useWardrobeItems';
 import type { CanvasLayer } from '@/components/EnhancedInteractiveCanvas';
 // Trimming now happens at upload, no need for metrics
@@ -124,7 +125,7 @@ export const useCanvasEditor = () => {
     }
   }, []);
 
-  // Load from cloud
+  // Load from cloud - Phase 2: Denormalize coordinates on load
   const loadFromCloud = useCallback(async (fitId: string) => {
     try {
       const { data: fitData, error } = await supabase
@@ -137,7 +138,18 @@ export const useCanvasEditor = () => {
 
       if (fitData?.canvas_json) {
         const canvasData = fitData.canvas_json as any;
-        setLayers(canvasData.layers || []);
+        
+        // Phase 2: Denormalize coordinates from 0-1 to stage dimensions
+        const denormalizedLayers = (canvasData.layers || []).map((layer: any) => ({
+          ...layer,
+          transform: {
+            ...layer.transform,
+            x: layer.transform.x * STAGE_W, // Denormalize from 0-1
+            y: layer.transform.y * STAGE_H, // Denormalize from 0-1
+          }
+        }));
+        
+        setLayers(denormalizedLayers);
         setBackground(canvasData.background || { type: 'solid', value: '#FFFFFF' });
         toast.success('Loaded outfit from cloud');
       }
@@ -274,10 +286,18 @@ export const useCanvasEditor = () => {
       // Step 4: Save to database (80-100%)
       toast.loading('Saving outfit...', { id: 'save-toast' });
 
+      // Phase 2: Normalize coordinates before saving (0-1 range)
       const canvasData = {
         layers: layers.map(layer => ({
           wardrobeItemId: layer.wardrobeItem.id,
-          transform: layer.transform,
+          transform: {
+            x: layer.transform.x / STAGE_W, // Normalize to 0-1
+            y: layer.transform.y / STAGE_H, // Normalize to 0-1
+            width: layer.transform.width,
+            height: layer.transform.height,
+            scale: layer.transform.scale,
+            rotation: layer.transform.rotation,
+          },
           opacity: layer.opacity,
           flipH: layer.flipH,
           visible: layer.visible,

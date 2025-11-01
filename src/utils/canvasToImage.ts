@@ -1,4 +1,5 @@
 import { STAGE_W, STAGE_H, getTargetRect } from './canvasLayout';
+import { layerMatrix, applyMatrixToCanvas, resetCanvasTransform } from './canvasTransforms';
 
 export interface CanvasLayer {
   id: string;
@@ -104,20 +105,24 @@ export async function renderCanvasToBase64(
           img.naturalHeight
         );
         
-        // Apply transforms in SAME ORDER as editor
-        ctx.translate(
-          Math.round(layer.position.x),
-          Math.round(layer.position.y)
-        );
-        ctx.rotate((layer.rotation * Math.PI) / 180);
-        ctx.scale(layer.flippedH ? -1 : 1, 1);
+        // Phase 1: Use unified transform matrix (same as preview)
+        const matrix = layerMatrix({
+          x: layer.position.x,
+          y: layer.position.y,
+          scale: layer.scale,
+          rotation: layer.rotation,
+          flipH: layer.flippedH,
+        });
         
         // High-quality rendering
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = 'high';
         ctx.globalAlpha = layer.opacity;
         
-        // Draw centered on transform origin
+        // Apply matrix transform
+        applyMatrixToCanvas(ctx, matrix);
+        
+        // Draw centered at origin (matrix already includes translation)
         ctx.drawImage(
           img,
           Math.round(-targetW / 2),
@@ -126,6 +131,7 @@ export async function renderCanvasToBase64(
           Math.round(targetH)
         );
         
+        resetCanvasTransform(ctx);
         ctx.restore();
       }
     } catch (error) {
