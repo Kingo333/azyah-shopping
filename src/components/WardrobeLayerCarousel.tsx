@@ -240,9 +240,7 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
     const handleScrollEndUpdate = () => {
       clearTimeout(updateDebounceTimer);
       updateDebounceTimer = setTimeout(() => {
-        if (!isUserScrollingRef.current) return;
-
-        // Immediately identify centered item when scroll stops
+        // Update database regardless of scroll source (user or programmatic)
         const vw = window.innerWidth;
         const cellWidth = vw * GRID_CONFIG.cellWidthVw;
         const currentIndex = Math.round(rail.scrollLeft / cellWidth);
@@ -269,33 +267,42 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
     const rail = scrollContainerRef.current;
     if (!rail || items.length === 0) return;
 
-    const handleScroll = () => {
-      if (!isUserScrollingRef.current) return;
-
+    // Always update visual center, regardless of scroll source
+    const updateVisualCenter = () => {
       const vw = window.innerWidth;
       const cellWidth = vw * GRID_CONFIG.cellWidthVw;
-
-      // Get current virtual index
       const rawVirtualIndex = rail.scrollLeft / cellWidth;
       const snappedVirtualIndex = Math.round(rawVirtualIndex);
-
-      // Convert to real index for broadcasting
       const realIndex = getVirtualToRealIndex(snappedVirtualIndex);
-      setActiveScrollIndex(realIndex);
-
-      // Find the corresponding real item
+      
+      // Find the corresponding item
       const virtualItemIndex = Math.max(0, Math.min(snappedVirtualIndex, virtualItems.length - 1));
       const centeredItem = virtualItems[virtualItemIndex];
       
-      if (centeredItem) {
+      if (centeredItem && centeredItem.id !== localCenterId) {
+        console.log(`🎯 Visual center updated: ${centeredItem.id}`);
         setLocalCenterId(centeredItem.id);
 
-        // Visual feedback
+        // Update visual feedback
         const cards = rail.querySelectorAll<HTMLElement>('[data-item-id]');
         cards.forEach((card, idx) => {
           card.classList.toggle('is-center', idx === virtualItemIndex);
         });
       }
+      
+      return realIndex;
+    };
+
+    const handleScroll = () => {
+      if (!isUserScrollingRef.current) {
+        // Not user scroll, but still update visual center
+        updateVisualCenter();
+        return;
+      }
+
+      // User is scrolling - update visual center AND broadcast to other layers
+      const realIndex = updateVisualCenter();
+      setActiveScrollIndex(realIndex); // Broadcast to other carousels
     };
 
     const handleScrollStart = () => {
@@ -360,9 +367,18 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
         requestAnimationFrame(() => {
           rail.scrollTo({ left: targetScrollLeft, behavior: 'smooth' });
 
+          // Immediately update visual center after programmatic scroll
           const clampedRealIndex = Math.max(0, Math.min(realIndex, items.length - 1));
-          if (items[clampedRealIndex]) {
-            setLocalCenterId(items[clampedRealIndex].id);
+          const targetItem = items[clampedRealIndex];
+          
+          if (targetItem) {
+            setLocalCenterId(targetItem.id);
+            
+            // Update .is-center class
+            const cards = rail.querySelectorAll<HTMLElement>('[data-item-id]');
+            cards.forEach((card, idx) => {
+              card.classList.toggle('is-center', idx === virtualIndex);
+            });
           }
         });
       });
