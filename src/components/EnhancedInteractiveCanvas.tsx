@@ -11,6 +11,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from 'sonner';
 import { STAGE_W, STAGE_H, getTargetRect } from '@/utils/canvasLayout';
 import { layerMatrix, matrixToCss } from '@/utils/canvasTransforms';
+import { renderLayers, RenderableLayer } from '@/utils/canvasRenderer';
 // Trimming now happens at upload
 
 // Fixed logical stage dimensions (9:16 aspect ratio for Instagram)
@@ -54,6 +55,7 @@ export const EnhancedInteractiveCanvas: React.FC<EnhancedInteractiveCanvasProps>
 }) => {
   const canvasRef = useRef<HTMLDivElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const previewCanvasRef = useRef<HTMLCanvasElement>(null);
   const isMobile = useIsMobile();
   const [internalSelectedLayerId, setInternalSelectedLayerId] = useState<string | null>(null);
   
@@ -88,6 +90,50 @@ export const EnhancedInteractiveCanvas: React.FC<EnhancedInteractiveCanvasProps>
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, []);
+
+  // Phase 2: Render to hidden canvas for WYSIWYG validation
+  useEffect(() => {
+    if (!previewCanvasRef.current) return;
+    
+    const ctx = previewCanvasRef.current.getContext('2d');
+    if (!ctx) return;
+
+    // Pre-load all images
+    const imagePromises = layers.map(layer => {
+      return new Promise<{ layer: CanvasLayer; img: HTMLImageElement }>((resolve, reject) => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => resolve({ layer, img });
+        img.onerror = reject;
+        img.src = layer.wardrobeItem.image_bg_removed_url || layer.wardrobeItem.image_url;
+      });
+    });
+
+    Promise.all(imagePromises)
+      .then(loadedImages => {
+        // Convert to RenderableLayer format
+        const renderableLayers: RenderableLayer[] = loadedImages.map(({ layer, img }) => ({
+          id: layer.id,
+          preloadedImage: img,
+          transform: {
+            x: layer.transform.x,
+            y: layer.transform.y,
+            scale: layer.transform.scale,
+            rotation: layer.transform.rotation,
+          },
+          flipH: layer.flipH,
+          opacity: layer.opacity,
+          visible: layer.visible,
+          zIndex: layer.zIndex,
+        }));
+
+        // Use unified renderer for pixel-perfect preview
+        renderLayers(ctx, renderableLayers, background);
+      })
+      .catch(err => {
+        console.warn('Failed to render preview canvas:', err);
+      });
+  }, [layers, background]);
 
   const selectedLayer = layers.find(l => l.id === selectedLayerId);
 
@@ -437,6 +483,14 @@ export const EnhancedInteractiveCanvas: React.FC<EnhancedInteractiveCanvasProps>
         margin: 'auto',
       }}
     >
+      {/* Hidden canvas for WYSIWYG validation - Phase 2 */}
+      <canvas
+        ref={previewCanvasRef}
+        className="hidden"
+        width={STAGE_W}
+        height={STAGE_H}
+      />
+      
       <div
         ref={canvasRef}
         className="w-full h-full rounded-lg border border-border relative"
