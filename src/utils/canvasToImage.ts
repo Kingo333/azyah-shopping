@@ -98,11 +98,10 @@ export async function renderCanvasToBase64(
         
         // Calculate target width (25% of canvas width * user's scale)
         const targetWidth = width * 0.25 * layer.scale;
-        const displayScale = targetWidth / img.naturalWidth;
         
-        // Calculate the final rendered dimensions
-        const renderedWidth = img.naturalWidth * displayScale;
-        const renderedHeight = img.naturalHeight * displayScale;
+        // Preserve aspect ratio using natural dimensions
+        const aspectRatio = img.naturalHeight / img.naturalWidth;
+        const targetHeight = targetWidth * aspectRatio;
         
         // Apply flip (scale is 1 or -1 for flip, size is in context already)
         ctx.scale(layer.flippedH ? -1 : 1, 1);
@@ -110,13 +109,13 @@ export async function renderCanvasToBase64(
         // Apply opacity
         ctx.globalAlpha = layer.opacity;
         
-        // Draw at calculated size, centered (round to avoid sub-pixel blur)
+        // Draw at fixed size, centered (round to avoid sub-pixel blur)
         ctx.drawImage(
           img,
-          Math.round(-renderedWidth / 2),
-          Math.round(-renderedHeight / 2),
-          Math.round(renderedWidth),
-          Math.round(renderedHeight)
+          Math.round(-targetWidth / 2),
+          Math.round(-targetHeight / 2),
+          Math.round(targetWidth),
+          Math.round(targetHeight)
         );
         
         ctx.restore();
