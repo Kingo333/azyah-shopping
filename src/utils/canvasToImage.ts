@@ -109,8 +109,8 @@ export async function renderCanvasToBase64(
         // Apply opacity
         ctx.globalAlpha = layer.opacity;
         
-        // Draw image centered at current position
-        ctx.drawImage(img, -img.width / 2, -img.height / 2);
+        // Draw image centered at current position using natural dimensions in scaled space
+        ctx.drawImage(img, -img.naturalWidth / 2, -img.naturalHeight / 2);
         
         ctx.restore();
       }
