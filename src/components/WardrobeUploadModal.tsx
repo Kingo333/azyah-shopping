@@ -278,7 +278,14 @@ export const WardrobeUploadModal: React.FC<WardrobeUploadModalProps> = ({
       setBgRemovedPreview(trimmedUrl);
       
       // Store trim metadata for database insert
+      console.log('Trim result:', trimResult);
       setTrimMetadata({
+        offsetX: trimResult.offset.x,
+        offsetY: trimResult.offset.y,
+        originalWidth: trimResult.originalSize.w,
+        originalHeight: trimResult.originalSize.h,
+      });
+      console.log('Trim metadata set:', {
         offsetX: trimResult.offset.x,
         offsetY: trimResult.offset.y,
         originalWidth: trimResult.originalSize.w,
@@ -348,8 +355,9 @@ export const WardrobeUploadModal: React.FC<WardrobeUploadModalProps> = ({
 
     try {
       console.log('Saving item to database with URL:', bgRemovedPreview);
+      console.log('Trim metadata before save:', trimMetadata);
       
-      const newItem = await addItem.mutateAsync({
+      const itemData = {
         image_url: bgRemovedPreview,
         image_bg_removed_url: bgRemovedPreview,
         category: category as 'top' | 'bottom' | 'dress' | 'outerwear' | 'shoes' | 'bag' | 'accessory',
@@ -366,7 +374,11 @@ export const WardrobeUploadModal: React.FC<WardrobeUploadModalProps> = ({
         trim_offset_y: trimMetadata?.offsetY ?? null,
         original_width: trimMetadata?.originalWidth ?? null,
         original_height: trimMetadata?.originalHeight ?? null,
-      });
+      };
+      
+      console.log('Item data being saved:', itemData);
+      
+      const newItem = await addItem.mutateAsync(itemData);
 
       console.log('Item saved successfully:', newItem);
       
