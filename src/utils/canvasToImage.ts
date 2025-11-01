@@ -1,5 +1,6 @@
-import { STAGE_W, STAGE_H, getTargetRect } from './canvasLayout';
+import { STAGE_W, STAGE_H } from './canvasLayout';
 import type { ImageMetrics } from './canvasLayout';
+import { applyCanvasTransform, type LayerTransform } from './transformMatrix';
 
 export interface CanvasLayer {
   id: string;
@@ -101,36 +102,29 @@ export async function renderCanvasToBase64(
       if (img.complete && img.naturalWidth > 0) {
         ctx.save();
         
-        // Use shared math for exact dimensions
-        const transform = {
+        // Use unified transform (SAME as preview)
+        const transform: LayerTransform = {
           x: layer.position.x,
           y: layer.position.y,
           scale: layer.scale,
           rotation: layer.rotation,
+          flipH: layer.flippedH,
         };
         
-        const { targetW, targetH, offsetX, offsetY } = getTargetRect(transform, metrics);
-        
-        // Apply transforms in SAME ORDER as editor: translate → rotate → scale
-        ctx.translate(
-          Math.round(layer.position.x + offsetX),
-          Math.round(layer.position.y + offsetY)
-        );
-        ctx.rotate((layer.rotation * Math.PI) / 180);
-        ctx.scale(layer.flippedH ? -1 : 1, 1);
+        const dims = applyCanvasTransform(ctx, transform, metrics);
         
         // High-quality rendering
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = 'high';
         ctx.globalAlpha = layer.opacity;
         
-        // Draw centered on transform origin (same as editor's translate(-50%, -50%))
+        // Draw centered (matches CSS translate(-50%, -50%))
         ctx.drawImage(
           img,
-          Math.round(-targetW / 2),
-          Math.round(-targetH / 2),
-          Math.round(targetW),
-          Math.round(targetH)
+          -dims.width / 2,
+          -dims.height / 2,
+          dims.width,
+          dims.height
         );
         
         ctx.restore();

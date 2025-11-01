@@ -9,8 +9,9 @@ import {
 import { Slider } from '@/components/ui/slider';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from 'sonner';
-import { STAGE_W, STAGE_H, getTargetRect } from '@/utils/canvasLayout';
+import { STAGE_W, STAGE_H } from '@/utils/canvasLayout';
 import { measurePngTrim, type ImageMetrics } from '@/utils/measurePngTrim';
+import { toCSSTransform } from '@/utils/transformMatrix';
 
 // Fixed logical stage dimensions (9:16 aspect ratio for Instagram)
 const STAGE_WIDTH = 1080;
@@ -555,29 +556,28 @@ export const EnhancedInteractiveCanvas: React.FC<EnhancedInteractiveCanvasProps>
             
             if (!metrics) return null; // Skip until metrics loaded
             
-            // Use shared math to calculate exact dimensions
-            const { targetW, targetH, offsetX, offsetY } = getTargetRect(layer.transform, metrics);
-            
-            // Convert to percentages for CSS (maintaining responsiveness)
-            const leftPercent = ((layer.transform.x + offsetX) / STAGE_W) * 100;
-            const topPercent = ((layer.transform.y + offsetY) / STAGE_H) * 100;
-            const widthPercent = (targetW / STAGE_W) * 100;
-            const heightPercent = (targetH / STAGE_H) * 100;
+            // Use unified transform calculation (SAME as export)
+            const cssProps = toCSSTransform(
+              {
+                x: layer.transform.x,
+                y: layer.transform.y,
+                scale: layer.transform.scale,
+                rotation: layer.transform.rotation,
+                flipH: layer.flipH,
+              },
+              metrics
+            );
             
             return (
               <div
                 key={layer.id}
                 className={`absolute select-none ${selectedLayerId === layer.id ? 'outline outline-2 outline-primary outline-offset-2' : ''}`}
                 style={{
-                  left: `${leftPercent}%`,
-                  top: `${topPercent}%`,
-                  width: `${widthPercent}%`,
-                  height: `${heightPercent}%`,
-                  transform: `
-                    translate(-50%, -50%)
-                    rotate(${layer.transform.rotation || 0}deg)
-                    scaleX(${layer.flipH ? -1 : 1})
-                  `,
+                  left: cssProps.left,
+                  top: cssProps.top,
+                  width: cssProps.width,
+                  height: cssProps.height,
+                  transform: cssProps.transform,
                   transformOrigin: 'center',
                   opacity: layer.opacity || 1,
                   zIndex: layer.zIndex,
