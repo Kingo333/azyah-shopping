@@ -1,9 +1,10 @@
 import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { renderSceneToBase64 } from '@/utils/canvasRenderer';
+import { preloadCanvasImages, ImageLoadResult } from '@/utils/canvasImageLoader';
+import { renderCanvasToBase64 } from '@/utils/canvasToImage';
 import { useSaveFit } from '@/hooks/useSaveFit';
-import type { CanvasScene } from '@/types/canvas';
+import type { CanvasLayer } from '@/components/EnhancedInteractiveCanvas';
 
 export type SaveStep = 
   | 'idle'
@@ -24,11 +25,12 @@ interface UseCanvasSaveResult {
 }
 
 interface SaveOutfitParams {
-  scene: CanvasScene;
+  layers: CanvasLayer[];
+  background: { type: 'solid' | 'gradient' | 'pattern' | 'image'; value: string };
   title?: string;
   occasion?: string;
   isPublic: boolean;
-  exportQuality?: 'high' | 'medium' | 'low';
+  exportQuality?: 'high' | 'medium' | 'low'; // Phase 6: Configurable export quality
 }
 
 const MAX_IMAGE_SIZE_MB = 5;
@@ -62,31 +64,72 @@ export const useCanvasSave = (): UseCanvasSaveResult => {
       reset();
       
       // Step 1: Validate
-      if (params.scene.items.length === 0) {
+      if (params.layers.length === 0) {
         throw new Error('Please add items to your outfit first');
       }
 
-      // Step 2: Preparing
-      console.log('🎯 Step 1: Preparing to render...');
+      // Step 2: Preparing - Pre-load all images
+      console.log('🎯 Step 1: Preparing images...');
       setCurrentStep('preparing');
       setProgress(10);
 
-      // Step 3: Rendering - Create canvas image using universal renderer
+      const imagesToLoad = params.layers
+        .filter(l => l.visible)
+        .map(l => ({
+          id: l.id,
+          url: l.wardrobeItem.image_bg_removed_url || l.wardrobeItem.image_url,
+        }));
+
+      const { loaded, failed } = await preloadCanvasImages(
+        imagesToLoad,
+        (loadedCount, total) => {
+          const loadProgress = 10 + (loadedCount / total) * 20; // 10-30%
+          setProgress(loadProgress);
+        }
+      );
+
+      if (loaded.length === 0) {
+        throw new Error('Failed to load any outfit images. Please check your internet connection.');
+      }
+
+      if (failed.length > 0) {
+        console.warn(`⚠️ ${failed.length} images failed to load, continuing with ${loaded.length} images`);
+      }
+
+      // Step 3: Rendering - Create canvas image
       console.log('🎯 Step 2: Rendering canvas...');
       setCurrentStep('rendering');
       setProgress(40);
 
-      // Use configured export resolution
+      // Create image map for quick lookup
+      const imageMap = new Map<string, HTMLImageElement>();
+      loaded.forEach(({ id, image }) => imageMap.set(id, image));
+
+      // Phase 6: Use configured export resolution
       const config = EXPORT_CONFIGS[params.exportQuality ?? DEFAULT_EXPORT_CONFIG];
       console.log(`📐 Rendering canvas at ${config.width}x${config.height} with quality ${config.quality}`);
 
-      // Use universal renderer for export
-      const canvasImageBase64 = await renderSceneToBase64(
-        params.scene,
+      const canvasImageBase64 = await renderCanvasToBase64(
+        params.layers
+          .filter(l => l.visible && imageMap.has(l.id))
+          .map(l => ({
+            id: l.id,
+            imageUrl: '', // Not used anymore
+            preloadedImage: imageMap.get(l.id)!,
+            position: { 
+              x: l.transform.x || 0,  // Use directly - no scaling needed!
+              y: l.transform.y || 0
+            },
+            scale: l.transform.scale || 1,
+            rotation: l.transform.rotation || 0,
+            flippedH: l.flipH,
+            opacity: l.opacity,
+            visible: l.visible,
+            zIndex: l.zIndex,
+          })),
+        params.background,
         config.width,
-        config.height,
-        config.quality,
-        2 // 2x DPR for high quality
+        config.height
       );
 
       setProgress(60);
@@ -111,24 +154,27 @@ export const useCanvasSave = (): UseCanvasSaveResult => {
       setCurrentStep('uploading');
       setProgress(70);
 
-      // Step 4: Saving to database
-      console.log('🎯 Step 3: Saving outfit...');
+      // Step 5: Saving to database
+      console.log('🎯 Step 4: Saving outfit...');
       setCurrentStep('saving');
       setProgress(85);
 
-      // Store the normalized scene data
-      const canvasData = params.scene;
+      const canvasData = {
+        layers: params.layers.map(layer => ({
+          wardrobeItemId: layer.wardrobeItem.id,
+          transform: layer.transform,
+          opacity: layer.opacity,
+          flipH: layer.flipH,
+          visible: layer.visible,
+          zIndex: layer.zIndex,
+        })),
+        background: params.background,
+      };
 
-      // Create fit items from scene
-      const fitItems = params.scene.items.map(item => ({
-        wardrobe_item_id: item.wardrobeItemId,
-        z_index: item.z,
-        transform: {
-          x: item.x * params.scene.stageWidth,
-          y: item.y * params.scene.stageHeight,
-          scale: 1,
-          rotation: item.rotation,
-        },
+      const fitItems = params.layers.map(layer => ({
+        wardrobe_item_id: layer.wardrobeItem.id,
+        z_index: layer.zIndex,
+        transform: layer.transform,
       }));
 
       const result = await saveFit.mutateAsync({
