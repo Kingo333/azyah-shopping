@@ -90,27 +90,34 @@ export async function renderCanvasToBase64(
       if (img.complete && img.naturalWidth > 0) {
         ctx.save();
         
-        // Move to layer position
-        ctx.translate(layer.position.x, layer.position.y);
+        // Move to layer position (round to avoid sub-pixel issues)
+        ctx.translate(Math.round(layer.position.x), Math.round(layer.position.y));
         
         // Apply rotation
         ctx.rotate((layer.rotation * Math.PI) / 180);
         
-        // Match editor display: items shown at 25% of canvas width as base size (when scale = 1.0)
-        // Calculate the target width in pixels, then derive scale from natural dimensions
-        const targetWidth = width * 0.25 * layer.scale; // 25% base size * user's scale
+        // Calculate target width (25% of canvas width * user's scale)
+        const targetWidth = width * 0.25 * layer.scale;
         const displayScale = targetWidth / img.naturalWidth;
         
-        // Apply display scale and flip
-        const scaleX = displayScale * (layer.flippedH ? -1 : 1);
-        const scaleY = displayScale;
-        ctx.scale(scaleX, scaleY);
+        // Calculate the final rendered dimensions
+        const renderedWidth = img.naturalWidth * displayScale;
+        const renderedHeight = img.naturalHeight * displayScale;
+        
+        // Apply flip (scale is 1 or -1 for flip, size is in context already)
+        ctx.scale(layer.flippedH ? -1 : 1, 1);
         
         // Apply opacity
         ctx.globalAlpha = layer.opacity;
         
-        // Draw image centered at current position using natural dimensions in scaled space
-        ctx.drawImage(img, -img.naturalWidth / 2, -img.naturalHeight / 2);
+        // Draw at calculated size, centered (round to avoid sub-pixel blur)
+        ctx.drawImage(
+          img,
+          Math.round(-renderedWidth / 2),
+          Math.round(-renderedHeight / 2),
+          Math.round(renderedWidth),
+          Math.round(renderedHeight)
+        );
         
         ctx.restore();
       }
