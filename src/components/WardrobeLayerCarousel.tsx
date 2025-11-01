@@ -6,6 +6,7 @@ import { WardrobeItem } from '@/hooks/useWardrobeItems';
 import { WardrobeLayer } from '@/hooks/useWardrobeLayers';
 import { useLayerScroll } from '@/contexts/LayerScrollContext';
 import { measurePngTrim, ImageMetrics } from '@/utils/measurePngTrim';
+import { triggerHaptic } from '@/utils/haptics';
 
 interface WardrobeLayerCarouselProps {
   layer: WardrobeLayer;
@@ -156,7 +157,7 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
     };
   }, [selectedItemId, items.length, layer.category, setActiveScrollIndex, realItemsLength]);
 
-  // ✅ SNAP HANDLER: Ensure cards snap to center after manual scroll ends
+  // ✅ SNAP HANDLER: Ensure cards snap to center after manual scroll ends + haptic feedback
   useEffect(() => {
     const rail = scrollContainerRef.current;
     if (!rail || items.length === 0) return;
@@ -176,6 +177,9 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
           // Snap to exact center position
           const targetScrollLeft = getScrollLeftForIndex(snappedIndex, vw);
           rail.scrollTo({ left: targetScrollLeft, behavior: 'smooth' });
+          
+          // Haptic feedback on snap
+          triggerHaptic('light');
           
           console.log(`📍 Snap: ${rawIndex.toFixed(2)} → ${snappedIndex}`);
         }
@@ -220,6 +224,40 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
     rail.addEventListener('scrollend', handleLoopSnap, { passive: true });
     return () => rail.removeEventListener('scrollend', handleLoopSnap);
   }, [items.length, realItemsLength]);
+
+  // ✅ AUTO-UPDATE DATABASE: Sync database with visually centered item when scroll ends
+  useEffect(() => {
+    const rail = scrollContainerRef.current;
+    if (!rail || items.length === 0) return;
+
+    let updateDebounceTimer: NodeJS.Timeout;
+
+    const handleScrollEndUpdate = () => {
+      clearTimeout(updateDebounceTimer);
+      updateDebounceTimer = setTimeout(() => {
+        if (!isUserScrollingRef.current) return;
+
+        // Immediately identify centered item when scroll stops
+        const vw = window.innerWidth;
+        const cellWidth = vw * GRID_CONFIG.cellWidthVw;
+        const currentIndex = Math.round(rail.scrollLeft / cellWidth);
+        const realIndex = getVirtualToRealIndex(currentIndex);
+        const centeredItem = items[realIndex];
+        
+        if (centeredItem && centeredItem.id !== selectedItemId) {
+          console.log(`💾 Auto-updating selection to centered item: ${centeredItem.id}`);
+          onItemClick(centeredItem.id); // Update database
+          triggerHaptic('light');
+        }
+      }, 500); // Debounce to avoid excessive DB writes
+    };
+
+    rail.addEventListener('scrollend', handleScrollEndUpdate, { passive: true });
+    return () => {
+      clearTimeout(updateDebounceTimer);
+      rail.removeEventListener('scrollend', handleScrollEndUpdate);
+    };
+  }, [items, selectedItemId, onItemClick]);
 
   // ✅ SCROLL HANDLER: Sync scroll index across all layers
   useEffect(() => {
@@ -434,7 +472,28 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
                   data-item-id={item.id}
                   data-category={layer.category}
                   className={isCenter ? 'rail-card is-center' : 'rail-card'}
-                  onClick={() => onItemClick(item.id)}
+                  onClick={() => {
+                    onItemClick(item.id); // Update database
+                    
+                    // If clicked item is not already centered, scroll it to center
+                    if (item.id !== visualCenterId) {
+                      const realIndex = items.findIndex(i => i.id === item.id);
+                      if (realIndex !== -1) {
+                        const vw = window.innerWidth;
+                        const targetScrollLeft = getScrollLeftForIndex(
+                          getRealToVirtualIndex(realIndex), 
+                          vw
+                        );
+                        
+                        requestAnimationFrame(() => {
+                          scrollContainerRef.current?.scrollTo({
+                            left: targetScrollLeft,
+                            behavior: 'smooth'
+                          });
+                        });
+                      }
+                    }
+                  }}
                 >
                   {/* Pin icon - only show in middle section */}
                   {layer.is_pinned && isCenter && virtualIndex >= realItemsLength && virtualIndex < realItemsLength * 2 && (

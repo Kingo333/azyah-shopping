@@ -36,5 +36,6 @@ export const swipeHaptics = {
   like: () => triggerHaptic('medium'),
   dislike: () => triggerHaptic('light'),
   wishlist: () => triggerHaptic('heavy'),
-  return: () => triggerHaptic('light')
+  return: () => triggerHaptic('light'),
+  selection: () => triggerHaptic('light')
 };
