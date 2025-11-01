@@ -44,6 +44,12 @@ export const WardrobeUploadModal: React.FC<WardrobeUploadModalProps> = ({
   const [progress, setProgress] = useState(0);
   const [currentStep, setCurrentStep] = useState<'upload' | 'processing' | 'metadata'>('upload');
   const [colorCarouselIndex, setColorCarouselIndex] = useState(0);
+  const [trimMetadata, setTrimMetadata] = useState<{
+    offsetX: number;
+    offsetY: number;
+    originalWidth: number;
+    originalHeight: number;
+  } | null>(null);
 
   const colorOptions = [
     { name: 'Black', value: 'black', hex: '#000000' },
@@ -271,6 +277,14 @@ export const WardrobeUploadModal: React.FC<WardrobeUploadModalProps> = ({
       console.log('Trimmed image uploaded:', trimmedUrl);
       setBgRemovedPreview(trimmedUrl);
       
+      // Store trim metadata for database insert
+      setTrimMetadata({
+        offsetX: trimResult.offset.x,
+        offsetY: trimResult.offset.y,
+        originalWidth: trimResult.originalSize.w,
+        originalHeight: trimResult.originalSize.h,
+      });
+      
       // Wait a moment before transitioning to metadata step
       await new Promise(resolve => setTimeout(resolve, 500));
       
@@ -348,6 +362,10 @@ export const WardrobeUploadModal: React.FC<WardrobeUploadModalProps> = ({
         public_reuse_permitted: publicReuse,
         attribution_user_id: null,
         thumb_path: null,
+        trim_offset_x: trimMetadata?.offsetX ?? null,
+        trim_offset_y: trimMetadata?.offsetY ?? null,
+        original_width: trimMetadata?.originalWidth ?? null,
+        original_height: trimMetadata?.originalHeight ?? null,
       });
 
       console.log('Item saved successfully:', newItem);
@@ -370,6 +388,7 @@ export const WardrobeUploadModal: React.FC<WardrobeUploadModalProps> = ({
       setPublicReuse(false);
       setProgress(0);
       setCurrentStep('upload');
+      setTrimMetadata(null);
       onClose();
     } catch (error) {
       console.error('Error saving item:', error);
