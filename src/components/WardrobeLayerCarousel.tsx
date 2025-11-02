@@ -302,8 +302,13 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
     };
 
     const handleScroll = () => {
-      // Always just update local visual center - no cross-layer syncing during manual scroll
-      updateVisualCenter();
+      // Only update visual center during programmatic scrolls
+      // User scrolls are handled by the snap handler (lines 172-206)
+      if (!isUserScrollingRef.current) {
+        updateVisualCenter();
+      }
+      
+      // No broadcasting to other layers (removed setActiveScrollIndex call)
     };
 
     const handleScrollStart = () => {
