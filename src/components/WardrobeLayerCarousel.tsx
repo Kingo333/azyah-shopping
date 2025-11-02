@@ -302,15 +302,8 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
     };
 
     const handleScroll = () => {
-      if (!isUserScrollingRef.current) {
-        // Not user scroll, but still update visual center
-        updateVisualCenter();
-        return;
-      }
-
-      // User is scrolling - update visual center AND broadcast to other layers
-      const realIndex = updateVisualCenter();
-      setActiveScrollIndex(realIndex, layer.id); // Broadcast to other carousels with source ID
+      // Always just update local visual center - no cross-layer syncing during manual scroll
+      updateVisualCenter();
     };
 
     const handleScrollStart = () => {
