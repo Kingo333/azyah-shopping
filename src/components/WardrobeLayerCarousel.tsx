@@ -302,13 +302,15 @@ export const WardrobeLayerCarousel: React.FC<WardrobeLayerCarouselProps> = ({
     };
 
     const handleScroll = () => {
-      // Only update visual center during programmatic scrolls
-      // User scrolls are handled by the snap handler (lines 172-206)
       if (!isUserScrollingRef.current) {
+        // Not user scroll, but still update visual center
         updateVisualCenter();
+        return;
       }
-      
-      // No broadcasting to other layers (removed setActiveScrollIndex call)
+
+      // User is scrolling - update visual center AND broadcast to other layers
+      const realIndex = updateVisualCenter();
+      setActiveScrollIndex(realIndex, layer.id); // Broadcast to other carousels with source ID
     };
 
     const handleScrollStart = () => {
