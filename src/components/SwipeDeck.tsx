@@ -53,26 +53,17 @@ interface SwipeDeckProps {
 }
 
 const cardVariants = {
-  hidden: { opacity: 0, y: 20, scale: 0.95 },
+  hidden: { opacity: 0, scale: 0.95 },
   visible: { 
-    opacity: 1, 
-    y: 0, 
+    opacity: 1,
     scale: 1,
-    transition: { type: "spring", stiffness: 300, damping: 30, mass: 0.8 }
+    transition: { type: "spring", stiffness: 300, damping: 25 }
   },
-  exit: (direction: { x: number; y: number }) => ({
-    x: direction.x,
-    y: direction.y,
-    opacity: 0,
-    scale: 0.9,
-    rotate: direction.x * 0.1,
-    transition: { 
-      type: "spring", 
-      stiffness: 300, 
-      damping: 25,
-      mass: 0.5
-    }
-  })
+  exit: { 
+    opacity: 0, 
+    scale: 0.95,
+    transition: { duration: 0.2 }
+  }
 };
 
 const DISTANCE_THRESHOLD = 120;
@@ -98,15 +89,11 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
   const navigate = useNavigate();
   const { addToWishlist, isLoading: wishlistLoading } = useWishlist();
   
-  // Motion values with improved physics
+  // Motion values - simplified like SwipeableImages
   const x = useMotionValue(0);
   const y = useMotionValue(0);
-  const rotate = useTransform(x, [-300, 0, 300], [-20, 0, 20]);
-  const opacity = useTransform(
-    x, 
-    [-300, -150, 0, 150, 300], 
-    [0.5, 1, 1, 1, 0.5]
-  );
+  const rotate = useTransform(x, [-200, 0, 200], [-15, 0, 15]);
+  const opacity = useTransform(x, [-200, -100, 0, 100, 200], [0.5, 1, 1, 1, 0.5]);
 
   // Custom hooks
   const { products, isLoading } = useUnifiedProducts({
@@ -128,31 +115,30 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
     // Image loaded - no aspect ratio calculation needed anymore
   }, []);
 
-  // Navigation with cleanup and memory optimization
-  const nextCard = useCallback((direction?: { x: number; y: number }) => {
+  // Navigation with cleanup and memory optimization - simplified
+  const nextCard = useCallback(() => {
     if (currentProduct) {
       addSeenProduct(currentProduct.id);
     }
     
-    if (direction) {
-      setExitDirection(direction);
-    }
+    // Immediate index update - no setTimeout
+    setIndex(prevIndex => Math.min(prevIndex + 1, products.length));
     
-    // Small delay to allow exit animation
-    setTimeout(() => {
-      x.set(0);
-      y.set(0);
-      setIndex(prevIndex => Math.min(prevIndex + 1, products.length));
+    // Reset motion values immediately
+    x.set(0);
+    y.set(0);
+    
+    // Cleanup operations in microtask (non-blocking)
+    queueMicrotask(() => {
       performCleanup();
-      
       if (index % 50 === 0) {
         optimizeMemory();
       }
-    }, 50);
+    });
   }, [x, y, products.length, performCleanup, currentProduct, addSeenProduct, optimizeMemory, index]);
 
 
-  // Optimized action handlers with haptics
+  // Optimized action handlers with haptics - immediate UI response
   const handleLike = useCallback(async (product: SwipeProduct) => {
     if (!user) {
       toast({
@@ -164,33 +150,31 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
     }
 
     swipeHaptics.like();
-    nextCard({ x: 300, y: 0 });
+    nextCard(); // Immediate, no direction parameter
 
+    // ALL heavy operations happen after animation
     queueMicrotask(async () => {
       try {
         const viewDuration = getViewDuration(product.id);
         
-        trackSwipe({
-          productId: product.id,
-          action: 'right',
-          product,
-          viewDuration,
-          confidence: 1.0
-        }).catch(() => {});
+        await Promise.all([
+          trackSwipe({
+            productId: product.id,
+            action: 'right',
+            product,
+            viewDuration,
+            confidence: 1.0
+          }),
+          supabase.from('likes').insert([{
+            user_id: user.id,
+            product_id: product.id
+          }])
+        ]);
 
-        const { error } = await supabase.from('likes').insert([{
-          user_id: user.id,
-          product_id: product.id
-        }]);
-
-        if (error && error.code !== '23505') {
-          console.warn("Like error:", error);
-        } else if (!error) {
-          toast({ 
-            description: `Added to likes!`,
-            duration: 2000
-          });
-        }
+        toast({ 
+          description: `Added to likes!`,
+          duration: 2000
+        });
       } catch (error) {
         // Silent fail
       }
@@ -199,24 +183,20 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
 
   const handleDislike = useCallback(() => {
     swipeHaptics.dislike();
+    nextCard(); // Immediate
     
-    if (currentProduct) {
-      const viewDuration = getViewDuration(currentProduct.id);
-      
-      if (user) {
-        queueMicrotask(() => {
-          trackSwipe({
-            productId: currentProduct.id,
-            action: 'left',
-            product: currentProduct,
-            viewDuration,
-            confidence: 1.0
-          }).catch(() => {});
-        });
-      }
+    if (currentProduct && user) {
+      queueMicrotask(() => {
+        const viewDuration = getViewDuration(currentProduct.id);
+        trackSwipe({
+          productId: currentProduct.id,
+          action: 'left',
+          product: currentProduct,
+          viewDuration,
+          confidence: 1.0
+        }).catch(() => {});
+      });
     }
-    
-    nextCard({ x: -300, y: 0 });
   }, [user, currentProduct, nextCard, trackSwipe, getViewDuration]);
 
   const handleAddToWishlist = useCallback(async (product: SwipeProduct) => {
@@ -230,21 +210,23 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
     }
 
     swipeHaptics.wishlist();
-    nextCard({ x: 0, y: -300 });
+    nextCard(); // Immediate
 
     queueMicrotask(async () => {
       try {
         const viewDuration = getViewDuration(product.id);
         
-        trackSwipe({
-          productId: product.id,
-          action: 'up',
-          product,
-          viewDuration,
-          confidence: 1.0
-        }).catch(() => {});
+        await Promise.all([
+          trackSwipe({
+            productId: product.id,
+            action: 'up',
+            product,
+            viewDuration,
+            confidence: 1.0
+          }),
+          addToWishlist(product.id)
+        ]);
 
-        await addToWishlist(product.id);
         toast({ 
           description: `Added to wishlist!`,
           duration: 2000
@@ -265,23 +247,34 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
     const currentProduct = products[index];
     if (!currentProduct) return;
 
-    const { x: offsetX, y: offsetY } = info.offset;
-    const { x: velocityX, y: velocityY } = info.velocity;
+    const { offset, velocity } = info;
+    const effectiveX = offset.x + velocity.x * 0.1;
+    const effectiveY = offset.y + velocity.y * 0.1;
 
-    // Consider velocity for more natural swipes
-    const effectiveX = offsetX + velocityX * 0.1;
-    const effectiveY = offsetY + velocityY * 0.1;
-
+    // Determine action
+    let action: 'like' | 'dislike' | 'wishlist' | null = null;
+    
     if (effectiveY < -VERTICAL_THRESHOLD && Math.abs(effectiveX) < DISTANCE_THRESHOLD) {
-      handleAddToWishlist(currentProduct);
+      action = 'wishlist';
     } else if (effectiveX > DISTANCE_THRESHOLD) {
-      handleLike(currentProduct);
+      action = 'like';
     } else if (effectiveX < -DISTANCE_THRESHOLD) {
-      handleDislike();
+      action = 'dislike';
+    }
+
+    // Smooth return to center (like SwipeableImages)
+    animate(x, 0, { type: "spring", stiffness: 300, damping: 25 });
+    animate(y, 0, { type: "spring", stiffness: 300, damping: 25 });
+
+    // Execute action AFTER animation starts (non-blocking)
+    if (action) {
+      queueMicrotask(() => {
+        if (action === 'like') handleLike(currentProduct);
+        else if (action === 'dislike') handleDislike();
+        else if (action === 'wishlist') handleAddToWishlist(currentProduct);
+      });
     } else {
       swipeHaptics.return();
-      animate(x, 0, { type: "spring", stiffness: 400, damping: 30 });
-      animate(y, 0, { type: "spring", stiffness: 400, damping: 30 });
     }
   }, [x, y, index, products, handleLike, handleDislike, handleAddToWishlist]);
 
@@ -381,6 +374,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                   style: { x, y, rotate, opacity },
                   drag: true,
                   dragElastic: 0.2,
+                  dragConstraints: { left: 0, right: 0, top: 0, bottom: 0 },
                   whileDrag: { 
                     scale: 1.05,
                     cursor: "grabbing"
@@ -389,8 +383,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
                   variants: cardVariants,
                   initial: "hidden",
                   animate: "visible",
-                  exit: "exit",
-                  custom: exitDirection
+                  exit: "exit"
                 }}
               />
             );
