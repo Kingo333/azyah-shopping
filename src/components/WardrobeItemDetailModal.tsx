@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { WardrobeItem } from '@/hooks/useWardrobeItems';
-import { Sparkles, Loader2, CheckCircle, Trash2 } from 'lucide-react';
+import { Sparkles, Loader2, CheckCircle } from 'lucide-react';
 import { useEnhanceWardrobeItem } from '@/hooks/useEnhanceWardrobeItem';
 import { useUserCredits } from '@/hooks/useUserCredits';
 import { toast } from 'sonner';
@@ -27,8 +27,6 @@ export const WardrobeItemDetailModal: React.FC<WardrobeItemDetailModalProps> = (
   const [isUpdating, setIsUpdating] = useState(false);
 
   if (!item) return null;
-
-  const isCopiedItem = item.attribution_user_id && item.attribution_user_id !== item.user_id;
 
   const handleEnhance = async () => {
     // Check wardrobe credits
@@ -69,25 +67,6 @@ export const WardrobeItemDetailModal: React.FC<WardrobeItemDetailModalProps> = (
       );
     } catch (error) {
       toast.error('Failed to update item visibility');
-    } finally {
-      setIsUpdating(false);
-    }
-  };
-
-  const handleDeleteOrRemove = async () => {
-    setIsUpdating(true);
-    try {
-      const { error } = await supabase
-        .from('wardrobe_items')
-        .delete()
-        .eq('id', item.id);
-      
-      if (error) throw error;
-      
-      toast.success(isCopiedItem ? 'Removed from your wardrobe' : 'Item deleted');
-      onClose();
-    } catch (error) {
-      toast.error(isCopiedItem ? 'Failed to remove item' : 'Failed to delete item');
     } finally {
       setIsUpdating(false);
     }
@@ -144,22 +123,20 @@ export const WardrobeItemDetailModal: React.FC<WardrobeItemDetailModalProps> = (
             </div>
           )}
 
-          {/* Make Public Toggle - Only for original owners */}
-          {!isCopiedItem && (
-            <div className="flex justify-between items-center pt-3 border-t">
-              <div className="space-y-1">
-                <span className="text-sm font-medium">Make Public</span>
-                <p className="text-xs text-muted-foreground">
-                  Share in Community &gt; Clothes
-                </p>
-              </div>
-              <Switch 
-                checked={isPublic}
-                onCheckedChange={handleTogglePublic}
-                disabled={isUpdating}
-              />
+          {/* Make Public Toggle */}
+          <div className="flex justify-between items-center pt-3 border-t">
+            <div className="space-y-1">
+              <span className="text-sm font-medium">Make Public</span>
+              <p className="text-xs text-muted-foreground">
+                Share in Community &gt; Clothes
+              </p>
             </div>
-          )}
+            <Switch 
+              checked={isPublic}
+              onCheckedChange={handleTogglePublic}
+              disabled={isUpdating}
+            />
+          </div>
 
           {/* Enhance Button */}
           <Button
@@ -179,23 +156,6 @@ export const WardrobeItemDetailModal: React.FC<WardrobeItemDetailModalProps> = (
               <>Our AI will convert your item to a professional ghost mannequin display. Costs 1 wardrobe credit.</>
             )}
           </p>
-
-          {/* Delete/Remove Button */}
-          <Button
-            variant="destructive"
-            onClick={handleDeleteOrRemove}
-            disabled={isUpdating}
-            className="w-full mt-2"
-          >
-            <Trash2 className="w-4 h-4 mr-2" />
-            {isCopiedItem ? 'Remove from Wardrobe' : 'Delete Item'}
-          </Button>
-
-          {isCopiedItem && (
-            <p className="text-xs text-muted-foreground text-center mt-2">
-              This item was added from Community. Removing it only affects your wardrobe. The original remains in Community &gt; Clothes.
-            </p>
-          )}
         </div>
       </DialogContent>
     </Dialog>
