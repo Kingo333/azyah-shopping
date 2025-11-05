@@ -428,7 +428,7 @@ export const WardrobeUploadModal: React.FC<WardrobeUploadModalProps> = ({
               <div className="space-y-2">
                 <Progress value={progress} />
                 <p className="text-xs text-center text-muted-foreground">
-                  {progress < 30 ? 'Preparing image...' : progress < 70 ? 'AI removing background with Picsart...' : 'Saving...'}
+                  {progress < 30 ? 'Preparing image...' : progress < 70 ? 'AI is removing the background...' : 'Saving...'}
                 </p>
               </div>
             </div>

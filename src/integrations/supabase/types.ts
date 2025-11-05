@@ -2771,11 +2771,15 @@ export type Database = {
           image_url: string
           is_favorite: boolean | null
           name: string | null
+          original_height: number | null
+          original_width: number | null
           public_reuse_permitted: boolean | null
           season: string | null
           source: string | null
           tags: string[] | null
           thumb_path: string | null
+          trim_offset_x: number | null
+          trim_offset_y: number | null
           user_id: string
         }
         Insert: {
@@ -2789,11 +2793,15 @@ export type Database = {
           image_url: string
           is_favorite?: boolean | null
           name?: string | null
+          original_height?: number | null
+          original_width?: number | null
           public_reuse_permitted?: boolean | null
           season?: string | null
           source?: string | null
           tags?: string[] | null
           thumb_path?: string | null
+          trim_offset_x?: number | null
+          trim_offset_y?: number | null
           user_id: string
         }
         Update: {
@@ -2807,11 +2815,15 @@ export type Database = {
           image_url?: string
           is_favorite?: boolean | null
           name?: string | null
+          original_height?: number | null
+          original_width?: number | null
           public_reuse_permitted?: boolean | null
           season?: string | null
           source?: string | null
           tags?: string[] | null
           thumb_path?: string | null
+          trim_offset_x?: number | null
+          trim_offset_y?: number | null
           user_id?: string
         }
         Relationships: []
