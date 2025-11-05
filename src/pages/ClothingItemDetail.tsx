@@ -31,11 +31,18 @@ export default function ClothingItemDetail() {
       if (!user) throw new Error('Not authenticated');
       if (!item) throw new Error('No item data');
 
+      // Show warning about public items
+      toast.info('Adding item from Community', {
+        description: 'Note: The original publisher can remove this item at any time, and it will be removed from your wardrobe.',
+        duration: 5000,
+      });
+
       // Copy the item to user's wardrobe
       const { data, error } = await supabase
         .from('wardrobe_items')
         .insert([{
           user_id: user.id,
+          source: 'community_copy',
           name: item.name,
           brand: item.brand,
           category: item.category || 'tops',

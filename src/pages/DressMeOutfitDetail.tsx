@@ -14,6 +14,7 @@ export default function DressMeOutfitDetail() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [outfit, setOutfit] = useState<any>(null);
+  const [missingItemsCount, setMissingItemsCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -35,6 +36,27 @@ export default function DressMeOutfitDetail() {
         .single();
 
       if (error) throw error;
+
+      // Check for missing items
+      const { data: fitItems } = await supabase
+        .from('fit_items')
+        .select('wardrobe_item_id')
+        .eq('fit_id', outfitId);
+
+      const expectedCount = fitItems?.length || 0;
+
+      if (expectedCount > 0) {
+        const { data: items } = await supabase
+          .from('wardrobe_items')
+          .select('id')
+          .in('id', fitItems!.map(fi => fi.wardrobe_item_id));
+        
+        const foundCount = items?.length || 0;
+        setMissingItemsCount(expectedCount - foundCount);
+      } else {
+        setMissingItemsCount(0);
+      }
+
       setOutfit(data);
     } catch (error) {
       console.error('Error loading outfit:', error);
@@ -149,6 +171,15 @@ export default function DressMeOutfitDetail() {
               )}
             </div>
           </Card>
+
+          {/* Missing Items Warning */}
+          {missingItemsCount > 0 && (
+            <div className="p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+              <p className="text-sm text-yellow-600 dark:text-yellow-500">
+                ⚠️ Some items in this outfit are no longer available
+              </p>
+            </div>
+          )}
 
           {/* Outfit Info */}
           <div className="space-y-4">

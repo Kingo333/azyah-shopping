@@ -51,7 +51,12 @@ export const OutfitDetailSheet: React.FC<OutfitDetailSheetProps> = ({
 
       if (wardrobeError) throw wardrobeError;
 
-      return { fit, items: items as WardrobeItem[] };
+      // Calculate missing items count
+      const expectedCount = fitItems.length;
+      const foundCount = items?.length || 0;
+      const missingItemsCount = expectedCount - foundCount;
+
+      return { fit, items: items as WardrobeItem[], missingItemsCount };
     },
     enabled: !!fitId && isOpen,
   });
@@ -93,6 +98,15 @@ export const OutfitDetailSheet: React.FC<OutfitDetailSheetProps> = ({
           {/* Title (if exists) */}
           {fit.title && (
             <h3 className="text-xl font-semibold mt-4">{fit.title}</h3>
+          )}
+
+          {/* Missing Items Warning */}
+          {fitData.missingItemsCount > 0 && (
+            <div className="mt-4 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+              <p className="text-sm text-yellow-600 dark:text-yellow-500">
+                ⚠️ {fitData.missingItemsCount} item{fitData.missingItemsCount > 1 ? 's are' : ' is'} no longer available
+              </p>
+            </div>
           )}
 
           {/* Clothes in outfit */}
