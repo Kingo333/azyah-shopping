@@ -1,30 +1,59 @@
 import React from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CollabList } from '@/components/ugc/CollabList';
+import { ReviewsList } from '@/components/ugc/brand/ReviewsList';
 
 export default function UGCCollaborations() {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-[#F9F8F6]">
+    <div className="min-h-screen bg-background">
       {/* Sticky Header */}
-      <header className="sticky top-0 z-10 bg-white border-b border-[#E5E3DF] h-[60px] flex items-center px-4">
+      <header className="sticky top-0 z-10 bg-card border-b border-border h-[60px] flex items-center px-4">
         <button 
           onClick={() => navigate(-1)}
-          className="flex items-center gap-2 text-gray-700 hover:text-gray-900 transition-colors"
+          className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
         >
           <ArrowLeft className="h-5 w-5" />
         </button>
-        <h1 className="flex-1 text-center text-lg font-sans font-semibold text-gray-900 pr-9">
-          UGC Collaborations
+        <h1 className="flex-1 text-center text-lg font-semibold text-foreground pr-9">
+          UGC Brand
         </h1>
       </header>
 
       {/* Main Content */}
       <main className="pt-4 px-4 pb-20">
         <div className="max-w-[1200px] mx-auto">
-          <CollabList />
+          <Tabs defaultValue="collabs" className="w-full">
+            <TabsList className="grid w-full grid-cols-4 mb-6">
+              <TabsTrigger value="collabs">Collabs</TabsTrigger>
+              <TabsTrigger value="reviews">Reviews</TabsTrigger>
+              <TabsTrigger value="questions">Questions</TabsTrigger>
+              <TabsTrigger value="scams">Scams</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="collabs">
+              <CollabList />
+            </TabsContent>
+
+            <TabsContent value="reviews">
+              <ReviewsList />
+            </TabsContent>
+
+            <TabsContent value="questions">
+              <div className="text-center py-12 text-muted-foreground">
+                <p>Questions feature coming soon</p>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="scams">
+              <div className="text-center py-12 text-muted-foreground">
+                <p>Scam reports feature coming soon</p>
+              </div>
+            </TabsContent>
+          </Tabs>
         </div>
       </main>
     </div>

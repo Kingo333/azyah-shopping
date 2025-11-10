@@ -269,6 +269,245 @@ export type Database = {
         }
         Relationships: []
       }
+      brand_answers: {
+        Row: {
+          body: string
+          created_at: string | null
+          helpful_count: number | null
+          id: string
+          is_accepted: boolean | null
+          question_id: string | null
+          report_count: number | null
+          status: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          body: string
+          created_at?: string | null
+          helpful_count?: number | null
+          id?: string
+          is_accepted?: boolean | null
+          question_id?: string | null
+          report_count?: number | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          body?: string
+          created_at?: string | null
+          helpful_count?: number | null
+          id?: string
+          is_accepted?: boolean | null
+          question_id?: string | null
+          report_count?: number | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brand_answers_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "brand_questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      brand_questions: {
+        Row: {
+          body: string | null
+          brand_id: string | null
+          created_at: string | null
+          id: string
+          report_count: number | null
+          status: string | null
+          title: string
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          body?: string | null
+          brand_id?: string | null
+          created_at?: string | null
+          id?: string
+          report_count?: number | null
+          status?: string | null
+          title: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          body?: string | null
+          brand_id?: string | null
+          created_at?: string | null
+          id?: string
+          report_count?: number | null
+          status?: string | null
+          title?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brand_questions_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "ugc_brand_stats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "brand_questions_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "ugc_brands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      brand_reviews: {
+        Row: {
+          body: string | null
+          brand_id: string | null
+          communication_rating: number | null
+          created_at: string | null
+          currency: string | null
+          deliverables: string | null
+          evidence_urls: string[] | null
+          fairness_rating: number | null
+          helpful_count: number | null
+          id: string
+          is_anonymous: boolean | null
+          payout: number | null
+          rating: number | null
+          report_count: number | null
+          status: string | null
+          time_to_pay_days: number | null
+          title: string
+          updated_at: string | null
+          user_id: string | null
+          work_type: string | null
+          would_work_again: boolean | null
+        }
+        Insert: {
+          body?: string | null
+          brand_id?: string | null
+          communication_rating?: number | null
+          created_at?: string | null
+          currency?: string | null
+          deliverables?: string | null
+          evidence_urls?: string[] | null
+          fairness_rating?: number | null
+          helpful_count?: number | null
+          id?: string
+          is_anonymous?: boolean | null
+          payout?: number | null
+          rating?: number | null
+          report_count?: number | null
+          status?: string | null
+          time_to_pay_days?: number | null
+          title: string
+          updated_at?: string | null
+          user_id?: string | null
+          work_type?: string | null
+          would_work_again?: boolean | null
+        }
+        Update: {
+          body?: string | null
+          brand_id?: string | null
+          communication_rating?: number | null
+          created_at?: string | null
+          currency?: string | null
+          deliverables?: string | null
+          evidence_urls?: string[] | null
+          fairness_rating?: number | null
+          helpful_count?: number | null
+          id?: string
+          is_anonymous?: boolean | null
+          payout?: number | null
+          rating?: number | null
+          report_count?: number | null
+          status?: string | null
+          time_to_pay_days?: number | null
+          title?: string
+          updated_at?: string | null
+          user_id?: string | null
+          work_type?: string | null
+          would_work_again?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brand_reviews_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "ugc_brand_stats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "brand_reviews_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "ugc_brands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      brand_scam_reports: {
+        Row: {
+          brand_id: string | null
+          created_at: string | null
+          description: string
+          evidence_urls: string[] | null
+          id: string
+          report_count: number | null
+          scam_type: string | null
+          status: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          brand_id?: string | null
+          created_at?: string | null
+          description: string
+          evidence_urls?: string[] | null
+          id?: string
+          report_count?: number | null
+          scam_type?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          brand_id?: string | null
+          created_at?: string | null
+          description?: string
+          evidence_urls?: string[] | null
+          id?: string
+          report_count?: number | null
+          scam_type?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brand_scam_reports_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "ugc_brand_stats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "brand_scam_reports_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "ugc_brands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       brands: {
         Row: {
           bio: string | null
@@ -2516,6 +2755,99 @@ export type Database = {
           },
         ]
       }
+      ugc_brand_reports: {
+        Row: {
+          content_id: string
+          content_type: string | null
+          created_at: string | null
+          id: number
+          reason: string | null
+          user_id: string | null
+        }
+        Insert: {
+          content_id: string
+          content_type?: string | null
+          created_at?: string | null
+          id?: number
+          reason?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          content_id?: string
+          content_type?: string | null
+          created_at?: string | null
+          id?: number
+          reason?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      ugc_brand_votes: {
+        Row: {
+          content_id: string
+          content_type: string | null
+          created_at: string | null
+          id: number
+          user_id: string | null
+          value: number | null
+        }
+        Insert: {
+          content_id: string
+          content_type?: string | null
+          created_at?: string | null
+          id?: number
+          user_id?: string | null
+          value?: number | null
+        }
+        Update: {
+          content_id?: string
+          content_type?: string | null
+          created_at?: string | null
+          id?: number
+          user_id?: string | null
+          value?: number | null
+        }
+        Relationships: []
+      }
+      ugc_brands: {
+        Row: {
+          category: string | null
+          country: string | null
+          created_at: string | null
+          id: string
+          instagram_handle: string | null
+          is_verified: boolean | null
+          logo_url: string | null
+          name: string
+          updated_at: string | null
+          website_url: string | null
+        }
+        Insert: {
+          category?: string | null
+          country?: string | null
+          created_at?: string | null
+          id?: string
+          instagram_handle?: string | null
+          is_verified?: boolean | null
+          logo_url?: string | null
+          name: string
+          updated_at?: string | null
+          website_url?: string | null
+        }
+        Update: {
+          category?: string | null
+          country?: string | null
+          created_at?: string | null
+          id?: string
+          instagram_handle?: string | null
+          is_verified?: boolean | null
+          logo_url?: string | null
+          name?: string
+          updated_at?: string | null
+          website_url?: string | null
+        }
+        Relationships: []
+      }
       user_credits: {
         Row: {
           ai_studio_credits: number
@@ -3168,6 +3500,24 @@ export type Database = {
           socials?: Json | null
           updated_at?: string | null
           website?: string | null
+        }
+        Relationships: []
+      }
+      ugc_brand_stats: {
+        Row: {
+          avg_rating: number | null
+          category: string | null
+          country: string | null
+          id: string | null
+          instagram_handle: string | null
+          is_verified: boolean | null
+          last_review_at: string | null
+          logo_url: string | null
+          name: string | null
+          questions_count: number | null
+          reviews_count: number | null
+          scams_count: number | null
+          website_url: string | null
         }
         Relationships: []
       }
