@@ -1,14 +1,15 @@
 import { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
 import { Star } from 'lucide-react';
 import { useCreateReview, useUGCBrands } from '@/hooks/useUGCBrand';
 import { CreateBrandModal } from './CreateBrandModal';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Info } from 'lucide-react';
 
 interface ReviewFormModalProps {
   open: boolean;
@@ -20,6 +21,8 @@ export const ReviewFormModal = ({ open, onOpenChange, preselectedBrandId }: Revi
   const [step, setStep] = useState(1);
   const [brandId, setBrandId] = useState(preselectedBrandId || '');
   const [rating, setRating] = useState(0);
+  const [paymentRating, setPaymentRating] = useState(0);
+  const [vibeRating, setVibeRating] = useState(0);
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [workType, setWorkType] = useState<string>('');
@@ -27,10 +30,7 @@ export const ReviewFormModal = ({ open, onOpenChange, preselectedBrandId }: Revi
   const [payout, setPayout] = useState('');
   const [currency, setCurrency] = useState('AED');
   const [timeToPay, setTimeToPay] = useState('');
-  const [communicationRating, setCommunicationRating] = useState(0);
-  const [fairnessRating, setFairnessRating] = useState(0);
   const [wouldWorkAgain, setWouldWorkAgain] = useState<boolean | null>(null);
-  const [isAnonymous, setIsAnonymous] = useState(false);
   const [showCreateBrand, setShowCreateBrand] = useState(false);
 
   const { data: brands } = useUGCBrands();
@@ -42,6 +42,8 @@ export const ReviewFormModal = ({ open, onOpenChange, preselectedBrandId }: Revi
     await createReview.mutateAsync({
       brand_id: brandId,
       rating,
+      payment_rating: paymentRating || undefined,
+      vibe_rating: vibeRating || undefined,
       title,
       body: body || undefined,
       work_type: workType as any,
@@ -49,10 +51,7 @@ export const ReviewFormModal = ({ open, onOpenChange, preselectedBrandId }: Revi
       payout: payout ? parseFloat(payout) : undefined,
       currency,
       time_to_pay_days: timeToPay ? parseInt(timeToPay) : undefined,
-      communication_rating: communicationRating || undefined,
-      fairness_rating: fairnessRating || undefined,
       would_work_again: wouldWorkAgain ?? undefined,
-      is_anonymous: isAnonymous,
       evidence_urls: [],
     });
 
@@ -65,27 +64,29 @@ export const ReviewFormModal = ({ open, onOpenChange, preselectedBrandId }: Revi
     setStep(1);
     setBrandId('');
     setRating(0);
+    setPaymentRating(0);
+    setVibeRating(0);
     setTitle('');
     setBody('');
     setWorkType('');
     setDeliverables('');
     setPayout('');
     setTimeToPay('');
-    setCommunicationRating(0);
-    setFairnessRating(0);
     setWouldWorkAgain(null);
-    setIsAnonymous(false);
   };
 
-  const renderStars = (value: number, onChange: (val: number) => void) => {
+  const renderStars = (value: number, onChange: (val: number) => void, size: 'small' | 'large' = 'small') => {
+    const starSize = size === 'large' ? 'h-8 w-8' : 'h-6 w-6';
     return (
       <div className="flex gap-1">
         {[1, 2, 3, 4, 5].map((star) => (
           <Star
             key={star}
-            className={`h-6 w-6 cursor-pointer transition-colors ${
-              star <= value ? 'fill-yellow-400 text-yellow-400' : 'text-muted hover:text-yellow-200'
-            }`}
+            className={`${starSize} cursor-pointer transition-colors ${
+              star <= value 
+                ? 'fill-yellow-400 text-yellow-400' 
+                : 'text-muted-foreground hover:text-yellow-200 stroke-muted-foreground/30'
+            } stroke-1`}
             onClick={() => onChange(star)}
           />
         ))}
@@ -98,7 +99,15 @@ export const ReviewFormModal = ({ open, onOpenChange, preselectedBrandId }: Revi
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Write a Review - Step {step} of 3</DialogTitle>
+            <DialogTitle>Write a Review - Step {step} of 4</DialogTitle>
+            <DialogDescription>
+              <Alert className="mt-2">
+                <Info className="h-4 w-4" />
+                <AlertDescription>
+                  Your review will be posted anonymously to protect your privacy
+                </AlertDescription>
+              </Alert>
+            </DialogDescription>
           </DialogHeader>
 
           {step === 1 && (
@@ -127,8 +136,34 @@ export const ReviewFormModal = ({ open, onOpenChange, preselectedBrandId }: Revi
               </div>
 
               <div>
-                <Label>Overall Rating *</Label>
-                {renderStars(rating, setRating)}
+                <Label className="text-lg font-semibold">Overall Rating *</Label>
+                <div className="mt-2">
+                  {renderStars(rating, setRating, 'large')}
+                </div>
+              </div>
+
+              <Button 
+                onClick={() => setStep(2)} 
+                disabled={!brandId || !rating}
+                className="w-full"
+              >
+                Next
+              </Button>
+            </div>
+          )}
+
+          {step === 2 && (
+            <div className="space-y-4">
+              <div>
+                <Label>Payment Rating</Label>
+                <p className="text-xs text-muted-foreground mb-2">How timely was the payment?</p>
+                {renderStars(paymentRating, setPaymentRating)}
+              </div>
+
+              <div>
+                <Label>Vibe/Chemistry Rating</Label>
+                <p className="text-xs text-muted-foreground mb-2">How was the working relationship?</p>
+                {renderStars(vibeRating, setVibeRating)}
               </div>
 
               <div>
@@ -152,17 +187,18 @@ export const ReviewFormModal = ({ open, onOpenChange, preselectedBrandId }: Revi
                 />
               </div>
 
-              <Button 
-                onClick={() => setStep(2)} 
-                disabled={!brandId || !rating || !title}
-                className="w-full"
-              >
-                Next
-              </Button>
+              <div className="flex gap-4">
+                <Button variant="outline" onClick={() => setStep(1)} className="flex-1">
+                  Back
+                </Button>
+                <Button onClick={() => setStep(3)} disabled={!title} className="flex-1">
+                  Next
+                </Button>
+              </div>
             </div>
           )}
 
-          {step === 2 && (
+          {step === 3 && (
             <div className="space-y-4">
               <div>
                 <Label>Work Type *</Label>
@@ -229,28 +265,18 @@ export const ReviewFormModal = ({ open, onOpenChange, preselectedBrandId }: Revi
               </div>
 
               <div className="flex gap-4">
-                <Button variant="outline" onClick={() => setStep(1)} className="flex-1">
+                <Button variant="outline" onClick={() => setStep(2)} className="flex-1">
                   Back
                 </Button>
-                <Button onClick={() => setStep(3)} disabled={!workType} className="flex-1">
+                <Button onClick={() => setStep(4)} disabled={!workType} className="flex-1">
                   Next
                 </Button>
               </div>
             </div>
           )}
 
-          {step === 3 && (
+          {step === 4 && (
             <div className="space-y-4">
-              <div>
-                <Label>Communication Rating</Label>
-                {renderStars(communicationRating, setCommunicationRating)}
-              </div>
-
-              <div>
-                <Label>Fairness Rating</Label>
-                {renderStars(fairnessRating, setFairnessRating)}
-              </div>
-
               <div>
                 <Label>Would you work with them again?</Label>
                 <div className="flex gap-4 mt-2">
@@ -271,17 +297,8 @@ export const ReviewFormModal = ({ open, onOpenChange, preselectedBrandId }: Revi
                 </div>
               </div>
 
-              <div className="flex items-center justify-between pt-3 border-t">
-                <Label htmlFor="anonymous">Post anonymously</Label>
-                <Switch
-                  id="anonymous"
-                  checked={isAnonymous}
-                  onCheckedChange={setIsAnonymous}
-                />
-              </div>
-
               <div className="flex gap-4">
-                <Button variant="outline" onClick={() => setStep(2)} className="flex-1">
+                <Button variant="outline" onClick={() => setStep(3)} className="flex-1">
                   Back
                 </Button>
                 <Button 

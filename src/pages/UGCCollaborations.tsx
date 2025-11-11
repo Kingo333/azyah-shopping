@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CollabList } from '@/components/ugc/CollabList';
 import { ReviewsList } from '@/components/ugc/brand/ReviewsList';
+import { QuestionsList } from '@/components/ugc/brand/QuestionsList';
+import { ScamsList } from '@/components/ugc/brand/ScamsList';
 
 export default function UGCCollaborations() {
   const navigate = useNavigate();
@@ -28,10 +30,10 @@ export default function UGCCollaborations() {
         <div className="max-w-[1200px] mx-auto">
           <Tabs defaultValue="collabs" className="w-full">
             <TabsList className="grid w-full grid-cols-4 mb-6">
-              <TabsTrigger value="collabs">Collabs</TabsTrigger>
-              <TabsTrigger value="reviews">Reviews</TabsTrigger>
-              <TabsTrigger value="questions">Questions</TabsTrigger>
-              <TabsTrigger value="scams">Scams</TabsTrigger>
+              <TabsTrigger value="collabs">collabs</TabsTrigger>
+              <TabsTrigger value="reviews">reviews</TabsTrigger>
+              <TabsTrigger value="questions">questions</TabsTrigger>
+              <TabsTrigger value="scams">scams</TabsTrigger>
             </TabsList>
 
             <TabsContent value="collabs">
@@ -43,15 +45,11 @@ export default function UGCCollaborations() {
             </TabsContent>
 
             <TabsContent value="questions">
-              <div className="text-center py-12 text-muted-foreground">
-                <p>Questions feature coming soon</p>
-              </div>
+              <QuestionsList />
             </TabsContent>
 
             <TabsContent value="scams">
-              <div className="text-center py-12 text-muted-foreground">
-                <p>Scam reports feature coming soon</p>
-              </div>
+              <ScamsList />
             </TabsContent>
           </Tabs>
         </div>

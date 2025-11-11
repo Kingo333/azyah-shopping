@@ -1,35 +1,17 @@
 import { useState } from 'react';
-import { useUGCBrands } from '@/hooks/useUGCBrand';
-import { BrandCard } from './BrandCard';
-import { BrandSearchBar } from './BrandSearchBar';
-import { BrandDetailModal } from './BrandDetailModal';
+import { useAllReviews } from '@/hooks/useUGCBrand';
+import { ReviewCard } from './ReviewCard';
 import { Button } from '@/components/ui/button';
 import { PenSquare } from 'lucide-react';
 import { ReviewFormModal } from './ReviewFormModal';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ContentThreadModal } from './ContentThreadModal';
 
 export const ReviewsList = () => {
-  const [selectedBrandId, setSelectedBrandId] = useState<string | null>(null);
+  const [selectedReviewId, setSelectedReviewId] = useState<string | null>(null);
   const [showReviewForm, setShowReviewForm] = useState(false);
-  const [filters, setFilters] = useState<{
-    search?: string;
-    category?: string;
-    verified?: boolean;
-  }>({});
-
-  const { data: brands, isLoading } = useUGCBrands(filters);
-
-  const handleSearchChange = (search: string) => {
-    setFilters((prev) => ({ ...prev, search: search || undefined }));
-  };
-
-  const handleCategoryChange = (category: string) => {
-    setFilters((prev) => ({ ...prev, category: category === 'all' ? undefined : category }));
-  };
-
-  const handleVerifiedChange = (verified: boolean | undefined) => {
-    setFilters((prev) => ({ ...prev, verified }));
-  };
+  
+  const { data: reviews, isLoading } = useAllReviews();
 
   if (isLoading) {
     return (
@@ -46,45 +28,40 @@ export const ReviewsList = () => {
     <>
       <div className="space-y-4">
         <div className="flex justify-between items-center">
-          <h2 className="text-xl font-semibold">Brand Reviews</h2>
+          <h2 className="text-xl font-semibold">Reviews</h2>
           <Button onClick={() => setShowReviewForm(true)} className="gap-2">
             <PenSquare className="h-4 w-4" />
             Write Review
           </Button>
         </div>
 
-        <BrandSearchBar
-          onSearchChange={handleSearchChange}
-          onCategoryChange={handleCategoryChange}
-          onVerifiedChange={handleVerifiedChange}
-        />
-
-        {brands && brands.length === 0 ? (
+        {reviews && reviews.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
-            <p>No brands found. Be the first to add one!</p>
+            <p>No reviews yet. Be the first to share your experience!</p>
           </div>
         ) : (
           <div className="space-y-3">
-            {brands?.map((brand) => (
-              <BrandCard
-                key={brand.id}
-                brand={brand}
-                onClick={() => setSelectedBrandId(brand.id)}
+            {reviews?.map((review) => (
+              <ReviewCard
+                key={review.id}
+                review={review}
+                onClick={() => setSelectedReviewId(review.id)}
               />
             ))}
           </div>
         )}
       </div>
 
-      <BrandDetailModal
-        brandId={selectedBrandId}
-        open={!!selectedBrandId}
-        onOpenChange={(open) => !open && setSelectedBrandId(null)}
-      />
-
       <ReviewFormModal
         open={showReviewForm}
         onOpenChange={setShowReviewForm}
+      />
+
+      <ContentThreadModal
+        contentType="review"
+        contentId={selectedReviewId}
+        open={!!selectedReviewId}
+        onOpenChange={(open) => !open && setSelectedReviewId(null)}
       />
     </>
   );

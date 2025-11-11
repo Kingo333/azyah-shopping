@@ -7,13 +7,11 @@ import { CreateBrandModal } from './CreateBrandModal';
 
 interface BrandSearchBarProps {
   onSearchChange: (search: string) => void;
-  onCategoryChange: (category: string) => void;
   onVerifiedChange: (verified: boolean | undefined) => void;
 }
 
 export const BrandSearchBar = ({
   onSearchChange,
-  onCategoryChange,
   onVerifiedChange,
 }: BrandSearchBarProps) => {
   const [search, setSearch] = useState('');
@@ -38,17 +36,6 @@ export const BrandSearchBar = ({
         </div>
 
         <div className="flex gap-2">
-          <Select onValueChange={onCategoryChange}>
-            <SelectTrigger className="flex-1">
-              <SelectValue placeholder="Category" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Categories</SelectItem>
-              <SelectItem value="fashion">Fashion</SelectItem>
-              <SelectItem value="beauty">Beauty</SelectItem>
-            </SelectContent>
-          </Select>
-
           <Select onValueChange={(val) => onVerifiedChange(val === 'all' ? undefined : val === 'verified')}>
             <SelectTrigger className="flex-1">
               <SelectValue placeholder="Verified" />

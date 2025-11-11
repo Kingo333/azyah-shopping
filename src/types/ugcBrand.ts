@@ -32,6 +32,8 @@ export interface BrandReview {
   brand_id: string;
   user_id: string;
   rating: number;
+  payment_rating?: number;
+  vibe_rating?: number;
   title: string;
   body?: string;
   work_type: 'UGC' | 'Affiliate' | 'Gifted' | 'Paid' | 'Event';
@@ -39,14 +41,13 @@ export interface BrandReview {
   payout?: number;
   currency: string;
   time_to_pay_days?: number;
-  communication_rating?: number;
-  fairness_rating?: number;
   would_work_again?: boolean;
   evidence_urls: string[];
-  is_anonymous: boolean;
   status: string;
   report_count: number;
-  helpful_count: number;
+  like_count: number;
+  dislike_count: number;
+  comment_count: number;
   created_at: string;
   updated_at: string;
   users?: {
@@ -63,6 +64,9 @@ export interface BrandQuestion {
   body?: string;
   status: string;
   report_count: number;
+  like_count: number;
+  dislike_count: number;
+  comment_count: number;
   created_at: string;
   updated_at: string;
   users?: {
@@ -93,11 +97,15 @@ export interface BrandScamReport {
   id: string;
   brand_id: string;
   user_id: string;
+  title: string;
   scam_type: 'nonpayment' | 'counterfeit' | 'phishing' | 'ghosting' | 'other';
   description: string;
   evidence_urls: string[];
   status: string;
   report_count: number;
+  like_count: number;
+  dislike_count: number;
+  comment_count: number;
   created_at: string;
   updated_at: string;
   users?: {
