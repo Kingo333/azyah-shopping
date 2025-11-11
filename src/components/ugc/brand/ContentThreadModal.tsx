@@ -8,6 +8,20 @@ import { CommentCard } from './CommentCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ContentType } from '@/types/ugcBrand';
 
+interface Comment {
+  id: string;
+  content_type: string;
+  content_id: string;
+  user_id: string;
+  body: string;
+  status: string;
+  report_count: number;
+  like_count: number;
+  dislike_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
 interface ContentThreadModalProps {
   contentType: ContentType;
   contentId: string | null;
@@ -60,7 +74,7 @@ export const ContentThreadModal = ({ contentType, contentId, open, onOpenChange 
               </>
             ) : comments && comments.length > 0 ? (
               comments.map((comment) => (
-                <CommentCard key={comment.id} comment={comment} />
+                <CommentCard key={(comment as Comment).id} comment={comment as Comment} />
               ))
             ) : (
               <p className="text-sm text-muted-foreground text-center py-8">

@@ -6,9 +6,10 @@ import { formatDistanceToNow } from 'date-fns';
 
 interface ScamCardProps {
   scam: BrandScamReport;
+  onClick?: () => void;
 }
 
-export const ScamCard = ({ scam }: ScamCardProps) => {
+export const ScamCard = ({ scam, onClick }: ScamCardProps) => {
   const scamTypeLabels: Record<string, string> = {
     nonpayment: 'Non-Payment',
     counterfeit: 'Counterfeit Products',
@@ -18,7 +19,7 @@ export const ScamCard = ({ scam }: ScamCardProps) => {
   };
 
   return (
-    <Card className="p-4 border-destructive/50 bg-destructive/5">
+    <Card className="p-4 border-destructive/50 bg-destructive/5 cursor-pointer hover:border-destructive/70 transition-colors" onClick={onClick}>
       <div className="flex items-start gap-3">
         <AlertTriangle className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
         <div className="flex-1">

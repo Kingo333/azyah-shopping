@@ -107,11 +107,23 @@ export const useBrandReviews = (brandId?: string) => {
         
         return reviews.map(review => ({
           ...review,
+          like_count: (review as any).like_count ?? 0,
+          dislike_count: (review as any).dislike_count ?? 0,
+          comment_count: (review as any).comment_count ?? 0,
+          payment_rating: (review as any).payment_rating ?? null,
+          vibe_rating: (review as any).vibe_rating ?? null,
           users: usersMap.get(review.user_id) || undefined
         })) as BrandReview[];
       }
       
-      return reviews as BrandReview[];
+      return reviews.map(review => ({
+        ...review,
+        like_count: (review as any).like_count ?? 0,
+        dislike_count: (review as any).dislike_count ?? 0,
+        comment_count: (review as any).comment_count ?? 0,
+        payment_rating: (review as any).payment_rating ?? null,
+        vibe_rating: (review as any).vibe_rating ?? null,
+      })) as BrandReview[];
     },
     enabled: !!brandId,
   });
@@ -191,11 +203,19 @@ export const useBrandQuestions = (brandId?: string) => {
         
         return questions.map(question => ({
           ...question,
+          like_count: (question as any).like_count ?? 0,
+          dislike_count: (question as any).dislike_count ?? 0,
+          comment_count: (question as any).comment_count ?? 0,
           users: usersMap.get(question.user_id) || undefined
         })) as (BrandQuestion & { brand_answers?: any[] })[];
       }
       
-      return questions as (BrandQuestion & { brand_answers?: any[] })[];
+      return questions.map(question => ({
+        ...question,
+        like_count: (question as any).like_count ?? 0,
+        dislike_count: (question as any).dislike_count ?? 0,
+        comment_count: (question as any).comment_count ?? 0,
+      })) as (BrandQuestion & { brand_answers?: any[] })[];
     },
     enabled: !!brandId,
   });
@@ -337,11 +357,21 @@ export const useBrandScamReports = (brandId?: string) => {
         
         return scams.map(scam => ({
           ...scam,
+          title: (scam as any).title ?? '',
+          like_count: (scam as any).like_count ?? 0,
+          dislike_count: (scam as any).dislike_count ?? 0,
+          comment_count: (scam as any).comment_count ?? 0,
           users: usersMap.get(scam.user_id) || undefined
         })) as BrandScamReport[];
       }
       
-      return scams as BrandScamReport[];
+      return scams.map(scam => ({
+        ...scam,
+        title: (scam as any).title ?? '',
+        like_count: (scam as any).like_count ?? 0,
+        dislike_count: (scam as any).dislike_count ?? 0,
+        comment_count: (scam as any).comment_count ?? 0,
+      })) as BrandScamReport[];
     },
     enabled: !!brandId,
   });
@@ -392,7 +422,7 @@ export const useVoteContent = () => {
   return useMutation({
     mutationFn: async ({ contentType, contentId, value }: { contentType: ContentType | 'comment'; contentId: string; value: 1 | -1 }) => {
       const { data, error } = await supabase
-        .from('ugc_brand_votes')
+        .from('ugc_brand_votes' as any)
         .upsert([{ content_type: contentType, content_id: contentId, value }], {
           onConflict: 'content_type,content_id,user_id',
         })
@@ -423,7 +453,7 @@ export const useReportContent = () => {
   return useMutation({
     mutationFn: async ({ contentType, contentId, reason }: { contentType: ContentType; contentId: string; reason?: string }) => {
       const { data, error } = await supabase
-        .from('ugc_brand_reports')
+        .from('ugc_brand_reports' as any)
         .insert([{ content_type: contentType, content_id: contentId, reason }])
         .select()
         .single();
@@ -462,7 +492,14 @@ export const useAllReviews = () => {
         .order('created_at', { ascending: false })
         .limit(100);
       if (error) throw error;
-      return data as (BrandReview & { ugc_brands?: { name: string; logo_url?: string } })[];
+      return (data || []).map(review => ({
+        ...review,
+        like_count: (review as any).like_count ?? 0,
+        dislike_count: (review as any).dislike_count ?? 0,
+        comment_count: (review as any).comment_count ?? 0,
+        payment_rating: (review as any).payment_rating ?? null,
+        vibe_rating: (review as any).vibe_rating ?? null,
+      })) as (BrandReview & { ugc_brands?: { name: string; logo_url?: string } })[];
     },
   });
 };
@@ -479,7 +516,12 @@ export const useAllQuestions = () => {
         .order('created_at', { ascending: false })
         .limit(100);
       if (error) throw error;
-      return data as (BrandQuestion & { ugc_brands?: { name: string; logo_url?: string } })[];
+      return (data || []).map(question => ({
+        ...question,
+        like_count: (question as any).like_count ?? 0,
+        dislike_count: (question as any).dislike_count ?? 0,
+        comment_count: (question as any).comment_count ?? 0,
+      })) as (BrandQuestion & { ugc_brands?: { name: string; logo_url?: string } })[];
     },
   });
 };
@@ -496,7 +538,13 @@ export const useAllScams = () => {
         .order('created_at', { ascending: false })
         .limit(100);
       if (error) throw error;
-      return data as (BrandScamReport & { ugc_brands?: { name: string; logo_url?: string } })[];
+      return (data || []).map(scam => ({
+        ...scam,
+        title: (scam as any).title ?? '',
+        like_count: (scam as any).like_count ?? 0,
+        dislike_count: (scam as any).dislike_count ?? 0,
+        comment_count: (scam as any).comment_count ?? 0,
+      })) as (BrandScamReport & { ugc_brands?: { name: string; logo_url?: string } })[];
     },
   });
 };
@@ -513,7 +561,7 @@ export const useContentDetail = (contentType: ContentType, contentId: string | n
       else if (contentType === 'scam') tableName = 'brand_scam_reports';
       
       const { data, error } = await supabase
-        .from(tableName)
+        .from(tableName as any)
         .select('*, ugc_brands(name, logo_url)')
         .eq('id', contentId)
         .single();
@@ -531,14 +579,14 @@ export const useContentComments = (contentType: ContentType, contentId: string |
     queryFn: async () => {
       if (!contentId) return [];
       const { data, error } = await supabase
-        .from('ugc_brand_comments')
+        .from('ugc_brand_comments' as any)
         .select('*')
         .eq('content_type', contentType)
         .eq('content_id', contentId)
         .eq('status', 'published')
         .order('created_at', { ascending: true });
       if (error) throw error;
-      return data;
+      return (data || []) as any[];
     },
     enabled: !!contentId,
   });
@@ -554,7 +602,7 @@ export const useCreateComment = () => {
       body: string;
     }) => {
       const { data, error } = await supabase
-        .from('ugc_brand_comments')
+        .from('ugc_brand_comments' as any)
         .insert([comment])
         .select()
         .single();
