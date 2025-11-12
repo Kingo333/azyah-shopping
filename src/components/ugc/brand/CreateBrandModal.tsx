@@ -3,11 +3,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from '@/components/ui/command';
 import { useCreateBrand } from '@/hooks/useUGCBrand';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Upload } from 'lucide-react';
+import { Upload, Check, ChevronsUpDown } from 'lucide-react';
+import { COUNTRIES } from '@/lib/countries';
+import { cn } from '@/lib/utils';
 
 interface CreateBrandModalProps {
   open: boolean;
@@ -18,11 +21,11 @@ export const CreateBrandModal = ({ open, onOpenChange }: CreateBrandModalProps) 
   const [name, setName] = useState('');
   const [website, setWebsite] = useState('');
   const [instagram, setInstagram] = useState('');
-  const [category, setCategory] = useState<string>('');
   const [country, setCountry] = useState('');
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string>('');
   const [uploading, setUploading] = useState(false);
+  const [countryOpen, setCountryOpen] = useState(false);
 
   const createBrand = useCreateBrand();
 
@@ -81,7 +84,6 @@ export const CreateBrandModal = ({ open, onOpenChange }: CreateBrandModalProps) 
       logo_url: logoUrl,
       website_url: website || undefined,
       instagram_handle: instagram || undefined,
-      category: category || undefined,
       country: country || undefined,
     });
 
@@ -89,7 +91,6 @@ export const CreateBrandModal = ({ open, onOpenChange }: CreateBrandModalProps) 
     setName('');
     setWebsite('');
     setInstagram('');
-    setCategory('');
     setCountry('');
     setLogoFile(null);
     setLogoPreview('');
@@ -172,26 +173,48 @@ export const CreateBrandModal = ({ open, onOpenChange }: CreateBrandModalProps) 
           </div>
 
           <div>
-            <Label htmlFor="category">Category</Label>
-            <Select value={category} onValueChange={setCategory}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select category" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="fashion">Fashion</SelectItem>
-                <SelectItem value="beauty">Beauty</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
-            <Label htmlFor="country">Country</Label>
-            <Input
-              id="country"
-              value={country}
-              onChange={(e) => setCountry(e.target.value)}
-              placeholder="United Arab Emirates"
-            />
+            <Label>Country</Label>
+            <Popover open={countryOpen} onOpenChange={setCountryOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={countryOpen}
+                  className="w-full justify-between"
+                >
+                  {country || "Select country..."}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-full p-0" align="start">
+                <Command>
+                  <CommandInput placeholder="Search country..." />
+                  <CommandList>
+                    <CommandEmpty>No country found.</CommandEmpty>
+                    <CommandGroup>
+                      {COUNTRIES.map((countryOption) => (
+                        <CommandItem
+                          key={countryOption.code}
+                          value={countryOption.name}
+                          onSelect={(currentValue) => {
+                            setCountry(currentValue === country ? "" : currentValue);
+                            setCountryOpen(false);
+                          }}
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              country === countryOption.name ? "opacity-100" : "opacity-0"
+                            )}
+                          />
+                          {countryOption.name}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
           </div>
 
           <Button 
