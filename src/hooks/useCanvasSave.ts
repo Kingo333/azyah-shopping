@@ -31,6 +31,8 @@ interface SaveOutfitParams {
   title?: string;
   occasion?: string;
   isPublic: boolean;
+  giftedTo?: string;  // NEW: Friend ID if creating outfit for friend
+  context?: 'self' | 'friend';  // NEW: Context of outfit creation
   exportQuality?: 'high' | 'medium' | 'low'; // Phase 6: Configurable export quality
 }
 
@@ -211,6 +213,8 @@ export const useCanvasSave = (): UseCanvasSaveResult => {
         canvas_json: canvasData,
         canvas_image_base64: canvasImageBase64,
         is_public: params.isPublic,
+        gifted_to: params.giftedTo,
+        context: params.context,
         items: fitItems,
       });
 

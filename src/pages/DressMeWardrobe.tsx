@@ -20,6 +20,7 @@ import { OutfitPreviewCard } from '@/components/OutfitPreviewCard';
 import { useDressMeAnalytics } from '@/hooks/useDressMeAnalytics';
 import { CommunityOutfits } from './CommunityOutfits';
 import { CommunityClothes } from './CommunityClothes';
+import { FriendsTab } from '@/components/FriendsTab';
 import { OutfitDetailSheet } from '@/components/OutfitDetailSheet';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
@@ -39,8 +40,8 @@ export default function DressMeWardrobe() {
   const analytics = useDressMeAnalytics();
 
   // Get initial state from URL params
-  const [activeTab, setActiveTab] = useState<'clothes' | 'outfits' | 'community'>(
-    (searchParams.get('tab') as 'clothes' | 'outfits' | 'community') || 'clothes'
+  const [activeTab, setActiveTab] = useState<'clothes' | 'outfits' | 'community' | 'friends'>(
+    (searchParams.get('tab') as 'clothes' | 'outfits' | 'community' | 'friends') || 'clothes'
   );
   const [communitySubTab, setCommunitySubTab] = useState<'outfits' | 'clothes'>('outfits');
   const [selectedCategory, setSelectedCategory] = useState(
@@ -456,6 +457,12 @@ export default function DressMeWardrobe() {
               Outfits
             </button>
             <button 
+              className={activeTab === 'friends' ? 'segment active' : 'segment'}
+              onClick={() => setActiveTab('friends')}
+            >
+              Friends
+            </button>
+            <button 
               className={activeTab === 'community' ? 'segment active' : 'segment'}
               onClick={() => setActiveTab('community')}
             >
@@ -620,6 +627,10 @@ export default function DressMeWardrobe() {
                   <CommunityClothes />
                 </TabsContent>
               </Tabs>
+            </TabsContent>
+
+            <TabsContent value="friends" className="mt-3">
+              <FriendsTab />
             </TabsContent>
           </Tabs>
         </div>

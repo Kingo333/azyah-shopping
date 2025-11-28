@@ -1,12 +1,13 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save, Palette, Plus, Smile, Droplet, Trash2 } from 'lucide-react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { ArrowLeft, Save, Palette, Plus, Smile, Droplet, Trash2, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { EnhancedInteractiveCanvas, CanvasLayer } from '@/components/EnhancedInteractiveCanvas';
 import { BackgroundPicker } from '@/components/BackgroundPicker';
 import { CanvasBottomToolbar } from '@/components/CanvasBottomToolbar';
 import { WardrobeUploadModal } from '@/components/WardrobeUploadModal';
-import { useWardrobeItems, WardrobeItem } from '@/hooks/useWardrobeItems';
+import { useWardrobeItems, useFriendWardrobeItems, WardrobeItem } from '@/hooks/useWardrobeItems';
+import { useCheckFriendship } from '@/hooks/useFriends';
 import { toast } from 'sonner';
 import { SEOHead } from '@/components/SEOHead';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -20,12 +21,38 @@ import { WardrobeThumbnailRail } from '@/components/WardrobeThumbnailRail';
 import { supabase } from '@/integrations/supabase/client';
 import { useCanvasSave } from '@/hooks/useCanvasSave';
 import { SaveProgressModal } from '@/components/SaveProgressModal';
+import { Badge } from '@/components/ui/badge';
+import { useQuery } from '@tanstack/react-query';
 
 export default function DressMeCanvas() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const friendMode = searchParams.get('mode') === 'friend';
+  const friendId = searchParams.get('friendId');
+  
   const { data: allItems = [] } = useWardrobeItems();
+  const { data: friendItems = [] } = useFriendWardrobeItems(friendMode ? friendId : null);
+  const { data: isFriend } = useCheckFriendship(friendMode ? friendId : null);
   const analytics = useDressMeAnalytics();
   const { saveOutfit, currentStep, progress, errorMessage, reset } = useCanvasSave();
+
+  // Get friend profile if in friend mode
+  const { data: friendProfile } = useQuery({
+    queryKey: ['friend-profile', friendId],
+    queryFn: async () => {
+      if (!friendId) return null;
+      const { data, error } = await supabase
+        .from('users')
+        .select('id, username, avatar_url')
+        .eq('id', friendId)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!friendId && friendMode,
+  });
+
+  const itemsToUse = friendMode ? friendItems : allItems;
 
   const [layers, setLayers] = useState<CanvasLayer[]>([]);
   const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
@@ -44,6 +71,18 @@ export default function DressMeCanvas() {
 
   // Load selected items or fit on mount - DON'T auto-load from autosave
   useEffect(() => {
+    // Verify friendship if in friend mode
+    if (friendMode && friendId && isFriend === false) {
+      toast.error('You are not friends with this user');
+      navigate('/dress-me/wardrobe?tab=friends');
+      return;
+    }
+
+    if (friendMode && friendItems.length === 0 && !friendProfile) {
+      toast.error('Friend has no public items');
+      return;
+    }
+
     const selectedItemsStr = sessionStorage.getItem('dressme_selected_items');
     const loadFitId = sessionStorage.getItem('dressme_load_fit');
 
@@ -51,11 +90,11 @@ export default function DressMeCanvas() {
       // Load existing fit
       loadFit(loadFitId);
       sessionStorage.removeItem('dressme_load_fit');
-    } else if (selectedItemsStr) {
-      // Load selected items
+    } else if (selectedItemsStr && !friendMode) {
+      // Load selected items (only in self mode)
       try {
         const selectedIds = JSON.parse(selectedItemsStr);
-        const selectedItems = allItems.filter(item => selectedIds.includes(item.id));
+        const selectedItems = itemsToUse.filter(item => selectedIds.includes(item.id));
         
         const newLayers: CanvasLayer[] = selectedItems.map((item, index) => ({
           id: `layer-${Date.now()}-${index}`,
@@ -80,8 +119,7 @@ export default function DressMeCanvas() {
         console.error('Failed to load selected items:', e);
       }
     }
-    // Removed auto-load from autosave - canvas starts empty
-  }, [allItems]);
+  }, [itemsToUse, friendMode, friendId, isFriend, friendItems, friendProfile]);
 
   // Autosave to localStorage
   useEffect(() => {
@@ -199,6 +237,8 @@ export default function DressMeCanvas() {
       title: fitTitle || undefined,
       occasion: fitOccasion,
       isPublic,
+      giftedTo: friendMode ? friendId || undefined : undefined,
+      context: friendMode ? 'friend' : 'self',
     });
 
     // Track analytics on success
@@ -213,11 +253,11 @@ export default function DressMeCanvas() {
   };
 
   const handleItemAdded = useCallback((itemId: string) => {
-    const item = allItems.find(i => i.id === itemId);
+    const item = itemsToUse.find(i => i.id === itemId);
     if (item) {
       handleAddItemToCanvas(item);
     }
-  }, [allItems, handleAddItemToCanvas]);
+  }, [itemsToUse, handleAddItemToCanvas]);
 
   return (
     <>
@@ -292,7 +332,9 @@ export default function DressMeCanvas() {
         <SheetContent side="bottom" className="h-[80vh]">
           <SheetHeader>
             <div className="flex items-center justify-between gap-2">
-              <SheetTitle>All Items</SheetTitle>
+              <SheetTitle>
+                {friendMode ? `@${friendProfile?.username}'s Public Items` : 'All Items'}
+              </SheetTitle>
               <div className="flex items-center gap-2">
                 <Button
                   onClick={() => setSelectedLayerId(null)}
@@ -301,17 +343,19 @@ export default function DressMeCanvas() {
                 >
                   Select
                 </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setIsWardrobeSheetOpen(false);
-                    setIsUploadModalOpen(true);
-                  }}
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Layer
-                </Button>
+                {!friendMode && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setIsWardrobeSheetOpen(false);
+                      setIsUploadModalOpen(true);
+                    }}
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Layer
+                  </Button>
+                )}
                 {selectedLayerId && (
                   <Button
                     onClick={() => {
@@ -329,7 +373,7 @@ export default function DressMeCanvas() {
           </SheetHeader>
           <div className="mt-4 space-y-4 overflow-y-auto h-[calc(100%-60px)]">
             <WardrobeThumbnailRail
-              items={allItems}
+              items={itemsToUse}
               onSelectItem={handleAddItemToCanvas}
             />
           </div>

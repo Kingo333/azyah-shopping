@@ -42,6 +42,27 @@ export const useWardrobeItems = () => {
   });
 };
 
+// Get friend's public wardrobe items
+export const useFriendWardrobeItems = (friendId: string | null) => {
+  return useQuery({
+    queryKey: ['friend-wardrobe-items', friendId],
+    queryFn: async () => {
+      if (!friendId) return [];
+      
+      const { data, error } = await supabase
+        .from('wardrobe_items')
+        .select('*')
+        .eq('user_id', friendId)
+        .eq('public_reuse_permitted', true)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data as WardrobeItem[];
+    },
+    enabled: !!friendId,
+  });
+};
+
 export const useWardrobeItemsByCategory = (category: string) => {
   const { user } = useAuth();
 

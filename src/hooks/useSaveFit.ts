@@ -9,6 +9,8 @@ interface SaveFitParams {
   canvas_json: any;
   canvas_image_base64?: string;
   is_public: boolean;
+  gifted_to?: string;
+  context?: 'self' | 'friend';
   items: Array<{ 
     wardrobe_item_id: string; 
     transform: any; 
@@ -93,6 +95,10 @@ export const useSaveFit = () => {
           occasion: params.occasion,
           canvas_json: params.canvas_json,
           image_preview: imageUrl,
+          is_public: params.is_public,
+          gifted_to: params.gifted_to || null,
+          context: params.context || 'self',
+        })
           render_path: imageUrl,
           is_public: params.is_public,
         })
