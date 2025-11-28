@@ -13,6 +13,11 @@ export interface Fit {
   like_count: number;
   occasion: string | null;
   created_at: string;
+  creator?: {
+    id: string;
+    username: string;
+    avatar_url: string | null;
+  } | null;
 }
 
 export interface FitItem {
@@ -172,6 +177,39 @@ export const useDeleteFit = () => {
       console.error('Error deleting fit:', error);
       toast.error('Failed to delete fit');
     },
+  });
+};
+
+// Get fits gifted TO the current user (Made for You)
+export const useGiftedFits = () => {
+  const { user } = useAuth();
+
+  return useQuery({
+    queryKey: ['gifted-fits', user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      
+      const { data, error } = await supabase
+        .from('fits')
+        .select('*, user_id')
+        .eq('gifted_to', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      
+      // Fetch creator profiles
+      const creatorIds = [...new Set(data.map(fit => fit.user_id))];
+      const { data: profiles } = await supabase
+        .from('users')
+        .select('id, username, avatar_url')
+        .in('id', creatorIds);
+      
+      return data.map(fit => ({
+        ...fit,
+        creator: profiles?.find(p => p.id === fit.user_id) || null,
+      }));
+    },
+    enabled: !!user,
   });
 };
 

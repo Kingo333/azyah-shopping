@@ -6,6 +6,9 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { LikeButton } from '@/components/LikeButton';
 import { CommentButton } from '@/components/CommentButton';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useAuth } from '@/contexts/AuthContext';
+import { useSendFriendRequest, useCheckFriendship } from '@/hooks/useFriends';
+import { UserPlus, Check } from 'lucide-react';
 
 interface PublicFit {
   id: string;
@@ -21,6 +24,32 @@ interface PublicFit {
     avatar_url: string | null;
   };
 }
+
+// Add Friend Button Component
+const AddFriendButton = ({ userId }: { userId: string }) => {
+  const { user } = useAuth();
+  const sendRequest = useSendFriendRequest();
+  const { data: isFriend } = useCheckFriendship(userId);
+  
+  if (!user || user.id === userId) return null; // Can't add yourself
+  if (isFriend) return (
+    <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
+      <Check className="w-3 h-3 text-white" />
+    </div>
+  );
+  
+  return (
+    <button
+      className="w-5 h-5 rounded-full bg-primary flex items-center justify-center hover:bg-primary/80 transition-colors"
+      onClick={(e) => {
+        e.stopPropagation();
+        sendRequest.mutate(userId);
+      }}
+    >
+      <UserPlus className="w-3 h-3 text-white" />
+    </button>
+  );
+};
 
 export const CommunityOutfits = () => {
   const navigate = useNavigate();
@@ -131,6 +160,7 @@ export const CommunityOutfits = () => {
               <span className="text-xs font-medium">
                 {fit.user.username || 'Anonymous'}
               </span>
+              <AddFriendButton userId={fit.user.id} />
             </div>
           </div>
 

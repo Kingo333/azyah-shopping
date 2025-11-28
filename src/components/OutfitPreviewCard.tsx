@@ -1,22 +1,31 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Trash2 } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 interface OutfitPreviewCardProps {
   fit: any;
   onClick: () => void;
   onDelete?: (fitId: string) => void;
+  creator?: {
+    id: string;
+    username: string;
+    avatar_url: string | null;
+  };
+  showCreator?: boolean;
 }
 
 export const OutfitPreviewCard: React.FC<OutfitPreviewCardProps> = ({
   fit,
   onClick,
   onDelete,
+  creator,
+  showCreator,
 }) => {
   return (
     <div className="outfit-card" onClick={onClick}>
       {/* Fixed 3:4 aspect ratio frame */}
-      <div className="outfit-image-frame">
+      <div className="outfit-image-frame relative">
         {fit.render_path ? (
           <img
             src={fit.render_path}
@@ -26,6 +35,21 @@ export const OutfitPreviewCard: React.FC<OutfitPreviewCardProps> = ({
           />
         ) : (
           <div className="outfit-placeholder">No preview</div>
+        )}
+
+        {/* Creator badge overlay */}
+        {showCreator && creator && (
+          <div className="outfit-user-badge">
+            <Avatar className="w-5 h-5">
+              <AvatarImage src={creator.avatar_url || undefined} />
+              <AvatarFallback className="text-xs">
+                {(creator.username || 'U')[0].toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            <span className="text-xs font-medium">
+              @{creator.username || 'Anonymous'}
+            </span>
+          </div>
         )}
       </div>
 
