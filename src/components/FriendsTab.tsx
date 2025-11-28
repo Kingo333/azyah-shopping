@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import { Users, Package, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { FriendProfileModal } from './FriendProfileModal';
@@ -95,13 +96,32 @@ export const FriendsTab: React.FC = () => {
                 >
                   View Profile
                 </Button>
-                <Button
-                  size="sm"
-                  onClick={() => handleCreateOutfit(friend.id)}
-                  disabled={!friend.public_items_count || friend.public_items_count === 0}
-                >
-                  Create Outfit
-                </Button>
+                {(!friend.public_items_count || friend.public_items_count === 0) ? (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span>
+                          <Button
+                            size="sm"
+                            disabled
+                          >
+                            Create Outfit
+                          </Button>
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>@{friend.username} has no public items yet</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                ) : (
+                  <Button
+                    size="sm"
+                    onClick={() => handleCreateOutfit(friend.id)}
+                  >
+                    Create Outfit
+                  </Button>
+                )}
               </div>
             </div>
           </Card>
