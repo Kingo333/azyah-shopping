@@ -320,8 +320,11 @@ export type Database = {
         Row: {
           body: string | null
           brand_id: string | null
+          comment_count: number
           created_at: string | null
+          dislike_count: number
           id: string
+          like_count: number
           report_count: number | null
           status: string | null
           title: string
@@ -331,8 +334,11 @@ export type Database = {
         Insert: {
           body?: string | null
           brand_id?: string | null
+          comment_count?: number
           created_at?: string | null
+          dislike_count?: number
           id?: string
+          like_count?: number
           report_count?: number | null
           status?: string | null
           title: string
@@ -342,8 +348,11 @@ export type Database = {
         Update: {
           body?: string | null
           brand_id?: string | null
+          comment_count?: number
           created_at?: string | null
+          dislike_count?: number
           id?: string
+          like_count?: number
           report_count?: number | null
           status?: string | null
           title?: string
@@ -371,15 +380,19 @@ export type Database = {
         Row: {
           body: string | null
           brand_id: string | null
+          comment_count: number
           communication_rating: number | null
           created_at: string | null
           currency: string | null
           deliverables: string | null
+          dislike_count: number
           evidence_urls: string[] | null
           fairness_rating: number | null
           helpful_count: number | null
           id: string
           is_anonymous: boolean | null
+          like_count: number
+          payment_rating: number | null
           payout: number | null
           rating: number | null
           report_count: number | null
@@ -388,21 +401,26 @@ export type Database = {
           title: string
           updated_at: string | null
           user_id: string | null
+          vibe_rating: number | null
           work_type: string | null
           would_work_again: boolean | null
         }
         Insert: {
           body?: string | null
           brand_id?: string | null
+          comment_count?: number
           communication_rating?: number | null
           created_at?: string | null
           currency?: string | null
           deliverables?: string | null
+          dislike_count?: number
           evidence_urls?: string[] | null
           fairness_rating?: number | null
           helpful_count?: number | null
           id?: string
           is_anonymous?: boolean | null
+          like_count?: number
+          payment_rating?: number | null
           payout?: number | null
           rating?: number | null
           report_count?: number | null
@@ -411,21 +429,26 @@ export type Database = {
           title: string
           updated_at?: string | null
           user_id?: string | null
+          vibe_rating?: number | null
           work_type?: string | null
           would_work_again?: boolean | null
         }
         Update: {
           body?: string | null
           brand_id?: string | null
+          comment_count?: number
           communication_rating?: number | null
           created_at?: string | null
           currency?: string | null
           deliverables?: string | null
+          dislike_count?: number
           evidence_urls?: string[] | null
           fairness_rating?: number | null
           helpful_count?: number | null
           id?: string
           is_anonymous?: boolean | null
+          like_count?: number
+          payment_rating?: number | null
           payout?: number | null
           rating?: number | null
           report_count?: number | null
@@ -434,6 +457,7 @@ export type Database = {
           title?: string
           updated_at?: string | null
           user_id?: string | null
+          vibe_rating?: number | null
           work_type?: string | null
           would_work_again?: boolean | null
         }
@@ -457,37 +481,49 @@ export type Database = {
       brand_scam_reports: {
         Row: {
           brand_id: string | null
+          comment_count: number
           created_at: string | null
           description: string
+          dislike_count: number
           evidence_urls: string[] | null
           id: string
+          like_count: number
           report_count: number | null
           scam_type: string | null
           status: string | null
+          title: string | null
           updated_at: string | null
           user_id: string | null
         }
         Insert: {
           brand_id?: string | null
+          comment_count?: number
           created_at?: string | null
           description: string
+          dislike_count?: number
           evidence_urls?: string[] | null
           id?: string
+          like_count?: number
           report_count?: number | null
           scam_type?: string | null
           status?: string | null
+          title?: string | null
           updated_at?: string | null
           user_id?: string | null
         }
         Update: {
           brand_id?: string | null
+          comment_count?: number
           created_at?: string | null
           description?: string
+          dislike_count?: number
           evidence_urls?: string[] | null
           id?: string
+          like_count?: number
           report_count?: number | null
           scam_type?: string | null
           status?: string | null
+          title?: string | null
           updated_at?: string | null
           user_id?: string | null
         }
@@ -2755,6 +2791,48 @@ export type Database = {
           },
         ]
       }
+      ugc_brand_comments: {
+        Row: {
+          body: string
+          content_id: string
+          content_type: string
+          created_at: string | null
+          id: string
+          is_anonymous: boolean
+          like_count: number
+          report_count: number
+          status: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          body: string
+          content_id: string
+          content_type: string
+          created_at?: string | null
+          id?: string
+          is_anonymous?: boolean
+          like_count?: number
+          report_count?: number
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          body?: string
+          content_id?: string
+          content_type?: string
+          created_at?: string | null
+          id?: string
+          is_anonymous?: boolean
+          like_count?: number
+          report_count?: number
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       ugc_brand_reports: {
         Row: {
           content_id: string
@@ -2789,7 +2867,7 @@ export type Database = {
           created_at: string | null
           id: number
           user_id: string | null
-          value: number | null
+          vote_type: number | null
         }
         Insert: {
           content_id: string
@@ -2797,7 +2875,7 @@ export type Database = {
           created_at?: string | null
           id?: number
           user_id?: string | null
-          value?: number | null
+          vote_type?: number | null
         }
         Update: {
           content_id?: string
@@ -2805,7 +2883,7 @@ export type Database = {
           created_at?: string | null
           id?: number
           user_id?: string | null
-          value?: number | null
+          vote_type?: number | null
         }
         Relationships: []
       }
