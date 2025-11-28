@@ -99,9 +99,6 @@ export const useSaveFit = () => {
           gifted_to: params.gifted_to || null,
           context: params.context || 'self',
         })
-          render_path: imageUrl,
-          is_public: params.is_public,
-        })
         .select()
         .single();
 
