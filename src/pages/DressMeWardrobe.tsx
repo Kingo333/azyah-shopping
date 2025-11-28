@@ -15,7 +15,7 @@ import { AccessoriesTray } from '@/components/AccessoriesTray';
 import { SEOHead } from '@/components/SEOHead';
 import { BackButton } from '@/components/ui/back-button';
 import { Card } from '@/components/ui/card';
-import { useFits, usePublicFits, useDeleteFit } from '@/hooks/useFits';
+import { useFits, usePublicFits, useDeleteFit, useGiftedFits } from '@/hooks/useFits';
 import { OutfitPreviewCard } from '@/components/OutfitPreviewCard';
 import { useDressMeAnalytics } from '@/hooks/useDressMeAnalytics';
 import { CommunityOutfits } from './CommunityOutfits';
@@ -31,6 +31,7 @@ export default function DressMeWardrobe() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { data: allItems = [], isLoading } = useWardrobeItems();
   const { data: userFits = [] } = useFits();
+  const { data: giftedFits = [] } = useGiftedFits();
   const { data: layers = [], isLoading: layersLoading } = useWardrobeLayers();
   const addLayerMutation = useAddWardrobeLayer();
   const updateLayerMutation = useUpdateWardrobeLayer();
@@ -563,7 +564,7 @@ export default function DressMeWardrobe() {
             <TabsContent value="outfits" className="mt-3 space-y-3">
               {/* Occasion filter chips */}
               <div className="flex gap-2 overflow-x-auto pb-2">
-                {['All', 'Work', 'Casual', 'Home', 'School', 'Date'].map((occasion) => (
+                {['All', 'Made for You', 'Work', 'Casual', 'Home', 'School', 'Date'].map((occasion) => (
                   <Button
                     key={occasion}
                     variant={selectedOccasion === occasion ? 'default' : 'outline'}
@@ -572,39 +573,53 @@ export default function DressMeWardrobe() {
                     onClick={() => setSelectedOccasion(occasion)}
                   >
                     {occasion}
+                    {occasion === 'Made for You' && giftedFits.length > 0 && (
+                      <span className="ml-1 bg-primary-foreground text-primary rounded-full px-1.5 py-0.5 text-xs font-semibold">
+                        {giftedFits.length}
+                      </span>
+                    )}
                   </Button>
                 ))}
               </div>
 
               {/* Outfits Grid */}
               {(() => {
-                const filteredFits = selectedOccasion === 'All' 
-                  ? userFits 
-                  : userFits.filter(fit => fit.occasion === selectedOccasion);
+                const showGifted = selectedOccasion === 'Made for You';
+                const fitsToShow = showGifted ? giftedFits : (
+                  selectedOccasion === 'All' 
+                    ? userFits 
+                    : userFits.filter(fit => fit.occasion === selectedOccasion)
+                );
 
-                return filteredFits.length === 0 ? (
+                return fitsToShow.length === 0 ? (
                   <Card className="p-8 text-center">
                     <p className="text-muted-foreground mb-4">
-                      {selectedOccasion === 'All' 
-                        ? "You haven't saved any outfits yet"
-                        : `No ${selectedOccasion} outfits saved yet`
+                      {showGifted 
+                        ? "No outfits made for you yet"
+                        : selectedOccasion === 'All' 
+                          ? "You haven't saved any outfits yet"
+                          : `No ${selectedOccasion} outfits saved yet`
                       }
                     </p>
-                    <Button onClick={handleDone}>
-                      <Plus className="w-4 h-4 mr-2" />
-                      Create Your First Outfit
-                    </Button>
+                    {!showGifted && (
+                      <Button onClick={handleDone}>
+                        <Plus className="w-4 h-4 mr-2" />
+                        Create Your First Outfit
+                      </Button>
+                    )}
                   </Card>
                 ) : (
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    {filteredFits.map((fit) => (
+                    {fitsToShow.map((fit) => (
                       <OutfitPreviewCard
                         key={fit.id}
                         fit={fit}
                         onClick={() => {
                           setSelectedOutfitId(fit.id);
                         }}
-                        onDelete={(fitId) => setFitToDelete(fitId)}
+                        onDelete={showGifted ? undefined : (fitId) => setFitToDelete(fitId)}
+                        creator={showGifted ? fit.creator : undefined}
+                        showCreator={showGifted}
                       />
                     ))}
                   </div>
