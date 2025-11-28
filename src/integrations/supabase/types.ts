@@ -1396,7 +1396,9 @@ export type Database = {
         Row: {
           canvas_json: Json
           comment_count: number
+          context: string | null
           created_at: string
+          gifted_to: string | null
           id: string
           image_preview: string | null
           is_public: boolean | null
@@ -1411,7 +1413,9 @@ export type Database = {
         Insert: {
           canvas_json?: Json
           comment_count?: number
+          context?: string | null
           created_at?: string
+          gifted_to?: string | null
           id?: string
           image_preview?: string | null
           is_public?: boolean | null
@@ -1426,7 +1430,9 @@ export type Database = {
         Update: {
           canvas_json?: Json
           comment_count?: number
+          context?: string | null
           created_at?: string
+          gifted_to?: string | null
           id?: string
           image_preview?: string | null
           is_public?: boolean | null
@@ -1475,6 +1481,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      friendships: {
+        Row: {
+          created_at: string | null
+          friend_id: string
+          id: string
+          status: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          friend_id: string
+          id?: string
+          status?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          friend_id?: string
+          id?: string
+          status?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       image_cache: {
         Row: {
@@ -3596,6 +3629,21 @@ export type Database = {
           reviews_count: number | null
           scams_count: number | null
           website_url: string | null
+        }
+        Relationships: []
+      }
+      v_my_friends: {
+        Row: {
+          friend_id: string | null
+          friends_since: string | null
+        }
+        Insert: {
+          friend_id?: never
+          friends_since?: string | null
+        }
+        Update: {
+          friend_id?: never
+          friends_since?: string | null
         }
         Relationships: []
       }

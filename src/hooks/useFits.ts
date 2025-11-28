@@ -77,6 +77,8 @@ export const useSaveFit = () => {
       render_path?: string;
       is_public?: boolean;
       occasion?: string;
+      gifted_to?: string;  // NEW
+      context?: 'self' | 'friend';  // NEW
       items: Array<{
         wardrobe_item_id: string;
         z_index: number;
@@ -110,6 +112,8 @@ export const useSaveFit = () => {
           render_path: renderPath,
           is_public: fitData.is_public || false,
           occasion: fitData.occasion,
+          gifted_to: fitData.gifted_to || null,  // NEW
+          context: fitData.context || 'self',  // NEW
         })
         .select()
         .single();
@@ -132,9 +136,13 @@ export const useSaveFit = () => {
 
       return fit;
     },
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['fits'] });
-      toast.success('Saved to My Fits. Share with friends?');
+      if (variables.gifted_to) {
+        toast.success('Outfit saved for your friend!');
+      } else {
+        toast.success('Saved to My Fits. Share with friends?');
+      }
     },
     onError: (error) => {
       console.error('Error saving fit:', error);
