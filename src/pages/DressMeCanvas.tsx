@@ -244,6 +244,12 @@ export default function DressMeCanvas() {
     // Track analytics on success
     if (currentStep === 'success') {
       analytics.saveFit('saved', isPublic);
+      // Show custom success toast for friend mode
+      if (friendMode && friendProfile) {
+        toast.success(`Outfit saved for @${friendProfile.username}!`);
+      } else {
+        toast.success('Outfit saved!');
+      }
     }
 
     // Reset form
@@ -300,6 +306,21 @@ export default function DressMeCanvas() {
             </div>
           </div>
         </div>
+
+        {/* Friend Mode Banner */}
+        {friendMode && friendProfile && (
+          <div className="bg-indigo-50 dark:bg-indigo-950/30 border-b border-indigo-200 dark:border-indigo-800 py-2 px-4 flex-shrink-0">
+            <div className="container max-w-6xl mx-auto flex items-center gap-2">
+              <span className="inline-flex h-2 w-2 rounded-full bg-indigo-500 animate-pulse" />
+              <span className="text-sm text-indigo-900 dark:text-indigo-100">
+                Designing for <b>@{friendProfile.username}</b>
+              </span>
+              <Badge variant="secondary" className="text-xs">
+                Using their public items
+              </Badge>
+            </div>
+          </div>
+        )}
 
         {/* Canvas - grows to fill available space */}
         <div 
