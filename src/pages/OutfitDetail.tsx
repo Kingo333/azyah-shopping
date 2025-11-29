@@ -50,7 +50,7 @@ export default function OutfitDetail() {
 
       // Fetch user data
       const { data: userData } = await supabase
-        .from('users')
+        .from('users_public')
         .select('id, username, name, avatar_url')
         .eq('id', data.user_id)
         .single();
