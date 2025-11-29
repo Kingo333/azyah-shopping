@@ -374,49 +374,61 @@ export const WishlistManager: React.FC = () => {
               ))}
             </div>
           ) : (
-            <div className={viewMode === 'grid' ? 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-6' : 'space-y-4'}>
+            <div className={viewMode === 'grid' ? 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6' : 'space-y-4'}>
               {wishlistItems?.map(item => (
-                <Card key={item.id} className="group hover:shadow-lg transition-shadow">
+                <Card key={item.id} className="group overflow-hidden hover:shadow-xl transition-all duration-300 border-border/50">
                   <CardContent className="p-0">
-                    <div className={viewMode === 'grid' ? 'space-y-2 md:space-y-3' : 'flex gap-4'}>
-                      <div className={viewMode === 'grid' ? 'aspect-square' : 'w-24 h-24 flex-shrink-0'}>
+                    <div className={viewMode === 'grid' ? 'flex flex-col' : 'flex gap-4'}>
+                      {/* Image Container */}
+                      <div className={viewMode === 'grid' ? 'aspect-[3/4] relative overflow-hidden bg-muted' : 'w-32 h-32 flex-shrink-0'}>
                         <SmartImage
                           src={getPrimaryImageUrl(item.product)}
                           alt={item.product.title}
-                          className="w-full h-full object-cover rounded-t-lg"
-                          sizes={viewMode === 'grid' ? "(max-width: 768px) 50vw, 25vw" : "96px"}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          sizes={viewMode === 'grid' ? "(max-width: 768px) 50vw, 25vw" : "128px"}
                         />
+                        {/* Remove Button Overlay */}
+                        <Button
+                          variant="secondary"
+                          size="icon"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeItemMutation.mutate(item.id);
+                          }}
+                          className="absolute top-2 right-2 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                       
-                      <div className={`${viewMode === 'list' ? 'flex-1' : 'p-2 md:p-4'} space-y-2`}>
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <h3 className="font-medium line-clamp-2 text-sm md:text-base">{item.product.title}</h3>
-                            {item.product.brand && (
-                              <p className="text-xs md:text-sm text-muted-foreground">{item.product.brand.name}</p>
-                            )}
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removeItemMutation.mutate(item.id)}
-                            className="opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
+                      {/* Content Container */}
+                      <div className={`${viewMode === 'list' ? 'flex-1' : 'p-3 md:p-4'} flex flex-col gap-2 md:gap-3`}>
+                        {/* Brand */}
+                        {item.product.brand && (
+                          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                            {item.product.brand.name}
+                          </p>
+                        )}
                         
-                        <div className="flex items-center justify-between">
-                          <span className="font-bold text-sm md:text-base">
+                        {/* Title - with proper spacing */}
+                        <h3 className="font-medium text-sm md:text-base leading-snug line-clamp-3 min-h-[3rem] md:min-h-[3.5rem]">
+                          {item.product.title}
+                        </h3>
+                        
+                        {/* Price */}
+                        <div className="mt-auto">
+                          <span className="font-bold text-base md:text-lg">
                             {formatPrice(item.product.price_cents, item.product.currency)}
                           </span>
                         </div>
 
+                        {/* Shop Button */}
                         <Button
                           onClick={() => handleShopNow(item.product)}
-                          className="w-full text-xs md:text-sm h-8 md:h-9"
+                          className="w-full mt-2"
+                          size="sm"
                         >
-                          <ExternalLink className="h-3 w-3 md:h-4 md:w-4 mr-1" />
+                          <ExternalLink className="h-4 w-4 mr-2" />
                           Shop Now
                         </Button>
                       </div>
