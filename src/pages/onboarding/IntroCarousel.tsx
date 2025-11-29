@@ -1,85 +1,93 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence, PanInfo } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { BeforeAfterSlider } from '@/components/BeforeAfterSlider';
 import { SwipeableImages } from '@/components/SwipeableImages';
+import { Heart, X } from 'lucide-react';
 
 type SlideType = 
-  | { type: 'image'; image: string; title: string; subtitle: string }
-  | { type: 'slider'; title: string; subtitle: string }
-  | { type: 'swipeable'; images: string[]; title: string; subtitle: string };
+  | { type: 'hero'; image: string; title: string; subtitle: string }
+  | { type: 'interactive-swipe'; title: string; subtitle: string; images: string[] }
+  | { type: 'interactive-slider'; title: string; subtitle: string }
+  | { type: 'gallery'; title: string; subtitle: string; image: string };
 
 const slides: SlideType[] = [
   {
+    type: 'hero',
     image: '/onboarding/slide-hero.png',
-    title: 'Elegant style, carefully curated',
-    subtitle: 'Find styles you love & build looks (earn points for salons)',
-    type: 'image',
+    title: 'Discover Your Style',
+    subtitle: 'Curated fashion that matches your unique taste',
   },
   {
-    title: 'Try on outfits with AI',
-    subtitle: 'See how items look on you before buying.',
-    type: 'slider',
-  },
-  {
+    type: 'interactive-swipe',
+    title: 'Your Style, Your Swipes',
+    subtitle: 'Swipe right on items you love. We learn your taste.',
     images: [
       '/onboarding/swipe-outfit-1.png',
       '/onboarding/swipe-outfit-2.png',
       '/onboarding/swipe-outfit-3.png',
     ],
-    title: 'Discover your style, faster',
-    subtitle: 'Swipe or browse; results adapt to your taste.',
-    type: 'swipeable',
   },
   {
-    image: '/onboarding/slide-dressme.png',
-    title: 'Build outfits, your way',
-    subtitle: 'Add your wardrobe and arrange shareable looks.',
-    type: 'image',
+    type: 'interactive-slider',
+    title: 'Try Before You Buy',
+    subtitle: 'See how items look on you with AI try-on technology',
   },
   {
-    image: '/onboarding/slide-events-new.jpg',
-    title: "What's happening near you",
-    subtitle: 'Find pop-ups and local style events.',
-    type: 'image',
-  },
-  {
+    type: 'gallery',
+    title: 'Create, Collaborate, Earn',
+    subtitle: 'Join creators & brands. Build looks, share style, earn rewards.',
     image: '/onboarding/slide-collabs.png',
-    title: '(UGC) Create, collaborate, & earn',
-    subtitle: 'Apply for brand collab; earn points (Premium redeems).',
-    type: 'image',
   },
 ];
 
 export default function IntroCarousel() {
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [direction, setDirection] = useState(0);
   const navigate = useNavigate();
 
-  const nextSlide = () => {
-    if (currentSlide < slides.length - 1) {
-      setCurrentSlide(currentSlide + 1);
+  const handleSwipe = (offset: number) => {
+    if (offset > 100 && currentSlide > 0) {
+      setDirection(-1);
+      setCurrentSlide(prev => prev - 1);
+    } else if (offset < -100 && currentSlide < slides.length - 1) {
+      setDirection(1);
+      setCurrentSlide(prev => prev + 1);
     }
   };
 
-  const prevSlide = () => {
-    if (currentSlide > 0) {
-      setCurrentSlide(currentSlide - 1);
-    }
+  const handleDragEnd = (event: any, info: PanInfo) => {
+    handleSwipe(info.offset.x);
   };
 
-  const handleJoinFree = () => {
+  const handleJoinCommunity = () => {
     navigate('/onboarding/signup');
   };
 
-  const handleLogin = () => {
-    navigate('/onboarding/signup');
+  const slide = slides[currentSlide];
+
+  const variants = {
+    enter: (direction: number) => ({
+      x: direction > 0 ? 1000 : -1000,
+      opacity: 0,
+    }),
+    center: {
+      zIndex: 1,
+      x: 0,
+      opacity: 1,
+    },
+    exit: (direction: number) => ({
+      zIndex: 0,
+      x: direction < 0 ? 1000 : -1000,
+      opacity: 0,
+    }),
   };
 
   return (
     <div className="h-screen bg-white flex flex-col overflow-hidden">
       {/* Azyah Branding at Top */}
-      <div className="pt-6 pb-4">
+      <div className="pt-6 pb-4 z-10">
         <div className="flex items-center justify-center gap-2">
           <img 
             src="/marketing/azyah-logo.png" 
@@ -92,93 +100,173 @@ export default function IntroCarousel() {
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="flex items-center justify-center px-4 py-6 overflow-auto">
-        <div className="w-full max-w-xs mx-auto flex flex-col items-center gap-0">
-          {/* Phone Mockup with Screenshot or Slider */}
-          <div className="relative w-64 h-auto pt-1">
-            <div className="relative bg-white rounded-[2rem] shadow-xl border-[2px] border-gray-900 overflow-hidden">
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-16 h-3 bg-gray-900 rounded-b-xl z-10" />
-              {slides[currentSlide].type === 'slider' ? (
-                <div className="w-full aspect-[9/16]">
+      {/* Main Content Area with Swipe */}
+      <div className="flex-1 overflow-hidden relative" style={{ paddingBottom: '140px' }}>
+        <AnimatePresence initial={false} custom={direction} mode="wait">
+          <motion.div
+            key={currentSlide}
+            custom={direction}
+            variants={variants}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            transition={{
+              x: { type: "spring", stiffness: 300, damping: 30 },
+              opacity: { duration: 0.2 },
+            }}
+            drag="x"
+            dragConstraints={{ left: 0, right: 0 }}
+            dragElastic={0.2}
+            onDragEnd={handleDragEnd}
+            className="absolute inset-0 cursor-grab active:cursor-grabbing"
+          >
+            {slide.type === 'hero' && (
+              <div className="h-full flex flex-col">
+                {/* Full-bleed hero image */}
+                <div className="relative h-[55%] overflow-hidden">
+                  <img 
+                    src={slide.image} 
+                    alt={slide.title}
+                    className="w-full h-full object-cover"
+                    draggable={false}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-white" />
+                </div>
+                
+                {/* Title & Subtitle */}
+                <div className="flex-1 flex flex-col items-center justify-center px-8 text-center">
+                  <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-3">
+                    {slide.title}
+                  </h2>
+                  <p className="text-base text-muted-foreground leading-relaxed max-w-md">
+                    {slide.subtitle}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {slide.type === 'interactive-swipe' && (
+              <div className="h-full flex flex-col px-6">
+                {/* Title & Subtitle */}
+                <div className="text-center mb-6">
+                  <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-2">
+                    {slide.title}
+                  </h2>
+                  <p className="text-base text-muted-foreground leading-relaxed">
+                    {slide.subtitle}
+                  </p>
+                </div>
+
+                {/* Interactive Swipe Area */}
+                <div className="flex-1 relative max-w-sm mx-auto w-full">
+                  <SwipeableImages images={slide.images} />
+                  
+                  {/* Swipe Action Indicators */}
+                  <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-8 pointer-events-none z-20">
+                    <motion.div 
+                      className="w-14 h-14 rounded-full bg-red-500 flex items-center justify-center shadow-lg"
+                      animate={{ scale: [1, 1.1, 1] }}
+                      transition={{ duration: 2, repeat: Infinity }}
+                    >
+                      <X className="w-7 h-7 text-white" strokeWidth={3} />
+                    </motion.div>
+                    <motion.div 
+                      className="w-14 h-14 rounded-full bg-pink-500 flex items-center justify-center shadow-lg"
+                      animate={{ scale: [1, 1.1, 1] }}
+                      transition={{ duration: 2, repeat: Infinity, delay: 1 }}
+                    >
+                      <Heart className="w-7 h-7 text-white fill-white" />
+                    </motion.div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {slide.type === 'interactive-slider' && (
+              <div className="h-full flex flex-col px-6">
+                {/* Title & Subtitle */}
+                <div className="text-center mb-6">
+                  <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-2">
+                    {slide.title}
+                  </h2>
+                  <p className="text-base text-muted-foreground leading-relaxed">
+                    {slide.subtitle}
+                  </p>
+                </div>
+
+                {/* Interactive Slider Area */}
+                <div className="flex-1 relative max-w-sm mx-auto w-full rounded-2xl overflow-hidden shadow-2xl">
                   <BeforeAfterSlider />
                 </div>
-              ) : slides[currentSlide].type === 'swipeable' ? (
-                <div className="w-full aspect-[9/16]">
-                  <SwipeableImages images={slides[currentSlide].images} />
+              </div>
+            )}
+
+            {slide.type === 'gallery' && (
+              <div className="h-full flex flex-col">
+                {/* Background Image with Overlay */}
+                <div className="relative h-[55%] overflow-hidden">
+                  <img 
+                    src={slide.image} 
+                    alt={slide.title}
+                    className="w-full h-full object-cover"
+                    draggable={false}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/20 to-white" />
                 </div>
-              ) : (
-                <img 
-                  src={slides[currentSlide].image} 
-                  alt={slides[currentSlide].title}
-                  className="w-full h-auto object-contain"
-                />
-              )}
-            </div>
-          </div>
-          
-          {/* Text Content */}
-          <div className="text-center space-y-1 px-2 mt-3">
-            <h2 className="text-base font-bold text-foreground leading-tight line-clamp-1">
-              {slides[currentSlide].title}
-            </h2>
-            <p className="text-[11px] text-gray-500 leading-relaxed line-clamp-2">
-              {slides[currentSlide].subtitle}
-            </p>
-          </div>
-
-          {/* Progress Dots with Arrow Navigation */}
-          <div className="flex items-center justify-center gap-3 mt-4">
-            <button
-              onClick={prevSlide}
-              disabled={currentSlide === 0}
-              className="p-1 rounded-full hover:bg-muted disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-              aria-label="Previous slide"
-            >
-              <ChevronLeft className="w-5 h-5" />
-            </button>
-            
-            <div className="flex justify-center gap-2">
-              {slides.map((_, index) => (
-                <button
-                  key={index}
-                  onClick={() => setCurrentSlide(index)}
-                  className={`h-2 rounded-full transition-all ${
-                    index === currentSlide 
-                      ? 'w-8 bg-foreground' 
-                      : 'w-2 bg-muted-foreground/30'
-                  }`}
-                  aria-label={`Go to slide ${index + 1}`}
-                />
-              ))}
-            </div>
-
-            <button
-              onClick={nextSlide}
-              disabled={currentSlide === slides.length - 1}
-              className="p-1 rounded-full hover:bg-muted disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-              aria-label="Next slide"
-            >
-              <ChevronRight className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
+                
+                {/* Title & Subtitle */}
+                <div className="flex-1 flex flex-col items-center justify-center px-8 text-center">
+                  <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-3">
+                    {slide.title}
+                  </h2>
+                  <p className="text-base text-muted-foreground leading-relaxed max-w-md mb-4">
+                    {slide.subtitle}
+                  </p>
+                  <p className="text-sm text-muted-foreground font-medium">
+                    Join 10,000+ creators
+                  </p>
+                </div>
+              </div>
+            )}
+          </motion.div>
+        </AnimatePresence>
       </div>
 
-      {/* Bottom Actions */}
-      <div className="px-6 py-4 space-y-2 bg-white mt-auto">
+      {/* Fixed Bottom CTA Section */}
+      <div className="fixed bottom-0 left-0 right-0 px-6 pb-8 pt-6 bg-gradient-to-t from-white via-white to-transparent z-20">
+        {/* Navigation Dots */}
+        <div className="flex justify-center gap-2 mb-6">
+          {slides.map((_, index) => (
+            <button
+              key={index}
+              onClick={() => {
+                setDirection(index > currentSlide ? 1 : -1);
+                setCurrentSlide(index);
+              }}
+              className={`h-2 rounded-full transition-all ${
+                index === currentSlide 
+                  ? 'w-8 bg-[#E91E8C]' 
+                  : 'w-2 bg-gray-300 hover:bg-gray-400'
+              }`}
+              aria-label={`Go to slide ${index + 1}`}
+            />
+          ))}
+        </div>
+        
+        {/* Primary CTA */}
         <Button 
-          onClick={handleJoinFree}
-          className="w-full h-12 text-base font-semibold rounded-full bg-[#8B4567] hover:bg-[#7A3A57] text-white"
+          onClick={handleJoinCommunity}
+          className="w-full h-14 text-lg font-semibold rounded-full bg-[#E91E8C] hover:bg-[#D11A7F] text-white shadow-lg"
         >
-          Join for free
+          Join the Community
         </Button>
         
+        {/* Login Link */}
         <button
-          onClick={handleLogin}
-          className="w-full h-12 text-base font-semibold text-foreground hover:text-foreground/80 transition-colors"
+          onClick={handleJoinCommunity}
+          className="w-full mt-3 text-[#E91E8C] font-medium hover:text-[#D11A7F] transition-colors"
         >
-          Log in
+          Already have an account? <span className="font-semibold">Log In</span>
         </button>
       </div>
     </div>
