@@ -200,7 +200,7 @@ export const useGiftedFits = () => {
       // Fetch creator profiles
       const creatorIds = [...new Set(data.map(fit => fit.user_id))];
       const { data: profiles } = await supabase
-        .from('users')
+        .from('users_public')
         .select('id, username, avatar_url')
         .in('id', creatorIds);
       

@@ -77,7 +77,7 @@ export const CommunityOutfits = () => {
       const fitsWithUsers = await Promise.all(
         (data || []).map(async (fit) => {
           const { data: userData } = await supabase
-            .from('users')
+            .from('users_public')
             .select('id, username, name, avatar_url')
             .eq('id', fit.user_id)
             .single();
