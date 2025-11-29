@@ -158,7 +158,7 @@ export const CommunityOutfits = () => {
                 </AvatarFallback>
               </Avatar>
               <span className="text-xs font-medium">
-                {fit.user.username || 'Anonymous'}
+                {fit.user.username || fit.user.name || 'Anonymous'}
               </span>
               <AddFriendButton userId={fit.user.id} />
             </div>
