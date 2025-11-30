@@ -105,10 +105,10 @@ export default function IntroCarousel() {
               setDirection(-1);
               setCurrentSlide(prev => prev - 1);
             }}
-            className="absolute left-4 top-[62%] -translate-y-1/2 z-30 w-14 h-14 rounded-full bg-primary/80 backdrop-blur-sm border-2 border-primary shadow-2xl flex items-center justify-center hover:bg-primary hover:scale-110 transition-all hover:shadow-[0_0_30px_rgba(0,0,0,0.3)]"
+            className="absolute left-4 top-[66%] -translate-y-1/2 z-30 w-12 h-12 rounded-full bg-primary/90 backdrop-blur-md border border-primary/20 flex items-center justify-center hover:bg-primary hover:scale-110 transition-all shadow-lg hover:shadow-xl"
             aria-label="Previous slide"
           >
-            <ChevronLeft className="w-8 h-8 text-white drop-shadow-2xl" strokeWidth={3} />
+            <ChevronLeft className="w-7 h-7 text-white drop-shadow-lg" strokeWidth={2.5} />
           </button>
         )}
         
@@ -118,10 +118,10 @@ export default function IntroCarousel() {
               setDirection(1);
               setCurrentSlide(prev => prev + 1);
             }}
-            className="absolute right-4 top-[62%] -translate-y-1/2 z-30 w-14 h-14 rounded-full bg-primary/80 backdrop-blur-sm border-2 border-primary shadow-2xl flex items-center justify-center hover:bg-primary hover:scale-110 transition-all hover:shadow-[0_0_30px_rgba(0,0,0,0.3)]"
+            className="absolute right-4 top-[66%] -translate-y-1/2 z-30 w-12 h-12 rounded-full bg-primary/90 backdrop-blur-md border border-primary/20 flex items-center justify-center hover:bg-primary hover:scale-110 transition-all shadow-lg hover:shadow-xl"
             aria-label="Next slide"
           >
-            <ChevronRight className="w-8 h-8 text-white drop-shadow-2xl" strokeWidth={3} />
+            <ChevronRight className="w-7 h-7 text-white drop-shadow-lg" strokeWidth={2.5} />
           </button>
         )}
         
