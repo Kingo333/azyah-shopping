@@ -385,17 +385,6 @@ export default function IntroCarousel() {
                     {/* Auto-Playing Outfit Inspo Slider */}
                     <OutfitInspoSlider />
 
-                    {/* Create Outfit Inspo - Main Card */}
-                    <div className="flex-shrink-0 w-52 rounded-2xl overflow-hidden shadow-lg hover-scale transition-all duration-300 relative bg-white">
-                      <div className="h-64 relative">
-                        <BeforeAfterSlider />
-                      </div>
-                      <div className="bg-white p-3 text-center">
-                        <p className="text-sm font-semibold text-foreground">Create Outfit Inspo</p>
-                        <p className="text-xs text-muted-foreground">Earn points at salons</p>
-                      </div>
-                    </div>
-
                     {/* Brand Deals Card */}
                     <div className="flex-shrink-0 w-52 rounded-2xl overflow-hidden shadow-lg hover-scale transition-all duration-300 bg-white">
                       <div className="h-64 bg-gradient-to-br from-blue-500 to-indigo-600 flex flex-col items-center justify-center p-6">
