@@ -163,7 +163,7 @@ export default function IntroCarousel() {
                       className="h-10 w-10 object-contain drop-shadow-lg"
                     />
                     <h1 className="text-4xl font-serif text-white tracking-wider drop-shadow-lg" style={{ fontWeight: 300, letterSpacing: '0.15em' }}>
-                      Azyah
+                      zyah
                     </h1>
                   </div>
                 </div>
