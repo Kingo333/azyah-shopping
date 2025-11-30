@@ -18,7 +18,7 @@ const slides: SlideType[] = [
     type: 'hero',
     image: '/marketing/hero-visual-gender-neutral.png',
     title: 'Discover Your Style',
-    subtitle: 'The platform for discovering fashion brands, beauty products, and local events.(Powered by AI)\nWe empower brands, shoppers and content creators.',
+    subtitle: 'The platform for discovering fashion brands, beauty products, and local events. (Powered by AI)\nWe empower brands, shoppers and content creators.',
   },
   {
     type: 'interactive-swipe',
