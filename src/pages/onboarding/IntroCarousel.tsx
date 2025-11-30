@@ -398,45 +398,52 @@ export default function IntroCarousel() {
                 </div>
 
                 {/* Content Container */}
-                <div className="flex-1 flex flex-col justify-start pt-2">
+                <div className="flex-1 flex flex-col justify-start pt-4">
                   {/* Horizontal Scrollable Creator Content */}
-                  <div className="overflow-x-auto flex gap-3 py-2 -mx-6 px-6 scrollbar-hide mb-4">
+                  <div className="overflow-x-auto flex gap-4 py-3 -mx-6 px-6 scrollbar-hide mb-6">
                     {[
                       { img: '/onboarding/intro-outfits.png', label: 'Outfit Boards' },
                       { img: '/onboarding/intro-community.png', label: 'Community & Reviews' },
                       { img: '/onboarding/intro-rewards.png', label: 'Saloon Rewards' },
                     ].map((item, idx) => (
-                      <div key={idx} className="flex-shrink-0 w-36 rounded-xl overflow-hidden shadow-md">
+                      <div key={idx} className="flex-shrink-0 w-40 rounded-2xl overflow-hidden shadow-lg hover-scale transition-all duration-300">
                         <img 
                           src={item.img} 
                           alt={item.label}
-                          className="w-full h-24 object-cover"
+                          className="w-full h-28 object-cover"
                         />
-                        <div className="bg-white p-2 text-center">
-                          <p className="text-sm font-medium text-foreground">{item.label}</p>
+                        <div className="bg-white p-2.5 text-center">
+                          <p className="text-sm font-semibold text-foreground">{item.label}</p>
                         </div>
                       </div>
                     ))}
                   </div>
 
                   {/* Feature Cards - Benefits */}
-                  <div className="grid grid-cols-2 gap-3 mb-6">
-                    <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-4 text-center border border-purple-100">
-                      <span className="text-2xl mb-2 block">⭐</span>
-                      <h4 className="font-semibold text-sm text-foreground mb-1">Earn Points</h4>
-                      <p className="text-xs text-muted-foreground">Every board & review earns you rewards</p>
+                  <div className="grid grid-cols-2 gap-4 mb-6 px-2">
+                    <div className="bg-gradient-to-br from-amber-50 via-orange-50 to-pink-50 rounded-2xl p-5 text-center shadow-sm border border-amber-100/50 animate-fade-in">
+                      <div className="bg-gradient-to-br from-amber-400 to-orange-500 w-12 h-12 rounded-xl mx-auto mb-3 flex items-center justify-center shadow-md">
+                        <span className="text-2xl">⭐</span>
+                      </div>
+                      <h4 className="font-bold text-sm text-foreground mb-1.5">Earn Points</h4>
+                      <p className="text-xs text-muted-foreground leading-relaxed">Create outfit boards to earn points</p>
                     </div>
-                    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4 text-center border border-blue-100">
-                      <span className="text-2xl mb-2 block">🤝</span>
-                      <h4 className="font-semibold text-sm text-foreground mb-1">Brand Deals</h4>
-                      <p className="text-xs text-muted-foreground">Get discovered & create UGC content</p>
+                    <div className="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 rounded-2xl p-5 text-center shadow-sm border border-blue-100/50 animate-fade-in" style={{ animationDelay: '100ms' }}>
+                      <div className="bg-gradient-to-br from-blue-400 to-indigo-500 w-12 h-12 rounded-xl mx-auto mb-3 flex items-center justify-center shadow-md">
+                        <span className="text-2xl">🤝</span>
+                      </div>
+                      <h4 className="font-bold text-sm text-foreground mb-1.5">Brand Deals</h4>
+                      <p className="text-xs text-muted-foreground leading-relaxed">Get discovered & create UGC content</p>
                     </div>
                   </div>
 
                   {/* Join creators badge */}
-                  <p className="text-center text-sm text-muted-foreground font-medium">
-                    Join 10,000+ creators earning through style
-                  </p>
+                  <div className="text-center">
+                    <p className="text-sm text-muted-foreground font-medium inline-flex items-center gap-2 bg-accent/10 px-4 py-2 rounded-full">
+                      <span className="text-lg">✨</span>
+                      Join 10,000+ creators earning through style
+                    </p>
+                  </div>
                 </div>
               </div>
             )}
