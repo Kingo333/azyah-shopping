@@ -342,9 +342,9 @@ export default function IntroCarousel() {
       </div>
 
       {/* Fixed Bottom CTA Section */}
-      <div className="fixed bottom-0 left-0 right-0 px-3 pb-3 pt-2 bg-gradient-to-t from-background via-background to-transparent z-20">
+      <div className="fixed bottom-0 left-0 right-0 px-3 pb-2 md:pb-3 pt-2 bg-gradient-to-t from-background via-background to-transparent z-20">
         {/* Navigation Dots */}
-        <div className="flex justify-center gap-2 mb-6">
+        <div className="flex justify-center gap-2 mb-4 md:mb-6">
           {slides.map((_, index) => (
             <button
               key={index}
@@ -365,7 +365,7 @@ export default function IntroCarousel() {
         {/* Primary CTA */}
         <Button 
           onClick={handleJoinCommunity}
-          className="w-full h-14 text-lg font-semibold rounded-full shadow-lg"
+          className="w-full h-12 md:h-14 text-base md:text-lg font-semibold rounded-full shadow-lg"
         >
           Join the Community
         </Button>
@@ -373,7 +373,7 @@ export default function IntroCarousel() {
         {/* Login Link */}
         <button
           onClick={handleJoinCommunity}
-          className="w-full mt-3 text-primary font-medium hover:text-primary/80 transition-colors"
+          className="w-full mt-2 md:mt-3 text-sm md:text-base text-primary font-medium hover:text-primary/80 transition-colors"
         >
           Already have an account? <span className="font-semibold">Log In</span>
         </button>
