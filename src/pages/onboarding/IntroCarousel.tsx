@@ -206,7 +206,7 @@ export default function IntroCarousel() {
 
                 {/* Interactive Slider Area */}
                 <div className="flex-1 flex items-start justify-center pt-4">
-                  <div className="w-full max-w-sm rounded-2xl overflow-hidden shadow-2xl h-[300px] aspect-[3/4]">
+                  <div className="w-full max-w-sm rounded-2xl overflow-hidden shadow-2xl h-[450px]">
                     <BeforeAfterSlider />
                   </div>
                 </div>
