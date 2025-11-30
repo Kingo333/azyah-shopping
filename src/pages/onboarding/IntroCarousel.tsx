@@ -540,17 +540,18 @@ export default function IntroCarousel() {
                 {/* Content Container */}
                 <div className="flex-1 flex flex-col justify-start pt-4">
                   {/* Horizontal Carousel - Auto-scroll on mobile, static on desktop */}
-                  <div className="relative overflow-hidden mb-6">
-                    <motion.div
-                      className="flex gap-6 py-3 cursor-grab active:cursor-grabbing justify-center md:justify-center"
-                      animate={isMobile ? { x: -cardOffset * 232 } : { x: 0 }}
-                      transition={{ duration: 0.8, ease: "easeInOut" }}
-                      style={isMobile ? { paddingLeft: "calc(50% - 104px)" } : {}}
-                      drag={isMobile ? "x" : false}
-                      dragConstraints={{ left: -696, right: 0 }}
-                      dragElastic={0.1}
-                      onDragStart={() => setIsCarouselDragging(true)}
-                      onDragEnd={(e, info) => {
+                  <div className="relative mb-6 w-full">
+                    <div className="overflow-hidden">
+                      <motion.div
+                        className="flex gap-6 py-3 cursor-grab active:cursor-grabbing"
+                        style={isMobile ? { paddingLeft: 'calc(50vw - 104px)' } : {}}
+                        animate={isMobile ? { x: -cardOffset * 232 } : { x: 0 }}
+                        transition={{ duration: 0.8, ease: "easeInOut" }}
+                        drag={isMobile ? "x" : false}
+                        dragConstraints={{ left: -696, right: 0 }}
+                        dragElastic={0.1}
+                        onDragStart={() => setIsCarouselDragging(true)}
+                        onDragEnd={(e, info) => {
                         setIsCarouselDragging(false);
                         const offset = info.offset.x;
                         const velocity = info.velocity.x;
@@ -692,6 +693,7 @@ export default function IntroCarousel() {
                         </div>
                       </motion.div>
                     </motion.div>
+                    </div>
                   </div>
 
                   {/* Join creators badge with Animated Counter */}
