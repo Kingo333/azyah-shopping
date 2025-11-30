@@ -90,36 +90,23 @@ const faqData = [{
 // Auto-playing outfit inspo slider component
 const OutfitInspoSlider = () => {
   const [currentImage, setCurrentImage] = useState(0);
-  const images = [
-    '/onboarding/outfit-collage-1.jpg',
-    '/onboarding/outfit-collage-2.jpg'
-  ];
-
+  const images = ['/onboarding/outfit-collage-1.jpg', '/onboarding/outfit-collage-2.jpg'];
   useEffect(() => {
     const interval = setInterval(() => {
-      setCurrentImage((prev) => (prev + 1) % images.length);
+      setCurrentImage(prev => (prev + 1) % images.length);
     }, 3000); // Auto-advance every 3 seconds
 
     return () => clearInterval(interval);
   }, [images.length]);
-
-  return (
-    <div className="flex-shrink-0 w-52 rounded-2xl overflow-hidden shadow-lg hover-scale transition-all duration-300 relative">
+  return <div className="flex-shrink-0 w-52 rounded-2xl overflow-hidden shadow-lg hover-scale transition-all duration-300 relative">
       <div className="relative h-64 overflow-hidden">
-        {images.map((image, index) => (
-          <motion.img
-            key={index}
-            src={image}
-            alt={`Outfit Inspiration ${index + 1}`}
-            className="absolute inset-0 w-full h-full object-cover"
-            initial={false}
-            animate={{
-              opacity: currentImage === index ? 1 : 0,
-              scale: currentImage === index ? 1 : 1.05,
-            }}
-            transition={{ duration: 0.6, ease: "easeInOut" }}
-          />
-        ))}
+        {images.map((image, index) => <motion.img key={index} src={image} alt={`Outfit Inspiration ${index + 1}`} className="absolute inset-0 w-full h-full object-cover" initial={false} animate={{
+        opacity: currentImage === index ? 1 : 0,
+        scale: currentImage === index ? 1 : 1.05
+      }} transition={{
+        duration: 0.6,
+        ease: "easeInOut"
+      }} />)}
         {/* Earn Badge Overlay */}
         <div className="absolute top-2 right-2 bg-gradient-to-r from-amber-400 to-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg flex items-center gap-1 z-10">
           <span>⭐</span>
@@ -128,24 +115,15 @@ const OutfitInspoSlider = () => {
         
         {/* Slide indicators */}
         <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
-          {images.map((_, index) => (
-            <div
-              key={index}
-              className={`h-1.5 rounded-full transition-all duration-300 ${
-                currentImage === index ? 'w-6 bg-white' : 'w-1.5 bg-white/50'
-              }`}
-            />
-          ))}
+          {images.map((_, index) => <div key={index} className={`h-1.5 rounded-full transition-all duration-300 ${currentImage === index ? 'w-6 bg-white' : 'w-1.5 bg-white/50'}`} />)}
         </div>
       </div>
       <div className="bg-white p-3 text-center">
-        <p className="text-sm font-semibold text-foreground">Outfit Inspo</p>
-        <p className="text-xs text-muted-foreground">Auto-switching styles</p>
+        <p className="text-sm font-semibold text-foreground">Create Outfit Inspo</p>
+        <p className="text-xs text-muted-foreground">Earn points at salons</p>
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default function IntroCarousel() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [direction, setDirection] = useState(0);
