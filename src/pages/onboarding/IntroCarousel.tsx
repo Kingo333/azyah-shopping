@@ -133,66 +133,68 @@ export default function IntroCarousel() {
         canonical="https://azyah.app/" 
       />
       
-      {/* Floating Navigation Elements */}
-      <div className="fixed top-4 left-0 right-0 z-50 px-4 sm:px-6">
-        <div className="container max-w-7xl mx-auto flex items-center justify-between">
-          {/* Logo */}
-          <div className="flex items-center gap-2 bg-white/90 backdrop-blur-md rounded-full px-4 py-2 shadow-lg">
-            <img 
-              src="/marketing/azyah-logo.png" 
-              alt="Azyah" 
-              className="h-6 w-6 object-contain"
-            />
-            <span className="font-serif text-base font-light tracking-wider text-foreground">Azyah</span>
-          </div>
-          
-          {/* Right Side Buttons */}
-          <div className="flex items-center gap-2">
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button 
-                  size="sm" 
-                  className="font-light bg-white/90 backdrop-blur-md text-foreground hover:bg-white shadow-lg rounded-full"
-                >
-                  FAQ
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="right" className="w-full sm:max-w-xl overflow-y-auto">
-                <SheetHeader>
-                  <SheetTitle className="font-serif text-2xl">Frequently Asked Questions</SheetTitle>
-                  <SheetDescription>
-                    Everything you need to know about fashion discovery with Azyah.
-                  </SheetDescription>
-                </SheetHeader>
-                <div className="mt-6 space-y-4">
-                  {faqData.map((item, index) => (
-                    <div 
-                      key={index} 
-                      className="bg-muted/30 rounded-lg p-4 border border-primary/10 hover:border-primary/20 transition-colors"
-                    >
-                      <div className="flex items-start gap-3">
-                        <ChevronRight className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                        <div>
-                          <h3 className="font-semibold text-foreground mb-2">{item.question}</h3>
-                          <p className="text-sm text-muted-foreground leading-relaxed">{item.answer}</p>
+      {/* Floating Navigation Elements - Only on first slide */}
+      {currentSlide === 0 && (
+        <div className="fixed top-4 left-0 right-0 z-50 px-4 sm:px-6">
+          <div className="container max-w-7xl mx-auto flex items-center justify-between">
+            {/* Logo */}
+            <div className="flex items-center gap-2 bg-white/90 backdrop-blur-md rounded-full px-4 py-2 shadow-lg">
+              <img 
+                src="/marketing/azyah-logo.png" 
+                alt="Azyah" 
+                className="h-6 w-6 object-contain"
+              />
+              <span className="font-serif text-base font-light tracking-wider text-foreground">Azyah</span>
+            </div>
+            
+            {/* Right Side Buttons */}
+            <div className="flex items-center gap-2">
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button 
+                    size="sm" 
+                    className="font-light bg-white/90 backdrop-blur-md text-foreground hover:bg-white shadow-lg rounded-full"
+                  >
+                    FAQ
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="right" className="w-full sm:max-w-xl overflow-y-auto">
+                  <SheetHeader>
+                    <SheetTitle className="font-serif text-2xl">Frequently Asked Questions</SheetTitle>
+                    <SheetDescription>
+                      Everything you need to know about fashion discovery with Azyah.
+                    </SheetDescription>
+                  </SheetHeader>
+                  <div className="mt-6 space-y-4">
+                    {faqData.map((item, index) => (
+                      <div 
+                        key={index} 
+                        className="bg-muted/30 rounded-lg p-4 border border-primary/10 hover:border-primary/20 transition-colors"
+                      >
+                        <div className="flex items-start gap-3">
+                          <ChevronRight className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                          <div>
+                            <h3 className="font-semibold text-foreground mb-2">{item.question}</h3>
+                            <p className="text-sm text-muted-foreground leading-relaxed">{item.answer}</p>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              </SheetContent>
-            </Sheet>
-            
-            <Button 
-              size="sm" 
-              className="font-light bg-white/90 backdrop-blur-md text-foreground hover:bg-white shadow-lg rounded-full"
-              onClick={() => setInvestorModalOpen(true)}
-            >
-              For Investors
-            </Button>
+                    ))}
+                  </div>
+                </SheetContent>
+              </Sheet>
+              
+              <Button 
+                size="sm" 
+                className="font-light bg-white/90 backdrop-blur-md text-foreground hover:bg-white shadow-lg rounded-full"
+                onClick={() => setInvestorModalOpen(true)}
+              >
+                For Investors
+              </Button>
+            </div>
           </div>
         </div>
-      </div>
+      )}
       
       <InvestorContactModal 
         isOpen={investorModalOpen} 
