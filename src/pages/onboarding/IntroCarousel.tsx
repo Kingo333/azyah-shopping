@@ -134,6 +134,7 @@ export default function IntroCarousel() {
   const [investorModalOpen, setInvestorModalOpen] = useState(false);
   const [creatorCount, setCreatorCount] = useState(0);
   const [cardOffset, setCardOffset] = useState(0);
+  const [isCarouselDragging, setIsCarouselDragging] = useState(false);
   const navigate = useNavigate();
   const isMobile = useIsMobile();
 
@@ -165,8 +166,8 @@ export default function IntroCarousel() {
 
   // Auto-scroll carousel for gallery slide
   useEffect(() => {
-    if (currentSlide !== 3) {
-      setCardOffset(0); // Reset offset when leaving gallery slide
+    if (currentSlide !== 3 || isCarouselDragging) {
+      if (currentSlide !== 3) setCardOffset(0); // Reset offset when leaving gallery slide
       return;
     }
     
@@ -175,7 +176,7 @@ export default function IntroCarousel() {
     }, 3500);
 
     return () => clearInterval(interval);
-  }, [currentSlide]);
+  }, [currentSlide, isCarouselDragging]);
   const handleSwipe = (offset: number) => {
     if (offset > 100 && currentSlide > 0) {
       setDirection(-1);
@@ -431,10 +432,28 @@ export default function IntroCarousel() {
                   {/* Horizontal Auto-Scrolling Carousel */}
                   <div className="relative overflow-hidden mb-6">
                     <motion.div 
-                      className="flex gap-6 py-3"
+                      className="flex gap-6 py-3 cursor-grab active:cursor-grabbing"
                       animate={{ x: -cardOffset * 272 }}
                       transition={{ duration: 0.8, ease: "easeInOut" }}
                       style={{ paddingLeft: 'calc(50% - 104px)' }}
+                      drag="x"
+                      dragConstraints={{ left: -816, right: 0 }}
+                      dragElastic={0.1}
+                      onDragStart={() => setIsCarouselDragging(true)}
+                      onDragEnd={(e, info) => {
+                        setIsCarouselDragging(false);
+                        const offset = info.offset.x;
+                        const velocity = info.velocity.x;
+                        
+                        // Calculate which card to snap to based on drag distance
+                        if (Math.abs(offset) > 100 || Math.abs(velocity) > 500) {
+                          if (offset < 0 && cardOffset < 3) {
+                            setCardOffset(prev => Math.min(prev + 1, 3));
+                          } else if (offset > 0 && cardOffset > 0) {
+                            setCardOffset(prev => Math.max(prev - 1, 0));
+                          }
+                        }
+                      }}
                     >
                       {/* Auto-Playing Outfit Inspo Slider */}
                       <motion.div
