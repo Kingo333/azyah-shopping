@@ -70,7 +70,7 @@ const slides: SlideType[] = [{
 }, {
   type: 'ugc',
   title: 'Rate & Review Brands',
-  subtitle: 'Share your experience working with brands and help fellow creators make informed decisions'
+  subtitle: 'Share your experience working with brands and help fellow creators'
 }];
 const faqData = [{
   question: "How does AI-powered fashion discovery work?",
