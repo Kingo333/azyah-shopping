@@ -105,7 +105,8 @@ export default function IntroCarousel() {
               setDirection(-1);
               setCurrentSlide(prev => prev - 1);
             }}
-            className="absolute left-4 top-1/2 -translate-y-1/2 z-30 w-12 h-12 rounded-full bg-white/10 backdrop-blur-md border border-white/40 flex items-center justify-center hover:bg-white/20 hover:scale-110 transition-all shadow-xl hover:shadow-2xl"
+            className="absolute left-4 top-1/2 -translate-y-1/2 z-30 w-12 h-12 rounded-full bg-white/10 backdrop-blur-md border border-white/40 flex items-center justify-center hover:bg-white/20 hover:scale-110 transition-all"
+            style={{ boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.3)' }}
             aria-label="Previous slide"
           >
             <ChevronLeft className="w-7 h-7 text-white drop-shadow-lg" strokeWidth={2.5} />
@@ -118,7 +119,8 @@ export default function IntroCarousel() {
               setDirection(1);
               setCurrentSlide(prev => prev + 1);
             }}
-            className="absolute right-4 top-1/2 -translate-y-1/2 z-30 w-12 h-12 rounded-full bg-white/10 backdrop-blur-md border border-white/40 flex items-center justify-center hover:bg-white/20 hover:scale-110 transition-all shadow-xl hover:shadow-2xl"
+            className="absolute right-4 top-1/2 -translate-y-1/2 z-30 w-12 h-12 rounded-full bg-white/10 backdrop-blur-md border border-white/40 flex items-center justify-center hover:bg-white/20 hover:scale-110 transition-all"
+            style={{ boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.3)' }}
             aria-label="Next slide"
           >
             <ChevronRight className="w-7 h-7 text-white drop-shadow-lg" strokeWidth={2.5} />
