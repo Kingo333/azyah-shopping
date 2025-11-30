@@ -12,6 +12,8 @@ interface FloatingIcon {
   size: number;
   delay: number;
   duration: number;
+  floatX: number;
+  floatY: number;
 }
 
 export function FloatingFashionIcons() {
@@ -29,7 +31,9 @@ export function FloatingFashionIcons() {
       baseY: Math.random() * 100,
       size: 8 + Math.random() * 8, // Random size between 8-16
       delay: Math.random() * 5,
-      duration: 10 + Math.random() * 8
+      duration: 10 + Math.random() * 8,
+      floatX: (Math.random() - 0.5) * 40, // Random float range -20 to 20
+      floatY: (Math.random() - 0.5) * 40
     }));
     
     setFloatingIcons(iconData);
@@ -106,7 +110,7 @@ export function FloatingFashionIcons() {
 
   return (
     <div ref={containerRef} className="absolute inset-0 pointer-events-none overflow-hidden">
-      {floatingIcons.map(({ id, Icon, baseX, baseY, size, delay, duration }) => {
+      {floatingIcons.map(({ id, Icon, baseX, baseY, size, delay, duration, floatX, floatY }) => {
         const repulsion = getRepulsionOffset(baseX, baseY);
         
         return (
@@ -121,14 +125,20 @@ export function FloatingFashionIcons() {
             }}
             initial={{ x: 0, y: 0 }}
             animate={{
-              x: repulsion.x + tilt.x,
-              y: repulsion.y + tilt.y,
+              x: [repulsion.x + tilt.x, repulsion.x + tilt.x + floatX, repulsion.x + tilt.x - floatX, repulsion.x + tilt.x],
+              y: [repulsion.y + tilt.y, repulsion.y + tilt.y + floatY, repulsion.y + tilt.y - floatY, repulsion.y + tilt.y],
             }}
             transition={{
-              type: "spring",
-              stiffness: 50,
-              damping: 15,
-              mass: 1
+              x: {
+                duration: duration,
+                repeat: Infinity,
+                ease: "easeInOut"
+              },
+              y: {
+                duration: duration,
+                repeat: Infinity,
+                ease: "easeInOut"
+              }
             }}
           >
             <motion.div
