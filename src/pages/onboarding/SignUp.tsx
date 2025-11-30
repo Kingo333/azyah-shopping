@@ -526,7 +526,7 @@ export default function SignUp() {
                   <div className="w-full border-t border-white/30"></div>
                 </div>
                 <div className="relative flex justify-center text-xs md:text-sm">
-                  <span className="px-3 md:px-4 bg-background text-white/90 font-medium">or</span>
+                  <span className="px-3 md:px-4 bg-[#16213e] text-white/90 font-medium">or</span>
                 </div>
               </div>
             )}
