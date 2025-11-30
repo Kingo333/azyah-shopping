@@ -355,6 +355,7 @@ export default function IntroCarousel() {
                       </div>
                       <div className="bg-white p-3 text-center">
                         <p className="text-sm font-semibold text-foreground">Outfit Inspo 1</p>
+                        <p className="text-xs text-muted-foreground">Earn points at salons</p>
                       </div>
                     </div>
 
@@ -368,6 +369,7 @@ export default function IntroCarousel() {
                       </div>
                       <div className="bg-white p-3 text-center">
                         <p className="text-sm font-semibold text-foreground">Outfit Inspo 2</p>
+                        <p className="text-xs text-muted-foreground">Earn points at salons</p>
                       </div>
                     </div>
 
