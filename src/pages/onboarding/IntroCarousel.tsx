@@ -394,9 +394,9 @@ export default function IntroCarousel() {
                 </div>
               </div>}
 
-            {slide.type === 'gallery' && <div className="h-full flex flex-col px-6 bg-gradient-to-b from-white via-primary/3 to-accent/5">
+            {slide.type === 'gallery' && <div className="h-full flex flex-col px-6 bg-gradient-to-b from-white via-white to-primary/5">
                 {/* Title & Subtitle */}
-                <div className="text-center mb-8 pt-4">
+                <div className="text-center mb-6 pt-4">
                   <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-2 bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
                     {slide.title}
                   </h2>
@@ -406,28 +406,25 @@ export default function IntroCarousel() {
                 </div>
 
                 {/* Content Container */}
-                <div className="flex-1 flex flex-col justify-start">
-                  {/* Centered Grid of Cards */}
-                  <div className="grid grid-cols-2 gap-4 max-w-2xl mx-auto px-2 mb-8">
-                    {/* Outfit Inspo Card - Staggered Animation */}
+                <div className="flex-1 flex flex-col justify-start pt-4">
+                  {/* Horizontal Scrollable Collages & Cards with Scroll Snap */}
+                  <div 
+                    className="overflow-x-auto flex gap-4 py-3 -mx-6 px-6 scrollbar-hide mb-6"
+                    style={{
+                      scrollSnapType: 'x mandatory',
+                      scrollPaddingLeft: '1.5rem'
+                    }}
+                  >
+                    {/* Auto-Playing Outfit Inspo Slider - Staggered Animation */}
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
                       animate={currentSlide === 3 ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
                       transition={{ delay: 0, duration: 0.5 }}
-                      className="w-full"
+                      style={{ scrollSnapAlign: 'start' }}
+                      className="flex-shrink-0"
                     >
-                      <div className="rounded-2xl overflow-hidden shadow-[0_4px_24px_rgba(251,191,36,0.3)] hover:shadow-[0_8px_32px_rgba(251,191,36,0.4)] transition-all duration-300 hover:scale-105 bg-white h-full">
-                        <div className="h-40 bg-gradient-to-br from-amber-400 to-orange-500 flex flex-col items-center justify-center p-4 relative">
-                          <span className="text-5xl mb-2">📸</span>
-                          <h4 className="font-bold text-base text-white mb-1 text-center">Outfit Inspo</h4>
-                          <p className="text-xs text-center text-white/90">Share your style</p>
-                          <div className="absolute top-2 right-2 bg-white/20 backdrop-blur-sm text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                            ⭐ Earn
-                          </div>
-                        </div>
-                        <div className="bg-white p-2.5 text-center border-t border-amber-100">
-                          <p className="text-xs font-semibold text-foreground">Create Content</p>
-                        </div>
+                      <div className="shadow-[0_4px_24px_rgba(251,191,36,0.3)] hover:shadow-[0_8px_32px_rgba(251,191,36,0.4)] transition-shadow duration-300">
+                        <OutfitInspoSlider />
                       </div>
                     </motion.div>
 
@@ -436,16 +433,17 @@ export default function IntroCarousel() {
                       initial={{ opacity: 0, y: 20 }}
                       animate={currentSlide === 3 ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
                       transition={{ delay: 0.1, duration: 0.5 }}
-                      className="w-full"
+                      style={{ scrollSnapAlign: 'start' }}
+                      className="flex-shrink-0"
                     >
-                      <div className="rounded-2xl overflow-hidden shadow-[0_4px_24px_rgba(59,130,246,0.3)] hover:shadow-[0_8px_32px_rgba(59,130,246,0.4)] transition-all duration-300 hover:scale-105 bg-white h-full">
-                        <div className="h-40 bg-gradient-to-br from-blue-500 to-indigo-600 flex flex-col items-center justify-center p-4">
-                          <span className="text-5xl mb-2">🤝</span>
-                          <h4 className="font-bold text-base text-white mb-1 text-center">Brand Deals</h4>
-                          <p className="text-xs text-center text-white/90">Partner with brands</p>
+                      <div className="w-52 rounded-2xl overflow-hidden hover-scale transition-all duration-300 bg-white shadow-[0_4px_24px_rgba(59,130,246,0.3)] hover:shadow-[0_8px_32px_rgba(59,130,246,0.4)]">
+                        <div className="h-64 bg-gradient-to-br from-blue-500 to-indigo-600 flex flex-col items-center justify-center p-6">
+                          <span className="text-6xl mb-4">🤝</span>
+                          <h4 className="font-bold text-lg text-white mb-2 text-center">Brand Deals</h4>
+                          <p className="text-sm text-center text-white/90">Get discovered by brands & create UGC content</p>
                         </div>
-                        <div className="bg-white p-2.5 text-center border-t border-blue-100">
-                          <p className="text-xs font-semibold text-foreground">Earn Money</p>
+                        <div className="bg-white p-3 text-center">
+                          <p className="text-sm font-semibold text-foreground">Earn Money</p>
                         </div>
                       </div>
                     </motion.div>
@@ -455,16 +453,17 @@ export default function IntroCarousel() {
                       initial={{ opacity: 0, y: 20 }}
                       animate={currentSlide === 3 ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
                       transition={{ delay: 0.2, duration: 0.5 }}
-                      className="w-full"
+                      style={{ scrollSnapAlign: 'start' }}
+                      className="flex-shrink-0"
                     >
-                      <div className="rounded-2xl overflow-hidden shadow-[0_4px_24px_rgba(236,72,153,0.3)] hover:shadow-[0_8px_32px_rgba(236,72,153,0.4)] transition-all duration-300 hover:scale-105 bg-white h-full">
-                        <div className="h-40 bg-gradient-to-br from-pink-500 to-rose-600 flex flex-col items-center justify-center p-4">
-                          <span className="text-5xl mb-2">👯</span>
-                          <h4 className="font-bold text-base text-white mb-1 text-center">Style Friends</h4>
-                          <p className="text-xs text-center text-white/90">Design for friends</p>
+                      <div className="w-52 rounded-2xl overflow-hidden hover-scale transition-all duration-300 bg-white shadow-[0_4px_24px_rgba(236,72,153,0.3)] hover:shadow-[0_8px_32px_rgba(236,72,153,0.4)]">
+                        <div className="h-64 bg-gradient-to-br from-pink-500 to-rose-600 flex flex-col items-center justify-center p-6">
+                          <span className="text-6xl mb-4">👯</span>
+                          <h4 className="font-bold text-lg text-white mb-2 text-center">Style Friends</h4>
+                          <p className="text-sm text-center text-white/90">Create outfits for your friends with their clothes</p>
                         </div>
-                        <div className="bg-white p-2.5 text-center border-t border-pink-100">
-                          <p className="text-xs font-semibold text-foreground">Be Creative</p>
+                        <div className="bg-white p-3 text-center">
+                          <p className="text-sm font-semibold text-foreground">Be Creative</p>
                         </div>
                       </div>
                     </motion.div>
@@ -474,16 +473,17 @@ export default function IntroCarousel() {
                       initial={{ opacity: 0, y: 20 }}
                       animate={currentSlide === 3 ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
                       transition={{ delay: 0.3, duration: 0.5 }}
-                      className="w-full"
+                      style={{ scrollSnapAlign: 'start' }}
+                      className="flex-shrink-0"
                     >
-                      <div className="rounded-2xl overflow-hidden shadow-[0_4px_24px_rgba(168,85,247,0.3)] hover:shadow-[0_8px_32px_rgba(168,85,247,0.4)] transition-all duration-300 hover:scale-105 bg-white h-full">
-                        <div className="h-40 bg-gradient-to-br from-purple-500 to-violet-600 flex flex-col items-center justify-center p-4">
-                          <span className="text-5xl mb-2">🎉</span>
-                          <h4 className="font-bold text-base text-white mb-1 text-center">Pop-Up Events</h4>
-                          <p className="text-xs text-center text-white/90">Exclusive access</p>
+                      <div className="w-52 rounded-2xl overflow-hidden hover-scale transition-all duration-300 bg-white shadow-[0_4px_24px_rgba(168,85,247,0.3)] hover:shadow-[0_8px_32px_rgba(168,85,247,0.4)]">
+                        <div className="h-64 bg-gradient-to-br from-purple-500 to-violet-600 flex flex-col items-center justify-center p-6">
+                          <span className="text-6xl mb-4">🎉</span>
+                          <h4 className="font-bold text-lg text-white mb-2 text-center">Pop-Up Events</h4>
+                          <p className="text-sm text-center text-white/90">Discover exclusive fashion events and join them</p>
                         </div>
-                        <div className="bg-white p-2.5 text-center border-t border-purple-100">
-                          <p className="text-xs font-semibold text-foreground">Join Events</p>
+                        <div className="bg-white p-3 text-center">
+                          <p className="text-sm font-semibold text-foreground">Get Exclusive Access</p>
                         </div>
                       </div>
                     </motion.div>
@@ -496,7 +496,7 @@ export default function IntroCarousel() {
                     animate={currentSlide === 3 ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.9 }}
                     transition={{ delay: 0.5, duration: 0.4 }}
                   >
-                    <p className="text-sm text-muted-foreground font-medium inline-flex items-center gap-2 bg-gradient-to-r from-primary/10 to-accent/10 px-5 py-2.5 rounded-full border border-primary/20">
+                    <p className="text-sm text-muted-foreground font-medium inline-flex items-center gap-2 bg-accent/10 px-4 py-2 rounded-full">
                       <span className="text-lg">✨</span>
                       Join {creatorCount.toLocaleString()}+ creators earning through style
                     </p>
