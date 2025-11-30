@@ -10,6 +10,7 @@ type SlideType =
   | { type: 'hero'; image: string; title: string; subtitle: string }
   | { type: 'interactive-swipe'; title: string; subtitle: string; images: string[]; productInfo?: Array<{ name: string; brand: string }> }
   | { type: 'interactive-slider'; title: string; subtitle: string }
+  | { type: 'ugc'; title: string; subtitle: string }
   | { type: 'gallery'; title: string; subtitle: string };
 
 const slides: SlideType[] = [
@@ -38,6 +39,11 @@ const slides: SlideType[] = [
     type: 'interactive-slider',
     title: 'Try Before You Buy',
     subtitle: 'See how items look on you with AI try-on technology',
+  },
+  {
+    type: 'ugc',
+    title: 'Rate & Review Brands',
+    subtitle: 'Share your experience working with brands and help fellow creators make informed decisions',
   },
   {
     type: 'gallery',
@@ -91,7 +97,7 @@ export default function IntroCarousel() {
   return (
     <div className="h-screen bg-white flex flex-col overflow-hidden">
       {/* Main Content Area with Swipe */}
-      <div className="flex-1 overflow-hidden relative" style={{ paddingBottom: '140px' }}>
+      <div className="flex-1 overflow-hidden relative" style={{ paddingBottom: '180px' }}>
         <AnimatePresence initial={false} custom={direction} mode="wait">
           <motion.div
             key={currentSlide}
@@ -202,6 +208,46 @@ export default function IntroCarousel() {
                 <div className="flex-1 relative max-w-sm mx-auto w-full rounded-2xl overflow-hidden shadow-2xl">
                   <BeforeAfterSlider />
                 </div>
+              </div>
+            )}
+
+            {slide.type === 'ugc' && (
+              <div className="h-full flex flex-col px-6 pt-8">
+                {/* Title & Subtitle */}
+                <div className="text-center mb-8">
+                  <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-2">
+                    {slide.title}
+                  </h2>
+                  <p className="text-base text-muted-foreground leading-relaxed">
+                    {slide.subtitle}
+                  </p>
+                </div>
+
+                {/* UGC Features Grid */}
+                <div className="grid grid-cols-1 gap-4 mb-6">
+                  <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl p-6 border border-primary/20">
+                    <span className="text-4xl mb-3 block">⭐</span>
+                    <h4 className="font-bold text-lg text-foreground mb-2">Honest Reviews</h4>
+                    <p className="text-sm text-muted-foreground">Rate brands on payment, communication, and overall experience</p>
+                  </div>
+                  
+                  <div className="bg-gradient-to-br from-accent/10 to-accent/5 rounded-2xl p-6 border border-accent/20">
+                    <span className="text-4xl mb-3 block">🚨</span>
+                    <h4 className="font-bold text-lg text-foreground mb-2">Report Scams</h4>
+                    <p className="text-sm text-muted-foreground">Warn other creators about brands with unfair practices</p>
+                  </div>
+                  
+                  <div className="bg-gradient-to-br from-secondary/10 to-secondary/5 rounded-2xl p-6 border border-secondary/20">
+                    <span className="text-4xl mb-3 block">❓</span>
+                    <h4 className="font-bold text-lg text-foreground mb-2">Ask Questions</h4>
+                    <p className="text-sm text-muted-foreground">Get answers from creators who've worked with the brand</p>
+                  </div>
+                </div>
+
+                {/* Community Badge */}
+                <p className="text-center text-sm text-muted-foreground font-medium">
+                  100% anonymous • Community-powered
+                </p>
               </div>
             )}
 
