@@ -343,20 +343,17 @@ export default function IntroCarousel() {
 
                 {/* Content Container */}
                 <div className="flex-1 flex flex-col justify-start pt-4">
-                  {/* Horizontal Scrollable Creator Content */}
+                  {/* Horizontal Scrollable Outfit Collages */}
                   <div className="overflow-x-auto flex gap-4 py-3 -mx-6 px-6 scrollbar-hide mb-6">
                     {[{
-                  img: '/onboarding/swipe-outfit-1.png',
+                  img: '/onboarding/outfit-collage-1.jpg',
                   label: 'Outfit Boards'
                 }, {
-                  img: '/onboarding/intro-community.png',
-                  label: 'Community & Reviews'
-                }, {
-                  img: '/onboarding/intro-rewards.png',
-                  label: 'Saloon Rewards'
-                }].map((item, idx) => <div key={idx} className="flex-shrink-0 w-40 rounded-2xl overflow-hidden shadow-lg hover-scale transition-all duration-300">
-                        <img src={item.img} alt={item.label} className="w-full h-28 object-cover" />
-                        <div className="bg-white p-2.5 text-center">
+                  img: '/onboarding/outfit-collage-2.jpg',
+                  label: 'Style Collages'
+                }].map((item, idx) => <div key={idx} className="flex-shrink-0 w-52 rounded-2xl overflow-hidden shadow-lg hover-scale transition-all duration-300">
+                        <img src={item.img} alt={item.label} className="w-full h-64 object-cover" />
+                        <div className="bg-white p-3 text-center">
                           <p className="text-sm font-semibold text-foreground">{item.label}</p>
                         </div>
                       </div>)}
@@ -364,22 +361,23 @@ export default function IntroCarousel() {
 
                   {/* Feature Cards - Benefits */}
                   <div className="grid grid-cols-2 gap-4 mb-6 px-2">
-                    <div className="bg-gradient-to-br from-amber-50 via-orange-50 to-pink-50 rounded-2xl p-5 text-center shadow-sm border border-amber-100/50 animate-fade-in">
-                      <div className="bg-gradient-to-br from-amber-400 to-orange-500 w-12 h-12 rounded-xl mx-auto mb-3 flex items-center justify-center shadow-md">
-                        <span className="text-2xl">⭐</span>
+                    <div className="flex-shrink-0 rounded-2xl overflow-hidden shadow-lg hover-scale transition-all duration-300 bg-white">
+                      <div className="bg-gradient-to-br from-amber-400 to-orange-500 h-24 flex items-center justify-center">
+                        <span className="text-5xl">⭐</span>
                       </div>
-                      <h4 className="font-bold text-sm text-foreground mb-1.5">Earn Points</h4>
-                      <p className="text-xs text-muted-foreground leading-relaxed">Create outfit boards to earn points for salons reward
- </p>
+                      <div className="p-3 text-center">
+                        <h4 className="font-bold text-sm text-foreground mb-1">Earn Points</h4>
+                        <p className="text-xs text-muted-foreground leading-relaxed">Create outfit boards to earn points</p>
+                      </div>
                     </div>
-                    <div className="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 rounded-2xl p-5 text-center shadow-sm border border-blue-100/50 animate-fade-in" style={{
-                  animationDelay: '100ms'
-                }}>
-                      <div className="bg-gradient-to-br from-blue-400 to-indigo-500 w-12 h-12 rounded-xl mx-auto mb-3 flex items-center justify-center shadow-md">
-                        <span className="text-2xl">🤝</span>
+                    <div className="flex-shrink-0 rounded-2xl overflow-hidden shadow-lg hover-scale transition-all duration-300 bg-white">
+                      <div className="bg-gradient-to-br from-blue-400 to-indigo-500 h-24 flex items-center justify-center">
+                        <span className="text-5xl">🤝</span>
                       </div>
-                      <h4 className="font-bold text-sm text-foreground mb-1.5">Brand Deals</h4>
-                      <p className="text-xs text-muted-foreground leading-relaxed">Get discovered & create UGC content</p>
+                      <div className="p-3 text-center">
+                        <h4 className="font-bold text-sm text-foreground mb-1">Brand Deals</h4>
+                        <p className="text-xs text-muted-foreground leading-relaxed">Get discovered & create UGC content</p>
+                      </div>
                     </div>
                   </div>
 
