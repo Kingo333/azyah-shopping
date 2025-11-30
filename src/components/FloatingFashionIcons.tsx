@@ -33,7 +33,7 @@ export function FloatingFashionIcons() {
       {floatingIcons.map(({ id, Icon, x, y, delay, duration }) => (
         <div
           key={id}
-          className="absolute opacity-5 md:opacity-8 animate-float-gentle"
+          className="absolute opacity-15 md:opacity-25 animate-float-gentle"
           style={{
             left: `${x}%`,
             top: `${y}%`,
@@ -41,7 +41,7 @@ export function FloatingFashionIcons() {
             animationDuration: `${duration}s`
           }}
         >
-          <Icon className="w-10 h-10 md:w-12 md:h-12 text-primary/20" />
+          <Icon className="w-10 h-10 md:w-12 md:h-12 text-white/60" />
         </div>
       ))}
     </div>
