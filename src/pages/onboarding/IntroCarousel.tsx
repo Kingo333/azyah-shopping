@@ -146,7 +146,7 @@ export default function IntroCarousel() {
                   <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-3">
                     {slide.title}
                   </h2>
-                  <p className="text-base text-muted-foreground leading-relaxed max-w-md">
+                  <p className="text-base text-muted-foreground leading-relaxed max-w-xl">
                     {slide.subtitle}
                   </p>
                 </div>
