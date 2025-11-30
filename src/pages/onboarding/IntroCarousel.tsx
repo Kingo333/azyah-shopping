@@ -360,36 +360,36 @@ export default function IntroCarousel() {
                       </div>)}
                   </div>
 
-                  {/* Divider with Arrow */}
-                  <div className="flex items-center justify-center gap-2 mb-3">
-                    <div className="h-px bg-border flex-1"></div>
-                    <span className="text-muted-foreground text-lg">↓</span>
-                    <div className="h-px bg-border flex-1"></div>
+                  {/* Arrow pointing down to connected benefit */}
+                  <div className="flex justify-center mb-2">
+                    <span className="text-muted-foreground text-xl">↓</span>
                   </div>
 
-                  {/* Benefit Cards - Horizontal Compact Layout */}
-                  <div className="grid grid-cols-2 gap-3 mb-5">
-                    <div className="rounded-xl overflow-hidden shadow-md bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-100">
-                      <div className="p-3 flex items-center gap-3">
-                        <div className="bg-gradient-to-br from-amber-400 to-orange-500 w-10 h-10 rounded-full flex items-center justify-center shadow-sm flex-shrink-0">
-                          <span className="text-xl">⭐</span>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-bold text-xs text-foreground mb-0.5">Earn Points</h4>
-                          <p className="text-[10px] text-muted-foreground leading-tight">Create boards to earn rewards</p>
-                        </div>
+                  {/* Earn Points - Connected to images above */}
+                  <div className="rounded-xl overflow-hidden shadow-md bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-100 mb-4">
+                    <div className="p-3 flex items-center gap-3">
+                      <div className="bg-gradient-to-br from-amber-400 to-orange-500 w-12 h-12 rounded-full flex items-center justify-center shadow-sm flex-shrink-0">
+                        <span className="text-2xl">⭐</span>
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-bold text-sm text-foreground mb-1">Earn Points</h4>
+                        <p className="text-xs text-muted-foreground leading-snug">Create outfit boards like these to earn rewards and unlock features</p>
                       </div>
                     </div>
-                    
-                    <div className="rounded-xl overflow-hidden shadow-md bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100">
-                      <div className="p-3 flex items-center gap-3">
-                        <div className="bg-gradient-to-br from-blue-400 to-indigo-500 w-10 h-10 rounded-full flex items-center justify-center shadow-sm flex-shrink-0">
-                          <span className="text-xl">🤝</span>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-bold text-xs text-foreground mb-0.5">Brand Deals</h4>
-                          <p className="text-[10px] text-muted-foreground leading-tight">Get discovered & create UGC</p>
-                        </div>
+                  </div>
+
+                  {/* Divider - Separating unrelated benefit */}
+                  <div className="h-px bg-border mb-4"></div>
+
+                  {/* Brand Deals - Separate standalone benefit */}
+                  <div className="rounded-xl overflow-hidden shadow-md bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 mb-5">
+                    <div className="p-3 flex items-center gap-3">
+                      <div className="bg-gradient-to-br from-blue-400 to-indigo-500 w-12 h-12 rounded-full flex items-center justify-center shadow-sm flex-shrink-0">
+                        <span className="text-2xl">🤝</span>
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-bold text-sm text-foreground mb-1">Brand Deals</h4>
+                        <p className="text-xs text-muted-foreground leading-snug">Get discovered by brands and create paid UGC content</p>
                       </div>
                     </div>
                   </div>
