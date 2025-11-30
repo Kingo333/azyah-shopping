@@ -345,19 +345,29 @@ export default function IntroCarousel() {
                 <div className="flex-1 flex flex-col justify-start pt-4">
                   {/* Horizontal Scrollable Collages & Cards */}
                   <div className="overflow-x-auto flex gap-4 py-3 -mx-6 px-6 scrollbar-hide mb-6">
-                    {/* Outfit Collage 1 */}
-                    <div className="flex-shrink-0 w-52 rounded-2xl overflow-hidden shadow-lg hover-scale transition-all duration-300">
-                      <img src="/onboarding/outfit-collage-1.jpg" alt="Outfit Boards" className="w-full h-64 object-cover" />
+                    {/* Outfit Inspo 1 */}
+                    <div className="flex-shrink-0 w-52 rounded-2xl overflow-hidden shadow-lg hover-scale transition-all duration-300 relative">
+                      <img src="/onboarding/outfit-collage-1.jpg" alt="Outfit Inspiration 1" className="w-full h-64 object-cover" />
+                      {/* Earn Badge Overlay */}
+                      <div className="absolute top-2 right-2 bg-gradient-to-r from-amber-400 to-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg flex items-center gap-1">
+                        <span>⭐</span>
+                        <span>Earn</span>
+                      </div>
                       <div className="bg-white p-3 text-center">
-                        <p className="text-sm font-semibold text-foreground">Outfit Boards</p>
+                        <p className="text-sm font-semibold text-foreground">Outfit Inspo 1</p>
                       </div>
                     </div>
 
-                    {/* Outfit Collage 2 */}
-                    <div className="flex-shrink-0 w-52 rounded-2xl overflow-hidden shadow-lg hover-scale transition-all duration-300">
-                      <img src="/onboarding/outfit-collage-2.jpg" alt="Style Collages" className="w-full h-64 object-cover" />
+                    {/* Outfit Inspo 2 */}
+                    <div className="flex-shrink-0 w-52 rounded-2xl overflow-hidden shadow-lg hover-scale transition-all duration-300 relative">
+                      <img src="/onboarding/outfit-collage-2.jpg" alt="Outfit Inspiration 2" className="w-full h-64 object-cover" />
+                      {/* Earn Badge Overlay */}
+                      <div className="absolute top-2 right-2 bg-gradient-to-r from-amber-400 to-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg flex items-center gap-1">
+                        <span>⭐</span>
+                        <span>Earn</span>
+                      </div>
                       <div className="bg-white p-3 text-center">
-                        <p className="text-sm font-semibold text-foreground">Style Collages</p>
+                        <p className="text-sm font-semibold text-foreground">Outfit Inspo 2</p>
                       </div>
                     </div>
 
