@@ -272,7 +272,7 @@ export default function IntroCarousel() {
             {slide.type === 'hero' && <div className="h-full flex flex-col">
                 {/* Full-bleed hero image with overlaid branding */}
                 <div className="relative h-[55%] overflow-hidden">
-                  <img src={slide.image} alt={slide.title} className="w-full h-full object-cover object-top" draggable={false} />
+                  <img src={slide.image} alt={slide.title} className="w-full h-full object-cover" draggable={false} />
                   <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-white" />
                   
                   {/* Azyah branding overlaid on image */}
