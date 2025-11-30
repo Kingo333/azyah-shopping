@@ -25,14 +25,14 @@ const slides: SlideType[] = [
     title: 'Your Style, Your Swipes',
     subtitle: 'Swipe right to save items to your digital closet. Swipe left to pass.',
     images: [
-      '/onboarding/swipe-outfit-1.png',
-      '/onboarding/swipe-outfit-2.png',
-      '/onboarding/swipe-outfit-3.png',
+      '/onboarding/product-bag.png',
+      '/onboarding/product-shoes.png',
+      '/onboarding/product-shirt.png',
     ],
     productInfo: [
-      { name: 'Designer Handbag', brand: 'Stella McCartney' },
-      { name: 'Summer Dress', brand: 'Zara' },
-      { name: 'Statement Coat', brand: 'Mango' },
+      { name: 'Designer Handbag', brand: 'Coach' },
+      { name: 'Fashion Sneakers', brand: 'Nike' },
+      { name: 'Men\'s Button-Up Shirt', brand: 'H&M' },
     ],
   },
   {
