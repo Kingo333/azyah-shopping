@@ -4,11 +4,12 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface SwipeableImagesProps {
   images: string[];
+  productInfo?: Array<{ name: string; brand: string }>;
 }
 
 const DISTANCE_THRESHOLD = 100;
 
-export const SwipeableImages = ({ images }: SwipeableImagesProps) => {
+export const SwipeableImages = ({ images, productInfo }: SwipeableImagesProps) => {
   const [currentIndex, setCurrentIndex] = useState(0);
 
   // Motion values for swipe effect
@@ -17,6 +18,7 @@ export const SwipeableImages = ({ images }: SwipeableImagesProps) => {
   const opacity = useTransform(x, [-200, -100, 0, 100, 200], [0.5, 1, 1, 1, 0.5]);
 
   const currentImage = useMemo(() => images[currentIndex], [images, currentIndex]);
+  const currentProduct = useMemo(() => productInfo?.[currentIndex], [productInfo, currentIndex]);
 
   const handleSwipeEnd = useCallback((event: any, info: PanInfo) => {
     const { offset } = info;
@@ -36,68 +38,44 @@ export const SwipeableImages = ({ images }: SwipeableImagesProps) => {
   }, [currentIndex, images.length, x]);
 
   return (
-    <div className="relative w-full h-full overflow-hidden bg-gradient-to-b from-gray-50 to-gray-100">
+    <div className="relative w-full h-full overflow-visible">
       <motion.div
-        className="w-full h-full flex items-center justify-center cursor-grab active:cursor-grabbing"
+        className="w-full h-full bg-white rounded-3xl shadow-xl overflow-hidden cursor-grab active:cursor-grabbing relative"
         style={{ x, rotate, opacity }}
         drag="x"
         dragElastic={0.2}
         dragConstraints={{ left: 0, right: 0 }}
         onDragEnd={handleSwipeEnd}
       >
-        <img
-          src={currentImage}
-          alt={`Style ${currentIndex + 1}`}
-          className="w-full h-full object-contain select-none pointer-events-none"
-          draggable={false}
-        />
+        <div className="w-full h-full flex items-center justify-center bg-gradient-to-b from-gray-50 to-gray-100">
+          <img
+            src={currentImage}
+            alt={`Style ${currentIndex + 1}`}
+            className="w-full h-full object-contain select-none pointer-events-none"
+            draggable={false}
+          />
+        </div>
+
+        {/* Product Info Overlay */}
+        {currentProduct && (
+          <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-white via-white/95 to-transparent">
+            <h3 className="font-semibold text-gray-900 text-lg">{currentProduct.name}</h3>
+            <p className="text-sm text-[#E91E8C] font-medium">By {currentProduct.brand}</p>
+          </div>
+        )}
       </motion.div>
 
-      {/* Indicators */}
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
+      {/* Pagination Dots */}
+      <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
         {images.map((_, index) => (
           <div
             key={index}
             className={`h-1.5 rounded-full transition-all ${
-              index === currentIndex ? 'w-6 bg-gray-800' : 'w-1.5 bg-gray-800/30'
+              index === currentIndex ? 'w-6 bg-gray-800' : 'w-1.5 bg-gray-400'
             }`}
           />
         ))}
       </div>
-
-      {/* Pulsing Swipe Indicators */}
-      {currentIndex > 0 && (
-        <motion.div
-          className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/60 backdrop-blur-sm rounded-full p-3 shadow-lg"
-          animate={{
-            scale: [1, 1.2, 1],
-            opacity: [0.7, 1, 0.7],
-          }}
-          transition={{
-            duration: 2,
-            repeat: Infinity,
-            ease: "easeInOut"
-          }}
-        >
-          <ChevronLeft className="w-6 h-6 text-white" />
-        </motion.div>
-      )}
-      {currentIndex < images.length - 1 && (
-        <motion.div
-          className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/60 backdrop-blur-sm rounded-full p-3 shadow-lg"
-          animate={{
-            scale: [1, 1.2, 1],
-            opacity: [0.7, 1, 0.7],
-          }}
-          transition={{
-            duration: 2,
-            repeat: Infinity,
-            ease: "easeInOut"
-          }}
-        >
-          <ChevronRight className="w-6 h-6 text-white" />
-        </motion.div>
-      )}
     </div>
   );
 };
