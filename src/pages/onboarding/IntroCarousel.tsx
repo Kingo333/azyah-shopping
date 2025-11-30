@@ -128,7 +128,34 @@ export default function IntroCarousel() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [direction, setDirection] = useState(0);
   const [investorModalOpen, setInvestorModalOpen] = useState(false);
+  const [creatorCount, setCreatorCount] = useState(0);
   const navigate = useNavigate();
+
+  // Animated counter for creator count - only when gallery slide is active
+  useEffect(() => {
+    if (currentSlide === 3) { // Gallery slide is at index 3
+      const duration = 1500; // 1.5 seconds
+      const targetCount = 10000;
+      const steps = 50;
+      const increment = targetCount / steps;
+      const intervalTime = duration / steps;
+      
+      let currentCount = 0;
+      const timer = setInterval(() => {
+        currentCount += increment;
+        if (currentCount >= targetCount) {
+          setCreatorCount(targetCount);
+          clearInterval(timer);
+        } else {
+          setCreatorCount(Math.floor(currentCount));
+        }
+      }, intervalTime);
+      
+      return () => clearInterval(timer);
+    } else {
+      setCreatorCount(0); // Reset when leaving slide
+    }
+  }, [currentSlide]);
   const handleSwipe = (offset: number) => {
     if (offset > 100 && currentSlide > 0) {
       setDirection(-1);
@@ -367,10 +394,10 @@ export default function IntroCarousel() {
                 </div>
               </div>}
 
-            {slide.type === 'gallery' && <div className="h-full flex flex-col px-6">
+            {slide.type === 'gallery' && <div className="h-full flex flex-col px-6 bg-gradient-to-b from-white via-white to-primary/5">
                 {/* Title & Subtitle */}
                 <div className="text-center mb-6 pt-4">
-                  <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-2">
+                  <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-2 bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
                     {slide.title}
                   </h2>
                   <p className="text-base text-muted-foreground leading-relaxed">
@@ -380,55 +407,100 @@ export default function IntroCarousel() {
 
                 {/* Content Container */}
                 <div className="flex-1 flex flex-col justify-start pt-4">
-                  {/* Horizontal Scrollable Collages & Cards */}
-                  <div className="overflow-x-auto flex gap-4 py-3 -mx-6 px-6 scrollbar-hide mb-6">
-                    {/* Auto-Playing Outfit Inspo Slider */}
-                    <OutfitInspoSlider />
+                  {/* Horizontal Scrollable Collages & Cards with Scroll Snap */}
+                  <div 
+                    className="overflow-x-auto flex gap-4 py-3 -mx-6 px-6 scrollbar-hide mb-6"
+                    style={{
+                      scrollSnapType: 'x mandatory',
+                      scrollPaddingLeft: '1.5rem'
+                    }}
+                  >
+                    {/* Auto-Playing Outfit Inspo Slider - Staggered Animation */}
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={currentSlide === 3 ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+                      transition={{ delay: 0, duration: 0.5 }}
+                      style={{ scrollSnapAlign: 'start' }}
+                      className="flex-shrink-0"
+                    >
+                      <div className="shadow-[0_4px_24px_rgba(251,191,36,0.3)] hover:shadow-[0_8px_32px_rgba(251,191,36,0.4)] transition-shadow duration-300">
+                        <OutfitInspoSlider />
+                      </div>
+                    </motion.div>
 
-                    {/* Brand Deals Card */}
-                    <div className="flex-shrink-0 w-52 rounded-2xl overflow-hidden shadow-lg hover-scale transition-all duration-300 bg-white">
-                      <div className="h-64 bg-gradient-to-br from-blue-500 to-indigo-600 flex flex-col items-center justify-center p-6">
-                        <span className="text-6xl mb-4">🤝</span>
-                        <h4 className="font-bold text-lg text-white mb-2 text-center">Brand Deals</h4>
-                        <p className="text-sm text-center text-white/90">Get discovered by brands & create UGC content</p>
+                    {/* Brand Deals Card - Staggered Animation */}
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={currentSlide === 3 ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+                      transition={{ delay: 0.1, duration: 0.5 }}
+                      style={{ scrollSnapAlign: 'start' }}
+                      className="flex-shrink-0"
+                    >
+                      <div className="w-52 rounded-2xl overflow-hidden hover-scale transition-all duration-300 bg-white shadow-[0_4px_24px_rgba(59,130,246,0.3)] hover:shadow-[0_8px_32px_rgba(59,130,246,0.4)]">
+                        <div className="h-64 bg-gradient-to-br from-blue-500 to-indigo-600 flex flex-col items-center justify-center p-6">
+                          <span className="text-6xl mb-4">🤝</span>
+                          <h4 className="font-bold text-lg text-white mb-2 text-center">Brand Deals</h4>
+                          <p className="text-sm text-center text-white/90">Get discovered by brands & create UGC content</p>
+                        </div>
+                        <div className="bg-white p-3 text-center">
+                          <p className="text-sm font-semibold text-foreground">Earn Money</p>
+                        </div>
                       </div>
-                      <div className="bg-white p-3 text-center">
-                        <p className="text-sm font-semibold text-foreground">Earn Money</p>
-                      </div>
-                    </div>
+                    </motion.div>
 
-                    {/* Style Friends Card */}
-                    <div className="flex-shrink-0 w-52 rounded-2xl overflow-hidden shadow-lg hover-scale transition-all duration-300 bg-white">
-                      <div className="h-64 bg-gradient-to-br from-pink-500 to-rose-600 flex flex-col items-center justify-center p-6">
-                        <span className="text-6xl mb-4">👯</span>
-                        <h4 className="font-bold text-lg text-white mb-2 text-center">Style Friends</h4>
-                        <p className="text-sm text-center text-white/90">Create outfits for your friends with their clothes</p>
+                    {/* Style Friends Card - Staggered Animation */}
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={currentSlide === 3 ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+                      transition={{ delay: 0.2, duration: 0.5 }}
+                      style={{ scrollSnapAlign: 'start' }}
+                      className="flex-shrink-0"
+                    >
+                      <div className="w-52 rounded-2xl overflow-hidden hover-scale transition-all duration-300 bg-white shadow-[0_4px_24px_rgba(236,72,153,0.3)] hover:shadow-[0_8px_32px_rgba(236,72,153,0.4)]">
+                        <div className="h-64 bg-gradient-to-br from-pink-500 to-rose-600 flex flex-col items-center justify-center p-6">
+                          <span className="text-6xl mb-4">👯</span>
+                          <h4 className="font-bold text-lg text-white mb-2 text-center">Style Friends</h4>
+                          <p className="text-sm text-center text-white/90">Create outfits for your friends with their clothes</p>
+                        </div>
+                        <div className="bg-white p-3 text-center">
+                          <p className="text-sm font-semibold text-foreground">Be Creative</p>
+                        </div>
                       </div>
-                      <div className="bg-white p-3 text-center">
-                        <p className="text-sm font-semibold text-foreground">Be Creative</p>
-                      </div>
-                    </div>
+                    </motion.div>
 
-                    {/* Pop-Up Events Card */}
-                    <div className="flex-shrink-0 w-52 rounded-2xl overflow-hidden shadow-lg hover-scale transition-all duration-300 bg-white">
-                      <div className="h-64 bg-gradient-to-br from-purple-500 to-violet-600 flex flex-col items-center justify-center p-6">
-                        <span className="text-6xl mb-4">🎉</span>
-                        <h4 className="font-bold text-lg text-white mb-2 text-center">Pop-Up Events</h4>
-                        <p className="text-sm text-center text-white/90">Discover exclusive fashion events and join them</p>
+                    {/* Pop-Up Events Card - Staggered Animation */}
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={currentSlide === 3 ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+                      transition={{ delay: 0.3, duration: 0.5 }}
+                      style={{ scrollSnapAlign: 'start' }}
+                      className="flex-shrink-0"
+                    >
+                      <div className="w-52 rounded-2xl overflow-hidden hover-scale transition-all duration-300 bg-white shadow-[0_4px_24px_rgba(168,85,247,0.3)] hover:shadow-[0_8px_32px_rgba(168,85,247,0.4)]">
+                        <div className="h-64 bg-gradient-to-br from-purple-500 to-violet-600 flex flex-col items-center justify-center p-6">
+                          <span className="text-6xl mb-4">🎉</span>
+                          <h4 className="font-bold text-lg text-white mb-2 text-center">Pop-Up Events</h4>
+                          <p className="text-sm text-center text-white/90">Discover exclusive fashion events and join them</p>
+                        </div>
+                        <div className="bg-white p-3 text-center">
+                          <p className="text-sm font-semibold text-foreground">Get Exclusive Access</p>
+                        </div>
                       </div>
-                      <div className="bg-white p-3 text-center">
-                        <p className="text-sm font-semibold text-foreground">Get Exclusive Access</p>
-                      </div>
-                    </div>
+                    </motion.div>
                   </div>
 
-                  {/* Join creators badge */}
-                  <div className="text-center">
+                  {/* Join creators badge with Animated Counter */}
+                  <motion.div 
+                    className="text-center"
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={currentSlide === 3 ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.9 }}
+                    transition={{ delay: 0.5, duration: 0.4 }}
+                  >
                     <p className="text-sm text-muted-foreground font-medium inline-flex items-center gap-2 bg-accent/10 px-4 py-2 rounded-full">
                       <span className="text-lg">✨</span>
-                      Join 10,000+ creators earning through style
+                      Join {creatorCount.toLocaleString()}+ creators earning through style
                     </p>
-                  </div>
+                  </motion.div>
                 </div>
               </div>}
           </motion.div>
