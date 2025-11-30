@@ -16,7 +16,7 @@ type SlideType =
 const slides: SlideType[] = [
   {
     type: 'hero',
-    image: '/onboarding/hero-visual-gender-neutral.png',
+    image: '/marketing/hero-visual-gender-neutral.png',
     title: 'Discover Your Style',
     subtitle: 'The ultimate platform for discovering new fashion, beauty products, and local events.',
   },
@@ -119,7 +119,7 @@ export default function IntroCarousel() {
             {slide.type === 'hero' && (
               <div className="h-full flex flex-col">
                 {/* Full-bleed hero image with overlaid branding */}
-                <div className="relative h-[60%] overflow-hidden">
+                <div className="relative h-[55%] overflow-hidden">
                   <img 
                     src={slide.image} 
                     alt={slide.title}
@@ -142,7 +142,7 @@ export default function IntroCarousel() {
                 </div>
                 
                 {/* Title & Subtitle */}
-                <div className="flex-1 flex flex-col items-center justify-center px-8 text-center">
+                <div className="flex-1 flex flex-col items-center justify-start pt-6 px-8 text-center">
                   <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-3">
                     {slide.title}
                   </h2>
