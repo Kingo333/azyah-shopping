@@ -406,33 +406,25 @@ export default function IntroCarousel() {
                 </div>
 
                 {/* Content Container */}
-                <div className="flex-1 flex flex-col justify-center items-center px-4">
-                  {/* Centered Grid of Cards */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-4xl w-full mb-8">
+                <div className="flex-1 flex flex-col justify-start pt-4">
+                  {/* Horizontal Scrollable Collages & Cards with Scroll Snap */}
+                  <div 
+                    className="overflow-x-auto flex gap-4 py-3 -mx-6 px-6 scrollbar-hide mb-6"
+                    style={{
+                      scrollSnapType: 'x mandatory',
+                      scrollPaddingLeft: '1.5rem'
+                    }}
+                  >
                     {/* Auto-Playing Outfit Inspo Slider - Staggered Animation */}
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
                       animate={currentSlide === 3 ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
                       transition={{ delay: 0, duration: 0.5 }}
-                      className="w-full"
+                      style={{ scrollSnapAlign: 'start' }}
+                      className="flex-shrink-0"
                     >
-                      <div className="rounded-2xl overflow-hidden shadow-[0_4px_24px_rgba(251,191,36,0.3)] hover:shadow-[0_8px_32px_rgba(251,191,36,0.4)] transition-all duration-300 hover:scale-105 h-full">
-                        <div className="relative h-48 overflow-hidden">
-                          <img 
-                            src="/onboarding/outfit-collage-1.jpg" 
-                            alt="Outfit Inspiration" 
-                            className="w-full h-full object-cover"
-                          />
-                          {/* Earn Badge Overlay */}
-                          <div className="absolute top-2 right-2 bg-gradient-to-r from-amber-400 to-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg flex items-center gap-1 z-10">
-                            <span>⭐</span>
-                            <span>Earn</span>
-                          </div>
-                        </div>
-                        <div className="bg-white p-3 text-center">
-                          <p className="text-sm font-semibold text-foreground">Create Outfit Inspo</p>
-                          <p className="text-xs text-muted-foreground">Earn points at salons</p>
-                        </div>
+                      <div className="shadow-[0_4px_24px_rgba(251,191,36,0.3)] hover:shadow-[0_8px_32px_rgba(251,191,36,0.4)] transition-shadow duration-300">
+                        <OutfitInspoSlider />
                       </div>
                     </motion.div>
 
@@ -441,13 +433,14 @@ export default function IntroCarousel() {
                       initial={{ opacity: 0, y: 20 }}
                       animate={currentSlide === 3 ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
                       transition={{ delay: 0.1, duration: 0.5 }}
-                      className="w-full"
+                      style={{ scrollSnapAlign: 'start' }}
+                      className="flex-shrink-0"
                     >
-                      <div className="rounded-2xl overflow-hidden hover-scale transition-all duration-300 bg-white shadow-[0_4px_24px_rgba(59,130,246,0.3)] hover:shadow-[0_8px_32px_rgba(59,130,246,0.4)] h-full flex flex-col">
-                        <div className="flex-1 bg-gradient-to-br from-blue-500 to-indigo-600 flex flex-col items-center justify-center p-4">
-                          <span className="text-5xl mb-3">🤝</span>
-                          <h4 className="font-bold text-base text-white mb-2 text-center">Brand Deals</h4>
-                          <p className="text-xs text-center text-white/90">Get discovered by brands & create UGC content</p>
+                      <div className="w-52 rounded-2xl overflow-hidden hover-scale transition-all duration-300 bg-white shadow-[0_4px_24px_rgba(59,130,246,0.3)] hover:shadow-[0_8px_32px_rgba(59,130,246,0.4)]">
+                        <div className="h-64 bg-gradient-to-br from-blue-500 to-indigo-600 flex flex-col items-center justify-center p-6">
+                          <span className="text-6xl mb-4">🤝</span>
+                          <h4 className="font-bold text-lg text-white mb-2 text-center">Brand Deals</h4>
+                          <p className="text-sm text-center text-white/90">Get discovered by brands & create UGC content</p>
                         </div>
                         <div className="bg-white p-3 text-center">
                           <p className="text-sm font-semibold text-foreground">Earn Money</p>
@@ -460,13 +453,14 @@ export default function IntroCarousel() {
                       initial={{ opacity: 0, y: 20 }}
                       animate={currentSlide === 3 ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
                       transition={{ delay: 0.2, duration: 0.5 }}
-                      className="w-full"
+                      style={{ scrollSnapAlign: 'start' }}
+                      className="flex-shrink-0"
                     >
-                      <div className="rounded-2xl overflow-hidden hover-scale transition-all duration-300 bg-white shadow-[0_4px_24px_rgba(236,72,153,0.3)] hover:shadow-[0_8px_32px_rgba(236,72,153,0.4)] h-full flex flex-col">
-                        <div className="flex-1 bg-gradient-to-br from-pink-500 to-rose-600 flex flex-col items-center justify-center p-4">
-                          <span className="text-5xl mb-3">👯</span>
-                          <h4 className="font-bold text-base text-white mb-2 text-center">Style Friends</h4>
-                          <p className="text-xs text-center text-white/90">Create outfits for your friends with their clothes</p>
+                      <div className="w-52 rounded-2xl overflow-hidden hover-scale transition-all duration-300 bg-white shadow-[0_4px_24px_rgba(236,72,153,0.3)] hover:shadow-[0_8px_32px_rgba(236,72,153,0.4)]">
+                        <div className="h-64 bg-gradient-to-br from-pink-500 to-rose-600 flex flex-col items-center justify-center p-6">
+                          <span className="text-6xl mb-4">👯</span>
+                          <h4 className="font-bold text-lg text-white mb-2 text-center">Style Friends</h4>
+                          <p className="text-sm text-center text-white/90">Create outfits for your friends with their clothes</p>
                         </div>
                         <div className="bg-white p-3 text-center">
                           <p className="text-sm font-semibold text-foreground">Be Creative</p>
@@ -479,13 +473,14 @@ export default function IntroCarousel() {
                       initial={{ opacity: 0, y: 20 }}
                       animate={currentSlide === 3 ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
                       transition={{ delay: 0.3, duration: 0.5 }}
-                      className="w-full"
+                      style={{ scrollSnapAlign: 'start' }}
+                      className="flex-shrink-0"
                     >
-                      <div className="rounded-2xl overflow-hidden hover-scale transition-all duration-300 bg-white shadow-[0_4px_24px_rgba(168,85,247,0.3)] hover:shadow-[0_8px_32px_rgba(168,85,247,0.4)] h-full flex flex-col">
-                        <div className="flex-1 bg-gradient-to-br from-purple-500 to-violet-600 flex flex-col items-center justify-center p-4">
-                          <span className="text-5xl mb-3">🎉</span>
-                          <h4 className="font-bold text-base text-white mb-2 text-center">Pop-Up Events</h4>
-                          <p className="text-xs text-center text-white/90">Discover exclusive fashion events and join them</p>
+                      <div className="w-52 rounded-2xl overflow-hidden hover-scale transition-all duration-300 bg-white shadow-[0_4px_24px_rgba(168,85,247,0.3)] hover:shadow-[0_8px_32px_rgba(168,85,247,0.4)]">
+                        <div className="h-64 bg-gradient-to-br from-purple-500 to-violet-600 flex flex-col items-center justify-center p-6">
+                          <span className="text-6xl mb-4">🎉</span>
+                          <h4 className="font-bold text-lg text-white mb-2 text-center">Pop-Up Events</h4>
+                          <p className="text-sm text-center text-white/90">Discover exclusive fashion events and join them</p>
                         </div>
                         <div className="bg-white p-3 text-center">
                           <p className="text-sm font-semibold text-foreground">Get Exclusive Access</p>
