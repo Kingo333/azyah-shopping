@@ -344,7 +344,7 @@ export default function IntroCarousel() {
                 {/* Content Container */}
                 <div className="flex-1 flex flex-col justify-start pt-2 px-6">
                   {/* Outfit Collages Grid - Taller with Overlay Labels */}
-                  <div className="grid grid-cols-2 gap-3 mb-3">
+                  <div className="grid grid-cols-2 gap-3 mb-2">
                     {[{
                   img: '/onboarding/outfit-collage-1.jpg',
                   label: 'Outfit Boards'
@@ -352,9 +352,9 @@ export default function IntroCarousel() {
                   img: '/onboarding/outfit-collage-2.jpg',
                   label: 'Style Collages'
                 }].map((item, idx) => <div key={idx} className="rounded-xl overflow-hidden shadow-md relative">
-                        <img src={item.img} alt={item.label} className="w-full h-52 object-cover" />
+                        <img src={item.img} alt={item.label} className="w-full h-44 object-cover" />
                         {/* Gradient Overlay with Label */}
-                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent py-3 px-3">
+                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent py-2.5 px-3">
                           <p className="text-sm font-bold text-white drop-shadow-md">{item.label}</p>
                         </div>
                       </div>)}
