@@ -22,7 +22,7 @@ export function FloatingFashionIcons() {
 
   // Initialize icons
   useEffect(() => {
-    const iconData: FloatingIcon[] = Array.from({ length: 30 }, (_, i) => ({
+    const iconData: FloatingIcon[] = Array.from({ length: 50 }, (_, i) => ({
       id: i,
       Icon: icons[Math.floor(Math.random() * icons.length)],
       baseX: Math.random() * 100,
@@ -112,7 +112,7 @@ export function FloatingFashionIcons() {
         return (
           <motion.div
             key={id}
-            className="absolute opacity-15 md:opacity-25"
+            className="absolute opacity-25 md:opacity-35"
             style={{
               left: `${baseX}%`,
               top: `${baseY}%`,
