@@ -262,7 +262,7 @@ export default function IntroCarousel() {
       </div>
 
       {/* Fixed Bottom CTA Section */}
-      <div className="fixed bottom-0 left-0 right-0 px-6 pb-8 pt-6 bg-gradient-to-t from-white via-white to-transparent z-20">
+      <div className="fixed bottom-0 left-0 right-0 px-6 pb-8 pt-6 bg-gradient-to-t from-background via-background to-transparent z-20">
         {/* Navigation Dots */}
         <div className="flex justify-center gap-2 mb-6">
           {slides.map((_, index) => (
@@ -274,8 +274,8 @@ export default function IntroCarousel() {
               }}
               className={`h-2 rounded-full transition-all ${
                 index === currentSlide 
-                  ? 'w-8 bg-[#E91E8C]' 
-                  : 'w-2 bg-gray-300 hover:bg-gray-400'
+                  ? 'w-8 bg-primary' 
+                  : 'w-2 bg-muted hover:bg-muted-foreground/50'
               }`}
               aria-label={`Go to slide ${index + 1}`}
             />
@@ -285,7 +285,7 @@ export default function IntroCarousel() {
         {/* Primary CTA */}
         <Button 
           onClick={handleJoinCommunity}
-          className="w-full h-14 text-lg font-semibold rounded-full bg-[#E91E8C] hover:bg-[#D11A7F] text-white shadow-lg"
+          className="w-full h-14 text-lg font-semibold rounded-full shadow-lg"
         >
           Join the Community
         </Button>
@@ -293,7 +293,7 @@ export default function IntroCarousel() {
         {/* Login Link */}
         <button
           onClick={handleJoinCommunity}
-          className="w-full mt-3 text-[#E91E8C] font-medium hover:text-[#D11A7F] transition-colors"
+          className="w-full mt-3 text-primary font-medium hover:text-primary/80 transition-colors"
         >
           Already have an account? <span className="font-semibold">Log In</span>
         </button>
