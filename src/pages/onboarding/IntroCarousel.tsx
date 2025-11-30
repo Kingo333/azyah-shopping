@@ -133,24 +133,27 @@ export default function IntroCarousel() {
         canonical="https://azyah.app/" 
       />
       
-      {/* Minimal Top Navigation Bar */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-primary/10">
-        <div className="container max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
+      {/* Floating Navigation Elements */}
+      <div className="fixed top-4 left-0 right-0 z-50 px-4 sm:px-6">
+        <div className="container max-w-7xl mx-auto flex items-center justify-between">
           {/* Logo */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 bg-white/90 backdrop-blur-md rounded-full px-4 py-2 shadow-lg">
             <img 
               src="/marketing/azyah-logo.png" 
               alt="Azyah" 
-              className="h-8 w-8 object-contain"
+              className="h-6 w-6 object-contain"
             />
-            <span className="font-serif text-lg font-light tracking-wider text-foreground">Azyah</span>
+            <span className="font-serif text-base font-light tracking-wider text-foreground">Azyah</span>
           </div>
           
           {/* Right Side Buttons */}
           <div className="flex items-center gap-2">
             <Sheet>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="sm" className="font-light">
+                <Button 
+                  size="sm" 
+                  className="font-light bg-white/90 backdrop-blur-md text-foreground hover:bg-white shadow-lg rounded-full"
+                >
                   FAQ
                 </Button>
               </SheetTrigger>
@@ -181,16 +184,15 @@ export default function IntroCarousel() {
             </Sheet>
             
             <Button 
-              variant="ghost" 
               size="sm" 
-              className="font-light"
+              className="font-light bg-white/90 backdrop-blur-md text-foreground hover:bg-white shadow-lg rounded-full"
               onClick={() => setInvestorModalOpen(true)}
             >
               For Investors
             </Button>
           </div>
         </div>
-      </nav>
+      </div>
       
       <InvestorContactModal 
         isOpen={investorModalOpen} 
@@ -198,7 +200,7 @@ export default function IntroCarousel() {
       />
       
       {/* Main Content Area with Swipe */}
-      <div className="flex-1 overflow-hidden relative" style={{ paddingTop: '56px', paddingBottom: '200px' }}>
+      <div className="flex-1 overflow-hidden relative" style={{ paddingBottom: '200px' }}>
         {/* Navigation Arrows */}
         {currentSlide > 0 && (
           <button
