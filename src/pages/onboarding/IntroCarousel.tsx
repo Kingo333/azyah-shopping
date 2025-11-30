@@ -407,12 +407,11 @@ export default function IntroCarousel() {
 
                 {/* Content Container */}
                 <div className="flex-1 flex flex-col justify-start pt-4">
-                  {/* Horizontal Scrollable Collages & Cards with Scroll Snap */}
+                  {/* Horizontal Scrollable Collages & Cards with Scroll Snap - Centered */}
                   <div 
-                    className="overflow-x-auto flex gap-4 py-3 -mx-6 px-6 scrollbar-hide mb-6"
+                    className="overflow-x-auto flex gap-6 py-3 px-6 scrollbar-hide mb-6 justify-center"
                     style={{
                       scrollSnapType: 'x mandatory',
-                      scrollPaddingLeft: '1.5rem'
                     }}
                   >
                     {/* Auto-Playing Outfit Inspo Slider - Staggered Animation */}
@@ -420,10 +419,21 @@ export default function IntroCarousel() {
                       initial={{ opacity: 0, y: 20 }}
                       animate={currentSlide === 3 ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
                       transition={{ delay: 0, duration: 0.5 }}
-                      style={{ scrollSnapAlign: 'start' }}
+                      style={{ scrollSnapAlign: 'center' }}
                       className="flex-shrink-0"
                     >
-                      <div className="shadow-[0_4px_24px_rgba(251,191,36,0.3)] hover:shadow-[0_8px_32px_rgba(251,191,36,0.4)] transition-shadow duration-300">
+                      <div 
+                        className="rounded-2xl overflow-hidden transition-all duration-300 hover:scale-[1.02]"
+                        style={{
+                          boxShadow: '0 8px 32px rgba(251, 191, 36, 0.3), 0 0 48px rgba(251, 191, 36, 0.15)',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.boxShadow = '0 12px 48px rgba(251, 191, 36, 0.4), 0 0 64px rgba(251, 191, 36, 0.2)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.boxShadow = '0 8px 32px rgba(251, 191, 36, 0.3), 0 0 48px rgba(251, 191, 36, 0.15)';
+                        }}
+                      >
                         <OutfitInspoSlider />
                       </div>
                     </motion.div>
@@ -433,10 +443,21 @@ export default function IntroCarousel() {
                       initial={{ opacity: 0, y: 20 }}
                       animate={currentSlide === 3 ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
                       transition={{ delay: 0.1, duration: 0.5 }}
-                      style={{ scrollSnapAlign: 'start' }}
+                      style={{ scrollSnapAlign: 'center' }}
                       className="flex-shrink-0"
                     >
-                      <div className="w-52 rounded-2xl overflow-hidden hover-scale transition-all duration-300 bg-white shadow-[0_4px_24px_rgba(59,130,246,0.3)] hover:shadow-[0_8px_32px_rgba(59,130,246,0.4)]">
+                      <div 
+                        className="w-52 rounded-2xl overflow-hidden transition-all duration-300 hover:scale-[1.02] bg-white"
+                        style={{
+                          boxShadow: '0 8px 32px rgba(59, 130, 246, 0.3), 0 0 48px rgba(59, 130, 246, 0.15)',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.boxShadow = '0 12px 48px rgba(59, 130, 246, 0.4), 0 0 64px rgba(59, 130, 246, 0.2)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.boxShadow = '0 8px 32px rgba(59, 130, 246, 0.3), 0 0 48px rgba(59, 130, 246, 0.15)';
+                        }}
+                      >
                         <div className="h-64 bg-gradient-to-br from-blue-500 to-indigo-600 flex flex-col items-center justify-center p-6">
                           <span className="text-6xl mb-4">🤝</span>
                           <h4 className="font-bold text-lg text-white mb-2 text-center">Brand Deals</h4>
@@ -453,10 +474,21 @@ export default function IntroCarousel() {
                       initial={{ opacity: 0, y: 20 }}
                       animate={currentSlide === 3 ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
                       transition={{ delay: 0.2, duration: 0.5 }}
-                      style={{ scrollSnapAlign: 'start' }}
+                      style={{ scrollSnapAlign: 'center' }}
                       className="flex-shrink-0"
                     >
-                      <div className="w-52 rounded-2xl overflow-hidden hover-scale transition-all duration-300 bg-white shadow-[0_4px_24px_rgba(236,72,153,0.3)] hover:shadow-[0_8px_32px_rgba(236,72,153,0.4)]">
+                      <div 
+                        className="w-52 rounded-2xl overflow-hidden transition-all duration-300 hover:scale-[1.02] bg-white"
+                        style={{
+                          boxShadow: '0 8px 32px rgba(236, 72, 153, 0.3), 0 0 48px rgba(236, 72, 153, 0.15)',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.boxShadow = '0 12px 48px rgba(236, 72, 153, 0.4), 0 0 64px rgba(236, 72, 153, 0.2)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.boxShadow = '0 8px 32px rgba(236, 72, 153, 0.3), 0 0 48px rgba(236, 72, 153, 0.15)';
+                        }}
+                      >
                         <div className="h-64 bg-gradient-to-br from-pink-500 to-rose-600 flex flex-col items-center justify-center p-6">
                           <span className="text-6xl mb-4">👯</span>
                           <h4 className="font-bold text-lg text-white mb-2 text-center">Style Friends</h4>
@@ -473,10 +505,21 @@ export default function IntroCarousel() {
                       initial={{ opacity: 0, y: 20 }}
                       animate={currentSlide === 3 ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
                       transition={{ delay: 0.3, duration: 0.5 }}
-                      style={{ scrollSnapAlign: 'start' }}
+                      style={{ scrollSnapAlign: 'center' }}
                       className="flex-shrink-0"
                     >
-                      <div className="w-52 rounded-2xl overflow-hidden hover-scale transition-all duration-300 bg-white shadow-[0_4px_24px_rgba(168,85,247,0.3)] hover:shadow-[0_8px_32px_rgba(168,85,247,0.4)]">
+                      <div 
+                        className="w-52 rounded-2xl overflow-hidden transition-all duration-300 hover:scale-[1.02] bg-white"
+                        style={{
+                          boxShadow: '0 8px 32px rgba(168, 85, 247, 0.3), 0 0 48px rgba(168, 85, 247, 0.15)',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.boxShadow = '0 12px 48px rgba(168, 85, 247, 0.4), 0 0 64px rgba(168, 85, 247, 0.2)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.boxShadow = '0 8px 32px rgba(168, 85, 247, 0.3), 0 0 48px rgba(168, 85, 247, 0.15)';
+                        }}
+                      >
                         <div className="h-64 bg-gradient-to-br from-purple-500 to-violet-600 flex flex-col items-center justify-center p-6">
                           <span className="text-6xl mb-4">🎉</span>
                           <h4 className="font-bold text-lg text-white mb-2 text-center">Pop-Up Events</h4>
