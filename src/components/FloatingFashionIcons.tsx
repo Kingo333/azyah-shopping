@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, useMotionValue, useSpring } from 'framer-motion';
-import { Crown, Sparkles, Shirt, ShoppingBag, Heart, Watch, Glasses, Footprints, Gem, Star, Scissors, Palette, Zap, Triangle, Circle, Diamond } from 'lucide-react';
+import { Crown, Sparkles, Shirt, ShoppingBag, Heart, Watch, Glasses, Footprints, Gem, Star, Scissors, Palette, ShoppingCart, Tag, Gift, Wallet } from 'lucide-react';
 
-const icons = [Crown, Sparkles, Shirt, ShoppingBag, Heart, Watch, Glasses, Footprints, Gem, Star, Scissors, Palette, Zap, Triangle, Circle, Diamond];
+const icons = [Crown, Sparkles, Shirt, ShoppingBag, Heart, Watch, Glasses, Footprints, Gem, Star, Scissors, Palette, ShoppingCart, Tag, Gift, Wallet];
 
 interface FloatingIcon {
   id: number;
