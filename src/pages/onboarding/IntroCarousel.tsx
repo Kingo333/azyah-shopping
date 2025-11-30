@@ -543,11 +543,11 @@ export default function IntroCarousel() {
                   <div className="relative overflow-hidden mb-6">
                     <motion.div
                       className="flex gap-6 py-3 cursor-grab active:cursor-grabbing justify-center md:justify-center"
-                      animate={isMobile ? { x: -cardOffset * 272 } : { x: 0 }}
+                      animate={isMobile ? { x: -cardOffset * 232 } : { x: 0 }}
                       transition={{ duration: 0.8, ease: "easeInOut" }}
                       style={isMobile ? { paddingLeft: "calc(50% - 104px)" } : {}}
                       drag={isMobile ? "x" : false}
-                      dragConstraints={{ left: -816, right: 0 }}
+                      dragConstraints={{ left: -696, right: 0 }}
                       dragElastic={0.1}
                       onDragStart={() => setIsCarouselDragging(true)}
                       onDragEnd={(e, info) => {
