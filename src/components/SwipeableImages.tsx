@@ -57,9 +57,9 @@ export const SwipeableImages = ({ images, productInfo }: SwipeableImagesProps) =
         </div>
 
         {/* Swipe Instruction */}
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-2 px-3 py-1.5 bg-black/60 backdrop-blur-sm rounded-full pointer-events-none">
-          <MoveHorizontal className="w-3.5 h-3.5 text-white" />
-          <span className="text-white text-xs font-medium">Swipe left or right</span>
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-2.5 py-1 bg-black/60 backdrop-blur-sm rounded-full pointer-events-none">
+          <MoveHorizontal className="w-3 h-3 text-white" />
+          <span className="text-white text-[10px] font-medium whitespace-nowrap">Swipe left or right</span>
         </div>
 
         {/* Product Info Overlay */}
