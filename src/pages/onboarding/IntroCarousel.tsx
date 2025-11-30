@@ -315,7 +315,7 @@ export default function IntroCarousel() {
       </div>
 
       {/* Fixed Bottom CTA Section */}
-      <div className="fixed bottom-0 left-0 right-0 px-4 pb-4 pt-3 bg-gradient-to-t from-background via-background to-transparent z-20">
+      <div className="fixed bottom-0 left-0 right-0 px-3 pb-3 pt-2 bg-gradient-to-t from-background via-background to-transparent z-20">
         {/* Navigation Dots */}
         <div className="flex justify-center gap-2 mb-6">
           {slides.map((_, index) => (
