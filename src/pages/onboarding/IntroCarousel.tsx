@@ -189,7 +189,7 @@ export default function IntroCarousel() {
     if (currentSlide === 3) {
       // Gallery slide is at index 3
       const duration = 1500; // 1.5 seconds
-      const targetCount = 10000;
+      const targetCount = 100;
       const steps = 50;
       const increment = targetCount / steps;
       const intervalTime = duration / steps;
@@ -544,7 +544,7 @@ export default function IntroCarousel() {
                     <div className="overflow-hidden">
                       <motion.div
                         className="flex gap-6 py-3 cursor-grab active:cursor-grabbing"
-                        style={isMobile ? { paddingLeft: 'calc(50vw - 104px)' } : {}}
+                        style={isMobile ? { paddingLeft: "calc(50vw - 104px)" } : {}}
                         animate={isMobile ? { x: -cardOffset * 232 } : { x: 0 }}
                         transition={{ duration: 0.8, ease: "easeInOut" }}
                         drag={isMobile ? "x" : false}
@@ -552,147 +552,147 @@ export default function IntroCarousel() {
                         dragElastic={0.1}
                         onDragStart={() => setIsCarouselDragging(true)}
                         onDragEnd={(e, info) => {
-                        setIsCarouselDragging(false);
-                        const offset = info.offset.x;
-                        const velocity = info.velocity.x;
+                          setIsCarouselDragging(false);
+                          const offset = info.offset.x;
+                          const velocity = info.velocity.x;
 
-                        // Calculate which card to snap to based on drag distance
-                        if (Math.abs(offset) > 100 || Math.abs(velocity) > 500) {
-                          if (offset < 0 && cardOffset < 3) {
-                            setCardOffset((prev) => Math.min(prev + 1, 3));
-                          } else if (offset > 0 && cardOffset > 0) {
-                            setCardOffset((prev) => Math.max(prev - 1, 0));
+                          // Calculate which card to snap to based on drag distance
+                          if (Math.abs(offset) > 100 || Math.abs(velocity) > 500) {
+                            if (offset < 0 && cardOffset < 3) {
+                              setCardOffset((prev) => Math.min(prev + 1, 3));
+                            } else if (offset > 0 && cardOffset > 0) {
+                              setCardOffset((prev) => Math.max(prev - 1, 0));
+                            }
                           }
-                        }
-                      }}
-                    >
-                      {/* Auto-Playing Outfit Inspo Slider */}
-                      <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={currentSlide === 3 ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-                        transition={{ delay: 0, duration: 0.5 }}
-                        className="flex-shrink-0"
+                        }}
                       >
-                        <div
-                          className="w-52 rounded-2xl overflow-hidden transition-all duration-300 hover:scale-[1.02]"
-                          style={{
-                            boxShadow: "0 8px 32px rgba(251, 191, 36, 0.3), 0 0 48px rgba(251, 191, 36, 0.15)",
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.boxShadow =
-                              "0 12px 48px rgba(251, 191, 36, 0.4), 0 0 64px rgba(251, 191, 36, 0.2)";
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.boxShadow =
-                              "0 8px 32px rgba(251, 191, 36, 0.3), 0 0 48px rgba(251, 191, 36, 0.15)";
-                          }}
+                        {/* Auto-Playing Outfit Inspo Slider */}
+                        <motion.div
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={currentSlide === 3 ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+                          transition={{ delay: 0, duration: 0.5 }}
+                          className="flex-shrink-0"
                         >
-                          <OutfitInspoSlider />
-                        </div>
-                      </motion.div>
+                          <div
+                            className="w-52 rounded-2xl overflow-hidden transition-all duration-300 hover:scale-[1.02]"
+                            style={{
+                              boxShadow: "0 8px 32px rgba(251, 191, 36, 0.3), 0 0 48px rgba(251, 191, 36, 0.15)",
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.boxShadow =
+                                "0 12px 48px rgba(251, 191, 36, 0.4), 0 0 64px rgba(251, 191, 36, 0.2)";
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.boxShadow =
+                                "0 8px 32px rgba(251, 191, 36, 0.3), 0 0 48px rgba(251, 191, 36, 0.15)";
+                            }}
+                          >
+                            <OutfitInspoSlider />
+                          </div>
+                        </motion.div>
 
-                      {/* Brand Deals Card */}
-                      <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={currentSlide === 3 ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-                        transition={{ delay: 0.1, duration: 0.5 }}
-                        className="flex-shrink-0"
-                      >
-                        <div
-                          className="w-52 rounded-2xl overflow-hidden transition-all duration-300 hover:scale-[1.02] bg-white"
-                          style={{
-                            boxShadow: "0 8px 32px rgba(59, 130, 246, 0.3), 0 0 48px rgba(59, 130, 246, 0.15)",
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.boxShadow =
-                              "0 12px 48px rgba(59, 130, 246, 0.4), 0 0 64px rgba(59, 130, 246, 0.2)";
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.boxShadow =
-                              "0 8px 32px rgba(59, 130, 246, 0.3), 0 0 48px rgba(59, 130, 246, 0.15)";
-                          }}
+                        {/* Brand Deals Card */}
+                        <motion.div
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={currentSlide === 3 ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+                          transition={{ delay: 0.1, duration: 0.5 }}
+                          className="flex-shrink-0"
                         >
-                          <div className="h-64 bg-gradient-to-br from-blue-500 to-indigo-600 flex flex-col items-center justify-center p-6">
-                            <span className="text-6xl mb-4">🤝</span>
-                            <h4 className="font-bold text-lg text-white mb-2 text-center">Brand Deals</h4>
-                            <p className="text-sm text-center text-white/90">
-                              Get discovered by brands & create UGC content
-                            </p>
+                          <div
+                            className="w-52 rounded-2xl overflow-hidden transition-all duration-300 hover:scale-[1.02] bg-white"
+                            style={{
+                              boxShadow: "0 8px 32px rgba(59, 130, 246, 0.3), 0 0 48px rgba(59, 130, 246, 0.15)",
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.boxShadow =
+                                "0 12px 48px rgba(59, 130, 246, 0.4), 0 0 64px rgba(59, 130, 246, 0.2)";
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.boxShadow =
+                                "0 8px 32px rgba(59, 130, 246, 0.3), 0 0 48px rgba(59, 130, 246, 0.15)";
+                            }}
+                          >
+                            <div className="h-64 bg-gradient-to-br from-blue-500 to-indigo-600 flex flex-col items-center justify-center p-6">
+                              <span className="text-6xl mb-4">🤝</span>
+                              <h4 className="font-bold text-lg text-white mb-2 text-center">Brand Deals</h4>
+                              <p className="text-sm text-center text-white/90">
+                                Get discovered by brands & create UGC content
+                              </p>
+                            </div>
+                            <div className="bg-white p-3 text-center">
+                              <p className="text-sm font-semibold text-foreground">Earn Money</p>
+                            </div>
                           </div>
-                          <div className="bg-white p-3 text-center">
-                            <p className="text-sm font-semibold text-foreground">Earn Money</p>
-                          </div>
-                        </div>
-                      </motion.div>
+                        </motion.div>
 
-                      {/* Style Friends Card */}
-                      <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={currentSlide === 3 ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-                        transition={{ delay: 0.2, duration: 0.5 }}
-                        className="flex-shrink-0"
-                      >
-                        <div
-                          className="w-52 rounded-2xl overflow-hidden transition-all duration-300 hover:scale-[1.02] bg-white"
-                          style={{
-                            boxShadow: "0 8px 32px rgba(236, 72, 153, 0.3), 0 0 48px rgba(236, 72, 153, 0.15)",
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.boxShadow =
-                              "0 12px 48px rgba(236, 72, 153, 0.4), 0 0 64px rgba(236, 72, 153, 0.2)";
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.boxShadow =
-                              "0 8px 32px rgba(236, 72, 153, 0.3), 0 0 48px rgba(236, 72, 153, 0.15)";
-                          }}
+                        {/* Style Friends Card */}
+                        <motion.div
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={currentSlide === 3 ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+                          transition={{ delay: 0.2, duration: 0.5 }}
+                          className="flex-shrink-0"
                         >
-                          <div className="h-64 bg-gradient-to-br from-pink-500 to-rose-600 flex flex-col items-center justify-center p-6">
-                            <span className="text-6xl mb-4">👯</span>
-                            <h4 className="font-bold text-lg text-white mb-2 text-center">Style Friends</h4>
-                            <p className="text-sm text-center text-white/90">
-                              Create outfits for your friends with their clothes
-                            </p>
+                          <div
+                            className="w-52 rounded-2xl overflow-hidden transition-all duration-300 hover:scale-[1.02] bg-white"
+                            style={{
+                              boxShadow: "0 8px 32px rgba(236, 72, 153, 0.3), 0 0 48px rgba(236, 72, 153, 0.15)",
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.boxShadow =
+                                "0 12px 48px rgba(236, 72, 153, 0.4), 0 0 64px rgba(236, 72, 153, 0.2)";
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.boxShadow =
+                                "0 8px 32px rgba(236, 72, 153, 0.3), 0 0 48px rgba(236, 72, 153, 0.15)";
+                            }}
+                          >
+                            <div className="h-64 bg-gradient-to-br from-pink-500 to-rose-600 flex flex-col items-center justify-center p-6">
+                              <span className="text-6xl mb-4">👯</span>
+                              <h4 className="font-bold text-lg text-white mb-2 text-center">Style Friends</h4>
+                              <p className="text-sm text-center text-white/90">
+                                Create outfits for your friends with their clothes
+                              </p>
+                            </div>
+                            <div className="bg-white p-3 text-center">
+                              <p className="text-sm font-semibold text-foreground">Be Creative</p>
+                            </div>
                           </div>
-                          <div className="bg-white p-3 text-center">
-                            <p className="text-sm font-semibold text-foreground">Be Creative</p>
-                          </div>
-                        </div>
-                      </motion.div>
+                        </motion.div>
 
-                      {/* Pop-Up Events Card */}
-                      <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={currentSlide === 3 ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-                        transition={{ delay: 0.3, duration: 0.5 }}
-                        className="flex-shrink-0"
-                      >
-                        <div
-                          className="w-52 rounded-2xl overflow-hidden transition-all duration-300 hover:scale-[1.02] bg-white"
-                          style={{
-                            boxShadow: "0 8px 32px rgba(168, 85, 247, 0.3), 0 0 48px rgba(168, 85, 247, 0.15)",
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.boxShadow =
-                              "0 12px 48px rgba(168, 85, 247, 0.4), 0 0 64px rgba(168, 85, 247, 0.2)";
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.boxShadow =
-                              "0 8px 32px rgba(168, 85, 247, 0.3), 0 0 48px rgba(168, 85, 247, 0.15)";
-                          }}
+                        {/* Pop-Up Events Card */}
+                        <motion.div
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={currentSlide === 3 ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+                          transition={{ delay: 0.3, duration: 0.5 }}
+                          className="flex-shrink-0"
                         >
-                          <div className="h-64 bg-gradient-to-br from-purple-500 to-violet-600 flex flex-col items-center justify-center p-6">
-                            <span className="text-6xl mb-4">🎉</span>
-                            <h4 className="font-bold text-lg text-white mb-2 text-center">Pop-Up Events</h4>
-                            <p className="text-sm text-center text-white/90">
-                              Discover exclusive fashion events and join them
-                            </p>
+                          <div
+                            className="w-52 rounded-2xl overflow-hidden transition-all duration-300 hover:scale-[1.02] bg-white"
+                            style={{
+                              boxShadow: "0 8px 32px rgba(168, 85, 247, 0.3), 0 0 48px rgba(168, 85, 247, 0.15)",
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.boxShadow =
+                                "0 12px 48px rgba(168, 85, 247, 0.4), 0 0 64px rgba(168, 85, 247, 0.2)";
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.boxShadow =
+                                "0 8px 32px rgba(168, 85, 247, 0.3), 0 0 48px rgba(168, 85, 247, 0.15)";
+                            }}
+                          >
+                            <div className="h-64 bg-gradient-to-br from-purple-500 to-violet-600 flex flex-col items-center justify-center p-6">
+                              <span className="text-6xl mb-4">🎉</span>
+                              <h4 className="font-bold text-lg text-white mb-2 text-center">Pop-Up Events</h4>
+                              <p className="text-sm text-center text-white/90">
+                                Discover exclusive fashion events and join them
+                              </p>
+                            </div>
+                            <div className="bg-white p-3 text-center">
+                              <p className="text-sm font-semibold text-foreground">Get Exclusive Access</p>
+                            </div>
                           </div>
-                          <div className="bg-white p-3 text-center">
-                            <p className="text-sm font-semibold text-foreground">Get Exclusive Access</p>
-                          </div>
-                        </div>
+                        </motion.div>
                       </motion.div>
-                    </motion.div>
                     </div>
                   </div>
 
