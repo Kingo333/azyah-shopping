@@ -37,7 +37,7 @@ type SlideType = {
 };
 const slides: SlideType[] = [{
   type: 'hero',
-  image: '/marketing/hero-visual-gender-neutral.png',
+  image: '/marketing/hero-visual-diverse.png',
   title: 'Discover Your Style',
   subtitle: 'The platform for discovering fashion brands, beauty products, and events. (Powered by AI)\nWe empower brands, shoppers and content creators.'
 }, {
