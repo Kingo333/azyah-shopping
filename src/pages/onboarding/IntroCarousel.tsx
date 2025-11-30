@@ -342,62 +342,49 @@ export default function IntroCarousel() {
                 </div>
 
                 {/* Content Container */}
-                <div className="flex-1 flex flex-col justify-start pt-2 px-6">
-                  {/* Outfit Collages Grid - Taller with Overlay Labels */}
-                  <div className="grid grid-cols-2 gap-3 mb-2">
+                <div className="flex-1 flex flex-col justify-start pt-4">
+                  {/* Horizontal Scrollable Outfit Collages */}
+                  <div className="overflow-x-auto flex gap-4 py-3 -mx-6 px-6 scrollbar-hide mb-6">
                     {[{
                   img: '/onboarding/outfit-collage-1.jpg',
                   label: 'Outfit Boards'
                 }, {
                   img: '/onboarding/outfit-collage-2.jpg',
                   label: 'Style Collages'
-                }].map((item, idx) => <div key={idx} className="rounded-xl overflow-hidden shadow-md relative">
-                        <img src={item.img} alt={item.label} className="w-full h-44 object-cover" />
-                        {/* Gradient Overlay with Label */}
-                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent py-2.5 px-3">
-                          <p className="text-sm font-bold text-white drop-shadow-md">{item.label}</p>
+                }].map((item, idx) => <div key={idx} className="flex-shrink-0 w-52 rounded-2xl overflow-hidden shadow-lg hover-scale transition-all duration-300">
+                        <img src={item.img} alt={item.label} className="w-full h-64 object-cover" />
+                        <div className="bg-white p-3 text-center">
+                          <p className="text-sm font-semibold text-foreground">{item.label}</p>
                         </div>
                       </div>)}
                   </div>
 
-                  {/* Arrow pointing down to connected benefit */}
-                  <div className="flex justify-center mb-2">
-                    <span className="text-muted-foreground text-xl">↓</span>
-                  </div>
-
-                  {/* Earn Points - Connected to images above */}
-                  <div className="rounded-xl overflow-hidden shadow-md bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-100 mb-4">
-                    <div className="p-3 flex items-center gap-3">
-                      <div className="bg-gradient-to-br from-amber-400 to-orange-500 w-12 h-12 rounded-full flex items-center justify-center shadow-sm flex-shrink-0">
-                        <span className="text-2xl">⭐</span>
+                  {/* Feature Cards - Benefits */}
+                  <div className="grid grid-cols-2 gap-4 mb-6 px-2">
+                    <div className="flex-shrink-0 rounded-2xl overflow-hidden shadow-lg hover-scale transition-all duration-300 bg-white">
+                      <div className="bg-gradient-to-br from-amber-400 to-orange-500 h-24 flex items-center justify-center">
+                        <span className="text-5xl">⭐</span>
                       </div>
-                      <div className="flex-1">
+                      <div className="p-3 text-center">
                         <h4 className="font-bold text-sm text-foreground mb-1">Earn Points</h4>
-                        <p className="text-xs text-muted-foreground leading-snug">Create outfit boards like these to earn rewards and unlock features</p>
+                        <p className="text-xs text-muted-foreground leading-relaxed">Create outfit boards to earn points</p>
                       </div>
                     </div>
-                  </div>
-
-                  {/* Divider - Separating unrelated benefit */}
-                  <div className="h-px bg-border mb-4"></div>
-
-                  {/* Brand Deals - Separate standalone benefit */}
-                  <div className="rounded-xl overflow-hidden shadow-md bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 mb-5">
-                    <div className="p-3 flex items-center gap-3">
-                      <div className="bg-gradient-to-br from-blue-400 to-indigo-500 w-12 h-12 rounded-full flex items-center justify-center shadow-sm flex-shrink-0">
-                        <span className="text-2xl">🤝</span>
+                    <div className="flex-shrink-0 rounded-2xl overflow-hidden shadow-lg hover-scale transition-all duration-300 bg-white">
+                      <div className="bg-gradient-to-br from-blue-400 to-indigo-500 h-24 flex items-center justify-center">
+                        <span className="text-5xl">🤝</span>
                       </div>
-                      <div className="flex-1">
+                      <div className="p-3 text-center">
                         <h4 className="font-bold text-sm text-foreground mb-1">Brand Deals</h4>
-                        <p className="text-xs text-muted-foreground leading-snug">Get discovered by brands and create paid UGC content</p>
+                        <p className="text-xs text-muted-foreground leading-relaxed">Get discovered & create UGC content</p>
                       </div>
                     </div>
                   </div>
 
                   {/* Join creators badge */}
                   <div className="text-center">
-                    <p className="text-xs text-muted-foreground font-medium inline-flex items-center gap-2 bg-accent/10 px-3 py-1.5 rounded-full">
-                      <span className="text-base">✨</span>
+                    <p className="text-sm text-muted-foreground font-medium inline-flex items-center gap-2 bg-accent/10 px-4 py-2 rounded-full">
+                      <span className="text-lg">✨</span>
                       Join 10,000+ creators earning through style
                     </p>
                   </div>
