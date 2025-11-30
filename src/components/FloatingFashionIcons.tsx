@@ -21,7 +21,10 @@ export function FloatingFashionIcons() {
 
   // Initialize icons
   useEffect(() => {
-    const iconData: FloatingIcon[] = Array.from({ length: 35 }, (_, i) => ({
+    const isMobile = window.innerWidth < 768;
+    const iconCount = isMobile ? 20 : 35;
+    
+    const iconData: FloatingIcon[] = Array.from({ length: iconCount }, (_, i) => ({
       id: i,
       Icon: icons[Math.floor(Math.random() * icons.length)],
       baseX: Math.random() * 100,
