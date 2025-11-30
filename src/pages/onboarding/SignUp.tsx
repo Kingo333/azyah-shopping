@@ -468,8 +468,13 @@ export default function SignUp() {
       </div>
 
       {/* Azyah Branding */}
-      <div className="pt-2 pb-4 md:pt-4 md:pb-8 relative z-10 flex-shrink-0">
-        <h1 className="text-3xl md:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-white via-[#E68BA5] to-white text-center tracking-tight" style={{ textShadow: '0 4px 12px rgba(0,0,0,0.8)' }}>
+      <div className="pt-2 pb-4 md:pt-4 md:pb-8 relative z-10 flex-shrink-0 flex justify-center items-center gap-2">
+        <img 
+          src="/marketing/azyah-logo.png" 
+          alt="Azyah" 
+          className="h-10 w-10 object-contain drop-shadow-lg"
+        />
+        <h1 className="text-4xl font-serif text-white tracking-wider drop-shadow-lg" style={{ fontWeight: 300, letterSpacing: '0.15em' }}>
           Azyah
         </h1>
       </div>
