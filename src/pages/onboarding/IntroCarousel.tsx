@@ -342,18 +342,21 @@ export default function IntroCarousel() {
           </button>
         )}
 
-        {currentSlide < slides.length - 1 && (
-          <button
-            onClick={() => {
+        <button
+          onClick={() => {
+            if (currentSlide === slides.length - 1) {
+              setDirection(-1);
+              setCurrentSlide(0);
+            } else {
               setDirection(1);
               setCurrentSlide((prev) => prev + 1);
-            }}
-            className="fixed right-4 bottom-32 z-30 w-8 h-8 md:w-10 md:h-10 rounded-full bg-primary/60 backdrop-blur-md border border-white/30 flex items-center justify-center hover:bg-primary/80 hover:scale-110 transition-all shadow-lg hover:shadow-xl"
-            aria-label="Next slide"
-          >
-            <ChevronRight className="w-5 h-5 md:w-6 md:h-6 text-white drop-shadow-lg" strokeWidth={2.5} />
-          </button>
-        )}
+            }
+          }}
+          className="fixed right-4 bottom-32 z-30 w-8 h-8 md:w-10 md:h-10 rounded-full bg-primary/60 backdrop-blur-md border border-white/30 flex items-center justify-center hover:bg-primary/80 hover:scale-110 transition-all shadow-lg hover:shadow-xl"
+          aria-label={currentSlide === slides.length - 1 ? "Back to start" : "Next slide"}
+        >
+          <ChevronRight className="w-5 h-5 md:w-6 md:h-6 text-white drop-shadow-lg" strokeWidth={2.5} />
+        </button>
 
         <AnimatePresence initial={false} custom={direction} mode="wait">
           <motion.div
