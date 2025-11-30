@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo } from 'react';
 import { motion, PanInfo, useMotionValue, useTransform, animate } from 'framer-motion';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, MoveHorizontal } from 'lucide-react';
 
 interface SwipeableImagesProps {
   images: string[];
@@ -23,13 +23,13 @@ export const SwipeableImages = ({ images, productInfo }: SwipeableImagesProps) =
   const handleSwipeEnd = useCallback((event: any, info: PanInfo) => {
     const { offset } = info;
 
-    if (offset.x > DISTANCE_THRESHOLD && currentIndex > 0) {
-      // Swipe right - go to previous image
-      setCurrentIndex(prev => prev - 1);
+    if (offset.x > DISTANCE_THRESHOLD) {
+      // Swipe right - go to previous image (loop to last if at first)
+      setCurrentIndex(prev => prev === 0 ? images.length - 1 : prev - 1);
       animate(x, 0, { type: "spring", stiffness: 300, damping: 25 });
-    } else if (offset.x < -DISTANCE_THRESHOLD && currentIndex < images.length - 1) {
-      // Swipe left - go to next image
-      setCurrentIndex(prev => prev + 1);
+    } else if (offset.x < -DISTANCE_THRESHOLD) {
+      // Swipe left - go to next image (loop to first if at last)
+      setCurrentIndex(prev => prev === images.length - 1 ? 0 : prev + 1);
       animate(x, 0, { type: "spring", stiffness: 300, damping: 25 });
     } else {
       // Return to center
@@ -54,6 +54,12 @@ export const SwipeableImages = ({ images, productInfo }: SwipeableImagesProps) =
             className="w-full h-full object-contain select-none pointer-events-none"
             draggable={false}
           />
+        </div>
+
+        {/* Swipe Instruction */}
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-2 px-3 py-1.5 bg-black/60 backdrop-blur-sm rounded-full pointer-events-none">
+          <MoveHorizontal className="w-3.5 h-3.5 text-white" />
+          <span className="text-white text-xs font-medium">Swipe left or right</span>
         </div>
 
         {/* Product Info Overlay */}
