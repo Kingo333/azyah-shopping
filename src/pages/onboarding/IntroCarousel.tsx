@@ -703,7 +703,7 @@ export default function IntroCarousel() {
                   >
                     <p className="text-sm text-muted-foreground font-medium inline-flex items-center gap-2 bg-accent/10 px-4 py-2 rounded-full">
                       <span className="text-lg">✨</span>
-                      Join {creatorCount.toLocaleString()}+ creators earning through digital closet
+                      Join {creatorCount.toLocaleString()}+ creators earning with digital closet
                     </p>
                   </motion.div>
                 </div>
