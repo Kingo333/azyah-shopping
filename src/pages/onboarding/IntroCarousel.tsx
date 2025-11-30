@@ -343,44 +343,43 @@ export default function IntroCarousel() {
 
                 {/* Content Container */}
                 <div className="flex-1 flex flex-col justify-start pt-4">
-                  {/* Horizontal Scrollable Outfit Collages */}
-                  <div className="overflow-x-auto flex gap-4 py-3 -mx-6 px-6 scrollbar-hide mb-4">
+                  {/* Horizontal Scrollable Collages & Cards */}
+                  <div className="overflow-x-auto flex gap-4 py-3 -mx-6 px-6 scrollbar-hide mb-6">
                     {/* Outfit Inspo 1 */}
-                    <div className="flex-shrink-0 w-52 rounded-2xl overflow-hidden shadow-lg hover-scale transition-all duration-300">
+                    <div className="flex-shrink-0 w-52 rounded-2xl overflow-hidden shadow-lg hover-scale transition-all duration-300 relative">
                       <img src="/onboarding/outfit-collage-1.jpg" alt="Outfit Inspiration 1" className="w-full h-64 object-cover" />
+                      {/* Earn Badge Overlay */}
+                      <div className="absolute top-2 right-2 bg-gradient-to-r from-amber-400 to-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg flex items-center gap-1">
+                        <span>⭐</span>
+                        <span>Earn</span>
+                      </div>
                       <div className="bg-white p-3 text-center">
                         <p className="text-sm font-semibold text-foreground">Outfit Inspo 1</p>
                       </div>
                     </div>
 
                     {/* Outfit Inspo 2 */}
-                    <div className="flex-shrink-0 w-52 rounded-2xl overflow-hidden shadow-lg hover-scale transition-all duration-300">
+                    <div className="flex-shrink-0 w-52 rounded-2xl overflow-hidden shadow-lg hover-scale transition-all duration-300 relative">
                       <img src="/onboarding/outfit-collage-2.jpg" alt="Outfit Inspiration 2" className="w-full h-64 object-cover" />
+                      {/* Earn Badge Overlay */}
+                      <div className="absolute top-2 right-2 bg-gradient-to-r from-amber-400 to-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg flex items-center gap-1">
+                        <span>⭐</span>
+                        <span>Earn</span>
+                      </div>
                       <div className="bg-white p-3 text-center">
                         <p className="text-sm font-semibold text-foreground">Outfit Inspo 2</p>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Earn Points & Brand Deals Cards */}
-                  <div className="grid grid-cols-2 gap-3 px-4 mb-4">
-                    <div className="rounded-2xl overflow-hidden shadow-lg hover-scale transition-all duration-300">
-                      <div className="bg-gradient-to-br from-amber-400 to-orange-500 h-20 flex items-center justify-center">
-                        <span className="text-4xl">⭐</span>
+                    {/* Brand Deals Card */}
+                    <div className="flex-shrink-0 w-52 rounded-2xl overflow-hidden shadow-lg hover-scale transition-all duration-300 bg-white">
+                      <div className="h-64 bg-gradient-to-br from-blue-500 to-indigo-600 flex flex-col items-center justify-center p-6">
+                        <span className="text-6xl mb-4">🤝</span>
+                        <h4 className="font-bold text-lg text-white mb-2 text-center">Brand Deals</h4>
+                        <p className="text-sm text-center text-white/90">Get discovered by brands & create UGC content</p>
                       </div>
-                      <div className="bg-white p-2.5 text-center">
-                        <h4 className="font-bold text-sm text-foreground mb-0.5">Earn Points</h4>
-                        <p className="text-xs text-muted-foreground">Redeem at salons</p>
-                      </div>
-                    </div>
-
-                    <div className="rounded-2xl overflow-hidden shadow-lg hover-scale transition-all duration-300">
-                      <div className="bg-gradient-to-br from-blue-500 to-indigo-600 h-20 flex items-center justify-center">
-                        <span className="text-4xl">🤝</span>
-                      </div>
-                      <div className="bg-white p-2.5 text-center">
-                        <h4 className="font-bold text-sm text-foreground mb-0.5">Brand Deals</h4>
-                        <p className="text-xs text-muted-foreground">Create UGC content</p>
+                      <div className="bg-white p-3 text-center">
+                        <p className="text-sm font-semibold text-foreground">Earn Money</p>
                       </div>
                     </div>
                   </div>
