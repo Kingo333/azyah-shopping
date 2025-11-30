@@ -60,13 +60,13 @@ const slides: SlideType[] = [{
   title: 'Try Before You Buy',
   subtitle: 'See how items look on you with AI try-on technology'
 }, {
-  type: 'ugc',
-  title: 'Rate & Review Brands',
-  subtitle: 'Share your experience working with brands and help fellow creators make informed decisions'
-}, {
   type: 'gallery',
   title: 'Create, Collaborate, Earn',
   subtitle: 'Showcase your style and get rewarded'
+}, {
+  type: 'ugc',
+  title: 'Rate & Review Brands',
+  subtitle: 'Share your experience working with brands and help fellow creators make informed decisions'
 }];
 const faqData = [{
   question: "How does AI-powered fashion discovery work?",
