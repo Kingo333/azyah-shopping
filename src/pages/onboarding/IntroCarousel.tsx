@@ -223,7 +223,7 @@ export default function IntroCarousel() {
           <div className="flex items-center gap-1.5 sm:gap-2">
             <Sheet>
               <SheetTrigger asChild>
-                <Button size="sm" className="font-light bg-white/90 backdrop-blur-md text-foreground hover:bg-white shadow-lg rounded-full text-xs sm:text-sm h-8 px-3 sm:h-9 sm:px-4">
+                <Button size="sm" className="font-light bg-white/70 backdrop-blur-md text-foreground hover:bg-white/80 shadow-lg rounded-full text-xs sm:text-sm h-8 px-3 sm:h-9 sm:px-4">
                   FAQ
                 </Button>
               </SheetTrigger>
@@ -248,7 +248,7 @@ export default function IntroCarousel() {
               </SheetContent>
             </Sheet>
             
-            <Button size="sm" className="font-light bg-white/90 backdrop-blur-md text-foreground hover:bg-white shadow-lg rounded-full text-xs sm:text-sm h-8 px-3 sm:h-9 sm:px-4" onClick={() => setInvestorModalOpen(true)}>
+            <Button size="sm" className="font-light bg-white/70 backdrop-blur-md text-foreground hover:bg-white/80 shadow-lg rounded-full text-xs sm:text-sm h-8 px-3 sm:h-9 sm:px-4" onClick={() => setInvestorModalOpen(true)}>
               For Investors
             </Button>
           </div>
