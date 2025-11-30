@@ -344,7 +344,7 @@ export default function IntroCarousel() {
                 {/* Content Container */}
                 <div className="flex-1 flex flex-col justify-start pt-4">
                   {/* Horizontal Scrollable Outfit Collages */}
-                  <div className="overflow-x-auto flex gap-4 py-3 -mx-6 px-6 scrollbar-hide mb-6">
+                  <div className="overflow-x-auto flex gap-4 py-3 -mx-6 px-6 scrollbar-hide mb-3">
                     {[{
                   img: '/onboarding/outfit-collage-1.jpg',
                   label: 'Outfit Boards'
@@ -359,24 +359,34 @@ export default function IntroCarousel() {
                       </div>)}
                   </div>
 
-                  {/* Feature Cards - Benefits */}
-                  <div className="grid grid-cols-2 gap-4 mb-6 px-2">
-                    <div className="flex-shrink-0 rounded-2xl overflow-hidden shadow-lg hover-scale transition-all duration-300 bg-white">
-                      <div className="bg-gradient-to-br from-amber-400 to-orange-500 h-24 flex items-center justify-center">
-                        <span className="text-5xl">⭐</span>
-                      </div>
-                      <div className="p-3 text-center">
-                        <h4 className="font-bold text-sm text-foreground mb-1">Earn Points</h4>
-                        <p className="text-xs text-muted-foreground leading-relaxed">Create outfit boards to earn points</p>
+                  {/* Connection Text */}
+                  <div className="text-center mb-4 px-4">
+                    <p className="text-xs text-muted-foreground">Create outfit boards like these ↑</p>
+                  </div>
+
+                  {/* Feature Cards - Full Width */}
+                  <div className="space-y-3 mb-6 px-4">
+                    <div className="rounded-2xl overflow-hidden shadow-lg hover-scale transition-all duration-300 bg-gradient-to-r from-amber-400 via-orange-400 to-orange-500">
+                      <div className="p-5 flex items-center gap-4">
+                        <div className="bg-white/20 backdrop-blur-sm w-16 h-16 rounded-xl flex items-center justify-center flex-shrink-0">
+                          <span className="text-4xl">⭐</span>
+                        </div>
+                        <div className="text-left text-white flex-1">
+                          <h4 className="font-bold text-base mb-1">Earn Points</h4>
+                          <p className="text-sm opacity-90 leading-relaxed">Create outfit boards to earn points</p>
+                        </div>
                       </div>
                     </div>
-                    <div className="flex-shrink-0 rounded-2xl overflow-hidden shadow-lg hover-scale transition-all duration-300 bg-white">
-                      <div className="bg-gradient-to-br from-blue-400 to-indigo-500 h-24 flex items-center justify-center">
-                        <span className="text-5xl">🤝</span>
-                      </div>
-                      <div className="p-3 text-center">
-                        <h4 className="font-bold text-sm text-foreground mb-1">Brand Deals</h4>
-                        <p className="text-xs text-muted-foreground leading-relaxed">Get discovered & create UGC content</p>
+                    
+                    <div className="rounded-2xl overflow-hidden shadow-lg hover-scale transition-all duration-300 bg-gradient-to-r from-blue-400 via-indigo-400 to-indigo-500">
+                      <div className="p-5 flex items-center gap-4">
+                        <div className="bg-white/20 backdrop-blur-sm w-16 h-16 rounded-xl flex items-center justify-center flex-shrink-0">
+                          <span className="text-4xl">🤝</span>
+                        </div>
+                        <div className="text-left text-white flex-1">
+                          <h4 className="font-bold text-base mb-1">Brand Deals</h4>
+                          <p className="text-sm opacity-90 leading-relaxed">Get discovered & create UGC content</p>
+                        </div>
                       </div>
                     </div>
                   </div>
