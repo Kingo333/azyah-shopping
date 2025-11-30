@@ -113,20 +113,22 @@ export function FloatingFashionIcons() {
           <motion.div
             key={id}
             className="absolute opacity-15 md:opacity-25"
-            initial={{ x: `${baseX}%`, y: `${baseY}%` }}
+            style={{
+              left: `${baseX}%`,
+              top: `${baseY}%`,
+              animationDelay: `${delay}s`,
+              animationDuration: `${duration}s`
+            }}
+            initial={{ x: 0, y: 0 }}
             animate={{
-              x: `calc(${baseX}% + ${repulsion.x + tilt.x}%)`,
-              y: `calc(${baseY}% + ${repulsion.y + tilt.y}%)`,
+              x: repulsion.x + tilt.x,
+              y: repulsion.y + tilt.y,
             }}
             transition={{
               type: "spring",
               stiffness: 50,
               damping: 15,
               mass: 1
-            }}
-            style={{
-              animationDelay: `${delay}s`,
-              animationDuration: `${duration}s`
             }}
           >
             <motion.div
