@@ -298,9 +298,10 @@ export default function IntroCarousel() {
                   {/* Azyah branding overlaid on image */}
                   <div className="absolute bottom-6 left-6 flex items-center gap-2">
                     <img src="/marketing/azyah-logo.png" alt="Azyah" className="h-10 w-10 object-contain drop-shadow-lg" />
-                    <h1 className="text-4xl font-serif text-white tracking-wider drop-shadow-lg" style={{
+                    <h1 className="text-4xl font-serif text-white tracking-wider" style={{
                   fontWeight: 300,
-                  letterSpacing: '0.15em'
+                  letterSpacing: '0.15em',
+                  textShadow: '0 2px 8px rgba(0, 0, 0, 0.4), 0 4px 16px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.2)'
                 }}>
                       zyah
                     </h1>
