@@ -41,7 +41,7 @@ export function FloatingFashionIcons() {
             animationDuration: `${duration}s`
           }}
         >
-          <Icon className="w-10 h-10 md:w-12 md:h-12 text-rose-200/40" />
+          <Icon className="w-10 h-10 md:w-12 md:h-12 text-[#E68BA5]/50" />
         </div>
       ))}
     </div>
