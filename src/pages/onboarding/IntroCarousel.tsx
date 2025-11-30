@@ -5,6 +5,9 @@ import { Button } from '@/components/ui/button';
 import { BeforeAfterSlider } from '@/components/BeforeAfterSlider';
 import { SwipeableImages } from '@/components/SwipeableImages';
 import { Heart, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { InvestorContactModal } from '@/components/InvestorContactModal';
+import { SEOHead } from '@/components/SEOHead';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 
 type SlideType = 
   | { type: 'hero'; image: string; title: string; subtitle: string }
@@ -52,9 +55,37 @@ const slides: SlideType[] = [
   },
 ];
 
+const faqData = [
+  { 
+    question: "How does AI-powered fashion discovery work?", 
+    answer: "Our AI learns from your swipes and preferences to show you fashion pieces you'll love. The more you use Azyah, the better our recommendations become." 
+  },
+  { 
+    question: "Do you sell the products directly?", 
+    answer: "No, Azyah is a fashion discovery platform. We show you products that match your style, then redirect you to the retailer where you can purchase them." 
+  },
+  { 
+    question: "How does the swipe discovery work?", 
+    answer: "Swipe right on styles you love, left on ones you don't. Our AI learns from these interactions to show you more items you'll love." 
+  },
+  { 
+    question: "What are the benefits of Premium?", 
+    answer: "Premium members get 20 virtual fittings daily, unlimited AI replicas, UGC collaboration access, and priority support." 
+  },
+  { 
+    question: "Can I save items to my closet and wishlist?", 
+    answer: "Yes! You can save items to your personal closet, create wishlists, and organize your favorite finds. Share your collections with friends or keep them private - it's up to you." 
+  },
+  { 
+    question: "How do I connect with the community?", 
+    answer: "Join our global fashion community! Share your discoveries, follow other users, and get inspired by trending looks." 
+  },
+];
+
 export default function IntroCarousel() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [direction, setDirection] = useState(0);
+  const [investorModalOpen, setInvestorModalOpen] = useState(false);
   const navigate = useNavigate();
 
   const handleSwipe = (offset: number) => {
@@ -96,8 +127,78 @@ export default function IntroCarousel() {
 
   return (
     <div className="h-screen bg-white flex flex-col overflow-hidden">
+      <SEOHead 
+        title="Azyah — Luxury Fashion Curation" 
+        description="AI-curated luxury fashion discovery. Exclusive designer collections for the discerning style connoisseur." 
+        canonical="https://azyah.app/" 
+      />
+      
+      {/* Minimal Top Navigation Bar */}
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-primary/10">
+        <div className="container max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
+          {/* Logo */}
+          <div className="flex items-center gap-2">
+            <img 
+              src="/marketing/azyah-logo.png" 
+              alt="Azyah" 
+              className="h-8 w-8 object-contain"
+            />
+            <span className="font-serif text-lg font-light tracking-wider text-foreground">Azyah</span>
+          </div>
+          
+          {/* Right Side Buttons */}
+          <div className="flex items-center gap-2">
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="sm" className="font-light">
+                  FAQ
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-full sm:max-w-xl overflow-y-auto">
+                <SheetHeader>
+                  <SheetTitle className="font-serif text-2xl">Frequently Asked Questions</SheetTitle>
+                  <SheetDescription>
+                    Everything you need to know about fashion discovery with Azyah.
+                  </SheetDescription>
+                </SheetHeader>
+                <div className="mt-6 space-y-4">
+                  {faqData.map((item, index) => (
+                    <div 
+                      key={index} 
+                      className="bg-muted/30 rounded-lg p-4 border border-primary/10 hover:border-primary/20 transition-colors"
+                    >
+                      <div className="flex items-start gap-3">
+                        <ChevronRight className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                        <div>
+                          <h3 className="font-semibold text-foreground mb-2">{item.question}</h3>
+                          <p className="text-sm text-muted-foreground leading-relaxed">{item.answer}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </SheetContent>
+            </Sheet>
+            
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="font-light"
+              onClick={() => setInvestorModalOpen(true)}
+            >
+              For Investors
+            </Button>
+          </div>
+        </div>
+      </nav>
+      
+      <InvestorContactModal 
+        isOpen={investorModalOpen} 
+        onOpenChange={setInvestorModalOpen} 
+      />
+      
       {/* Main Content Area with Swipe */}
-      <div className="flex-1 overflow-hidden relative" style={{ paddingTop: '32px', paddingBottom: '200px' }}>
+      <div className="flex-1 overflow-hidden relative" style={{ paddingTop: '56px', paddingBottom: '200px' }}>
         {/* Navigation Arrows */}
         {currentSlide > 0 && (
           <button
