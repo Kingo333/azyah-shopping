@@ -12,12 +12,38 @@ serve(async (req) => {
   }
 
   try {
+    // 🔒 SECURITY: Verify JWT authentication
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Authentication required' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
+    
     if (!openaiApiKey) {
       throw new Error('OpenAI API key not configured');
     }
 
-    console.log('Creating OpenAI Realtime session...');
+    // Verify user is authenticated
+    const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2');
+    const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } }
+    });
+
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+    if (authError || !user) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log('Creating OpenAI Realtime session for user:', user.id);
 
     const response = await fetch('https://api.openai.com/v1/realtime/sessions', {
       method: 'POST',

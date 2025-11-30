@@ -15,20 +15,20 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // Parse request body BEFORE try/catch for error handling
-  const { toyReplicaId } = await req.json();
-  if (!toyReplicaId) {
-    console.error('❌ Missing toyReplicaId in request');
-    return new Response(
-      JSON.stringify({ error: 'Missing toyReplicaId' }), 
-      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-  }
-
   try {
+    // 🔒 SECURITY: Verify JWT authentication
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: 'Authentication required' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Validate all required environment variables
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
     
     if (!supabaseUrl) {
@@ -37,18 +37,45 @@ serve(async (req) => {
     if (!supabaseServiceKey) {
       throw new Error('SUPABASE_SERVICE_ROLE_KEY is not configured');
     }
+    if (!supabaseAnonKey) {
+      throw new Error('SUPABASE_ANON_KEY is not configured');
+    }
     if (!openAIApiKey) {
       throw new Error('OPENAI_API_KEY is not configured');
     }
 
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    console.log('🎯 Starting LEGO toy replica generation for ID:', toyReplicaId);
+    // Verify user is authenticated
+    const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } }
+    });
 
-    // Fetch the toy replica record
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+    if (authError || !user) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Parse request body
+    const { toyReplicaId } = await req.json();
+    if (!toyReplicaId) {
+      console.error('❌ Missing toyReplicaId in request');
+      return new Response(
+        JSON.stringify({ error: 'Missing toyReplicaId' }), 
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    console.log('🎯 Starting LEGO toy replica generation for ID:', toyReplicaId, 'User:', user.id);
+
+    // 🔒 SECURITY: Fetch the toy replica record and verify ownership
     const { data: toyReplica, error: fetchError } = await supabase
       .from('toy_replicas')
       .select('*')
       .eq('id', toyReplicaId)
+      .eq('user_id', user.id) // Verify ownership
       .single();
 
     if (fetchError || !toyReplica) {
