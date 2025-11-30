@@ -97,7 +97,7 @@ export default function IntroCarousel() {
   return (
     <div className="h-screen bg-white flex flex-col overflow-hidden">
       {/* Main Content Area with Swipe */}
-      <div className="flex-1 overflow-hidden relative" style={{ paddingBottom: '180px' }}>
+      <div className="flex-1 overflow-hidden relative" style={{ paddingTop: '32px', paddingBottom: '200px' }}>
         <AnimatePresence initial={false} custom={direction} mode="wait">
           <motion.div
             key={currentSlide}
@@ -154,7 +154,7 @@ export default function IntroCarousel() {
             )}
 
             {slide.type === 'interactive-swipe' && (
-              <div className="h-full flex flex-col px-6 pt-8">
+              <div className="h-full flex flex-col px-6 pt-4">
                 {/* Title & Subtitle */}
                 <div className="text-center mb-6">
                   <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-2">
@@ -193,7 +193,7 @@ export default function IntroCarousel() {
             )}
 
             {slide.type === 'interactive-slider' && (
-              <div className="h-full flex flex-col px-6">
+              <div className="h-full flex flex-col px-6 pt-4">
                 {/* Title & Subtitle */}
                 <div className="text-center mb-6">
                   <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-2">
@@ -212,7 +212,7 @@ export default function IntroCarousel() {
             )}
 
             {slide.type === 'ugc' && (
-              <div className="h-full flex flex-col px-6 pt-8">
+              <div className="h-full flex flex-col px-6 pt-4">
                 {/* Title & Subtitle */}
                 <div className="text-center mb-8">
                   <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-2">
@@ -252,7 +252,7 @@ export default function IntroCarousel() {
             )}
 
             {slide.type === 'gallery' && (
-              <div className="h-full flex flex-col px-6 pt-8">
+              <div className="h-full flex flex-col px-6 pt-4">
                 {/* Title & Subtitle */}
                 <div className="text-center mb-6">
                   <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-2">
