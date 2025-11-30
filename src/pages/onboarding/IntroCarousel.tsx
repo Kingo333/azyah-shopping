@@ -343,48 +343,53 @@ export default function IntroCarousel() {
 
                 {/* Content Container */}
                 <div className="flex-1 flex flex-col justify-start pt-2 px-6">
-                  {/* Outfit Collages Grid */}
-                  <div className="grid grid-cols-2 gap-3 mb-4">
+                  {/* Outfit Collages Grid - Taller with Overlay Labels */}
+                  <div className="grid grid-cols-2 gap-3 mb-3">
                     {[{
                   img: '/onboarding/outfit-collage-1.jpg',
                   label: 'Outfit Boards'
                 }, {
                   img: '/onboarding/outfit-collage-2.jpg',
                   label: 'Style Collages'
-                }].map((item, idx) => <div key={idx} className="rounded-xl overflow-hidden shadow-md bg-white">
-                        <img src={item.img} alt={item.label} className="w-full h-40 object-cover" />
-                        <div className="p-2.5 text-center">
-                          <p className="text-xs font-semibold text-foreground">{item.label}</p>
+                }].map((item, idx) => <div key={idx} className="rounded-xl overflow-hidden shadow-md relative">
+                        <img src={item.img} alt={item.label} className="w-full h-52 object-cover" />
+                        {/* Gradient Overlay with Label */}
+                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent py-3 px-3">
+                          <p className="text-sm font-bold text-white drop-shadow-md">{item.label}</p>
                         </div>
                       </div>)}
                   </div>
 
                   {/* Divider with Arrow */}
-                  <div className="flex items-center justify-center gap-2 mb-4">
+                  <div className="flex items-center justify-center gap-2 mb-3">
                     <div className="h-px bg-border flex-1"></div>
-                    <span className="text-muted-foreground text-xl">↓</span>
+                    <span className="text-muted-foreground text-lg">↓</span>
                     <div className="h-px bg-border flex-1"></div>
                   </div>
 
-                  {/* Benefit Cards - 2 Column Grid */}
+                  {/* Benefit Cards - Horizontal Compact Layout */}
                   <div className="grid grid-cols-2 gap-3 mb-5">
                     <div className="rounded-xl overflow-hidden shadow-md bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-100">
-                      <div className="p-4 text-center">
-                        <div className="bg-gradient-to-br from-amber-400 to-orange-500 w-14 h-14 rounded-full mx-auto mb-3 flex items-center justify-center shadow-sm">
-                          <span className="text-3xl">⭐</span>
+                      <div className="p-3 flex items-center gap-3">
+                        <div className="bg-gradient-to-br from-amber-400 to-orange-500 w-10 h-10 rounded-full flex items-center justify-center shadow-sm flex-shrink-0">
+                          <span className="text-xl">⭐</span>
                         </div>
-                        <h4 className="font-bold text-sm text-foreground mb-1.5">Earn Points</h4>
-                        <p className="text-xs text-muted-foreground leading-snug">Create outfit boards to earn rewards</p>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-bold text-xs text-foreground mb-0.5">Earn Points</h4>
+                          <p className="text-[10px] text-muted-foreground leading-tight">Create boards to earn rewards</p>
+                        </div>
                       </div>
                     </div>
                     
                     <div className="rounded-xl overflow-hidden shadow-md bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100">
-                      <div className="p-4 text-center">
-                        <div className="bg-gradient-to-br from-blue-400 to-indigo-500 w-14 h-14 rounded-full mx-auto mb-3 flex items-center justify-center shadow-sm">
-                          <span className="text-3xl">🤝</span>
+                      <div className="p-3 flex items-center gap-3">
+                        <div className="bg-gradient-to-br from-blue-400 to-indigo-500 w-10 h-10 rounded-full flex items-center justify-center shadow-sm flex-shrink-0">
+                          <span className="text-xl">🤝</span>
                         </div>
-                        <h4 className="font-bold text-sm text-foreground mb-1.5">Brand Deals</h4>
-                        <p className="text-xs text-muted-foreground leading-snug">Get discovered & create UGC content</p>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-bold text-xs text-foreground mb-0.5">Brand Deals</h4>
+                          <p className="text-[10px] text-muted-foreground leading-tight">Get discovered & create UGC</p>
+                        </div>
                       </div>
                     </div>
                   </div>
