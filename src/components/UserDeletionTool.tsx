@@ -22,8 +22,8 @@ interface UserStatus {
 }
 
 const UserDeletionTool = () => {
-  const [email, setEmail] = useState('abdullahiking33@gmail.com');
-  const [justification, setJustification] = useState('User deletion requested by administrator - enabling fresh signup after incomplete deletion');
+  const [email, setEmail] = useState('');
+  const [justification, setJustification] = useState('');
   const [loading, setLoading] = useState(false);
   const [checking, setChecking] = useState(false);
   const [userStatus, setUserStatus] = useState<UserStatus | null>(null);

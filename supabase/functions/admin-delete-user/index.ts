@@ -14,11 +14,68 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+
+    // 🔒 SECURITY: Verify JWT authentication
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: 'Authentication required', success: false }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
+      );
+    }
+
+    // Verify user is authenticated
+    const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } }
+    });
+
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+    if (authError || !user) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized', success: false }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
+      );
+    }
 
     // Create admin client with service role
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
+    // 🔒 SECURITY: Verify admin role via database lookup
+    const { data: userData, error: roleError } = await supabaseAdmin
+      .from('users')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+
+    if (roleError || userData?.role !== 'admin') {
+      // Log unauthorized access attempt
+      await supabaseAdmin
+        .from('security_audit_log')
+        .insert({
+          user_id: user.id,
+          action: 'unauthorized_admin_access_attempt',
+          details: { attempted_action: 'user_deletion' },
+          ip_address: req.headers.get('x-forwarded-for') || 'unknown'
+        });
+
+      return new Response(
+        JSON.stringify({ error: 'Admin privileges required', success: false }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 403 }
+      );
+    }
+
     const { email, user_id, force_delete, justification, checkOnly } = await req.json();
+
+    // Log admin action
+    await supabaseAdmin
+      .from('security_audit_log')
+      .insert({
+        user_id: user.id,
+        action: checkOnly ? 'admin_user_check' : 'admin_user_deletion',
+        details: { target_email: email, target_user_id: user_id, justification },
+        ip_address: req.headers.get('x-forwarded-for') || 'unknown'
+      });
 
     // If checkOnly is true, just return user status
     if (checkOnly) {

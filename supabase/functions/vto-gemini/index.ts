@@ -225,6 +225,28 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // 🔒 SECURITY: Verify JWT authentication
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: 'Authentication required' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Verify user is authenticated
+    const supabaseClient = createClient(SUPABASE_URL, Deno.env.get('SUPABASE_ANON_KEY')!, {
+      global: { headers: { Authorization: authHeader } }
+    });
+
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+    if (authError || !user) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const { jobId } = await req.json();
     if (!jobId) {
       return new Response(
@@ -233,9 +255,30 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log('[vto-gemini] Processing job:', jobId);
+    console.log('[vto-gemini] Processing job:', jobId, 'for user:', user.id);
 
     const admin = createClient(SUPABASE_URL, SERVICE_KEY);
+
+    // 🔒 SECURITY: Verify job ownership
+    const { data: jobOwnerCheck, error: ownerError } = await admin
+      .from('event_tryon_jobs')
+      .select('user_id')
+      .eq('id', jobId)
+      .single();
+
+    if (ownerError || !jobOwnerCheck) {
+      return new Response(
+        JSON.stringify({ error: 'Job not found' }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (jobOwnerCheck.user_id !== user.id) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized - job does not belong to user' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     // 1. Load job + validate
     const { data: job, error: jobError } = await admin
