@@ -402,7 +402,7 @@ export default function IntroCarousel() {
                   {/* Horizontal Scrollable Creator Content */}
                   <div className="overflow-x-auto flex gap-4 py-3 -mx-6 px-6 scrollbar-hide mb-6">
                     {[
-                      { img: '/onboarding/intro-outfits.png', label: 'Outfit Boards' },
+                      { img: '/onboarding/swipe-outfit-1.png', label: 'Outfit Boards' },
                       { img: '/onboarding/intro-community.png', label: 'Community & Reviews' },
                       { img: '/onboarding/intro-rewards.png', label: 'Saloon Rewards' },
                     ].map((item, idx) => (
