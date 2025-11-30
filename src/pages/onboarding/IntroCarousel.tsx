@@ -133,72 +133,13 @@ export default function IntroCarousel() {
         canonical="https://azyah.app/" 
       />
       
-      {/* Minimal Top Navigation Bar */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-primary/10">
-        <div className="container max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
-          {/* Logo */}
-          <div className="flex items-center gap-2">
-            <img 
-              src="/marketing/azyah-logo.png" 
-              alt="Azyah" 
-              className="h-8 w-8 object-contain"
-            />
-            <span className="font-serif text-lg font-light tracking-wider text-foreground">Azyah</span>
-          </div>
-          
-          {/* Right Side Buttons */}
-          <div className="flex items-center gap-2">
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="sm" className="font-light">
-                  FAQ
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="right" className="w-full sm:max-w-xl overflow-y-auto">
-                <SheetHeader>
-                  <SheetTitle className="font-serif text-2xl">Frequently Asked Questions</SheetTitle>
-                  <SheetDescription>
-                    Everything you need to know about fashion discovery with Azyah.
-                  </SheetDescription>
-                </SheetHeader>
-                <div className="mt-6 space-y-4">
-                  {faqData.map((item, index) => (
-                    <div 
-                      key={index} 
-                      className="bg-muted/30 rounded-lg p-4 border border-primary/10 hover:border-primary/20 transition-colors"
-                    >
-                      <div className="flex items-start gap-3">
-                        <ChevronRight className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                        <div>
-                          <h3 className="font-semibold text-foreground mb-2">{item.question}</h3>
-                          <p className="text-sm text-muted-foreground leading-relaxed">{item.answer}</p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </SheetContent>
-            </Sheet>
-            
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="font-light"
-              onClick={() => setInvestorModalOpen(true)}
-            >
-              For Investors
-            </Button>
-          </div>
-        </div>
-      </nav>
-      
       <InvestorContactModal 
         isOpen={investorModalOpen} 
         onOpenChange={setInvestorModalOpen} 
       />
       
       {/* Main Content Area with Swipe */}
-      <div className="flex-1 overflow-hidden relative" style={{ paddingTop: '56px', paddingBottom: '200px' }}>
+      <div className="flex-1 overflow-hidden relative" style={{ paddingTop: '32px', paddingBottom: '200px' }}>
         {/* Navigation Arrows */}
         {currentSlide > 0 && (
           <button
@@ -471,10 +412,54 @@ export default function IntroCarousel() {
           Join the Community
         </Button>
         
+        {/* FAQ and Investor Links */}
+        <div className="flex items-center justify-center gap-4 mt-3">
+          <Sheet>
+            <SheetTrigger asChild>
+              <button className="text-sm text-muted-foreground hover:text-primary transition-colors font-medium">
+                FAQ
+              </button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-full sm:max-w-xl overflow-y-auto">
+              <SheetHeader>
+                <SheetTitle className="font-serif text-2xl">Frequently Asked Questions</SheetTitle>
+                <SheetDescription>
+                  Everything you need to know about fashion discovery with Azyah.
+                </SheetDescription>
+              </SheetHeader>
+              <div className="mt-6 space-y-4">
+                {faqData.map((item, index) => (
+                  <div 
+                    key={index} 
+                    className="bg-muted/30 rounded-lg p-4 border border-primary/10 hover:border-primary/20 transition-colors"
+                  >
+                    <div className="flex items-start gap-3">
+                      <ChevronRight className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                      <div>
+                        <h3 className="font-semibold text-foreground mb-2">{item.question}</h3>
+                        <p className="text-sm text-muted-foreground leading-relaxed">{item.answer}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </SheetContent>
+          </Sheet>
+          
+          <span className="text-muted-foreground">•</span>
+          
+          <button 
+            onClick={() => setInvestorModalOpen(true)}
+            className="text-sm text-muted-foreground hover:text-primary transition-colors font-medium"
+          >
+            For Investors
+          </button>
+        </div>
+        
         {/* Login Link */}
         <button
           onClick={handleJoinCommunity}
-          className="w-full mt-2 md:mt-3 text-sm md:text-base text-primary font-medium hover:text-primary/80 transition-colors"
+          className="w-full mt-2 text-sm md:text-base text-primary font-medium hover:text-primary/80 transition-colors"
         >
           Already have an account? <span className="font-semibold">Log In</span>
         </button>
