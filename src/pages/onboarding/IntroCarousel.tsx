@@ -403,8 +403,8 @@ export default function IntroCarousel() {
                   <div className="overflow-x-auto flex gap-3 py-2 -mx-6 px-6 scrollbar-hide mb-4">
                     {[
                       { img: '/onboarding/intro-outfits.png', label: 'Outfit Boards' },
-                      { img: '/onboarding/intro-community.png', label: 'Community' },
-                      { img: '/onboarding/intro-rewards.png', label: 'Rewards' },
+                      { img: '/onboarding/intro-community.png', label: 'Community & Reviews' },
+                      { img: '/onboarding/intro-rewards.png', label: 'Saloon Rewards' },
                     ].map((item, idx) => (
                       <div key={idx} className="flex-shrink-0 w-36 rounded-xl overflow-hidden shadow-md">
                         <img 
@@ -421,21 +421,34 @@ export default function IntroCarousel() {
 
                   {/* Feature Cards */}
                   <div className="grid grid-cols-2 gap-3 mb-4">
-                    <div className="bg-gray-50 rounded-xl p-3 text-center">
-                      <span className="text-2xl mb-2 block">📝</span>
-                      <h4 className="font-semibold text-sm text-foreground mb-1">Review Your Faves</h4>
-                      <p className="text-xs text-muted-foreground">Post reviews for brands you love</p>
+                    <div className="relative bg-gray-50 rounded-xl overflow-hidden">
+                      <img 
+                        src="/onboarding/intro-outfits.png" 
+                        alt="Style Boards"
+                        className="w-full h-20 object-cover opacity-80"
+                      />
+                      <div className="p-3 text-center bg-white">
+                        <h4 className="font-semibold text-sm text-foreground mb-1">Style Boards</h4>
+                        <p className="text-xs text-muted-foreground">Create boards & earn points</p>
+                      </div>
                     </div>
-                    <div className="bg-gray-50 rounded-xl p-3 text-center">
-                      <span className="text-2xl mb-2 block">🎨</span>
-                      <h4 className="font-semibold text-sm text-foreground mb-1">Style Collages</h4>
-                      <p className="text-xs text-muted-foreground">Create outfit boards & earn rewards</p>
+                    <div className="bg-gray-50 rounded-xl p-3 text-center flex flex-col justify-center">
+                      <span className="text-2xl mb-2 block">💇‍♀️</span>
+                      <h4 className="font-semibold text-sm text-foreground mb-1">Saloon Rewards</h4>
+                      <p className="text-xs text-muted-foreground">Redeem points at partner saloons</p>
                     </div>
+                  </div>
+
+                  {/* Flow Text */}
+                  <div className="text-center mb-4">
+                    <p className="text-sm text-muted-foreground">
+                      Create boards → Earn points → Redeem at Saloons
+                    </p>
                   </div>
 
                   {/* Join creators badge */}
                   <p className="text-center text-sm text-muted-foreground font-medium">
-                    Join 10,000+ creators
+                    🎨 Create boards, review brands, earn!
                   </p>
                 </div>
               </div>
