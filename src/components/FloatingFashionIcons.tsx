@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Crown, Sparkles, Shirt, ShoppingBag, Heart } from 'lucide-react';
+import { Crown, Sparkles, Shirt, ShoppingBag, Heart, Watch, Glasses, Footprints, Gem, Star } from 'lucide-react';
 
-const icons = [Crown, Sparkles, Shirt, ShoppingBag, Heart];
+const icons = [Crown, Sparkles, Shirt, ShoppingBag, Heart, Watch, Glasses, Footprints, Gem, Star];
 
 interface FloatingIcon {
   id: number;
@@ -16,13 +16,13 @@ export function FloatingFashionIcons() {
   const [floatingIcons, setFloatingIcons] = useState<FloatingIcon[]>([]);
 
   useEffect(() => {
-    const iconData: FloatingIcon[] = Array.from({ length: 5 }, (_, i) => ({
+    const iconData: FloatingIcon[] = Array.from({ length: 15 }, (_, i) => ({
       id: i,
-      Icon: icons[i % icons.length],
+      Icon: icons[Math.floor(Math.random() * icons.length)],
       x: Math.random() * 100,
       y: Math.random() * 100,
-      delay: Math.random() * 2,
-      duration: 8 + Math.random() * 4
+      delay: Math.random() * 5,
+      duration: 10 + Math.random() * 8
     }));
     
     setFloatingIcons(iconData);
@@ -33,7 +33,7 @@ export function FloatingFashionIcons() {
       {floatingIcons.map(({ id, Icon, x, y, delay, duration }) => (
         <div
           key={id}
-          className="absolute opacity-20 animate-float-gentle"
+          className="absolute opacity-10 md:opacity-15 animate-float-gentle"
           style={{
             left: `${x}%`,
             top: `${y}%`,
@@ -41,7 +41,7 @@ export function FloatingFashionIcons() {
             animationDuration: `${duration}s`
           }}
         >
-          <Icon className="w-6 h-6 text-primary/40" />
+          <Icon className="w-8 h-8 md:w-10 md:h-10 text-primary/30" />
         </div>
       ))}
     </div>
