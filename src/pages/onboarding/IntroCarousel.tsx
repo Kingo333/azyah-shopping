@@ -98,7 +98,7 @@ const OutfitInspoSlider = () => {
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentImage(prev => (prev + 1) % images.length);
-    }, 3000); // Auto-advance every 3 seconds
+    }, 2000); // Auto-advance every 2 seconds
 
     return () => clearInterval(interval);
   }, [images.length]);
