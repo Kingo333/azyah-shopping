@@ -105,10 +105,10 @@ export default function IntroCarousel() {
               setDirection(-1);
               setCurrentSlide(prev => prev - 1);
             }}
-            className="fixed left-4 bottom-32 z-30 w-12 h-12 rounded-full bg-primary/60 backdrop-blur-md border border-white/30 flex items-center justify-center hover:bg-primary/80 hover:scale-110 transition-all shadow-lg hover:shadow-xl"
+            className="fixed left-4 bottom-32 z-30 w-10 h-10 rounded-full bg-primary/60 backdrop-blur-md border border-white/30 flex items-center justify-center hover:bg-primary/80 hover:scale-110 transition-all shadow-lg hover:shadow-xl"
             aria-label="Previous slide"
           >
-            <ChevronLeft className="w-7 h-7 text-white drop-shadow-lg" strokeWidth={2.5} />
+            <ChevronLeft className="w-6 h-6 text-white drop-shadow-lg" strokeWidth={2.5} />
           </button>
         )}
         
@@ -118,10 +118,10 @@ export default function IntroCarousel() {
               setDirection(1);
               setCurrentSlide(prev => prev + 1);
             }}
-            className="fixed right-4 bottom-32 z-30 w-12 h-12 rounded-full bg-primary/60 backdrop-blur-md border border-white/30 flex items-center justify-center hover:bg-primary/80 hover:scale-110 transition-all shadow-lg hover:shadow-xl"
+            className="fixed right-4 bottom-32 z-30 w-10 h-10 rounded-full bg-primary/60 backdrop-blur-md border border-white/30 flex items-center justify-center hover:bg-primary/80 hover:scale-110 transition-all shadow-lg hover:shadow-xl"
             aria-label="Next slide"
           >
-            <ChevronRight className="w-7 h-7 text-white drop-shadow-lg" strokeWidth={2.5} />
+            <ChevronRight className="w-6 h-6 text-white drop-shadow-lg" strokeWidth={2.5} />
           </button>
         )}
         
