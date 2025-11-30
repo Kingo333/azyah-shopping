@@ -450,7 +450,7 @@ export default function SignUp() {
       }}
     >
       {/* Floating Fashion Icons Background */}
-      <div className="absolute inset-0 z-0 bg-gradient-to-b from-background/60 via-background/80 to-background">
+      <div className="absolute inset-0 z-0 bg-gradient-to-b from-background via-background to-background">
         <FloatingFashionIcons />
       </div>
       
@@ -468,7 +468,7 @@ export default function SignUp() {
 
       {/* Azyah Branding */}
       <div className="pt-2 pb-4 md:pt-4 md:pb-8 relative z-10 flex-shrink-0">
-        <h1 className="text-3xl md:text-4xl font-bold text-white text-center tracking-tight">
+        <h1 className="text-3xl md:text-4xl font-bold text-white text-center tracking-tight" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.3)' }}>
           Azyah
         </h1>
       </div>
@@ -476,7 +476,7 @@ export default function SignUp() {
       {/* Content */}
       <div className="flex-1 flex flex-col justify-center items-center px-4 md:px-6 relative z-10 min-h-0">
         <div className="w-full max-w-md text-center space-y-6 md:space-y-8">
-          <p className="text-white text-base md:text-lg font-medium px-2">
+          <p className="text-white text-base md:text-lg font-medium px-2" style={{ textShadow: '0 1px 4px rgba(0,0,0,0.3)' }}>
             Create your free account to backup outfits and sync across devices.
           </p>
 
@@ -485,7 +485,7 @@ export default function SignUp() {
               <>
                 <Button
                   onClick={() => handleOAuthSignIn('google')}
-                  className="w-full h-12 md:h-14 text-sm md:text-base font-medium rounded-full border-2"
+                  className="w-full h-12 md:h-14 text-sm md:text-base font-semibold rounded-full bg-[#B91C50] hover:bg-[#9A1842] text-white border-0 shadow-lg"
                 >
                   <svg className="mr-3 h-5 w-5" viewBox="0 0 24 24">
                     <path
@@ -510,7 +510,7 @@ export default function SignUp() {
 
                 <Button
                   onClick={() => handleOAuthSignIn('apple')}
-                  className="w-full h-12 md:h-14 text-sm md:text-base font-medium rounded-full border-2"
+                  className="w-full h-12 md:h-14 text-sm md:text-base font-semibold rounded-full bg-[#B91C50] hover:bg-[#9A1842] text-white border-0 shadow-lg"
                 >
                   <svg className="mr-3 h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
@@ -523,17 +523,17 @@ export default function SignUp() {
             {!isBrandOrRetailer && (
               <div className="relative py-2">
                 <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-white/20"></div>
+                  <div className="w-full border-t border-white/30"></div>
                 </div>
                 <div className="relative flex justify-center text-xs md:text-sm">
-                  <span className="px-3 md:px-4 bg-transparent text-white/80">or</span>
+                  <span className="px-3 md:px-4 bg-background text-white/90 font-medium">or</span>
                 </div>
               </div>
             )}
 
             <Button
               onClick={() => setStep('email-entry')}
-              className="w-full h-12 md:h-14 text-sm md:text-base font-semibold rounded-full bg-white hover:bg-gray-100 text-black"
+              className="w-full h-12 md:h-14 text-sm md:text-base font-semibold rounded-full bg-white hover:bg-gray-100 text-black border-0 shadow-lg"
             >
               <Mail className="w-4 h-4 md:w-5 md:h-5 mr-2" />
               Continue with email
@@ -542,14 +542,14 @@ export default function SignUp() {
 
           {!isBrandOrRetailer && (
             <div 
-              className="relative z-10 text-center text-xs md:text-sm text-white/80 space-y-1 pb-2 flex-shrink-0"
+              className="relative z-10 text-center text-xs md:text-sm text-white/90 space-y-1 pb-2 flex-shrink-0"
               style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}
             >
               <p>
                 Are you a brand?{' '}
                 <button
                   onClick={() => navigate('/onboarding/signup?role=brand')}
-                  className="text-white hover:underline font-medium"
+                  className="text-white hover:underline font-semibold"
                 >
                   Create a brand account
                 </button>
@@ -561,7 +561,7 @@ export default function SignUp() {
                 Are you a retailer?{' '}
                 <button
                   onClick={() => navigate('/onboarding/signup?role=retailer')}
-                  className="text-white hover:underline font-medium"
+                  className="text-white hover:underline font-semibold"
                 >
                   Create a retailer account
                 </button>
