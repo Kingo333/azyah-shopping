@@ -419,36 +419,23 @@ export default function IntroCarousel() {
                     ))}
                   </div>
 
-                  {/* Feature Cards */}
-                  <div className="grid grid-cols-2 gap-3 mb-4">
-                    <div className="relative bg-gray-50 rounded-xl overflow-hidden">
-                      <img 
-                        src="/onboarding/intro-outfits.png" 
-                        alt="Style Boards"
-                        className="w-full h-20 object-cover opacity-80"
-                      />
-                      <div className="p-3 text-center bg-white">
-                        <h4 className="font-semibold text-sm text-foreground mb-1">Style Boards</h4>
-                        <p className="text-xs text-muted-foreground">Create boards & earn points</p>
-                      </div>
+                  {/* Feature Cards - Benefits */}
+                  <div className="grid grid-cols-2 gap-3 mb-6">
+                    <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-4 text-center border border-purple-100">
+                      <span className="text-2xl mb-2 block">⭐</span>
+                      <h4 className="font-semibold text-sm text-foreground mb-1">Earn Points</h4>
+                      <p className="text-xs text-muted-foreground">Every board & review earns you rewards</p>
                     </div>
-                    <div className="bg-gray-50 rounded-xl p-3 text-center flex flex-col justify-center">
-                      <span className="text-2xl mb-2 block">💇‍♀️</span>
-                      <h4 className="font-semibold text-sm text-foreground mb-1">Saloon Rewards</h4>
-                      <p className="text-xs text-muted-foreground">Redeem points at partner saloons</p>
+                    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4 text-center border border-blue-100">
+                      <span className="text-2xl mb-2 block">🤝</span>
+                      <h4 className="font-semibold text-sm text-foreground mb-1">Brand Deals</h4>
+                      <p className="text-xs text-muted-foreground">Get discovered & create UGC content</p>
                     </div>
-                  </div>
-
-                  {/* Flow Text */}
-                  <div className="text-center mb-4">
-                    <p className="text-sm text-muted-foreground">
-                      Create boards → Earn points → Redeem at Saloons
-                    </p>
                   </div>
 
                   {/* Join creators badge */}
                   <p className="text-center text-sm text-muted-foreground font-medium">
-                    🎨 Create boards, review brands, earn!
+                    Join 10,000+ creators earning through style
                   </p>
                 </div>
               </div>
