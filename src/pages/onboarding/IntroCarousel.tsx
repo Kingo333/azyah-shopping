@@ -23,7 +23,7 @@ const slides: SlideType[] = [
   {
     type: 'interactive-swipe',
     title: 'Your Style, Your Swipes',
-    subtitle: 'Swipe right to save, left to pass—our AI learns your unique style with every choice.',
+    subtitle: 'Swipe right to save, left to pass. Our AI learns your unique style with every choice.',
     images: [
       '/onboarding/product-bag.png',
       '/onboarding/product-shoes.png',
