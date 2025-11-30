@@ -164,9 +164,9 @@ export default function IntroCarousel() {
     }
   }, [currentSlide]);
 
-  // Auto-scroll carousel for gallery slide
+  // Auto-scroll carousel for gallery slide - only on mobile/tablet
   useEffect(() => {
-    if (currentSlide !== 3 || isCarouselDragging) {
+    if (currentSlide !== 3 || isCarouselDragging || !isMobile) {
       if (currentSlide !== 3) setCardOffset(0); // Reset offset when leaving gallery slide
       return;
     }
@@ -176,7 +176,7 @@ export default function IntroCarousel() {
     }, 3500);
 
     return () => clearInterval(interval);
-  }, [currentSlide, isCarouselDragging]);
+  }, [currentSlide, isCarouselDragging, isMobile]);
   const handleSwipe = (offset: number) => {
     if (offset > 100 && currentSlide > 0) {
       setDirection(-1);
@@ -429,14 +429,14 @@ export default function IntroCarousel() {
 
                 {/* Content Container */}
                 <div className="flex-1 flex flex-col justify-start pt-4">
-                  {/* Horizontal Auto-Scrolling Carousel */}
+                  {/* Horizontal Carousel - Auto-scroll on mobile, static on desktop */}
                   <div className="relative overflow-hidden mb-6">
                     <motion.div 
-                      className="flex gap-6 py-3 cursor-grab active:cursor-grabbing"
-                      animate={{ x: -cardOffset * 272 }}
+                      className="flex gap-6 py-3 cursor-grab active:cursor-grabbing justify-center md:justify-center"
+                      animate={isMobile ? { x: -cardOffset * 272 } : { x: 0 }}
                       transition={{ duration: 0.8, ease: "easeInOut" }}
-                      style={{ paddingLeft: 'calc(50% - 104px)' }}
-                      drag="x"
+                      style={isMobile ? { paddingLeft: 'calc(50% - 104px)' } : {}}
+                      drag={isMobile ? "x" : false}
                       dragConstraints={{ left: -816, right: 0 }}
                       dragElastic={0.1}
                       onDragStart={() => setIsCarouselDragging(true)}
