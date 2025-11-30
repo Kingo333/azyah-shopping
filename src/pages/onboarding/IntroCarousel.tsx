@@ -384,6 +384,30 @@ export default function IntroCarousel() {
                         <p className="text-sm font-semibold text-foreground">Earn Money</p>
                       </div>
                     </div>
+
+                    {/* Style Friends Card */}
+                    <div className="flex-shrink-0 w-52 rounded-2xl overflow-hidden shadow-lg hover-scale transition-all duration-300 bg-white">
+                      <div className="h-64 bg-gradient-to-br from-pink-500 to-rose-600 flex flex-col items-center justify-center p-6">
+                        <span className="text-6xl mb-4">👯</span>
+                        <h4 className="font-bold text-lg text-white mb-2 text-center">Style Friends</h4>
+                        <p className="text-sm text-center text-white/90">Create outfits for your friends with their clothes</p>
+                      </div>
+                      <div className="bg-white p-3 text-center">
+                        <p className="text-sm font-semibold text-foreground">Be Creative</p>
+                      </div>
+                    </div>
+
+                    {/* Pop-Up Events Card */}
+                    <div className="flex-shrink-0 w-52 rounded-2xl overflow-hidden shadow-lg hover-scale transition-all duration-300 bg-white">
+                      <div className="h-64 bg-gradient-to-br from-purple-500 to-violet-600 flex flex-col items-center justify-center p-6">
+                        <span className="text-6xl mb-4">🎉</span>
+                        <h4 className="font-bold text-lg text-white mb-2 text-center">Pop-Up Events</h4>
+                        <p className="text-sm text-center text-white/90">Discover exclusive fashion events and join them</p>
+                      </div>
+                      <div className="bg-white p-3 text-center">
+                        <p className="text-sm font-semibold text-foreground">Get Exclusive Access</p>
+                      </div>
+                    </div>
                   </div>
 
                   {/* Join creators badge */}
