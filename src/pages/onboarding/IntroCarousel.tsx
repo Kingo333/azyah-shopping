@@ -4,7 +4,7 @@ import { motion, AnimatePresence, PanInfo } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { BeforeAfterSlider } from '@/components/BeforeAfterSlider';
 import { SwipeableImages } from '@/components/SwipeableImages';
-import { Heart, X } from 'lucide-react';
+import { Heart, X, ChevronLeft, ChevronRight } from 'lucide-react';
 
 type SlideType = 
   | { type: 'hero'; image: string; title: string; subtitle: string }
@@ -98,6 +98,33 @@ export default function IntroCarousel() {
     <div className="h-screen bg-white flex flex-col overflow-hidden">
       {/* Main Content Area with Swipe */}
       <div className="flex-1 overflow-hidden relative" style={{ paddingTop: '32px', paddingBottom: '200px' }}>
+        {/* Navigation Arrows */}
+        {currentSlide > 0 && (
+          <button
+            onClick={() => {
+              setDirection(-1);
+              setCurrentSlide(prev => prev - 1);
+            }}
+            className="absolute left-4 top-1/2 -translate-y-1/2 z-30 w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center hover:bg-white/30 transition-all"
+            aria-label="Previous slide"
+          >
+            <ChevronLeft className="w-6 h-6 text-white" />
+          </button>
+        )}
+        
+        {currentSlide < slides.length - 1 && (
+          <button
+            onClick={() => {
+              setDirection(1);
+              setCurrentSlide(prev => prev + 1);
+            }}
+            className="absolute right-4 top-1/2 -translate-y-1/2 z-30 w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center hover:bg-white/30 transition-all"
+            aria-label="Next slide"
+          >
+            <ChevronRight className="w-6 h-6 text-white" />
+          </button>
+        )}
+        
         <AnimatePresence initial={false} custom={direction} mode="wait">
           <motion.div
             key={currentSlide}

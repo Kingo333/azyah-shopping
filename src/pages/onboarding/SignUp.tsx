@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { Mail, ArrowLeft, Loader2, CheckCircle, XCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { trackOnboardingEvent } from '@/lib/analytics/onboarding';
+import { FloatingFashionIcons } from '@/components/FloatingFashionIcons';
 
 type FlowStep = 'initial' | 'email-entry';
 type UserRole = 'shopper' | 'brand' | 'retailer';
@@ -448,14 +449,10 @@ export default function SignUp() {
         paddingRight: 'env(safe-area-inset-right)',
       }}
     >
-      {/* Background Image Overlay */}
-      <div 
-        className="absolute inset-0 bg-cover bg-center z-0"
-        style={{ 
-          backgroundImage: 'url(/onboarding/signup.png)',
-          filter: 'brightness(0.4)'
-        }}
-      />
+      {/* Floating Fashion Icons Background */}
+      <div className="absolute inset-0 z-0 bg-gradient-to-b from-background/60 via-background/80 to-background">
+        <FloatingFashionIcons />
+      </div>
       
       {/* Back Button */}
       <div className="p-2 md:p-4 relative z-10 flex-shrink-0">
