@@ -18,9 +18,6 @@ interface FloatingIcon {
 
 export function FloatingFashionIcons() {
   const [floatingIcons, setFloatingIcons] = useState<FloatingIcon[]>([]);
-  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
-  const [tilt, setTilt] = useState({ x: 0, y: 0 });
-  const containerRef = useRef<HTMLDivElement>(null);
 
   // Initialize icons
   useEffect(() => {
@@ -39,79 +36,9 @@ export function FloatingFashionIcons() {
     setFloatingIcons(iconData);
   }, []);
 
-  // Track mouse/touch position
-  useEffect(() => {
-    const handleMove = (e: MouseEvent | TouchEvent) => {
-      if (!containerRef.current) return;
-      
-      const rect = containerRef.current.getBoundingClientRect();
-      let clientX: number, clientY: number;
-      
-      if ('touches' in e) {
-        clientX = e.touches[0].clientX;
-        clientY = e.touches[0].clientY;
-      } else {
-        clientX = e.clientX;
-        clientY = e.clientY;
-      }
-      
-      setMousePos({
-        x: ((clientX - rect.left) / rect.width) * 100,
-        y: ((clientY - rect.top) / rect.height) * 100
-      });
-    };
-
-    window.addEventListener('mousemove', handleMove);
-    window.addEventListener('touchmove', handleMove);
-    
-    return () => {
-      window.removeEventListener('mousemove', handleMove);
-      window.removeEventListener('touchmove', handleMove);
-    };
-  }, []);
-
-  // Track device orientation (gyroscope)
-  useEffect(() => {
-    const handleOrientation = (e: DeviceOrientationEvent) => {
-      if (e.beta !== null && e.gamma !== null) {
-        // beta: front-to-back tilt (-180 to 180)
-        // gamma: left-to-right tilt (-90 to 90)
-        setTilt({
-          x: (e.gamma / 90) * 15, // Max 15% shift
-          y: (e.beta / 180) * 15
-        });
-      }
-    };
-
-    window.addEventListener('deviceorientation', handleOrientation);
-    
-    return () => {
-      window.removeEventListener('deviceorientation', handleOrientation);
-    };
-  }, []);
-
-  // Calculate repulsion effect
-  const getRepulsionOffset = (iconX: number, iconY: number) => {
-    const dx = iconX - mousePos.x;
-    const dy = iconY - mousePos.y;
-    const distance = Math.sqrt(dx * dx + dy * dy);
-    const repulsionRadius = 25; // 25% of screen width/height
-    
-    if (distance < repulsionRadius && distance > 0) {
-      const force = (repulsionRadius - distance) / repulsionRadius;
-      return {
-        x: (dx / distance) * force * 15, // Max 15% push
-        y: (dy / distance) * force * 15
-      };
-    }
-    
-    return { x: 0, y: 0 };
-  };
-
   return (
-    <div ref={containerRef} className="absolute inset-0 pointer-events-none overflow-hidden">
+    <div className="absolute inset-0 pointer-events-none overflow-hidden">
       {floatingIcons.map(({ id, Icon, baseX, baseY, size, delay, duration, floatX, floatY }) => {
-        const repulsion = getRepulsionOffset(baseX, baseY);
         
         return (
           <motion.div
@@ -125,8 +52,8 @@ export function FloatingFashionIcons() {
             }}
             initial={{ x: 0, y: 0 }}
             animate={{
-              x: [repulsion.x + tilt.x, repulsion.x + tilt.x + floatX, repulsion.x + tilt.x - floatX, repulsion.x + tilt.x],
-              y: [repulsion.y + tilt.y, repulsion.y + tilt.y + floatY, repulsion.y + tilt.y - floatY, repulsion.y + tilt.y],
+              x: [0, floatX, -floatX, 0],
+              y: [0, floatY, -floatY, 0],
             }}
             transition={{
               x: {
