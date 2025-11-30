@@ -409,7 +409,7 @@ export default function IntroCarousel() {
                   </div>
 
                   {/* Community Badge */}
-                  <p className="text-center text-sm text-muted-foreground font-medium">
+                  <p className="text-center text-sm text-muted-foreground font-medium -mt-2">
                     100% anonymous • Community-powered
                   </p>
                 </div>
