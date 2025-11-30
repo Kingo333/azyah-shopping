@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence, PanInfo } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -87,6 +87,65 @@ const faqData = [{
   question: "How do I connect with the community?",
   answer: "Join our global fashion community! Share your discoveries, follow other users, and get inspired by trending looks."
 }];
+// Auto-playing outfit inspo slider component
+const OutfitInspoSlider = () => {
+  const [currentImage, setCurrentImage] = useState(0);
+  const images = [
+    '/onboarding/outfit-collage-1.jpg',
+    '/onboarding/outfit-collage-2.jpg'
+  ];
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentImage((prev) => (prev + 1) % images.length);
+    }, 3000); // Auto-advance every 3 seconds
+
+    return () => clearInterval(interval);
+  }, [images.length]);
+
+  return (
+    <div className="flex-shrink-0 w-52 rounded-2xl overflow-hidden shadow-lg hover-scale transition-all duration-300 relative">
+      <div className="relative h-64 overflow-hidden">
+        {images.map((image, index) => (
+          <motion.img
+            key={index}
+            src={image}
+            alt={`Outfit Inspiration ${index + 1}`}
+            className="absolute inset-0 w-full h-full object-cover"
+            initial={false}
+            animate={{
+              opacity: currentImage === index ? 1 : 0,
+              scale: currentImage === index ? 1 : 1.05,
+            }}
+            transition={{ duration: 0.6, ease: "easeInOut" }}
+          />
+        ))}
+        {/* Earn Badge Overlay */}
+        <div className="absolute top-2 right-2 bg-gradient-to-r from-amber-400 to-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg flex items-center gap-1 z-10">
+          <span>⭐</span>
+          <span>Earn</span>
+        </div>
+        
+        {/* Slide indicators */}
+        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
+          {images.map((_, index) => (
+            <div
+              key={index}
+              className={`h-1.5 rounded-full transition-all duration-300 ${
+                currentImage === index ? 'w-6 bg-white' : 'w-1.5 bg-white/50'
+              }`}
+            />
+          ))}
+        </div>
+      </div>
+      <div className="bg-white p-3 text-center">
+        <p className="text-sm font-semibold text-foreground">Outfit Inspo</p>
+        <p className="text-xs text-muted-foreground">Auto-switching styles</p>
+      </div>
+    </div>
+  );
+};
+
 export default function IntroCarousel() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [direction, setDirection] = useState(0);
@@ -345,30 +404,16 @@ export default function IntroCarousel() {
                 <div className="flex-1 flex flex-col justify-start pt-4">
                   {/* Horizontal Scrollable Collages & Cards */}
                   <div className="overflow-x-auto flex gap-4 py-3 -mx-6 px-6 scrollbar-hide mb-6">
-                    {/* Outfit Inspo 1 */}
-                    <div className="flex-shrink-0 w-52 rounded-2xl overflow-hidden shadow-lg hover-scale transition-all duration-300 relative">
-                      <img src="/onboarding/outfit-collage-1.jpg" alt="Outfit Inspiration 1" className="w-full h-64 object-cover" />
-                      {/* Earn Badge Overlay */}
-                      <div className="absolute top-2 right-2 bg-gradient-to-r from-amber-400 to-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg flex items-center gap-1">
-                        <span>⭐</span>
-                        <span>Earn</span>
-                      </div>
-                      <div className="bg-white p-3 text-center">
-                        <p className="text-sm font-semibold text-foreground">Outfit Inspo 1</p>
-                        <p className="text-xs text-muted-foreground">Earn points at salons</p>
-                      </div>
-                    </div>
+                    {/* Auto-Playing Outfit Inspo Slider */}
+                    <OutfitInspoSlider />
 
-                    {/* Outfit Inspo 2 */}
-                    <div className="flex-shrink-0 w-52 rounded-2xl overflow-hidden shadow-lg hover-scale transition-all duration-300 relative">
-                      <img src="/onboarding/outfit-collage-2.jpg" alt="Outfit Inspiration 2" className="w-full h-64 object-cover" />
-                      {/* Earn Badge Overlay */}
-                      <div className="absolute top-2 right-2 bg-gradient-to-r from-amber-400 to-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg flex items-center gap-1">
-                        <span>⭐</span>
-                        <span>Earn</span>
+                    {/* Create Outfit Inspo - Main Card */}
+                    <div className="flex-shrink-0 w-52 rounded-2xl overflow-hidden shadow-lg hover-scale transition-all duration-300 relative bg-white">
+                      <div className="h-64 relative">
+                        <BeforeAfterSlider />
                       </div>
                       <div className="bg-white p-3 text-center">
-                        <p className="text-sm font-semibold text-foreground">Outfit Inspo 2</p>
+                        <p className="text-sm font-semibold text-foreground">Create Outfit Inspo</p>
                         <p className="text-xs text-muted-foreground">Earn points at salons</p>
                       </div>
                     </div>
