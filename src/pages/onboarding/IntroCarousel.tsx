@@ -166,7 +166,7 @@ export default function IntroCarousel() {
                 </div>
 
                 {/* Interactive Swipe Area with Side Indicators */}
-                <div className="flex-1 relative max-w-sm mx-auto w-full px-12 flex items-start pt-4">
+                <div className="flex-1 relative max-w-sm mx-auto w-full px-12 flex items-start pt-4 max-h-[350px]">
                   <SwipeableImages 
                     images={slide.images} 
                     productInfo={slide.productInfo}
@@ -174,19 +174,19 @@ export default function IntroCarousel() {
                   
                   {/* Side X/Heart Indicators */}
                   <motion.div 
-                    className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 w-16 h-16 rounded-full bg-red-50 border-2 border-red-200 flex items-center justify-center shadow-lg pointer-events-none z-20"
+                    className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 w-12 h-12 rounded-full bg-red-50 border-2 border-red-200 flex items-center justify-center shadow-lg pointer-events-none z-20"
                     animate={{ scale: [1, 1.1, 1] }}
                     transition={{ duration: 2, repeat: Infinity }}
                   >
-                    <X className="w-7 h-7 text-red-500" strokeWidth={2.5} />
+                    <X className="w-5 h-5 text-red-500" strokeWidth={2.5} />
                   </motion.div>
                   
                   <motion.div 
-                    className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-16 h-16 rounded-full bg-green-50 border-2 border-green-200 flex items-center justify-center shadow-lg pointer-events-none z-20"
+                    className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-12 h-12 rounded-full bg-green-50 border-2 border-green-200 flex items-center justify-center shadow-lg pointer-events-none z-20"
                     animate={{ scale: [1, 1.1, 1] }}
                     transition={{ duration: 2, repeat: Infinity, delay: 1 }}
                   >
-                    <Heart className="w-7 h-7 text-green-500 fill-green-500" />
+                    <Heart className="w-5 h-5 text-green-500 fill-green-500" />
                   </motion.div>
                 </div>
               </div>
@@ -206,7 +206,7 @@ export default function IntroCarousel() {
 
                 {/* Interactive Slider Area */}
                 <div className="flex-1 flex items-start justify-center pt-4">
-                  <div className="w-full max-w-sm rounded-2xl overflow-hidden shadow-2xl">
+                  <div className="w-full max-w-sm rounded-2xl overflow-hidden shadow-2xl max-h-[300px]">
                     <BeforeAfterSlider />
                   </div>
                 </div>
@@ -227,22 +227,22 @@ export default function IntroCarousel() {
 
                 {/* UGC Features Grid */}
                 <div className="flex-1 flex flex-col justify-start pt-2">
-                  <div className="grid grid-cols-1 gap-4 mb-6">
-                    <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl p-6 border border-primary/20">
-                      <span className="text-4xl mb-3 block">⭐</span>
-                      <h4 className="font-bold text-lg text-foreground mb-2">Honest Reviews</h4>
+                  <div className="grid grid-cols-1 gap-2 mb-3">
+                    <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl p-4 border border-primary/20">
+                      <span className="text-2xl mb-3 block">⭐</span>
+                      <h4 className="font-bold text-base text-foreground mb-2">Honest Reviews</h4>
                       <p className="text-sm text-muted-foreground">Rate brands on payment, communication, and overall experience</p>
                     </div>
                     
-                    <div className="bg-gradient-to-br from-accent/10 to-accent/5 rounded-2xl p-6 border border-accent/20">
-                      <span className="text-4xl mb-3 block">🚨</span>
-                      <h4 className="font-bold text-lg text-foreground mb-2">Report Scams</h4>
+                    <div className="bg-gradient-to-br from-accent/10 to-accent/5 rounded-2xl p-4 border border-accent/20">
+                      <span className="text-2xl mb-3 block">🚨</span>
+                      <h4 className="font-bold text-base text-foreground mb-2">Report Scams</h4>
                       <p className="text-sm text-muted-foreground">Warn other creators about brands with unfair practices</p>
                     </div>
                     
-                    <div className="bg-gradient-to-br from-secondary/10 to-secondary/5 rounded-2xl p-6 border border-secondary/20">
-                      <span className="text-4xl mb-3 block">❓</span>
-                      <h4 className="font-bold text-lg text-foreground mb-2">Ask Questions</h4>
+                    <div className="bg-gradient-to-br from-secondary/10 to-secondary/5 rounded-2xl p-4 border border-secondary/20">
+                      <span className="text-2xl mb-3 block">❓</span>
+                      <h4 className="font-bold text-base text-foreground mb-2">Ask Questions</h4>
                       <p className="text-sm text-muted-foreground">Get answers from creators who've worked with the brand</p>
                     </div>
                   </div>
@@ -276,11 +276,11 @@ export default function IntroCarousel() {
                       { img: '/onboarding/intro-community.png', label: 'Community' },
                       { img: '/onboarding/intro-rewards.png', label: 'Rewards' },
                     ].map((item, idx) => (
-                      <div key={idx} className="flex-shrink-0 w-48 rounded-xl overflow-hidden shadow-md">
+                      <div key={idx} className="flex-shrink-0 w-36 rounded-xl overflow-hidden shadow-md">
                         <img 
                           src={item.img} 
                           alt={item.label}
-                          className="w-full h-32 object-cover"
+                          className="w-full h-24 object-cover"
                         />
                         <div className="bg-white p-2 text-center">
                           <p className="text-sm font-medium text-foreground">{item.label}</p>
@@ -291,13 +291,13 @@ export default function IntroCarousel() {
 
                   {/* Feature Cards */}
                   <div className="grid grid-cols-2 gap-3 mb-4">
-                    <div className="bg-gray-50 rounded-xl p-4 text-center">
-                      <span className="text-3xl mb-2 block">📝</span>
+                    <div className="bg-gray-50 rounded-xl p-3 text-center">
+                      <span className="text-2xl mb-2 block">📝</span>
                       <h4 className="font-semibold text-sm text-foreground mb-1">Review Your Faves</h4>
                       <p className="text-xs text-muted-foreground">Post reviews for brands you love</p>
                     </div>
-                    <div className="bg-gray-50 rounded-xl p-4 text-center">
-                      <span className="text-3xl mb-2 block">🎨</span>
+                    <div className="bg-gray-50 rounded-xl p-3 text-center">
+                      <span className="text-2xl mb-2 block">🎨</span>
                       <h4 className="font-semibold text-sm text-foreground mb-1">Style Collages</h4>
                       <p className="text-xs text-muted-foreground">Create outfit boards & earn rewards</p>
                     </div>
