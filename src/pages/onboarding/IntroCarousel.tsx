@@ -573,7 +573,7 @@ export default function IntroCarousel() {
                         className="flex-shrink-0"
                       >
                         <div
-                          className="rounded-2xl overflow-hidden transition-all duration-300 hover:scale-[1.02]"
+                          className="w-52 rounded-2xl overflow-hidden transition-all duration-300 hover:scale-[1.02]"
                           style={{
                             boxShadow: "0 8px 32px rgba(251, 191, 36, 0.3), 0 0 48px rgba(251, 191, 36, 0.15)",
                           }}
