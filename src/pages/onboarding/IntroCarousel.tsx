@@ -50,7 +50,7 @@ const slides: SlideType[] = [
     mobileImage: "/marketing/hero-visual-mobile.png",
     title: "Discover Your Style",
     subtitle:
-      "The platform for discovering fashion brands, beauty products, and events. (Powered by AI)\nWe empower brands, shoppers and content creators.",
+      "The platform for discovering fashion, beauty products, and events. (Powered by AI)\nWe empower brands, shoppers and content creators.",
   },
   {
     type: "interactive-swipe",
