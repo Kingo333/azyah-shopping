@@ -154,9 +154,9 @@ export default function IntroCarousel() {
             )}
 
             {slide.type === 'interactive-swipe' && (
-              <div className="h-full flex flex-col px-6 pt-4">
+              <div className="h-full flex flex-col px-6">
                 {/* Title & Subtitle */}
-                <div className="text-center mb-6">
+                <div className="text-center mb-6 pt-4">
                   <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-2">
                     {slide.title}
                   </h2>
@@ -166,7 +166,7 @@ export default function IntroCarousel() {
                 </div>
 
                 {/* Interactive Swipe Area with Side Indicators */}
-                <div className="flex-1 relative max-w-sm mx-auto w-full px-12">
+                <div className="flex-1 relative max-w-sm mx-auto w-full px-12 flex items-start pt-4">
                   <SwipeableImages 
                     images={slide.images} 
                     productInfo={slide.productInfo}
@@ -193,9 +193,9 @@ export default function IntroCarousel() {
             )}
 
             {slide.type === 'interactive-slider' && (
-              <div className="h-full flex flex-col px-6 pt-4">
+              <div className="h-full flex flex-col px-6">
                 {/* Title & Subtitle */}
-                <div className="text-center mb-6">
+                <div className="text-center mb-6 pt-4">
                   <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-2">
                     {slide.title}
                   </h2>
@@ -205,16 +205,18 @@ export default function IntroCarousel() {
                 </div>
 
                 {/* Interactive Slider Area */}
-                <div className="flex-1 relative max-w-sm mx-auto w-full rounded-2xl overflow-hidden shadow-2xl">
-                  <BeforeAfterSlider />
+                <div className="flex-1 flex items-start justify-center pt-4">
+                  <div className="w-full max-w-sm rounded-2xl overflow-hidden shadow-2xl">
+                    <BeforeAfterSlider />
+                  </div>
                 </div>
               </div>
             )}
 
             {slide.type === 'ugc' && (
-              <div className="h-full flex flex-col px-6 pt-4">
+              <div className="h-full flex flex-col px-6">
                 {/* Title & Subtitle */}
-                <div className="text-center mb-8">
+                <div className="text-center mb-6 pt-4">
                   <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-2">
                     {slide.title}
                   </h2>
@@ -224,37 +226,39 @@ export default function IntroCarousel() {
                 </div>
 
                 {/* UGC Features Grid */}
-                <div className="grid grid-cols-1 gap-4 mb-6">
-                  <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl p-6 border border-primary/20">
-                    <span className="text-4xl mb-3 block">⭐</span>
-                    <h4 className="font-bold text-lg text-foreground mb-2">Honest Reviews</h4>
-                    <p className="text-sm text-muted-foreground">Rate brands on payment, communication, and overall experience</p>
+                <div className="flex-1 flex flex-col justify-start pt-2">
+                  <div className="grid grid-cols-1 gap-4 mb-6">
+                    <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl p-6 border border-primary/20">
+                      <span className="text-4xl mb-3 block">⭐</span>
+                      <h4 className="font-bold text-lg text-foreground mb-2">Honest Reviews</h4>
+                      <p className="text-sm text-muted-foreground">Rate brands on payment, communication, and overall experience</p>
+                    </div>
+                    
+                    <div className="bg-gradient-to-br from-accent/10 to-accent/5 rounded-2xl p-6 border border-accent/20">
+                      <span className="text-4xl mb-3 block">🚨</span>
+                      <h4 className="font-bold text-lg text-foreground mb-2">Report Scams</h4>
+                      <p className="text-sm text-muted-foreground">Warn other creators about brands with unfair practices</p>
+                    </div>
+                    
+                    <div className="bg-gradient-to-br from-secondary/10 to-secondary/5 rounded-2xl p-6 border border-secondary/20">
+                      <span className="text-4xl mb-3 block">❓</span>
+                      <h4 className="font-bold text-lg text-foreground mb-2">Ask Questions</h4>
+                      <p className="text-sm text-muted-foreground">Get answers from creators who've worked with the brand</p>
+                    </div>
                   </div>
-                  
-                  <div className="bg-gradient-to-br from-accent/10 to-accent/5 rounded-2xl p-6 border border-accent/20">
-                    <span className="text-4xl mb-3 block">🚨</span>
-                    <h4 className="font-bold text-lg text-foreground mb-2">Report Scams</h4>
-                    <p className="text-sm text-muted-foreground">Warn other creators about brands with unfair practices</p>
-                  </div>
-                  
-                  <div className="bg-gradient-to-br from-secondary/10 to-secondary/5 rounded-2xl p-6 border border-secondary/20">
-                    <span className="text-4xl mb-3 block">❓</span>
-                    <h4 className="font-bold text-lg text-foreground mb-2">Ask Questions</h4>
-                    <p className="text-sm text-muted-foreground">Get answers from creators who've worked with the brand</p>
-                  </div>
-                </div>
 
-                {/* Community Badge */}
-                <p className="text-center text-sm text-muted-foreground font-medium">
-                  100% anonymous • Community-powered
-                </p>
+                  {/* Community Badge */}
+                  <p className="text-center text-sm text-muted-foreground font-medium">
+                    100% anonymous • Community-powered
+                  </p>
+                </div>
               </div>
             )}
 
             {slide.type === 'gallery' && (
-              <div className="h-full flex flex-col px-6 pt-4">
+              <div className="h-full flex flex-col px-6">
                 {/* Title & Subtitle */}
-                <div className="text-center mb-6">
+                <div className="text-center mb-6 pt-4">
                   <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-2">
                     {slide.title}
                   </h2>
@@ -263,44 +267,47 @@ export default function IntroCarousel() {
                   </p>
                 </div>
 
-                {/* Horizontal Scrollable Creator Content */}
-                <div className="overflow-x-auto flex gap-3 py-2 -mx-6 px-6 scrollbar-hide mb-4">
-                  {[
-                    { img: '/onboarding/intro-outfits.png', label: 'Outfit Boards' },
-                    { img: '/onboarding/intro-community.png', label: 'Community' },
-                    { img: '/onboarding/intro-rewards.png', label: 'Rewards' },
-                  ].map((item, idx) => (
-                    <div key={idx} className="flex-shrink-0 w-48 rounded-xl overflow-hidden shadow-md">
-                      <img 
-                        src={item.img} 
-                        alt={item.label}
-                        className="w-full h-32 object-cover"
-                      />
-                      <div className="bg-white p-2 text-center">
-                        <p className="text-sm font-medium text-foreground">{item.label}</p>
+                {/* Content Container */}
+                <div className="flex-1 flex flex-col justify-start pt-2">
+                  {/* Horizontal Scrollable Creator Content */}
+                  <div className="overflow-x-auto flex gap-3 py-2 -mx-6 px-6 scrollbar-hide mb-4">
+                    {[
+                      { img: '/onboarding/intro-outfits.png', label: 'Outfit Boards' },
+                      { img: '/onboarding/intro-community.png', label: 'Community' },
+                      { img: '/onboarding/intro-rewards.png', label: 'Rewards' },
+                    ].map((item, idx) => (
+                      <div key={idx} className="flex-shrink-0 w-48 rounded-xl overflow-hidden shadow-md">
+                        <img 
+                          src={item.img} 
+                          alt={item.label}
+                          className="w-full h-32 object-cover"
+                        />
+                        <div className="bg-white p-2 text-center">
+                          <p className="text-sm font-medium text-foreground">{item.label}</p>
+                        </div>
                       </div>
+                    ))}
+                  </div>
+
+                  {/* Feature Cards */}
+                  <div className="grid grid-cols-2 gap-3 mb-4">
+                    <div className="bg-gray-50 rounded-xl p-4 text-center">
+                      <span className="text-3xl mb-2 block">📝</span>
+                      <h4 className="font-semibold text-sm text-foreground mb-1">Review Your Faves</h4>
+                      <p className="text-xs text-muted-foreground">Post reviews for brands you love</p>
                     </div>
-                  ))}
-                </div>
-
-                {/* Feature Cards */}
-                <div className="grid grid-cols-2 gap-3 mb-4">
-                  <div className="bg-gray-50 rounded-xl p-4 text-center">
-                    <span className="text-3xl mb-2 block">📝</span>
-                    <h4 className="font-semibold text-sm text-foreground mb-1">Review Your Faves</h4>
-                    <p className="text-xs text-muted-foreground">Post reviews for brands you love</p>
+                    <div className="bg-gray-50 rounded-xl p-4 text-center">
+                      <span className="text-3xl mb-2 block">🎨</span>
+                      <h4 className="font-semibold text-sm text-foreground mb-1">Style Collages</h4>
+                      <p className="text-xs text-muted-foreground">Create outfit boards & earn rewards</p>
+                    </div>
                   </div>
-                  <div className="bg-gray-50 rounded-xl p-4 text-center">
-                    <span className="text-3xl mb-2 block">🎨</span>
-                    <h4 className="font-semibold text-sm text-foreground mb-1">Style Collages</h4>
-                    <p className="text-xs text-muted-foreground">Create outfit boards & earn rewards</p>
-                  </div>
-                </div>
 
-                {/* Join creators badge */}
-                <p className="text-center text-sm text-muted-foreground font-medium">
-                  Join 10,000+ creators
-                </p>
+                  {/* Join creators badge */}
+                  <p className="text-center text-sm text-muted-foreground font-medium">
+                    Join 10,000+ creators
+                  </p>
+                </div>
               </div>
             )}
           </motion.div>
