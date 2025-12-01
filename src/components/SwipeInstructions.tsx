@@ -1,12 +1,15 @@
 import { memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, ArrowRight, ArrowUp } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ArrowUp, MoveHorizontal, MoveUp } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface SwipeInstructionsProps {
   show: boolean;
 }
 
 export const SwipeInstructions = memo(({ show }: SwipeInstructionsProps) => {
+  const isMobile = useIsMobile();
+  
   return (
     <AnimatePresence>
       {show && (
@@ -21,16 +24,29 @@ export const SwipeInstructions = memo(({ show }: SwipeInstructionsProps) => {
           }}
           className="absolute top-4 left-1/2 -translate-x-1/2 z-10 px-4 py-2 rounded-xl bg-background/20 backdrop-blur-sm border border-border/10"
         >
-          <div className="flex items-center gap-2 text-xs font-medium text-foreground whitespace-nowrap">
-            <ArrowLeft className="h-4 w-4" />
-            <span>Pass</span>
-            <span className="text-muted-foreground">•</span>
-            <ArrowUp className="h-4 w-4" />
-            <span>Save</span>
-            <span className="text-muted-foreground">•</span>
-            <ArrowRight className="h-4 w-4" />
-            <span>Like</span>
-          </div>
+          {isMobile ? (
+            <div className="flex items-center gap-2 text-xs font-medium text-foreground whitespace-nowrap">
+              <MoveHorizontal className="h-4 w-4" />
+              <span>Swipe left to pass</span>
+              <span className="text-muted-foreground">•</span>
+              <MoveUp className="h-4 w-4" />
+              <span>Swipe up to save</span>
+              <span className="text-muted-foreground">•</span>
+              <MoveHorizontal className="h-4 w-4" />
+              <span>Swipe right to like</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 text-xs font-medium text-foreground whitespace-nowrap">
+              <ArrowLeft className="h-4 w-4" />
+              <span>Pass</span>
+              <span className="text-muted-foreground">•</span>
+              <ArrowUp className="h-4 w-4" />
+              <span>Save</span>
+              <span className="text-muted-foreground">•</span>
+              <ArrowRight className="h-4 w-4" />
+              <span>Like</span>
+            </div>
+          )}
         </motion.div>
       )}
     </AnimatePresence>
