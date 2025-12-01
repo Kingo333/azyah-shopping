@@ -1,25 +1,26 @@
 workflows:
   azyah-ios-capacitor:
     name: Azyah iOS (Capacitor)
+    max_build_duration: 120
     instance_type: mac_mini_m2
-    max_build_duration: 60
 
     integrations:
       app_store_connect: codemagic
 
     environment:
-      node: latest
-      cocoapods: default
       ios_signing:
         distribution_type: app_store
         bundle_identifier: com.azyah.style
+      vars:
+        XCODE_WORKSPACE: "App.xcworkspace"
+        XCODE_SCHEME: "App"
 
     scripts:
-      - name: Install dependencies
+      - name: Install npm dependencies
         script: |
           npm install
 
-      - name: Build web app (Vite)
+      - name: Build web assets
         script: |
           npm run build
 
@@ -29,25 +30,24 @@ workflows:
 
       - name: Install CocoaPods
         script: |
-          cd ios/App
-          pod install
+          cd ios && pod install
 
-      - name: Build iOS .ipa with Xcode
+      - name: Apply signing settings
+        script: |
+          xcode-project use-profiles
+
+      - name: Build IPA
         script: |
           xcode-project build-ipa \
-            --workspace ios/App/App.xcworkspace \
-            --scheme App \
-            --archive-path $CM_BUILD_DIR/ios/App.xcarchive
+            --workspace "ios/$XCODE_WORKSPACE" \
+            --scheme "$XCODE_SCHEME"
 
     artifacts:
       - build/ios/ipa/*.ipa
-      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.app
-      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
+      - /tmp/xcodebuild_logs/*.log
 
     publishing:
       email:
         recipients:
-          - YOUR_EMAIL_ADDRESS_HERE
-        notify:
-          success: true
-          failure: true
+          - "gabelaka79@gmail.com"
+          - "kingo19889@gmail.com"
