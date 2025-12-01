@@ -26,24 +26,24 @@ export const SwipeInstructions = memo(({ show }: SwipeInstructionsProps) => {
         >
           {isMobile ? (
             <div className="flex items-center gap-2 text-xs font-medium text-foreground whitespace-nowrap">
-              <MoveHorizontal className="h-5 w-5" />
+              <MoveHorizontal className="h-5 w-5 text-foreground flex-shrink-0" />
               <span>Pass</span>
               <span className="text-muted-foreground">•</span>
-              <MoveUp className="h-5 w-5" />
+              <MoveUp className="h-5 w-5 text-foreground flex-shrink-0" />
               <span>Save</span>
               <span className="text-muted-foreground">•</span>
-              <MoveHorizontal className="h-5 w-5" />
+              <MoveHorizontal className="h-5 w-5 text-foreground flex-shrink-0" />
               <span>Like</span>
             </div>
           ) : (
             <div className="flex items-center gap-2 text-xs font-medium text-foreground whitespace-nowrap">
-              <ArrowLeft className="h-4 w-4" />
+              <ArrowLeft className="h-4 w-4 text-foreground flex-shrink-0" />
               <span>Pass</span>
               <span className="text-muted-foreground">•</span>
-              <ArrowUp className="h-4 w-4" />
+              <ArrowUp className="h-4 w-4 text-foreground flex-shrink-0" />
               <span>Save</span>
               <span className="text-muted-foreground">•</span>
-              <ArrowRight className="h-4 w-4" />
+              <ArrowRight className="h-4 w-4 text-foreground flex-shrink-0" />
               <span>Like</span>
             </div>
           )}
