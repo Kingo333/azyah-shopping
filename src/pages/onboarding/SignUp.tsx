@@ -174,9 +174,6 @@ export default function SignUp() {
             access_type: 'offline',
             prompt: 'consent',
           },
-          data: {
-            role: userRole
-          }
         },
       });
       
