@@ -398,23 +398,38 @@ export default function IntroCarousel() {
                   <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-white" />
 
                   {/* Azyah branding overlaid on image */}
-                  <div className="absolute bottom-6 left-6 flex items-center gap-2">
-                    <img
-                      src="/marketing/azyah-logo.png"
-                      alt="Azyah"
-                      className="h-10 w-10 object-contain drop-shadow-lg"
-                    />
-                    <h1
-                      className="text-4xl font-serif text-white tracking-wider"
-                      style={{
-                        fontWeight: 300,
-                        letterSpacing: "0.15em",
-                        textShadow:
-                          "0 2px 8px rgba(0, 0, 0, 0.4), 0 4px 16px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.2)",
-                      }}
-                    >
-                      zyah
-                    </h1>
+                  <div className="absolute bottom-6 left-6 flex flex-col gap-3">
+                    <div className="flex items-center gap-2">
+                      <img
+                        src="/marketing/azyah-logo.png"
+                        alt="Azyah"
+                        className="h-10 w-10 object-contain drop-shadow-lg"
+                      />
+                      <h1
+                        className="text-4xl font-serif text-white tracking-wider"
+                        style={{
+                          fontWeight: 300,
+                          letterSpacing: "0.15em",
+                          textShadow:
+                            "0 2px 8px rgba(0, 0, 0, 0.4), 0 4px 16px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.2)",
+                        }}
+                      >
+                        zyah
+                      </h1>
+                    </div>
+
+                    {/* Feature Bubbles */}
+                    <div className="flex flex-wrap gap-2">
+                      <div className="font-light bg-white/70 backdrop-blur-md text-foreground shadow-lg rounded-full text-xs px-3 py-1.5">
+                        Let AI find your style
+                      </div>
+                      <div className="font-light bg-white/70 backdrop-blur-md text-foreground shadow-lg rounded-full text-xs px-3 py-1.5">
+                        Create digital closets • Earn salon rewards
+                      </div>
+                      <div className="font-light bg-white/70 backdrop-blur-md text-foreground shadow-lg rounded-full text-xs px-3 py-1.5">
+                        Collaborate with brands
+                      </div>
+                    </div>
                   </div>
                 </div>
 
