@@ -21,21 +21,15 @@ export const SwipeInstructions = memo(({ show }: SwipeInstructionsProps) => {
           }}
           className="absolute top-4 left-1/2 -translate-x-1/2 z-10 px-4 py-2 rounded-xl bg-background/20 backdrop-blur-sm border border-border/10"
         >
-          <div className="flex items-center gap-4 text-sm font-medium text-foreground">
-            <div className="flex items-center gap-1.5">
-              <ArrowLeft className="h-4 w-4" />
-              <span className="text-xs">Swipe Left to Pass</span>
-            </div>
-            
-            <div className="flex items-center gap-1.5">
-              <ArrowUp className="h-4 w-4" />
-              <span className="text-xs">Up to Save</span>
-            </div>
-            
-            <div className="flex items-center gap-1.5">
-              <ArrowRight className="h-4 w-4" />
-              <span className="text-xs">Right to Like</span>
-            </div>
+          <div className="flex items-center gap-2 text-xs font-medium text-foreground whitespace-nowrap">
+            <ArrowLeft className="h-3.5 w-3.5" />
+            <span>Pass</span>
+            <span className="text-muted-foreground">•</span>
+            <ArrowUp className="h-3.5 w-3.5" />
+            <span>Save</span>
+            <span className="text-muted-foreground">•</span>
+            <ArrowRight className="h-3.5 w-3.5" />
+            <span>Like</span>
           </div>
         </motion.div>
       )}
