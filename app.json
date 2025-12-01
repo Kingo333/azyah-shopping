@@ -4,9 +4,16 @@
     "slug": "vite_react_shadcn_ts",
     "version": "1.0.0",
     "orientation": "portrait",
-    "platforms": ["ios", "android", "web"],
+    "platforms": [
+      "ios",
+      "android",
+      "web"
+    ],
     "ios": {
-      "bundleIdentifier": "com.azyah.style"
+      "bundleIdentifier": "com.azyah.style",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "com.azyah.style"
