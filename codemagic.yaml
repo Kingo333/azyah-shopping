@@ -1,20 +1,21 @@
 workflows:
-  ios-capacitor:
+  azyah-ios-capacitor:
     name: Azyah iOS (Capacitor)
-    max_build_duration: 60
     instance_type: mac_mini_m2
+    max_build_duration: 60
 
-    # (Optional) once you set up App Store Connect integration in Codemagic UI,
-    # you can uncomment the 'integrations' + 'ios_signing' blocks below
-    # integrations:
-    #   app_store_connect: codemagic
-    # environment:
-    #   ios_signing:
-    #     distribution_type: app_store
-    #     bundle_identifier: "com.azyah.style"
+    integrations:
+      app_store_connect: codemagic
+
+    environment:
+      node: latest
+      cocoapods: default
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.azyah.style
 
     scripts:
-      - name: Install npm dependencies
+      - name: Install dependencies
         script: |
           npm install
 
@@ -26,7 +27,7 @@ workflows:
         script: |
           npx cap sync ios
 
-      - name: Install CocoaPods for iOS project
+      - name: Install CocoaPods
         script: |
           cd ios/App
           pod install
@@ -34,10 +35,19 @@ workflows:
       - name: Build iOS .ipa with Xcode
         script: |
           xcode-project build-ipa \
-            --workspace "$CM_BUILD_DIR/ios/App/App.xcworkspace" \
-            --scheme "App"
+            --workspace ios/App/App.xcworkspace \
+            --scheme App \
+            --archive-path $CM_BUILD_DIR/ios/App.xcarchive
 
     artifacts:
       - build/ios/ipa/*.ipa
-      - ios/App/build/**/*.app
-      - ios/App/build/**/*.dSYM
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.app
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
+
+    publishing:
+      email:
+        recipients:
+          - YOUR_EMAIL_ADDRESS_HERE
+        notify:
+          success: true
+          failure: true
