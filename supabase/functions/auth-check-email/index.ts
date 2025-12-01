@@ -27,10 +27,10 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Check if email exists (case-insensitive)
+    // Check if email exists (case-insensitive) and get provider info
     const { data, error } = await supabaseClient
       .from('users')
-      .select('id')
+      .select('id, provider')
       .ilike('email', email)
       .maybeSingle();
 
@@ -43,7 +43,10 @@ serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ exists: !!data }),
+      JSON.stringify({ 
+        exists: !!data,
+        provider: data?.provider || null
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
