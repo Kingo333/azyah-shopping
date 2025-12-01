@@ -53,6 +53,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         async (event, session) => {
           console.log('AuthContext: Auth state changed:', { event, user: session?.user?.email });
           
+          // Handle OAuth sign-in events
+          if (event === 'SIGNED_IN' && session) {
+            const provider = session.user.app_metadata?.provider;
+            const role = session.user.user_metadata?.role || 'shopper';
+            console.log('OAuth sign-in detected:', { provider, role });
+          }
+          
           // Handle auth errors proactively
           if (event === 'TOKEN_REFRESHED' && !session) {
             console.log('Token refresh failed - initiating recovery');
