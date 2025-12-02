@@ -13,13 +13,16 @@ workflows:
         bundle_identifier: com.azyah.style
 
       vars:
+        # Xcode workspace & scheme from your iOS project
         XCODE_WORKSPACE: ios/App/App.xcworkspace
         XCODE_SCHEME: App
-        # from your App Store Connect URL: .../apps/6755971189/...
+
+        # From your App Store Connect URL
         APP_STORE_APP_ID: "6755971189"
 
+      # Use a Codemagic-supported Xcode image
       node: v20.14.0
-      xcode: 15.2
+      xcode: 16.0
       cocoapods: default
 
     scripts:
@@ -57,4 +60,4 @@ workflows:
       app_store_connect:
         auth: integration
         submit_to_testflight: true
-        # submit_to_app_store: false  # keep commented for now
+        # submit_to_app_store: false   # leave commented for now
