@@ -12,7 +12,7 @@ workflows:
         distribution_type: app_store
         bundle_identifier: com.azyah.style
       vars:
-        XCODE_WORKSPACE: "App.xcworkspace"
+        XCODE_WORKSPACE: "ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
 
     scripts:
