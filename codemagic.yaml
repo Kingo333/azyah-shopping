@@ -10,10 +10,11 @@ workflows:
     environment:
       ios_signing:
         distribution_type: app_store
-        bundle_identifier: com.azyah.style
-      vars:
-        XCODE_WORKSPACE: "ios/App/App.xcworkspace"
-        XCODE_SCHEME: "App"
+        bundle_identifier: com.azyaah.style
+
+    vars:
+      XCODE_WORKSPACE: "ios/App/App.xcworkspace"
+      XCODE_SCHEME: "App"
 
     scripts:
       - name: Build web assets
@@ -35,15 +36,12 @@ workflows:
           xcode-project use-profiles
 
       - name: Build IPA
-  script: |
-    xcode-project build-ipa \
-      --workspace "$XCODE_WORKSPACE" \
-      --scheme "$XCODE_SCHEME"
-
+        script: |
+          xcode-project build-ipa \
+            --workspace "$XCODE_WORKSPACE" \
+            --scheme "$XCODE_SCHEME"
 
     publishing:
       app_store_connect:
-        # use the Codemagic Apple Developer Portal integration for auth
         auth: integration
-        # send the build to TestFlight automatically
         submit_to_testflight: true
