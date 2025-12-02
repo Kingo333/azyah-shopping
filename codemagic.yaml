@@ -19,7 +19,7 @@ workflows:
         APP_STORE_APP_ID: "6755971189"
 
       node: v20.14.0
-      xcode: 15.4
+      xcode: 15.2
       cocoapods: default
 
     scripts:
