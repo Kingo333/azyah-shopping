@@ -202,13 +202,17 @@ const ProfileSettings: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto max-w-2xl p-4">
-        {/* Header */}
-        <div className="flex items-center gap-3 mb-6">
-          <BackButton />
-          <h1 className="text-2xl font-bold">Profile Settings</h1>
+      {/* Header */}
+      <div className="sticky top-0 z-10 bg-background border-b safe-area-pt">
+        <div className="container mx-auto max-w-2xl px-4 py-3">
+          <div className="flex items-center gap-3">
+            <BackButton />
+            <h1 className="text-2xl font-bold">Profile Settings</h1>
+          </div>
         </div>
+      </div>
 
+      <div className="container mx-auto max-w-2xl p-4">
         <div className="space-y-6">
           {/* Profile Picture */}
           <Card>

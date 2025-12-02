@@ -46,7 +46,10 @@ export const BottomNavigation: React.FC = () => {
   };
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[hsl(var(--azyah-border))] z-50 safe-area-pb">
+    <div 
+      className="fixed bottom-0 left-0 right-0 bg-white border-t border-[hsl(var(--azyah-border))] z-50"
+      style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+    >
       <div className="grid grid-cols-4 h-16">
         {navItems.map((item) => {
           const Icon = item.icon;

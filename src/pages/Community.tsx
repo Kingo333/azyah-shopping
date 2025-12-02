@@ -16,7 +16,7 @@ export default function Community() {
       />
 
       <div className="min-h-screen bg-background pb-20">
-        <header className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
+        <header className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b safe-area-pt">
           <div className="container flex items-center h-14 max-w-screen-2xl">
             <BackButton />
             <h1 className="text-lg font-semibold ml-2">Community</h1>

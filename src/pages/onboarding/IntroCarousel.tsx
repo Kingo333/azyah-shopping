@@ -257,7 +257,7 @@ export default function IntroCarousel() {
     }),
   };
   return (
-    <div className="h-screen bg-white flex flex-col overflow-hidden">
+    <div className="h-screen bg-white flex flex-col overflow-hidden" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
       <SEOHead
         title="Azyah — Luxury Fashion Curation"
         description="AI-curated luxury fashion discovery. Exclusive designer collections for the discerning style connoisseur."
@@ -266,7 +266,7 @@ export default function IntroCarousel() {
 
       {/* Floating Navigation Elements - Only on first slide */}
       {currentSlide === 0 && (
-        <div className="fixed top-3 sm:top-4 left-3 right-3 sm:left-4 sm:right-4 z-50 flex items-center justify-between">
+        <div className="fixed left-3 right-3 sm:left-4 sm:right-4 z-50 flex items-center justify-between" style={{ top: 'calc(env(safe-area-inset-top) + 12px)' }}>
           {/* Logo */}
           <div className="flex items-center gap-1.5 sm:gap-2 bg-white/90 backdrop-blur-md rounded-full px-3 py-1.5 sm:px-4 sm:py-2 shadow-lg">
             <img src="/marketing/azyah-logo.png" alt="Azyah" className="h-5 w-5 sm:h-6 sm:w-6 object-contain" />
@@ -734,9 +734,12 @@ export default function IntroCarousel() {
       </div>
 
       {/* Fixed Bottom CTA Section */}
-      <div className="fixed bottom-0 left-0 right-0 px-3 pb-2 md:pb-3 pt-2 bg-gradient-to-t from-background via-background to-transparent z-20">
+      <div 
+        className="fixed bottom-0 left-0 right-0 px-3 pt-2 bg-gradient-to-t from-background via-background to-transparent z-20"
+        style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 8px)' }}
+      >
         {/* Navigation Dots */}
-        <div className="flex justify-center gap-2 mb-4 md:mb-6">
+        <div className="flex justify-center gap-2 mb-3 md:mb-4">
           {slides.map((_, index) => (
             <button
               key={index}
@@ -761,7 +764,7 @@ export default function IntroCarousel() {
         {/* Login Link */}
         <button
           onClick={handleJoinCommunity}
-          className="w-full mt-2 md:mt-3 text-sm md:text-base text-primary font-medium hover:text-primary/80 transition-colors"
+          className="w-full mt-2 text-sm md:text-base text-primary font-medium hover:text-primary/80 transition-colors"
         >
           Already have an account? <span className="font-semibold">Log In</span>
         </button>
