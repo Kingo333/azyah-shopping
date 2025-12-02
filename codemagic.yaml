@@ -33,8 +33,3 @@ workflows:
         script: |
           cd ios/App
           pod install
-
-    publishing:
-      app_store_connect:
-        submit_to_app_store: false
-        submit_to_testflight: false
