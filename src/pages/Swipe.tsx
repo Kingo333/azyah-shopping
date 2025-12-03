@@ -2,8 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
-import { ArrowLeft, Heart, Search, Sparkles, List, LayoutGrid } from "lucide-react";
+import { ArrowLeft, Heart, Search, List, LayoutGrid } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAuth } from "@/contexts/AuthContext";
 import SwipeDeck from '@/components/SwipeDeck';
@@ -132,59 +131,80 @@ const Swipe = () => {
   };
   return <div className="min-h-screen dashboard-bg flex flex-col">
       {/* Header */}
-      <header className={`sticky top-0 z-50 w-full border-b border-white/20 glass-premium shrink-0 transition-opacity duration-300 safe-area-pt ${isProductDetailOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
-        <div className="container max-w-screen-2xl mx-auto px-1 sm:px-2 py-0 sm:py-0">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center space-x-2 sm:space-x-4 flex-shrink-0">
-              <Button variant="ghost" size="sm" onClick={() => navigate("/dashboard")} className="hover:bg-accent/50 p-2">
+      <header className={`sticky top-0 z-50 w-full bg-background/80 backdrop-blur-xl border-b border-border/40 shrink-0 transition-all duration-300 safe-area-pt ${isProductDetailOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+        <div className="container max-w-screen-2xl mx-auto px-3 sm:px-4 py-3">
+          <div className="flex items-center justify-between gap-3">
+            {/* Left Section - Back & Title */}
+            <div className="flex items-center gap-3 flex-shrink-0">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => navigate("/dashboard")} 
+                className="h-9 w-9 rounded-full hover:bg-accent/60 transition-colors"
+              >
                 <ArrowLeft className="h-4 w-4" />
-                <span className="hidden sm:inline sm:ml-2">Back</span>
               </Button>
-              <div className="hidden md:flex items-center space-x-3">
-                
-                <div>
-                  <h1 className="text-xl font-bold font-playfair">Discover</h1>
-                  <p className="text-xs text-muted-foreground">
-                    {getCurrentCategoryDisplay()}
-                  </p>
-                </div>
+              <div className="hidden sm:block">
+                <h1 className="text-lg font-semibold tracking-tight">Discover</h1>
+                <p className="text-xs text-muted-foreground/80 font-medium">
+                  {getCurrentCategoryDisplay()}
+                </p>
               </div>
             </div>
             
-            <div className="flex items-center gap-1 sm:gap-2 flex-1 justify-end max-w-full">
-              {/* View Mode Toggle - Only show after sufficient swipes */}
-              {showListToggle && <TooltipProvider>
+            {/* Center Section - Search */}
+            <div className="relative flex-1 max-w-xs mx-auto">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60" />
+              <Input 
+                type="text" 
+                placeholder="Search styles..." 
+                value={filters.searchQuery} 
+                onChange={e => setFilters(prev => ({
+                  ...prev,
+                  searchQuery: e.target.value
+                }))} 
+                className="pl-9 h-9 text-sm bg-muted/40 border-0 rounded-full placeholder:text-muted-foreground/50 focus-visible:ring-1 focus-visible:ring-primary/30 focus-visible:bg-muted/60 transition-all" 
+              />
+            </div>
+
+            {/* Right Section - Actions */}
+            <div className="flex items-center gap-1.5">
+              {/* View Mode Toggle */}
+              {showListToggle && (
+                <TooltipProvider>
                   <Tooltip open={showTooltip} onOpenChange={setShowTooltip}>
                     <TooltipTrigger asChild>
-                      <div className="flex items-center gap-2 mr-2">
-                        <LayoutGrid className="h-4 w-4 text-muted-foreground" />
-                        <Switch checked={viewMode === 'list'} onCheckedChange={checked => setViewMode(checked ? 'list' : 'swipe')} className="data-[state=checked]:bg-primary" />
-                        <List className="h-4 w-4 text-muted-foreground" />
+                      <div className="hidden sm:flex items-center gap-1.5 px-2 py-1.5 rounded-full bg-muted/40">
+                        <button 
+                          onClick={() => setViewMode('swipe')}
+                          className={`p-1.5 rounded-full transition-all ${viewMode === 'swipe' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                        >
+                          <LayoutGrid className="h-3.5 w-3.5" />
+                        </button>
+                        <button 
+                          onClick={() => setViewMode('list')}
+                          className={`p-1.5 rounded-full transition-all ${viewMode === 'list' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                        >
+                          <List className="h-3.5 w-3.5" />
+                        </button>
                       </div>
                     </TooltipTrigger>
-                    <TooltipContent className="bg-background border-primary/20 shadow-lg max-w-[200px]">
-                      <p className="text-sm">
-                        Switch views anytime! AI learns your taste.
-                      </p>
+                    <TooltipContent className="bg-popover border shadow-lg max-w-[180px]">
+                      <p className="text-xs">Switch views anytime</p>
                     </TooltipContent>
                   </Tooltip>
-                </TooltipProvider>}
+                </TooltipProvider>
+              )}
 
-              {/* Search Bar */}
-              <div className="relative flex-1 max-w-[160px] sm:max-w-[200px]">
-                <Search className="absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
-                <Input type="text" placeholder="Search..." value={filters.searchQuery} onChange={e => setFilters(prev => ({
-                ...prev,
-                searchQuery: e.target.value
-              }))} className="pl-7 sm:pl-10 h-8 sm:h-9 text-sm bg-background/50 backdrop-blur-sm border-border/50 focus-visible:ring-ring/50 focus-visible:border-ring" />
-              </div>
-
-              <Button variant="ghost" size="sm" onClick={() => navigate("/likes")} className="hover:bg-accent/50 p-2 flex-shrink-0">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => navigate("/likes")} 
+                className="h-9 w-9 rounded-full hover:bg-accent/60 transition-colors"
+              >
                 <Heart className="h-4 w-4" />
-                <span className="hidden lg:inline lg:ml-2">Likes</span>
               </Button>
               
-              {/* Unified Category Filter */}
               <UnifiedCategoryFilter filters={filters} onFiltersChange={setFilters} compact={true} showPriceRange={true} showCurrency={true} />
             </div>
           </div>
