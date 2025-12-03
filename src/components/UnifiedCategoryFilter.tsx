@@ -119,49 +119,55 @@ const UnifiedCategoryFilter: React.FC<UnifiedCategoryFilterProps> = ({
 
   if (compact) {
     return (
-      <div className="flex flex-wrap gap-2">
-        {/* Active filters as removable badges */}
-        {filters.genders.map(gender => (
-          <Badge key={gender} variant="secondary" className="cursor-pointer">
-            {getGenderDisplayName(gender)}
-            <X 
-              className="h-3 w-3 ml-1" 
-              onClick={() => toggleGender(gender)}
-            />
-          </Badge>
-        ))}
-        {filters.categories.map(category => (
-          <Badge key={category} variant="secondary" className="cursor-pointer">
-            {getCategoryDisplayName(category)}
-            <X 
-              className="h-3 w-3 ml-1" 
-              onClick={() => toggleCategory(category)}
-            />
-          </Badge>
-        ))}
-        {filters.subcategories.map(subcategory => (
-          <Badge key={subcategory} variant="secondary" className="cursor-pointer">
-            {getSubcategoryDisplayName(subcategory)}
-            <X 
-              className="h-3 w-3 ml-1" 
-              onClick={() => toggleSubcategory(subcategory)}
-            />
-          </Badge>
-        ))}
+      <div className="flex flex-wrap items-center gap-2">
+        {/* Active filters as removable badges - hidden on mobile for cleaner look */}
+        <div className="hidden sm:flex flex-wrap gap-2">
+          {filters.genders.map(gender => (
+            <Badge key={gender} variant="secondary" className="cursor-pointer">
+              {getGenderDisplayName(gender)}
+              <X 
+                className="h-3 w-3 ml-1" 
+                onClick={() => toggleGender(gender)}
+              />
+            </Badge>
+          ))}
+          {filters.categories.map(category => (
+            <Badge key={category} variant="secondary" className="cursor-pointer">
+              {getCategoryDisplayName(category)}
+              <X 
+                className="h-3 w-3 ml-1" 
+                onClick={() => toggleCategory(category)}
+              />
+            </Badge>
+          ))}
+          {filters.subcategories.map(subcategory => (
+            <Badge key={subcategory} variant="secondary" className="cursor-pointer">
+              {getSubcategoryDisplayName(subcategory)}
+              <X 
+                className="h-3 w-3 ml-1" 
+                onClick={() => toggleSubcategory(subcategory)}
+              />
+            </Badge>
+          ))}
+        </div>
         
         <Popover open={isOpen} onOpenChange={setIsOpen}>
           <PopoverTrigger asChild>
-            <Button variant="outline" size="sm">
-              <Filter className="h-4 w-4 mr-2" />
-              Filters
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="h-8 sm:h-9 px-3 sm:px-4 rounded-full border-border/60 bg-background hover:bg-muted/50 transition-colors"
+            >
+              <Filter className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span className="ml-1.5 text-xs sm:text-sm font-medium">Filters</span>
               {activeFilterCount > 0 && (
-                <Badge variant="destructive" className="ml-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
+                <Badge variant="destructive" className="ml-1.5 h-4 w-4 sm:h-5 sm:w-5 rounded-full p-0 flex items-center justify-center text-[10px] sm:text-xs">
                   {activeFilterCount}
                 </Badge>
               )}
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-80 max-h-96 overflow-y-auto" align="start">
+          <PopoverContent className="w-80 max-h-96 overflow-y-auto" align="end">
             <FilterContent 
               filters={filters}
               onFiltersChange={onFiltersChange}

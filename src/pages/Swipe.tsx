@@ -144,7 +144,7 @@ const Swipe = () => {
               >
                 <ArrowLeft className="h-4 w-4" />
               </Button>
-              <div>
+              <div className="hidden sm:block">
                 <h1 className="text-base sm:text-lg font-semibold tracking-tight">Discover</h1>
                 <p className="text-[10px] sm:text-xs text-muted-foreground/80 font-medium truncate max-w-[80px] sm:max-w-none">
                   {getCurrentCategoryDisplay()}
@@ -153,7 +153,7 @@ const Swipe = () => {
             </div>
             
             {/* Center Section - Search */}
-            <div className="relative flex-1 max-w-[140px] sm:max-w-xs mx-auto">
+            <div className="relative flex-1 max-w-[180px] sm:max-w-xs">
               <Search className="absolute left-2.5 sm:left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground/60" />
               <Input 
                 type="text" 
@@ -168,7 +168,7 @@ const Swipe = () => {
             </div>
 
             {/* Right Section - Actions */}
-            <div className="flex items-center gap-1 sm:gap-1.5">
+            <div className="flex items-center gap-1.5 sm:gap-2">
               {/* View Mode Toggle */}
               {showListToggle && (
                 <TooltipProvider>
@@ -205,7 +205,13 @@ const Swipe = () => {
                 <Heart className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               </Button>
               
-              <UnifiedCategoryFilter filters={filters} onFiltersChange={setFilters} compact={true} showPriceRange={true} showCurrency={true} />
+              <UnifiedCategoryFilter 
+                filters={filters} 
+                onFiltersChange={setFilters} 
+                compact={true} 
+                showPriceRange={true} 
+                showCurrency={true}
+              />
             </div>
           </div>
         </div>
