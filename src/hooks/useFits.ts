@@ -2,6 +2,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { useSubscription } from '@/hooks/useSubscription';
+
+const FREE_OUTFIT_LIMIT = 5;
 
 export interface Fit {
   id: string;
@@ -237,5 +240,39 @@ export const useUpdateFit = () => {
       console.error('Error updating fit:', error);
       toast.error('Failed to update fit');
     },
+  });
+};
+
+// Check outfit creation limit for free users
+export const useFitsLimit = () => {
+  const { user } = useAuth();
+  const { isPremium } = useSubscription();
+
+  return useQuery({
+    queryKey: ['fits-limit', user?.id, isPremium],
+    queryFn: async () => {
+      if (!user) return { count: 0, limit: FREE_OUTFIT_LIMIT, canCreate: false, isPremium: false };
+      
+      if (isPremium) {
+        return { count: 0, limit: Infinity, canCreate: true, isPremium: true };
+      }
+
+      const { count, error } = await supabase
+        .from('fits')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+      
+      const currentCount = count || 0;
+      return {
+        count: currentCount,
+        limit: FREE_OUTFIT_LIMIT,
+        canCreate: currentCount < FREE_OUTFIT_LIMIT,
+        isPremium: false,
+        remaining: FREE_OUTFIT_LIMIT - currentCount,
+      };
+    },
+    enabled: !!user,
   });
 };

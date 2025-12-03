@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Save, Share2, Upload, Palette, Layers } from 'lucide-react';
 import { EnhancedInteractiveCanvas, CanvasLayer } from '@/components/EnhancedInteractiveCanvas';
@@ -7,7 +8,7 @@ import { WardrobeThumbnailRail } from '@/components/WardrobeThumbnailRail';
 import { BackgroundPicker } from '@/components/BackgroundPicker';
 import { WardrobeUploadModal } from '@/components/WardrobeUploadModal';
 import { useWardrobeItems, WardrobeItem } from '@/hooks/useWardrobeItems';
-import { useSaveFit, usePublicFits } from '@/hooks/useFits';
+import { useSaveFit, usePublicFits, useFitsLimit } from '@/hooks/useFits';
 import { toast } from 'sonner';
 import { SEOHead } from '@/components/SEOHead';
 import { Card } from '@/components/ui/card';
@@ -26,10 +27,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { measurePngTrim, type ImageMetrics } from '@/utils/measurePngTrim';
 
 export default function DressMe() {
+  const navigate = useNavigate();
   const { data: allItems = [], isLoading } = useWardrobeItems();
   const { data: publicFits = [] } = usePublicFits();
   const saveFit = useSaveFit();
   const analytics = useDressMeAnalytics();
+  const { data: fitsLimit } = useFitsLimit();
 
   // State
   const [layers, setLayers] = useState<CanvasLayer[]>([]);
@@ -115,6 +118,12 @@ export default function DressMe() {
   const handleSave = async () => {
     if (layers.length === 0) {
       toast.error('Please add items to your fit first');
+      return;
+    }
+
+    // Check outfit limit for free users
+    if (fitsLimit && !fitsLimit.canCreate) {
+      toast.error(`You've reached the free limit of ${fitsLimit.limit} outfits. Upgrade to Premium for unlimited outfits!`);
       return;
     }
 
@@ -420,6 +429,30 @@ export default function DressMe() {
               <DialogTitle>Save your fit</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
+              {/* Show limit info for free users */}
+              {fitsLimit && !fitsLimit.isPremium && (
+                <div className={`p-3 rounded-lg text-sm ${fitsLimit.canCreate ? 'bg-muted' : 'bg-destructive/10 border border-destructive/20'}`}>
+                  {fitsLimit.canCreate ? (
+                    <p className="text-muted-foreground">
+                      {fitsLimit.remaining} outfit{fitsLimit.remaining !== 1 ? 's' : ''} remaining on free plan
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      <p className="text-destructive font-medium">
+                        You've reached the free limit of {fitsLimit.limit} outfits
+                      </p>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="w-full"
+                        onClick={() => navigate('/dashboard/upgrade')}
+                      >
+                        Upgrade for Unlimited Outfits
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
               <div className="space-y-2">
                 <Label>Title (optional)</Label>
                 <Input
@@ -440,7 +473,11 @@ export default function DressMe() {
                   onCheckedChange={setIsPublic}
                 />
               </div>
-              <Button onClick={handleSave} className="w-full" disabled={saveFit.isPending}>
+              <Button 
+                onClick={handleSave} 
+                className="w-full" 
+                disabled={saveFit.isPending || (fitsLimit && !fitsLimit.canCreate)}
+              >
                 {saveFit.isPending ? 'Saving...' : 'Save Fit'}
               </Button>
             </div>
