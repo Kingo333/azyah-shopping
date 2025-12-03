@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { performSessionHealthCheck, recoverFromAuthError } from '@/utils/sessionHealthCheck';
+import { supabase } from '@/integrations/supabase/client';
+import { isCapacitorApp } from '@/utils/sessionHealthCheck';
 
 export const useSessionMonitor = () => {
   const { session, user } = useAuth();
@@ -17,39 +18,49 @@ export const useSessionMonitor = () => {
       return;
     }
 
-    // Start monitoring
+    // Simple periodic session refresh - let Supabase handle the heavy lifting
     const startMonitoring = () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
       }
 
+      // Check less frequently - every 15 minutes instead of 5
+      // Supabase's autoRefreshToken handles most cases
+      const checkInterval = isCapacitorApp() ? 20 * 60 * 1000 : 15 * 60 * 1000;
+
       intervalRef.current = setInterval(async () => {
         const now = Date.now();
         
-        // Avoid too frequent checks
-        if (now - lastCheckRef.current < 60000) { // 1 minute minimum
+        // Avoid too frequent checks - 5 minute minimum
+        if (now - lastCheckRef.current < 5 * 60 * 1000) {
           return;
         }
         
         lastCheckRef.current = now;
         
         try {
-          const isHealthy = await performSessionHealthCheck();
+          // Just silently refresh the session - don't trigger recovery
+          const { data: { session: currentSession } } = await supabase.auth.getSession();
           
-          if (!isHealthy) {
-            console.log('Session monitor detected unhealthy session');
-            await recoverFromAuthError();
+          if (currentSession) {
+            const expiresAt = currentSession.expires_at || 0;
+            const nowSeconds = Math.floor(Date.now() / 1000);
+            
+            // Proactively refresh if expiring within 10 minutes
+            if (expiresAt - nowSeconds < 600) {
+              console.log('Session monitor: Proactively refreshing session');
+              await supabase.auth.refreshSession();
+            }
           }
         } catch (error) {
-          console.error('Session monitor error:', error);
-          // Don't recover on every error, just log it
+          // Log but don't take action - network errors shouldn't trigger logout
+          console.log('Session monitor: Check failed (network?):', error);
         }
-      }, 5 * 60 * 1000); // Check every 5 minutes
+      }, checkInterval);
     };
 
     startMonitoring();
 
-    // Cleanup on unmount
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
@@ -58,26 +69,40 @@ export const useSessionMonitor = () => {
     };
   }, [session, user]);
 
-  // Handle visibility change to check session when user returns
+  // Handle visibility change - be lenient, just refresh silently
   useEffect(() => {
     const handleVisibilityChange = async () => {
       if (document.visibilityState === 'visible' && session && user) {
         const now = Date.now();
         
-        // Only check if it's been more than 2 minutes since last check
-        if (now - lastCheckRef.current > 2 * 60 * 1000) {
+        // On mobile/Capacitor, be more lenient - wait 5 minutes
+        // On web, 2 minutes is fine
+        const minInterval = isCapacitorApp() ? 5 * 60 * 1000 : 2 * 60 * 1000;
+        
+        if (now - lastCheckRef.current > minInterval) {
           lastCheckRef.current = now;
           
-          try {
-            const isHealthy = await performSessionHealthCheck();
-            
-            if (!isHealthy) {
-              console.log('Session unhealthy on visibility change');
-              await recoverFromAuthError();
+          // Small delay to let the app fully resume
+          setTimeout(async () => {
+            try {
+              // Just refresh silently - don't check validity or trigger recovery
+              const { data: { session: currentSession } } = await supabase.auth.getSession();
+              
+              if (currentSession) {
+                const expiresAt = currentSession.expires_at || 0;
+                const nowSeconds = Math.floor(Date.now() / 1000);
+                
+                // Refresh if expiring within 10 minutes
+                if (expiresAt - nowSeconds < 600) {
+                  console.log('Visibility change: Refreshing session');
+                  await supabase.auth.refreshSession();
+                }
+              }
+            } catch (error) {
+              // Network error on resume - ignore, don't logout
+              console.log('Visibility change: Refresh failed (expected on resume)');
             }
-          } catch (error) {
-            console.error('Visibility change session check error:', error);
-          }
+          }, isCapacitorApp() ? 1000 : 500); // Longer delay on mobile
         }
       }
     };

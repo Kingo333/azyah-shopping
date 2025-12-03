@@ -132,7 +132,7 @@ const Swipe = () => {
   };
   return <div className="min-h-screen dashboard-bg flex flex-col">
       {/* Header */}
-      <header className={`sticky top-0 z-50 w-full border-b border-white/20 glass-premium shrink-0 transition-opacity duration-300 ${isProductDetailOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+      <header className={`sticky top-0 z-50 w-full border-b border-white/20 glass-premium shrink-0 transition-opacity duration-300 safe-area-pt ${isProductDetailOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
         <div className="container max-w-screen-2xl mx-auto px-1 sm:px-2 py-0 sm:py-0">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center space-x-2 sm:space-x-4 flex-shrink-0">
