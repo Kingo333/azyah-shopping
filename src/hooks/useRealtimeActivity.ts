@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 export interface ActivityEvent {
   id: string;
-  type: 'view' | 'click' | 'wishlist' | 'like';
+  type: 'swipe_right' | 'swipe_left' | 'swipe_up' | 'wishlist' | 'like';
   product_title: string;
   timestamp: string;
   time_ago: string;
@@ -52,19 +52,16 @@ export const useRealtimeActivity = (brandId?: string, retailerId?: string, limit
         return [];
       }
 
-      // Get recent events for retailer/brand products
-      const eventsQuery = supabase
-        .from('events')
-        .select('id, event_type, created_at, product_id, user_id')
+      // Get recent swipes for brand/retailer products
+      const { data: swipes, error: swipesError } = await supabase
+        .from('swipes')
+        .select('id, action, created_at, product_id')
         .in('product_id', productIds)
         .order('created_at', { ascending: false })
         .limit(limit * 3);
 
-      const { data: events, error: eventsError } = await eventsQuery;
-      
-      if (eventsError) {
-        console.error('Error fetching events:', eventsError);
-        return [];
+      if (swipesError) {
+        console.error('Error fetching swipes:', swipesError);
       }
 
       // Get recent likes for retailer/brand products
@@ -75,7 +72,7 @@ export const useRealtimeActivity = (brandId?: string, retailerId?: string, limit
         .order('created_at', { ascending: false })
         .limit(limit * 2);
 
-      console.log('Likes found:', likes?.length || 0, likes);
+      console.log('Likes found:', likes?.length || 0);
 
       // Get recent wishlist adds for retailer/brand products
       const { data: wishlistAdds } = await supabase
@@ -99,19 +96,20 @@ export const useRealtimeActivity = (brandId?: string, retailerId?: string, limit
       // Combine and format all activities
       const activities: ActivityEvent[] = [];
 
-      // Add events
-      events?.forEach(event => {
-        if (event.product_id && productTitles[event.product_id]) {
-          let type: ActivityEvent['type'] = 'view';
-          if (event.event_type === 'product_view') type = 'view';
-          else if (event.event_type === 'product_click') type = 'click';
+      // Add swipes
+      swipes?.forEach(swipe => {
+        if (swipe.product_id && productTitles[swipe.product_id]) {
+          let type: ActivityEvent['type'] = 'swipe_left';
+          if (swipe.action === 'right') type = 'swipe_right';
+          else if (swipe.action === 'up') type = 'swipe_up';
+          else if (swipe.action === 'left') type = 'swipe_left';
 
           activities.push({
-            id: `event-${event.id}`,
+            id: `swipe-${swipe.id}`,
             type,
-            product_title: productTitles[event.product_id],
-            timestamp: event.created_at,
-            time_ago: getTimeAgo(event.created_at)
+            product_title: productTitles[swipe.product_id],
+            timestamp: swipe.created_at,
+            time_ago: getTimeAgo(swipe.created_at)
           });
         }
       });
@@ -147,7 +145,6 @@ export const useRealtimeActivity = (brandId?: string, retailerId?: string, limit
         .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
       // Merge activities by type and product
-      const mergedActivities: (ActivityEvent & { count: number })[] = [];
       const activityMap = new Map<string, ActivityEvent & { count: number }>();
 
       sortedActivities.forEach(activity => {

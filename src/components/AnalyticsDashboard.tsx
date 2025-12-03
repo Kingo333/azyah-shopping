@@ -9,21 +9,21 @@ import ReactECharts from 'echarts-for-react';
 import { 
   TrendingUp, 
   Eye, 
-  MousePointer, 
   Heart, 
-  ShoppingCart, 
-  DollarSign,
+  Bookmark,
   Users,
   Target,
   Calendar,
   Download,
-  ExternalLink
+  Smartphone,
+  ThumbsUp,
+  ArrowUpRight,
+  ArrowDownRight
 } from 'lucide-react';
 import { InfoTooltip } from '@/components/ui/info-tooltip';
 import { useAnalyticsOverview, useConversionFunnel, useTimeSeriesAnalytics } from '@/hooks/useAnalytics';
 import { useTopProducts } from '@/hooks/useTopProducts';
 import { useRealtimeActivity } from '@/hooks/useRealtimeActivity';
-import { CustomerJourneyFlow } from '@/components/CustomerJourneyFlow';
 import { motion } from 'framer-motion';
 
 interface AnalyticsDashboardProps {
@@ -36,7 +36,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
   retailerId
 }) => {
   const [dateRange, setDateRange] = useState('7d');
-  const [selectedMetric, setSelectedMetric] = useState<'impressions' | 'clicks' | 'conversions' | 'revenue'>('impressions');
+  const [selectedMetric, setSelectedMetric] = useState<'swipes' | 'likes' | 'wishlists'>('swipes');
 
   // Calculate date filters
   const getDateFilter = (range: string) => {
@@ -91,41 +91,17 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
     entityType
   );
 
-  // New queries for real product data
+  // Queries for real product data
   const topProductsQuery = useTopProducts(brandId, retailerId, 6);
   const realtimeActivityQuery = useRealtimeActivity(brandId, retailerId, 8);
 
-  // Debug logging for React Query states
-  console.log('Analytics Debug Info:', {
-    overviewQuery: {
-      isLoading: overviewQuery.isLoading,
-      isError: overviewQuery.isError,
-      error: overviewQuery.error,
-      data: overviewQuery.data,
-      status: overviewQuery.status
-    },
-    funnelQuery: {
-      isLoading: funnelQuery.isLoading,
-      isError: funnelQuery.isError,
-      data: funnelQuery.data,
-      status: funnelQuery.status
-    },
-    timeSeriesQuery: {
-      isLoading: timeSeriesQuery.isLoading,
-      isError: timeSeriesQuery.isError,
-      data: timeSeriesQuery.data,
-      status: timeSeriesQuery.status
-    }
-  });
-
-  // Extract data with explicit fallbacks and validation
+  // Extract data with explicit fallbacks
   const overview = overviewQuery.data || {
-    impressions: 0,
-    clicks: 0,
-    ctr: 0,
-    wishlist_adds: 0,
-    conversions: 0,
-    revenue_cents: 0
+    swipe_appearances: 0,
+    right_swipes: 0,
+    wishlist_swipes: 0,
+    likes: 0,
+    engagement_rate: 0
   };
   
   const funnelData = funnelQuery.data || [];
@@ -136,8 +112,6 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
   const isTimeSeriesLoading = timeSeriesQuery.isLoading;
   
   const hasOverviewError = overviewQuery.isError;
-  const hasFunnelError = funnelQuery.isError;
-  const hasTimeSeriesError = timeSeriesQuery.isError;
 
   // Chart configurations
   const getLineChartOption = () => ({
@@ -147,9 +121,6 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
         type: 'cross'
       }
     },
-    legend: {
-      data: [selectedMetric.charAt(0).toUpperCase() + selectedMetric.slice(1)]
-    },
     grid: {
       left: '3%',
       right: '4%',
@@ -158,7 +129,10 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
     },
     xAxis: {
       type: 'category',
-      data: timeSeriesData?.map(d => new Date(d.date).toLocaleDateString()) || [],
+      data: timeSeriesData?.map(d => {
+        const date = new Date(d.date);
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      }) || [],
       axisLabel: {
         rotate: 45
       }
@@ -167,98 +141,81 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
       type: 'value'
     },
     series: [{
-      name: selectedMetric.charAt(0).toUpperCase() + selectedMetric.slice(1),
+      name: selectedMetric === 'swipes' ? 'Swipe Appearances' : selectedMetric === 'likes' ? 'Likes' : 'Wishlist Saves',
       type: 'line',
       data: timeSeriesData?.map(d => d.value) || [],
       smooth: true,
+      areaStyle: {
+        opacity: 0.3
+      },
       itemStyle: {
-        color: '#8b5cf6'
+        color: selectedMetric === 'swipes' ? '#3b82f6' : selectedMetric === 'likes' ? '#ef4444' : '#8b5cf6'
       }
     }]
   });
 
-  const getFunnelChartOption = () => ({
-    tooltip: {
-      trigger: 'item',
-      formatter: '{a} <br/>{b} : {c}%'
-    },
-    series: [{
-      name: 'Conversion Funnel',
-      type: 'funnel',
-      left: '10%',
-      top: 60,
-      bottom: 60,
-      width: '80%',
-      data: funnelData?.map(stage => ({
-        value: stage.conversion_rate,
-        name: stage.stage
-      })) || []
-    }]
-  });
-
-  // Funnel stage explanations
-  const funnelStageTooltips = {
-    'Product Views': 'Users browsing and viewing products in your catalog',
-    'External Store Clicks': 'Users clicking "Shop Now" to visit the retailer\'s website',
-    'Wishlist Additions': 'Users saving products to their wishlist for later',
-    'Tracked Conversions': 'Estimated purchases when users buy on external retailer sites'
-  };
-
-  // Metric cards data with explicit data validation
+  // Metric cards data
   const metricCards = useMemo(() => [
     {
-      title: 'Product Views',
-      value: overview.impressions,
-      icon: Eye,
+      title: 'Swipe Appearances',
+      value: overview.swipe_appearances,
+      icon: Smartphone,
       color: 'text-blue-600',
       bgColor: 'bg-blue-50',
-      change: '+12.5%',
-      tooltip: 'Total times your products were viewed by users'
+      tooltip: 'Times your products appeared in users\' swipe deck'
     },
     {
-      title: 'Shop Now Clicks',
-      value: overview.clicks,
-      icon: ExternalLink,
+      title: 'Right Swipes',
+      value: overview.right_swipes,
+      icon: ThumbsUp,
       color: 'text-green-600',
       bgColor: 'bg-green-50',
-      change: '+8.2%',
-      tooltip: 'Users who clicked "Shop Now" to visit retailer websites - your main traffic driver'
+      tooltip: 'Users who swiped right to like your products'
     },
     {
       title: 'Wishlist Saves',
-      value: overview.wishlist_adds,
+      value: overview.likes,
       icon: Heart,
       color: 'text-pink-600',
       bgColor: 'bg-pink-50',
-      change: '+15.3%',
-      tooltip: 'Products saved to wishlists - indicates strong purchase intent'
+      tooltip: 'Products saved to users\' liked items'
     },
     {
-      title: 'Actual Purchases',
-      value: overview.conversions,
-      icon: ShoppingCart,
+      title: 'Engagement Rate',
+      value: `${overview.engagement_rate}%`,
+      icon: Target,
       color: 'text-purple-600',
       bgColor: 'bg-purple-50',
-      change: '+22.1%',
-      tooltip: 'Confirmed purchases completed after clicking through to retailer sites'
-    },
-    {
-      title: 'Revenue Generated',
-      value: `$${(overview.revenue_cents / 100).toFixed(2)}`,
-      icon: DollarSign,
-      color: 'text-emerald-600',
-      bgColor: 'bg-emerald-50',
-      change: '+18.7%',
-      tooltip: 'Total revenue from Shop Now clicks leading to purchases'
+      tooltip: '(Right swipes + Wishlist saves) / Total swipe appearances'
     }
   ], [overview]);
 
-  // Show loading state or error handling
+  // Funnel stage icons config
+  const funnelStageConfig: Record<string, { icon: any; color: string }> = {
+    'Swipe Appearances': { icon: Smartphone, color: 'bg-blue-100 text-blue-600' },
+    'Right Swipes (Likes)': { icon: ThumbsUp, color: 'bg-green-100 text-green-600' },
+    'Wishlist Saves': { icon: Bookmark, color: 'bg-pink-100 text-pink-600' },
+    'Saved to Likes': { icon: Heart, color: 'bg-purple-100 text-purple-600' }
+  };
+
+  // Activity type labels and colors
+  const getActivityLabel = (type: string) => {
+    switch (type) {
+      case 'swipe_right': return { label: 'Liked', color: 'bg-green-500' };
+      case 'swipe_left': return { label: 'Passed', color: 'bg-gray-400' };
+      case 'swipe_up': return { label: 'Saved to wishlist', color: 'bg-purple-500' };
+      case 'wishlist': return { label: 'Added to wishlist', color: 'bg-purple-500' };
+      case 'like': return { label: 'Saved to likes', color: 'bg-red-500' };
+      default: return { label: 'Interacted', color: 'bg-blue-500' };
+    }
+  };
+
+  // Show loading state
   if (isOverviewLoading || isFunnelLoading) {
     return (
       <div className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {Array.from({ length: 6 }).map((_, i) => (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
             <Card key={i} className="animate-pulse">
               <CardContent className="p-6">
                 <div className="h-16 bg-muted rounded" />
@@ -270,7 +227,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
     );
   }
 
-  // Show error state if queries failed
+  // Show error state
   if (hasOverviewError) {
     return (
       <div className="space-y-6">
@@ -301,8 +258,14 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
       {/* Header with controls */}
       <div className="flex flex-col gap-4 lg:flex-row lg:justify-between lg:items-center">
         <div>
-          <h2 className="text-xl lg:text-2xl font-bold text-foreground">Analytics Dashboard</h2>
-          <p className="text-sm lg:text-base text-muted-foreground">Track your performance metrics and insights</p>
+          <div className="flex items-center gap-2">
+            <h2 className="text-xl lg:text-2xl font-bold text-foreground">Swipe Analytics</h2>
+            <Badge variant="secondary" className="text-xs">
+              <Smartphone className="h-3 w-3 mr-1" />
+              Swipe Mode
+            </Badge>
+          </div>
+          <p className="text-sm lg:text-base text-muted-foreground">Track how users interact with your products in swipe mode</p>
         </div>
         
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
@@ -326,7 +289,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
       </div>
 
       {/* Metric Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {metricCards.map((metric, index) => (
           <motion.div
             key={metric.title}
@@ -335,22 +298,19 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
             transition={{ delay: index * 0.1 }}
           >
             <Card className="hover:shadow-md transition-shadow duration-200">
-              <CardContent className="p-6">
+              <CardContent className="p-4 lg:p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm font-medium text-muted-foreground">
+                    <div className="flex items-center gap-1">
+                      <p className="text-xs lg:text-sm font-medium text-muted-foreground">
                         {metric.title}
                       </p>
                       <InfoTooltip content={metric.tooltip} />
                     </div>
-                    <p className="text-2xl font-bold">{metric.value}</p>
-                    <Badge variant="secondary" className="mt-1">
-                      {metric.change}
-                    </Badge>
+                    <p className="text-xl lg:text-2xl font-bold">{typeof metric.value === 'number' ? metric.value.toLocaleString() : metric.value}</p>
                   </div>
-                  <div className={`p-3 rounded-full ${metric.bgColor}`}>
-                    <metric.icon className={`h-6 w-6 ${metric.color}`} />
+                  <div className={`p-2 lg:p-3 rounded-full ${metric.bgColor}`}>
+                    <metric.icon className={`h-4 w-4 lg:h-6 lg:w-6 ${metric.color}`} />
                   </div>
                 </div>
               </CardContent>
@@ -363,65 +323,77 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
       <Tabs defaultValue="trends" className="space-y-4">
         <TabsList>
           <TabsTrigger value="trends">Trends</TabsTrigger>
-          <TabsTrigger value="funnel">Conversion Funnel</TabsTrigger>
-          <TabsTrigger value="performance">Performance</TabsTrigger>
+          <TabsTrigger value="funnel">User Journey</TabsTrigger>
+          <TabsTrigger value="performance">Products</TabsTrigger>
         </TabsList>
 
         <TabsContent value="trends" className="space-y-4">
           <Card>
             <CardHeader>
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-2">
-                  <CardTitle>Performance Trends</CardTitle>
-                  <InfoTooltip content="Track how your metrics change over time. Select different metrics to see their trends." />
+                  <CardTitle className="text-lg">Daily Trends</CardTitle>
+                  <InfoTooltip content="See how your metrics change day by day" />
                 </div>
                 <Select value={selectedMetric} onValueChange={(value: any) => setSelectedMetric(value)}>
-                  <SelectTrigger className="w-40">
+                  <SelectTrigger className="w-full sm:w-44">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="impressions">Product Views</SelectItem>
-                    <SelectItem value="clicks">External Clicks</SelectItem>
-                    <SelectItem value="conversions">Conversions</SelectItem>
-                    <SelectItem value="revenue">Est. Revenue</SelectItem>
+                    <SelectItem value="swipes">Swipe Appearances</SelectItem>
+                    <SelectItem value="likes">Likes</SelectItem>
+                    <SelectItem value="wishlists">Wishlist Saves</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </CardHeader>
             <CardContent>
-              {/* Data Summary Stats */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 mb-6">
+              {/* Summary Stats */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
                 {(() => {
                   const values = timeSeriesData?.map(d => d.value) || [];
                   const total = values.reduce((sum, val) => sum + (val || 0), 0);
                   const average = values.length > 0 ? total / values.length : 0;
                   const max = values.length > 0 ? Math.max(...values) : 0;
-                  const min = values.length > 0 ? Math.min(...values) : 0;
+                  
+                  // Calculate trend
+                  const recent = values.slice(-3).reduce((sum, val) => sum + (val || 0), 0) / 3;
+                  const earlier = values.slice(0, 3).reduce((sum, val) => sum + (val || 0), 0) / 3;
+                  const trendUp = recent >= earlier;
                   
                   return (
                     <>
-                      <div className="text-center p-3 bg-blue-50 rounded-lg">
-                        <p className="text-lg font-bold text-blue-600">{total.toLocaleString()}</p>
+                      <div className="text-center p-3 bg-muted/50 rounded-lg">
+                        <p className="text-lg font-bold">{total.toLocaleString()}</p>
                         <p className="text-xs text-muted-foreground">Total</p>
                       </div>
-                      <div className="text-center p-3 bg-green-50 rounded-lg">
-                        <p className="text-lg font-bold text-green-600">{Math.round(average).toLocaleString()}</p>
-                        <p className="text-xs text-muted-foreground">Daily Average</p>
+                      <div className="text-center p-3 bg-muted/50 rounded-lg">
+                        <p className="text-lg font-bold">{Math.round(average).toLocaleString()}</p>
+                        <p className="text-xs text-muted-foreground">Daily Avg</p>
                       </div>
-                      <div className="text-center p-3 bg-purple-50 rounded-lg">
-                        <p className="text-lg font-bold text-purple-600">{max.toLocaleString()}</p>
-                        <p className="text-xs text-muted-foreground">Peak Day</p>
+                      <div className="text-center p-3 bg-muted/50 rounded-lg">
+                        <p className="text-lg font-bold">{max.toLocaleString()}</p>
+                        <p className="text-xs text-muted-foreground">Best Day</p>
                       </div>
-                      <div className="text-center p-3 bg-orange-50 rounded-lg">
-                        <p className="text-lg font-bold text-orange-600">{min.toLocaleString()}</p>
-                        <p className="text-xs text-muted-foreground">Lowest Day</p>
+                      <div className="text-center p-3 bg-muted/50 rounded-lg">
+                        <div className="flex items-center justify-center gap-1">
+                          {trendUp ? (
+                            <ArrowUpRight className="h-4 w-4 text-green-600" />
+                          ) : (
+                            <ArrowDownRight className="h-4 w-4 text-red-600" />
+                          )}
+                          <p className={`text-lg font-bold ${trendUp ? 'text-green-600' : 'text-red-600'}`}>
+                            {trendUp ? 'Up' : 'Down'}
+                          </p>
+                        </div>
+                        <p className="text-xs text-muted-foreground">Trend</p>
                       </div>
                     </>
                   );
                 })()}
               </div>
 
-              <div className="h-80">
+              <div className="h-64 lg:h-80">
                 {isTimeSeriesLoading ? (
                   <div className="flex items-center justify-center h-full">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
@@ -433,29 +405,6 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
                   />
                 )}
               </div>
-
-              {/* Additional Insights */}
-              <div className="mt-4 p-4 bg-accent/30 rounded-lg">
-                <h4 className="font-medium mb-2">Quick Insights</h4>
-                <div className="text-sm text-muted-foreground space-y-1">
-                  {(() => {
-                    const values = timeSeriesData?.map(d => d.value) || [];
-                    if (values.length < 2) return <p>Not enough data for trend analysis</p>;
-                    
-                    const recent = values.slice(-3).reduce((sum, val) => sum + (val || 0), 0) / 3;
-                    const earlier = values.slice(0, 3).reduce((sum, val) => sum + (val || 0), 0) / 3;
-                    const trend = recent > earlier ? 'increasing' : recent < earlier ? 'decreasing' : 'stable';
-                    const trendColor = trend === 'increasing' ? 'text-green-600' : trend === 'decreasing' ? 'text-red-600' : 'text-muted-foreground';
-                    
-                    return (
-                      <>
-                        <p>Your {selectedMetric} trend is <span className={`font-medium ${trendColor}`}>{trend}</span> over the selected period.</p>
-                        <p>Recent 3-day average: <span className="font-medium">{Math.round(recent).toLocaleString()}</span></p>
-                      </>
-                    );
-                  })()}
-                </div>
-              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -464,114 +413,89 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
           <Card>
             <CardHeader>
               <div className="flex items-center gap-2">
-                <CardTitle>Customer Journey Funnel</CardTitle>
-                <InfoTooltip content="Shows how users progress from viewing products to making purchases. Each stage shows conversion rates to the next level." />
+                <CardTitle className="text-lg">User Journey</CardTitle>
+                <Badge variant="outline" className="text-xs">Swipe Mode</Badge>
+                <InfoTooltip content="How users progress from seeing your products to saving them" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="space-y-6">
-
-                {/* Customer Journey Flow */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Customer Journey Flow</h3>
-                  <div className="space-y-4">
-                    {isFunnelLoading ? (
-                      <div className="flex items-center justify-center py-8">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-                      </div>
-                    ) : hasFunnelError ? (
-                      <div className="text-center py-8 text-destructive">
-                        Error loading funnel data
-                      </div>
-                    ) : funnelData.length === 0 ? (
-                      <div className="text-center py-8 text-muted-foreground">
-                        No funnel data available
-                      </div>
-                    ) : (
-                      <div className="space-y-3">
-                        {funnelData.map((stage, index) => {
-                          const stageIcons = {
-                            'Product Views': { icon: Eye, color: 'bg-blue-100 text-blue-600' },
-                            'External Store Clicks': { icon: ExternalLink, color: 'bg-green-100 text-green-600' },
-                            'Wishlist Additions': { icon: Heart, color: 'bg-pink-100 text-pink-600' },
-                            'Actual Purchases': { icon: ShoppingCart, color: 'bg-purple-100 text-purple-600' }
-                          };
-                          
-                          const config = stageIcons[stage.stage as keyof typeof stageIcons] || 
-                            { icon: Eye, color: 'bg-gray-100 text-gray-600' };
-                          const Icon = config.icon;
-                          
-                          return (
-                            <div key={stage.stage} className="flex items-center gap-4 p-3 bg-accent/30 rounded-lg">
-                              <div className={`p-2 rounded-full ${config.color}`}>
-                                <Icon className="h-4 w-4" />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center justify-between">
-                                  <span className="font-medium text-sm truncate">{stage.stage}</span>
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-lg font-bold">{stage.count.toLocaleString()}</span>
-                                    {index > 0 && (
-                                      <Badge variant="outline" className="text-xs">
-                                        {stage.conversion_rate.toFixed(1)}%
-                                      </Badge>
-                                    )}
-                                  </div>
-                                </div>
-                                <div className="w-full bg-muted rounded-full h-2 mt-2">
-                                  <div 
-                                    className="h-2 rounded-full bg-primary transition-all duration-700"
-                                    style={{ width: `${stage.percentage}%` }}
-                                  />
-                                </div>
+              <div className="space-y-4">
+                {isFunnelLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+                  </div>
+                ) : funnelData.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No data available yet
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {funnelData.map((stage, index) => {
+                      const config = funnelStageConfig[stage.stage] || 
+                        { icon: Eye, color: 'bg-gray-100 text-gray-600' };
+                      const Icon = config.icon;
+                      
+                      return (
+                        <div key={stage.stage} className="flex items-center gap-4 p-3 bg-accent/30 rounded-lg">
+                          <div className={`p-2 rounded-full ${config.color}`}>
+                            <Icon className="h-4 w-4" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between">
+                              <span className="font-medium text-sm truncate">{stage.stage}</span>
+                              <div className="flex items-center gap-2">
+                                <span className="text-lg font-bold">{stage.count.toLocaleString()}</span>
+                                {index > 0 && (
+                                  <Badge variant="outline" className="text-xs">
+                                    {stage.conversion_rate.toFixed(1)}%
+                                  </Badge>
+                                )}
                               </div>
                             </div>
-                          );
-                        })}
-                      </div>
-                    )}
+                            <div className="w-full bg-muted rounded-full h-2 mt-2">
+                              <div 
+                                className="h-2 rounded-full bg-primary transition-all duration-700"
+                                style={{ width: `${Math.min(stage.percentage, 100)}%` }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                </div>
+                )}
               </div>
               
               {/* Conversion Insights */}
-              <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <Card className="p-4">
-                  <div className="text-center">
-                    <p className="text-2xl font-bold text-green-600">
-                      {funnelData.length > 1 ? 
-                        ((funnelData[1]?.count || 0) / (funnelData[0]?.count || 1) * 100).toFixed(1) : 
-                        '0'
-                      }%
-                    </p>
-                    <p className="text-sm text-muted-foreground">View to Click Rate</p>
-                  </div>
-                </Card>
-                
-                <Card className="p-4">
-                  <div className="text-center">
-                    <p className="text-2xl font-bold text-purple-600">
-                      {funnelData.length > 2 ? 
-                        ((funnelData[2]?.count || 0) / (funnelData[0]?.count || 1) * 100).toFixed(1) : 
-                        '0'
-                      }%
-                    </p>
-                    <p className="text-sm text-muted-foreground">View to Wishlist Rate</p>
-                  </div>
-                </Card>
-                
-                <Card className="p-4">
-                  <div className="text-center">
-                    <p className="text-2xl font-bold text-orange-600">
-                      {funnelData.length > 3 ? 
-                        ((funnelData[3]?.count || 0) / (funnelData[0]?.count || 1) * 100).toFixed(1) : 
-                        '0'
-                      }%
-                    </p>
-                    <p className="text-sm text-muted-foreground">Overall Conversion Rate</p>
-                  </div>
-                </Card>
-              </div>
+              {funnelData.length > 0 && (
+                <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <Card className="p-4">
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-green-600">
+                        {funnelData.length > 1 ? 
+                          ((funnelData[1]?.count || 0) / (funnelData[0]?.count || 1) * 100).toFixed(1) : 
+                          '0'
+                        }%
+                      </p>
+                      <p className="text-sm text-muted-foreground">Like Rate</p>
+                      <p className="text-xs text-muted-foreground mt-1">Users who swiped right</p>
+                    </div>
+                  </Card>
+                  
+                  <Card className="p-4">
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-purple-600">
+                        {funnelData.length > 2 ? 
+                          ((funnelData[2]?.count || 0) / (funnelData[0]?.count || 1) * 100).toFixed(1) : 
+                          '0'
+                        }%
+                      </p>
+                      <p className="text-sm text-muted-foreground">Save Rate</p>
+                      <p className="text-xs text-muted-foreground mt-1">Users who added to wishlist</p>
+                    </div>
+                  </Card>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -581,91 +505,88 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
             <Card>
               <CardHeader>
                 <div className="flex items-center gap-2">
-                  <CardTitle>Top Performing Products</CardTitle>
-                  <InfoTooltip content="Products ranked by views, likes, and estimated revenue. Performance based on user interactions within the app." />
+                  <CardTitle className="text-lg">Top Products</CardTitle>
+                  <Badge variant="outline" className="text-xs">Swipe Mode</Badge>
+                  <InfoTooltip content="Products ranked by swipe appearances and engagement in swipe mode" />
                 </div>
               </CardHeader>
-               <CardContent>
-                 <div className="space-y-3">
-                   {topProductsQuery.isLoading ? (
-                     <div className="flex items-center justify-center py-8">
-                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-                     </div>
-                   ) : topProductsQuery.error ? (
-                     <div className="text-center py-8 text-destructive">
-                       Error loading products
-                     </div>
-                   ) : !topProductsQuery.data || topProductsQuery.data.length === 0 ? (
-                     <div className="text-center py-8 text-muted-foreground">
-                       No product data available yet
-                     </div>
-                   ) : (
-                     topProductsQuery.data.map((product, index) => (
-                       <div key={product.id} className="flex items-center justify-between p-3 bg-accent/30 rounded-lg">
-                         <div>
-                           <p className="font-medium">{product.title}</p>
-                           <p className="text-sm text-muted-foreground">
-                             {product.views} views • {product.likes} likes • ${product.est_revenue} est. revenue
-                           </p>
-                         </div>
-                         <Badge variant="secondary">
-                           {product.engagement_rate.toFixed(1)}% engagement
-                         </Badge>
-                       </div>
-                     ))
-                   )}
-                 </div>
+              <CardContent>
+                <div className="space-y-3">
+                  {topProductsQuery.isLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+                    </div>
+                  ) : topProductsQuery.error ? (
+                    <div className="text-center py-8 text-destructive">
+                      Error loading products
+                    </div>
+                  ) : !topProductsQuery.data || topProductsQuery.data.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      No product data available yet
+                    </div>
+                  ) : (
+                    topProductsQuery.data.map((product, index) => (
+                      <div key={product.id} className="flex items-center justify-between p-3 bg-accent/30 rounded-lg">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium truncate">{product.title}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {product.swipe_appearances} appearances • {product.right_swipes} likes • {product.wishlist_adds} saves
+                          </p>
+                        </div>
+                        <Badge variant="secondary">
+                          {product.engagement_rate.toFixed(1)}%
+                        </Badge>
+                      </div>
+                    ))
+                  )}
+                </div>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader>
                 <div className="flex items-center gap-2">
-                  <CardTitle>Real-time Activity</CardTitle>
-                  <InfoTooltip content="Live feed of user interactions with your products. Shows recent views, wishlist additions, and AR try-ons." />
+                  <CardTitle className="text-lg">Recent Activity</CardTitle>
+                  <Badge variant="outline" className="text-xs">Live</Badge>
+                  <InfoTooltip content="Real-time swipe interactions with your products" />
                 </div>
               </CardHeader>
-               <CardContent>
-                 <div className="space-y-3">
-                   {realtimeActivityQuery.isLoading ? (
-                     <div className="flex items-center justify-center py-8">
-                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-                     </div>
-                   ) : realtimeActivityQuery.error ? (
-                     <div className="text-center py-8 text-destructive">
-                       Error loading activity
-                     </div>
-                   ) : !realtimeActivityQuery.data || realtimeActivityQuery.data.length === 0 ? (
-                     <div className="text-center py-8 text-muted-foreground">
-                       No recent activity
-                     </div>
-                   ) : (
-                     realtimeActivityQuery.data.map((activity) => (
-                       <div key={activity.id} className="flex items-center gap-3 p-3 border rounded-lg hover:bg-accent/50 transition-colors">
-                         <div className={`w-2 h-2 rounded-full animate-pulse ${
-                           activity.type === 'view' ? 'bg-blue-500' :
-                           activity.type === 'click' ? 'bg-green-500' :
-                           activity.type === 'like' ? 'bg-red-500' :
-                           'bg-purple-500'
-                         }`} />
-                         <div className="flex-1 min-w-0">
-                           <p className="text-sm truncate">
-                             {activity.type === 'view' ? 'Product viewed' :
-                              activity.type === 'click' ? 'Shop Now clicked' :
-                              activity.type === 'like' ? 'Product liked' :
-                              'Added to wishlist'} - {activity.product_title}
-                             {activity.count && activity.count > 1 && (
-                               <Badge variant="secondary" className="ml-2 text-xs">
-                                 {activity.count}x
-                               </Badge>
-                             )}
-                           </p>
-                           <p className="text-xs text-muted-foreground">{activity.time_ago}</p>
-                         </div>
-                       </div>
-                     ))
-                   )}
-                 </div>
+              <CardContent>
+                <div className="space-y-3">
+                  {realtimeActivityQuery.isLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+                    </div>
+                  ) : realtimeActivityQuery.error ? (
+                    <div className="text-center py-8 text-destructive">
+                      Error loading activity
+                    </div>
+                  ) : !realtimeActivityQuery.data || realtimeActivityQuery.data.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      No recent activity
+                    </div>
+                  ) : (
+                    realtimeActivityQuery.data.map((activity) => {
+                      const { label, color } = getActivityLabel(activity.type);
+                      return (
+                        <div key={activity.id} className="flex items-center gap-3 p-3 border rounded-lg hover:bg-accent/50 transition-colors">
+                          <div className={`w-2 h-2 rounded-full animate-pulse ${color}`} />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm truncate">
+                              {label} - {activity.product_title}
+                              {activity.count && activity.count > 1 && (
+                                <Badge variant="secondary" className="ml-2 text-xs">
+                                  {activity.count}x
+                                </Badge>
+                              )}
+                            </p>
+                            <p className="text-xs text-muted-foreground">{activity.time_ago}</p>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
               </CardContent>
             </Card>
           </div>

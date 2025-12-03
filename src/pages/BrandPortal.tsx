@@ -368,10 +368,10 @@ const BrandPortal: React.FC = () => {
     </div>;
   const analytics = {
     totalProducts: products.length,
-    totalViews: analyticsData?.totalViews || 0,
+    totalSwipeAppearances: analyticsData?.totalSwipeAppearances || 0,
     totalLikes: analyticsData?.totalLikes || 0,
     totalWishlistAdds: analyticsData?.totalWishlistAdds || 0,
-    totalRevenue: (analyticsData?.totalViews || 0) * 45.99
+    engagementRate: analyticsData?.engagementRate || 0
   };
   const topProductsData = products.slice(0, 5).map((product, index) => ({
     rank: index + 1,
@@ -414,11 +414,11 @@ const BrandPortal: React.FC = () => {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-xs md:text-sm font-medium">Total Views</CardTitle>
+              <CardTitle className="text-xs md:text-sm font-medium">Swipe Appearances</CardTitle>
               <BarChart3 className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-lg md:text-2xl font-bold">{analytics.totalViews}</div>
+              <div className="text-lg md:text-2xl font-bold">{analytics.totalSwipeAppearances}</div>
             </CardContent>
           </Card>
 

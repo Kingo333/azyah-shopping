@@ -4,11 +4,10 @@ import { supabase } from '@/integrations/supabase/client';
 export interface TopProduct {
   id: string;
   title: string;
-  views: number;
-  likes: number;
+  swipe_appearances: number;
+  right_swipes: number;
   wishlist_adds: number;
-  clicks: number;
-  est_revenue: number;
+  likes: number;
   engagement_rate: number;
 }
 
@@ -44,15 +43,15 @@ export const useTopProducts = (brandId?: string, retailerId?: string, limit: num
 
       console.log('Found products:', products.length);
 
-      // Get analytics data for each product
+      // Get analytics data for each product from swipes table
       const productAnalytics = await Promise.all(
         products.map(async (product) => {
-          // Get events for this product
-          const { data: events } = await supabase
-            .from('events')
-            .select('event_type')
+          // Get swipes for this product (last 30 days)
+          const { data: swipes } = await supabase
+            .from('swipes')
+            .select('action')
             .eq('product_id', product.id)
-            .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()); // Last 30 days
+            .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
 
           // Get likes for this product
           const { data: likes } = await supabase
@@ -67,32 +66,33 @@ export const useTopProducts = (brandId?: string, retailerId?: string, limit: num
             .eq('product_id', product.id)
             .gte('added_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
 
-          const views = events?.filter(e => e.event_type === 'product_view').length || 0;
-          const clicks = events?.filter(e => e.event_type === 'product_click').length || 0;
+          const swipeAppearances = swipes?.length || 0;
+          const rightSwipes = swipes?.filter(s => s.action === 'right').length || 0;
           const likesCount = likes?.length || 0;
           const wishlistCount = wishlistAdds?.length || 0;
           
-          const engagementRate = views > 0 ? ((likesCount + clicks) / views) * 100 : 0;
-          const estRevenue = clicks * 45; // $45 average per click
+          // Engagement rate = (right swipes + wishlist adds) / total appearances
+          const engagementRate = swipeAppearances > 0 
+            ? ((rightSwipes + wishlistCount) / swipeAppearances) * 100 
+            : 0;
 
           return {
             id: product.id,
             title: product.title,
-            views,
-            likes: likesCount,
+            swipe_appearances: swipeAppearances,
+            right_swipes: rightSwipes,
             wishlist_adds: wishlistCount,
-            clicks,
-            est_revenue: estRevenue,
+            likes: likesCount,
             engagement_rate: engagementRate
           };
         })
       );
 
-      // Sort by views and engagement, then limit
+      // Sort by swipe appearances and engagement, then limit
       const topProducts = productAnalytics
         .sort((a, b) => {
-          // Primary sort: views (descending)
-          if (b.views !== a.views) return b.views - a.views;
+          // Primary sort: swipe appearances (descending)
+          if (b.swipe_appearances !== a.swipe_appearances) return b.swipe_appearances - a.swipe_appearances;
           // Secondary sort: engagement rate (descending)
           return b.engagement_rate - a.engagement_rate;
         })
