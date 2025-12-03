@@ -1,5 +1,4 @@
-
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -9,8 +8,8 @@ import type { UserRole } from '@/lib/rbac';
 import { 
   performSessionHealthCheck, 
   shouldPerformHealthCheck, 
-  recoverFromAuthError, 
-  clearAllAuthData 
+  clearAllAuthData,
+  setNavigationCallback
 } from '@/utils/sessionHealthCheck';
 
 interface AuthContextType {
@@ -21,6 +20,8 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   updateProfile: (data: any) => Promise<{ error: any }>;
+  // For programmatic navigation after signout
+  onSignOutComplete?: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -30,17 +31,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [healthCheckPerformed, setHealthCheckPerformed] = useState(false);
+  const [signOutCallback, setSignOutCallback] = useState<(() => void) | null>(null);
+
+  // Allow App component to set navigation callback for recovery
+  useEffect(() => {
+    // This will be set by useAuthNavigation hook in App
+    return () => {
+      setNavigationCallback(() => {});
+    };
+  }, []);
 
   useEffect(() => {
-    // Perform health check on app startup
+    // Perform health check on app startup - but less aggressively
     const initializeAuth = async () => {
       if (shouldPerformHealthCheck() && !healthCheckPerformed) {
         console.log('Performing startup session health check...');
         setHealthCheckPerformed(true);
+        
+        // Health check now only returns false after multiple consecutive failures
         const isHealthy = await performSessionHealthCheck();
         
         if (!isHealthy) {
-          console.log('Session unhealthy - clearing state');
+          console.log('Session unhealthy after multiple checks - clearing state');
           setSession(null);
           setUser(null);
           setLoading(false);
@@ -50,7 +62,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // Auth state management - database trigger handles profile creation automatically
       const { data: { subscription } } = supabase.auth.onAuthStateChange(
-        async (event, session) => {
+        (event, session) => {
           console.log('AuthContext: Auth state changed:', { event, user: session?.user?.email });
           
           // Handle OAuth sign-in events
@@ -60,10 +72,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             console.log('OAuth sign-in detected:', { provider, role });
           }
           
-          // Handle auth errors proactively
+          // Handle token refresh failure more gracefully
           if (event === 'TOKEN_REFRESHED' && !session) {
-            console.log('Token refresh failed - initiating recovery');
-            await recoverFromAuthError();
+            console.log('Token refresh returned no session - user may have logged out elsewhere');
+            // Don't force recovery - just update state
+            setSession(null);
+            setUser(null);
             return;
           }
           
@@ -83,8 +97,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
-          console.log('Session retrieval error:', error);
-          await recoverFromAuthError();
+          console.log('Session retrieval error:', error.message);
+          // Don't force recovery on errors - just set no session
+          // Could be network error, let user retry
+          setSession(null);
+          setUser(null);
+          setLoading(false);
           return;
         }
         
@@ -237,7 +255,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const signOut = async () => {
+  const signOut = useCallback(async () => {
     try {
       setLoading(true);
       
@@ -255,7 +273,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           console.log('Signout error:', error.message);
           toast({
             title: "Signed Out",
-            description: "You have been signed out. Redirecting...",
+            description: "You have been signed out.",
             variant: "default"
           });
         }
@@ -265,8 +283,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(null);
       setUser(null);
       
-      // Always redirect to landing page
-      window.location.href = '/';
+      // Use callback for navigation if provided (set by App component)
+      // This allows soft navigation instead of hard redirect
+      if (signOutCallback) {
+        signOutCallback();
+      } else {
+        // Fallback to hard redirect if no callback
+        window.location.href = '/';
+      }
       
     } catch (error) {
       console.error('Signout error:', error);
@@ -278,7 +302,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [signOutCallback]);
 
   const updateProfile = async (data: any) => {
     if (!user) return { error: new Error('No user') };
@@ -305,7 +329,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signUp,
     signIn,
     signOut,
-    updateProfile
+    updateProfile,
+    // Allow setting signout callback from outside
+    set onSignOutComplete(callback: (() => void) | undefined) {
+      setSignOutCallback(() => callback || null);
+    }
   };
 
   return (

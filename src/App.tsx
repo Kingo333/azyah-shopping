@@ -8,6 +8,7 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import { FeatureFlagsProvider } from '@/contexts/FeatureFlagsContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { useSessionMonitor } from '@/hooks/useSessionMonitor';
+import { useAuthNavigation } from '@/hooks/useAuthNavigation';
 
 import Index from './pages/Index';
 import Landing from './pages/Landing';
@@ -70,6 +71,7 @@ const queryClient = new QueryClient({
 
 function AppContent() {
   useSessionMonitor();
+  useAuthNavigation(); // Set up soft navigation for auth recovery
   return (
     <>
       <Routes>
