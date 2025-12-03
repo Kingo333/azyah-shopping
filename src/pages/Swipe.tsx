@@ -174,16 +174,16 @@ const Swipe = () => {
                 <TooltipProvider>
                   <Tooltip open={showTooltip} onOpenChange={setShowTooltip}>
                     <TooltipTrigger asChild>
-                      <div className="flex items-center gap-0.5 sm:gap-1.5 px-1.5 sm:px-2 py-1 sm:py-1.5 rounded-full bg-muted/40">
+                      <div className="flex items-center gap-0.5 sm:gap-1 px-1 sm:px-1.5 py-0.5 sm:py-1 rounded-full bg-muted/40">
                         <button 
                           onClick={() => setViewMode('swipe')}
-                          className={`p-1 sm:p-1.5 rounded-full transition-all ${viewMode === 'swipe' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                          className={`p-1.5 sm:p-2 rounded-full transition-all ${viewMode === 'swipe' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
                         >
                           <LayoutGrid className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                         </button>
                         <button 
                           onClick={() => setViewMode('list')}
-                          className={`p-1 sm:p-1.5 rounded-full transition-all ${viewMode === 'list' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                          className={`p-1.5 sm:p-2 rounded-full transition-all ${viewMode === 'list' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
                         >
                           <List className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                         </button>

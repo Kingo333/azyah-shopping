@@ -5,7 +5,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Separator } from '@/components/ui/separator';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ChevronDown, X, Filter } from 'lucide-react';
+import { ChevronDown, X, SlidersHorizontal } from 'lucide-react';
 import { 
   CATEGORY_TREE, 
   GENDER_OPTIONS, 
@@ -156,10 +156,10 @@ const UnifiedCategoryFilter: React.FC<UnifiedCategoryFilterProps> = ({
             <Button 
               variant="outline" 
               size="sm" 
-              className="h-8 sm:h-9 px-3 sm:px-4 rounded-full border-border/60 bg-background hover:bg-muted/50 transition-colors"
+              className="h-8 sm:h-9 px-3 sm:px-4 rounded-full border-border/60 bg-background hover:bg-muted/50 transition-colors gap-1.5"
             >
-              <Filter className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              <span className="ml-1.5 text-xs sm:text-sm font-medium">Filters</span>
+              <SlidersHorizontal className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span className="text-xs sm:text-sm font-medium">Filters</span>
               {activeFilterCount > 0 && (
                 <Badge variant="destructive" className="ml-1.5 h-4 w-4 sm:h-5 sm:w-5 rounded-full p-0 flex items-center justify-center text-[10px] sm:text-xs">
                   {activeFilterCount}
