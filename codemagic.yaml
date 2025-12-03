@@ -13,14 +13,10 @@ workflows:
         bundle_identifier: com.azyah.style
 
       vars:
-        # Xcode workspace & scheme from your iOS project
         XCODE_WORKSPACE: ios/App/App.xcworkspace
         XCODE_SCHEME: App
-
-        # From your App Store Connect URL
         APP_STORE_APP_ID: "6755971189"
 
-      # Use a Codemagic-supported Xcode image
       node: v20.14.0
       xcode: 16.0
       cocoapods: default
@@ -39,6 +35,12 @@ workflows:
         script: |
           cd ios/App
           pod install
+
+      # NEW STEP – Auto-update iOS build number for TestFlight
+      - name: Set iOS build number from Codemagic BUILD_NUMBER
+        script: |
+          cd ios/App
+          agvtool new-version -all $BUILD_NUMBER
 
       - name: Apply signing settings
         script: |
@@ -60,4 +62,5 @@ workflows:
       app_store_connect:
         auth: integration
         submit_to_testflight: true
-        # submit_to_app_store: false   # leave commented for now
+        # DO NOT ENABLE ↓ until you want App Store review
+        # submit_to_app_store: false
