@@ -764,7 +764,7 @@ export default function IntroCarousel() {
         {/* Login Link */}
         <button
           onClick={handleJoinCommunity}
-          className="w-full mt-3 text-base md:text-lg text-primary font-medium hover:text-primary/80 transition-colors"
+          className="w-full mt-3 text-sm md:text-base text-primary font-medium hover:text-primary/80 transition-colors"
         >
           Already have an account? <span className="font-semibold">Log In</span>
         </button>
