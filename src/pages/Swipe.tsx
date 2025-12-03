@@ -132,60 +132,60 @@ const Swipe = () => {
   return <div className="min-h-screen dashboard-bg flex flex-col">
       {/* Header */}
       <header className={`sticky top-0 z-50 w-full bg-background/80 backdrop-blur-xl border-b border-border/40 shrink-0 transition-all duration-300 safe-area-pt ${isProductDetailOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
-        <div className="container max-w-screen-2xl mx-auto px-3 sm:px-4 py-3">
-          <div className="flex items-center justify-between gap-3">
+        <div className="container max-w-screen-2xl mx-auto px-3 sm:px-4 py-2.5 sm:py-3">
+          <div className="flex items-center justify-between gap-2 sm:gap-3">
             {/* Left Section - Back & Title */}
-            <div className="flex items-center gap-3 flex-shrink-0">
+            <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
               <Button 
                 variant="ghost" 
                 size="icon" 
                 onClick={() => navigate("/dashboard")} 
-                className="h-9 w-9 rounded-full hover:bg-accent/60 transition-colors"
+                className="h-8 w-8 sm:h-9 sm:w-9 rounded-full hover:bg-accent/60 transition-colors"
               >
                 <ArrowLeft className="h-4 w-4" />
               </Button>
-              <div className="hidden sm:block">
-                <h1 className="text-lg font-semibold tracking-tight">Discover</h1>
-                <p className="text-xs text-muted-foreground/80 font-medium">
+              <div>
+                <h1 className="text-base sm:text-lg font-semibold tracking-tight">Discover</h1>
+                <p className="text-[10px] sm:text-xs text-muted-foreground/80 font-medium truncate max-w-[80px] sm:max-w-none">
                   {getCurrentCategoryDisplay()}
                 </p>
               </div>
             </div>
             
             {/* Center Section - Search */}
-            <div className="relative flex-1 max-w-xs mx-auto">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60" />
+            <div className="relative flex-1 max-w-[140px] sm:max-w-xs mx-auto">
+              <Search className="absolute left-2.5 sm:left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground/60" />
               <Input 
                 type="text" 
-                placeholder="Search styles..." 
+                placeholder="Search..." 
                 value={filters.searchQuery} 
                 onChange={e => setFilters(prev => ({
                   ...prev,
                   searchQuery: e.target.value
                 }))} 
-                className="pl-9 h-9 text-sm bg-muted/40 border-0 rounded-full placeholder:text-muted-foreground/50 focus-visible:ring-1 focus-visible:ring-primary/30 focus-visible:bg-muted/60 transition-all" 
+                className="pl-8 sm:pl-9 h-8 sm:h-9 text-xs sm:text-sm bg-muted/40 border-0 rounded-full placeholder:text-muted-foreground/50 focus-visible:ring-1 focus-visible:ring-primary/30 focus-visible:bg-muted/60 transition-all" 
               />
             </div>
 
             {/* Right Section - Actions */}
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1 sm:gap-1.5">
               {/* View Mode Toggle */}
               {showListToggle && (
                 <TooltipProvider>
                   <Tooltip open={showTooltip} onOpenChange={setShowTooltip}>
                     <TooltipTrigger asChild>
-                      <div className="hidden sm:flex items-center gap-1.5 px-2 py-1.5 rounded-full bg-muted/40">
+                      <div className="flex items-center gap-0.5 sm:gap-1.5 px-1.5 sm:px-2 py-1 sm:py-1.5 rounded-full bg-muted/40">
                         <button 
                           onClick={() => setViewMode('swipe')}
-                          className={`p-1.5 rounded-full transition-all ${viewMode === 'swipe' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                          className={`p-1 sm:p-1.5 rounded-full transition-all ${viewMode === 'swipe' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
                         >
-                          <LayoutGrid className="h-3.5 w-3.5" />
+                          <LayoutGrid className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                         </button>
                         <button 
                           onClick={() => setViewMode('list')}
-                          className={`p-1.5 rounded-full transition-all ${viewMode === 'list' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                          className={`p-1 sm:p-1.5 rounded-full transition-all ${viewMode === 'list' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
                         >
-                          <List className="h-3.5 w-3.5" />
+                          <List className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                         </button>
                       </div>
                     </TooltipTrigger>
@@ -200,9 +200,9 @@ const Swipe = () => {
                 variant="ghost" 
                 size="icon" 
                 onClick={() => navigate("/likes")} 
-                className="h-9 w-9 rounded-full hover:bg-accent/60 transition-colors"
+                className="h-8 w-8 sm:h-9 sm:w-9 rounded-full hover:bg-accent/60 transition-colors"
               >
-                <Heart className="h-4 w-4" />
+                <Heart className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               </Button>
               
               <UnifiedCategoryFilter filters={filters} onFiltersChange={setFilters} compact={true} showPriceRange={true} showCurrency={true} />
