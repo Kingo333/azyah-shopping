@@ -32,7 +32,7 @@ const features = [
 ];
 
 const comparisonFeatures = [
-  { name: 'Create outfits', free: '10 total', premium: 'Unlimited' },
+  { name: 'Create outfits', free: '5 total', premium: 'Unlimited' },
   { name: 'Connect with community', free: true, premium: true },
   { name: 'Wardrobe items', free: '10 items', premium: 'Unlimited' },
   { name: 'AI Try-on', free: '4/day', premium: 'Unlimited' },
