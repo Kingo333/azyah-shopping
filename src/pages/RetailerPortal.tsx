@@ -47,6 +47,14 @@ const RetailerPortal = () => {
   const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'products');
   const [retailer, setRetailer] = useState<any>(null);
   
+  // Sync activeTab when URL changes (e.g., from ProfileCompletionBanner navigation)
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab && tab !== activeTab) {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
+  
   const handleTabChange = (value: string) => {
     setActiveTab(value);
     setSearchParams({ tab: value });
