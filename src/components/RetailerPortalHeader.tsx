@@ -4,8 +4,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Settings, LogOut, Sun, Moon, User } from 'lucide-react';
+
+import { LogOut, Sun, Moon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface Retailer {
@@ -62,27 +62,25 @@ export const RetailerPortalHeader: React.FC<RetailerPortalHeaderProps> = ({
           {theme === 'dark' ? <Sun className="h-4 w-4 md:h-5 md:w-5" /> : <Moon className="h-4 w-4 md:h-5 md:w-5" />}
         </Button>
 
-        {/* User Menu */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" className="flex items-center gap-1 md:gap-3 hover:bg-accent/50 dark:hover:bg-accent/20 hover:scale-105 transition-all h-8 md:h-10 max-w-24 md:max-w-none">
-              <Avatar className="h-6 w-6 md:h-8 md:w-8 border-2 border-border dark:border-border/50 flex-shrink-0">
-                <AvatarFallback className="text-xs md:text-sm bg-gradient-to-br from-primary/20 to-accent/20 dark:from-primary/30 dark:to-accent/30">
-                  {getUserName().charAt(0).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              <span className="text-xs md:text-sm font-medium truncate min-w-0">
-                {getUserName()}
-              </span>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="z-50 w-56 bg-background border border-border shadow-lg">
-            <DropdownMenuItem onClick={handleSignOut}>
-              <LogOut className="mr-2 h-4 w-4" />
-              Sign Out
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {/* User Info & Sign Out */}
+        <div className="flex items-center gap-1 md:gap-2">
+          <Avatar className="h-6 w-6 md:h-8 md:w-8 border-2 border-border dark:border-border/50 flex-shrink-0">
+            <AvatarFallback className="text-xs md:text-sm bg-gradient-to-br from-primary/20 to-accent/20 dark:from-primary/30 dark:to-accent/30">
+              {getUserName().charAt(0).toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
+          <span className="text-xs md:text-sm font-medium truncate max-w-20 md:max-w-none">
+            {getUserName()}
+          </span>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={handleSignOut}
+            className="h-8 w-8 md:h-10 md:w-10 p-0 hover:bg-destructive/10 hover:text-destructive"
+          >
+            <LogOut className="h-4 w-4 md:h-5 md:w-5" />
+          </Button>
+        </div>
       </div>
     </div>
   );
