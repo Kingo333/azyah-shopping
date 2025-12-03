@@ -4,17 +4,14 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
 export interface AnalyticsMetrics {
-  totalViews: number;
+  totalSwipeAppearances: number;
   totalLikes: number;
   totalWishlistAdds: number;
-  conversionRate: number;
+  engagementRate: number;
   topReferrers: Array<{
     code: string;
     clicks: number;
-    revenue: number;
   }>;
-  repeatShopperRate: number;
-  avgSwipeSentiment: number;
 }
 
 export interface ConversionFunnelData {
@@ -25,19 +22,16 @@ export interface ConversionFunnelData {
 }
 
 export interface AnalyticsOverview {
-  impressions: number;
-  clicks: number;
-  ctr: number;
-  wishlist_adds: number;
-  conversions: number;
-  revenue_cents: number;
+  swipe_appearances: number;
+  right_swipes: number;
+  wishlist_swipes: number;
+  likes: number;
+  engagement_rate: number;
 }
 
 export interface TimeSeriesData {
   date: string;
   value: number;
-  revenue?: number;
-  conversions?: number;
 }
 
 // Main analytics hook for brand/retailer specific metrics
@@ -66,24 +60,21 @@ export const useAnalytics = (entityId: string | undefined, entityType: 'brand' |
 
       if (productIds.length === 0) {
         return {
-          totalViews: 0,
+          totalSwipeAppearances: 0,
           totalLikes: 0,
           totalWishlistAdds: 0,
-          conversionRate: 0,
-          topReferrers: [],
-          repeatShopperRate: 0,
-          avgSwipeSentiment: 0
+          engagementRate: 0,
+          topReferrers: []
         };
       }
 
-      // Get actual analytics data from events table
-      const { data: viewEvents, error: viewError } = await supabase
-        .from('events')
-        .select('*')
-        .eq('event_type', 'product_view')
+      // Get swipe data - this is where products appeared in swipe mode
+      const { data: swipes, error: swipesError } = await supabase
+        .from('swipes')
+        .select('action')
         .in('product_id', productIds);
 
-      if (viewError) console.error('Error fetching view events:', viewError);
+      if (swipesError) console.error('Error fetching swipes:', swipesError);
 
       // Get likes for these products
       const { data: likes, error: likesError } = await supabase
@@ -101,47 +92,37 @@ export const useAnalytics = (entityId: string | undefined, entityType: 'brand' |
 
       if (wishlistError) console.error('Error fetching wishlist items:', wishlistError);
 
-      // Get purchase events
-      const { data: purchaseEvents, error: purchaseError } = await supabase
-        .from('events')
-        .select('*')
-        .eq('event_type', 'purchase')
-        .in('product_id', productIds);
-
-      if (purchaseError) console.error('Error fetching purchase events:', purchaseError);
-
-      const totalViews = viewEvents?.length || 0;
+      const totalSwipeAppearances = swipes?.length || 0;
+      const rightSwipes = swipes?.filter(s => s.action === 'right').length || 0;
       const totalLikes = likes?.length || 0;
       const totalWishlistAdds = wishlistItems?.length || 0;
-      const totalPurchases = purchaseEvents?.length || 0;
 
-      // Calculate conversion rate (purchases / views)
-      const conversionRate = totalViews > 0 ? (totalPurchases / totalViews) * 100 : 0;
+      // Calculate engagement rate (right swipes + wishlist / total appearances)
+      const engagementRate = totalSwipeAppearances > 0 
+        ? ((rightSwipes + totalWishlistAdds) / totalSwipeAppearances) * 100 
+        : 0;
 
       console.log('Analytics computed:', {
-        totalViews,
+        totalSwipeAppearances,
         totalLikes,
         totalWishlistAdds,
-        totalPurchases,
-        conversionRate
+        engagementRate
       });
 
       return {
-        totalViews,
+        totalSwipeAppearances,
         totalLikes,
         totalWishlistAdds,
-        conversionRate: Math.round(conversionRate * 100) / 100,
-        topReferrers: [], // TODO: implement with affiliate tracking
-        repeatShopperRate: 0, // TODO: implement with order analysis
-        avgSwipeSentiment: 0 // TODO: implement with swipe analysis
+        engagementRate: Math.round(engagementRate * 100) / 100,
+        topReferrers: []
       };
     },
     enabled: !!entityId,
-    refetchInterval: 30000 // Refetch every 30 seconds for real-time data
+    refetchInterval: 30000
   });
 };
 
-// Analytics overview hook with real data
+// Analytics overview hook with swipe data
 export const useAnalyticsOverview = (params: {
   startDate: string;
   endDate: string;
@@ -168,12 +149,11 @@ export const useAnalyticsOverview = (params: {
         if (productsError) {
           console.error('Error fetching products:', productsError);
           return {
-            impressions: 0,
-            clicks: 0,
-            ctr: 0,
-            wishlist_adds: 0,
-            conversions: 0,
-            revenue_cents: 0
+            swipe_appearances: 0,
+            right_swipes: 0,
+            wishlist_swipes: 0,
+            likes: 0,
+            engagement_rate: 0
           };
         }
         
@@ -181,69 +161,67 @@ export const useAnalyticsOverview = (params: {
         console.log('Product IDs found for filtering:', productIds.length);
       }
 
-      // Get events within date range, filter by product_ids since events table doesn't have brand_id/retailer_id
-      let eventsQuery = supabase
-        .from('events')
-        .select('event_type, product_id, created_at')
-        .gte('created_at', startDate)
-        .lte('created_at', endDate);
-
-      // Filter by product_ids since we need to join through products
-      if (productIds.length > 0) {
-        eventsQuery = eventsQuery.in('product_id', productIds);
-      }
-
-      const { data: events, error: eventsError } = await eventsQuery;
-      
-      if (eventsError) {
-        console.error('Error fetching events:', eventsError);
+      if (productIds.length === 0) {
         return {
-          impressions: 0,
-          clicks: 0,
-          ctr: 0,
-          wishlist_adds: 0,
-          conversions: 0,
-          revenue_cents: 0
+          swipe_appearances: 0,
+          right_swipes: 0,
+          wishlist_swipes: 0,
+          likes: 0,
+          engagement_rate: 0
         };
       }
+
+      // Get swipes data - all swipe actions represent product appearances
+      const { data: swipes, error: swipesError } = await supabase
+        .from('swipes')
+        .select('action, created_at')
+        .in('product_id', productIds)
+        .gte('created_at', startDate)
+        .lte('created_at', endDate);
       
-      console.log('Events query result:', { 
-        events: events?.length, 
-        brandId,
-        retailerId,
-        sampleEvents: events?.slice(0, 3)
-      });
-
-      const impressions = events?.filter(e => e.event_type === 'product_view').length || 0;
-      const clicks = events?.filter(e => e.event_type === 'product_click').length || 0;
-      const conversions = events?.filter(e => e.event_type === 'purchase').length || 0;
-
-      // Get wishlist adds in date range
-      let wishlistQuery = supabase
-        .from('wishlist_items')
-        .select('product_id')
-        .gte('added_at', startDate)
-        .lte('added_at', endDate);
-
-      if (productIds.length > 0) {
-        wishlistQuery = wishlistQuery.in('product_id', productIds);
+      if (swipesError) {
+        console.error('Error fetching swipes:', swipesError);
       }
 
-      const { data: wishlistAdds, error: wishlistError } = await wishlistQuery;
+      // Get likes in date range
+      const { data: likes, error: likesError } = await supabase
+        .from('likes')
+        .select('id')
+        .in('product_id', productIds)
+        .gte('created_at', startDate)
+        .lte('created_at', endDate);
+      
+      if (likesError) {
+        console.error('Error fetching likes:', likesError);
+      }
+
+      // Get wishlist adds in date range
+      const { data: wishlistAdds, error: wishlistError } = await supabase
+        .from('wishlist_items')
+        .select('product_id')
+        .in('product_id', productIds)
+        .gte('added_at', startDate)
+        .lte('added_at', endDate);
       
       if (wishlistError) {
         console.error('Error fetching wishlist adds:', wishlistError);
       }
 
-      const ctr = impressions > 0 ? (clicks / impressions) * 100 : 0;
+      const swipeAppearances = swipes?.length || 0;
+      const rightSwipes = swipes?.filter(s => s.action === 'right').length || 0;
+      const wishlistSwipes = swipes?.filter(s => s.action === 'up').length || 0;
+      const likesCount = likes?.length || 0;
+      
+      const engagementRate = swipeAppearances > 0 
+        ? ((rightSwipes + wishlistSwipes) / swipeAppearances) * 100 
+        : 0;
       
       const result = {
-        impressions,
-        clicks,
-        ctr: Math.round(ctr * 100) / 100,
-        wishlist_adds: wishlistAdds?.length || 0,
-        conversions,
-        revenue_cents: clicks * 4500 // Revenue estimated from Shop Now clicks with average order value
+        swipe_appearances: swipeAppearances,
+        right_swipes: rightSwipes,
+        wishlist_swipes: wishlistSwipes,
+        likes: likesCount,
+        engagement_rate: Math.round(engagementRate * 100) / 100
       };
       
       console.log('useAnalyticsOverview queryFn returning result:', result);
@@ -257,7 +235,7 @@ export const useAnalyticsOverview = (params: {
   });
 };
 
-// Real conversion funnel data
+// Conversion funnel based on swipe interactions
 export const useConversionFunnel = (params: {
   startDate: string;
   endDate: string;
@@ -287,54 +265,59 @@ export const useConversionFunnel = (params: {
         productIds = products?.map(p => p.id) || [];
       }
 
-      // Get event counts with proper filtering using product_ids
-      let eventsQuery = supabase
-        .from('events')
-        .select('event_type')
-        .gte('created_at', startDate)
-        .lte('created_at', endDate);
-
-      // Filter by product_ids since events table doesn't have brand_id/retailer_id columns
-      if (productIds.length > 0) {
-        eventsQuery = eventsQuery.in('product_id', productIds);
-      }
-
-      const { data: events, error: eventsError } = await eventsQuery;
-      
-      if (eventsError) {
-        console.error('Error fetching events for funnel:', eventsError);
+      if (productIds.length === 0) {
         return [];
       }
 
-      const impressions = events?.filter(e => e.event_type === 'product_view').length || 0;
-      const clicks = events?.filter(e => e.event_type === 'product_click').length || 0;
-      const purchases = events?.filter(e => e.event_type === 'purchase').length || 0;
+      // Get swipes data
+      const { data: swipes, error: swipesError } = await supabase
+        .from('swipes')
+        .select('action')
+        .in('product_id', productIds)
+        .gte('created_at', startDate)
+        .lte('created_at', endDate);
 
-      // Get wishlist data
-      let wishlistQuery = supabase
-        .from('wishlist_items')
-        .select('product_id')
-        .gte('added_at', startDate)
-        .lte('added_at', endDate);
-
-      if (productIds.length > 0) {
-        wishlistQuery = wishlistQuery.in('product_id', productIds);
+      if (swipesError) {
+        console.error('Error fetching swipes for funnel:', swipesError);
+        return [];
       }
 
-      const { data: wishlistAdds, error: wishlistError } = await wishlistQuery;
+      // Get wishlist data
+      const { data: wishlistAdds, error: wishlistError } = await supabase
+        .from('wishlist_items')
+        .select('product_id')
+        .in('product_id', productIds)
+        .gte('added_at', startDate)
+        .lte('added_at', endDate);
       
       if (wishlistError) {
         console.error('Error fetching wishlist for funnel:', wishlistError);
       }
 
-      const wishlistCount = wishlistAdds?.length || 0;
+      // Get likes data
+      const { data: likes, error: likesError } = await supabase
+        .from('likes')
+        .select('id')
+        .in('product_id', productIds)
+        .gte('created_at', startDate)
+        .lte('created_at', endDate);
+      
+      if (likesError) {
+        console.error('Error fetching likes for funnel:', likesError);
+      }
 
-      // Build funnel stages with clearer terminology
+      const swipeAppearances = swipes?.length || 0;
+      const rightSwipes = swipes?.filter(s => s.action === 'right').length || 0;
+      const wishlistSwipes = swipes?.filter(s => s.action === 'up').length || 0;
+      const wishlistCount = wishlistAdds?.length || 0;
+      const likesCount = likes?.length || 0;
+
+      // Build funnel stages
       const stages = [
-        { stage: 'Product Views', count: impressions, percentage: 100 },
-        { stage: 'External Store Clicks', count: clicks, percentage: impressions > 0 ? (clicks / impressions) * 100 : 0 },
-        { stage: 'Wishlist Additions', count: wishlistCount, percentage: impressions > 0 ? (wishlistCount / impressions) * 100 : 0 },
-        { stage: 'Tracked Conversions', count: purchases, percentage: impressions > 0 ? (purchases / impressions) * 100 : 0 }
+        { stage: 'Swipe Appearances', count: swipeAppearances, percentage: 100 },
+        { stage: 'Right Swipes (Likes)', count: rightSwipes, percentage: swipeAppearances > 0 ? (rightSwipes / swipeAppearances) * 100 : 0 },
+        { stage: 'Wishlist Saves', count: wishlistCount, percentage: swipeAppearances > 0 ? (wishlistCount / swipeAppearances) * 100 : 0 },
+        { stage: 'Saved to Likes', count: likesCount, percentage: swipeAppearances > 0 ? (likesCount / swipeAppearances) * 100 : 0 }
       ];
 
       // Calculate conversion rates between stages
@@ -353,9 +336,9 @@ export const useConversionFunnel = (params: {
   });
 };
 
-// Time series analytics with real data
+// Time series analytics with swipe data
 export const useTimeSeriesAnalytics = (
-  metric: 'impressions' | 'clicks' | 'conversions' | 'revenue',
+  metric: 'swipes' | 'likes' | 'wishlists',
   interval: 'day' | 'week' | 'month',
   dateFilter: { startDate: string; endDate: string },
   entityId?: string,
@@ -382,56 +365,86 @@ export const useTimeSeriesAnalytics = (
         productIds = products?.map(p => p.id) || [];
       }
 
-      const eventType = metric === 'impressions' ? 'product_view' : 
-                      metric === 'clicks' ? 'product_click' : 
-                      metric === 'conversions' ? 'purchase' : 'product_view';
-
-      // Get events data with proper filtering using product_ids
-      let eventsQuery = supabase
-        .from('events')
-        .select('created_at, event_type')
-        .eq('event_type', eventType)
-        .gte('created_at', dateFilter.startDate)
-        .lte('created_at', dateFilter.endDate)
-        .order('created_at');
-
-      // Filter by product_ids since events table doesn't have brand_id/retailer_id columns
-      if (productIds.length > 0) {
-        eventsQuery = eventsQuery.in('product_id', productIds);
-      }
-
-      const { data: events, error: eventsError } = await eventsQuery;
-      
-      if (eventsError) {
-        console.error('Error fetching events for time series:', eventsError);
+      if (productIds.length === 0) {
         return [];
       }
 
-      // Group by date
+      // Initialize date groups
       const dateGroups: Record<string, number> = {};
       const startDate = new Date(dateFilter.startDate);
       const endDate = new Date(dateFilter.endDate);
       
-      // Initialize all dates with 0
       for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
         const dateKey = d.toISOString().split('T')[0];
         dateGroups[dateKey] = 0;
       }
 
-      // Count events by date
-      events?.forEach(event => {
-        const dateKey = new Date(event.created_at).toISOString().split('T')[0];
-        if (dateGroups.hasOwnProperty(dateKey)) {
-          dateGroups[dateKey]++;
+      if (metric === 'swipes') {
+        // Get swipes data
+        const { data: swipes, error: swipesError } = await supabase
+          .from('swipes')
+          .select('created_at')
+          .in('product_id', productIds)
+          .gte('created_at', dateFilter.startDate)
+          .lte('created_at', dateFilter.endDate);
+
+        if (swipesError) {
+          console.error('Error fetching swipes for time series:', swipesError);
+          return [];
         }
-      });
+
+        swipes?.forEach(swipe => {
+          const dateKey = new Date(swipe.created_at).toISOString().split('T')[0];
+          if (dateGroups.hasOwnProperty(dateKey)) {
+            dateGroups[dateKey]++;
+          }
+        });
+      } else if (metric === 'likes') {
+        // Get likes data
+        const { data: likes, error: likesError } = await supabase
+          .from('likes')
+          .select('created_at')
+          .in('product_id', productIds)
+          .gte('created_at', dateFilter.startDate)
+          .lte('created_at', dateFilter.endDate);
+
+        if (likesError) {
+          console.error('Error fetching likes for time series:', likesError);
+          return [];
+        }
+
+        likes?.forEach(like => {
+          const dateKey = new Date(like.created_at).toISOString().split('T')[0];
+          if (dateGroups.hasOwnProperty(dateKey)) {
+            dateGroups[dateKey]++;
+          }
+        });
+      } else if (metric === 'wishlists') {
+        // Get wishlist data
+        const { data: wishlists, error: wishlistError } = await supabase
+          .from('wishlist_items')
+          .select('added_at')
+          .in('product_id', productIds)
+          .gte('added_at', dateFilter.startDate)
+          .lte('added_at', dateFilter.endDate);
+
+        if (wishlistError) {
+          console.error('Error fetching wishlists for time series:', wishlistError);
+          return [];
+        }
+
+        wishlists?.forEach(item => {
+          const dateKey = new Date(item.added_at).toISOString().split('T')[0];
+          if (dateGroups.hasOwnProperty(dateKey)) {
+            dateGroups[dateKey]++;
+          }
+        });
+      }
 
       // Convert to array format
       const result = Object.entries(dateGroups).map(([date, value]) => ({
         date,
-        value,
-        revenue: metric === 'revenue' ? value * 45 : undefined,
-        conversions: metric === 'conversions' ? value : undefined
+        value
       }));
       
       console.log('Time series result for', metric, ':', result.length, 'data points');
@@ -444,7 +457,7 @@ export const useTimeSeriesAnalytics = (
   });
 };
 
-// Product analytics hook for tracking user interactions
+// Product analytics hook for tracking user interactions (no changes needed - doesn't affect swipe mechanics)
 export const useProductAnalytics = () => {
   const trackProductView = async (productId: string, context: string) => {
     console.log('Tracking product view:', productId, context);
@@ -499,7 +512,6 @@ export const useProductAnalytics = () => {
         .insert({
           event_type: 'wishlist_add',
           product_id: productId,
-          event_data: {},
           session_id: crypto.randomUUID(),
           created_at: new Date().toISOString()
         });
@@ -513,7 +525,7 @@ export const useProductAnalytics = () => {
   };
 
   const trackAddToCart = async (productId: string, size?: string, color?: string) => {
-    console.log('Tracking add to cart:', productId, size, color);
+    console.log('Tracking add to cart:', productId, { size, color });
     
     try {
       const { error } = await supabase
