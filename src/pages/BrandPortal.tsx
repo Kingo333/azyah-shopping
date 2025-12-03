@@ -24,7 +24,7 @@ import { Plus, Edit, Trash2, Upload, BarChart3, TrendingUp, Eye, Heart, Shopping
 import { InfoTooltip } from '@/components/ui/info-tooltip';
 import { FeedbackModal } from '@/components/FeedbackModal';
 import { ProfileCompletionBanner } from '@/components/ProfileCompletionBanner';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import type { Product } from '@/types';
 interface Brand {
   id: string;
@@ -37,7 +37,13 @@ interface Brand {
   shipping_regions: string[];
 }
 const BrandPortal: React.FC = () => {
-  const [activeTab, setActiveTab] = useState('products');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'products');
+  
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    setSearchParams({ tab: value });
+  };
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
   const [products, setProducts] = useState<any[]>([]);
   const [brand, setBrand] = useState<Brand | null>(null);
@@ -383,17 +389,7 @@ const BrandPortal: React.FC = () => {
   return <div className="min-h-screen bg-background dark:bg-slate-950">
       <div className="container max-w-7xl mx-auto p-3 md:p-6">
         {/* Header */}
-        <BrandPortalHeader brand={brand} onAddProduct={() => {
-        if (products.length >= 10) {
-          toast({
-            title: "Product Limit Reached",
-            description: "You've reached the 10 product limit. Use the Feedback & Support button to request more.",
-            variant: "destructive"
-          });
-          return;
-        }
-        setIsAddProductModalOpen(true);
-      }} />
+        <BrandPortalHeader brand={brand} />
 
         {/* Feedback Section */}
         <div className="mb-4 md:mb-8 flex justify-end">
@@ -449,7 +445,7 @@ const BrandPortal: React.FC = () => {
         <ProfileCompletionBanner />
         
         {/* Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 md:space-y-6">
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4 md:space-y-6">
           <TabsList className="bg-muted/50 dark:bg-slate-800/50 grid w-full grid-cols-4 md:flex md:w-auto">
             <TabsTrigger value="products" className="data-[state=active]:bg-background dark:data-[state=active]:bg-slate-700 text-xs md:text-sm">Products</TabsTrigger>
             <TabsTrigger value="collabs" className="data-[state=active]:bg-background dark:data-[state=active]:bg-slate-700 text-xs md:text-sm">Collabs</TabsTrigger>
@@ -460,21 +456,42 @@ const BrandPortal: React.FC = () => {
           <TabsContent value="products">
             <Card>
               <CardHeader>
-                <div className="flex justify-between items-center">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                   <CardTitle>Product Catalog</CardTitle>
-                  {selectedProducts.size > 0 && <div className="flex items-center gap-2">
-                      <span className="text-sm text-muted-foreground">
-                        {selectedProducts.size} selected
-                      </span>
-                      <Button variant="outline" size="sm" onClick={() => handleBulkAction('Archive')} className="text-orange-600 border-orange-200 hover:bg-orange-50">
-                        <Archive className="h-4 w-4 mr-1" />
-                        Archive
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={() => handleBulkAction('Delete')} className="text-red-600 border-red-200 hover:bg-red-50">
-                        <Trash2 className="h-4 w-4 mr-1" />
-                        Delete
-                      </Button>
-                    </div>}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {selectedProducts.size > 0 && (
+                      <>
+                        <span className="text-sm text-muted-foreground">
+                          {selectedProducts.size} selected
+                        </span>
+                        <Button variant="outline" size="sm" onClick={() => handleBulkAction('Archive')} className="text-orange-600 border-orange-200 hover:bg-orange-50">
+                          <Archive className="h-4 w-4 mr-1" />
+                          Archive
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => handleBulkAction('Delete')} className="text-red-600 border-red-200 hover:bg-red-50">
+                          <Trash2 className="h-4 w-4 mr-1" />
+                          Delete
+                        </Button>
+                      </>
+                    )}
+                    <Button 
+                      onClick={() => {
+                        if (products.length >= 10) {
+                          toast({
+                            title: "Product Limit Reached",
+                            description: "You've reached the 10 product limit. Use the Feedback & Support button to request more.",
+                            variant: "destructive"
+                          });
+                          return;
+                        }
+                        setIsAddProductModalOpen(true);
+                      }} 
+                      className="gap-2 bg-primary hover:bg-primary/90"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Add Product
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>

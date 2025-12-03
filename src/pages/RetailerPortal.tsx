@@ -34,7 +34,7 @@ import { RetailerEvents } from '@/components/RetailerEvents';
 import { useRetailerBrands } from '@/hooks/useRetailerBrands';
 import { Product } from '@/types';
 import { convertJsonToProductAttributes } from '@/lib/type-utils';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { FeedbackModal } from '@/components/FeedbackModal';
 import { ProfileCompletionBanner } from '@/components/ProfileCompletionBanner';
@@ -43,7 +43,14 @@ const RetailerPortal = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'products');
   const [retailer, setRetailer] = useState<any>(null);
+  
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    setSearchParams({ tab: value });
+  };
   const [products, setProducts] = useState<Product[]>([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -400,10 +407,7 @@ const RetailerPortal = () => {
     <div className="min-h-screen bg-background dark:bg-slate-950">
       <div className="container max-w-7xl mx-auto p-3 md:p-6">
         {/* Header */}
-        <RetailerPortalHeader 
-          retailer={retailer}
-          onAddProduct={() => setIsAddModalOpen(true)}
-        />
+        <RetailerPortalHeader retailer={retailer} />
 
         {/* Feedback Section */}
         <div className="mb-4 md:mb-8 flex justify-end">
@@ -461,7 +465,7 @@ const RetailerPortal = () => {
         <ProfileCompletionBanner />
         
         {/* Tabs */}
-        <Tabs defaultValue="products" className="space-y-4 md:space-y-6">
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4 md:space-y-6">
           <TabsList className="bg-muted/50 dark:bg-slate-800/50 grid w-full grid-cols-6 md:flex md:w-auto">
             <TabsTrigger value="products" className="data-[state=active]:bg-background dark:data-[state=active]:bg-slate-700 text-xs md:text-sm">Products</TabsTrigger>
             <TabsTrigger value="collabs" className="data-[state=active]:bg-background dark:data-[state=active]:bg-slate-700 text-xs md:text-sm">Collabs</TabsTrigger>
@@ -473,8 +477,15 @@ const RetailerPortal = () => {
 
           <TabsContent value="products">
             <Card>
-              <CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>Product Catalog</CardTitle>
+                <Button 
+                  onClick={() => setIsAddModalOpen(true)} 
+                  className="gap-2 bg-primary hover:bg-primary/90"
+                >
+                  <Plus className="h-4 w-4" />
+                  Add Product
+                </Button>
               </CardHeader>
               <CardContent>
                 {loading ? (

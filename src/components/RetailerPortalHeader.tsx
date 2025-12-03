@@ -5,7 +5,7 @@ import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Settings, LogOut, Sun, Moon, User, Plus } from 'lucide-react';
+import { Settings, LogOut, Sun, Moon, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface Retailer {
@@ -18,13 +18,11 @@ interface Retailer {
 
 interface RetailerPortalHeaderProps {
   retailer: Retailer | null;
-  onAddProduct?: () => void;
   className?: string;
 }
 
 export const RetailerPortalHeader: React.FC<RetailerPortalHeaderProps> = ({
   retailer,
-  onAddProduct,
   className
 }) => {
   const { user, signOut } = useAuth();
@@ -63,14 +61,6 @@ export const RetailerPortalHeader: React.FC<RetailerPortalHeaderProps> = ({
         <Button variant="ghost" size="sm" onClick={handleThemeToggle} className="hover:bg-accent/50 dark:hover:bg-accent/20 hover:scale-105 transition-all h-8 w-8 md:h-10 md:w-10">
           {theme === 'dark' ? <Sun className="h-4 w-4 md:h-5 md:w-5" /> : <Moon className="h-4 w-4 md:h-5 md:w-5" />}
         </Button>
-
-        {onAddProduct && (
-          <Button onClick={onAddProduct} className="gap-1 md:gap-2 bg-primary hover:bg-primary/90 dark:bg-primary dark:hover:bg-primary/80 h-8 md:h-10 text-xs md:text-sm px-2 md:px-4">
-            <Plus className="h-3 w-3 md:h-4 md:w-4" />
-            <span className="hidden sm:inline">Add Product</span>
-            <span className="sm:hidden">Add</span>
-          </Button>
-        )}
 
         {/* User Menu */}
         <DropdownMenu>
