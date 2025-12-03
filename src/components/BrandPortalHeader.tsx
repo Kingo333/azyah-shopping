@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Settings, LogOut, Sun, Moon, User, Plus, Globe } from 'lucide-react';
+import { Settings, LogOut, Sun, Moon, User, Globe } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 interface Brand {
@@ -18,13 +18,11 @@ interface Brand {
 }
 interface BrandPortalHeaderProps {
   brand: Brand | null;
-  onAddProduct?: () => void;
   onImportFromWebsite?: () => void;
   className?: string;
 }
 export const BrandPortalHeader: React.FC<BrandPortalHeaderProps> = ({
   brand,
-  onAddProduct,
   onImportFromWebsite,
   className
 }) => {
@@ -94,14 +92,6 @@ export const BrandPortalHeader: React.FC<BrandPortalHeaderProps> = ({
           <span className="hidden sm:inline">Import from Website</span>
           <span className="sm:hidden">Import</span>
         </Button>
-
-        {onAddProduct && (
-          <Button onClick={onAddProduct} className="gap-1 md:gap-2 bg-primary hover:bg-primary/90 dark:bg-primary dark:hover:bg-primary/80 h-8 md:h-10 text-xs md:text-sm px-2 md:px-4">
-            <Plus className="h-3 w-3 md:h-4 md:w-4" />
-            <span className="hidden sm:inline">Add Product</span>
-            <span className="sm:hidden">Add</span>
-          </Button>
-        )}
 
         {/* User Menu */}
         <DropdownMenu>
