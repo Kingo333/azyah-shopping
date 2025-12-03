@@ -736,7 +736,7 @@ export default function IntroCarousel() {
       {/* Fixed Bottom CTA Section */}
       <div 
         className="fixed bottom-0 left-0 right-0 px-3 pt-2 bg-gradient-to-t from-background via-background to-transparent z-20"
-        style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 8px)' }}
+        style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 16px)' }}
       >
         {/* Navigation Dots */}
         <div className="flex justify-center gap-2 mb-3 md:mb-4">
@@ -756,7 +756,7 @@ export default function IntroCarousel() {
         {/* Primary CTA */}
         <Button
           onClick={handleJoinCommunity}
-          className="w-full h-12 md:h-14 text-base md:text-lg font-semibold rounded-full shadow-lg"
+          className="w-full h-11 md:h-12 text-sm md:text-base font-semibold rounded-full shadow-lg"
         >
           Join the Community
         </Button>
@@ -764,7 +764,7 @@ export default function IntroCarousel() {
         {/* Login Link */}
         <button
           onClick={handleJoinCommunity}
-          className="w-full mt-2 text-sm md:text-base text-primary font-medium hover:text-primary/80 transition-colors"
+          className="w-full mt-3 text-base md:text-lg text-primary font-medium hover:text-primary/80 transition-colors"
         >
           Already have an account? <span className="font-semibold">Log In</span>
         </button>
