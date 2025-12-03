@@ -124,8 +124,8 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
       toast({
         title: 'Generation Limit Reached',
         description: isPremium 
-          ? 'You have reached your daily limit of 20 try-ons' 
-          : 'You have reached your lifetime limit of 4 generations. Upgrade to Premium for 20 daily try-ons.',
+          ? 'You have reached your daily limit of 10 try-ons' 
+          : 'You have reached your lifetime limit of 4 generations. Upgrade to Premium for 10 daily try-ons.',
         variant: 'destructive'
       });
       return;

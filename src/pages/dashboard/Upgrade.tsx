@@ -16,8 +16,8 @@ const features = [
   },
   { 
     icon: <Sparkles className="h-5 w-5" />,
-    name: 'Unlimited AI Try-On',
-    description: 'Unlimited virtual try-ons daily'
+    name: '10 AI Try-Ons Daily',
+    description: '10 virtual try-ons per day'
   },
   { 
     icon: <TrendingUp className="h-5 w-5" />,
@@ -35,7 +35,7 @@ const comparisonFeatures = [
   { name: 'Create outfits', free: '5 total', premium: 'Unlimited' },
   { name: 'Connect with community', free: true, premium: true },
   { name: 'Wardrobe items', free: '10 items', premium: 'Unlimited' },
-  { name: 'AI Try-on', free: '4/day', premium: 'Unlimited' },
+  { name: 'AI Try-on', free: '4 total', premium: '10/day' },
   { name: 'AI Beauty Consultant', free: '4 credits', premium: 'Unlimited' },
   { name: 'UGC collaboration', free: '5 listings', premium: 'Full access' },
   { name: 'Nail / Salon rewards', free: false, premium: true },
