@@ -11,35 +11,35 @@ import { useSubscription } from '@/hooks/useSubscription';
 const features = [
   { 
     icon: <Users className="h-5 w-5" />,
-    name: 'UGC collaboration',
-    description: 'Partner with brands on content creation'
+    name: 'UGC Collaboration',
+    description: 'Access all brand partnerships'
   },
   { 
     icon: <Sparkles className="h-5 w-5" />,
-    name: 'Priority AI Try-On',
-    description: 'Up to 10 AI try-ons per day'
-  },
-  { 
-    icon: <Gift className="h-5 w-5" />,
-    name: 'Community Perks',
-    description: 'Exclusive rewards and benefits'
+    name: 'Unlimited AI Try-On',
+    description: 'Unlimited virtual try-ons daily'
   },
   { 
     icon: <TrendingUp className="h-5 w-5" />,
-    name: 'Early Access',
-    description: 'First to see new drops and features'
+    name: 'AI Beauty Consultant',
+    description: 'Unlimited beauty analysis'
+  },
+  { 
+    icon: <Gift className="h-5 w-5" />,
+    name: 'Nail & Salon Rewards',
+    description: 'Exclusive rewards and benefits'
   },
 ];
 
 const comparisonFeatures = [
-  { name: 'Create outfits', free: true, premium: true },
+  { name: 'Create outfits', free: '10 total', premium: 'Unlimited' },
   { name: 'Connect with community', free: true, premium: true },
-  { name: 'Unlimited wardrobe items', free: true, premium: true },
-  { name: 'AI Try-on', free: 'Limited to 4 uses', premium: 'Up to 10/day' },
-  { name: 'Daily AI outfit suggestions', free: false, premium: true },
-  { name: 'Advanced style insights', free: false, premium: true },
-  { name: 'UGC collaboration', free: false, premium: true },
+  { name: 'Wardrobe items', free: '10 items', premium: 'Unlimited' },
+  { name: 'AI Try-on', free: '4/day', premium: 'Unlimited' },
+  { name: 'AI Beauty Consultant', free: '4 credits', premium: 'Unlimited' },
+  { name: 'UGC collaboration', free: '5 listings', premium: 'Full access' },
   { name: 'Nail / Salon rewards', free: false, premium: true },
+  { name: 'Priority support', free: false, premium: true },
 ];
 
 export default function Upgrade() {

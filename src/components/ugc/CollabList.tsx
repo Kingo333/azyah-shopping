@@ -81,20 +81,20 @@ export const CollabList: React.FC = () => {
     );
   }
 
-  // Apply freemium logic: show only 3 collaborations for non-premium users
-  const displayedCollaborations = isPremium ? collaborations : collaborations.slice(0, 3);
-  const hasMoreCollaborations = !isPremium && collaborations.length > 3;
+  // Apply freemium logic: show only 5 collaborations for non-premium users
+  const displayedCollaborations = isPremium ? collaborations : collaborations.slice(0, 5);
+  const hasMoreCollaborations = !isPremium && collaborations.length > 5;
 
   return (
     <>
       <ScrollArea className="h-full pr-4">
         <div className="grid gap-4">
-          {!isPremium && collaborations.length > 3 && (
+          {!isPremium && collaborations.length > 5 && (
             <div className="mb-4 p-3 bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20 rounded-lg">
               <div className="flex items-center gap-2 mb-2">
                 <Crown className="h-4 w-4 text-primary" />
                 <span className="text-sm font-medium">
-                  Showing 3 of {collaborations.length} collaborations
+                  Showing 5 of {collaborations.length} collaborations
                 </span>
               </div>
               <p className="text-xs text-muted-foreground">
@@ -200,7 +200,7 @@ export const CollabList: React.FC = () => {
                       Unlock All Collaborations
                     </h3>
                     <p className="text-sm text-muted-foreground mb-4">
-                      Upgrade to premium to see {collaborations.length - 3} more collaboration opportunities and get unlimited access to all UGC partnerships.
+                      Upgrade to premium to see {collaborations.length - 5} more collaboration opportunities and get unlimited access to all UGC partnerships.
                     </p>
                   </div>
                   
