@@ -11,6 +11,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { SEOHead } from '@/components/SEOHead';
 import ShopperNavigation from '@/components/ShopperNavigation';
 import { BackButton } from '@/components/ui/back-button';
+import { useAuth } from '@/contexts/AuthContext';
+import { useHasPublicItems } from '@/hooks/useUserPublicWardrobeItems';
 import { 
   User, 
   MapPin, 
@@ -20,7 +22,8 @@ import {
   MessageSquare,
   Users,
   Archive,
-  ArrowRight
+  ArrowRight,
+  Palette
 } from 'lucide-react';
 
 interface UserProfile {
@@ -68,7 +71,12 @@ interface UserCloset {
 const UserProfile: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('posts');
+  
+  // Check if this user has public items (for "Style Me" button)
+  const { data: hasPublicItems } = useHasPublicItems(id || null);
+  const isOwnProfile = user?.id === id;
 
   const { data: userProfile, isLoading: profileLoading } = useQuery({
     queryKey: ['user-profile', id],
@@ -204,7 +212,18 @@ const UserProfile: React.FC = () => {
               </div>
 
               {/* Social Links */}
-              <div className="flex gap-4 justify-center md:justify-start">
+              <div className="flex gap-4 justify-center md:justify-start flex-wrap">
+                {/* Style Me Button - Only show on other user's profiles who have public items */}
+                {!isOwnProfile && hasPublicItems && (
+                  <Button 
+                    onClick={() => navigate(`/dress-me/canvas?mode=suggest&targetId=${id}`)}
+                    className="hover:scale-105 transition-transform"
+                  >
+                    <Palette className="h-4 w-4 mr-2" />
+                    Style Me
+                  </Button>
+                )}
+                
                 {userProfile.website && (
                   <Button 
                     variant="outline" 

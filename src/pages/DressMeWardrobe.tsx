@@ -15,7 +15,7 @@ import { AccessoriesTray } from '@/components/AccessoriesTray';
 import { SEOHead } from '@/components/SEOHead';
 import { BackButton } from '@/components/ui/back-button';
 import { Card } from '@/components/ui/card';
-import { useFits, usePublicFits, useDeleteFit, useGiftedFits } from '@/hooks/useFits';
+import { useFits, usePublicFits, useDeleteFit, useGiftedFits, useSuggestionFits } from '@/hooks/useFits';
 import { OutfitPreviewCard } from '@/components/OutfitPreviewCard';
 import { useDressMeAnalytics } from '@/hooks/useDressMeAnalytics';
 import { CommunityOutfits } from './CommunityOutfits';
@@ -32,6 +32,7 @@ export default function DressMeWardrobe() {
   const { data: allItems = [], isLoading } = useWardrobeItems();
   const { data: userFits = [] } = useFits();
   const { data: giftedFits = [] } = useGiftedFits();
+  const { data: suggestionFits = [] } = useSuggestionFits();
   const { data: layers = [], isLoading: layersLoading } = useWardrobeLayers();
   const addLayerMutation = useAddWardrobeLayer();
   const updateLayerMutation = useUpdateWardrobeLayer();
@@ -564,7 +565,7 @@ export default function DressMeWardrobe() {
             <TabsContent value="outfits" className="mt-3 space-y-3">
               {/* Occasion filter chips */}
               <div className="flex gap-2 overflow-x-auto pb-2">
-                {['All', 'Made for You', 'Work', 'Casual', 'Home', 'School', 'Date'].map((occasion) => (
+                {['All', 'Suggestions', 'Made for You', 'Work', 'Casual', 'Home', 'School', 'Date'].map((occasion) => (
                   <Button
                     key={occasion}
                     variant={selectedOccasion === occasion ? 'default' : 'outline'}
@@ -573,6 +574,11 @@ export default function DressMeWardrobe() {
                     onClick={() => setSelectedOccasion(occasion)}
                   >
                     {occasion}
+                    {occasion === 'Suggestions' && suggestionFits.length > 0 && (
+                      <span className="ml-1 bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-200 rounded-full px-1.5 py-0.5 text-xs font-semibold">
+                        {suggestionFits.length}
+                      </span>
+                    )}
                     {occasion === 'Made for You' && giftedFits.length > 0 && (
                       <span className="ml-1 bg-primary-foreground text-primary rounded-full px-1.5 py-0.5 text-xs font-semibold">
                         {giftedFits.length}
@@ -584,24 +590,29 @@ export default function DressMeWardrobe() {
 
               {/* Outfits Grid */}
               {(() => {
+                const showSuggestions = selectedOccasion === 'Suggestions';
                 const showGifted = selectedOccasion === 'Made for You';
-                const fitsToShow = showGifted ? giftedFits : (
-                  selectedOccasion === 'All' 
-                    ? userFits 
-                    : userFits.filter(fit => fit.occasion === selectedOccasion)
+                const fitsToShow = showSuggestions ? suggestionFits : (
+                  showGifted ? giftedFits : (
+                    selectedOccasion === 'All' 
+                      ? userFits 
+                      : userFits.filter(fit => fit.occasion === selectedOccasion)
+                  )
                 );
 
                 return fitsToShow.length === 0 ? (
                   <Card className="p-8 text-center">
                     <p className="text-muted-foreground mb-4">
-                      {showGifted 
-                        ? "No outfits made for you yet"
-                        : selectedOccasion === 'All' 
-                          ? "You haven't saved any outfits yet"
-                          : `No ${selectedOccasion} outfits saved yet`
+                      {showSuggestions 
+                        ? "No outfit suggestions from followers yet"
+                        : showGifted 
+                          ? "No outfits made for you yet"
+                          : selectedOccasion === 'All' 
+                            ? "You haven't saved any outfits yet"
+                            : `No ${selectedOccasion} outfits saved yet`
                       }
                     </p>
-                    {!showGifted && (
+                    {!showSuggestions && !showGifted && (
                       <Button onClick={handleDone}>
                         <Plus className="w-4 h-4 mr-2" />
                         Create Your First Outfit
@@ -617,9 +628,9 @@ export default function DressMeWardrobe() {
                         onClick={() => {
                           setSelectedOutfitId(fit.id);
                         }}
-                        onDelete={showGifted ? undefined : (fitId) => setFitToDelete(fitId)}
-                        creator={showGifted ? fit.creator : undefined}
-                        showCreator={showGifted}
+                        onDelete={(showGifted || showSuggestions) ? undefined : (fitId) => setFitToDelete(fitId)}
+                        creator={(showGifted || showSuggestions) ? fit.creator : undefined}
+                        showCreator={showGifted || showSuggestions}
                       />
                     ))}
                   </div>

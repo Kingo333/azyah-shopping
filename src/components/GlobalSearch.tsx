@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Search, Users, Package, Store, UserPlus, UserMinus } from 'lucide-react';
+import { Search, Users, Package, Store, UserPlus, UserMinus, Palette } from 'lucide-react';
 import { SmartImage } from '@/components/SmartImage';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -18,6 +18,7 @@ interface SearchResult {
   subtitle?: string;
   image?: string;
   isFollowing?: boolean;
+  isStyleable?: boolean;
 }
 
 interface GlobalSearchProps {
@@ -77,6 +78,15 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ isOpen, onClose }) => {
           .in('following_id', users.map(u => u.id));
 
         const followingIds = new Set(follows?.map(f => f.following_id) || []);
+        
+        // Check which users have public wardrobe items (style-able)
+        const { data: publicItemCounts } = await supabase
+          .from('wardrobe_items')
+          .select('user_id')
+          .eq('public_reuse_permitted', true)
+          .in('user_id', users.map(u => u.id));
+        
+        const styleableUserIds = new Set(publicItemCounts?.map(i => i.user_id) || []);
 
         searchResults.push(...users.map(userData => ({
           id: userData.id,
@@ -84,7 +94,8 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ isOpen, onClose }) => {
           title: userData.name || 'Anonymous User',
           subtitle: 'Fashion Enthusiast',
           image: userData.avatar_url,
-          isFollowing: followingIds.has(userData.id)
+          isFollowing: followingIds.has(userData.id),
+          isStyleable: styleableUserIds.has(userData.id)
         })));
       }
 
@@ -224,33 +235,61 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ isOpen, onClose }) => {
                     key={result.id}
                     className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted"
                   >
-                    <Avatar>
+                    <Avatar className="cursor-pointer" onClick={() => {
+                      onClose();
+                      window.location.href = `/profile/${result.id}`;
+                    }}>
                       <AvatarImage src={result.image} />
                       <AvatarFallback>{result.title.charAt(0).toUpperCase()}</AvatarFallback>
                     </Avatar>
-                    <div className="flex-1">
-                      <h4 className="font-medium">{result.title}</h4>
+                    <div className="flex-1 cursor-pointer" onClick={() => {
+                      onClose();
+                      window.location.href = `/profile/${result.id}`;
+                    }}>
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-medium">{result.title}</h4>
+                        {result.isStyleable && (
+                          <Badge variant="secondary" className="text-xs bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-200">
+                            Style-able
+                          </Badge>
+                        )}
+                      </div>
                       {result.subtitle && (
                         <p className="text-sm text-muted-foreground">{result.subtitle}</p>
                       )}
                     </div>
-                    <Button
-                      variant={result.isFollowing ? "outline" : "default"}
-                      size="sm"
-                      onClick={() => handleFollow(result.id, result.isFollowing || false)}
-                    >
-                      {result.isFollowing ? (
-                        <>
-                          <UserMinus className="h-4 w-4 mr-1" />
-                          Unfollow
-                        </>
-                      ) : (
-                        <>
-                          <UserPlus className="h-4 w-4 mr-1" />
-                          Follow
-                        </>
+                    <div className="flex gap-1">
+                      {result.isStyleable && user?.id !== result.id && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            onClose();
+                            window.location.href = `/dress-me/canvas?mode=suggest&targetId=${result.id}`;
+                          }}
+                          title="Style this person"
+                        >
+                          <Palette className="h-4 w-4" />
+                        </Button>
                       )}
-                    </Button>
+                      <Button
+                        variant={result.isFollowing ? "outline" : "default"}
+                        size="sm"
+                        onClick={() => handleFollow(result.id, result.isFollowing || false)}
+                      >
+                        {result.isFollowing ? (
+                          <>
+                            <UserMinus className="h-4 w-4 mr-1" />
+                            Unfollow
+                          </>
+                        ) : (
+                          <>
+                            <UserPlus className="h-4 w-4 mr-1" />
+                            Follow
+                          </>
+                        )}
+                      </Button>
+                    </div>
                   </div>
                 ))}
               </TabsContent>

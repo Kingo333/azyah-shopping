@@ -27,32 +27,55 @@ import { useQuery } from '@tanstack/react-query';
 export default function DressMeCanvas() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const friendMode = searchParams.get('mode') === 'friend';
-  const friendId = searchParams.get('friendId');
+  const mode = searchParams.get('mode'); // 'friend' | 'suggest' | null
+  const targetId = searchParams.get('friendId') || searchParams.get('targetId');
+  
+  const friendMode = mode === 'friend';
+  const suggestMode = mode === 'suggest';
+  const specialMode = friendMode || suggestMode;
   
   const { data: allItems = [] } = useWardrobeItems();
-  const { data: friendItems = [] } = useFriendWardrobeItems(friendMode ? friendId : null);
-  const { data: isFriend } = useCheckFriendship(friendMode ? friendId : null);
+  const { data: friendItems = [] } = useFriendWardrobeItems(friendMode ? targetId : null);
+  const { data: isFriend } = useCheckFriendship(friendMode ? targetId : null);
+  
+  // For suggestion mode: fetch target user's public items (no friendship required)
+  const { data: suggestItems = [] } = useQuery<WardrobeItem[]>({
+    queryKey: ['suggest-target-items', targetId],
+    queryFn: async () => {
+      if (!targetId) return [];
+      const { data, error } = await supabase
+        .from('wardrobe_items')
+        .select('*')
+        .eq('user_id', targetId)
+        .eq('public_reuse_permitted', true)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return (data || []) as WardrobeItem[];
+    },
+    enabled: !!targetId && suggestMode,
+  });
+  
   const analytics = useDressMeAnalytics();
   const { saveOutfit, currentStep, progress, errorMessage, reset } = useCanvasSave();
 
-  // Get friend profile if in friend mode
-  const { data: friendProfile } = useQuery({
-    queryKey: ['friend-profile', friendId],
+  // Get target profile if in friend or suggest mode
+  const { data: targetProfile } = useQuery({
+    queryKey: ['target-profile', targetId],
     queryFn: async () => {
-      if (!friendId) return null;
+      if (!targetId) return null;
       const { data, error } = await supabase
-        .from('users')
+        .from('users_public')
         .select('id, username, avatar_url')
-        .eq('id', friendId)
+        .eq('id', targetId)
         .single();
       if (error) throw error;
       return data;
     },
-    enabled: !!friendId && friendMode,
+    enabled: !!targetId && specialMode,
   });
 
-  const itemsToUse = friendMode ? friendItems : allItems;
+  // Select items based on mode
+  const itemsToUse = suggestMode ? suggestItems : (friendMode ? friendItems : allItems);
 
   const [layers, setLayers] = useState<CanvasLayer[]>([]);
   const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
@@ -71,15 +94,21 @@ export default function DressMeCanvas() {
 
   // Load selected items or fit on mount - DON'T auto-load from autosave
   useEffect(() => {
-    // Verify friendship if in friend mode
-    if (friendMode && friendId && isFriend === false) {
+    // Verify friendship if in friend mode (suggestion mode doesn't require friendship)
+    if (friendMode && targetId && isFriend === false) {
       toast.error('You are not friends with this user');
       navigate('/dress-me/wardrobe?tab=friends');
       return;
     }
 
-    if (friendMode && friendItems.length === 0 && !friendProfile) {
+    if (friendMode && friendItems.length === 0 && !targetProfile) {
       toast.error('Friend has no public items');
+      return;
+    }
+    
+    if (suggestMode && suggestItems.length === 0 && targetProfile) {
+      toast.error('This user has no public items to style');
+      navigate(-1);
       return;
     }
 
@@ -90,7 +119,7 @@ export default function DressMeCanvas() {
       // Load existing fit
       loadFit(loadFitId);
       sessionStorage.removeItem('dressme_load_fit');
-    } else if (selectedItemsStr && !friendMode) {
+    } else if (selectedItemsStr && !specialMode) {
       // Load selected items (only in self mode)
       try {
         const selectedIds = JSON.parse(selectedItemsStr);
@@ -119,7 +148,7 @@ export default function DressMeCanvas() {
         console.error('Failed to load selected items:', e);
       }
     }
-  }, [itemsToUse, friendMode, friendId, isFriend, friendItems, friendProfile]);
+  }, [itemsToUse, friendMode, suggestMode, targetId, isFriend, friendItems, suggestItems, targetProfile]);
 
   // Autosave to localStorage
   useEffect(() => {
@@ -230,23 +259,28 @@ export default function DressMeCanvas() {
     // Close the save modal and show progress modal
     setIsSaveModalOpen(false);
     
+    // Determine context based on mode
+    const context = suggestMode ? 'suggestion' : (friendMode ? 'friend' : 'self');
+    
     // Start the save process
     await saveOutfit({
       layers,
       background,
       title: fitTitle || undefined,
       occasion: fitOccasion,
-      isPublic,
-      giftedTo: friendMode ? friendId || undefined : undefined,
-      context: friendMode ? 'friend' : 'self',
+      isPublic: suggestMode ? false : isPublic, // Suggestions are private by default
+      giftedTo: specialMode ? targetId || undefined : undefined,
+      context,
     });
 
     // Track analytics on success
     if (currentStep === 'success') {
       analytics.saveFit('saved', isPublic);
-      // Show custom success toast for friend mode
-      if (friendMode && friendProfile) {
-        toast.success(`Outfit saved for @${friendProfile.username}!`);
+      // Show custom success toast based on mode
+      if (suggestMode && targetProfile) {
+        toast.success(`Outfit suggestion sent to @${targetProfile.username}!`);
+      } else if (friendMode && targetProfile) {
+        toast.success(`Outfit saved for @${targetProfile.username}!`);
       } else {
         toast.success('Outfit saved!');
       }
@@ -307,16 +341,16 @@ export default function DressMeCanvas() {
           </div>
         </div>
 
-        {/* Friend Mode Banner */}
-        {friendMode && friendProfile && (
-          <div className="bg-indigo-50 dark:bg-indigo-950/30 border-b border-indigo-200 dark:border-indigo-800 py-2 px-4 flex-shrink-0">
+        {/* Special Mode Banner (Friend or Suggestion) */}
+        {specialMode && targetProfile && (
+          <div className={`${suggestMode ? 'bg-purple-50 dark:bg-purple-950/30 border-purple-200 dark:border-purple-800' : 'bg-indigo-50 dark:bg-indigo-950/30 border-indigo-200 dark:border-indigo-800'} border-b py-2 px-4 flex-shrink-0`}>
             <div className="container max-w-6xl mx-auto flex items-center gap-2">
-              <span className="inline-flex h-2 w-2 rounded-full bg-indigo-500 animate-pulse" />
-              <span className="text-sm text-indigo-900 dark:text-indigo-100">
-                Designing for <b>@{friendProfile.username}</b>
+              <span className={`inline-flex h-2 w-2 rounded-full ${suggestMode ? 'bg-purple-500' : 'bg-indigo-500'} animate-pulse`} />
+              <span className={`text-sm ${suggestMode ? 'text-purple-900 dark:text-purple-100' : 'text-indigo-900 dark:text-indigo-100'}`}>
+                {suggestMode ? 'Styling' : 'Designing for'} <b>@{targetProfile.username}</b>
               </span>
               <Badge variant="secondary" className="text-xs">
-                Using their public items
+                {suggestMode ? 'Suggesting an outfit' : 'Using their public items'}
               </Badge>
             </div>
           </div>
@@ -354,7 +388,7 @@ export default function DressMeCanvas() {
           <SheetHeader>
             <div className="flex items-center justify-between gap-2">
               <SheetTitle>
-                {friendMode ? `@${friendProfile?.username}'s Public Items` : 'All Items'}
+                {specialMode ? `@${targetProfile?.username}'s Public Items` : 'All Items'}
               </SheetTitle>
               <div className="flex items-center gap-2">
                 <Button
@@ -364,7 +398,7 @@ export default function DressMeCanvas() {
                 >
                   Select
                 </Button>
-                {!friendMode && (
+                {!specialMode && (
                   <Button
                     variant="outline"
                     size="sm"

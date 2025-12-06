@@ -10,7 +10,7 @@ interface SaveFitParams {
   canvas_image_base64?: string;
   is_public: boolean;
   gifted_to?: string;
-  context?: 'self' | 'friend';
+  context?: 'self' | 'friend' | 'suggestion';
   items: Array<{ 
     wardrobe_item_id: string; 
     transform: any; 

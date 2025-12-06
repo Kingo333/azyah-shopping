@@ -196,6 +196,41 @@ export const useGiftedFits = () => {
         .from('fits')
         .select('*, user_id')
         .eq('gifted_to', user.id)
+        .eq('context', 'friend') // Only friend gifts, not suggestions
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      
+      // Fetch creator profiles
+      const creatorIds = [...new Set(data.map(fit => fit.user_id))];
+      const { data: profiles } = await supabase
+        .from('users_public')
+        .select('id, username, avatar_url')
+        .in('id', creatorIds);
+      
+      return data.map(fit => ({
+        ...fit,
+        creator: profiles?.find(p => p.id === fit.user_id) || null,
+      }));
+    },
+    enabled: !!user,
+  });
+};
+
+// Get outfit suggestions submitted TO the current user
+export const useSuggestionFits = () => {
+  const { user } = useAuth();
+
+  return useQuery({
+    queryKey: ['suggestion-fits', user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      
+      const { data, error } = await supabase
+        .from('fits')
+        .select('*, user_id')
+        .eq('gifted_to', user.id)
+        .eq('context', 'suggestion')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
