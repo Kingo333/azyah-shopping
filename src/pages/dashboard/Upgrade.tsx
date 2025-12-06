@@ -135,94 +135,34 @@ export default function Upgrade() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-background border-b px-4 py-3 flex items-center gap-3">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => navigate('/dashboard')}
-        >
+      <div className="sticky top-0 z-10 bg-background border-b px-4 py-2 flex items-center gap-3">
+        <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard')}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <h1 className="text-lg font-semibold">Choose Your Plan</h1>
       </div>
 
-      <div className="max-w-2xl mx-auto px-4 py-6 space-y-8">
-        {/* Hero Section */}
-        <div className="text-center space-y-3">
-          <div className="flex items-center justify-center gap-2 mb-2">
-            <Crown className="h-8 w-8 text-primary" />
-          </div>
-          <h2 className="text-2xl font-bold">Unlock Azyah Premium</h2>
-          <p className="text-muted-foreground">
-            Get the most out of your fashion journey
-          </p>
+      <div className="max-w-2xl mx-auto px-4 py-4 space-y-4">
+        {/* Hero - Compact */}
+        <div className="text-center flex flex-col items-center gap-1">
+          <Crown className="h-6 w-6 text-primary" />
+          <h2 className="text-xl font-bold">Unlock Azyah Premium</h2>
+          <p className="text-sm text-muted-foreground">Get the most out of your fashion journey</p>
         </div>
 
-        {/* Feature Grid */}
-        <div className="grid grid-cols-2 gap-4">
+        {/* Feature Highlights - Inline chips */}
+        <div className="flex flex-wrap justify-center gap-2">
           {features.map((feature, index) => (
-            <Card key={index} className="border-primary/20">
-              <CardContent className="p-4 space-y-2">
-                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                  {feature.icon}
-                </div>
-                <h3 className="font-semibold text-sm">{feature.name}</h3>
-                <p className="text-xs text-muted-foreground">{feature.description}</p>
-              </CardContent>
-            </Card>
+            <div key={index} className="flex items-center gap-1.5 bg-primary/10 text-primary px-3 py-1.5 rounded-full text-xs font-medium">
+              {feature.icon}
+              <span>{feature.name}</span>
+            </div>
           ))}
         </div>
 
-        {/* Feature Comparison Table */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">What you get</CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left p-4 font-semibold text-sm">Feature</th>
-                    <th className="text-center p-4 font-semibold text-sm">Free</th>
-                    <th className="text-center p-4 font-semibold text-sm">Premium</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {comparisonFeatures.map((feature, index) => (
-                    <tr key={index} className="border-b last:border-0">
-                      <td className="p-4 text-sm">{feature.name}</td>
-                      <td className="p-4 text-center">
-                        {typeof feature.free === 'string' ? (
-                          <span className="text-xs text-muted-foreground">{feature.free}</span>
-                        ) : feature.free ? (
-                          <Check className="h-4 w-4 text-green-600 mx-auto" />
-                        ) : (
-                          <span className="text-muted-foreground">—</span>
-                        )}
-                      </td>
-                      <td className="p-4 text-center">
-                        {typeof feature.premium === 'string' ? (
-                          <span className="text-xs text-primary font-medium">{feature.premium}</span>
-                        ) : feature.premium ? (
-                          <Check className="h-4 w-4 text-primary mx-auto" />
-                        ) : (
-                          <span className="text-muted-foreground">—</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Plan Selection */}
-        <div className="space-y-3">
-          <h3 className="font-semibold text-lg">Select your plan</h3>
-          
-          {/* Yearly Plan */}
+        {/* Plan Selection - Compact cards */}
+        <div className="space-y-2">
+          {/* Yearly */}
           <Card
             onClick={() => setSelectedPlan('yearly')}
             className={cn(
@@ -230,27 +170,22 @@ export default function Upgrade() {
               selectedPlan === 'yearly' && "border-primary ring-2 ring-primary"
             )}
           >
-            <div className="absolute -top-2 left-1/2 -translate-x-1/2 bg-foreground text-background px-3 py-1 rounded-full text-xs font-bold">
-              MOST POPULAR
+            <div className="absolute -top-2 left-4 bg-foreground text-background px-2 py-0.5 rounded-full text-[10px] font-bold">
+              BEST VALUE
             </div>
-            <CardContent className="p-4 flex items-center justify-between">
+            <CardContent className="p-3 flex items-center justify-between">
               <div>
-                <h3 className="font-bold text-lg">Yearly Plan</h3>
-                <p className="text-sm text-muted-foreground">12 months • AED 300</p>
-                <p className="text-xs text-primary font-medium mt-1">Save 37%</p>
+                <h3 className="font-bold">Yearly</h3>
+                <p className="text-xs text-muted-foreground">AED 300/year • Save 37%</p>
               </div>
-              <div className="text-right">
-                <div className="text-2xl font-bold">AED 25<span className="text-sm text-muted-foreground">/mo</span></div>
-                {selectedPlan === 'yearly' && (
-                  <div className="mt-2 w-6 h-6 bg-foreground rounded-full flex items-center justify-center">
-                    <Check className="h-4 w-4 text-background" />
-                  </div>
-                )}
+              <div className="flex items-center gap-2">
+                <span className="text-lg font-bold">AED 25<span className="text-xs text-muted-foreground">/mo</span></span>
+                {selectedPlan === 'yearly' && <Check className="h-5 w-5 text-primary" />}
               </div>
             </CardContent>
           </Card>
 
-          {/* Monthly Plan */}
+          {/* Monthly */}
           <Card
             onClick={() => setSelectedPlan('monthly')}
             className={cn(
@@ -258,27 +193,23 @@ export default function Upgrade() {
               selectedPlan === 'monthly' && "border-primary ring-2 ring-primary"
             )}
           >
-            <CardContent className="p-4 flex items-center justify-between">
+            <CardContent className="p-3 flex items-center justify-between">
               <div>
-                <h3 className="font-bold text-lg">Monthly Plan</h3>
-                <p className="text-sm text-muted-foreground">Billed monthly</p>
+                <h3 className="font-bold">Monthly</h3>
+                <p className="text-xs text-muted-foreground">Billed monthly</p>
               </div>
-              <div className="text-right">
-                <div className="text-2xl font-bold">AED 40<span className="text-sm text-muted-foreground">/mo</span></div>
-                {selectedPlan === 'monthly' && (
-                  <div className="mt-2 w-6 h-6 bg-foreground rounded-full flex items-center justify-center">
-                    <Check className="h-4 w-4 text-background" />
-                  </div>
-                )}
+              <div className="flex items-center gap-2">
+                <span className="text-lg font-bold">AED 40<span className="text-xs text-muted-foreground">/mo</span></span>
+                {selectedPlan === 'monthly' && <Check className="h-5 w-5 text-primary" />}
               </div>
             </CardContent>
           </Card>
 
-          {/* Free Plan Option */}
+          {/* Free */}
           <button
             onClick={() => setSelectedPlan('free')}
             className={cn(
-              "w-full text-center text-sm py-2 rounded-lg transition-colors",
+              "w-full text-center text-sm py-1.5 rounded-lg transition-colors",
               selectedPlan === 'free' ? "text-primary font-medium" : "text-muted-foreground hover:text-foreground"
             )}
           >
@@ -286,30 +217,68 @@ export default function Upgrade() {
           </button>
         </div>
 
-        {/* CTA Button */}
-        <Button
-          onClick={handleContinue}
-          disabled={loading}
-          className="w-full h-12 text-base font-semibold"
-        >
-          {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          {selectedPlan === 'free' ? 'Continue Free' : `Upgrade to ${selectedPlan === 'yearly' ? 'Yearly' : 'Monthly'}`}
-        </Button>
+        {/* Comparison Table - Compact */}
+        <Card>
+          <CardHeader className="pb-2 pt-3 px-3">
+            <CardTitle className="text-sm">Free vs Premium</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b">
+                  <th className="text-left p-2 font-medium">Feature</th>
+                  <th className="text-center p-2 font-medium w-20">Free</th>
+                  <th className="text-center p-2 font-medium w-20">Premium</th>
+                </tr>
+              </thead>
+              <tbody>
+                {comparisonFeatures.map((feature, index) => (
+                  <tr key={index} className="border-b last:border-0">
+                    <td className="p-2">{feature.name}</td>
+                    <td className="p-2 text-center">
+                      {typeof feature.free === 'string' ? (
+                        <span className="text-muted-foreground">{feature.free}</span>
+                      ) : feature.free ? (
+                        <Check className="h-3.5 w-3.5 text-green-600 mx-auto" />
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </td>
+                    <td className="p-2 text-center">
+                      {typeof feature.premium === 'string' ? (
+                        <span className="text-primary font-medium">{feature.premium}</span>
+                      ) : feature.premium ? (
+                        <Check className="h-3.5 w-3.5 text-primary mx-auto" />
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </CardContent>
+        </Card>
 
-        {selectedPlan !== 'free' && (
-          <p className="text-center text-sm text-muted-foreground">
-            Cancel your plan anytime from Settings
-          </p>
-        )}
+        {/* CTA */}
+        <div className="space-y-2">
+          <Button
+            onClick={handleContinue}
+            disabled={loading}
+            className="w-full h-11 font-semibold"
+          >
+            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {selectedPlan === 'free' ? 'Continue Free' : `Upgrade to ${selectedPlan === 'yearly' ? 'Yearly' : 'Monthly'}`}
+          </Button>
+          {selectedPlan !== 'free' && (
+            <p className="text-center text-xs text-muted-foreground">Cancel anytime from Settings</p>
+          )}
+        </div>
 
-        {/* Footer Links */}
-        <div className="flex justify-center gap-4 text-xs text-muted-foreground">
-          <button className="hover:underline" onClick={() => navigate('/terms')}>
-            Terms of service
-          </button>
-          <button className="hover:underline" onClick={() => navigate('/privacy')}>
-            Privacy policy
-          </button>
+        {/* Footer */}
+        <div className="flex justify-center gap-4 text-xs text-muted-foreground pb-4">
+          <button className="hover:underline" onClick={() => navigate('/terms')}>Terms</button>
+          <button className="hover:underline" onClick={() => navigate('/privacy')}>Privacy</button>
         </div>
       </div>
     </div>
