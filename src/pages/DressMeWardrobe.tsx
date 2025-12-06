@@ -566,7 +566,7 @@ export default function DressMeWardrobe() {
             <TabsContent value="outfits" className="mt-3 space-y-3">
               {/* Occasion filter chips */}
               <div className="flex gap-2 overflow-x-auto pb-2">
-                {['All', 'Suggestions', 'Made for You', 'Work', 'Casual', 'Home', 'School', 'Date'].map((occasion) => (
+                {['All', 'From Followers', 'From Friends', 'Work', 'Casual', 'Home', 'School', 'Date'].map((occasion) => (
                   <Button
                     key={occasion}
                     variant={selectedOccasion === occasion ? 'default' : 'outline'}
@@ -575,12 +575,12 @@ export default function DressMeWardrobe() {
                     onClick={() => setSelectedOccasion(occasion)}
                   >
                     {occasion}
-                    {occasion === 'Suggestions' && suggestionFits.length > 0 && (
+                    {occasion === 'From Followers' && suggestionFits.length > 0 && (
                       <span className="ml-1 bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-200 rounded-full px-1.5 py-0.5 text-xs font-semibold">
                         {suggestionFits.length}
                       </span>
                     )}
-                    {occasion === 'Made for You' && giftedFits.length > 0 && (
+                    {occasion === 'From Friends' && giftedFits.length > 0 && (
                       <span className="ml-1 bg-primary-foreground text-primary rounded-full px-1.5 py-0.5 text-xs font-semibold">
                         {giftedFits.length}
                       </span>
@@ -591,8 +591,8 @@ export default function DressMeWardrobe() {
 
               {/* Outfits Grid */}
               {(() => {
-                const showSuggestions = selectedOccasion === 'Suggestions';
-                const showGifted = selectedOccasion === 'Made for You';
+                const showSuggestions = selectedOccasion === 'From Followers';
+                const showGifted = selectedOccasion === 'From Friends';
                 const fitsToShow = showSuggestions ? suggestionFits : (
                   showGifted ? giftedFits : (
                     selectedOccasion === 'All' 
@@ -605,9 +605,9 @@ export default function DressMeWardrobe() {
                   <Card className="p-8 text-center">
                     <p className="text-muted-foreground mb-4">
                       {showSuggestions 
-                        ? "No outfit suggestions from followers yet"
+                        ? "No outfits from followers yet"
                         : showGifted 
-                          ? "No outfits made for you yet"
+                          ? "No outfits from friends yet"
                           : selectedOccasion === 'All' 
                             ? "You haven't saved any outfits yet"
                             : `No ${selectedOccasion} outfits saved yet`
