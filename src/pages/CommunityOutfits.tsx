@@ -3,12 +3,14 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
 import { LikeButton } from '@/components/LikeButton';
 import { CommentButton } from '@/components/CommentButton';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSendFriendRequest, useCheckFriendship } from '@/hooks/useFriends';
-import { UserPlus, Check } from 'lucide-react';
+import { useHasPublicItems } from '@/hooks/useUserPublicWardrobeItems';
+import { UserPlus, Check, Palette } from 'lucide-react';
 
 interface PublicFit {
   id: string;
@@ -47,6 +49,28 @@ const AddFriendButton = ({ userId }: { userId: string }) => {
       }}
     >
       <UserPlus className="w-3 h-3 text-white" />
+    </button>
+  );
+};
+
+// Style Button Component
+const StyleButton = ({ userId }: { userId: string }) => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { data: hasPublicItems } = useHasPublicItems(userId);
+  
+  if (!user || user.id === userId || !hasPublicItems) return null;
+  
+  return (
+    <button
+      className="w-5 h-5 rounded-full bg-violet-500 flex items-center justify-center hover:bg-violet-600 transition-colors"
+      onClick={(e) => {
+        e.stopPropagation();
+        navigate(`/dress-me/canvas?mode=suggest&targetId=${userId}`);
+      }}
+      title="Style this person"
+    >
+      <Palette className="w-3 h-3 text-white" />
     </button>
   );
 };
@@ -161,6 +185,7 @@ export const CommunityOutfits = () => {
                 {fit.user.username || fit.user.name || 'Anonymous'}
               </span>
               <AddFriendButton userId={fit.user.id} />
+              <StyleButton userId={fit.user.id} />
             </div>
           </div>
 

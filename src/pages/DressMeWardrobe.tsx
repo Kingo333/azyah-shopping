@@ -21,6 +21,7 @@ import { useDressMeAnalytics } from '@/hooks/useDressMeAnalytics';
 import { CommunityOutfits } from './CommunityOutfits';
 import { CommunityClothes } from './CommunityClothes';
 import { FriendsTab } from '@/components/FriendsTab';
+import { StyleableUsersGrid } from '@/components/StyleableUsersGrid';
 import { OutfitDetailSheet } from '@/components/OutfitDetailSheet';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
@@ -45,7 +46,7 @@ export default function DressMeWardrobe() {
   const [activeTab, setActiveTab] = useState<'clothes' | 'outfits' | 'community' | 'friends'>(
     (searchParams.get('tab') as 'clothes' | 'outfits' | 'community' | 'friends') || 'clothes'
   );
-  const [communitySubTab, setCommunitySubTab] = useState<'outfits' | 'clothes'>('outfits');
+  const [communitySubTab, setCommunitySubTab] = useState<'outfits' | 'clothes' | 'style'>('outfits');
   const [selectedCategory, setSelectedCategory] = useState(
     searchParams.get('category') || 'all'
   );
@@ -640,9 +641,10 @@ export default function DressMeWardrobe() {
 
             <TabsContent value="community" className="mt-3 space-y-3">
               <Tabs value={communitySubTab} onValueChange={(v) => setCommunitySubTab(v as any)} className="w-full">
-                <TabsList className="w-full grid grid-cols-2">
+                <TabsList className="w-full grid grid-cols-3">
                   <TabsTrigger value="outfits">Outfits</TabsTrigger>
                   <TabsTrigger value="clothes">Clothes</TabsTrigger>
+                  <TabsTrigger value="style">Style Someone</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="outfits" className="mt-6">
@@ -651,6 +653,10 @@ export default function DressMeWardrobe() {
 
                 <TabsContent value="clothes" className="mt-6">
                   <CommunityClothes />
+                </TabsContent>
+
+                <TabsContent value="style" className="mt-6">
+                  <StyleableUsersGrid />
                 </TabsContent>
               </Tabs>
             </TabsContent>
