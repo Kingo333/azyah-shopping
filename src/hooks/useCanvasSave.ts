@@ -31,8 +31,8 @@ interface SaveOutfitParams {
   title?: string;
   occasion?: string;
   isPublic: boolean;
-  giftedTo?: string;  // NEW: Friend ID if creating outfit for friend
-  context?: 'self' | 'friend';  // NEW: Context of outfit creation
+  giftedTo?: string;  // Friend/Influencer ID if creating outfit for someone else
+  context?: 'self' | 'friend' | 'suggestion';  // Context of outfit creation
   exportQuality?: 'high' | 'medium' | 'low'; // Phase 6: Configurable export quality
 }
 
