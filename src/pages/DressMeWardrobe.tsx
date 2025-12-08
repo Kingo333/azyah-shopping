@@ -437,7 +437,7 @@ export default function DressMeWardrobe() {
         <div className="container max-w-6xl mx-auto py-2 px-4">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
-              <BackButton onBack={() => navigate('/')} variant="ghost" size="sm" />
+              <BackButton onBack={() => navigate('/swipe')} variant="ghost" size="sm" />
               <div>
                 <h1 className="text-lg font-semibold">Digital Closet</h1>
                 <p className="text-xs text-muted-foreground">upload all clothes you own here</p>
