@@ -184,6 +184,24 @@ export default function IntroCarousel() {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
 
+  // Preload all carousel images on mount
+  useEffect(() => {
+    const imagesToPreload = [
+      "/marketing/hero-visual-desktop.png",
+      "/marketing/hero-visual-mobile.png",
+      "/onboarding/product-bag.png",
+      "/onboarding/product-shoes.png",
+      "/onboarding/product-shirt.png",
+      "/onboarding/outfit-collage-1.jpg",
+      "/onboarding/outfit-collage-2.jpg",
+    ];
+    
+    imagesToPreload.forEach((src) => {
+      const img = new Image();
+      img.src = src;
+    });
+  }, []);
+
   // Animated counter for creator count - only when gallery slide is active
   useEffect(() => {
     if (currentSlide === 3) {
@@ -242,7 +260,7 @@ export default function IntroCarousel() {
   const slide = slides[currentSlide];
   const variants = {
     enter: (direction: number) => ({
-      x: direction > 0 ? 1000 : -1000,
+      x: direction > 0 ? 300 : -300,
       opacity: 0,
     }),
     center: {
@@ -252,7 +270,7 @@ export default function IntroCarousel() {
     },
     exit: (direction: number) => ({
       zIndex: 0,
-      x: direction < 0 ? 1000 : -1000,
+      x: direction < 0 ? 300 : -300,
       opacity: 0,
     }),
   };
@@ -358,7 +376,7 @@ export default function IntroCarousel() {
           <ChevronRight className="w-5 h-5 md:w-6 md:h-6 text-white drop-shadow-lg" strokeWidth={2.5} />
         </button>
 
-        <AnimatePresence initial={false} custom={direction} mode="wait">
+        <AnimatePresence initial={false} custom={direction}>
           <motion.div
             key={currentSlide}
             custom={direction}
@@ -367,14 +385,8 @@ export default function IntroCarousel() {
             animate="center"
             exit="exit"
             transition={{
-              x: {
-                type: "spring",
-                stiffness: 300,
-                damping: 30,
-              },
-              opacity: {
-                duration: 0.2,
-              },
+              x: { type: "tween", duration: 0.3, ease: "easeOut" },
+              opacity: { duration: 0.15 },
             }}
             drag="x"
             dragConstraints={{
@@ -394,6 +406,8 @@ export default function IntroCarousel() {
                     alt={slide.title}
                     className="w-full h-full object-cover"
                     draggable={false}
+                    loading="eager"
+                    fetchPriority="high"
                   />
                   <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-white" />
 
@@ -588,7 +602,7 @@ export default function IntroCarousel() {
                         <motion.div
                           initial={{ opacity: 0, y: 20 }}
                           animate={currentSlide === 3 ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-                          transition={{ delay: 0, duration: 0.5 }}
+                          transition={{ delay: 0, duration: 0.3 }}
                           className="flex-shrink-0"
                         >
                           <div
@@ -613,7 +627,7 @@ export default function IntroCarousel() {
                         <motion.div
                           initial={{ opacity: 0, y: 20 }}
                           animate={currentSlide === 3 ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-                          transition={{ delay: 0.1, duration: 0.5 }}
+                          transition={{ delay: 0.05, duration: 0.3 }}
                           className="flex-shrink-0"
                         >
                           <div
@@ -647,7 +661,7 @@ export default function IntroCarousel() {
                         <motion.div
                           initial={{ opacity: 0, y: 20 }}
                           animate={currentSlide === 3 ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-                          transition={{ delay: 0.2, duration: 0.5 }}
+                          transition={{ delay: 0.1, duration: 0.3 }}
                           className="flex-shrink-0"
                         >
                           <div
@@ -681,7 +695,7 @@ export default function IntroCarousel() {
                         <motion.div
                           initial={{ opacity: 0, y: 20 }}
                           animate={currentSlide === 3 ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-                          transition={{ delay: 0.3, duration: 0.5 }}
+                          transition={{ delay: 0.15, duration: 0.3 }}
                           className="flex-shrink-0"
                         >
                           <div
