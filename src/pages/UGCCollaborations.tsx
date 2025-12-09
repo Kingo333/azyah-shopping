@@ -20,7 +20,7 @@ export default function UGCCollaborations() {
         >
           <ArrowLeft className="h-5 w-5" />
         </button>
-        <h1 className="flex-1 text-center text-lg font-semibold text-foreground pr-9">
+        <h1 className="flex-1 text-center text-lg font-serif font-medium text-foreground pr-9">
           UGC Brand
         </h1>
       </header>

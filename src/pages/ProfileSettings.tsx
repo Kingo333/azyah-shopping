@@ -12,11 +12,10 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/hooks/useSubscription';
 import { supabase } from '@/integrations/supabase/client';
-import { Trash2, Upload, Instagram, Twitter, Globe, Music, Crown, CreditCard, Calendar } from 'lucide-react';
+import { Trash2, Upload, Instagram, Twitter, Globe, Music, Crown, CreditCard, Calendar, LogOut, Users, Sparkles, TrendingUp, Gift, Check, ChevronsUpDown } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Check, ChevronsUpDown } from 'lucide-react';
 import { COUNTRIES } from '@/lib/countries';
 import { CITIES } from '@/lib/cities';
 
@@ -205,9 +204,20 @@ const ProfileSettings: React.FC = () => {
       {/* Header */}
       <div className="sticky top-0 z-10 bg-background border-b safe-area-pt">
         <div className="container mx-auto max-w-2xl px-4 py-3">
-          <div className="flex items-center gap-3">
-            <BackButton />
-            <h1 className="text-2xl font-bold">Profile Settings</h1>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <BackButton />
+              <h1 className="text-2xl font-serif font-medium">Profile Settings</h1>
+            </div>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={signOut}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              Sign Out
+            </Button>
           </div>
         </div>
       </div>
@@ -217,7 +227,7 @@ const ProfileSettings: React.FC = () => {
           {/* Profile Picture */}
           <Card>
             <CardHeader>
-              <CardTitle>Profile Picture</CardTitle>
+              <CardTitle className="font-serif font-medium">Profile Picture</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center gap-4">
@@ -243,7 +253,7 @@ const ProfileSettings: React.FC = () => {
           {/* Personal Information */}
           <Card>
             <CardHeader>
-              <CardTitle>Personal Information</CardTitle>
+              <CardTitle className="font-serif font-medium">Personal Information</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -380,7 +390,7 @@ const ProfileSettings: React.FC = () => {
           {/* Social Links */}
           <Card>
             <CardHeader>
-              <CardTitle>Social Links</CardTitle>
+              <CardTitle className="font-serif font-medium">Social Links</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-4">
@@ -545,40 +555,60 @@ const ProfileSettings: React.FC = () => {
           {/* Subscription Management */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Crown className="h-5 w-5" />
+              <CardTitle className="flex items-center gap-2 font-serif font-medium">
+                <Crown className="h-5 w-5 text-yellow-500" />
                 Subscription
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {isPremium ? (
                 <div className="space-y-4">
-                  <div className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 rounded-lg border border-purple-200 dark:border-purple-800">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="p-2 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 text-white">
-                        <Crown className="h-4 w-4" />
+                  <div className="p-4 bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 rounded-lg border border-purple-200 dark:border-purple-800">
+                    <div className="flex items-start gap-3 mb-4">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 flex items-center justify-center">
+                        <Crown className="h-5 w-5 text-white" />
                       </div>
                       <div>
-                        <h3 className="font-semibold text-foreground">Premium Active</h3>
-                        <p className="text-sm text-muted-foreground">
-                          You have full access to all premium features
+                        <h3 className="font-serif font-medium text-foreground">Premium Active</h3>
+                        <p className="text-sm font-light text-muted-foreground">
+                          Full access to all premium features
                         </p>
+                      </div>
+                    </div>
+                    
+                    {/* Feature Chips */}
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      <div className="flex items-center gap-1.5 bg-primary/10 text-primary px-3 py-1.5 rounded-full text-xs font-medium">
+                        <Users className="h-4 w-4" />
+                        <span>UGC Collaboration</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 bg-primary/10 text-primary px-3 py-1.5 rounded-full text-xs font-medium">
+                        <Sparkles className="h-4 w-4" />
+                        <span>10 AI Try-Ons Daily</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 bg-primary/10 text-primary px-3 py-1.5 rounded-full text-xs font-medium">
+                        <TrendingUp className="h-4 w-4" />
+                        <span>AI Beauty Consultant</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 bg-primary/10 text-primary px-3 py-1.5 rounded-full text-xs font-medium">
+                        <Gift className="h-4 w-4" />
+                        <span>Salon Rewards</span>
                       </div>
                     </div>
                     
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       <div>
-                        <span className="text-muted-foreground">Status:</span>
+                        <span className="text-muted-foreground font-light">Status:</span>
                         <p className="font-medium capitalize">{subscription?.status}</p>
                       </div>
                       <div>
-                        <span className="text-muted-foreground">Plan:</span>
+                        <span className="text-muted-foreground font-light">Plan:</span>
                         <p className="font-medium">Premium Shopper</p>
                       </div>
                       {subscription?.current_period_end && (
                         <>
                           <div>
-                            <span className="text-muted-foreground">Active Until:</span>
+                            <span className="text-muted-foreground font-light">Active Until:</span>
                             <p className="font-medium">
                               {new Date(subscription.current_period_end).toLocaleDateString('en-US', {
                                 year: 'numeric',
@@ -588,35 +618,11 @@ const ProfileSettings: React.FC = () => {
                             </p>
                           </div>
                           <div>
-                            <span className="text-muted-foreground">Renewal:</span>
+                            <span className="text-muted-foreground font-light">Renewal:</span>
                             <p className="font-medium">Manual</p>
                           </div>
                         </>
                       )}
-                    </div>
-
-                    <Separator className="my-4" />
-
-                    <div className="space-y-3">
-                      <h4 className="font-medium text-sm">Premium Benefits:</h4>
-                      <ul className="space-y-1 text-sm text-muted-foreground">
-                        <li className="flex items-center gap-2">
-                          <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
-                          Unlimited AI Try-On generations
-                        </li>
-                        <li className="flex items-center gap-2">
-                          <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
-                          Unlimited Toy Replica generations
-                        </li>
-                        <li className="flex items-center gap-2">
-                          <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
-                          Full AI Beauty Consultant access
-                        </li>
-                        <li className="flex items-center gap-2">
-                          <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
-                          Priority customer support
-                        </li>
-                      </ul>
                     </div>
                   </div>
 
@@ -667,8 +673,8 @@ const ProfileSettings: React.FC = () => {
                         <Crown className="h-6 w-6 text-gray-500" />
                       </div>
                       <div>
-                        <h3 className="font-semibold text-foreground">Basic Plan</h3>
-                        <p className="text-sm text-muted-foreground">
+                        <h3 className="font-serif font-medium text-foreground">Basic Plan</h3>
+                        <p className="text-sm font-light text-muted-foreground">
                           Limited access to premium features
                         </p>
                       </div>
@@ -676,26 +682,32 @@ const ProfileSettings: React.FC = () => {
 
                     <Separator className="my-4" />
 
-                    <div className="space-y-3">
-                      <h4 className="font-medium text-sm">Current Limitations:</h4>
-                      <ul className="space-y-1 text-sm text-muted-foreground">
-                        <li className="flex items-center gap-2">
-                          <div className="w-1.5 h-1.5 bg-orange-500 rounded-full"></div>
-                          4 AI Try-On generations per day
-                        </li>
-                        <li className="flex items-center gap-2">
-                          <div className="w-1.5 h-1.5 bg-orange-500 rounded-full"></div>
-                          4 Toy Replica generations maximum
-                        </li>
-                        <li className="flex items-center gap-2">
-                          <div className="w-1.5 h-1.5 bg-orange-500 rounded-full"></div>
-                          Limited AI Beauty Consultant access
-                        </li>
-                        <li className="flex items-center gap-2">
-                          <div className="w-1.5 h-1.5 bg-orange-500 rounded-full"></div>
-                          Standard customer support
-                        </li>
-                      </ul>
+                    {/* Comparison List */}
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-center justify-between py-1">
+                        <span className="text-muted-foreground">Create outfits</span>
+                        <span className="text-muted-foreground">5 total</span>
+                      </div>
+                      <div className="flex items-center justify-between py-1">
+                        <span className="text-muted-foreground">Wardrobe items</span>
+                        <span className="text-muted-foreground">10 items</span>
+                      </div>
+                      <div className="flex items-center justify-between py-1">
+                        <span className="text-muted-foreground">AI Try-on</span>
+                        <span className="text-muted-foreground">4 total</span>
+                      </div>
+                      <div className="flex items-center justify-between py-1">
+                        <span className="text-muted-foreground">AI Beauty Consultant</span>
+                        <span className="text-muted-foreground">4 credits</span>
+                      </div>
+                      <div className="flex items-center justify-between py-1">
+                        <span className="text-muted-foreground">UGC collaboration</span>
+                        <span className="text-muted-foreground">5 listings</span>
+                      </div>
+                      <div className="flex items-center justify-between py-1">
+                        <span className="text-muted-foreground">Salon rewards</span>
+                        <span className="text-muted-foreground">—</span>
+                      </div>
                     </div>
                   </div>
 
@@ -707,6 +719,9 @@ const ProfileSettings: React.FC = () => {
                     <Crown className="h-4 w-4 mr-2" />
                     Upgrade to Premium
                   </Button>
+                  <p className="text-center text-xs font-light text-muted-foreground">
+                    Unlock unlimited access to all features
+                  </p>
                 </div>
               )}
             </CardContent>

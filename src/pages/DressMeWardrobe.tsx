@@ -405,8 +405,8 @@ export default function DressMeWardrobe() {
         <div className="min-h-screen bg-background flex items-center justify-center p-4">
           <Card className="max-w-md w-full p-8 text-center space-y-6">
             <div className="space-y-2">
-              <h1 className="text-3xl font-bold">Build Your Wardrobe</h1>
-              <p className="text-muted-foreground">
+              <h1 className="text-3xl font-serif font-medium">Build Your Wardrobe</h1>
+              <p className="text-muted-foreground font-light">
                 Start by uploading photos of your clothes. We'll remove the background automatically!
               </p>
             </div>
@@ -439,8 +439,8 @@ export default function DressMeWardrobe() {
             <div className="flex items-center gap-2">
               <BackButton onBack={() => navigate('/dashboard')} variant="ghost" size="sm" />
               <div>
-                <h1 className="text-lg font-semibold">Digital Closet</h1>
-                <p className="text-xs text-muted-foreground">upload all clothes you own here</p>
+                <h1 className="text-lg font-serif font-medium">Digital Closet</h1>
+                <p className="text-xs font-light text-muted-foreground">upload all clothes you own here</p>
               </div>
             </div>
           </div>
