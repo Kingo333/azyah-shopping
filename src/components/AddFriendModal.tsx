@@ -31,7 +31,7 @@ export const AddFriendModal: React.FC<AddFriendModalProps> = ({ open, onOpenChan
       if (!searchQuery || searchQuery.length < 2) return [];
       
       const { data, error } = await supabase
-        .from('users')
+        .from('users_public')
         .select('id, username, avatar_url')
         .ilike('username', `%${searchQuery}%`)
         .neq('id', user?.id || '')

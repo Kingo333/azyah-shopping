@@ -52,11 +52,11 @@ export const usePublicWardrobeItems = (category?: string) => {
       const { data, error } = await query;
       if (error) throw error;
       
-      // Fetch user data separately
+      // Fetch user data separately (using public view for safe fields)
       const itemsWithUsers = await Promise.all(
         (data || []).map(async (item) => {
           const { data: userData } = await supabase
-            .from('users')
+            .from('users_public')
             .select('id, username, name, avatar_url')
             .eq('id', item.user_id)
             .single();
@@ -100,9 +100,9 @@ export const useWardrobeItem = (itemId: string) => {
 
       if (error) throw error;
       
-      // Fetch user data
+      // Fetch user data (using public view for safe fields)
       const { data: userData } = await supabase
-        .from('users')
+        .from('users_public')
         .select('id, username, name, avatar_url')
         .eq('id', data.user_id)
         .single();
