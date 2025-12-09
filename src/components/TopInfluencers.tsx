@@ -10,11 +10,9 @@ import { useNavigate } from 'react-router-dom';
 
 interface TopInfluencer {
   id: string;
-  name: string;
-  email: string;
-  avatar_url: string;
-  country: string;
-  bio: string;
+  name: string | null;
+  username: string | null;
+  avatar_url: string | null;
   engagement_score: number;
   stats: {
     posts_count: number;
@@ -35,16 +33,14 @@ const TopInfluencers: React.FC<TopInfluencersProps> = ({ limit = 6, showMore = t
   const { data: topInfluencers, isLoading } = useQuery({
     queryKey: ['top-influencers', limit],
     queryFn: async () => {
-      // Get users with their activity data
+      // Get users with their activity data (using public view for safe fields)
       const { data: users, error: usersError } = await supabase
-        .from('users')
+        .from('users_public')
         .select(`
           id,
           name,
-          email,
+          username,
           avatar_url,
-          country,
-          bio,
           created_at
         `)
         .limit(50); // Get more users to calculate engagement
@@ -169,24 +165,21 @@ const TopInfluencers: React.FC<TopInfluencersProps> = ({ limit = 6, showMore = t
                 <Badge variant={getRankBadgeVariant(index)}>
                   {getRankIcon(index)}
                 </Badge>
-                <div className="text-xs text-muted-foreground">
-                  {influencer.country}
-                </div>
               </div>
             </CardHeader>
             
             <CardContent>
               <div className="flex items-center gap-3 mb-4">
                 <Avatar className="w-12 h-12">
-                  <AvatarImage src={influencer.avatar_url} />
-                  <AvatarFallback>{influencer.name?.[0] || influencer.email[0]}</AvatarFallback>
+                  <AvatarImage src={influencer.avatar_url || undefined} />
+                  <AvatarFallback>{influencer.name?.[0] || influencer.username?.[0] || '?'}</AvatarFallback>
                 </Avatar>
                 <div className="flex-1 min-w-0">
                   <h3 className="font-semibold truncate group-hover:text-primary transition-colors">
-                    {influencer.name || influencer.email.split('@')[0]}
+                    {influencer.name || influencer.username || 'Anonymous'}
                   </h3>
                   <p className="text-sm text-muted-foreground truncate">
-                    {influencer.bio || 'Fashion enthusiast'}
+                    {influencer.username ? `@${influencer.username}` : 'Fashion enthusiast'}
                   </p>
                 </div>
               </div>

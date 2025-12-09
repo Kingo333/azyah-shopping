@@ -41,9 +41,9 @@ export const useFriends = () => {
       if (friendError) throw friendError;
       if (!friendIds || friendIds.length === 0) return [];
 
-      // Get profile data for friends
+      // Get profile data for friends (using public view for safe fields)
       const { data: profiles, error: profileError } = await supabase
-        .from('users')
+        .from('users_public')
         .select('id, username, avatar_url')
         .in('id', friendIds.map(f => f.friend_id));
 
@@ -99,9 +99,9 @@ export const usePendingFriendRequests = () => {
       if (friendshipsError) throw friendshipsError;
       if (!friendships || friendships.length === 0) return [];
 
-      // Get requester profile data
+      // Get requester profile data (using public view for safe fields)
       const { data: profiles, error: profilesError } = await supabase
-        .from('users')
+        .from('users_public')
         .select('id, username, avatar_url')
         .in('id', friendships.map(f => f.user_id));
 
