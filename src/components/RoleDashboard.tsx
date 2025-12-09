@@ -327,7 +327,7 @@ const RoleDashboard: React.FC = () => {
       {/* Basics Fits Section */}
       {basicsProducts.length > 0 && (
         <section className="px-4 pt-6">
-          <h2 className="text-lg font-semibold mb-3 text-foreground font-sans">Basics Fits</h2>
+          <h2 className="text-lg font-serif font-medium mb-3 text-foreground">Wardrobe Essentials</h2>
           
           <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide [-webkit-overflow-scrolling:touch]">
             {basicsProducts.map(product => (
@@ -351,7 +351,7 @@ const RoleDashboard: React.FC = () => {
       {/* Trending Looks Section */}
       <section className="px-4 pt-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-foreground font-sans">Trending Looks</h2>
+          <h2 className="text-lg font-serif font-medium text-foreground">Trending Looks</h2>
           
           {/* Category Filter */}
           <Popover open={isTrendingFilterOpen} onOpenChange={setIsTrendingFilterOpen}>
@@ -406,7 +406,7 @@ const RoleDashboard: React.FC = () => {
       {/* Events Section */}
       <section className="px-4 pt-6">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-semibold text-foreground font-sans">Events</h2>
+          <h2 className="text-lg font-serif font-medium text-foreground">Events</h2>
           <Button 
             variant="link" 
             size="sm" 
@@ -467,7 +467,7 @@ const RoleDashboard: React.FC = () => {
 
       {/* Salons Section */}
       <section className="px-4 pt-6">
-        <h2 className="text-lg font-semibold mb-3 text-foreground font-sans">Salons</h2>
+        <h2 className="text-lg font-serif font-medium mb-3 text-foreground">Salons</h2>
 
         {/* City Filter Pills */}
         <div className="flex gap-2 mb-3">
@@ -520,11 +520,11 @@ const RoleDashboard: React.FC = () => {
       {/* Fashion Leaderboard Section */}
       <section className="px-4 pt-6">
         <div className="mb-2">
-          <h2 className="text-lg font-semibold text-foreground flex items-center gap-2 font-sans">
+          <h2 className="text-lg font-serif font-medium text-foreground flex items-center gap-2">
             <Trophy className="h-5 w-5 text-yellow-500" />
             Fashion Leaderboard
           </h2>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs font-light text-muted-foreground">
             Compete with style enthusiasts worldwide
           </p>
         </div>
