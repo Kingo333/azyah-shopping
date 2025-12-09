@@ -3804,19 +3804,6 @@ export type Database = {
       }
       admin_access_payment_secure:
         | {
-            Args: { justification: string; target_payment_id: string }
-            Returns: {
-              amount_fils: number
-              created_at: string
-              currency: string
-              id: string
-              product: string
-              provider: string
-              status: string
-              user_id: string
-            }[]
-          }
-        | {
             Args: {
               justification: string
               operation_type?: string
@@ -3849,6 +3836,19 @@ export type Database = {
               isOneToOne: false
               isSetofReturn: true
             }
+          }
+        | {
+            Args: { justification: string; target_payment_id: string }
+            Returns: {
+              amount_fils: number
+              created_at: string
+              currency: string
+              id: string
+              product: string
+              provider: string
+              status: string
+              user_id: string
+            }[]
           }
       admin_access_payment_with_enhanced_security: {
         Args: {
@@ -4291,18 +4291,6 @@ export type Database = {
       }
       get_public_brands:
         | {
-            Args: { limit_param?: number }
-            Returns: {
-              bio: string
-              created_at: string
-              id: string
-              logo_url: string
-              name: string
-              slug: string
-              updated_at: string
-            }[]
-          }
-        | {
             Args: never
             Returns: {
               bio: string
@@ -4316,6 +4304,18 @@ export type Database = {
               socials: Json
               updated_at: string
               website: string
+            }[]
+          }
+        | {
+            Args: { limit_param?: number }
+            Returns: {
+              bio: string
+              created_at: string
+              id: string
+              logo_url: string
+              name: string
+              slug: string
+              updated_at: string
             }[]
           }
       get_public_categories: {
@@ -4402,18 +4402,6 @@ export type Database = {
       }
       get_public_retailers:
         | {
-            Args: { limit_param?: number }
-            Returns: {
-              bio: string
-              created_at: string
-              id: string
-              logo_url: string
-              name: string
-              slug: string
-              updated_at: string
-            }[]
-          }
-        | {
             Args: never
             Returns: {
               bio: string
@@ -4427,6 +4415,18 @@ export type Database = {
               socials: Json
               updated_at: string
               website: string
+            }[]
+          }
+        | {
+            Args: { limit_param?: number }
+            Returns: {
+              bio: string
+              created_at: string
+              id: string
+              logo_url: string
+              name: string
+              slug: string
+              updated_at: string
             }[]
           }
       get_retailer_contact_info: {
