@@ -27,7 +27,7 @@ const DashboardHeader: React.FC = () => {
           <div className="w-8 h-8 bg-[hsl(var(--azyah-maroon))] rounded-lg flex items-center justify-center">
             <span className="text-white font-bold text-sm">A</span>
           </div>
-          <span className="font-semibold text-foreground">Azyah</span>
+          <span className="font-serif font-medium text-foreground">Azyah</span>
         </div>
 
         {/* Center - Upgrade Button */}

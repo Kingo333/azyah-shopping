@@ -145,7 +145,7 @@ const Swipe = () => {
                 <ArrowLeft className="h-4 w-4" />
               </Button>
               <div className="hidden sm:block">
-                <h1 className="text-base sm:text-lg font-semibold tracking-tight">Discover</h1>
+                <h1 className="text-base sm:text-lg font-serif font-medium tracking-tight">Discover</h1>
                 <p className="text-[10px] sm:text-xs text-muted-foreground/80 font-medium truncate max-w-[80px] sm:max-w-none">
                   {getCurrentCategoryDisplay()}
                 </p>
