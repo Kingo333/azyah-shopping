@@ -79,8 +79,8 @@ const slides: SlideType[] = [
   },
   {
     type: "gallery",
-    title: "Create, Collaborate, Earn",
-    subtitle: "Showcase your style and get rewarded",
+    title: "Create. Collaborate. Inspire.",
+    subtitle: "Showcase your vision and be rewarded",
   },
   {
     type: "ugc",
@@ -435,10 +435,10 @@ export default function IntroCarousel() {
                     {/* Feature Bubbles */}
                     <div className="flex flex-wrap gap-2">
                       <div className="font-light bg-white/70 backdrop-blur-md text-foreground shadow-lg rounded-full text-xs px-3 py-1.5">
-                        Let AI find your style
+                        AI-powered curation
                       </div>
                       <div className="font-light bg-white/70 backdrop-blur-md text-foreground shadow-lg rounded-full text-xs px-3 py-1.5">
-                        Create digital closets • Earn salon rewards
+                        Build your virtual wardrobe • Exclusive salon rewards
                       </div>
                       <div className="font-light bg-white/70 backdrop-blur-md text-foreground shadow-lg rounded-full text-xs px-3 py-1.5">
                         Collaborate with brands
@@ -449,8 +449,8 @@ export default function IntroCarousel() {
 
                 {/* Title & Subtitle */}
                 <div className="flex-1 flex flex-col items-center justify-start pt-6 px-8 text-center">
-                  <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-3">{slide.title}</h2>
-                  <p className="text-base text-muted-foreground leading-relaxed max-w-xl">{slide.subtitle}</p>
+                  <h2 className="text-2xl md:text-3xl font-serif font-medium text-foreground mb-3">{slide.title}</h2>
+                  <p className="text-base font-light text-muted-foreground leading-relaxed max-w-xl">{slide.subtitle}</p>
                 </div>
               </div>
             )}
@@ -459,8 +459,8 @@ export default function IntroCarousel() {
               <div className="h-full flex flex-col px-6">
                 {/* Title & Subtitle */}
                 <div className="text-center mb-6 pt-4">
-                  <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-2">{slide.title}</h2>
-                  <p className="text-base text-muted-foreground leading-relaxed">{slide.subtitle}</p>
+                  <h2 className="text-2xl md:text-3xl font-serif font-medium text-foreground mb-2">{slide.title}</h2>
+                  <p className="text-base font-light text-muted-foreground leading-relaxed">{slide.subtitle}</p>
                 </div>
 
                 {/* Interactive Swipe Area with Side Indicators */}
@@ -502,8 +502,8 @@ export default function IntroCarousel() {
               <div className="h-full flex flex-col px-6">
                 {/* Title & Subtitle */}
                 <div className="text-center mb-6 pt-4">
-                  <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-2">{slide.title}</h2>
-                  <p className="text-base text-muted-foreground leading-relaxed">{slide.subtitle}</p>
+                  <h2 className="text-2xl md:text-3xl font-serif font-medium text-foreground mb-2">{slide.title}</h2>
+                  <p className="text-base font-light text-muted-foreground leading-relaxed">{slide.subtitle}</p>
                 </div>
 
                 {/* Interactive Slider Area */}
@@ -519,8 +519,8 @@ export default function IntroCarousel() {
               <div className="h-full flex flex-col px-6">
                 {/* Title & Subtitle */}
                 <div className="text-center mb-6 pt-4">
-                  <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-2">{slide.title}</h2>
-                  <p className="text-base text-muted-foreground leading-relaxed">{slide.subtitle}</p>
+                  <h2 className="text-2xl md:text-3xl font-serif font-medium text-foreground mb-2">{slide.title}</h2>
+                  <p className="text-base font-light text-muted-foreground leading-relaxed">{slide.subtitle}</p>
                 </div>
 
                 {/* UGC Features Grid */}
@@ -563,10 +563,10 @@ export default function IntroCarousel() {
               <div className="h-full flex flex-col px-6 bg-gradient-to-b from-white via-white to-primary/5">
                 {/* Title & Subtitle */}
                 <div className="text-center mb-6 pt-4">
-                  <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-2 bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
+                  <h2 className="text-2xl md:text-3xl font-serif font-medium text-foreground mb-2 bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
                     {slide.title}
                   </h2>
-                  <p className="text-base text-muted-foreground leading-relaxed">{slide.subtitle}</p>
+                  <p className="text-base font-light text-muted-foreground leading-relaxed">{slide.subtitle}</p>
                 </div>
 
                 {/* Content Container */}
