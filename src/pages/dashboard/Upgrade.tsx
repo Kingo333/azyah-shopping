@@ -77,7 +77,7 @@ export default function Upgrade() {
           status: 'active',
           plan_tier: selectedPlan,
           currency: 'AED',
-          price_cents: selectedPlan === 'yearly' ? 30000 : 4000, // AED 300 or AED 40
+          price_cents: selectedPlan === 'yearly' ? 20000 : 3000, // AED 200 or AED 30
           features_granted: {
             ugc_collaboration: true,
             ai_tryon_limit: 10,
@@ -176,10 +176,10 @@ export default function Upgrade() {
             <CardContent className="p-3 flex items-center justify-between">
               <div>
                 <h3 className="font-bold">Yearly</h3>
-                <p className="text-xs text-muted-foreground">AED 300/year • Save 37%</p>
+                <p className="text-xs text-muted-foreground">AED 200/year • Save 44%</p>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-lg font-bold">AED 25<span className="text-xs text-muted-foreground">/mo</span></span>
+                <span className="text-lg font-bold">AED 17<span className="text-xs text-muted-foreground">/mo</span></span>
                 {selectedPlan === 'yearly' && <Check className="h-5 w-5 text-primary" />}
               </div>
             </CardContent>
@@ -199,7 +199,7 @@ export default function Upgrade() {
                 <p className="text-xs text-muted-foreground">Billed monthly</p>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-lg font-bold">AED 40<span className="text-xs text-muted-foreground">/mo</span></span>
+                <span className="text-lg font-bold">AED 30<span className="text-xs text-muted-foreground">/mo</span></span>
                 {selectedPlan === 'monthly' && <Check className="h-5 w-5 text-primary" />}
               </div>
             </CardContent>
