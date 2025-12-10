@@ -48,7 +48,7 @@ const slides: SlideType[] = [
     type: "hero",
     image: "/marketing/hero-visual-desktop.png",
     mobileImage: "/marketing/hero-visual-mobile.png",
-    title: "Discover Your Style",
+    title: "The Art of Style",
   subtitle:
     "The platform for discovering fashion, beauty products, and pop-ups. \nWe empower brands, shoppers and content creators.",
   },
@@ -74,7 +74,7 @@ const slides: SlideType[] = [
   },
   {
     type: "interactive-slider",
-    title: "Try Before You Buy",
+    title: "See It On You",
     subtitle: "See how items look on you with AI try-on technology",
   },
   {
