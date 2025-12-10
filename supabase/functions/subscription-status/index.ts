@@ -71,8 +71,8 @@ serve(async (req) => {
 
       const planConfig = {
         free: { price_cents: 0, duration_days: 30 },
-        monthly: { price_cents: 4000, duration_days: 30 }, // AED 40
-        yearly: { price_cents: 30000, duration_days: 365 }, // AED 300
+        monthly: { price_cents: 3000, duration_days: 30 }, // AED 30
+        yearly: { price_cents: 20000, duration_days: 365 }, // AED 200
       };
 
       const config = planConfig[plan as keyof typeof planConfig];
