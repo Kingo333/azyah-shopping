@@ -5,6 +5,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useWishlist } from '@/hooks/useWishlist';
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { useUnifiedProducts } from '@/hooks/useUnifiedProducts';
 import { useEnhancedSwipeTracking } from '@/hooks/useEnhancedSwipeTracking';
 import { useSwipePerformance } from '@/hooks/useSwipePerformance';
@@ -87,6 +88,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
   const { toast } = useToast();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { addToWishlist, isLoading: wishlistLoading } = useWishlist();
   
   // Motion values - simplified like SwipeableImages
@@ -157,7 +159,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
       try {
         const viewDuration = getViewDuration(product.id);
         
-        await Promise.all([
+        const [trackResult, likeResult] = await Promise.all([
           trackSwipe({
             productId: product.id,
             action: 'right',
@@ -171,15 +173,34 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
           }])
         ]);
 
-        toast({ 
-          description: `Added to likes!`,
-          duration: 2000
-        });
+        // Handle duplicate likes - bump to top
+        if (likeResult.error?.code === '23505') {
+          // Already liked - update timestamp to bring to top
+          await supabase
+            .from('likes')
+            .update({ created_at: new Date().toISOString() })
+            .eq('user_id', user.id)
+            .eq('product_id', product.id);
+          
+          toast({ 
+            description: `Already in likes - moved to top!`,
+            duration: 2000
+          });
+        } else {
+          toast({ 
+            description: `Added to likes!`,
+            duration: 2000
+          });
+        }
+
+        // Invalidate likes cache so Likes page updates
+        queryClient.invalidateQueries({ queryKey: ['likes'] });
+        queryClient.invalidateQueries({ queryKey: ['liked-products'] });
       } catch (error) {
         // Silent fail
       }
     });
-  }, [user, toast, nextCard, trackSwipe, getViewDuration]);
+  }, [user, toast, nextCard, trackSwipe, getViewDuration, queryClient]);
 
   const handleDislike = useCallback(() => {
     swipeHaptics.dislike();
