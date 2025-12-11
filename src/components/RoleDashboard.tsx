@@ -27,7 +27,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { CATEGORY_TREE, getCategoryDisplayName } from '@/lib/categories';
 import type { TopCategory } from '@/lib/categories';
 import { useSubscription } from '@/hooks/useSubscription';
-import { BottomNavigation } from '@/components/BottomNavigation';
+
 interface UserProfile {
   id: string;
   name: string;
@@ -724,8 +724,6 @@ const RoleDashboard: React.FC = () => {
               </GlassPanel>
             </div>}
         
-        {/* Bottom Navigation */}
-        {userProfile?.role === 'shopper' && <BottomNavigation />}
 
         {/* Global Search Modal */}
         <GlobalSearch isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
