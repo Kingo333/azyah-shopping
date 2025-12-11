@@ -53,6 +53,7 @@ import PhotoCloseup from './components/PhotoCloseup';
 import UserDeletionTool from './components/UserDeletionTool';
 
 import { DebugHealthPage } from './components/DebugHealthPage';
+import { BottomNavigation } from './components/BottomNavigation';
 
 // Onboarding pages
 import IntroCarousel from './pages/onboarding/IntroCarousel';
@@ -239,6 +240,7 @@ function AppContent() {
                   <Route path="*" element={<NotFound />} />
       </Routes>
       <Toaster />
+      <BottomNavigation />
     </>
   );
 }
