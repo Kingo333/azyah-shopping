@@ -367,7 +367,7 @@ const RoleDashboard: React.FC = () => {
             {essentialsToShow.map(item => (
               <div 
                 key={item.id} 
-                className="flex-shrink-0 w-20 md:w-40 cursor-pointer"
+                className="flex-shrink-0 w-24 md:w-40 cursor-pointer"
                 onClick={() => navigate('/dress-me/wardrobe')}
               >
                 <div className="relative aspect-square rounded-lg overflow-hidden">
