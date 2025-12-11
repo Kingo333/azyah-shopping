@@ -184,11 +184,19 @@ export default function IntroCarousel() {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
 
-  // Preload all carousel images on mount
+  // Preload hero image immediately with high priority
   useEffect(() => {
-    const imagesToPreload = [
-      "/marketing/hero-visual-desktop.png",
-      "/marketing/hero-visual-mobile.png",
+    // Add preload link for hero image
+    const heroSrc = isMobile ? "/marketing/hero-visual-mobile.png" : "/marketing/hero-visual-desktop.png";
+    const link = document.createElement('link');
+    link.rel = 'preload';
+    link.as = 'image';
+    link.href = heroSrc;
+    link.fetchPriority = 'high';
+    document.head.appendChild(link);
+
+    // Preload other images with lower priority
+    const otherImages = [
       "/onboarding/product-bag.png",
       "/onboarding/product-shoes.png",
       "/onboarding/product-shirt.png",
@@ -196,11 +204,15 @@ export default function IntroCarousel() {
       "/onboarding/outfit-collage-2.jpg",
     ];
     
-    imagesToPreload.forEach((src) => {
+    otherImages.forEach((src) => {
       const img = new Image();
       img.src = src;
     });
-  }, []);
+
+    return () => {
+      document.head.removeChild(link);
+    };
+  }, [isMobile]);
 
   // Animated counter for creator count - only when gallery slide is active
   useEffect(() => {
