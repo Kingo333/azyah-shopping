@@ -363,11 +363,11 @@ const RoleDashboard: React.FC = () => {
             </Button>
           </div>
           
-          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide [-webkit-overflow-scrolling:touch]">
+          <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide [-webkit-overflow-scrolling:touch]">
             {essentialsToShow.map(item => (
               <div 
                 key={item.id} 
-                className="flex-shrink-0 w-16 cursor-pointer"
+                className="flex-shrink-0 w-20 md:w-40 cursor-pointer"
                 onClick={() => navigate('/dress-me/wardrobe')}
               >
                 <div className="relative aspect-square rounded-lg overflow-hidden">
@@ -379,7 +379,7 @@ const RoleDashboard: React.FC = () => {
                   {showingSuggestions && (
                     <Badge 
                       variant="secondary" 
-                      className="absolute top-1 left-1 text-[8px] px-1 py-0 bg-background/80 backdrop-blur-sm"
+                      className="absolute top-1 left-1 text-[8px] md:text-[10px] px-1 py-0 bg-background/80 backdrop-blur-sm"
                     >
                       Suggested
                     </Badge>
