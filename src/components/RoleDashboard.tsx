@@ -287,39 +287,62 @@ const RoleDashboard: React.FC = () => {
         <ProfileCompletionBanner />
       </section>
 
-      {/* Feature Strip - 4 Icon Buttons */}
+      {/* Feature Strip - 5 Square Tiles (ADNOC-inspired) */}
       <section className="px-4 pt-4">
-        <div className="grid grid-cols-4 gap-3">
+        <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
           {/* AI Studio */}
-          <button onClick={() => setAiStudioModalOpen(true)} className="flex flex-col items-center gap-1.5">
-            <div className="w-14 h-14 rounded-full bg-white border border-[hsl(var(--azyah-border))] shadow-sm flex items-center justify-center hover:shadow-md transition-shadow">
-              <Shirt className="h-6 w-6 text-gray-500" />
+          <button 
+            onClick={() => setAiStudioModalOpen(true)} 
+            className="flex flex-col items-center justify-center gap-1.5 p-3 bg-white rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.12)] transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] min-w-[64px]"
+          >
+            <div className="w-8 h-8 rounded-lg bg-[hsl(var(--azyah-ivory))] flex items-center justify-center">
+              <Shirt className="h-4 w-4 text-muted-foreground" />
             </div>
-            <span className="text-[10px] font-medium text-foreground">AI Studio</span>
+            <span className="text-[10px] font-medium text-muted-foreground text-center leading-tight">AI Studio</span>
           </button>
 
           {/* UGC Collab */}
-          <div className="flex flex-col items-center gap-1.5">
-            <div className="w-14 h-14 rounded-full bg-white border border-[hsl(var(--azyah-border))] shadow-sm flex items-center justify-center hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate('/ugc')}>
-              <Users className="h-6 w-6 text-gray-500" />
+          <button 
+            onClick={() => navigate('/ugc')} 
+            className="flex flex-col items-center justify-center gap-1.5 p-3 bg-white rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.12)] transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] min-w-[64px]"
+          >
+            <div className="w-8 h-8 rounded-lg bg-[hsl(var(--azyah-ivory))] flex items-center justify-center">
+              <Users className="h-4 w-4 text-muted-foreground" />
             </div>
-            <span className="text-[10px] font-medium text-muted-foreground">UGC Collab</span>
-          </div>
+            <span className="text-[10px] font-medium text-muted-foreground text-center leading-tight">UGC Collab</span>
+          </button>
 
           {/* Wishlist */}
-          <button onClick={() => navigate('/wishlist')} className="flex flex-col items-center gap-1.5">
-            <div className="w-14 h-14 rounded-full bg-white border border-[hsl(var(--azyah-border))] shadow-sm flex items-center justify-center hover:shadow-md transition-shadow">
-              <Heart className="h-6 w-6 text-gray-500" />
+          <button 
+            onClick={() => navigate('/wishlist')} 
+            className="flex flex-col items-center justify-center gap-1.5 p-3 bg-white rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.12)] transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] min-w-[64px]"
+          >
+            <div className="w-8 h-8 rounded-lg bg-[hsl(var(--azyah-ivory))] flex items-center justify-center">
+              <Heart className="h-4 w-4 text-muted-foreground" />
             </div>
-            <span className="text-[10px] font-medium text-muted-foreground">Wishlist</span>
+            <span className="text-[10px] font-medium text-muted-foreground text-center leading-tight">Wishlist</span>
           </button>
 
           {/* Beauty */}
-          <button onClick={() => navigate('/beauty-consultant')} className="flex flex-col items-center gap-1.5">
-            <div className="w-14 h-14 rounded-full bg-white border border-[hsl(var(--azyah-border))] shadow-sm flex items-center justify-center hover:shadow-md transition-shadow">
-              <WandSparkles className="h-6 w-6 text-gray-500" />
+          <button 
+            onClick={() => navigate('/beauty-consultant')} 
+            className="flex flex-col items-center justify-center gap-1.5 p-3 bg-white rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.12)] transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] min-w-[64px]"
+          >
+            <div className="w-8 h-8 rounded-lg bg-[hsl(var(--azyah-ivory))] flex items-center justify-center">
+              <WandSparkles className="h-4 w-4 text-muted-foreground" />
             </div>
-            <span className="text-[10px] font-medium text-muted-foreground">Beauty</span>
+            <span className="text-[10px] font-medium text-muted-foreground text-center leading-tight">Beauty</span>
+          </button>
+
+          {/* Profile */}
+          <button 
+            onClick={() => navigate('/settings')} 
+            className="flex flex-col items-center justify-center gap-1.5 p-3 bg-white rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.12)] transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] min-w-[64px]"
+          >
+            <div className="w-8 h-8 rounded-lg bg-[hsl(var(--azyah-ivory))] flex items-center justify-center">
+              <User className="h-4 w-4 text-muted-foreground" />
+            </div>
+            <span className="text-[10px] font-medium text-muted-foreground text-center leading-tight">Profile</span>
           </button>
         </div>
       </section>

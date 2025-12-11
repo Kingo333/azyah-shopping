@@ -1,6 +1,7 @@
 
 import React, { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -207,6 +208,7 @@ const ProductListView: React.FC<ProductListViewProps> = ({
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
 
   const handleLike = useCallback(async (product: Product) => {
     if (!user) {
@@ -226,8 +228,15 @@ const ProductListView: React.FC<ProductListViewProps> = ({
 
       if (error) {
         if (error.code === '23505') {
+          // Already liked - update timestamp to bring to top
+          await supabase
+            .from('likes')
+            .update({ created_at: new Date().toISOString() })
+            .eq('user_id', user.id)
+            .eq('product_id', product.id);
+          
           toast({
-            description: `${product.title} is already in your likes!`
+            description: `${product.title} moved to top of likes!`
           });
         } else {
           throw error;
@@ -237,6 +246,10 @@ const ProductListView: React.FC<ProductListViewProps> = ({
           description: `${product.title} added to your likes!`
         });
       }
+
+      // Invalidate likes cache
+      queryClient.invalidateQueries({ queryKey: ['likes'] });
+      queryClient.invalidateQueries({ queryKey: ['liked-products'] });
     } catch (error: any) {
       console.error("Error liking product:", error.message);
       toast({
@@ -245,7 +258,7 @@ const ProductListView: React.FC<ProductListViewProps> = ({
         variant: "destructive"
       });
     }
-  }, [user, toast]);
+  }, [user, toast, queryClient]);
 
   const handleProductClick = (product: Product) => {
     navigate(`/p/${product.id}?from=list`);
