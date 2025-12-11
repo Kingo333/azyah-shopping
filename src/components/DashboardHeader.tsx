@@ -42,7 +42,12 @@ const DashboardHeader: React.FC = () => {
 
         {/* Right Icons */}
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" className="h-8 w-8">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-8 w-8"
+            onClick={() => window.open('https://docs.lovable.dev/tips-tricks/troubleshooting', '_blank')}
+          >
             <HelpCircle className="h-4 w-4" />
           </Button>
           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleThemeToggle}>

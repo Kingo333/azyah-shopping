@@ -35,8 +35,8 @@ const navItems: NavItem[] = [
   { id: 'dress-me', label: 'Dress Me', icon: HangerIcon, path: '/dress-me' },
 ];
 
-// Find-related routes where auto-hide behavior applies
-const FIND_ROUTES = ['/swipe', '/likes', '/explore', '/p/'];
+// Routes where auto-hide behavior applies (minimized after 2 seconds)
+const AUTO_HIDE_ROUTES = ['/swipe', '/likes', '/explore', '/p/', '/settings', '/community', '/trending', '/influencers', '/brands', '/wishlist', '/forum', '/affiliate', '/events'];
 
 // Routes where bottom nav should NOT appear
 const EXCLUDED_ROUTES = [
@@ -62,20 +62,20 @@ export const BottomNavigation: React.FC = () => {
       return location.pathname === '/dashboard';
     }
     if (path === '/swipe') {
-      return FIND_ROUTES.some(route => location.pathname.startsWith(route));
+      return AUTO_HIDE_ROUTES.some(route => location.pathname.startsWith(route));
     }
     return location.pathname.startsWith(path);
   };
 
-  const isFindPage = FIND_ROUTES.some(route => location.pathname.startsWith(route));
+  const isAutoHidePage = AUTO_HIDE_ROUTES.some(route => location.pathname.startsWith(route));
   const isDressMePage = location.pathname.startsWith('/dress-me');
   const isExcludedPage = EXCLUDED_ROUTES.some(route => 
     route === location.pathname || location.pathname.startsWith(route + '/')
   );
 
-  // Auto-hide logic ONLY for Find pages
+  // Auto-hide logic for auto-hide pages
   useEffect(() => {
-    if (isFindPage) {
+    if (isAutoHidePage) {
       setIsMinimized(false);
       
       const timer = setTimeout(() => {
@@ -84,20 +84,20 @@ export const BottomNavigation: React.FC = () => {
       
       return () => clearTimeout(timer);
     } else {
-      // Always show on non-Find pages (like dashboard)
+      // Always show on non-auto-hide pages (like dashboard)
       setIsMinimized(false);
     }
-  }, [location.pathname, isFindPage]);
+  }, [location.pathname, isAutoHidePage]);
 
   const handleExpandNav = useCallback(() => {
     setIsMinimized(false);
     // Re-trigger auto-hide after expansion
     setTimeout(() => {
-      if (isFindPage) {
+      if (isAutoHidePage) {
         setIsMinimized(true);
       }
     }, 3000);
-  }, [isFindPage]);
+  }, [isAutoHidePage]);
 
   // Don't render if not logged in, on Dress Me pages, or excluded pages
   if (!user || isDressMePage || isExcludedPage) {
@@ -106,9 +106,9 @@ export const BottomNavigation: React.FC = () => {
 
   return (
     <>
-      {/* Minimized arrow handle for Find pages when hidden - right side */}
+      {/* Minimized arrow handle when hidden - right side */}
       <AnimatePresence>
-        {isFindPage && isMinimized && (
+        {isAutoHidePage && isMinimized && (
           <motion.button
             initial={{ x: 100, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
@@ -123,11 +123,11 @@ export const BottomNavigation: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* Main Navigation - always visible on non-Find pages, or when not minimized on Find pages */}
+      {/* Main Navigation - always visible on non-auto-hide pages, or when not minimized */}
       <AnimatePresence>
-        {(!isFindPage || !isMinimized) && (
+        {(!isAutoHidePage || !isMinimized) && (
           <motion.div
-            initial={isFindPage ? { y: 100 } : false}
+            initial={isAutoHidePage ? { y: 100 } : false}
             animate={{ y: 0 }}
             exit={{ y: 100 }}
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
