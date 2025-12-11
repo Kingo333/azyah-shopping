@@ -27,6 +27,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { CATEGORY_TREE, getCategoryDisplayName } from '@/lib/categories';
 import type { TopCategory } from '@/lib/categories';
 import { useSubscription } from '@/hooks/useSubscription';
+import { useWardrobeItems } from '@/hooks/useWardrobeItems';
+import { useSuggestedEssentials } from '@/hooks/useSuggestedEssentials';
 
 interface UserProfile {
   id: string;
@@ -68,9 +70,19 @@ const RoleDashboard: React.FC = () => {
   const [isAffiliateMinimized, setIsAffiliateMinimized] = useState(true);
   const [selectedTrendingCategory, setSelectedTrendingCategory] = useState<TopCategory | null>(null);
   const [isTrendingFilterOpen, setIsTrendingFilterOpen] = useState(false);
-  const [basicsProducts, setBasicsProducts] = useState<any[]>([]);
   const [featuredEvent, setFeaturedEvent] = useState<any>(null);
   const [salonCity, setSalonCity] = useState<'dubai' | 'abudhabi'>('dubai');
+  
+  // Wardrobe essentials - user's items or community suggestions
+  const { data: wardrobeItems = [], isLoading: wardrobeLoading } = useWardrobeItems();
+  const { data: suggestedItems = [] } = useSuggestedEssentials(wardrobeItems.length === 0);
+  
+  // Use user's items if they have any, otherwise show suggestions
+  const essentialsToShow = wardrobeItems.length > 0 
+    ? wardrobeItems.slice(0, 8) 
+    : suggestedItems;
+  const showingSuggestions = wardrobeItems.length === 0 && suggestedItems.length > 0;
+  
   const [salons] = useState<any[]>([
     { id: 1, name: 'Jane saloon', image_url: '/placeholder.svg', city: 'dubai' },
     { id: 2, name: 'Shay Nails', image_url: '/placeholder.svg', city: 'dubai' },
@@ -104,7 +116,6 @@ const RoleDashboard: React.FC = () => {
       try {
         await fetchUserProfile();
         await fetchDashboardStats();
-        await fetchBasicsFits();
         await fetchFeaturedEvent();
       } catch (error) {
         console.error('Error initializing dashboard:', error);
@@ -114,21 +125,6 @@ const RoleDashboard: React.FC = () => {
     };
     initializeDashboard();
   }, [user]);
-  
-  const fetchBasicsFits = async () => {
-    try {
-      const { data }: { data: any } = await supabase
-        .from('products')
-        .select('id, title, image_url, price_cents, currency')
-        .in('category_slug', ['clothing', 'footwear', 'accessories'])
-        .eq('status', 'active')
-        .limit(8);
-      
-      setBasicsProducts(data || []);
-    } catch (error) {
-      console.error('Error fetching basics:', error);
-    }
-  };
   
   const fetchFeaturedEvent = async () => {
     try {
@@ -347,23 +343,50 @@ const RoleDashboard: React.FC = () => {
         </div>
       </section>
 
-      {/* Basics Fits Section */}
-      {basicsProducts.length > 0 && (
+      {/* Wardrobe Essentials Section */}
+      {essentialsToShow.length > 0 && (
         <section className="px-4 pt-6">
-          <h2 className="text-lg font-serif font-medium mb-3 text-foreground">Wardrobe Essentials</h2>
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <h2 className="text-lg font-serif font-medium text-foreground">Wardrobe Essentials</h2>
+              {showingSuggestions && (
+                <p className="text-xs text-muted-foreground">Explore items from the community</p>
+              )}
+            </div>
+            <Button 
+              variant="link" 
+              size="sm" 
+              onClick={() => navigate('/dress-me/wardrobe')}
+              className="text-[hsl(var(--azyah-maroon))] hover:text-[hsl(var(--azyah-maroon))]/80 text-xs p-0 h-auto"
+            >
+              View All
+            </Button>
+          </div>
           
           <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide [-webkit-overflow-scrolling:touch]">
-            {basicsProducts.map(product => (
-              <div key={product.id} className="flex-shrink-0 w-32">
-                <div className="aspect-square rounded-xl bg-white border border-[hsl(var(--azyah-border))] shadow-sm overflow-hidden mb-2">
+            {essentialsToShow.map(item => (
+              <div 
+                key={item.id} 
+                className="flex-shrink-0 w-32 cursor-pointer"
+                onClick={() => navigate('/dress-me/wardrobe')}
+              >
+                <div className="relative aspect-square rounded-xl bg-white border border-[hsl(var(--azyah-border))] shadow-sm overflow-hidden mb-2">
                   <img 
-                    src={product.image_url || '/placeholder.svg'} 
-                    alt={product.title}
+                    src={item.image_bg_removed_url || item.image_url || '/placeholder.svg'} 
+                    alt={item.category}
                     className="w-full h-full object-cover"
                   />
+                  {showingSuggestions && (
+                    <Badge 
+                      variant="secondary" 
+                      className="absolute top-1.5 left-1.5 text-[9px] px-1.5 py-0.5 bg-background/80 backdrop-blur-sm"
+                    >
+                      Suggested
+                    </Badge>
+                  )}
                 </div>
-                <p className="text-xs font-medium text-center truncate">
-                  {product.title}
+                <p className="text-xs font-medium text-center truncate capitalize">
+                  {item.category}
                 </p>
               </div>
             ))}
