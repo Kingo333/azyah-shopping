@@ -48,6 +48,7 @@ const EXCLUDED_ROUTES = [
   '/privacy',
   '/brand-portal',
   '/retailer-portal',
+  '/dashboard/upgrade',
 ];
 
 export const BottomNavigation: React.FC = () => {
