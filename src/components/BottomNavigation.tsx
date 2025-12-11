@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Home, Search, ChevronUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface NavItem {
   id: string;
@@ -37,15 +38,27 @@ const navItems: NavItem[] = [
 // Find-related routes where auto-hide behavior applies
 const FIND_ROUTES = ['/swipe', '/likes', '/explore', '/p/'];
 
+// Routes where bottom nav should NOT appear
+const EXCLUDED_ROUTES = [
+  '/',
+  '/landing',
+  '/onboarding',
+  '/reset-password',
+  '/terms',
+  '/privacy',
+  '/brand-portal',
+  '/retailer-portal',
+];
+
 export const BottomNavigation: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [isVisible, setIsVisible] = useState(true);
+  const { user } = useAuth();
   const [isMinimized, setIsMinimized] = useState(false);
 
   const isActive = (path: string) => {
     if (path === '/dashboard') {
-      return location.pathname === '/dashboard' || location.pathname === '/';
+      return location.pathname === '/dashboard';
     }
     if (path === '/swipe') {
       return FIND_ROUTES.some(route => location.pathname.startsWith(route));
@@ -55,11 +68,13 @@ export const BottomNavigation: React.FC = () => {
 
   const isFindPage = FIND_ROUTES.some(route => location.pathname.startsWith(route));
   const isDressMePage = location.pathname.startsWith('/dress-me');
+  const isExcludedPage = EXCLUDED_ROUTES.some(route => 
+    route === location.pathname || location.pathname.startsWith(route + '/')
+  );
 
-  // Auto-hide logic for Find pages
+  // Auto-hide logic ONLY for Find pages
   useEffect(() => {
     if (isFindPage) {
-      setIsVisible(true);
       setIsMinimized(false);
       
       const timer = setTimeout(() => {
@@ -68,8 +83,8 @@ export const BottomNavigation: React.FC = () => {
       
       return () => clearTimeout(timer);
     } else {
+      // Always show on non-Find pages (like dashboard)
       setIsMinimized(false);
-      setIsVisible(true);
     }
   }, [location.pathname, isFindPage]);
 
@@ -83,14 +98,14 @@ export const BottomNavigation: React.FC = () => {
     }, 3000);
   }, [isFindPage]);
 
-  // Don't render on Dress Me pages
-  if (isDressMePage) {
+  // Don't render if not logged in, on Dress Me pages, or excluded pages
+  if (!user || isDressMePage || isExcludedPage) {
     return null;
   }
 
   return (
     <>
-      {/* Minimized handle for Find pages */}
+      {/* Minimized arrow handle for Find pages when hidden */}
       <AnimatePresence>
         {isFindPage && isMinimized && (
           <motion.button
@@ -99,15 +114,16 @@ export const BottomNavigation: React.FC = () => {
             exit={{ y: 100, opacity: 0 }}
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
             onClick={handleExpandNav}
-            className="fixed bottom-2 left-1/2 -translate-x-1/2 z-50 bg-white/90 backdrop-blur-sm rounded-full px-6 py-2 shadow-lg border border-[hsl(var(--azyah-border))]"
-            style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 8px)' }}
+            className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 bg-background/95 backdrop-blur-sm rounded-full px-8 py-3 shadow-lg border border-border flex items-center gap-2"
+            style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 12px)' }}
           >
             <ChevronUp className="h-5 w-5 text-muted-foreground" />
+            <span className="text-xs text-muted-foreground font-medium">Menu</span>
           </motion.button>
         )}
       </AnimatePresence>
 
-      {/* Main Navigation */}
+      {/* Main Navigation - always visible on non-Find pages, or when not minimized on Find pages */}
       <AnimatePresence>
         {(!isFindPage || !isMinimized) && (
           <motion.div
@@ -119,7 +135,7 @@ export const BottomNavigation: React.FC = () => {
             style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
           >
             {/* Background bar */}
-            <div className="relative bg-white border-t border-[hsl(var(--azyah-border))]">
+            <div className="relative bg-background border-t border-border">
               <div className="flex items-end justify-around h-16 px-4">
                 {navItems.map((item, index) => {
                   const Icon = item.icon;
@@ -147,7 +163,7 @@ export const BottomNavigation: React.FC = () => {
                         >
                           <Icon className="h-6 w-6 text-white" />
                         </div>
-                        <span className={`text-[10px] font-medium mt-1 ${active ? 'text-[hsl(var(--azyah-maroon))]' : 'text-gray-500'}`}>
+                        <span className={`text-[10px] font-medium mt-1 ${active ? 'text-[hsl(var(--azyah-maroon))]' : 'text-muted-foreground'}`}>
                           {item.label}
                         </span>
                       </button>
@@ -162,7 +178,7 @@ export const BottomNavigation: React.FC = () => {
                       className={`flex flex-col items-center justify-center gap-1 py-2 px-4 transition-colors ${
                         active 
                           ? 'text-[hsl(var(--azyah-maroon))]' 
-                          : 'text-gray-500 hover:text-gray-700'
+                          : 'text-muted-foreground hover:text-foreground'
                       }`}
                     >
                       <Icon className={`h-5 w-5 ${active ? 'text-[hsl(var(--azyah-maroon))]' : ''}`} />
