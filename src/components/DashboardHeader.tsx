@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Sun, Moon, User, HelpCircle } from 'lucide-react';
+import { FeedbackModal } from '@/components/FeedbackModal';
 
 const DashboardHeader: React.FC = () => {
   const { user } = useAuth();
@@ -42,14 +42,11 @@ const DashboardHeader: React.FC = () => {
 
         {/* Right Icons */}
         <div className="flex items-center gap-2">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="h-8 w-8"
-            onClick={() => window.open('https://docs.lovable.dev/tips-tricks/troubleshooting', '_blank')}
-          >
-            <HelpCircle className="h-4 w-4" />
-          </Button>
+          <FeedbackModal userType="shopper">
+            <Button variant="ghost" size="icon" className="h-8 w-8">
+              <HelpCircle className="h-4 w-4" />
+            </Button>
+          </FeedbackModal>
           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleThemeToggle}>
             {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </Button>
