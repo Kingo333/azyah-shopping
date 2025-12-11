@@ -289,9 +289,9 @@ const RoleDashboard: React.FC = () => {
           {/* AI Studio */}
           <button 
             onClick={() => setAiStudioModalOpen(true)} 
-            className="flex flex-col items-center justify-center gap-1.5 p-3 bg-white rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.12)] transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] min-w-[64px]"
+            className="flex flex-col items-center justify-center gap-1.5 p-3 bg-card rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.3)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.12)] transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] min-w-[64px] border border-border/50"
           >
-            <div className="w-8 h-8 rounded-lg bg-[hsl(var(--azyah-ivory))] flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center">
               <Shirt className="h-4 w-4 text-muted-foreground" />
             </div>
             <span className="text-[10px] font-medium text-muted-foreground text-center leading-tight">AI Studio</span>
@@ -300,9 +300,9 @@ const RoleDashboard: React.FC = () => {
           {/* UGC Collab */}
           <button 
             onClick={() => navigate('/ugc')} 
-            className="flex flex-col items-center justify-center gap-1.5 p-3 bg-white rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.12)] transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] min-w-[64px]"
+            className="flex flex-col items-center justify-center gap-1.5 p-3 bg-card rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.3)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.12)] transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] min-w-[64px] border border-border/50"
           >
-            <div className="w-8 h-8 rounded-lg bg-[hsl(var(--azyah-ivory))] flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center">
               <Users className="h-4 w-4 text-muted-foreground" />
             </div>
             <span className="text-[10px] font-medium text-muted-foreground text-center leading-tight">UGC Collab</span>
@@ -311,9 +311,9 @@ const RoleDashboard: React.FC = () => {
           {/* Wishlist */}
           <button 
             onClick={() => navigate('/wishlist')} 
-            className="flex flex-col items-center justify-center gap-1.5 p-3 bg-white rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.12)] transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] min-w-[64px]"
+            className="flex flex-col items-center justify-center gap-1.5 p-3 bg-card rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.3)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.12)] transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] min-w-[64px] border border-border/50"
           >
-            <div className="w-8 h-8 rounded-lg bg-[hsl(var(--azyah-ivory))] flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center">
               <Heart className="h-4 w-4 text-muted-foreground" />
             </div>
             <span className="text-[10px] font-medium text-muted-foreground text-center leading-tight">Wishlist</span>
@@ -322,9 +322,9 @@ const RoleDashboard: React.FC = () => {
           {/* Beauty */}
           <button 
             onClick={() => navigate('/beauty-consultant')} 
-            className="flex flex-col items-center justify-center gap-1.5 p-3 bg-white rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.12)] transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] min-w-[64px]"
+            className="flex flex-col items-center justify-center gap-1.5 p-3 bg-card rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.3)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.12)] transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] min-w-[64px] border border-border/50"
           >
-            <div className="w-8 h-8 rounded-lg bg-[hsl(var(--azyah-ivory))] flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center">
               <WandSparkles className="h-4 w-4 text-muted-foreground" />
             </div>
             <span className="text-[10px] font-medium text-muted-foreground text-center leading-tight">Beauty</span>
@@ -333,9 +333,9 @@ const RoleDashboard: React.FC = () => {
           {/* Profile */}
           <button 
             onClick={() => navigate('/settings')} 
-            className="flex flex-col items-center justify-center gap-1.5 p-3 bg-white rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.12)] transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] min-w-[64px]"
+            className="flex flex-col items-center justify-center gap-1.5 p-3 bg-card rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.3)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.12)] transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] min-w-[64px] border border-border/50"
           >
-            <div className="w-8 h-8 rounded-lg bg-[hsl(var(--azyah-ivory))] flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center">
               <User className="h-4 w-4 text-muted-foreground" />
             </div>
             <span className="text-[10px] font-medium text-muted-foreground text-center leading-tight">Profile</span>
@@ -363,14 +363,14 @@ const RoleDashboard: React.FC = () => {
             </Button>
           </div>
           
-          <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide [-webkit-overflow-scrolling:touch]">
+          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide [-webkit-overflow-scrolling:touch]">
             {essentialsToShow.map(item => (
               <div 
                 key={item.id} 
-                className="flex-shrink-0 w-32 cursor-pointer"
+                className="flex-shrink-0 w-16 cursor-pointer"
                 onClick={() => navigate('/dress-me/wardrobe')}
               >
-                <div className="relative aspect-square rounded-xl bg-white border border-[hsl(var(--azyah-border))] shadow-sm overflow-hidden mb-2">
+                <div className="relative aspect-square rounded-lg overflow-hidden">
                   <img 
                     src={item.image_bg_removed_url || item.image_url || '/placeholder.svg'} 
                     alt={item.category}
@@ -379,15 +379,12 @@ const RoleDashboard: React.FC = () => {
                   {showingSuggestions && (
                     <Badge 
                       variant="secondary" 
-                      className="absolute top-1.5 left-1.5 text-[9px] px-1.5 py-0.5 bg-background/80 backdrop-blur-sm"
+                      className="absolute top-1 left-1 text-[8px] px-1 py-0 bg-background/80 backdrop-blur-sm"
                     >
                       Suggested
                     </Badge>
                   )}
                 </div>
-                <p className="text-xs font-medium text-center truncate capitalize">
-                  {item.category}
-                </p>
               </div>
             ))}
           </div>
@@ -464,14 +461,14 @@ const RoleDashboard: React.FC = () => {
         </div>
 
         {!featuredEvent ? (
-          <Card className="bg-white border-[hsl(var(--azyah-border))] shadow-sm">
+          <Card className="bg-card border-border shadow-sm">
             <CardContent className="p-8 text-center">
               <CalendarIcon className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
               <p className="text-sm text-muted-foreground">No upcoming events</p>
             </CardContent>
           </Card>
         ) : (
-          <Card className="bg-white border-[hsl(var(--azyah-border))] shadow-sm overflow-hidden">
+          <Card className="bg-card border-border shadow-sm overflow-hidden">
             <CardContent className="p-0 flex gap-3">
               {/* Event Image */}
               <div className="w-32 h-32 flex-shrink-0 bg-muted">
@@ -522,7 +519,7 @@ const RoleDashboard: React.FC = () => {
             className={`px-3 py-1 text-xs rounded-full font-medium transition-colors ${
               salonCity === 'dubai' 
                 ? 'bg-[hsl(var(--azyah-maroon))] text-white' 
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                : 'bg-secondary text-muted-foreground hover:bg-secondary/80'
             }`}
           >
             Dubai
@@ -532,7 +529,7 @@ const RoleDashboard: React.FC = () => {
             className={`px-3 py-1 text-xs rounded-full font-medium transition-colors ${
               salonCity === 'abudhabi' 
                 ? 'bg-[hsl(var(--azyah-maroon))] text-white' 
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                : 'bg-secondary text-muted-foreground hover:bg-secondary/80'
             }`}
           >
             Abu Dhabi
@@ -545,7 +542,7 @@ const RoleDashboard: React.FC = () => {
             .filter(salon => salon.city === salonCity)
             .map(salon => (
               <div key={salon.id} className="flex-shrink-0 w-40">
-                <div className="aspect-[4/5] rounded-xl bg-white border border-[hsl(var(--azyah-border))] shadow-sm overflow-hidden mb-2 relative">
+                <div className="aspect-[4/5] rounded-xl bg-card border border-border shadow-sm overflow-hidden mb-2 relative">
                   <img 
                     src={salon.image_url} 
                     alt={salon.name}

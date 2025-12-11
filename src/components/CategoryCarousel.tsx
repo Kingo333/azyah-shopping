@@ -1,10 +1,8 @@
 import React, { useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious, CarouselApi } from '@/components/ui/carousel';
-import { Home } from 'lucide-react';
 import { usePublicProducts } from '@/hooks/usePublicProducts';
 import { getPrimaryImageUrl } from '@/utils/imageHelpers';
 import { cn } from '@/lib/utils';
@@ -52,7 +50,6 @@ const CategoryCarousel: React.FC<CategoryCarouselProps> = ({
 }) => {
   const [api, setApi] = React.useState<CarouselApi>();
   const intervalRef = useRef<NodeJS.Timeout>();
-  const navigate = useNavigate();
 
   useEffect(() => {
     if (!api) return;
@@ -97,19 +94,9 @@ const CategoryCarousel: React.FC<CategoryCarouselProps> = ({
   return <div className="mb-8">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-xl font-bold font-playfair">Our Best Categories</h2>
-        <div className="flex items-center gap-3">
-          {selectedCategories.length > 0 && <Badge variant="secondary" className="text-xs">
-              {selectedCategories.length} selected
-            </Badge>}
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={() => navigate('/')}
-            className="h-8 w-8 p-0 hover:bg-primary/10 hover:scale-110 transition-all duration-200 shadow-md hover:shadow-lg bg-background/80 backdrop-blur-sm border border-border/50"
-          >
-            <Home className="h-4 w-4" />
-          </Button>
-        </div>
+        {selectedCategories.length > 0 && <Badge variant="secondary" className="text-xs">
+            {selectedCategories.length} selected
+          </Badge>}
       </div>
       
       <Carousel 
