@@ -105,20 +105,19 @@ export const BottomNavigation: React.FC = () => {
 
   return (
     <>
-      {/* Minimized arrow handle for Find pages when hidden */}
+      {/* Minimized arrow handle for Find pages when hidden - right side */}
       <AnimatePresence>
         {isFindPage && isMinimized && (
           <motion.button
-            initial={{ y: 100, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 100, opacity: 0 }}
+            initial={{ x: 100, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: 100, opacity: 0 }}
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
             onClick={handleExpandNav}
-            className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 bg-background/95 backdrop-blur-sm rounded-full px-8 py-3 shadow-lg border border-border flex items-center gap-2"
-            style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 12px)' }}
+            className="fixed bottom-6 right-4 z-50 bg-background/95 backdrop-blur-sm rounded-full p-3 shadow-lg border border-border"
+            style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
           >
             <ChevronUp className="h-5 w-5 text-muted-foreground" />
-            <span className="text-xs text-muted-foreground font-medium">Menu</span>
           </motion.button>
         )}
       </AnimatePresence>
