@@ -36,6 +36,11 @@ export const isGuestMode = (): boolean => {
   return localStorage.getItem(GUEST_MODE_KEY) === 'true';
 };
 
+// Helper function to set guest mode without hook (for use outside components)
+export const setGuestMode = () => {
+  localStorage.setItem(GUEST_MODE_KEY, 'true');
+};
+
 export const clearGuestModeStorage = () => {
   localStorage.removeItem(GUEST_MODE_KEY);
 };

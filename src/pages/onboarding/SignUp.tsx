@@ -41,12 +41,16 @@ export default function SignUp() {
     navigate('/dashboard');
   };
 
-  // Handle role-based signup from URL params
+  // Handle role-based signup and login mode from URL params
   useEffect(() => {
     const roleParam = searchParams.get('role');
+    const modeParam = searchParams.get('mode');
+    
     if (roleParam && (roleParam === 'brand' || roleParam === 'retailer')) {
       setUserRole(roleParam);
       setStep('email-entry'); // Skip initial screen for brand/retailer
+    } else if (modeParam === 'login') {
+      setStep('email-entry'); // Go directly to email entry for login
     }
   }, [searchParams]);
 
