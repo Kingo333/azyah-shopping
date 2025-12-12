@@ -11,6 +11,7 @@ import {
   clearAllAuthData,
   setNavigationCallback
 } from '@/utils/sessionHealthCheck';
+import { clearGuestModeStorage } from '@/hooks/useGuestMode';
 
 interface AuthContextType {
   user: User | null;
@@ -62,11 +63,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // Auth state management - database trigger handles profile creation automatically
       const { data: { subscription } } = supabase.auth.onAuthStateChange(
-        (event, session) => {
+      (event, session) => {
           console.log('AuthContext: Auth state changed:', { event, user: session?.user?.email });
           
-          // Handle OAuth sign-in events
+          // Handle OAuth sign-in events - clear guest mode on real auth
           if (event === 'SIGNED_IN' && session) {
+            clearGuestModeStorage(); // Clear guest mode when user signs in
             const provider = session.user.app_metadata?.provider;
             const role = session.user.user_metadata?.role || 'shopper';
             console.log('OAuth sign-in detected:', { provider, role });

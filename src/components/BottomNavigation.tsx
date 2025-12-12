@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Home, Search, ChevronUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
+import { isGuestMode } from '@/hooks/useGuestMode';
 
 interface NavItem {
   id: string;
@@ -99,8 +100,9 @@ export const BottomNavigation: React.FC = () => {
     }, 3000);
   }, [isAutoHidePage]);
 
-  // Don't render if not logged in, on Dress Me pages, or excluded pages
-  if (!user || isDressMePage || isExcludedPage) {
+  // Don't render if not logged in (and not guest), on Dress Me pages, or excluded pages
+  const isGuest = isGuestMode();
+  if ((!user && !isGuest) || isDressMePage || isExcludedPage) {
     return null;
   }
 

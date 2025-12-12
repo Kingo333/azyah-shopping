@@ -6,10 +6,55 @@ import { canAccessRoute, getRedirectRoute } from '@/lib/rbac';
 import { getUserRole } from '@/lib/roleCache';
 import type { UserRole } from '@/lib/rbac';
 import { isVisualEditsMode } from '@/utils/visualEditsDetection';
+import { isGuestMode } from '@/hooks/useGuestMode';
 
 import { supabase } from '@/integrations/supabase/client';
 
 const DEBUG_AUTH = process.env.NODE_ENV === 'development';
+
+// Routes that guests can access (browse-only)
+const GUEST_ACCESSIBLE_ROUTES = [
+  '/dashboard',
+  '/swipe',
+  '/explore',
+  '/community',
+  '/community-outfits',
+  '/community-clothes',
+  '/trending-styles',
+  '/featured-brands',
+  '/top-influencers',
+  '/forum',
+  '/p/', // Product detail pages
+  '/brand/', // Brand detail pages
+];
+
+// Routes that explicitly require authentication (no guest access)
+const AUTH_REQUIRED_ROUTES = [
+  '/settings',
+  '/dress-me',
+  '/likes',
+  '/wishlist',
+  '/cart',
+  '/ugc',
+  '/events',
+  '/beauty-consultant',
+  '/toy-replica',
+  '/affiliate',
+  '/brand-portal',
+  '/retailer-portal',
+];
+
+const isGuestAccessibleRoute = (pathname: string): boolean => {
+  return GUEST_ACCESSIBLE_ROUTES.some(route => 
+    pathname === route || pathname.startsWith(route)
+  );
+};
+
+const isAuthRequiredRoute = (pathname: string): boolean => {
+  return AUTH_REQUIRED_ROUTES.some(route => 
+    pathname === route || pathname.startsWith(route)
+  );
+};
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -100,8 +145,23 @@ const ProtectedRoute = ({ children, roles }: ProtectedRouteProps) => {
     );
   }
 
-  // Only redirect to signup if we're certain there's no user AND auth is stable
+  // Handle guest mode - allow access to browse-only routes
   if (!user && !loading && authStable) {
+    const isGuest = isGuestMode();
+    
+    if (isGuest) {
+      // Guest can access browse-only routes
+      if (isGuestAccessibleRoute(location.pathname)) {
+        if (DEBUG_AUTH) console.log('ProtectedRoute: Guest accessing allowed route:', location.pathname);
+        return <>{children}</>;
+      }
+      
+      // Guest trying to access auth-required route - redirect to signup
+      if (DEBUG_AUTH) console.log('ProtectedRoute: Guest blocked from:', location.pathname);
+      return <Navigate to="/onboarding/signup" state={{ from: location }} replace />;
+    }
+    
+    // No user and not guest - redirect to signup
     if (DEBUG_AUTH) console.log('ProtectedRoute: No user detected, redirecting to signup');
     return <Navigate to="/onboarding/signup" state={{ from: location }} replace />;
   }

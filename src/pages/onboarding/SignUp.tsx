@@ -5,10 +5,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import { Mail, ArrowLeft, Loader2, CheckCircle, XCircle } from 'lucide-react';
+import { Mail, ArrowLeft, Loader2, CheckCircle, XCircle, User } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { trackOnboardingEvent } from '@/lib/analytics/onboarding';
 import { FloatingFashionIcons } from '@/components/FloatingFashionIcons';
+import { useGuestMode } from '@/hooks/useGuestMode';
 
 type FlowStep = 'initial' | 'email-entry';
 type UserRole = 'shopper' | 'brand' | 'retailer';
@@ -33,6 +34,12 @@ export default function SignUp() {
   const [userRole, setUserRole] = useState<UserRole>('shopper');
   const { signUp, signIn } = useAuth();
   const navigate = useNavigate();
+  const { setGuestMode } = useGuestMode();
+
+  const handleGuestContinue = () => {
+    setGuestMode();
+    navigate('/dashboard');
+  };
 
   // Handle role-based signup from URL params
   useEffect(() => {
@@ -582,6 +589,28 @@ export default function SignUp() {
               Continue with email
             </Button>
           </div>
+
+          {/* Already have account + Guest buttons */}
+          {!isBrandOrRetailer && (
+            <div className="flex items-center justify-center gap-3">
+              <Button
+                variant="ghost"
+                onClick={() => setStep('email-entry')}
+                className="text-white/80 hover:text-white hover:bg-white/10 text-xs md:text-sm px-3 py-2 h-auto"
+              >
+                Already have an account?
+              </Button>
+              <div className="w-px h-4 bg-white/30" />
+              <Button
+                variant="ghost"
+                onClick={handleGuestContinue}
+                className="text-white/80 hover:text-white hover:bg-white/10 text-xs md:text-sm px-3 py-2 h-auto"
+              >
+                <User className="w-3 h-3 mr-1.5" />
+                Guest
+              </Button>
+            </div>
+          )}
 
           {!isBrandOrRetailer && (
             <div 
