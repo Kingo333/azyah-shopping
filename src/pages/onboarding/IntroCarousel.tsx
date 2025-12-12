@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { setGuestMode } from "@/hooks/useGuestMode";
 import { motion, AnimatePresence, PanInfo } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { BeforeAfterSlider } from "@/components/BeforeAfterSlider";
@@ -787,13 +788,25 @@ export default function IntroCarousel() {
           Join the Community
         </Button>
 
-        {/* Login Link */}
-        <button
-          onClick={handleJoinCommunity}
-          className="w-full mt-3 text-sm md:text-base text-primary font-medium hover:text-primary/80 transition-colors"
-        >
-          Already have an account? <span className="font-semibold">Log In</span>
-        </button>
+        {/* Login & Guest Row */}
+        <div className="flex items-center justify-center gap-4 mt-3">
+          <button
+            onClick={() => navigate("/onboarding/signup?mode=login")}
+            className="text-sm md:text-base text-primary font-medium hover:text-primary/80 transition-colors"
+          >
+            Already have an account? <span className="font-semibold">Log In</span>
+          </button>
+          <span className="text-muted-foreground">|</span>
+          <button
+            onClick={() => {
+              setGuestMode();
+              navigate("/dashboard");
+            }}
+            className="text-sm md:text-base text-muted-foreground font-medium hover:text-foreground transition-colors"
+          >
+            Guest
+          </button>
+        </div>
       </div>
     </div>
   );
