@@ -738,11 +738,12 @@ const RoleDashboard: React.FC = () => {
         <DashboardHeader />
 
           {/* Role-based Dashboard Content - Only render ONE dashboard */}
-          {userProfile?.role === 'shopper' && renderShopperDashboard()}
+          {/* For guests (no userProfile), show shopper dashboard */}
+          {(userProfile?.role === 'shopper' || isGuest) && renderShopperDashboard()}
           {userProfile?.role === 'brand' && renderBrandDashboard()}
           {userProfile?.role === 'retailer' && renderRetailerDashboard()}
           
-          {/* Show error if no valid role */}
+          {/* Show error if no valid role (only for authenticated users) */}
           {userProfile && !['shopper', 'brand', 'retailer'].includes(userProfile.role) && <div className="space-y-4 px-4">
               <GlassPanel variant="premium" className="p-8">
                 <div className="text-center space-y-4">
