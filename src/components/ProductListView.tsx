@@ -114,7 +114,10 @@ const ProductCard: React.FC<{
             size="sm"
             variant="ghost"
             className="h-10 w-10 rounded-full bg-white/90 hover:bg-white backdrop-blur-sm"
-            onClick={() => handleLike(product)}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleLike(product);
+            }}
           >
             <Heart className="h-6 w-6" />
           </Button>
@@ -122,7 +125,10 @@ const ProductCard: React.FC<{
             size="sm"
             variant="ghost"
             className="h-10 w-10 rounded-full bg-white/90 hover:bg-white backdrop-blur-sm"
-            onClick={handleAddToWishlist}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleAddToWishlist();
+            }}
             disabled={wishlistLoading}
           >
             <ShoppingBag className="h-6 w-6" />
