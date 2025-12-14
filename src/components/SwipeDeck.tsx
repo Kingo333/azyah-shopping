@@ -18,6 +18,8 @@ import { SwipeLoadingCard } from '@/components/SwipeLoadingCard';
 import { SwipeEmptyState } from '@/components/SwipeEmptyState';
 import { SwipeCelebration } from '@/components/SwipeCelebration';
 import { swipeHaptics } from '@/utils/haptics';
+import { useGuestGate } from '@/hooks/useGuestGate';
+import { GuestActionPrompt } from '@/components/GuestActionPrompt';
 
 interface SwipeProduct {
   id: string;
@@ -90,6 +92,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { addToWishlist, isLoading: wishlistLoading } = useWishlist();
+  const { requireAuth, showPrompt, setShowPrompt, promptAction } = useGuestGate();
   
   // Motion values - simplified like SwipeableImages
   const x = useMotionValue(0);
@@ -142,65 +145,61 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
 
   // Optimized action handlers with haptics - immediate UI response
   const handleLike = useCallback(async (product: SwipeProduct) => {
-    if (!user) {
-      toast({
-        title: "Sign in required",
-        description: "You must be signed in to like products.",
-        variant: "destructive"
-      });
-      return;
-    }
+    // Guest gate - check if user needs to sign up
+    requireAuth('save likes', async () => {
+      if (!user) return;
 
-    swipeHaptics.like();
-    nextCard(); // Immediate, no direction parameter
+      swipeHaptics.like();
+      nextCard(); // Immediate, no direction parameter
 
-    // ALL heavy operations happen after animation
-    queueMicrotask(async () => {
-      try {
-        const viewDuration = getViewDuration(product.id);
-        
-        const [trackResult, likeResult] = await Promise.all([
-          trackSwipe({
-            productId: product.id,
-            action: 'right',
-            product,
-            viewDuration,
-            confidence: 1.0
-          }),
-          supabase.from('likes').insert([{
-            user_id: user.id,
-            product_id: product.id
-          }])
-        ]);
-
-        // Handle duplicate likes - bump to top
-        if (likeResult.error?.code === '23505') {
-          // Already liked - update timestamp to bring to top
-          await supabase
-            .from('likes')
-            .update({ created_at: new Date().toISOString() })
-            .eq('user_id', user.id)
-            .eq('product_id', product.id);
+      // ALL heavy operations happen after animation
+      queueMicrotask(async () => {
+        try {
+          const viewDuration = getViewDuration(product.id);
           
-          toast({ 
-            description: `Already in likes - moved to top!`,
-            duration: 2000
-          });
-        } else {
-          toast({ 
-            description: `Added to likes!`,
-            duration: 2000
-          });
-        }
+          const [trackResult, likeResult] = await Promise.all([
+            trackSwipe({
+              productId: product.id,
+              action: 'right',
+              product,
+              viewDuration,
+              confidence: 1.0
+            }),
+            supabase.from('likes').insert([{
+              user_id: user.id,
+              product_id: product.id
+            }])
+          ]);
 
-        // Invalidate likes cache so Likes page updates
-        queryClient.invalidateQueries({ queryKey: ['likes'] });
-        queryClient.invalidateQueries({ queryKey: ['liked-products'] });
-      } catch (error) {
-        // Silent fail
-      }
+          // Handle duplicate likes - bump to top
+          if (likeResult.error?.code === '23505') {
+            // Already liked - update timestamp to bring to top
+            await supabase
+              .from('likes')
+              .update({ created_at: new Date().toISOString() })
+              .eq('user_id', user.id)
+              .eq('product_id', product.id);
+            
+            toast({ 
+              description: `Already in likes - moved to top!`,
+              duration: 2000
+            });
+          } else {
+            toast({ 
+              description: `Added to likes!`,
+              duration: 2000
+            });
+          }
+
+          // Invalidate likes cache so Likes page updates
+          queryClient.invalidateQueries({ queryKey: ['likes'] });
+          queryClient.invalidateQueries({ queryKey: ['liked-products'] });
+        } catch (error) {
+          // Silent fail
+        }
+      });
     });
-  }, [user, toast, nextCard, trackSwipe, getViewDuration, queryClient]);
+  }, [user, toast, nextCard, trackSwipe, getViewDuration, queryClient, requireAuth]);
 
   const handleDislike = useCallback(() => {
     swipeHaptics.dislike();
@@ -221,48 +220,44 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
   }, [user, currentProduct, nextCard, trackSwipe, getViewDuration]);
 
   const handleAddToWishlist = useCallback(async (product: SwipeProduct) => {
-    if (!user) {
-      toast({
-        title: "Sign in required",
-        description: "You must be signed in to add to wishlist.",
-        variant: "destructive"
+    // Guest gate - check if user needs to sign up
+    requireAuth('add to wishlist', async () => {
+      if (!user) return;
+
+      swipeHaptics.wishlist();
+      nextCard(); // Immediate
+
+      queueMicrotask(async () => {
+        try {
+          const viewDuration = getViewDuration(product.id);
+          
+          await Promise.all([
+            trackSwipe({
+              productId: product.id,
+              action: 'up',
+              product,
+              viewDuration,
+              confidence: 1.0
+            }),
+            addToWishlist(product.id)
+          ]);
+
+          toast({ 
+            description: `Added to wishlist!`,
+            duration: 2000
+          });
+        } catch (error: any) {
+          const errorMessage = error instanceof Error ? error.message : "Failed to add to wishlist.";
+          toast({
+            title: "Error",
+            description: errorMessage,
+            variant: "destructive",
+            duration: 3000
+          });
+        }
       });
-      return;
-    }
-
-    swipeHaptics.wishlist();
-    nextCard(); // Immediate
-
-    queueMicrotask(async () => {
-      try {
-        const viewDuration = getViewDuration(product.id);
-        
-        await Promise.all([
-          trackSwipe({
-            productId: product.id,
-            action: 'up',
-            product,
-            viewDuration,
-            confidence: 1.0
-          }),
-          addToWishlist(product.id)
-        ]);
-
-        toast({ 
-          description: `Added to wishlist!`,
-          duration: 2000
-        });
-      } catch (error: any) {
-        const errorMessage = error instanceof Error ? error.message : "Failed to add to wishlist.";
-        toast({
-          title: "Error",
-          description: errorMessage,
-          variant: "destructive",
-          duration: 3000
-        });
-      }
     });
-  }, [user, addToWishlist, toast, nextCard, trackSwipe, getViewDuration]);
+  }, [user, addToWishlist, toast, nextCard, trackSwipe, getViewDuration, requireAuth]);
 
   const handleSwipeEnd = useCallback((event: any, info: PanInfo) => {
     const currentProduct = products[index];
@@ -437,6 +432,13 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
           }}
         />
       )}
+      
+      {/* Guest Action Prompt */}
+      <GuestActionPrompt 
+        open={showPrompt} 
+        onOpenChange={setShowPrompt} 
+        action={promptAction} 
+      />
     </div>
   );
 };

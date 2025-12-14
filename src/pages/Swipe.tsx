@@ -13,6 +13,7 @@ import type { UnifiedFilterState } from '@/components/UnifiedCategoryFilter';
 import type { SubCategory } from '@/lib/categories';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { isGuestMode } from '@/hooks/useGuestMode';
 const Swipe = () => {
   const navigate = useNavigate();
   const {
@@ -114,7 +115,9 @@ const Swipe = () => {
         </div>
       </div>;
   }
-  if (!user) {
+  // Allow guests to browse - don't redirect
+  const isGuest = isGuestMode();
+  if (!user && !isGuest) {
     navigate("/onboarding/signup");
     return null;
   }

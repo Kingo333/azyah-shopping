@@ -26,6 +26,8 @@ import { OutfitDetailSheet } from '@/components/OutfitDetailSheet';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 import { LayerScrollProvider } from '@/contexts/LayerScrollContext';
+import { useGuestGate } from '@/hooks/useGuestGate';
+import { GuestActionPrompt } from '@/components/GuestActionPrompt';
 
 export default function DressMeWardrobe() {
   const navigate = useNavigate();
@@ -66,6 +68,7 @@ export default function DressMeWardrobe() {
   
   const deleteFit = useDeleteFit();
   const deleteItemMutation = useDeleteWardrobeItem();
+  const { requireAuth, showPrompt, setShowPrompt, promptAction } = useGuestGate();
 
   // Update URL params when tab or category changes
   useEffect(() => {
@@ -243,8 +246,11 @@ export default function DressMeWardrobe() {
   };
 
   const handleAddItemToLayer = (category?: string) => {
-    setUploadCategory(category);
-    setIsUploadModalOpen(true);
+    // Gate wardrobe uploads for guests
+    requireAuth('add items to your wardrobe', () => {
+      setUploadCategory(category);
+      setIsUploadModalOpen(true);
+    });
   };
 
   const handleLayerItemClick = (layerId: string, itemId: string) => {
@@ -410,7 +416,7 @@ export default function DressMeWardrobe() {
                 Start by uploading photos of your clothes. We'll remove the background automatically!
               </p>
             </div>
-            <Button onClick={() => setIsUploadModalOpen(true)} size="lg" className="w-full">
+            <Button onClick={() => requireAuth('add items to your wardrobe', () => setIsUploadModalOpen(true))} size="lg" className="w-full">
               <Plus className="w-5 h-5 mr-2" />
               Add Your First Item
             </Button>
@@ -758,6 +764,13 @@ export default function DressMeWardrobe() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      
+      {/* Guest Action Prompt */}
+      <GuestActionPrompt 
+        open={showPrompt} 
+        onOpenChange={setShowPrompt} 
+        action={promptAction} 
+      />
     </>
   );
 }

@@ -20,6 +20,8 @@ import { useProductHasOutfit } from '@/hooks/useProductOutfits';
 import CategoryCarousel from '@/components/CategoryCarousel';
 import { getBrandDisplayName } from '@/utils/brandHelpers';
 import type { SubCategory } from '@/lib/categories';
+import { useGuestGate } from '@/hooks/useGuestGate';
+import { GuestActionPrompt } from '@/components/GuestActionPrompt';
 
 interface ProductListViewProps {
   products: Product[];
@@ -209,56 +211,52 @@ const ProductListView: React.FC<ProductListViewProps> = ({
   const { toast } = useToast();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { requireAuth, showPrompt, setShowPrompt, promptAction } = useGuestGate();
 
   const handleLike = useCallback(async (product: Product) => {
-    if (!user) {
-      toast({
-        title: "Sign in required",
-        description: "You must be signed in to like products.",
-        variant: "destructive"
-      });
-      return;
-    }
+    requireAuth('save likes', async () => {
+      if (!user) return;
 
-    try {
-      const { error } = await supabase.from('likes').insert([{
-        user_id: user.id,
-        product_id: product.id
-      }]);
+      try {
+        const { error } = await supabase.from('likes').insert([{
+          user_id: user.id,
+          product_id: product.id
+        }]);
 
-      if (error) {
-        if (error.code === '23505') {
-          // Already liked - update timestamp to bring to top
-          await supabase
-            .from('likes')
-            .update({ created_at: new Date().toISOString() })
-            .eq('user_id', user.id)
-            .eq('product_id', product.id);
-          
-          toast({
-            description: `${product.title} moved to top of likes!`
-          });
+        if (error) {
+          if (error.code === '23505') {
+            // Already liked - update timestamp to bring to top
+            await supabase
+              .from('likes')
+              .update({ created_at: new Date().toISOString() })
+              .eq('user_id', user.id)
+              .eq('product_id', product.id);
+            
+            toast({
+              description: `${product.title} moved to top of likes!`
+            });
+          } else {
+            throw error;
+          }
         } else {
-          throw error;
+          toast({
+            description: `${product.title} added to your likes!`
+          });
         }
-      } else {
+
+        // Invalidate likes cache
+        queryClient.invalidateQueries({ queryKey: ['likes'] });
+        queryClient.invalidateQueries({ queryKey: ['liked-products'] });
+      } catch (error: any) {
+        console.error("Error liking product:", error.message);
         toast({
-          description: `${product.title} added to your likes!`
+          title: "Error",
+          description: "Failed to like product. Please try again.",
+          variant: "destructive"
         });
       }
-
-      // Invalidate likes cache
-      queryClient.invalidateQueries({ queryKey: ['likes'] });
-      queryClient.invalidateQueries({ queryKey: ['liked-products'] });
-    } catch (error: any) {
-      console.error("Error liking product:", error.message);
-      toast({
-        title: "Error",
-        description: "Failed to like product. Please try again.",
-        variant: "destructive"
-      });
-    }
-  }, [user, toast, queryClient]);
+    });
+  }, [user, toast, queryClient, requireAuth]);
 
   const handleProductClick = (product: Product) => {
     navigate(`/p/${product.id}?from=list`);
@@ -320,7 +318,13 @@ const ProductListView: React.FC<ProductListViewProps> = ({
           />
         ))}
       </div>
-
+      
+      {/* Guest Action Prompt */}
+      <GuestActionPrompt 
+        open={showPrompt} 
+        onOpenChange={setShowPrompt} 
+        action={promptAction} 
+      />
     </>
   );
 };
