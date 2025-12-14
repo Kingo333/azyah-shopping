@@ -1,5 +1,5 @@
 
-import React, { useEffect, useCallback } from 'react';
+import React, { useEffect, useCallback, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -18,6 +18,8 @@ import { toast } from '@/hooks/use-toast';
 import { SmartImage } from '@/components/SmartImage';
 import { getPrimaryImageUrl } from '@/utils/imageHelpers';
 import { TopCategory } from '@/lib/categories';
+import { useGuestGate } from '@/hooks/useGuestGate';
+import { GuestActionPrompt } from '@/components/GuestActionPrompt';
 
 interface TrendingProduct {
   id: string;
@@ -38,6 +40,7 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [api, setApi] = React.useState<any>();
+  const { requireAuth, showPrompt, setShowPrompt, promptAction } = useGuestGate();
 
   const { data: trendingProducts, isLoading, error } = useQuery({
     queryKey: ['trending-products-engagement', limit, categoryFilter],
@@ -462,7 +465,9 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
                     className="h-8 w-8 rounded-full bg-white/90 hover:bg-white backdrop-blur-sm"
                     onClick={(e) => {
                       e.stopPropagation();
-                      addToLikesMutation.mutate(product.id);
+                      requireAuth('save likes', () => {
+                        addToLikesMutation.mutate(product.id);
+                      });
                     }}
                   >
                     <Heart className="h-4 w-4" />
@@ -473,7 +478,9 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
                     className="h-8 w-8 rounded-full bg-white/90 hover:bg-white backdrop-blur-sm"
                     onClick={(e) => {
                       e.stopPropagation();
-                      addToWishlistMutation.mutate(product.id);
+                      requireAuth('add to wishlist', () => {
+                        addToWishlistMutation.mutate(product.id);
+                      });
                     }}
                   >
                     <ShoppingBag className="h-4 w-4" />
@@ -517,6 +524,13 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
       </CarouselContent>
       <CarouselPrevious className="-left-6" />
       <CarouselNext className="-right-6" />
+      
+      {/* Guest Action Prompt */}
+      <GuestActionPrompt 
+        open={showPrompt} 
+        onOpenChange={setShowPrompt}
+        action={promptAction}
+      />
     </Carousel>
   );
 };

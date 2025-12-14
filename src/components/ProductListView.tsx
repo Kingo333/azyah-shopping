@@ -41,7 +41,8 @@ const ProductCard: React.FC<{
   formatPrice: (cents: number, currency?: string) => string;
   user: any;
   toast: any;
-}> = ({ product, handleLike, handleProductClick, formatPrice, user, toast }) => {
+  requireAuth: (action: string, callback: () => void) => void;
+}> = ({ product, handleLike, handleProductClick, formatPrice, user, toast, requireAuth }) => {
   const { addToWishlist, isLoading: wishlistLoading } = useWishlist(product.id);
   const { data: hasOutfit, isLoading: outfitLoading, error: outfitError } = useProductHasOutfit(product.id);
   const [tryOnModalOpen, setTryOnModalOpen] = useState(false);
@@ -50,29 +51,24 @@ const ProductCard: React.FC<{
   const shouldShowHeadIcon = hasOutfit === true;
 
   const handleAddToWishlist = async () => {
-    if (!user) {
-      toast({
-        title: "Sign in required",
-        description: "You must be signed in to add to wishlist.",
-        variant: "destructive"
-      });
-      return;
-    }
+    requireAuth('add to wishlist', async () => {
+      if (!user) return;
 
-    try {
-      await addToWishlist(product.id);
-      toast({
-        description: `${product.title} added to your wishlist!`
-      });
-    } catch (error: any) {
-      console.error('Failed to add to wishlist:', error);
-      const errorMessage = error instanceof Error ? error.message : "Failed to add to wishlist. Please try again.";
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive"
-      });
-    }
+      try {
+        await addToWishlist(product.id);
+        toast({
+          description: `${product.title} added to your wishlist!`
+        });
+      } catch (error: any) {
+        console.error('Failed to add to wishlist:', error);
+        const errorMessage = error instanceof Error ? error.message : "Failed to add to wishlist. Please try again.";
+        toast({
+          title: "Error",
+          description: errorMessage,
+          variant: "destructive"
+        });
+      }
+    });
   };
 
   return (
@@ -315,6 +311,7 @@ const ProductListView: React.FC<ProductListViewProps> = ({
             formatPrice={formatPrice}
             user={user}
             toast={toast}
+            requireAuth={requireAuth}
           />
         ))}
       </div>

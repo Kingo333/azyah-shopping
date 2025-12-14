@@ -1,15 +1,19 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
 import { Sun, Moon, User, HelpCircle } from 'lucide-react';
 import { FeedbackModal } from '@/components/FeedbackModal';
+import { isGuestMode } from '@/hooks/useGuestMode';
+import { GuestActionPrompt } from '@/components/GuestActionPrompt';
 
 const DashboardHeader: React.FC = () => {
   const { user } = useAuth();
   const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
+  const [showGuestPrompt, setShowGuestPrompt] = useState(false);
+  const isGuest = isGuestMode();
 
   const handleThemeToggle = () => {
     setTheme(theme === 'dark' ? 'light' : 'dark');
@@ -17,6 +21,14 @@ const DashboardHeader: React.FC = () => {
 
   const getUserName = () => {
     return user?.user_metadata?.name || user?.email?.split('@')[0] || 'User';
+  };
+
+  const handleUpgradeClick = () => {
+    if (isGuest || !user) {
+      setShowGuestPrompt(true);
+    } else {
+      navigate('/dashboard/upgrade');
+    }
   };
 
   return (
@@ -32,7 +44,7 @@ const DashboardHeader: React.FC = () => {
 
         {/* Center - Upgrade Button */}
         <Button 
-          onClick={() => navigate('/dashboard/upgrade')}
+          onClick={handleUpgradeClick}
           variant="outline"
           size="sm"
           className="text-[10px] px-2.5 py-0.5 h-6 rounded-full border-[hsl(var(--azyah-border))] hover:bg-[hsl(var(--azyah-ivory))]"
@@ -68,6 +80,13 @@ const DashboardHeader: React.FC = () => {
           </Button>
         </div>
       </div>
+      
+      {/* Guest Action Prompt */}
+      <GuestActionPrompt 
+        open={showGuestPrompt} 
+        onOpenChange={setShowGuestPrompt}
+        action="upgrade to Premium"
+      />
     </section>
   );
 };
