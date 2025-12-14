@@ -10,6 +10,8 @@ import { useAiAssets } from '@/hooks/useAiAssets';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useUserCredits } from '@/hooks/useUserCredits';
 import { supabase } from '@/integrations/supabase/client';
+import { useGuestGate } from '@/hooks/useGuestGate';
+import { GuestActionPrompt } from '@/components/GuestActionPrompt';
 
 export interface AiStudioModalProps {
   open: boolean;
@@ -50,6 +52,7 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
   const { assets, loading: assetsLoading, fetchAssets, saveAsset, deleteAssets } = useAiAssets();
   const { isPremium, createPaymentIntent } = useSubscription();
   const { credits, loading: creditsLoading, refetch: refetchCredits } = useUserCredits();
+  const { requireAuth, showPrompt, setShowPrompt, promptAction } = useGuestGate();
 
   // Generation limits based on user type
   const maxGenerations = isPremium ? 10 : 4;
@@ -85,28 +88,32 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
     return true;
   };
 
-  // File upload handlers
+  // File upload handlers - gated for guests
   const handleFileUpload = async (file: File, type: string, setImageId: (id: string) => void, setFile: (file: File) => void) => {
     if (!file || !validateFile(file)) return;
-    try {
-      clearError();
-      setFile(file);
-      const result = await uploadImage(file, type);
-      if (result?.id) {
-        setImageId(result.id);
+    
+    // Gate file upload for guests
+    requireAuth('upload images for AI Try-On', async () => {
+      try {
+        clearError();
+        setFile(file);
+        const result = await uploadImage(file, type);
+        if (result?.id) {
+          setImageId(result.id);
+          toast({
+            title: 'Upload Complete',
+            description: `${type === BITSTUDIO_IMAGE_TYPES.PERSON ? 'Person' : 'Outfit'} image uploaded successfully`
+          });
+        }
+      } catch (err) {
+        console.error('Upload error:', err);
         toast({
-          title: 'Upload Complete',
-          description: `${type === BITSTUDIO_IMAGE_TYPES.PERSON ? 'Person' : 'Outfit'} image uploaded successfully`
+          title: 'Upload Failed',
+          description: `Failed to upload ${type === BITSTUDIO_IMAGE_TYPES.PERSON ? 'person' : 'outfit'} image. Please try again.`,
+          variant: 'destructive'
         });
       }
-    } catch (err) {
-      console.error('Upload error:', err);
-      toast({
-        title: 'Upload Failed',
-        description: `Failed to upload ${type === BITSTUDIO_IMAGE_TYPES.PERSON ? 'person' : 'outfit'} image. Please try again.`,
-        variant: 'destructive'
-      });
-    }
+    });
   };
 
   // Virtual Try-On handler
@@ -458,6 +465,13 @@ const AiStudioModal: React.FC<AiStudioModalProps> = ({
           </motion.div>
         </div>
       </DialogContent>
+      
+      {/* Guest Action Prompt */}
+      <GuestActionPrompt 
+        open={showPrompt} 
+        onOpenChange={setShowPrompt} 
+        action={promptAction} 
+      />
     </Dialog>
   );
 };

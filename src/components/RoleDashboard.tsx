@@ -29,6 +29,9 @@ import type { TopCategory } from '@/lib/categories';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useWardrobeItems } from '@/hooks/useWardrobeItems';
 import { useSuggestedEssentials } from '@/hooks/useSuggestedEssentials';
+import { isGuestMode } from '@/hooks/useGuestMode';
+import { useGuestGate } from '@/hooks/useGuestGate';
+import { GuestActionPrompt } from '@/components/GuestActionPrompt';
 
 interface UserProfile {
   id: string;
@@ -255,9 +258,13 @@ const RoleDashboard: React.FC = () => {
       </div>;
   }
 
-  // Show sign-in prompt if no user
-  if (!user) {
-    console.log('No user, showing sign-in prompt');
+  // Check if in guest mode
+  const isGuest = isGuestMode();
+
+  // For guests, show the shopper dashboard with limited functionality
+  // For non-guests without user, redirect to signup
+  if (!user && !isGuest) {
+    console.log('No user and not guest, showing sign-in prompt');
     return <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center space-y-4">
           <h2 className="text-2xl font-bold">Welcome to Azyah</h2>
@@ -268,7 +275,10 @@ const RoleDashboard: React.FC = () => {
         </div>
       </div>;
   }
-  if (!userProfile) {
+  
+  // For guests, we'll render the shopper dashboard
+  // For authenticated users without profile, show error
+  if (!userProfile && !isGuest) {
     console.log('No user profile, showing error');
     return <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
