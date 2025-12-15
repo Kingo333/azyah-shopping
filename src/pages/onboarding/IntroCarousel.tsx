@@ -789,23 +789,24 @@ export default function IntroCarousel() {
         </Button>
 
         {/* Login & Guest Row */}
-        <div className="flex items-center justify-center gap-4 mt-3">
-          <button
+        <div className="flex items-center justify-center gap-3 mt-3">
+          <Button
             onClick={() => navigate("/onboarding/signup?mode=login")}
-            className="text-sm md:text-base text-primary font-medium hover:text-primary/80 transition-colors"
+            variant="outline"
+            className="flex-1 h-11 md:h-12 text-sm md:text-base font-semibold rounded-full border-primary text-primary hover:bg-primary hover:text-primary-foreground transition-colors"
           >
-            Already have an account? <span className="font-semibold">Log In</span>
-          </button>
-          <span className="text-muted-foreground">|</span>
-          <button
+            Log In
+          </Button>
+          <Button
             onClick={() => {
               setGuestMode();
               navigate("/dashboard");
             }}
-            className="text-sm md:text-base text-muted-foreground font-medium hover:text-foreground transition-colors"
+            variant="outline"
+            className="flex-1 h-11 md:h-12 text-sm md:text-base font-semibold rounded-full border-muted-foreground/50 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
           >
             Guest
-          </button>
+          </Button>
         </div>
       </div>
     </div>
