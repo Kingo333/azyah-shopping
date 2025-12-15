@@ -150,12 +150,12 @@ export default function Upgrade() {
           <p className="text-sm text-muted-foreground">Get the most out of your fashion journey</p>
         </div>
 
-        {/* Feature Highlights - Inline chips */}
-        <div className="flex flex-wrap justify-center gap-2">
+        {/* Feature Highlights - 2 column grid on mobile */}
+        <div className="grid grid-cols-2 gap-2">
           {features.map((feature, index) => (
-            <div key={index} className="flex items-center gap-1.5 bg-primary/10 text-primary px-3 py-1.5 rounded-full text-xs font-medium">
-              {feature.icon}
-              <span>{feature.name}</span>
+            <div key={index} className="flex items-center justify-center gap-1 bg-primary/10 text-primary px-2 py-1.5 rounded-full text-[10px] sm:text-xs font-medium">
+              <span className="[&>svg]:h-3.5 [&>svg]:w-3.5 sm:[&>svg]:h-4 sm:[&>svg]:w-4">{feature.icon}</span>
+              <span className="truncate">{feature.name}</span>
             </div>
           ))}
         </div>
