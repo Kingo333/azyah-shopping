@@ -789,24 +789,26 @@ export default function IntroCarousel() {
         </Button>
 
         {/* Login & Guest Row */}
-        <div className="flex items-center justify-center gap-3 mt-3">
-          <Button
-            onClick={() => navigate("/onboarding/signup?mode=login")}
-            variant="outline"
-            className="flex-1 h-11 md:h-12 text-sm md:text-base font-semibold rounded-full border-primary text-primary hover:bg-primary hover:text-primary-foreground transition-colors"
-          >
-            Log In
-          </Button>
-          <Button
-            onClick={() => {
-              setGuestMode();
-              navigate("/dashboard");
-            }}
-            variant="outline"
-            className="flex-1 h-11 md:h-12 text-sm md:text-base font-semibold rounded-full border-muted-foreground/50 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-          >
-            Guest
-          </Button>
+        <div className="flex flex-col items-center gap-3 mt-3">
+          <div className="flex items-center justify-center gap-3 w-full">
+            <Button
+              onClick={() => navigate("/onboarding/signup?mode=login")}
+              variant="outline"
+              className="flex-1 h-11 md:h-12 text-sm md:text-base font-semibold rounded-full border-primary text-primary hover:bg-primary hover:text-primary-foreground transition-colors"
+            >
+              Already have an account? Log In
+            </Button>
+            <Button
+              onClick={() => {
+                setGuestMode();
+                navigate("/dashboard");
+              }}
+              variant="outline"
+              className="h-11 md:h-12 px-6 text-sm md:text-base font-semibold rounded-full border-muted-foreground/50 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+            >
+              Guest
+            </Button>
+          </div>
         </div>
       </div>
     </div>
