@@ -2691,6 +2691,9 @@ export type Database = {
       subscriptions: {
         Row: {
           ai_tryon_limit: number | null
+          apple_original_transaction_id: string | null
+          apple_product_id: string | null
+          apple_transaction_id: string | null
           created_at: string
           currency: string | null
           current_period_end: string | null
@@ -2712,6 +2715,9 @@ export type Database = {
         }
         Insert: {
           ai_tryon_limit?: number | null
+          apple_original_transaction_id?: string | null
+          apple_product_id?: string | null
+          apple_transaction_id?: string | null
           created_at?: string
           currency?: string | null
           current_period_end?: string | null
@@ -2733,6 +2739,9 @@ export type Database = {
         }
         Update: {
           ai_tryon_limit?: number | null
+          apple_original_transaction_id?: string | null
+          apple_product_id?: string | null
+          apple_transaction_id?: string | null
           created_at?: string
           currency?: string | null
           current_period_end?: string | null
@@ -3204,12 +3213,15 @@ export type Database = {
           email: string
           gender_selected: string | null
           id: string
+          is_premium: boolean | null
           last_sign_in_at: string | null
           main_goals: Json | null
           name: string | null
           onboarding_completed: boolean | null
+          plan_type: string | null
           preferences: Json | null
           preferences_completed: boolean | null
+          premium_expires_at: string | null
           provider: string | null
           provider_id: string | null
           referral_source: string | null
@@ -3229,12 +3241,15 @@ export type Database = {
           email: string
           gender_selected?: string | null
           id?: string
+          is_premium?: boolean | null
           last_sign_in_at?: string | null
           main_goals?: Json | null
           name?: string | null
           onboarding_completed?: boolean | null
+          plan_type?: string | null
           preferences?: Json | null
           preferences_completed?: boolean | null
+          premium_expires_at?: string | null
           provider?: string | null
           provider_id?: string | null
           referral_source?: string | null
@@ -3254,12 +3269,15 @@ export type Database = {
           email?: string
           gender_selected?: string | null
           id?: string
+          is_premium?: boolean | null
           last_sign_in_at?: string | null
           main_goals?: Json | null
           name?: string | null
           onboarding_completed?: boolean | null
+          plan_type?: string | null
           preferences?: Json | null
           preferences_completed?: boolean | null
+          premium_expires_at?: string | null
           provider?: string | null
           provider_id?: string | null
           referral_source?: string | null
@@ -3925,12 +3943,15 @@ export type Database = {
           email: string
           gender_selected: string | null
           id: string
+          is_premium: boolean | null
           last_sign_in_at: string | null
           main_goals: Json | null
           name: string | null
           onboarding_completed: boolean | null
+          plan_type: string | null
           preferences: Json | null
           preferences_completed: boolean | null
+          premium_expires_at: string | null
           provider: string | null
           provider_id: string | null
           referral_source: string | null
@@ -3982,12 +4003,15 @@ export type Database = {
           email: string
           gender_selected: string | null
           id: string
+          is_premium: boolean | null
           last_sign_in_at: string | null
           main_goals: Json | null
           name: string | null
           onboarding_completed: boolean | null
+          plan_type: string | null
           preferences: Json | null
           preferences_completed: boolean | null
+          premium_expires_at: string | null
           provider: string | null
           provider_id: string | null
           referral_source: string | null
