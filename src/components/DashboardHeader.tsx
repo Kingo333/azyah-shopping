@@ -7,6 +7,7 @@ import { Sun, Moon, User, HelpCircle } from 'lucide-react';
 import { FeedbackModal } from '@/components/FeedbackModal';
 import { isGuestMode } from '@/hooks/useGuestMode';
 import { GuestActionPrompt } from '@/components/GuestActionPrompt';
+import { usePremium } from '@/hooks/usePremium';
 
 const DashboardHeader: React.FC = () => {
   const { user } = useAuth();
@@ -14,6 +15,7 @@ const DashboardHeader: React.FC = () => {
   const navigate = useNavigate();
   const [showGuestPrompt, setShowGuestPrompt] = useState(false);
   const isGuest = isGuestMode();
+  const { isPremium, loading: premiumLoading } = usePremium();
 
   const handleThemeToggle = () => {
     setTheme(theme === 'dark' ? 'light' : 'dark');
@@ -31,6 +33,9 @@ const DashboardHeader: React.FC = () => {
     }
   };
 
+  // Don't show upgrade button if user is premium
+  const showUpgradeButton = !isPremium && !premiumLoading;
+
   return (
     <section className="sticky top-0 z-50 bg-white border-b border-[hsl(var(--azyah-border))] px-4 py-3 safe-area-pt">
       <div className="flex items-center justify-between">
@@ -42,15 +47,17 @@ const DashboardHeader: React.FC = () => {
           <span className="font-serif font-medium text-foreground">Azyah</span>
         </div>
 
-        {/* Center - Upgrade Button */}
-        <Button 
-          onClick={handleUpgradeClick}
-          variant="outline"
-          size="sm"
-          className="text-[10px] px-2.5 py-0.5 h-6 rounded-full border-[hsl(var(--azyah-border))] hover:bg-[hsl(var(--azyah-ivory))]"
-        >
-          Upgrade to Premium
-        </Button>
+        {/* Center - Upgrade Button (hidden for premium users) */}
+        {showUpgradeButton && (
+          <Button 
+            onClick={handleUpgradeClick}
+            variant="outline"
+            size="sm"
+            className="text-[10px] px-2.5 py-0.5 h-6 rounded-full border-[hsl(var(--azyah-border))] hover:bg-[hsl(var(--azyah-ivory))]"
+          >
+            Upgrade to Premium
+          </Button>
+        )}
 
         {/* Right Icons */}
         <div className="flex items-center gap-2">

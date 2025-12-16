@@ -32,11 +32,16 @@ export function useSubscription(): UseSubscriptionReturn {
   const { user } = useAuth();
   const { toast } = useToast();
   const [subscription, setSubscription] = useState<Subscription | null>(null);
+  const [userPremiumStatus, setUserPremiumStatus] = useState<boolean>(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Check if user has active premium subscription
+  // Check if user has active premium subscription (from subscriptions table or users table)
   const isPremium = (() => {
+    // First check users table premium status
+    if (userPremiumStatus) return true;
+    
+    // Fallback to subscriptions table
     if (!subscription) return false;
     
     const now = new Date();
@@ -48,23 +53,45 @@ export function useSubscription(): UseSubscriptionReturn {
   const fetchSubscription = async () => {
     if (!user) {
       setSubscription(null);
+      setUserPremiumStatus(false);
       setLoading(false);
       return;
     }
 
     try {
       setError(null);
-      const { data, error } = await supabase
-        .from('subscriptions')
-        .select('*')
-        .eq('user_id', user.id)
-        .maybeSingle();
+      
+      // Fetch both subscription and user premium status in parallel
+      const [subResult, userResult] = await Promise.all([
+        supabase
+          .from('subscriptions')
+          .select('*')
+          .eq('user_id', user.id)
+          .maybeSingle(),
+        supabase
+          .from('users')
+          .select('is_premium, premium_expires_at')
+          .eq('id', user.id)
+          .single()
+      ]);
 
-      if (error) {
-        console.error('Error fetching subscription:', error);
-        setError(error.message);
+      if (subResult.error) {
+        console.error('Error fetching subscription:', subResult.error);
+        setError(subResult.error.message);
       } else {
-        setSubscription(data);
+        setSubscription(subResult.data);
+      }
+
+      // Check user premium status with expiry
+      if (userResult.data) {
+        const rawPremium = (userResult.data as any)?.is_premium ?? false;
+        const expiresAt = (userResult.data as any)?.premium_expires_at;
+        
+        let isActive = rawPremium;
+        if (expiresAt && new Date(expiresAt) < new Date()) {
+          isActive = false;
+        }
+        setUserPremiumStatus(isActive);
       }
     } catch (err) {
       console.error('Unexpected error fetching subscription:', err);
@@ -99,19 +126,29 @@ export function useSubscription(): UseSubscriptionReturn {
     try {
       setLoading(true);
       
-      const { error } = await supabase
-        .from('subscriptions')
-        .update({ 
-          status: 'canceled',
-          updated_at: new Date().toISOString()
-        })
-        .eq('user_id', user.id);
+      // Update both tables
+      const [subResult, userResult] = await Promise.all([
+        supabase
+          .from('subscriptions')
+          .update({ 
+            status: 'canceled',
+            updated_at: new Date().toISOString()
+          })
+          .eq('user_id', user.id),
+        supabase
+          .from('users')
+          .update({
+            is_premium: false,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', user.id)
+      ]);
 
-      if (error) {
-        console.error('Subscription cancellation error:', error);
+      if (subResult.error) {
+        console.error('Subscription cancellation error:', subResult.error);
         toast({
           title: "Cancellation Error",
-          description: error.message,
+          description: subResult.error.message,
           variant: "destructive"
         });
       } else {
@@ -119,7 +156,7 @@ export function useSubscription(): UseSubscriptionReturn {
           title: "Subscription Canceled",
           description: "Your premium access will remain active until the current period ends.",
         });
-        await fetchSubscription(); // Refresh subscription data
+        await fetchSubscription();
       }
     } catch (err) {
       console.error('Unexpected error canceling subscription:', err);

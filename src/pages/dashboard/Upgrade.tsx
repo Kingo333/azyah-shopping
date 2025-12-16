@@ -1,12 +1,22 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { ArrowLeft, Check, Crown, Sparkles, Users, Gift, TrendingUp, Loader2 } from 'lucide-react';
+import { ArrowLeft, Check, Crown, Sparkles, Users, Gift, TrendingUp, Loader2, RotateCcw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSubscription } from '@/hooks/useSubscription';
+import { usePremium, updatePremiumStatus, syncSubscriptionRecord } from '@/hooks/usePremium';
+import { 
+  isNativeIOS, 
+  initIap, 
+  getProducts, 
+  purchaseProduct, 
+  restorePurchases,
+  PRODUCT_IDS,
+  type IAPProduct 
+} from '@/lib/iap';
 
 const features = [
   { 
@@ -42,11 +52,70 @@ const comparisonFeatures = [
   { name: 'Priority support', free: false, premium: true },
 ];
 
+// Default prices (shown on web or if StoreKit fails)
+const DEFAULT_PRICES = {
+  monthly: { price: 30, priceString: 'AED 30', currency: 'AED' },
+  yearly: { price: 200, priceString: 'AED 200', currency: 'AED', monthlyEquivalent: 'AED 17' }
+};
+
 export default function Upgrade() {
   const [selectedPlan, setSelectedPlan] = useState<'free' | 'monthly' | 'yearly'>('yearly');
   const [loading, setLoading] = useState(false);
+  const [restoring, setRestoring] = useState(false);
+  const [iapInitialized, setIapInitialized] = useState(false);
+  const [products, setProducts] = useState<IAPProduct[]>([]);
   const navigate = useNavigate();
-  const { isPremium, subscription } = useSubscription();
+  const { isPremium: isSubPremium, subscription } = useSubscription();
+  const { isPremium, refetch: refetchPremium } = usePremium();
+
+  // Initialize IAP on native iOS
+  useEffect(() => {
+    const initializeIAP = async () => {
+      if (isNativeIOS()) {
+        const initialized = await initIap();
+        setIapInitialized(initialized);
+
+        if (initialized) {
+          try {
+            const fetchedProducts = await getProducts([
+              PRODUCT_IDS.MONTHLY,
+              PRODUCT_IDS.YEARLY
+            ]);
+            setProducts(fetchedProducts);
+            console.log('[Upgrade] Products loaded:', fetchedProducts);
+          } catch (error) {
+            console.error('[Upgrade] Failed to fetch products:', error);
+          }
+        }
+      }
+    };
+
+    initializeIAP();
+  }, []);
+
+  // Get localized price for a product
+  const getProductPrice = (productId: string) => {
+    const product = products.find(p => p.identifier === productId);
+    if (product) {
+      return {
+        price: product.price,
+        priceString: product.priceString,
+        currency: product.currencyCode
+      };
+    }
+    // Fallback to defaults
+    return productId === PRODUCT_IDS.YEARLY 
+      ? DEFAULT_PRICES.yearly 
+      : DEFAULT_PRICES.monthly;
+  };
+
+  const yearlyPrice = getProductPrice(PRODUCT_IDS.YEARLY);
+  const monthlyPrice = getProductPrice(PRODUCT_IDS.MONTHLY);
+
+  // Calculate monthly equivalent for yearly plan
+  const yearlyMonthlyEquivalent = products.find(p => p.identifier === PRODUCT_IDS.YEARLY)
+    ? `${yearlyPrice.currency} ${Math.round(yearlyPrice.price / 12)}`
+    : DEFAULT_PRICES.yearly.monthlyEquivalent;
 
   const handleContinue = async () => {
     if (selectedPlan === 'free') {
@@ -56,19 +125,62 @@ export default function Upgrade() {
 
     setLoading(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
         toast.error('Please sign in first');
         navigate('/onboarding/signup');
         return;
       }
 
-      // For now, since we're removing Ziina, just mark as premium directly
-      // TODO: Integrate with actual payment provider when ready
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
+      // On native iOS, use StoreKit purchase
+      if (isNativeIOS() && iapInitialized) {
+        const productId = selectedPlan === 'yearly' 
+          ? PRODUCT_IDS.YEARLY 
+          : PRODUCT_IDS.MONTHLY;
 
-      // Update subscription in database
+        const result = await purchaseProduct(productId);
+
+        if (result.cancelled) {
+          // User cancelled - just return silently
+          setLoading(false);
+          return;
+        }
+
+        if (!result.success) {
+          toast.error(result.error || 'Purchase failed. Please try again.');
+          setLoading(false);
+          return;
+        }
+
+        // Purchase successful - update Supabase
+        const planType = selectedPlan as 'monthly' | 'yearly';
+        const expiresAt = result.expiresAt || 
+          new Date(Date.now() + (selectedPlan === 'yearly' ? 365 : 30) * 24 * 60 * 60 * 1000);
+
+        // Update users table
+        const updateResult = await updatePremiumStatus(user.id, true, planType, expiresAt);
+        if (!updateResult.success) {
+          console.error('Failed to update premium status:', updateResult.error);
+        }
+
+        // Sync subscription record
+        await syncSubscriptionRecord(
+          user.id,
+          planType,
+          expiresAt,
+          result.transactionId,
+          result.productId
+        );
+
+        // Refetch premium status
+        await refetchPremium();
+
+        toast.success('Azyah Premium activated – enjoy unlimited outfits and salon rewards ✨');
+        navigate('/dashboard');
+        return;
+      }
+
+      // Web fallback - update subscription directly (for testing/demo)
       const { error: subError } = await supabase
         .from('subscriptions')
         .upsert({
@@ -77,7 +189,7 @@ export default function Upgrade() {
           status: 'active',
           plan_tier: selectedPlan,
           currency: 'AED',
-          price_cents: selectedPlan === 'yearly' ? 20000 : 3000, // AED 200 or AED 30
+          price_cents: selectedPlan === 'yearly' ? 20000 : 3000,
           features_granted: {
             ugc_collaboration: true,
             ai_tryon_limit: 10,
@@ -90,6 +202,16 @@ export default function Upgrade() {
         });
 
       if (subError) throw subError;
+
+      // Also update users table
+      await updatePremiumStatus(
+        user.id, 
+        true, 
+        selectedPlan as 'monthly' | 'yearly',
+        new Date(Date.now() + (selectedPlan === 'yearly' ? 365 : 30) * 24 * 60 * 60 * 1000)
+      );
+
+      await refetchPremium();
 
       toast.success('🎉 You\'re now Premium! Enjoy all features.');
       navigate('/dashboard');
@@ -111,7 +233,6 @@ export default function Upgrade() {
         return;
       }
 
-      // Mark user as having completed onboarding
       const { error } = await supabase
         .from('users')
         .update({ 
@@ -129,6 +250,61 @@ export default function Upgrade() {
       toast.error('Failed to continue');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleRestorePurchases = async () => {
+    if (!isNativeIOS()) {
+      toast.info('Restore purchases is only available on iOS devices');
+      return;
+    }
+
+    setRestoring(true);
+    try {
+      const result = await restorePurchases();
+
+      if (!result.success) {
+        toast.error(result.error || 'Failed to restore purchases');
+        return;
+      }
+
+      if (!result.hasActiveSubscription) {
+        toast.info('No active subscription found');
+        return;
+      }
+
+      // Active subscription found - update Supabase
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error('Please sign in first');
+        return;
+      }
+
+      // Determine plan type from product ID
+      const planType: 'monthly' | 'yearly' = 
+        result.activeProductId === PRODUCT_IDS.YEARLY ? 'yearly' : 'monthly';
+
+      // Update premium status
+      await updatePremiumStatus(user.id, true, planType, result.expiresAt || null);
+      
+      // Sync subscription record
+      await syncSubscriptionRecord(
+        user.id,
+        planType,
+        result.expiresAt || null,
+        undefined,
+        result.activeProductId
+      );
+
+      await refetchPremium();
+
+      toast.success('Premium restored on this device ✅');
+      navigate('/dashboard');
+    } catch (error) {
+      console.error('Error restoring purchases:', error);
+      toast.error('Failed to restore purchases');
+    } finally {
+      setRestoring(false);
     }
   };
 
@@ -176,10 +352,15 @@ export default function Upgrade() {
             <CardContent className="p-3 flex items-center justify-between">
               <div>
                 <h3 className="font-bold">Yearly</h3>
-                <p className="text-xs text-muted-foreground">AED 200/year • Save 44%</p>
+                <p className="text-xs text-muted-foreground">
+                  {yearlyPrice.priceString}/year • Save 44%
+                </p>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-lg font-bold">AED 17<span className="text-xs text-muted-foreground">/mo</span></span>
+                <span className="text-lg font-bold">
+                  {yearlyMonthlyEquivalent}
+                  <span className="text-xs text-muted-foreground">/mo</span>
+                </span>
                 {selectedPlan === 'yearly' && <Check className="h-5 w-5 text-primary" />}
               </div>
             </CardContent>
@@ -199,7 +380,10 @@ export default function Upgrade() {
                 <p className="text-xs text-muted-foreground">Billed monthly</p>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-lg font-bold">AED 30<span className="text-xs text-muted-foreground">/mo</span></span>
+                <span className="text-lg font-bold">
+                  {monthlyPrice.priceString}
+                  <span className="text-xs text-muted-foreground">/mo</span>
+                </span>
                 {selectedPlan === 'monthly' && <Check className="h-5 w-5 text-primary" />}
               </div>
             </CardContent>
@@ -264,14 +448,31 @@ export default function Upgrade() {
         <div className="space-y-2">
           <Button
             onClick={handleContinue}
-            disabled={loading}
+            disabled={loading || restoring}
             className="w-full h-11 font-semibold"
           >
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {selectedPlan === 'free' ? 'Continue Free' : `Upgrade to ${selectedPlan === 'yearly' ? 'Yearly' : 'Monthly'}`}
           </Button>
+          
           {selectedPlan !== 'free' && (
             <p className="text-center text-xs text-muted-foreground">Cancel anytime from Settings</p>
+          )}
+
+          {/* Restore Purchases - only show on iOS */}
+          {isNativeIOS() && (
+            <button
+              onClick={handleRestorePurchases}
+              disabled={restoring || loading}
+              className="w-full text-center text-xs text-muted-foreground hover:text-foreground py-2 flex items-center justify-center gap-1"
+            >
+              {restoring ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                <RotateCcw className="h-3 w-3" />
+              )}
+              Restore purchases
+            </button>
           )}
         </div>
 
