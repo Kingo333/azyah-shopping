@@ -16,27 +16,43 @@ workflows:
         XCODE_WORKSPACE: ios/App/App.xcworkspace
         XCODE_SCHEME: App
         APP_STORE_APP_ID: "6755971189"
+        # VITE_REVENUECAT_API_KEY must be set in Codemagic UI (Environment variables)
+        # This ensures it's available to Vite at build time
 
       node: v20.14.0
       xcode: 16.0
       cocoapods: default
 
     scripts:
+      - name: Validate RevenueCat API key
+        script: |
+          if [ -z "$VITE_REVENUECAT_API_KEY" ]; then
+            echo "ERROR: VITE_REVENUECAT_API_KEY is not set!"
+            echo "Please add it in Codemagic UI: App settings → Environment variables"
+            exit 1
+          fi
+          echo "✓ VITE_REVENUECAT_API_KEY is configured"
+
       - name: Install dependencies
         script: |
           npm ci
 
-      - name: Build web assets & sync Capacitor iOS
+      - name: Build web assets (Vite)
         script: |
           npm run build
+          echo "✓ Vite build complete → dist/"
+
+      - name: Sync Capacitor iOS
+        script: |
           npx cap sync ios
+          echo "✓ Capacitor synced to ios/"
 
       - name: Install CocoaPods
         script: |
           cd ios/App
           pod install
+          echo "✓ CocoaPods installed"
 
-      # NEW STEP – Auto-update iOS build number for TestFlight
       - name: Set iOS build number from Codemagic BUILD_NUMBER
         script: |
           cd ios/App
