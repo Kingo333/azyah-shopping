@@ -70,6 +70,13 @@ export async function initIap(): Promise<boolean> {
     return false;
   }
 
+  // Check for API key - no fallback
+  const apiKey = import.meta.env.VITE_REVENUECAT_API_KEY;
+  if (!apiKey) {
+    console.error('[IAP] VITE_REVENUECAT_API_KEY is missing - IAP disabled. Set this environment variable to enable in-app purchases.');
+    return false;
+  }
+
   try {
     // Dynamic import to avoid bundling issues on web
     const module = await import('@revenuecat/purchases-capacitor');
@@ -81,13 +88,10 @@ export async function initIap(): Promise<boolean> {
       await Purchases.setLogLevel({ level: LOG_LEVEL.DEBUG });
     }
 
-    // Configure RevenueCat with your API key
-    // You'll need to set this in your environment or replace with actual key
-    const apiKey = import.meta.env.VITE_REVENUECAT_API_KEY || 'appl_YOUR_REVENUECAT_PUBLIC_API_KEY';
-    
+    // Configure RevenueCat
     await Purchases.configure({
       apiKey,
-      appUserID: null // Let RevenueCat generate anonymous ID, we'll identify later
+      appUserID: null // Let RevenueCat generate anonymous ID, we'll identify with logIn later
     });
 
     console.log('[IAP] RevenueCat initialized successfully');
@@ -99,7 +103,8 @@ export async function initIap(): Promise<boolean> {
 }
 
 /**
- * Set the user ID for RevenueCat (call after user signs in)
+ * Log in user to RevenueCat (call after user signs in)
+ * This properly identifies the user for cross-device restore
  */
 export async function setIapUserId(userId: string): Promise<void> {
   if (!isNativeIOS() || !Purchases) {
@@ -108,14 +113,50 @@ export async function setIapUserId(userId: string): Promise<void> {
 
   try {
     await Purchases.logIn({ appUserID: userId });
-    console.log('[IAP] User ID set:', userId);
+    console.log('[IAP] User logged in to RevenueCat:', userId);
   } catch (error) {
-    console.error('[IAP] Failed to set user ID:', error);
+    console.error('[IAP] Failed to log in user:', error);
   }
 }
 
 /**
- * Get product information from StoreKit
+ * Log out user from RevenueCat (call on sign out)
+ * This resets to anonymous user for proper state management
+ */
+export async function logOutIap(): Promise<void> {
+  if (!isNativeIOS() || !Purchases) {
+    return;
+  }
+
+  try {
+    await Purchases.logOut();
+    console.log('[IAP] User logged out from RevenueCat');
+  } catch (error) {
+    console.error('[IAP] Failed to log out:', error);
+  }
+}
+
+/**
+ * Get current offerings from RevenueCat
+ * This is the recommended way to get products - returns what's configured in RC dashboard
+ */
+export async function getOfferings(): Promise<any> {
+  if (!isNativeIOS() || !Purchases) {
+    return null;
+  }
+
+  try {
+    const offerings = await Purchases.getOfferings();
+    console.log('[IAP] Offerings fetched:', offerings);
+    return offerings;
+  } catch (error) {
+    console.error('[IAP] Failed to get offerings:', error);
+    return null;
+  }
+}
+
+/**
+ * Get product information from StoreKit via Offerings
  * Returns empty array on web
  */
 export async function getProducts(productIds: string[]): Promise<IAPProduct[]> {
@@ -125,14 +166,15 @@ export async function getProducts(productIds: string[]): Promise<IAPProduct[]> {
   }
 
   if (!Purchases) {
-    throw new Error('IAP not initialized. Call initIap() first.');
+    console.error('[IAP] IAP not initialized. Call initIap() first.');
+    return [];
   }
 
   try {
     const offerings = await Purchases.getOfferings();
     const products: IAPProduct[] = [];
 
-    // Check current offering
+    // Check current offering first (recommended)
     if (offerings.current?.availablePackages) {
       for (const pkg of offerings.current.availablePackages) {
         const product = pkg.product;
@@ -149,7 +191,7 @@ export async function getProducts(productIds: string[]): Promise<IAPProduct[]> {
       }
     }
 
-    // Also check all offerings
+    // Also check all offerings as fallback
     if (offerings.all) {
       for (const offering of Object.values(offerings.all) as any[]) {
         if (offering.availablePackages) {
@@ -175,7 +217,7 @@ export async function getProducts(productIds: string[]): Promise<IAPProduct[]> {
     return products;
   } catch (error) {
     console.error('[IAP] Failed to get products:', error);
-    throw new Error('Failed to fetch product information');
+    return [];
   }
 }
 
@@ -199,7 +241,7 @@ export async function purchaseProduct(productId: string): Promise<PurchaseResult
   }
 
   try {
-    // Get the package for this product
+    // Get the package for this product from offerings
     const offerings = await Purchases.getOfferings();
     let targetPackage: any = null;
 

@@ -1,8 +1,8 @@
 /**
  * Hook to check user's premium subscription status
  * 
- * This hook reads from the users table's premium fields
- * and automatically handles expiry checks.
+ * This hook reads from the profiles table's premium fields
+ * and automatically handles expiry checks and missing profiles.
  */
 
 import { useState, useEffect, useCallback } from 'react';
@@ -38,11 +38,12 @@ export function usePremium(): PremiumStatus {
     try {
       setError(null);
       
+      // Use maybeSingle to handle missing profile gracefully
       const { data, error: fetchError } = await supabase
-        .from('users')
+        .from('profiles')
         .select('is_premium, plan_type, premium_expires_at')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
 
       if (fetchError) {
         console.error('Error fetching premium status:', fetchError);
@@ -53,10 +54,31 @@ export function usePremium(): PremiumStatus {
         return;
       }
 
-      // Handle missing/null values safely
-      const rawIsPremium = (data as any)?.is_premium ?? false;
-      const rawPlanType = (data as any)?.plan_type ?? null;
-      const rawExpiresAt = (data as any)?.premium_expires_at ?? null;
+      // Handle missing profile - create one
+      if (!data) {
+        console.log('[usePremium] No profile found, creating one for user:', user.id);
+        const { error: insertError } = await supabase
+          .from('profiles')
+          .insert({ id: user.id })
+          .select()
+          .single();
+        
+        if (insertError) {
+          console.error('Error creating profile:', insertError);
+          // Don't fail - just treat as non-premium
+        }
+        
+        // Default values for new profile
+        setIsPremium(false);
+        setPlanType(null);
+        setPremiumExpiresAt(null);
+        return;
+      }
+
+      // Handle existing profile
+      const rawIsPremium = data.is_premium ?? false;
+      const rawPlanType = data.plan_type ?? null;
+      const rawExpiresAt = data.premium_expires_at ?? null;
 
       // Check if premium is still valid (not expired)
       let isActive = rawIsPremium;
@@ -99,7 +121,7 @@ export function usePremium(): PremiumStatus {
 }
 
 /**
- * Update user's premium status in Supabase
+ * Update user's premium status in profiles table
  * This is called after a successful IAP purchase
  */
 export async function updatePremiumStatus(
@@ -110,7 +132,7 @@ export async function updatePremiumStatus(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const { error } = await supabase
-      .from('users')
+      .from('profiles')
       .update({
         is_premium: isPremium,
         plan_type: planType,

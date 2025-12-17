@@ -123,6 +123,12 @@ export default function Upgrade() {
       return;
     }
 
+    // On web, show toast that subscriptions are iOS-only
+    if (!isNativeIOS()) {
+      toast.info('Subscriptions are available on iOS. Download the app to subscribe!');
+      return;
+    }
+
     setLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -133,7 +139,7 @@ export default function Upgrade() {
       }
 
       // On native iOS, use StoreKit purchase
-      if (isNativeIOS() && iapInitialized) {
+      if (iapInitialized) {
         const productId = selectedPlan === 'yearly' 
           ? PRODUCT_IDS.YEARLY 
           : PRODUCT_IDS.MONTHLY;
@@ -152,18 +158,18 @@ export default function Upgrade() {
           return;
         }
 
-        // Purchase successful - update Supabase
+        // Purchase successful - update Supabase profiles table
         const planType = selectedPlan as 'monthly' | 'yearly';
         const expiresAt = result.expiresAt || 
           new Date(Date.now() + (selectedPlan === 'yearly' ? 365 : 30) * 24 * 60 * 60 * 1000);
 
-        // Update users table
+        // Update profiles table
         const updateResult = await updatePremiumStatus(user.id, true, planType, expiresAt);
         if (!updateResult.success) {
           console.error('Failed to update premium status:', updateResult.error);
         }
 
-        // Sync subscription record
+        // Sync subscription record for consistency
         await syncSubscriptionRecord(
           user.id,
           planType,
@@ -178,43 +184,9 @@ export default function Upgrade() {
         toast.success('Azyah Premium activated – enjoy unlimited outfits and salon rewards ✨');
         navigate('/dashboard');
         return;
+      } else {
+        toast.error('In-app purchases not available. Please restart the app.');
       }
-
-      // Web fallback - update subscription directly (for testing/demo)
-      const { error: subError } = await supabase
-        .from('subscriptions')
-        .upsert({
-          user_id: user.id,
-          plan: selectedPlan,
-          status: 'active',
-          plan_tier: selectedPlan,
-          currency: 'AED',
-          price_cents: selectedPlan === 'yearly' ? 20000 : 3000,
-          features_granted: {
-            ugc_collaboration: true,
-            ai_tryon_limit: 10,
-            early_access: true,
-            premium_support: true
-          },
-          current_period_end: new Date(Date.now() + (selectedPlan === 'yearly' ? 365 : 30) * 24 * 60 * 60 * 1000).toISOString()
-        }, {
-          onConflict: 'user_id'
-        });
-
-      if (subError) throw subError;
-
-      // Also update users table
-      await updatePremiumStatus(
-        user.id, 
-        true, 
-        selectedPlan as 'monthly' | 'yearly',
-        new Date(Date.now() + (selectedPlan === 'yearly' ? 365 : 30) * 24 * 60 * 60 * 1000)
-      );
-
-      await refetchPremium();
-
-      toast.success('🎉 You\'re now Premium! Enjoy all features.');
-      navigate('/dashboard');
     } catch (error) {
       console.error('Error upgrading:', error);
       toast.error('Failed to upgrade. Please try again.');
@@ -233,6 +205,7 @@ export default function Upgrade() {
         return;
       }
 
+      // Update users table for onboarding flags only
       const { error } = await supabase
         .from('users')
         .update({ 
@@ -284,7 +257,7 @@ export default function Upgrade() {
       const planType: 'monthly' | 'yearly' = 
         result.activeProductId === PRODUCT_IDS.YEARLY ? 'yearly' : 'monthly';
 
-      // Update premium status
+      // Update premium status in profiles table
       await updatePremiumStatus(user.id, true, planType, result.expiresAt || null);
       
       // Sync subscription record
