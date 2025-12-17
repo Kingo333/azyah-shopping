@@ -1,9 +1,7 @@
-
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-
 
 interface Subscription {
   id: string;
@@ -32,14 +30,14 @@ export function useSubscription(): UseSubscriptionReturn {
   const { user } = useAuth();
   const { toast } = useToast();
   const [subscription, setSubscription] = useState<Subscription | null>(null);
-  const [userPremiumStatus, setUserPremiumStatus] = useState<boolean>(false);
+  const [profilePremiumStatus, setProfilePremiumStatus] = useState<boolean>(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Check if user has active premium subscription (from subscriptions table or users table)
+  // Check if user has active premium subscription (from subscriptions table or profiles table)
   const isPremium = (() => {
-    // First check users table premium status
-    if (userPremiumStatus) return true;
+    // First check profiles table premium status
+    if (profilePremiumStatus) return true;
     
     // Fallback to subscriptions table
     if (!subscription) return false;
@@ -53,7 +51,7 @@ export function useSubscription(): UseSubscriptionReturn {
   const fetchSubscription = async () => {
     if (!user) {
       setSubscription(null);
-      setUserPremiumStatus(false);
+      setProfilePremiumStatus(false);
       setLoading(false);
       return;
     }
@@ -61,18 +59,18 @@ export function useSubscription(): UseSubscriptionReturn {
     try {
       setError(null);
       
-      // Fetch both subscription and user premium status in parallel
-      const [subResult, userResult] = await Promise.all([
+      // Fetch both subscription and profile premium status in parallel
+      const [subResult, profileResult] = await Promise.all([
         supabase
           .from('subscriptions')
           .select('*')
           .eq('user_id', user.id)
           .maybeSingle(),
         supabase
-          .from('users')
+          .from('profiles')
           .select('is_premium, premium_expires_at')
           .eq('id', user.id)
-          .single()
+          .maybeSingle()
       ]);
 
       if (subResult.error) {
@@ -82,16 +80,19 @@ export function useSubscription(): UseSubscriptionReturn {
         setSubscription(subResult.data);
       }
 
-      // Check user premium status with expiry
-      if (userResult.data) {
-        const rawPremium = (userResult.data as any)?.is_premium ?? false;
-        const expiresAt = (userResult.data as any)?.premium_expires_at;
+      // Check profile premium status with expiry
+      if (profileResult.data) {
+        const rawPremium = profileResult.data.is_premium ?? false;
+        const expiresAt = profileResult.data.premium_expires_at;
         
         let isActive = rawPremium;
         if (expiresAt && new Date(expiresAt) < new Date()) {
           isActive = false;
         }
-        setUserPremiumStatus(isActive);
+        setProfilePremiumStatus(isActive);
+      } else {
+        // No profile found - treat as non-premium
+        setProfilePremiumStatus(false);
       }
     } catch (err) {
       console.error('Unexpected error fetching subscription:', err);
@@ -107,8 +108,8 @@ export function useSubscription(): UseSubscriptionReturn {
 
   const createPaymentIntent = async (test = false) => {
     toast({
-      title: "Payment Integration Required",
-      description: "Payment integration is being updated. Please check back soon.",
+      title: "iOS Only",
+      description: "Subscriptions are available on iOS. Download the app to subscribe!",
       variant: "default"
     });
   };
@@ -126,8 +127,8 @@ export function useSubscription(): UseSubscriptionReturn {
     try {
       setLoading(true);
       
-      // Update both tables
-      const [subResult, userResult] = await Promise.all([
+      // Update both tables - subscriptions and profiles
+      const [subResult, profileResult] = await Promise.all([
         supabase
           .from('subscriptions')
           .update({ 
@@ -136,9 +137,10 @@ export function useSubscription(): UseSubscriptionReturn {
           })
           .eq('user_id', user.id),
         supabase
-          .from('users')
+          .from('profiles')
           .update({
             is_premium: false,
+            plan_type: null,
             updated_at: new Date().toISOString()
           })
           .eq('id', user.id)

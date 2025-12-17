@@ -5,6 +5,7 @@ import { toast } from '@/hooks/use-toast';
 import { CredentialsSchema } from '@/lib/password-validation';
 import { getRedirectRoute } from '@/lib/rbac';
 import type { UserRole } from '@/lib/rbac';
+import { Capacitor } from '@capacitor/core';
 import { 
   performSessionHealthCheck, 
   shouldPerformHealthCheck, 
@@ -63,7 +64,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // Auth state management - database trigger handles profile creation automatically
       const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
           console.log('AuthContext: Auth state changed:', { event, user: session?.user?.email });
           
           // Handle OAuth sign-in events - clear guest mode on real auth
@@ -72,6 +73,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const provider = session.user.app_metadata?.provider;
             const role = session.user.user_metadata?.role || 'shopper';
             console.log('OAuth sign-in detected:', { provider, role });
+            
+            // Initialize IAP and identify user in RevenueCat on iOS
+            if (Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'ios') {
+              try {
+                const { initIap, setIapUserId } = await import('@/lib/iap');
+                await initIap();
+                await setIapUserId(session.user.id);
+              } catch (error) {
+                console.error('Failed to initialize IAP after sign-in:', error);
+              }
+            }
           }
           
           // Handle token refresh failure more gracefully
@@ -106,6 +118,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser(null);
           setLoading(false);
           return;
+        }
+        
+        // If we have an existing session on iOS, initialize IAP
+        if (session && Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'ios') {
+          try {
+            const { initIap, setIapUserId } = await import('@/lib/iap');
+            await initIap();
+            await setIapUserId(session.user.id);
+          } catch (error) {
+            console.error('Failed to initialize IAP on session restore:', error);
+          }
         }
         
         setSession(session);
@@ -260,6 +283,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = useCallback(async () => {
     try {
       setLoading(true);
+      
+      // Log out from RevenueCat on iOS
+      if (Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'ios') {
+        try {
+          const { logOutIap } = await import('@/lib/iap');
+          await logOutIap();
+        } catch (error) {
+          console.error('Failed to log out from IAP:', error);
+        }
+      }
       
       // Clear all auth data first
       clearAllAuthData();

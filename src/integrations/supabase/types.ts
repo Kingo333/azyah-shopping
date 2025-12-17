@@ -2427,6 +2427,33 @@ export type Database = {
           },
         ]
       }
+      profiles: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_premium: boolean
+          plan_type: string | null
+          premium_expires_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id: string
+          is_premium?: boolean
+          plan_type?: string | null
+          premium_expires_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_premium?: boolean
+          plan_type?: string | null
+          premium_expires_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       public_profiles: {
         Row: {
           avatar_url: string | null
