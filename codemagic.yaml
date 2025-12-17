@@ -8,6 +8,8 @@ workflows:
       app_store_connect: Codemagic
 
     environment:
+      groups:
+        - azyah-secrets
       ios_signing:
         distribution_type: app_store
         bundle_identifier: com.azyah.style
@@ -16,8 +18,6 @@ workflows:
         XCODE_WORKSPACE: ios/App/App.xcworkspace
         XCODE_SCHEME: App
         APP_STORE_APP_ID: "6755971189"
-        # VITE_REVENUECAT_API_KEY must be set in Codemagic UI (Environment variables)
-        # This ensures it's available to Vite at build time
 
       node: v20.14.0
       xcode: 16.0
