@@ -565,9 +565,67 @@ export type Database = {
           },
         ]
       }
+      brand_services: {
+        Row: {
+          brand_id: string
+          created_at: string
+          description: string | null
+          discount_percent: number | null
+          id: string
+          is_active: boolean
+          max_price: number | null
+          min_price: number | null
+          service_type: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          brand_id: string
+          created_at?: string
+          description?: string | null
+          discount_percent?: number | null
+          id?: string
+          is_active?: boolean
+          max_price?: number | null
+          min_price?: number | null
+          service_type?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          brand_id?: string
+          created_at?: string
+          description?: string | null
+          discount_percent?: number | null
+          id?: string
+          is_active?: boolean
+          max_price?: number | null
+          min_price?: number | null
+          service_type?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brand_services_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "brand_services_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       brands: {
         Row: {
           bio: string | null
+          category: string | null
           contact_email: string | null
           cover_image_url: string | null
           created_at: string
@@ -583,6 +641,7 @@ export type Database = {
         }
         Insert: {
           bio?: string | null
+          category?: string | null
           contact_email?: string | null
           cover_image_url?: string | null
           created_at?: string
@@ -598,6 +657,7 @@ export type Database = {
         }
         Update: {
           bio?: string | null
+          category?: string | null
           contact_email?: string | null
           cover_image_url?: string | null
           created_at?: string
@@ -2714,6 +2774,55 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      service_leads: {
+        Row: {
+          created_at: string
+          id: string
+          message: string | null
+          requesting_brand_id: string
+          service_id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message?: string | null
+          requesting_brand_id: string
+          service_id: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string | null
+          requesting_brand_id?: string
+          service_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_leads_requesting_brand_id_fkey"
+            columns: ["requesting_brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_leads_requesting_brand_id_fkey"
+            columns: ["requesting_brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_leads_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "brand_services"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       subscriptions: {
         Row: {
