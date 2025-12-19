@@ -117,7 +117,8 @@ const BrandPortal: React.FC = () => {
         website: null,
         logo_url: null,
         socials: {},
-        shipping_regions: []
+        shipping_regions: [],
+        category: null // Force NULL so BrandCategorySelectorModal appears for new brands
       }).select().single();
       if (error) {
         console.error('Error creating brand:', error);
