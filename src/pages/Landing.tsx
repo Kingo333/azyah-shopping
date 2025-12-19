@@ -155,7 +155,10 @@ export default function Landing() {
   return <div className="min-h-screen bg-background">
         <SEOHead title="Azyah — Luxury Fashion Curation" description="AI-curated luxury fashion discovery. Exclusive designer collections for the discerning style connoisseur." canonical="https://azyah.app/" />
       {/* NAV - More Minimal for Mobile */}
-      <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-md border-b border-primary/10 animate-slide-down-fade">
+      <header 
+        className="sticky top-0 z-50 bg-background/95 backdrop-blur-md border-b border-primary/10 animate-slide-down-fade"
+        style={{ paddingTop: 'var(--safe-top, 0px)' }}
+      >
         <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 h-16 sm:h-20 flex items-center justify-between">
           {/* Logo - Show Azyah text on all screen sizes */}
           <div className="flex items-center space-x-2 sm:space-x-4 animate-scale-bounce" style={{

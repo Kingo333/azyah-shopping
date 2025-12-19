@@ -37,7 +37,10 @@ const DashboardHeader: React.FC = () => {
   const showUpgradeButton = !isPremium && !premiumLoading;
 
   return (
-    <section className="sticky top-0 z-50 bg-white border-b border-[hsl(var(--azyah-border))] px-4 py-3 safe-area-pt">
+    <section 
+      className="sticky top-0 z-50 bg-white border-b border-[hsl(var(--azyah-border))] px-4 py-3"
+      style={{ paddingTop: 'calc(var(--safe-top, 0px) + 12px)' }}
+    >
       <div className="flex items-center justify-between">
         {/* Logo */}
         <div className="flex items-center gap-2">

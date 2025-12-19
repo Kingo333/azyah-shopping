@@ -140,7 +140,10 @@ export default function OutfitDetail() {
       />
 
       <div className="min-h-screen bg-background pb-24">
-        <header className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
+        <header 
+          className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b"
+          style={{ paddingTop: 'var(--safe-top, 0px)' }}
+        >
           <div className="container flex items-center justify-between h-14 max-w-screen-2xl">
             <div className="flex items-center">
               <BackButton />

@@ -13,7 +13,10 @@ export default function UGCCollaborations() {
   return (
     <div className="min-h-screen bg-background">
       {/* Sticky Header */}
-      <header className="sticky top-0 z-10 bg-card border-b border-border h-[60px] flex items-center px-4">
+      <header 
+        className="sticky top-0 z-10 bg-card border-b border-border h-[60px] flex items-center px-4"
+        style={{ paddingTop: 'var(--safe-top, 0px)', height: 'calc(60px + var(--safe-top, 0px))' }}
+      >
         <button 
           onClick={() => navigate(-1)}
           className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
