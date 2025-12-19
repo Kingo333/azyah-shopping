@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { LogoUpload } from '@/components/LogoUpload';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Save, Plus, X, Trash2 } from 'lucide-react';
+import { Save, Plus, X, Trash2, CheckCircle } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 interface RetailerSettingsFormProps {
@@ -44,6 +44,30 @@ export const RetailerSettingsForm: React.FC<RetailerSettingsFormProps> = ({
   const [newRegion, setNewRegion] = useState('');
   const [newSocialPlatform, setNewSocialPlatform] = useState('');
   const [newSocialUrl, setNewSocialUrl] = useState('');
+
+  // Calculate profile completion - must match useProfileCompletion hook for consistency
+  const getProfileCompletion = () => {
+    const fields = {
+      name: { value: retailer.name && retailer.name !== 'My Store', weight: 20 },
+      logo_url: { value: retailer.logo_url, weight: 25 },
+      bio: { value: retailer.bio, weight: 20 },
+      website: { value: retailer.website, weight: 15 },
+      contact_email: { value: retailer.contact_email, weight: 20 }
+    };
+
+    let totalScore = 0;
+    Object.values(fields).forEach((field) => {
+      const hasValue = field.value && (typeof field.value === 'string' ? field.value.trim() !== '' : true);
+      if (hasValue) {
+        totalScore += field.weight;
+      }
+    });
+
+    return Math.round(totalScore);
+  };
+
+  const completionPercentage = getProfileCompletion();
+
 
   const handleLogoUpdate = (logoUrl: string | null) => {
     onRetailerUpdate({ ...retailer, logo_url: logoUrl });
@@ -181,7 +205,15 @@ export const RetailerSettingsForm: React.FC<RetailerSettingsFormProps> = ({
       <div className="space-y-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Store Settings</CardTitle>
+            <div className="flex items-center gap-4">
+              <CardTitle>Store Settings</CardTitle>
+              <div className="flex items-center gap-2">
+                <Badge variant={completionPercentage === 100 ? "default" : "secondary"}>
+                  {completionPercentage}% Complete
+                </Badge>
+                {completionPercentage === 100 && <CheckCircle className="h-5 w-5 text-green-500" />}
+              </div>
+            </div>
             <Button onClick={() => setIsEditing(true)} variant="outline">
               Edit Settings
             </Button>

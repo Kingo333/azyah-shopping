@@ -54,7 +54,7 @@ export function useProfileCompletion() {
       }
 
       const fields = {
-        name: { value: brand.name, weight: 20, label: 'Brand Name' },
+        name: { value: brand.name && brand.name !== 'My Brand', weight: 20, label: 'Brand Name' },
         logo_url: { value: brand.logo_url, weight: 25, label: 'Logo' },
         bio: { value: brand.bio, weight: 20, label: 'Bio' },
         website: { value: brand.website, weight: 15, label: 'Website' },
@@ -77,7 +77,7 @@ export function useProfileCompletion() {
       }
 
       const fields = {
-        name: { value: retailer.name, weight: 20, label: 'Store Name' },
+        name: { value: retailer.name && retailer.name !== 'My Store', weight: 20, label: 'Store Name' },
         logo_url: { value: retailer.logo_url, weight: 25, label: 'Logo' },
         bio: { value: retailer.bio, weight: 20, label: 'Bio' },
         website: { value: retailer.website, weight: 15, label: 'Website' },
