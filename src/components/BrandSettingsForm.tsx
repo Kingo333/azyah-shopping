@@ -42,18 +42,25 @@ export const BrandSettingsForm: React.FC<BrandSettingsFormProps> = ({ brand, onB
 
   const { toast } = useToast();
 
-  // Calculate profile completion
+  // Calculate profile completion - must match useProfileCompletion hook for consistency
   const getProfileCompletion = () => {
-    const fields = [
-      brand.logo_url,
-      brand.name && brand.name !== 'My Brand',
-      brand.bio,
-      brand.website,
-      brand.contact_email,
-      brand.shipping_regions?.length > 0
-    ];
-    const completed = fields.filter(Boolean).length;
-    return Math.round((completed / fields.length) * 100);
+    const fields = {
+      name: { value: brand.name && brand.name !== 'My Brand', weight: 20 },
+      logo_url: { value: brand.logo_url, weight: 25 },
+      bio: { value: brand.bio, weight: 20 },
+      website: { value: brand.website, weight: 15 },
+      contact_email: { value: brand.contact_email, weight: 20 }
+    };
+
+    let totalScore = 0;
+    Object.values(fields).forEach((field) => {
+      const hasValue = field.value && (typeof field.value === 'string' ? field.value.trim() !== '' : true);
+      if (hasValue) {
+        totalScore += field.weight;
+      }
+    });
+
+    return Math.round(totalScore);
   };
 
   const isNewBrand = () => {
