@@ -20,12 +20,18 @@ import { ImportWizardModal } from '@/components/ImportWizardModal';
 import { BulkImportActions } from '@/components/BulkImportActions';
 import { CollabDashboard } from '@/components/ugc/CollabDashboard';
 import { BrandSettingsForm } from '@/components/BrandSettingsForm';
-import { Plus, Edit, Trash2, Upload, BarChart3, TrendingUp, Eye, Heart, ShoppingBag, DollarSign, Download, Filter, Globe, Package, Archive, Store } from 'lucide-react';
+import { BrandCategorySelectorModal } from '@/components/brand/BrandCategorySelectorModal';
+import { BrandServicesManager } from '@/components/brand/BrandServicesManager';
+import { ServicesMarketplace } from '@/components/brand/ServicesMarketplace';
+import { Plus, Edit, Trash2, Upload, BarChart3, TrendingUp, Eye, Heart, ShoppingBag, DollarSign, Download, Filter, Globe, Package, Archive, Store, Briefcase } from 'lucide-react';
 import { InfoTooltip } from '@/components/ui/info-tooltip';
 import { FeedbackModal } from '@/components/FeedbackModal';
 import { ProfileCompletionBanner } from '@/components/ProfileCompletionBanner';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import type { Product } from '@/types';
+
+type BrandCategory = 'fashion_brand' | 'agency' | 'studio';
+
 interface Brand {
   id: string;
   name: string;
@@ -35,6 +41,7 @@ interface Brand {
   contact_email: string | null;
   socials: any;
   shipping_regions: string[];
+  category?: string | null;
 }
 const BrandPortal: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -380,6 +387,21 @@ const BrandPortal: React.FC = () => {
         </Button>
       </div>
     </div>;
+  // Determine if we need to show category selector
+  const needsCategorySelection = !brand.category;
+  const isAgencyOrStudio = brand.category === 'agency' || brand.category === 'studio';
+  const isFashionBrand = brand.category === 'fashion_brand';
+
+  const handleCategorySelected = (category: string) => {
+    setBrand({ ...brand, category });
+    // Set default tab based on category
+    if (category === 'agency' || category === 'studio') {
+      handleTabChange('services');
+    } else {
+      handleTabChange('products');
+    }
+  };
+
   const analytics = {
     totalProducts: products.length,
     totalSwipeAppearances: analyticsData?.totalSwipeAppearances || 0,
@@ -394,7 +416,37 @@ const BrandPortal: React.FC = () => {
     likes: Math.floor(Math.random() * 200) + 20,
     revenue: `$${(Math.random() * 500 + 100).toFixed(2)}`
   }));
+
+  // Determine which tabs to show based on brand category
+  const getTabsConfig = () => {
+    if (isAgencyOrStudio) {
+      return [
+        { value: 'services', label: 'Services' },
+        { value: 'collabs', label: 'Collabs' },
+        { value: 'analytics', label: 'Analytics' },
+        { value: 'settings', label: 'Settings' }
+      ];
+    }
+    // Fashion brand: Products + Services marketplace + Collabs + Analytics + Settings
+    return [
+      { value: 'products', label: 'Products' },
+      { value: 'collabs', label: 'Collabs' },
+      { value: 'partner-services', label: 'Services' },
+      { value: 'analytics', label: 'Analytics' },
+      { value: 'settings', label: 'Settings' }
+    ];
+  };
+
+  const tabsConfig = getTabsConfig();
+
   return <div className="min-h-screen bg-background dark:bg-slate-950">
+      {/* Category Selector Modal - blocks portal until category is chosen */}
+      <BrandCategorySelectorModal
+        brandId={brand.id}
+        isOpen={needsCategorySelection}
+        onCategorySelected={handleCategorySelected}
+      />
+
       <div className="container max-w-7xl mx-auto p-3 md:p-6">
         {/* Header */}
         <BrandPortalHeader brand={brand} />
@@ -404,62 +456,125 @@ const BrandPortal: React.FC = () => {
           <FeedbackModal userType="brand" />
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 mb-6 md:mb-8">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-xs md:text-sm font-medium">Total Products</CardTitle>
-              <Package className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-lg md:text-2xl font-bold">{analytics.totalProducts}</div>
-            </CardContent>
-          </Card>
+        {/* Stats Cards - show different stats for agencies/studios */}
+        {isAgencyOrStudio ? (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 mb-6 md:mb-8">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-xs md:text-sm font-medium">Active Services</CardTitle>
+                <Briefcase className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-lg md:text-2xl font-bold">-</div>
+              </CardContent>
+            </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-xs md:text-sm font-medium">Swipe Appearances</CardTitle>
-              <BarChart3 className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-lg md:text-2xl font-bold">{analytics.totalSwipeAppearances}</div>
-            </CardContent>
-          </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-xs md:text-sm font-medium">Leads Received</CardTitle>
+                <TrendingUp className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-lg md:text-2xl font-bold">-</div>
+              </CardContent>
+            </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-xs md:text-sm font-medium">Total Likes</CardTitle>
-              <Heart className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-lg md:text-2xl font-bold">{analytics.totalLikes}</div>
-            </CardContent>
-          </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-xs md:text-sm font-medium">Active Collabs</CardTitle>
+                <Heart className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-lg md:text-2xl font-bold">-</div>
+              </CardContent>
+            </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-xs md:text-sm font-medium">Active Products</CardTitle>
-              <ShoppingBag className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-lg md:text-2xl font-bold">
-                {products.filter(p => p.status === 'active').length}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-xs md:text-sm font-medium">Profile Views</CardTitle>
+                <Eye className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-lg md:text-2xl font-bold">-</div>
+              </CardContent>
+            </Card>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 mb-6 md:mb-8">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-xs md:text-sm font-medium">Total Products</CardTitle>
+                <Package className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-lg md:text-2xl font-bold">{analytics.totalProducts}</div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-xs md:text-sm font-medium">Swipe Appearances</CardTitle>
+                <BarChart3 className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-lg md:text-2xl font-bold">{analytics.totalSwipeAppearances}</div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-xs md:text-sm font-medium">Total Likes</CardTitle>
+                <Heart className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-lg md:text-2xl font-bold">{analytics.totalLikes}</div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-xs md:text-sm font-medium">Active Products</CardTitle>
+                <ShoppingBag className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-lg md:text-2xl font-bold">
+                  {products.filter(p => p.status === 'active').length}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         {/* Profile Completion Banner */}
         <ProfileCompletionBanner />
         
-        {/* Tabs */}
+        {/* Tabs - dynamically generated based on brand category */}
         <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4 md:space-y-6">
-          <TabsList className="bg-muted/50 dark:bg-slate-800/50 grid w-full grid-cols-4 md:flex md:w-auto">
-            <TabsTrigger value="products" className="data-[state=active]:bg-background dark:data-[state=active]:bg-slate-700 text-xs md:text-sm">Products</TabsTrigger>
-            <TabsTrigger value="collabs" className="data-[state=active]:bg-background dark:data-[state=active]:bg-slate-700 text-xs md:text-sm">Collabs</TabsTrigger>
-            <TabsTrigger value="analytics" className="data-[state=active]:bg-background dark:data-[state=active]:bg-slate-700 text-xs md:text-sm">Analytics</TabsTrigger>
-            <TabsTrigger value="settings" className="data-[state=active]:bg-background dark:data-[state=active]:bg-slate-700 text-xs md:text-sm">Settings</TabsTrigger>
+          <TabsList className="bg-muted/50 dark:bg-slate-800/50 flex flex-wrap md:flex md:w-auto gap-1">
+            {tabsConfig.map(tab => (
+              <TabsTrigger 
+                key={tab.value}
+                value={tab.value} 
+                className="data-[state=active]:bg-background dark:data-[state=active]:bg-slate-700 text-xs md:text-sm"
+              >
+                {tab.label}
+              </TabsTrigger>
+            ))}
           </TabsList>
+
+          {/* Services tab for agencies/studios */}
+          {isAgencyOrStudio && (
+            <TabsContent value="services">
+              <BrandServicesManager brandId={brand.id} brandCategory={brand.category as 'agency' | 'studio'} />
+            </TabsContent>
+          )}
+
+          {/* Partner Services marketplace for fashion brands */}
+          {isFashionBrand && (
+            <TabsContent value="partner-services">
+              <ServicesMarketplace currentBrandId={brand.id} />
+            </TabsContent>
+          )}
 
           <TabsContent value="products">
             <Card>
