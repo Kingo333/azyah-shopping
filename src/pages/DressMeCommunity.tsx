@@ -50,7 +50,10 @@ export default function DressMeCommunity() {
       />
       
       {/* Header */}
-      <div className="sticky top-0 z-40 bg-background/95 backdrop-blur-sm border-b">
+      <div 
+        className="sticky top-0 z-40 bg-background/95 backdrop-blur-sm border-b"
+        style={{ paddingTop: 'calc(var(--safe-top, 0px) + 12px)' }}
+      >
         <div className="container max-w-6xl mx-auto p-4">
           <div className="flex items-center justify-between">
             <Button

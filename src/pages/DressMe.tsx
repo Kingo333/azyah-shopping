@@ -319,7 +319,10 @@ export default function DressMe() {
       />
       <div className="min-h-screen bg-background pb-20">
         {/* Header */}
-        <div className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-40 safe-area-pt">
+        <div 
+          className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-40"
+          style={{ paddingTop: 'calc(var(--safe-top, 0px) + 12px)' }}
+        >
           <div className="container max-w-6xl mx-auto p-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">

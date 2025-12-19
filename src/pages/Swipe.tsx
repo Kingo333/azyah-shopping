@@ -134,7 +134,10 @@ const Swipe = () => {
   };
   return <div className="min-h-screen dashboard-bg flex flex-col">
       {/* Header */}
-      <header className={`sticky top-0 z-50 w-full bg-background/80 backdrop-blur-xl border-b border-border/40 shrink-0 transition-all duration-300 safe-area-pt ${isProductDetailOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+      <header 
+        className={`sticky top-0 z-50 w-full bg-background/80 backdrop-blur-xl border-b border-border/40 shrink-0 transition-all duration-300 ${isProductDetailOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
+        style={{ paddingTop: 'calc(var(--safe-top, 0px) + 10px)' }}
+      >
         <div className="container max-w-screen-2xl mx-auto px-3 sm:px-4 py-2.5 sm:py-3">
           <div className="flex items-center justify-between gap-2 sm:gap-3">
             {/* Left Section - Back & Title */}

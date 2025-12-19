@@ -117,8 +117,8 @@ export const BottomNavigation: React.FC = () => {
             exit={{ x: 100, opacity: 0 }}
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
             onClick={handleExpandNav}
-            className="fixed bottom-6 right-4 z-50 bg-background/95 backdrop-blur-sm rounded-full p-3 shadow-lg border border-border"
-            style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
+            className="fixed right-4 z-50 bg-background/95 backdrop-blur-sm rounded-full p-3 shadow-lg border border-border"
+            style={{ bottom: 'calc(var(--safe-bottom, 0px) + 24px)' }}
           >
             <ChevronUp className="h-5 w-5 text-muted-foreground" />
           </motion.button>
@@ -133,11 +133,11 @@ export const BottomNavigation: React.FC = () => {
             animate={{ y: 0 }}
             exit={{ y: 100 }}
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-            className="fixed bottom-0 left-0 right-0 z-50"
-            style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+            className="fixed bottom-0 left-0 right-0 z-50 bg-background"
+            style={{ paddingBottom: 'var(--safe-bottom, 0px)' }}
           >
             {/* Background bar */}
-            <div className="relative bg-background border-t border-border">
+            <div className="relative border-t border-border">
               <div className="flex items-end justify-around h-16 px-4">
                 {navItems.map((item, index) => {
                   const Icon = item.icon;
