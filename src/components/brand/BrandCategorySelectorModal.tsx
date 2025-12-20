@@ -4,10 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { ShoppingBag, Megaphone, Camera, Loader2 } from 'lucide-react';
+import { ShoppingBag, Megaphone, Camera, Loader2, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-type BrandCategory = 'fashion_brand' | 'agency' | 'studio';
+type BrandCategory = 'fashion_brand' | 'agency' | 'studio' | 'salon';
 
 interface BrandCategorySelectorModalProps {
   brandId: string;
@@ -38,6 +38,12 @@ const CATEGORY_OPTIONS: {
     label: 'Studio / Production',
     description: 'I provide content, photo/video, or production services',
     icon: <Camera className="h-8 w-8" />
+  },
+  {
+    value: 'salon',
+    label: 'Salon & Spa',
+    description: 'I provide nail, hair, beauty, or spa services',
+    icon: <Sparkles className="h-8 w-8" />
   }
 ];
 
