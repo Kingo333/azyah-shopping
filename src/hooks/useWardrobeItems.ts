@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { awardPointsAsync } from '@/hooks/useAwardPoints';
 
 export interface WardrobeItem {
   id: string;
@@ -115,10 +116,15 @@ export const useAddWardrobeItem = () => {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['wardrobe-items'] });
       queryClient.invalidateQueries({ queryKey: ['wardrobe-limit'] });
       toast.success('Item added to wardrobe');
+      
+      // Award points for adding wardrobe item (fire and forget)
+      if (data?.id) {
+        awardPointsAsync('wardrobe_add', data.id, `wardrobe:${data.id}`);
+      }
     },
     onError: (error: any) => {
       console.error('Error adding wardrobe item:', error);

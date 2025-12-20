@@ -32,6 +32,7 @@ import { useSuggestedEssentials } from '@/hooks/useSuggestedEssentials';
 import { isGuestMode } from '@/hooks/useGuestMode';
 import { useGuestGate } from '@/hooks/useGuestGate';
 import { GuestActionPrompt } from '@/components/GuestActionPrompt';
+import { useSalons } from '@/hooks/useSalons';
 
 interface UserProfile {
   id: string;
@@ -86,12 +87,8 @@ const RoleDashboard: React.FC = () => {
     : suggestedItems;
   const showingSuggestions = wardrobeItems.length === 0 && suggestedItems.length > 0;
   
-  const [salons] = useState<any[]>([
-    { id: 1, name: 'Jane saloon', image_url: '/placeholder.svg', city: 'dubai' },
-    { id: 2, name: 'Shay Nails', image_url: '/placeholder.svg', city: 'dubai' },
-    { id: 3, name: 'Glamour Spa', image_url: '/placeholder.svg', city: 'abudhabi' },
-    { id: 4, name: 'Beauty Lounge', image_url: '/placeholder.svg', city: 'abudhabi' },
-  ]);
+  // Fetch salons from Supabase instead of mock data
+  const { data: salons = [] } = useSalons(salonCity);
 
   // Load saved category selection on component mount
   useEffect(() => {
@@ -548,25 +545,31 @@ const RoleDashboard: React.FC = () => {
 
         {/* Salon Cards */}
         <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide [-webkit-overflow-scrolling:touch]">
-          {salons
-            .filter(salon => salon.city === salonCity)
-            .map(salon => (
+          {salons.map(salon => (
               <div key={salon.id} className="flex-shrink-0 w-40">
                 <div className="aspect-[4/5] rounded-xl bg-card border border-border shadow-sm overflow-hidden mb-2 relative">
                   <img 
-                    src={salon.image_url} 
+                    src={salon.logo_url || salon.cover_image_url || '/placeholder.svg'} 
                     alt={salon.name}
                     className="w-full h-full object-cover"
                   />
                   <div className="absolute top-2 left-2 bg-[hsl(var(--azyah-maroon))] text-white text-[10px] px-2 py-0.5 rounded-full font-medium">
-                    {salonCity === 'dubai' ? 'Dubai' : 'Abu Dhabi'}
+                    {salon.city === 'dubai' ? 'Dubai' : salon.city === 'abudhabi' ? 'Abu Dhabi' : 'Sharjah'}
                   </div>
+                  {salon.rating > 0 && (
+                    <div className="absolute bottom-2 right-2 bg-background/80 backdrop-blur-sm text-xs px-1.5 py-0.5 rounded font-medium">
+                      ★ {salon.rating}
+                    </div>
+                  )}
                 </div>
                 <p className="text-xs font-medium text-center truncate">
                   {salon.name}
                 </p>
               </div>
             ))}
+          {salons.length === 0 && (
+            <p className="text-sm text-muted-foreground py-4">No salons in this city yet</p>
+          )}
         </div>
       </section>
 
