@@ -209,7 +209,9 @@ export function useSalonOfferMutations(salonId?: string) {
   
   const createOffer = useMutation({
     mutationFn: async (offer: { salon_id: string; discount_type: string; discount_value: number; points_cost: number; min_spend_aed?: number; cooldown_days: number; monthly_cap?: number; is_active: boolean }) => {
-      const { data, error } = await supabase.from('salon_reward_offers').insert(offer).select().single();
+      // Auto-generate title from discount value
+      const title = `${offer.discount_value}% Off`;
+      const { data, error } = await supabase.from('salon_reward_offers').insert([{ ...offer, title }]).select().single();
       if (error) throw error;
       return data;
     },

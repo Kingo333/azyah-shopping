@@ -38,7 +38,7 @@ export const SalonServicesManager: React.FC<SalonServicesManagerProps> = ({ salo
     name: '',
     description: '',
     category: 'nails' as ServiceCategory,
-    price_cents: 0,
+    price_aed: 0,
     duration_minutes: 30,
     is_active: true,
   });
@@ -48,7 +48,7 @@ export const SalonServicesManager: React.FC<SalonServicesManagerProps> = ({ salo
       name: '',
       description: '',
       category: 'nails',
-      price_cents: 0,
+      price_aed: 0,
       duration_minutes: 30,
       is_active: true,
     });
@@ -80,7 +80,7 @@ export const SalonServicesManager: React.FC<SalonServicesManagerProps> = ({ salo
       name: service.name,
       description: service.description || '',
       category: service.category,
-      price_cents: service.price_cents,
+      price_aed: service.price_aed,
       duration_minutes: service.duration_minutes,
       is_active: service.is_active,
     });
@@ -102,11 +102,11 @@ export const SalonServicesManager: React.FC<SalonServicesManagerProps> = ({ salo
     return <Sparkles className="h-4 w-4" />;
   };
   
-  const formatPrice = (cents: number) => {
+  const formatPrice = (aed: number) => {
     return new Intl.NumberFormat('en-AE', {
       style: 'currency',
       currency: 'AED',
-    }).format(cents / 100);
+    }).format(aed);
   };
   
   if (isLoading) {
@@ -205,8 +205,8 @@ export const SalonServicesManager: React.FC<SalonServicesManagerProps> = ({ salo
                       type="number"
                       min="0"
                       step="1"
-                      value={formData.price_cents / 100}
-                      onChange={(e) => setFormData({ ...formData, price_cents: Math.round(parseFloat(e.target.value) * 100) })}
+                      value={formData.price_aed}
+                      onChange={(e) => setFormData({ ...formData, price_aed: parseFloat(e.target.value) || 0 })}
                       required
                     />
                   </div>
@@ -283,7 +283,7 @@ export const SalonServicesManager: React.FC<SalonServicesManagerProps> = ({ salo
                       )}
                     </div>
                     <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                      <span>{formatPrice(service.price_cents)}</span>
+                      <span>{formatPrice(service.price_aed)}</span>
                       <span className="flex items-center gap-1">
                         <Clock className="h-3 w-3" />
                         {service.duration_minutes} min

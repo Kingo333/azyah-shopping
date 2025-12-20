@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 
 interface TutorialTooltipProps {
   children: React.ReactNode;
-  content: string;
+  content: React.ReactNode;
   feature: string;
   className?: string;
 }
@@ -45,7 +45,7 @@ export const TutorialTooltip: React.FC<TutorialTooltipProps> = ({
         <TooltipContent className="max-w-xs p-3 bg-popover border shadow-lg">
           <div className="space-y-2">
             <div className="flex items-start justify-between gap-2">
-              <p className="text-sm text-popover-foreground">{content}</p>
+              <div className="text-sm text-popover-foreground">{content}</div>
               <Button
                 variant="ghost"
                 size="sm"
