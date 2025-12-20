@@ -2968,6 +2968,7 @@ export type Database = {
       salons: {
         Row: {
           address: string | null
+          brand_id: string | null
           city: string
           cover_image_url: string | null
           created_at: string
@@ -2988,6 +2989,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          brand_id?: string | null
           city: string
           cover_image_url?: string | null
           created_at?: string
@@ -3008,6 +3010,7 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          brand_id?: string | null
           city?: string
           cover_image_url?: string | null
           created_at?: string
@@ -3026,7 +3029,22 @@ export type Database = {
           updated_at?: string
           website?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "salons_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "salons_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands_public"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       security_audit_log: {
         Row: {
