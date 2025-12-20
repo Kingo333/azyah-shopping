@@ -2131,6 +2131,42 @@ export type Database = {
         }
         Relationships: []
       }
+      points_ledger: {
+        Row: {
+          action_type: string
+          amount: number
+          created_at: string
+          id: string
+          idempotency_key: string
+          metadata: Json | null
+          source_id: string | null
+          type: string
+          user_id: string
+        }
+        Insert: {
+          action_type: string
+          amount: number
+          created_at?: string
+          id?: string
+          idempotency_key: string
+          metadata?: Json | null
+          source_id?: string | null
+          type: string
+          user_id: string
+        }
+        Update: {
+          action_type?: string
+          amount?: number
+          created_at?: string
+          id?: string
+          idempotency_key?: string
+          metadata?: Json | null
+          source_id?: string | null
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       post_images: {
         Row: {
           id: string
@@ -2562,6 +2598,69 @@ export type Database = {
           },
         ]
       }
+      redemptions: {
+        Row: {
+          approved_at: string | null
+          cancelled_at: string | null
+          code_expires_at: string | null
+          created_at: string
+          id: string
+          offer_id: string
+          points_spent: number
+          redeemed_at: string | null
+          redemption_code: string | null
+          salon_id: string
+          salon_notes: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          approved_at?: string | null
+          cancelled_at?: string | null
+          code_expires_at?: string | null
+          created_at?: string
+          id?: string
+          offer_id: string
+          points_spent: number
+          redeemed_at?: string | null
+          redemption_code?: string | null
+          salon_id: string
+          salon_notes?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          approved_at?: string | null
+          cancelled_at?: string | null
+          code_expires_at?: string | null
+          created_at?: string
+          id?: string
+          offer_id?: string
+          points_spent?: number
+          redeemed_at?: string | null
+          redemption_code?: string | null
+          salon_id?: string
+          salon_notes?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "redemptions_offer_id_fkey"
+            columns: ["offer_id"]
+            isOneToOne: false
+            referencedRelation: "salon_reward_offers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "redemptions_salon_id_fkey"
+            columns: ["salon_id"]
+            isOneToOne: false
+            referencedRelation: "salons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       retail_events: {
         Row: {
           banner_image_url: string | null
@@ -2742,6 +2841,190 @@ export type Database = {
           old_role?: Database["public"]["Enums"]["user_role"] | null
           reason?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      salon_reward_offers: {
+        Row: {
+          cooldown_days: number
+          created_at: string
+          description: string | null
+          discount_type: string
+          discount_value: number
+          end_date: string | null
+          funding_source: string | null
+          id: string
+          is_active: boolean | null
+          min_spend_aed: number
+          monthly_cap: number
+          points_cost: number
+          requires_approval: boolean | null
+          salon_id: string
+          service_category: string | null
+          start_date: string | null
+          title: string
+          total_redemptions_count: number | null
+          total_redemptions_limit: number | null
+          updated_at: string
+        }
+        Insert: {
+          cooldown_days?: number
+          created_at?: string
+          description?: string | null
+          discount_type: string
+          discount_value: number
+          end_date?: string | null
+          funding_source?: string | null
+          id?: string
+          is_active?: boolean | null
+          min_spend_aed?: number
+          monthly_cap?: number
+          points_cost: number
+          requires_approval?: boolean | null
+          salon_id: string
+          service_category?: string | null
+          start_date?: string | null
+          title: string
+          total_redemptions_count?: number | null
+          total_redemptions_limit?: number | null
+          updated_at?: string
+        }
+        Update: {
+          cooldown_days?: number
+          created_at?: string
+          description?: string | null
+          discount_type?: string
+          discount_value?: number
+          end_date?: string | null
+          funding_source?: string | null
+          id?: string
+          is_active?: boolean | null
+          min_spend_aed?: number
+          monthly_cap?: number
+          points_cost?: number
+          requires_approval?: boolean | null
+          salon_id?: string
+          service_category?: string | null
+          start_date?: string | null
+          title?: string
+          total_redemptions_count?: number | null
+          total_redemptions_limit?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "salon_reward_offers_salon_id_fkey"
+            columns: ["salon_id"]
+            isOneToOne: false
+            referencedRelation: "salons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      salon_services: {
+        Row: {
+          category: string
+          created_at: string
+          description: string | null
+          duration_minutes: number | null
+          id: string
+          is_active: boolean | null
+          name: string
+          price_aed: number
+          salon_id: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          description?: string | null
+          duration_minutes?: number | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          price_aed: number
+          salon_id: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          duration_minutes?: number | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          price_aed?: number
+          salon_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "salon_services_salon_id_fkey"
+            columns: ["salon_id"]
+            isOneToOne: false
+            referencedRelation: "salons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      salons: {
+        Row: {
+          address: string | null
+          city: string
+          cover_image_url: string | null
+          created_at: string
+          description: string | null
+          id: string
+          instagram: string | null
+          is_active: boolean | null
+          is_verified: boolean | null
+          logo_url: string | null
+          name: string
+          owner_user_id: string | null
+          phone: string | null
+          rating: number | null
+          review_count: number | null
+          slug: string
+          updated_at: string
+          website: string | null
+        }
+        Insert: {
+          address?: string | null
+          city: string
+          cover_image_url?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          instagram?: string | null
+          is_active?: boolean | null
+          is_verified?: boolean | null
+          logo_url?: string | null
+          name: string
+          owner_user_id?: string | null
+          phone?: string | null
+          rating?: number | null
+          review_count?: number | null
+          slug: string
+          updated_at?: string
+          website?: string | null
+        }
+        Update: {
+          address?: string | null
+          city?: string
+          cover_image_url?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          instagram?: string | null
+          is_active?: boolean | null
+          is_verified?: boolean | null
+          logo_url?: string | null
+          name?: string
+          owner_user_id?: string | null
+          phone?: string | null
+          rating?: number | null
+          review_count?: number | null
+          slug?: string
+          updated_at?: string
+          website?: string | null
         }
         Relationships: []
       }
@@ -4177,6 +4460,16 @@ export type Database = {
         }
         Returns: boolean
       }
+      approve_redemption: { Args: { p_redemption_id: string }; Returns: Json }
+      award_points: {
+        Args: {
+          p_action_type: string
+          p_idempotency_key?: string
+          p_metadata?: Json
+          p_source_id?: string
+        }
+        Returns: Json
+      }
       batch_track_analytics: {
         Args: { events_data: Json; target_user_id: string }
         Returns: Json
@@ -4185,6 +4478,7 @@ export type Database = {
         Args: { target_user_id: string }
         Returns: boolean
       }
+      check_daily_checkin_status: { Args: never; Returns: Json }
       check_payment_encryption: { Args: never; Returns: string }
       check_retailer_data_security: { Args: never; Returns: Json }
       check_security_definer_views: { Args: never; Returns: Json }
@@ -4731,6 +5025,7 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_user_points_balance: { Args: never; Returns: Json }
       get_user_profile_secure: {
         Args: { target_user_id: string }
         Returns: {
@@ -4816,10 +5111,15 @@ export type Database = {
         Args: { seconds_used: number; target_user_id: string }
         Returns: boolean
       }
+      mark_redeemed: {
+        Args: { p_code: string; p_redemption_id: string }
+        Returns: Json
+      }
       policy_exists: {
         Args: { _name: string; _table: unknown }
         Returns: boolean
       }
+      redeem_offer: { Args: { p_offer_id: string }; Returns: Json }
       secure_update_payment_status: {
         Args: {
           new_status: string

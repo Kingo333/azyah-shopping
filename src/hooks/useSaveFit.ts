@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { awardPointsAsync } from '@/hooks/useAwardPoints';
 
 interface SaveFitParams {
   title?: string;
@@ -122,9 +123,14 @@ export const useSaveFit = () => {
 
       return fit;
     },
-    onSuccess: () => {
+    onSuccess: (fit) => {
       queryClient.invalidateQueries({ queryKey: ['fits'] });
       queryClient.invalidateQueries({ queryKey: ['public-fits'] });
+      
+      // Award points for creating outfit (fire and forget)
+      if (fit?.id) {
+        awardPointsAsync('outfit_create', fit.id, `fit:${fit.id}`);
+      }
     },
     onError: (error) => {
       console.error('Error saving fit:', error);
