@@ -41,6 +41,7 @@ import BeautyConsultant from './pages/BeautyConsultant';
 import Events from './pages/Events';
 import UGCCollaborations from './pages/UGCCollaborations';
 import Upgrade from './pages/dashboard/Upgrade';
+import Rewards from './pages/Rewards';
 import Terms from './pages/Terms';
 import Privacy from './pages/Privacy';
 
@@ -88,7 +89,11 @@ function AppContent() {
                       <Upgrade />
                     </ProtectedRoute>
                   } />
-                  
+                  <Route path="/rewards" element={
+                    <ProtectedRoute>
+                      <Rewards />
+                    </ProtectedRoute>
+                  } />
                   
                   {/* Onboarding routes */}
                   <Route path="/onboarding/intro" element={<IntroCarousel />} />
