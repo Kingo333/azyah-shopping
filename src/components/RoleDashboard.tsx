@@ -32,7 +32,7 @@ import { useSuggestedEssentials } from '@/hooks/useSuggestedEssentials';
 import { isGuestMode } from '@/hooks/useGuestMode';
 import { useGuestGate } from '@/hooks/useGuestGate';
 import { GuestActionPrompt } from '@/components/GuestActionPrompt';
-import { useSalons } from '@/hooks/useSalons';
+
 
 interface UserProfile {
   id: string;
@@ -75,7 +75,7 @@ const RoleDashboard: React.FC = () => {
   const [selectedTrendingCategory, setSelectedTrendingCategory] = useState<TopCategory | null>(null);
   const [isTrendingFilterOpen, setIsTrendingFilterOpen] = useState(false);
   const [featuredEvent, setFeaturedEvent] = useState<any>(null);
-  const [salonCity, setSalonCity] = useState<'dubai' | 'abudhabi'>('dubai');
+  
   
   // Wardrobe essentials - user's items or community suggestions
   const { data: wardrobeItems = [], isLoading: wardrobeLoading } = useWardrobeItems();
@@ -87,8 +87,6 @@ const RoleDashboard: React.FC = () => {
     : suggestedItems;
   const showingSuggestions = wardrobeItems.length === 0 && suggestedItems.length > 0;
   
-  // Fetch salons from Supabase instead of mock data
-  const { data: salons = [] } = useSalons(salonCity);
 
   // Load saved category selection on component mount
   useEffect(() => {
@@ -515,62 +513,23 @@ const RoleDashboard: React.FC = () => {
         )}
       </section>
 
-      {/* Salons Section */}
+      {/* Rewards & Offers Section */}
       <section className="px-4 pt-6">
-        <h2 className="text-lg font-serif font-medium mb-3 text-foreground">Salons</h2>
-
-        {/* City Filter Pills */}
-        <div className="flex gap-2 mb-3">
-          <button
-            onClick={() => setSalonCity('dubai')}
-            className={`px-3 py-1 text-xs rounded-full font-medium transition-colors ${
-              salonCity === 'dubai' 
-                ? 'bg-[hsl(var(--azyah-maroon))] text-white' 
-                : 'bg-secondary text-muted-foreground hover:bg-secondary/80'
-            }`}
-          >
-            Dubai
-          </button>
-          <button
-            onClick={() => setSalonCity('abudhabi')}
-            className={`px-3 py-1 text-xs rounded-full font-medium transition-colors ${
-              salonCity === 'abudhabi' 
-                ? 'bg-[hsl(var(--azyah-maroon))] text-white' 
-                : 'bg-secondary text-muted-foreground hover:bg-secondary/80'
-            }`}
-          >
-            Abu Dhabi
-          </button>
-        </div>
-
-        {/* Salon Cards */}
-        <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide [-webkit-overflow-scrolling:touch]">
-          {salons.map(salon => (
-              <div key={salon.id} className="flex-shrink-0 w-40">
-                <div className="aspect-[4/5] rounded-xl bg-card border border-border shadow-sm overflow-hidden mb-2 relative">
-                  <img 
-                    src={salon.logo_url || salon.cover_image_url || '/placeholder.svg'} 
-                    alt={salon.name}
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute top-2 left-2 bg-[hsl(var(--azyah-maroon))] text-white text-[10px] px-2 py-0.5 rounded-full font-medium">
-                    {salon.city === 'dubai' ? 'Dubai' : salon.city === 'abudhabi' ? 'Abu Dhabi' : 'Sharjah'}
-                  </div>
-                  {salon.rating > 0 && (
-                    <div className="absolute bottom-2 right-2 bg-background/80 backdrop-blur-sm text-xs px-1.5 py-0.5 rounded font-medium">
-                      ★ {salon.rating}
-                    </div>
-                  )}
-                </div>
-                <p className="text-xs font-medium text-center truncate">
-                  {salon.name}
-                </p>
-              </div>
-            ))}
-          {salons.length === 0 && (
-            <p className="text-sm text-muted-foreground py-4">No salons in this city yet</p>
-          )}
-        </div>
+        <Card 
+          className="bg-card border-border shadow-sm cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => navigate('/rewards')}
+        >
+          <CardContent className="p-4 flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-[hsl(var(--azyah-maroon))]/10 flex items-center justify-center">
+              <Gift className="h-6 w-6 text-[hsl(var(--azyah-maroon))]" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-semibold text-sm text-foreground">Rewards & Offers</h3>
+              <p className="text-xs text-muted-foreground">Earn points & redeem at salons</p>
+            </div>
+            <ChevronRight className="h-5 w-5 text-muted-foreground" />
+          </CardContent>
+        </Card>
       </section>
 
       {/* Fashion Leaderboard Section */}
