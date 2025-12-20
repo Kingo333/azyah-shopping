@@ -28,9 +28,10 @@ export const SalonOffersManager: React.FC<SalonOffersManagerProps> = ({ salonId 
   const [editingOffer, setEditingOffer] = useState<any>(null);
   
   const [formData, setFormData] = useState({
-    discount_percent: 25,
+    discount_type: 'PERCENT',
+    discount_value: 25,
     points_cost: 450,
-    min_spend_cents: 0,
+    min_spend_aed: 0,
     cooldown_days: 7,
     monthly_cap: 0,
     is_active: true,
@@ -38,9 +39,10 @@ export const SalonOffersManager: React.FC<SalonOffersManagerProps> = ({ salonId 
   
   const resetForm = () => {
     setFormData({
-      discount_percent: 25,
+      discount_type: 'PERCENT',
+      discount_value: 25,
       points_cost: 450,
-      min_spend_cents: 0,
+      min_spend_aed: 0,
       cooldown_days: 7,
       monthly_cap: 0,
       is_active: true,
@@ -52,9 +54,13 @@ export const SalonOffersManager: React.FC<SalonOffersManagerProps> = ({ salonId 
     e.preventDefault();
     
     const payload = {
-      ...formData,
-      min_spend_cents: formData.min_spend_cents || null,
-      monthly_cap: formData.monthly_cap || null,
+      discount_type: formData.discount_type,
+      discount_value: formData.discount_value,
+      points_cost: formData.points_cost,
+      min_spend_aed: formData.min_spend_aed || undefined,
+      cooldown_days: formData.cooldown_days,
+      monthly_cap: formData.monthly_cap || undefined,
+      is_active: formData.is_active,
     };
     
     if (editingOffer) {
@@ -76,9 +82,10 @@ export const SalonOffersManager: React.FC<SalonOffersManagerProps> = ({ salonId 
   const handleEdit = (offer: any) => {
     setEditingOffer(offer);
     setFormData({
-      discount_percent: offer.discount_percent,
+      discount_type: offer.discount_type || 'PERCENT',
+      discount_value: offer.discount_value,
       points_cost: offer.points_cost,
-      min_spend_cents: offer.min_spend_cents || 0,
+      min_spend_aed: offer.min_spend_aed || 0,
       cooldown_days: offer.cooldown_days,
       monthly_cap: offer.monthly_cap || 0,
       is_active: offer.is_active,
@@ -95,16 +102,16 @@ export const SalonOffersManager: React.FC<SalonOffersManagerProps> = ({ salonId 
   const applyRecommended = (rec: typeof RECOMMENDED_OFFERS[0]) => {
     setFormData({
       ...formData,
-      discount_percent: rec.discount,
+      discount_value: rec.discount,
       points_cost: rec.points,
     });
   };
   
-  const formatPrice = (cents: number) => {
+  const formatPrice = (aed: number) => {
     return new Intl.NumberFormat('en-AE', {
       style: 'currency',
       currency: 'AED',
-    }).format(cents / 100);
+    }).format(aed);
   };
   
   if (isLoading) {
@@ -163,7 +170,7 @@ export const SalonOffersManager: React.FC<SalonOffersManagerProps> = ({ salonId 
                         <Button
                           key={rec.discount}
                           type="button"
-                          variant={formData.discount_percent === rec.discount ? 'default' : 'outline'}
+                          variant={formData.discount_value === rec.discount ? 'default' : 'outline'}
                           size="sm"
                           onClick={() => applyRecommended(rec)}
                         >
@@ -185,8 +192,8 @@ export const SalonOffersManager: React.FC<SalonOffersManagerProps> = ({ salonId 
                       type="number"
                       min="1"
                       max="100"
-                      value={formData.discount_percent}
-                      onChange={(e) => setFormData({ ...formData, discount_percent: parseInt(e.target.value) })}
+                      value={formData.discount_value}
+                      onChange={(e) => setFormData({ ...formData, discount_value: parseInt(e.target.value) })}
                       required
                     />
                   </div>
@@ -210,8 +217,8 @@ export const SalonOffersManager: React.FC<SalonOffersManagerProps> = ({ salonId 
                     id="min_spend"
                     type="number"
                     min="0"
-                    value={formData.min_spend_cents / 100}
-                    onChange={(e) => setFormData({ ...formData, min_spend_cents: Math.round(parseFloat(e.target.value || '0') * 100) })}
+                    value={formData.min_spend_aed}
+                    onChange={(e) => setFormData({ ...formData, min_spend_aed: parseFloat(e.target.value || '0') })}
                     placeholder="0 = no minimum"
                   />
                 </div>
@@ -295,7 +302,7 @@ export const SalonOffersManager: React.FC<SalonOffersManagerProps> = ({ salonId 
                 <CardContent className="p-4">
                   <div className="text-center mb-4">
                     <div className="text-3xl font-bold text-primary">
-                      {offer.discount_percent}% OFF
+                      {offer.discount_value}% OFF
                     </div>
                     <div className="flex items-center justify-center gap-1 text-muted-foreground">
                       <Coins className="h-4 w-4" />
@@ -304,10 +311,10 @@ export const SalonOffersManager: React.FC<SalonOffersManagerProps> = ({ salonId 
                   </div>
                   
                   <div className="space-y-2 text-sm text-muted-foreground">
-                    {offer.min_spend_cents && offer.min_spend_cents > 0 && (
+                    {offer.min_spend_aed && offer.min_spend_aed > 0 && (
                       <div className="flex items-center justify-between">
                         <span>Min spend:</span>
-                        <span>{formatPrice(offer.min_spend_cents)}</span>
+                        <span>{formatPrice(offer.min_spend_aed)}</span>
                       </div>
                     )}
                     <div className="flex items-center justify-between">

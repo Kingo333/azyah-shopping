@@ -18,13 +18,14 @@ export const SalonRedemptionsManager: React.FC<SalonRedemptionsManagerProps> = (
   const { approveRedemption, markRedeemed } = useRedemptionActions();
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   
-  const pendingRedemptions = redemptions.filter(r => r.status === 'pending');
+  // Use 'requested' status for pending (matches DB schema)
+  const pendingRedemptions = redemptions.filter(r => r.status === 'requested');
   const approvedRedemptions = redemptions.filter(r => r.status === 'approved');
   const completedRedemptions = redemptions.filter(r => r.status === 'redeemed');
   
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'pending':
+      case 'requested':
         return <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">Pending</Badge>;
       case 'approved':
         return <Badge variant="secondary" className="bg-blue-100 text-blue-800">Approved</Badge>;
@@ -49,8 +50,8 @@ export const SalonRedemptionsManager: React.FC<SalonRedemptionsManagerProps> = (
     await approveRedemption.mutateAsync(redemptionId);
   };
   
-  const handleMarkRedeemed = async (redemptionId: string) => {
-    await markRedeemed.mutateAsync(redemptionId);
+  const handleMarkRedeemed = async (redemptionId: string, code: string) => {
+    await markRedeemed.mutateAsync({ redemptionId, code });
   };
   
   const renderRedemptionCard = (redemption: any, showActions: 'approve' | 'mark' | 'none') => (
@@ -65,12 +66,12 @@ export const SalonRedemptionsManager: React.FC<SalonRedemptionsManagerProps> = (
               </AvatarFallback>
             </Avatar>
             <div>
-              <p className="font-medium">{redemption.users?.name || 'Unknown User'}</p>
+              <p className="font-medium">{redemption.users?.name || 'User'}</p>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Gift className="h-3 w-3" />
-                <span>{redemption.salon_reward_offers?.discount_percent}% off</span>
+                <span>{redemption.salon_reward_offers?.discount_value || 0}% off</span>
                 <span>•</span>
-                <span>{redemption.salon_reward_offers?.points_cost} pts</span>
+                <span>{redemption.salon_reward_offers?.points_cost || 0} pts</span>
               </div>
             </div>
           </div>
@@ -123,11 +124,11 @@ export const SalonRedemptionsManager: React.FC<SalonRedemptionsManagerProps> = (
             </div>
           )}
           
-          {showActions === 'mark' && (
+          {showActions === 'mark' && redemption.redemption_code && (
             <Button
               size="sm"
               variant="outline"
-              onClick={() => handleMarkRedeemed(redemption.id)}
+              onClick={() => handleMarkRedeemed(redemption.id, redemption.redemption_code)}
               disabled={markRedeemed.isPending}
             >
               {markRedeemed.isPending ? (
@@ -142,9 +143,9 @@ export const SalonRedemptionsManager: React.FC<SalonRedemptionsManagerProps> = (
           )}
         </div>
         
-        {redemption.expires_at && redemption.status === 'approved' && (
+        {redemption.code_expires_at && redemption.status === 'approved' && (
           <p className="text-xs text-muted-foreground mt-2">
-            Expires: {format(new Date(redemption.expires_at), 'MMM d, yyyy h:mm a')}
+            Expires: {format(new Date(redemption.code_expires_at), 'MMM d, yyyy h:mm a')}
           </p>
         )}
       </CardContent>

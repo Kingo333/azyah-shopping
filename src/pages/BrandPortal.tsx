@@ -23,6 +23,7 @@ import { BrandSettingsForm } from '@/components/BrandSettingsForm';
 import { BrandCategorySelectorModal } from '@/components/brand/BrandCategorySelectorModal';
 import { BrandServicesManager } from '@/components/brand/BrandServicesManager';
 import { ServicesMarketplace } from '@/components/brand/ServicesMarketplace';
+import { SalonDashboard } from '@/components/salon/SalonDashboard';
 import { Plus, Edit, Trash2, Upload, BarChart3, TrendingUp, Eye, Heart, ShoppingBag, DollarSign, Download, Filter, Globe, Package, Archive, Store, Briefcase } from 'lucide-react';
 import { InfoTooltip } from '@/components/ui/info-tooltip';
 import { FeedbackModal } from '@/components/FeedbackModal';
@@ -392,11 +393,12 @@ const BrandPortal: React.FC = () => {
   const needsCategorySelection = !brand.category;
   const isAgencyOrStudio = brand.category === 'agency' || brand.category === 'studio';
   const isFashionBrand = brand.category === 'fashion_brand';
+  const isSalon = brand.category === 'salon';
 
   const handleCategorySelected = (category: string) => {
     setBrand({ ...brand, category });
     // Set default tab based on category
-    if (category === 'agency' || category === 'studio') {
+    if (category === 'agency' || category === 'studio' || category === 'salon') {
       handleTabChange('services');
     } else {
       handleTabChange('products');
@@ -420,6 +422,10 @@ const BrandPortal: React.FC = () => {
 
   // Determine which tabs to show based on brand category
   const getTabsConfig = () => {
+    if (isSalon) {
+      // Salon uses SalonDashboard which has its own tabs
+      return [];
+    }
     if (isAgencyOrStudio) {
       return [
         { value: 'services', label: 'Services' },
@@ -457,8 +463,16 @@ const BrandPortal: React.FC = () => {
           <FeedbackModal userType="brand" />
         </div>
 
-        {/* Stats Cards - show different stats for agencies/studios */}
-        {isAgencyOrStudio ? (
+        {/* Salon category - render SalonDashboard with its own tabs */}
+        {isSalon ? (
+          <SalonDashboard 
+            brandId={brand.id} 
+            brand={brand} 
+            onBrandUpdate={(b) => setBrand(b)} 
+          />
+        ) : isAgencyOrStudio ? (
+          <>
+          {/* Stats Cards - show different stats for agencies/studios */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 mb-6 md:mb-8">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -500,6 +514,7 @@ const BrandPortal: React.FC = () => {
               </CardContent>
             </Card>
           </div>
+          </>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 mb-6 md:mb-8">
             <Card>
