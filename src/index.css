@@ -210,6 +210,10 @@
   .safe-area-inset-top { top: var(--safe-top); }
   .safe-area-inset-bottom { bottom: var(--safe-bottom); }
   
+  /* Margin-based safe area (for elements that need margin instead of padding) */
+  .safe-area-mt { margin-top: var(--safe-top); }
+  .safe-area-mb { margin-bottom: var(--safe-bottom); }
+  
   /* Luxury text utilities */
   .text-luxury {
     @apply font-playfair;
