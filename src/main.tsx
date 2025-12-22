@@ -4,19 +4,17 @@ import App from './App.tsx'
 import './index.css'
 
 // Configure iOS StatusBar for Snapchat-style behavior:
-// Content extends behind status bar, icons always visible
+// Content extends behind status bar, dark scrim ensures white icons visible
 async function configureStatusBar() {
   if (Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'ios') {
     try {
       const { StatusBar, Style } = await import('@capacitor/status-bar');
       
       // SNAPCHAT-STYLE: Let WebView extend behind status bar
-      // This allows content to bleed behind the notch area
       await StatusBar.setOverlaysWebView({ overlay: true });
       
-      // Default to Dark style (black icons) for pages with light backgrounds
-      // Pages with dark backgrounds should use useStatusBar('light') hook
-      await StatusBar.setStyle({ style: Style.Dark });
+      // Style.Light = WHITE icons - works with our dark gray scrim
+      await StatusBar.setStyle({ style: Style.Light });
       
     } catch (error) {
       console.warn('StatusBar configuration skipped:', error);

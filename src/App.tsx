@@ -55,6 +55,7 @@ import UserDeletionTool from './components/UserDeletionTool';
 
 import { DebugHealthPage } from './components/DebugHealthPage';
 import { BottomNavigation } from './components/BottomNavigation';
+import { StatusBarScrim } from './components/StatusBarScrim';
 
 // Onboarding pages
 import IntroCarousel from './pages/onboarding/IntroCarousel';
@@ -76,6 +77,7 @@ function AppContent() {
   useAuthNavigation(); // Set up soft navigation for auth recovery
   return (
     <>
+      <StatusBarScrim />
       <Routes>
                   <Route path="/" element={<IntroCarousel />} />
                   <Route path="/landing" element={<Landing />} />
