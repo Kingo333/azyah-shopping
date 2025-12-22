@@ -155,7 +155,7 @@ export const BottomNavigation: React.FC = () => {
                         {/* Pop-out circular button - positioned above */}
                         <div 
                           className={`
-                            absolute -top-4 w-14 h-14 rounded-full flex items-center justify-center
+                            absolute -top-3 w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center
                             shadow-lg transition-all duration-200
                             ${active 
                               ? 'bg-[hsl(var(--azyah-maroon))] shadow-[0_4px_20px_hsl(var(--azyah-maroon)/0.4)]' 
@@ -163,7 +163,7 @@ export const BottomNavigation: React.FC = () => {
                             }
                           `}
                         >
-                          <Icon className="h-6 w-6 text-white" />
+                          <Icon className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
                         </div>
                         <span className={`text-[10px] font-medium ${active ? 'text-[hsl(var(--azyah-maroon))]' : 'text-muted-foreground'}`}>
                           {item.label}
