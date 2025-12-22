@@ -3,18 +3,18 @@ import { Capacitor } from '@capacitor/core'
 import App from './App.tsx'
 import './index.css'
 
-// Configure iOS StatusBar for Snapchat-style behavior:
-// Content extends behind status bar, dark scrim ensures white icons visible
+// Configure iOS StatusBar for Safari-style behavior:
+// iOS handles the black status bar automatically, content starts below it
 async function configureStatusBar() {
   if (Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'ios') {
     try {
       const { StatusBar, Style } = await import('@capacitor/status-bar');
       
-      // SNAPCHAT-STYLE: Let WebView extend behind status bar
-      await StatusBar.setOverlaysWebView({ overlay: true });
+      // SAFARI-STYLE: Don't overlay - iOS handles status bar automatically
+      await StatusBar.setOverlaysWebView({ overlay: false });
       
-      // Style.Light = WHITE icons - works with our dark gray scrim
-      await StatusBar.setStyle({ style: Style.Light });
+      // Style.Dark = BLACK icons on light background (iOS default)
+      await StatusBar.setStyle({ style: Style.Dark });
       
     } catch (error) {
       console.warn('StatusBar configuration skipped:', error);
