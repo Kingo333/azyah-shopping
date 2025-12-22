@@ -288,7 +288,7 @@ export default function IntroCarousel() {
     }),
   };
   return (
-    <div className="h-screen bg-white flex flex-col overflow-hidden" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+    <div className="h-screen bg-white flex flex-col overflow-hidden">
       <SEOHead
         title="Azyah — Luxury Fashion Curation"
         description="AI-curated luxury fashion discovery. Exclusive designer collections for the discerning style connoisseur."
