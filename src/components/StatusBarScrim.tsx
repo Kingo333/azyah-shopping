@@ -31,7 +31,7 @@ export function StatusBarScrim() {
       className="fixed top-0 left-0 right-0 z-[9999] pointer-events-none"
       style={{
         height: 'env(safe-area-inset-top, 44px)',
-        background: 'linear-gradient(to bottom, rgba(30, 30, 30, 0.85) 0%, rgba(30, 30, 30, 0.6) 60%, transparent 100%)',
+        backgroundColor: '#000000', // Solid black like Safari
       }}
       aria-hidden="true"
     />
