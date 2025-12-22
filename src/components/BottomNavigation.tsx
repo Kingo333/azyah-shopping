@@ -154,23 +154,20 @@ export const BottomNavigation: React.FC = () => {
                       >
                         {/* Pop-out circular button - positioned above */}
                         <div 
-                          className={`
-                            absolute left-1/2 -translate-x-1/2 -top-6 sm:-top-5
-                            w-[52px] h-[52px] sm:w-14 sm:h-14
-                            rounded-full flex items-center justify-center
-                            shadow-lg transition-all duration-200
-                            ${active 
-                              ? 'bg-[hsl(var(--azyah-maroon))] shadow-[0_4px_20px_hsl(var(--azyah-maroon)/0.4)]' 
-                              : 'bg-[hsl(var(--azyah-maroon))] shadow-[0_4px_16px_hsl(var(--azyah-maroon)/0.3)]'
-                            }
-                          `}
+                          className="absolute left-1/2 shadow-lg transition-all duration-200 flex items-center justify-center"
                           style={{
-                            minWidth: '52px',
-                            minHeight: '52px',
-                            aspectRatio: '1 / 1',
+                            transform: 'translateX(-50%)',
+                            top: '-28px',
+                            width: '56px',
+                            height: '56px',
+                            borderRadius: '50%',
+                            backgroundColor: 'hsl(var(--azyah-maroon))',
+                            boxShadow: active 
+                              ? '0 4px 20px hsl(var(--azyah-maroon) / 0.4)' 
+                              : '0 4px 16px hsl(var(--azyah-maroon) / 0.3)',
                           }}
                         >
-                          <Icon className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+                          <Icon className="h-6 w-6 text-white" />
                         </div>
                         <span className={`text-[10px] font-medium ${active ? 'text-[hsl(var(--azyah-maroon))]' : 'text-muted-foreground'}`}>
                           {item.label}
