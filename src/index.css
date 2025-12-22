@@ -210,6 +210,10 @@
   .safe-area-inset-top { top: var(--safe-top); }
   .safe-area-inset-bottom { bottom: var(--safe-bottom); }
   
+  /* For sticky/fixed headers that need to position below status bar */
+  .top-safe { top: env(safe-area-inset-top, 0px); }
+  .pt-safe { padding-top: env(safe-area-inset-top, 0px); }
+  
   /* Margin-based safe area (for elements that need margin instead of padding) */
   .safe-area-mt { margin-top: var(--safe-top); }
   .safe-area-mb { margin-bottom: var(--safe-bottom); }

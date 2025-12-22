@@ -38,8 +38,8 @@ const DashboardHeader: React.FC = () => {
 
   return (
     <section 
-      className="sticky top-0 z-50 bg-white border-b border-[hsl(var(--azyah-border))] px-4 py-3"
-      style={{ paddingTop: 'calc(var(--safe-top, 0px) + 12px)' }}
+      className="sticky z-50 bg-white border-b border-[hsl(var(--azyah-border))] px-4 py-3"
+      style={{ top: 'env(safe-area-inset-top, 0px)' }}
     >
       <div className="flex items-center justify-between">
         {/* Logo */}
