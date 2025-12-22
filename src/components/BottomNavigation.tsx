@@ -155,7 +155,7 @@ export const BottomNavigation: React.FC = () => {
                         {/* Pop-out circular button - positioned above */}
                         <div 
                           className={`
-                            absolute -top-3 w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center
+                            absolute -top-4 w-12 h-12 aspect-square sm:-top-3 sm:w-14 sm:h-14 rounded-full flex items-center justify-center
                             shadow-lg transition-all duration-200
                             ${active 
                               ? 'bg-[hsl(var(--azyah-maroon))] shadow-[0_4px_20px_hsl(var(--azyah-maroon)/0.4)]' 
