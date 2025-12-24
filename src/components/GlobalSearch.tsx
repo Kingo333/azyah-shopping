@@ -264,40 +264,40 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({
           </div>
 
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'products' | 'users' | 'brands')}>
-            <TabsList className="flex w-full gap-2 bg-transparent p-0 h-auto">
+            <TabsList className="flex w-full gap-1.5 sm:gap-2 bg-transparent p-0 h-auto">
               <TabsTrigger 
                 value="products" 
-                className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg bg-background/60 border border-border/30 text-xs sm:text-sm text-muted-foreground hover:bg-primary/10 hover:border-primary/30 hover:text-primary transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary"
+                className="flex-1 min-w-0 flex items-center justify-center gap-1.5 py-1.5 sm:py-2 px-2 sm:px-3 rounded-lg bg-background/60 border border-border/30 text-xs sm:text-sm text-muted-foreground hover:bg-primary/10 hover:border-primary/30 hover:text-primary transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary overflow-hidden"
               >
                 <Package className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
-                <span className="truncate">Products</span>
+                <span className="min-w-0 truncate">Products</span>
               </TabsTrigger>
               <TabsTrigger 
                 value="users" 
-                className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg bg-background/60 border border-border/30 text-xs sm:text-sm text-muted-foreground hover:bg-primary/10 hover:border-primary/30 hover:text-primary transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary"
+                className="flex-1 min-w-0 flex items-center justify-center gap-1.5 py-1.5 sm:py-2 px-2 sm:px-3 rounded-lg bg-background/60 border border-border/30 text-xs sm:text-sm text-muted-foreground hover:bg-primary/10 hover:border-primary/30 hover:text-primary transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary overflow-hidden"
               >
                 <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
-                <span className="truncate">Shoppers</span>
+                <span className="min-w-0 truncate">Shoppers</span>
               </TabsTrigger>
               <TabsTrigger 
                 value="brands" 
-                className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg bg-background/60 border border-border/30 text-xs sm:text-sm text-muted-foreground hover:bg-primary/10 hover:border-primary/30 hover:text-primary transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary"
+                className="flex-1 min-w-0 flex items-center justify-center gap-1.5 py-1.5 sm:py-2 px-2 sm:px-3 rounded-lg bg-background/60 border border-border/30 text-xs sm:text-sm text-muted-foreground hover:bg-primary/10 hover:border-primary/30 hover:text-primary transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary overflow-hidden"
               >
                 <Store className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
-                <span className="truncate">Brands</span>
+                <span className="min-w-0 truncate">Brands</span>
               </TabsTrigger>
             </TabsList>
 
-            <div className="max-h-96 overflow-y-auto mt-3">
+            <div className="max-h-96 w-full overflow-y-auto overflow-x-hidden mt-3">
               <TabsContent value="products" className="space-y-1.5 mt-0">
                 {filterResultsByType('product').map((result) => (
                   <div
                     key={result.id}
-                    className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg hover:bg-background/60 cursor-pointer transition-colors w-full"
+                    className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg hover:bg-background/60 cursor-pointer transition-colors w-full overflow-hidden"
                     onClick={() => handleProductClick(result.id)}
                   >
                     {renderResultImage(result, 'w-10 h-10 sm:w-12 sm:h-12 flex-shrink-0')}
-                    <div className="flex-1 min-w-0 overflow-hidden">
+                    <div className="flex-1 min-w-0 overflow-hidden max-w-full">
                       <h4 className="font-medium text-sm sm:text-base truncate block w-full">{result.title}</h4>
                       {result.subtitle && (
                         <p className="text-xs sm:text-sm text-muted-foreground truncate block w-full">{result.subtitle}</p>
