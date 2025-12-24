@@ -3,6 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
+// Safe subscription data - excludes sensitive payment provider IDs
 interface Subscription {
   id: string;
   user_id: string;
@@ -10,8 +11,6 @@ interface Subscription {
   status: string;
   current_period_start: string | null;
   current_period_end: string | null;
-  last_payment_intent_id: string | null;
-  last_payment_status: string | null;
   created_at: string | null;
   updated_at: string | null;
 }
@@ -61,9 +60,10 @@ export function useSubscription(): UseSubscriptionReturn {
       
       // Fetch both subscription and profile premium status in parallel
       const [subResult, profileResult] = await Promise.all([
+        // Select only non-sensitive columns - excludes payment provider IDs
         supabase
           .from('subscriptions')
-          .select('*')
+          .select('id, user_id, plan, status, current_period_start, current_period_end, created_at, updated_at')
           .eq('user_id', user.id)
           .maybeSingle(),
         supabase
