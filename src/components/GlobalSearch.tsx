@@ -217,13 +217,13 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({
   };
 
   // Helper to render image with fallback
-  const renderResultImage = (result: SearchResult, size: string = 'w-12 h-12') => {
+  const renderResultImage = (result: SearchResult, sizeClasses: string = 'w-10 h-10 sm:w-12 sm:h-12 flex-shrink-0') => {
     if (result.image && result.image !== '/placeholder.svg') {
       return (
         <SmartImage 
           src={result.image} 
           alt={result.title} 
-          className={`${size} rounded-lg object-cover`} 
+          className={`${sizeClasses} rounded-lg object-cover`} 
           sizes="48px" 
         />
       );
@@ -231,21 +231,23 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({
     
     // Show placeholder with icon based on type
     return (
-      <div className={`${size} rounded-lg bg-muted flex items-center justify-center`}>
-        {result.type === 'product' && <ImageOff className="h-5 w-5 text-muted-foreground" />}
-        {result.type === 'brand' && <Store className="h-5 w-5 text-muted-foreground" />}
-        {result.type === 'user' && <Users className="h-5 w-5 text-muted-foreground" />}
+      <div className={`${sizeClasses} rounded-lg bg-muted flex items-center justify-center`}>
+        {result.type === 'product' && <ImageOff className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />}
+        {result.type === 'brand' && <Store className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />}
+        {result.type === 'user' && <Users className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />}
       </div>
     );
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden">
+      <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden bg-gradient-to-br from-primary/5 via-card to-accent/5 border-border/50">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Search className="h-5 w-5" />
-            Global Search
+            <Search className="h-5 w-5 text-primary" />
+            <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent font-semibold">
+              Find items, friends & brands
+            </span>
           </DialogTitle>
         </DialogHeader>
 
@@ -256,43 +258,52 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({
               placeholder="Search products, users, brands..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              className="pl-10"
+              className="pl-10 bg-background/80 backdrop-blur-sm border-border/50"
               autoFocus
             />
           </div>
 
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'products' | 'users' | 'brands')}>
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="products" className="flex items-center gap-2">
-                <Package className="h-4 w-4" />
-                Products
+            <TabsList className="grid w-full grid-cols-3 bg-background/50 backdrop-blur-sm p-1">
+              <TabsTrigger 
+                value="products" 
+                className="flex items-center gap-1.5 text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all"
+              >
+                <Package className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">Products</span>
+                <span className="sm:hidden">Items</span>
               </TabsTrigger>
-              <TabsTrigger value="users" className="flex items-center gap-2">
-                <Users className="h-4 w-4" />
+              <TabsTrigger 
+                value="users" 
+                className="flex items-center gap-1.5 text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all"
+              >
+                <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 Shoppers
               </TabsTrigger>
-              <TabsTrigger value="brands" className="flex items-center gap-2">
-                <Store className="h-4 w-4" />
+              <TabsTrigger 
+                value="brands" 
+                className="flex items-center gap-1.5 text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all"
+              >
+                <Store className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 Brands
               </TabsTrigger>
             </TabsList>
 
-            <div className="max-h-96 overflow-y-auto">
-              <TabsContent value="products" className="space-y-2">
+            <div className="max-h-96 overflow-y-auto mt-3">
+              <TabsContent value="products" className="space-y-1.5 mt-0">
                 {filterResultsByType('product').map((result) => (
                   <div
                     key={result.id}
-                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted cursor-pointer"
+                    className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg hover:bg-background/60 cursor-pointer transition-colors overflow-hidden"
                     onClick={() => handleProductClick(result.id)}
                   >
-                    {renderResultImage(result)}
+                    {renderResultImage(result, 'w-10 h-10 sm:w-12 sm:h-12 flex-shrink-0')}
                     <div className="flex-1 min-w-0">
-                      <h4 className="font-medium truncate">{result.title}</h4>
+                      <h4 className="font-medium text-sm sm:text-base truncate">{result.title}</h4>
                       {result.subtitle && (
-                        <p className="text-sm text-muted-foreground truncate">{result.subtitle}</p>
+                        <p className="text-xs sm:text-sm text-muted-foreground truncate">{result.subtitle}</p>
                       )}
                     </div>
-                    <Badge variant="outline">Product</Badge>
                   </div>
                 ))}
                 {!loading && query && filterResultsByType('product').length === 0 && (
@@ -302,14 +313,14 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({
                 )}
               </TabsContent>
 
-              <TabsContent value="users" className="space-y-2">
+              <TabsContent value="users" className="space-y-1.5 mt-0">
                 {filterResultsByType('user').map((result) => (
                   <div
                     key={result.id}
-                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted"
+                    className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg hover:bg-background/60 overflow-hidden"
                   >
                     <Avatar 
-                      className="cursor-pointer" 
+                      className="w-10 h-10 sm:w-12 sm:h-12 cursor-pointer flex-shrink-0" 
                       onClick={() => handleUserClick(result.id)}
                     >
                       <AvatarImage src={result.image} />
@@ -319,15 +330,16 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({
                       className="flex-1 cursor-pointer min-w-0" 
                       onClick={() => handleUserClick(result.id)}
                     >
-                      <h4 className="font-medium truncate">{result.title}</h4>
+                      <h4 className="font-medium text-sm sm:text-base truncate">{result.title}</h4>
                       {result.subtitle && (
-                        <p className="text-sm text-muted-foreground truncate">{result.subtitle}</p>
+                        <p className="text-xs sm:text-sm text-muted-foreground truncate">{result.subtitle}</p>
                       )}
                     </div>
                     {user && (
                       <Button
                         variant={result.isFollowing ? "outline" : "default"}
                         size="sm"
+                        className="flex-shrink-0 text-xs sm:text-sm px-2 sm:px-3"
                         onClick={(e) => {
                           e.stopPropagation();
                           handleFollow(result.id, result.isFollowing || false);
@@ -335,13 +347,13 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({
                       >
                         {result.isFollowing ? (
                           <>
-                            <UserMinus className="h-4 w-4 mr-1" />
-                            Unfollow
+                            <UserMinus className="h-3.5 w-3.5 sm:mr-1" />
+                            <span className="hidden sm:inline">Unfollow</span>
                           </>
                         ) : (
                           <>
-                            <UserPlus className="h-4 w-4 mr-1" />
-                            Follow
+                            <UserPlus className="h-3.5 w-3.5 sm:mr-1" />
+                            <span className="hidden sm:inline">Follow</span>
                           </>
                         )}
                       </Button>
@@ -355,32 +367,31 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({
                 )}
               </TabsContent>
 
-              <TabsContent value="brands" className="space-y-2">
+              <TabsContent value="brands" className="space-y-1.5 mt-0">
                 {filterResultsByType('brand').map((result) => (
                   <div
                     key={result.id}
-                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted cursor-pointer"
+                    className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg hover:bg-background/60 cursor-pointer transition-colors overflow-hidden"
                     onClick={() => handleBrandClick(result.slug || result.id)}
                   >
                     {result.image ? (
                       <SmartImage 
                         src={result.image} 
                         alt={result.title} 
-                        className="w-12 h-12 rounded-lg object-cover" 
+                        className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg object-cover flex-shrink-0" 
                         sizes="48px" 
                       />
                     ) : (
-                      <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center">
-                        <Store className="h-5 w-5 text-muted-foreground" />
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
+                        <Store className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
-                      <h4 className="font-medium truncate">{result.title}</h4>
+                      <h4 className="font-medium text-sm sm:text-base truncate">{result.title}</h4>
                       {result.subtitle && (
-                        <p className="text-sm text-muted-foreground line-clamp-1">{result.subtitle}</p>
+                        <p className="text-xs sm:text-sm text-muted-foreground truncate">{result.subtitle}</p>
                       )}
                     </div>
-                    <Badge variant="outline">Brand</Badge>
                   </div>
                 ))}
                 {!loading && query && filterResultsByType('brand').length === 0 && (
