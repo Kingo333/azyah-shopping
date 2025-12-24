@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Search, Users, Package, Store, UserPlus, UserMinus } from 'lucide-react';
+import { Search, Users, Package, Store, UserPlus, UserMinus, ImageOff } from 'lucide-react';
 import { SmartImage } from '@/components/SmartImage';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { getPrimaryImageUrl } from '@/utils/imageHelpers';
 
 interface SearchResult {
   id: string;
@@ -18,6 +20,7 @@ interface SearchResult {
   subtitle?: string;
   image?: string;
   isFollowing?: boolean;
+  slug?: string; // For brands
 }
 
 interface GlobalSearchProps {
@@ -35,6 +38,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({
 }) => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [query, setQuery] = useState(initialQuery);
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
@@ -58,10 +62,10 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({
     try {
       const searchResults: SearchResult[] = [];
 
-      // Search products
+      // Search products - get full product data for proper image handling
       const { data: products } = await supabase
         .from('products')
-        .select('id, title, description, media_urls, brand:brands(name)')
+        .select('id, title, description, media_urls, image_url, brand:brands(name)')
         .ilike('title', `%${searchQuery}%`)
         .eq('status', 'active')
         .limit(10);
@@ -72,7 +76,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({
           type: 'product' as const,
           title: product.title,
           subtitle: product.brand?.name,
-          image: product.media_urls?.[0]
+          image: getPrimaryImageUrl(product) // Use consistent image helper
         })));
       }
 
@@ -98,15 +102,25 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({
           type: 'user' as const,
           title: userData.name || 'Anonymous User',
           subtitle: 'Fashion Enthusiast',
-          image: userData.avatar_url,
+          image: userData.avatar_url || undefined,
           isFollowing: followingIds.has(userData.id)
+        })));
+      } else if (users) {
+        // For non-logged in users, still show user results
+        searchResults.push(...users.map(userData => ({
+          id: userData.id,
+          type: 'user' as const,
+          title: userData.name || 'Anonymous User',
+          subtitle: 'Fashion Enthusiast',
+          image: userData.avatar_url || undefined,
+          isFollowing: false
         })));
       }
 
       // Search brands
       const { data: brands } = await supabase
         .from('brands')
-        .select('id, name, bio, logo_url')
+        .select('id, name, bio, logo_url, slug')
         .ilike('name', `%${searchQuery}%`)
         .limit(10);
 
@@ -116,7 +130,8 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({
           type: 'brand' as const,
           title: brand.name,
           subtitle: brand.bio,
-          image: brand.logo_url
+          image: brand.logo_url || undefined,
+          slug: brand.slug
         })));
       }
 
@@ -170,8 +185,46 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({
     }
   };
 
+  const handleProductClick = (productId: string) => {
+    onClose();
+    navigate(`/p/${productId}`);
+  };
+
+  const handleBrandClick = (brandSlug: string) => {
+    onClose();
+    navigate(`/brand/${brandSlug}`);
+  };
+
+  const handleUserClick = (userId: string) => {
+    onClose();
+    navigate(`/profile/${userId}`);
+  };
+
   const filterResultsByType = (type: string) => {
     return results.filter(result => result.type === type);
+  };
+
+  // Helper to render image with fallback
+  const renderResultImage = (result: SearchResult, size: string = 'w-12 h-12') => {
+    if (result.image && result.image !== '/placeholder.svg') {
+      return (
+        <SmartImage 
+          src={result.image} 
+          alt={result.title} 
+          className={`${size} rounded-lg object-cover`} 
+          sizes="48px" 
+        />
+      );
+    }
+    
+    // Show placeholder with icon based on type
+    return (
+      <div className={`${size} rounded-lg bg-muted flex items-center justify-center`}>
+        {result.type === 'product' && <ImageOff className="h-5 w-5 text-muted-foreground" />}
+        {result.type === 'brand' && <Store className="h-5 w-5 text-muted-foreground" />}
+        {result.type === 'user' && <Users className="h-5 w-5 text-muted-foreground" />}
+      </div>
+    );
   };
 
   return (
@@ -218,19 +271,23 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({
                   <div
                     key={result.id}
                     className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted cursor-pointer"
+                    onClick={() => handleProductClick(result.id)}
                   >
-                    {result.image && (
-                      <SmartImage src={result.image} alt={result.title} className="w-12 h-12 rounded-lg object-cover" sizes="48px" />
-                    )}
-                    <div className="flex-1">
-                      <h4 className="font-medium">{result.title}</h4>
+                    {renderResultImage(result)}
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-medium truncate">{result.title}</h4>
                       {result.subtitle && (
-                        <p className="text-sm text-muted-foreground">{result.subtitle}</p>
+                        <p className="text-sm text-muted-foreground truncate">{result.subtitle}</p>
                       )}
                     </div>
                     <Badge variant="outline">Product</Badge>
                   </div>
                 ))}
+                {!loading && query && filterResultsByType('product').length === 0 && (
+                  <div className="text-center py-4 text-muted-foreground text-sm">
+                    No products found
+                  </div>
+                )}
               </TabsContent>
 
               <TabsContent value="users" className="space-y-2">
@@ -239,41 +296,51 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({
                     key={result.id}
                     className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted"
                   >
-                    <Avatar className="cursor-pointer" onClick={() => {
-                      onClose();
-                      window.location.href = `/profile/${result.id}`;
-                    }}>
+                    <Avatar 
+                      className="cursor-pointer" 
+                      onClick={() => handleUserClick(result.id)}
+                    >
                       <AvatarImage src={result.image} />
                       <AvatarFallback>{result.title.charAt(0).toUpperCase()}</AvatarFallback>
                     </Avatar>
-                    <div className="flex-1 cursor-pointer" onClick={() => {
-                      onClose();
-                      window.location.href = `/profile/${result.id}`;
-                    }}>
-                      <h4 className="font-medium">{result.title}</h4>
+                    <div 
+                      className="flex-1 cursor-pointer min-w-0" 
+                      onClick={() => handleUserClick(result.id)}
+                    >
+                      <h4 className="font-medium truncate">{result.title}</h4>
                       {result.subtitle && (
-                        <p className="text-sm text-muted-foreground">{result.subtitle}</p>
+                        <p className="text-sm text-muted-foreground truncate">{result.subtitle}</p>
                       )}
                     </div>
-                    <Button
-                      variant={result.isFollowing ? "outline" : "default"}
-                      size="sm"
-                      onClick={() => handleFollow(result.id, result.isFollowing || false)}
-                    >
-                      {result.isFollowing ? (
-                        <>
-                          <UserMinus className="h-4 w-4 mr-1" />
-                          Unfollow
-                        </>
-                      ) : (
-                        <>
-                          <UserPlus className="h-4 w-4 mr-1" />
-                          Follow
-                        </>
-                      )}
-                    </Button>
+                    {user && (
+                      <Button
+                        variant={result.isFollowing ? "outline" : "default"}
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleFollow(result.id, result.isFollowing || false);
+                        }}
+                      >
+                        {result.isFollowing ? (
+                          <>
+                            <UserMinus className="h-4 w-4 mr-1" />
+                            Unfollow
+                          </>
+                        ) : (
+                          <>
+                            <UserPlus className="h-4 w-4 mr-1" />
+                            Follow
+                          </>
+                        )}
+                      </Button>
+                    )}
                   </div>
                 ))}
+                {!loading && query && filterResultsByType('user').length === 0 && (
+                  <div className="text-center py-4 text-muted-foreground text-sm">
+                    No shoppers found
+                  </div>
+                )}
               </TabsContent>
 
               <TabsContent value="brands" className="space-y-2">
@@ -281,19 +348,34 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({
                   <div
                     key={result.id}
                     className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted cursor-pointer"
+                    onClick={() => handleBrandClick(result.slug || result.id)}
                   >
-                    {result.image && (
-                      <SmartImage src={result.image} alt={result.title} className="w-12 h-12 rounded-lg object-cover" sizes="48px" />
+                    {result.image ? (
+                      <SmartImage 
+                        src={result.image} 
+                        alt={result.title} 
+                        className="w-12 h-12 rounded-lg object-cover" 
+                        sizes="48px" 
+                      />
+                    ) : (
+                      <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center">
+                        <Store className="h-5 w-5 text-muted-foreground" />
+                      </div>
                     )}
-                    <div className="flex-1">
-                      <h4 className="font-medium">{result.title}</h4>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-medium truncate">{result.title}</h4>
                       {result.subtitle && (
-                        <p className="text-sm text-muted-foreground line-clamp-2">{result.subtitle}</p>
+                        <p className="text-sm text-muted-foreground line-clamp-1">{result.subtitle}</p>
                       )}
                     </div>
                     <Badge variant="outline">Brand</Badge>
                   </div>
                 ))}
+                {!loading && query && filterResultsByType('brand').length === 0 && (
+                  <div className="text-center py-4 text-muted-foreground text-sm">
+                    No brands found
+                  </div>
+                )}
               </TabsContent>
             </div>
           </Tabs>
