@@ -6,16 +6,20 @@ import { Button } from '@/components/ui/button';
 import { useWardrobeItems } from '@/hooks/useWardrobeItems';
 import { useSuggestedEssentials } from '@/hooks/useSuggestedEssentials';
 import { usePublicFits } from '@/hooks/useFits';
+import { isGuestMode } from '@/hooks/useGuestMode';
+import { useAuth } from '@/contexts/AuthContext';
 
 const IMAGE_CYCLE_INTERVAL = 3000; // 3 seconds
 
 export const ClosetOutfitsSection: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const isGuest = isGuestMode() || !user;
   
   // Closet data
   const { data: wardrobeItems = [] } = useWardrobeItems();
-  const { data: suggestedItems = [] } = useSuggestedEssentials(wardrobeItems.length === 0);
-  const closetItems = wardrobeItems.length > 0 ? wardrobeItems : suggestedItems;
+  const { data: suggestedItems = [] } = useSuggestedEssentials(wardrobeItems.length === 0 || isGuest);
+  const closetItems = (!isGuest && wardrobeItems.length > 0) ? wardrobeItems : suggestedItems;
   
   // Outfits data (public community fits)
   const { data: publicFits = [] } = usePublicFits(20);
@@ -52,17 +56,24 @@ export const ClosetOutfitsSection: React.FC = () => {
   // Get outfit image URL
   const getOutfitImageUrl = (fit: any): string => {
     if (fit?.render_path) {
-      // Check if it's already a full URL
       if (fit.render_path.startsWith('http')) {
         return fit.render_path;
       }
-      // Construct Supabase storage URL
       return `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/fits/${fit.render_path}`;
     }
     if (fit?.image_preview) {
       return fit.image_preview;
     }
     return '/placeholder.svg';
+  };
+
+  // Handle navigation - redirect guests to sign-in
+  const handleNavigate = (path: string) => {
+    if (isGuest) {
+      navigate('/onboarding/signup');
+    } else {
+      navigate(path);
+    }
   };
 
   return (
@@ -73,7 +84,7 @@ export const ClosetOutfitsSection: React.FC = () => {
         <Button 
           variant="link" 
           size="sm" 
-          onClick={() => navigate('/dress-me/wardrobe')}
+          onClick={() => handleNavigate('/dress-me/wardrobe')}
           className="text-[hsl(var(--azyah-maroon))] hover:text-[hsl(var(--azyah-maroon))]/80 text-xs p-0 h-auto"
         >
           View All
@@ -84,7 +95,7 @@ export const ClosetOutfitsSection: React.FC = () => {
       <div className="grid grid-cols-2 gap-3">
         {/* Left Card - Closet */}
         <div 
-          onClick={() => navigate('/dress-me/wardrobe')}
+          onClick={() => handleNavigate('/dress-me/wardrobe')}
           className="relative aspect-[4/5] rounded-xl overflow-hidden bg-card border border-border/50 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
         >
           {/* Create Button */}
@@ -92,7 +103,7 @@ export const ClosetOutfitsSection: React.FC = () => {
             <button 
               onClick={(e) => {
                 e.stopPropagation();
-                navigate('/dress-me/wardrobe');
+                handleNavigate('/dress-me/wardrobe');
               }}
               className="flex items-center gap-1 px-2 py-1 bg-background/90 backdrop-blur-sm rounded-lg border border-border/50 hover:bg-background transition-colors"
             >
@@ -126,7 +137,7 @@ export const ClosetOutfitsSection: React.FC = () => {
         
         {/* Right Card - Outfits */}
         <div 
-          onClick={() => navigate('/dress-me/fits')}
+          onClick={() => handleNavigate('/dress-me/fits')}
           className="relative aspect-[4/5] rounded-xl overflow-hidden bg-card border border-border/50 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
         >
           {/* Header with title */}
@@ -138,7 +149,7 @@ export const ClosetOutfitsSection: React.FC = () => {
                 size="sm" 
                 onClick={(e) => {
                   e.stopPropagation();
-                  navigate('/dress-me/fits');
+                  handleNavigate('/dress-me/fits');
                 }}
                 className="text-white/90 hover:text-white text-xs p-0 h-auto"
               >
