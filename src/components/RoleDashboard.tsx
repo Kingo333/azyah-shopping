@@ -69,6 +69,25 @@ const RoleDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchInitialQuery, setSearchInitialQuery] = useState('');
+  const [searchInitialTab, setSearchInitialTab] = useState<'products' | 'users' | 'brands'>('products');
+  
+  // Restore search state from sessionStorage when returning to dashboard
+  useEffect(() => {
+    const savedState = sessionStorage.getItem('globalSearchState');
+    if (savedState) {
+      try {
+        const { query, tab, returnToDashboard } = JSON.parse(savedState);
+        if (returnToDashboard) {
+          setSearchInitialQuery(query || '');
+          setSearchInitialTab(tab || 'products');
+          setSearchOpen(true);
+          sessionStorage.removeItem('globalSearchState');
+        }
+      } catch (e) {
+        sessionStorage.removeItem('globalSearchState');
+      }
+    }
+  }, []);
   const [activeLeaderboard, setActiveLeaderboard] = useState<'global' | 'country'>('global');
   const [aiStudioModalOpen, setAiStudioModalOpen] = useState(false);
   const [isClosetsMinimized, setIsClosetsMinimized] = useState(true);
@@ -733,8 +752,11 @@ const RoleDashboard: React.FC = () => {
           onClose={() => {
             setSearchOpen(false);
             setSearchInitialQuery('');
+            setSearchInitialTab('products');
+            sessionStorage.removeItem('globalSearchState');
           }}
           initialQuery={searchInitialQuery}
+          initialTab={searchInitialTab}
         />
         
         {/* AI Studio Modal */}

@@ -171,65 +171,73 @@ const BrandDetail = () => {
           </CardContent>
         </Card>
 
-        {/* Products Grid */}
+        {/* Products List - Compact Mobile View */}
         <div className="mb-8">
-          <h2 className="text-2xl font-semibold mb-6">All Products</h2>
+          <h2 className="text-xl font-semibold mb-4">All Products</h2>
           
           {productsLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {[...Array(8)].map((_, i) => (
-                <Card key={i} className="animate-pulse">
-                  <div className="aspect-square bg-muted"></div>
-                  <CardContent className="p-4">
-                    <div className="h-4 bg-muted rounded mb-2"></div>
-                    <div className="h-4 bg-muted rounded w-2/3"></div>
-                  </CardContent>
-                </Card>
+            <div className="space-y-3">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="flex gap-3 p-3 bg-card rounded-lg animate-pulse">
+                  <div className="w-16 h-16 bg-muted rounded-lg flex-shrink-0"></div>
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 bg-muted rounded w-3/4"></div>
+                    <div className="h-3 bg-muted rounded w-1/4"></div>
+                  </div>
+                </div>
               ))}
             </div>
           ) : products && products.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div className="space-y-2">
               {products.map((product) => {
                 const imageUrl = getImageUrl(product);
                 const imageProps = imageUrl.includes('asos-media.com') 
-                  ? getResponsiveImageProps(imageUrl, "(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw")
+                  ? getResponsiveImageProps(imageUrl, "64px")
                   : { src: imageUrl };
 
                 return (
-                  <Card key={product.id} className="group hover:shadow-lg transition-all duration-300">
-                    <div className="aspect-square overflow-hidden rounded-t-lg">
+                  <div 
+                    key={product.id} 
+                    className="flex items-center gap-3 p-3 bg-card rounded-lg border border-border hover:bg-muted/50 transition-colors cursor-pointer"
+                    onClick={() => navigate(`/p/${product.id}`)}
+                  >
+                    {/* Compact Image */}
+                    <div className="w-14 h-14 md:w-16 md:h-16 flex-shrink-0 overflow-hidden rounded-lg bg-muted">
                       <img
                         {...imageProps}
                         alt={product.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        className="w-full h-full object-cover"
                         onError={(e) => {
                           e.currentTarget.src = '/placeholder.svg';
                         }}
                       />
                     </div>
-                    <CardContent className="p-4">
-                      <h3 className="font-medium text-sm line-clamp-2 mb-2 group-hover:text-primary transition-colors">
+                    
+                    {/* Product Info */}
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-medium text-sm line-clamp-2 text-foreground">
                         {product.title}
                       </h3>
-                      <div className="flex items-center justify-between">
-                        <p className="font-semibold text-primary">
-                          {formatPrice(product.price_cents, product.currency)}
-                        </p>
-                        {product.external_url && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            asChild
-                            className="h-8 w-8 p-0"
-                          >
-                            <a href={product.external_url} target="_blank" rel="noopener noreferrer">
-                              <ExternalLink className="h-4 w-4" />
-                            </a>
-                          </Button>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
+                      <p className="text-sm font-semibold text-primary mt-0.5">
+                        {formatPrice(product.price_cents, product.currency)}
+                      </p>
+                    </div>
+                    
+                    {/* External Link (optional) */}
+                    {product.external_url && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0 flex-shrink-0"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          window.open(product.external_url, '_blank');
+                        }}
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
                 );
               })}
             </div>

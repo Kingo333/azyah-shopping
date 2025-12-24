@@ -185,17 +185,29 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({
     }
   };
 
+  // Save search state to sessionStorage before navigating
+  const saveSearchState = () => {
+    sessionStorage.setItem('globalSearchState', JSON.stringify({
+      query,
+      tab: activeTab,
+      returnToDashboard: true
+    }));
+  };
+
   const handleProductClick = (productId: string) => {
+    saveSearchState();
     onClose();
     navigate(`/p/${productId}`);
   };
 
   const handleBrandClick = (brandSlug: string) => {
+    saveSearchState();
     onClose();
     navigate(`/brand/${brandSlug}`);
   };
 
   const handleUserClick = (userId: string) => {
+    saveSearchState();
     onClose();
     navigate(`/profile/${userId}`);
   };
