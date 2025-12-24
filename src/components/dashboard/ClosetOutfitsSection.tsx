@@ -134,21 +134,21 @@ export const ClosetOutfitsSection: React.FC = () => {
           onClick={() => handleNavigate('/dress-me/fits')}
           className="bg-card rounded-xl p-2 border border-border/50 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
         >
-          {/* Content area with plus button and transitioning image */}
-          <div className="flex gap-1.5 mb-2">
+          {/* Grid layout matching All clothes */}
+          <div className="grid grid-cols-2 gap-1.5 mb-2">
             {/* Create Button - circular */}
             <button 
               onClick={(e) => {
                 e.stopPropagation();
                 handleNavigate('/dress-me/fits');
               }}
-              className="w-10 h-10 flex-shrink-0 rounded-full bg-secondary flex items-center justify-center hover:bg-secondary/80 transition-colors"
+              className="aspect-square rounded-full bg-secondary flex items-center justify-center hover:bg-secondary/80 transition-colors"
             >
               <Plus className="h-5 w-5 text-muted-foreground" />
             </button>
             
-            {/* Transitioning Outfit Image */}
-            <div className="flex-1 aspect-[4/3] rounded-md overflow-hidden bg-secondary/30 relative">
+            {/* Transitioning Outfit Image - takes remaining 3 slots visually */}
+            <div className="aspect-square col-span-1 row-span-2 rounded-md overflow-hidden bg-secondary/30 relative">
               <AnimatePresence mode="wait">
                 {currentOutfit ? (
                   <motion.img
@@ -168,6 +168,9 @@ export const ClosetOutfitsSection: React.FC = () => {
                 )}
               </AnimatePresence>
             </div>
+            
+            {/* Empty slot below plus button */}
+            <div className="aspect-square rounded-md bg-secondary/20" />
           </div>
           
           {/* Bottom Label */}
