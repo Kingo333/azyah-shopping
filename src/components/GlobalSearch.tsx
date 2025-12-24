@@ -264,28 +264,27 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({
           </div>
 
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'products' | 'users' | 'brands')}>
-            <TabsList className="grid w-full grid-cols-3 bg-background/50 backdrop-blur-sm p-1">
+            <TabsList className="flex w-full gap-2 bg-transparent p-0 h-auto">
               <TabsTrigger 
                 value="products" 
-                className="flex items-center gap-1.5 text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all"
+                className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg bg-background/60 border border-border/30 text-xs sm:text-sm text-muted-foreground hover:bg-primary/10 hover:border-primary/30 hover:text-primary transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary"
               >
-                <Package className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                <span className="hidden sm:inline">Products</span>
-                <span className="sm:hidden">Items</span>
+                <Package className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                <span className="truncate">Products</span>
               </TabsTrigger>
               <TabsTrigger 
                 value="users" 
-                className="flex items-center gap-1.5 text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all"
+                className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg bg-background/60 border border-border/30 text-xs sm:text-sm text-muted-foreground hover:bg-primary/10 hover:border-primary/30 hover:text-primary transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary"
               >
-                <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                Shoppers
+                <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                <span className="truncate">Shoppers</span>
               </TabsTrigger>
               <TabsTrigger 
                 value="brands" 
-                className="flex items-center gap-1.5 text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all"
+                className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg bg-background/60 border border-border/30 text-xs sm:text-sm text-muted-foreground hover:bg-primary/10 hover:border-primary/30 hover:text-primary transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary"
               >
-                <Store className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                Brands
+                <Store className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                <span className="truncate">Brands</span>
               </TabsTrigger>
             </TabsList>
 
