@@ -125,9 +125,10 @@ export const ClosetOutfitsSection: React.FC = () => {
           </div>
           
           {/* Bottom Label */}
-          <div className="mt-1.5">
-            <p className="text-xs font-medium text-foreground">All clothes</p>
-            <p className="text-[10px] text-muted-foreground">{closetItems.length} items</p>
+          <div className="mt-1">
+            <p className="text-[10px] font-medium text-foreground">
+              All clothes <span className="text-muted-foreground font-normal">• {closetItems.length}</span>
+            </p>
           </div>
         </div>
         
@@ -171,9 +172,10 @@ export const ClosetOutfitsSection: React.FC = () => {
           </div>
           
           {/* Bottom Label */}
-          <div className="mt-1.5">
-            <p className="text-xs font-medium text-foreground">Outfits</p>
-            <p className="text-[10px] text-muted-foreground">{publicFits.length} looks</p>
+          <div className="mt-1">
+            <p className="text-[10px] font-medium text-foreground">
+              Outfits <span className="text-muted-foreground font-normal">• {publicFits.length}</span>
+            </p>
           </div>
         </div>
       </div>
