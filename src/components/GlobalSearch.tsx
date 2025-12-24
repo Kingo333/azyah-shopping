@@ -241,7 +241,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden bg-gradient-to-br from-primary/5 via-card to-accent/5 border-border/50">
+      <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden bg-gradient-to-br from-primary/5 via-card to-accent/5 border-border/50 rounded-2xl shadow-2xl fixed top-[5%] left-[50%] translate-x-[-50%] translate-y-0 sm:top-[8%] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:slide-out-to-top-[10%] data-[state=open]:slide-in-from-top-[10%]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Search className="h-5 w-5 text-primary" />
@@ -293,14 +293,14 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({
                 {filterResultsByType('product').map((result) => (
                   <div
                     key={result.id}
-                    className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg hover:bg-background/60 cursor-pointer transition-colors overflow-hidden"
+                    className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg hover:bg-background/60 cursor-pointer transition-colors w-full"
                     onClick={() => handleProductClick(result.id)}
                   >
                     {renderResultImage(result, 'w-10 h-10 sm:w-12 sm:h-12 flex-shrink-0')}
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-medium text-sm sm:text-base truncate">{result.title}</h4>
+                    <div className="flex-1 min-w-0 overflow-hidden">
+                      <h4 className="font-medium text-sm sm:text-base truncate block w-full">{result.title}</h4>
                       {result.subtitle && (
-                        <p className="text-xs sm:text-sm text-muted-foreground truncate">{result.subtitle}</p>
+                        <p className="text-xs sm:text-sm text-muted-foreground truncate block w-full">{result.subtitle}</p>
                       )}
                     </div>
                   </div>
