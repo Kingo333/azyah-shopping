@@ -87,24 +87,24 @@ export const ClosetOutfitsSection: React.FC = () => {
           onClick={() => handleNavigate('/dress-me/wardrobe')}
           className="bg-card rounded-xl p-2 border border-border/50 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
         >
-          {/* Grid of items with Create button */}
-          <div className="grid grid-cols-2 gap-1.5 mb-2">
+          {/* Grid of items with Create button - reduced size */}
+          <div className="grid grid-cols-2 gap-1 mb-2">
             {/* Create Button - circular */}
             <button 
               onClick={(e) => {
                 e.stopPropagation();
                 handleNavigate('/dress-me/wardrobe');
               }}
-              className="aspect-square rounded-full bg-secondary flex items-center justify-center hover:bg-secondary/80 transition-colors"
+              className="aspect-square rounded-full bg-secondary flex items-center justify-center hover:bg-secondary/80 transition-colors max-h-16"
             >
-              <Plus className="h-5 w-5 text-muted-foreground" />
+              <Plus className="h-4 w-4 text-muted-foreground" />
             </button>
             
             {/* Item thumbnails */}
             {displayClosetItems.map((item) => (
               <div 
                 key={item.id} 
-                className="aspect-square rounded-md overflow-hidden bg-secondary/30"
+                className="aspect-square rounded-md overflow-hidden bg-secondary/30 max-h-16"
               >
                 <img 
                   src={item.image_bg_removed_url || item.image_url || '/placeholder.svg'} 
@@ -117,7 +117,7 @@ export const ClosetOutfitsSection: React.FC = () => {
             {/* Fill empty slots if less than 3 items */}
             {displayClosetItems.length < 3 && 
               Array.from({ length: 3 - displayClosetItems.length }).map((_, i) => (
-                <div key={`empty-${i}`} className="aspect-square rounded-md bg-secondary/20" />
+                <div key={`empty-${i}`} className="aspect-square rounded-md bg-secondary/20 max-h-16" />
               ))
             }
           </div>
@@ -134,8 +134,8 @@ export const ClosetOutfitsSection: React.FC = () => {
           onClick={() => handleNavigate('/dress-me/fits')}
           className="bg-card rounded-xl p-2 border border-border/50 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
         >
-          {/* Image container with overlay plus button */}
-          <div className="relative aspect-square rounded-md overflow-hidden bg-secondary/30 mb-2">
+          {/* Image container with overlay plus button - matching closet height */}
+          <div className="relative aspect-square rounded-md overflow-hidden bg-secondary/30 mb-2 max-h-[140px]">
             {/* Small Plus Button - top left corner */}
             <button 
               onClick={(e) => {

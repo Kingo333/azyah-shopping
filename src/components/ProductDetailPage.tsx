@@ -36,16 +36,19 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
         // Validate URL
         const url = product.external_url.startsWith('http') ? product.external_url : `https://${product.external_url}`;
         console.log('Opening URL:', url);
-        const newWindow = window.open(url, '_blank', 'noopener,noreferrer');
-        if (!newWindow) {
-          // Fallback for popup blockers
-          console.log('Popup blocked, using location.href');
-          window.location.href = url;
-        } else {
-          toast({
-            description: 'Opening product page...'
-          });
-        }
+        
+        // Create a temporary anchor element to ensure new tab opens
+        const link = document.createElement('a');
+        link.href = url;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        toast({
+          description: 'Opening product page...'
+        });
       } catch (error) {
         console.error('Failed to open URL:', error);
         toast({
