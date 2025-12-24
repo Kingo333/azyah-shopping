@@ -33,39 +33,39 @@ export function PointsSummaryCard() {
     <div className="h-full flex items-center">
       <button
         onClick={handleClick}
-        className="w-full p-4 bg-card rounded-xl border border-border shadow-sm text-left hover:bg-accent/50 transition-colors"
+        className="w-full p-3 bg-gradient-to-br from-primary/5 via-card to-accent/5 rounded-xl border border-border/50 shadow-sm text-left hover:from-primary/10 hover:to-accent/10 transition-all duration-200"
         aria-label="View your rewards"
       >
         {isLoading ? (
-          <div className="flex flex-col gap-3">
-            <Skeleton className="h-5 w-32" />
-            <Skeleton className="h-4 w-48" />
-            <Skeleton className="h-2 w-full" />
+          <div className="flex flex-col gap-2">
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-3 w-36" />
+            <Skeleton className="h-1.5 w-full" />
           </div>
         ) : (
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-2">
             {/* Header with points */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-[hsl(var(--azyah-maroon))]/10 flex items-center justify-center">
-                  <Gift className="h-4 w-4 text-[hsl(var(--azyah-maroon))]" />
+                <div className="w-7 h-7 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
+                  <Gift className="h-3.5 w-3.5 text-primary" />
                 </div>
                 <div>
                   <div className="flex items-baseline gap-1">
-                    <span className="text-lg font-semibold text-foreground">
+                    <span className="text-base font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
                       {balance.toLocaleString()}
                     </span>
-                    <span className="text-sm text-muted-foreground">pts</span>
+                    <span className="text-xs text-muted-foreground">pts</span>
                   </div>
                 </div>
               </div>
-              <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
             </div>
 
             {/* Progress info */}
-            <div className="space-y-2">
-              <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                <Sparkles className="h-3 w-3" />
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                <Sparkles className="h-2.5 w-2.5 text-accent" />
                 <span>
                   {pointsToGo > 0 
                     ? `${pointsToGo} pts to ${currentTier.discount}% off`
@@ -75,7 +75,7 @@ export function PointsSummaryCard() {
               </div>
               <Progress 
                 value={progressToNext} 
-                className="h-1.5 bg-muted [&>div]:bg-[hsl(var(--azyah-maroon))]"
+                className="h-1.5 bg-background/60 [&>div]:bg-gradient-to-r [&>div]:from-primary [&>div]:to-accent"
               />
             </div>
           </div>
