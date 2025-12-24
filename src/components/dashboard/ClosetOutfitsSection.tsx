@@ -87,26 +87,24 @@ export const ClosetOutfitsSection: React.FC = () => {
           onClick={() => handleNavigate('/dress-me/wardrobe')}
           className="bg-card rounded-xl p-2 border border-border/50 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
         >
-          {/* Grid of items with Create button */}
-          <div className="grid grid-cols-2 gap-1.5 mb-2">
+          {/* Grid of items with Create button - reduced size */}
+          <div className="grid grid-cols-2 gap-1 mb-2">
             {/* Create Button - circular */}
-            <div className="flex items-center justify-center">
-              <button 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleNavigate('/dress-me/wardrobe');
-                }}
-                className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center hover:bg-secondary/80 transition-colors"
-              >
-                <Plus className="h-4 w-4 text-muted-foreground" />
-              </button>
-            </div>
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                handleNavigate('/dress-me/wardrobe');
+              }}
+              className="aspect-square rounded-full bg-secondary flex items-center justify-center hover:bg-secondary/80 transition-colors max-h-16"
+            >
+              <Plus className="h-4 w-4 text-muted-foreground" />
+            </button>
             
             {/* Item thumbnails */}
             {displayClosetItems.map((item) => (
               <div 
                 key={item.id} 
-                className="w-10 h-10 rounded-md overflow-hidden bg-secondary/30 mx-auto"
+                className="aspect-square rounded-md overflow-hidden bg-secondary/30 max-h-16"
               >
                 <img 
                   src={item.image_bg_removed_url || item.image_url || '/placeholder.svg'} 
@@ -119,7 +117,7 @@ export const ClosetOutfitsSection: React.FC = () => {
             {/* Fill empty slots if less than 3 items */}
             {displayClosetItems.length < 3 && 
               Array.from({ length: 3 - displayClosetItems.length }).map((_, i) => (
-                <div key={`empty-${i}`} className="w-10 h-10 rounded-md bg-secondary/20 mx-auto" />
+                <div key={`empty-${i}`} className="aspect-square rounded-md bg-secondary/20 max-h-16" />
               ))
             }
           </div>
