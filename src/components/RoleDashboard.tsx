@@ -27,11 +27,10 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { CATEGORY_TREE, getCategoryDisplayName } from '@/lib/categories';
 import type { TopCategory } from '@/lib/categories';
 import { useSubscription } from '@/hooks/useSubscription';
-import { useWardrobeItems } from '@/hooks/useWardrobeItems';
-import { useSuggestedEssentials } from '@/hooks/useSuggestedEssentials';
 import { isGuestMode } from '@/hooks/useGuestMode';
 import { useGuestGate } from '@/hooks/useGuestGate';
 import { GuestActionPrompt } from '@/components/GuestActionPrompt';
+import { ClosetOutfitsSection } from '@/components/dashboard/ClosetOutfitsSection';
 
 
 interface UserProfile {
@@ -96,18 +95,6 @@ const RoleDashboard: React.FC = () => {
   const [isTrendingFilterOpen, setIsTrendingFilterOpen] = useState(false);
   const [featuredEvent, setFeaturedEvent] = useState<any>(null);
   
-  
-  // Wardrobe essentials - user's items or community suggestions
-  const { data: wardrobeItems = [], isLoading: wardrobeLoading } = useWardrobeItems();
-  const { data: suggestedItems = [] } = useSuggestedEssentials(wardrobeItems.length === 0);
-  
-  // Use user's items if they have any, otherwise show suggestions
-  const essentialsToShow = wardrobeItems.length > 0 
-    ? wardrobeItems.slice(0, 8) 
-    : suggestedItems;
-  const showingSuggestions = wardrobeItems.length === 0 && suggestedItems.length > 0;
-  
-
   // Load saved category selection on component mount
   useEffect(() => {
     const savedCategory = localStorage.getItem('selectedTrendingCategory');
@@ -377,53 +364,8 @@ const RoleDashboard: React.FC = () => {
         </div>
       </section>
 
-      {/* Wardrobe Essentials Section */}
-      {essentialsToShow.length > 0 && (
-        <section className="px-4 pt-6">
-          <div className="flex items-center justify-between mb-3">
-            <div>
-              <h2 className="text-lg font-serif font-medium text-foreground">Wardrobe Essentials</h2>
-              {showingSuggestions && (
-                <p className="text-xs text-muted-foreground">Explore items from the community</p>
-              )}
-            </div>
-            <Button 
-              variant="link" 
-              size="sm" 
-              onClick={() => navigate('/dress-me/wardrobe')}
-              className="text-[hsl(var(--azyah-maroon))] hover:text-[hsl(var(--azyah-maroon))]/80 text-xs p-0 h-auto"
-            >
-              View All
-            </Button>
-          </div>
-          
-          <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide [-webkit-overflow-scrolling:touch]">
-            {essentialsToShow.map(item => (
-              <div 
-                key={item.id} 
-                className="flex-shrink-0 w-24 md:w-40 cursor-pointer"
-                onClick={() => navigate('/dress-me/wardrobe')}
-              >
-                <div className="relative aspect-square rounded-lg overflow-hidden">
-                  <img 
-                    src={item.image_bg_removed_url || item.image_url || '/placeholder.svg'} 
-                    alt={item.category}
-                    className="w-full h-full object-cover"
-                  />
-                  {showingSuggestions && (
-                    <Badge 
-                      variant="secondary" 
-                      className="absolute top-1 left-1 text-[8px] md:text-[10px] px-1 py-0 bg-background/80 backdrop-blur-sm"
-                    >
-                      Suggested
-                    </Badge>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
+      {/* Closet & Outfits Section */}
+      <ClosetOutfitsSection />
 
       {/* Trending Looks Section */}
       <section className="px-4 pt-6">
