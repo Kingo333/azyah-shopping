@@ -241,7 +241,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="!max-w-2xl max-h-[85vh] overflow-hidden !p-4 sm:!p-6 bg-gradient-to-br from-primary/5 via-card to-accent/5 border-border/50 !rounded-2xl shadow-2xl fixed top-[5%] left-[50%] translate-x-[-50%] translate-y-0 sm:top-[8%] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:slide-out-to-top-[10%] data-[state=open]:slide-in-from-top-[10%]">
+      <DialogContent className="w-[calc(100vw-1rem)] max-w-2xl max-h-[85vh] overflow-hidden overflow-x-hidden !p-3 sm:!p-6 bg-gradient-to-br from-primary/5 via-card to-accent/5 border-border/50 !rounded-2xl shadow-2xl fixed top-[5%] left-[50%] translate-x-[-50%] translate-y-0 sm:top-[8%] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:slide-out-to-top-[10%] data-[state=open]:slide-in-from-top-[10%]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Search className="h-5 w-5 text-primary" />
@@ -263,7 +263,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({
             />
           </div>
 
-          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'products' | 'users' | 'brands')}>
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'products' | 'users' | 'brands')} className="min-w-0 overflow-hidden">
             <TabsList className="!grid w-full !grid-cols-3 gap-1.5 sm:gap-2 bg-transparent !p-0 !h-auto min-w-0">
               <TabsTrigger 
                 value="products" 
@@ -289,7 +289,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({
             </TabsList>
 
             <div className="max-h-96 w-full overflow-y-auto overflow-x-hidden mt-3">
-              <TabsContent value="products" className="space-y-1.5 mt-0">
+              <TabsContent value="products" className="space-y-1.5 mt-0 min-w-0 overflow-hidden">
                 {filterResultsByType('product').map((result) => (
                   <div
                     key={result.id}
@@ -312,11 +312,11 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({
                 )}
               </TabsContent>
 
-              <TabsContent value="users" className="space-y-1.5 mt-0">
+              <TabsContent value="users" className="space-y-1.5 mt-0 min-w-0 overflow-hidden">
                 {filterResultsByType('user').map((result) => (
                   <div
                     key={result.id}
-                    className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg hover:bg-background/60 overflow-hidden"
+                    className="grid grid-cols-[auto,minmax(0,1fr),auto] items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg hover:bg-background/60 w-full overflow-hidden"
                   >
                     <Avatar 
                       className="w-10 h-10 sm:w-12 sm:h-12 cursor-pointer flex-shrink-0" 
@@ -326,12 +326,12 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({
                       <AvatarFallback>{result.title.charAt(0).toUpperCase()}</AvatarFallback>
                     </Avatar>
                     <div 
-                      className="flex-1 cursor-pointer min-w-0" 
+                      className="cursor-pointer min-w-0 overflow-hidden" 
                       onClick={() => handleUserClick(result.id)}
                     >
-                      <h4 className="font-medium text-sm sm:text-base truncate">{result.title}</h4>
+                      <h4 className="font-medium text-sm sm:text-base truncate block w-full">{result.title}</h4>
                       {result.subtitle && (
-                        <p className="text-xs sm:text-sm text-muted-foreground truncate">{result.subtitle}</p>
+                        <p className="text-xs sm:text-sm text-muted-foreground truncate block w-full">{result.subtitle}</p>
                       )}
                     </div>
                     {user && (
@@ -366,11 +366,11 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({
                 )}
               </TabsContent>
 
-              <TabsContent value="brands" className="space-y-1.5 mt-0">
+              <TabsContent value="brands" className="space-y-1.5 mt-0 min-w-0 overflow-hidden">
                 {filterResultsByType('brand').map((result) => (
                   <div
                     key={result.id}
-                    className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg hover:bg-background/60 cursor-pointer transition-colors overflow-hidden"
+                    className="grid grid-cols-[auto,minmax(0,1fr)] items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg hover:bg-background/60 cursor-pointer transition-colors w-full overflow-hidden"
                     onClick={() => handleBrandClick(result.slug || result.id)}
                   >
                     {result.image ? (
@@ -385,10 +385,10 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({
                         <Store className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
                       </div>
                     )}
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-medium text-sm sm:text-base truncate">{result.title}</h4>
+                    <div className="min-w-0 overflow-hidden">
+                      <h4 className="font-medium text-sm sm:text-base truncate block w-full">{result.title}</h4>
                       {result.subtitle && (
-                        <p className="text-xs sm:text-sm text-muted-foreground truncate">{result.subtitle}</p>
+                        <p className="text-xs sm:text-sm text-muted-foreground truncate block w-full">{result.subtitle}</p>
                       )}
                     </div>
                   </div>
