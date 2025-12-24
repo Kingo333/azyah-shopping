@@ -129,48 +129,43 @@ export const ClosetOutfitsSection: React.FC = () => {
           </div>
         </div>
         
-        {/* Right Card - Outfits (Slideshow with Plus Button) */}
+        {/* Right Card - Outfits (Full image with small plus button) */}
         <div 
           onClick={() => handleNavigate('/dress-me/fits')}
           className="bg-card rounded-xl p-2 border border-border/50 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
         >
-          {/* Grid layout matching All clothes */}
-          <div className="grid grid-cols-2 gap-1.5 mb-2">
-            {/* Create Button - circular */}
+          {/* Image container with overlay plus button */}
+          <div className="relative aspect-[4/5] rounded-md overflow-hidden bg-secondary/30 mb-2">
+            {/* Small Plus Button - top left corner */}
             <button 
               onClick={(e) => {
                 e.stopPropagation();
                 handleNavigate('/dress-me/fits');
               }}
-              className="aspect-square rounded-full bg-secondary flex items-center justify-center hover:bg-secondary/80 transition-colors"
+              className="absolute top-1.5 left-1.5 z-10 w-6 h-6 rounded-full bg-secondary/80 backdrop-blur-sm flex items-center justify-center hover:bg-secondary transition-colors"
             >
-              <Plus className="h-5 w-5 text-muted-foreground" />
+              <Plus className="h-3.5 w-3.5 text-muted-foreground" />
             </button>
             
-            {/* Transitioning Outfit Image - takes remaining 3 slots visually */}
-            <div className="aspect-square col-span-1 row-span-2 rounded-md overflow-hidden bg-secondary/30 relative">
-              <AnimatePresence mode="wait">
-                {currentOutfit ? (
-                  <motion.img
-                    key={currentOutfit.id}
-                    src={getOutfitImageUrl(currentOutfit)}
-                    alt={currentOutfit.title || 'Outfit'}
-                    className="w-full h-full object-cover"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.4 }}
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <span className="text-[10px] text-muted-foreground">No outfits</span>
-                  </div>
-                )}
-              </AnimatePresence>
-            </div>
-            
-            {/* Empty slot below plus button */}
-            <div className="aspect-square rounded-md bg-secondary/20" />
+            {/* Full Outfit Image */}
+            <AnimatePresence mode="wait">
+              {currentOutfit ? (
+                <motion.img
+                  key={currentOutfit.id}
+                  src={getOutfitImageUrl(currentOutfit)}
+                  alt={currentOutfit.title || 'Outfit'}
+                  className="w-full h-full object-contain"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.4 }}
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <span className="text-[10px] text-muted-foreground">No outfits</span>
+                </div>
+              )}
+            </AnimatePresence>
           </div>
           
           {/* Bottom Label */}
