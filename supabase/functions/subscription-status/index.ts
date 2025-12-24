@@ -85,8 +85,8 @@ serve(async (req) => {
         premium_support: true
       };
 
-      // Upsert subscription
-      const { data, error } = await supabaseClient
+      // Upsert subscription (no .select() to avoid returning sensitive columns)
+      const { error: upsertError } = await supabaseClient
         .from('subscriptions')
         .upsert({
           user_id: user.id,
@@ -99,20 +99,33 @@ serve(async (req) => {
           plan: plan, // Keep for backward compatibility
         }, {
           onConflict: 'user_id'
-        })
-        .select()
-        .single();
+        });
 
-      if (error) {
-        console.error('Error updating subscription:', error);
+      if (upsertError) {
+        console.error('Error updating subscription:', upsertError);
         return new Response(
           JSON.stringify({ error: 'Failed to update subscription' }),
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
 
+      // Fetch from safe view to return only non-sensitive data
+      const { data: safeSubscription, error: fetchError } = await supabaseClient
+        .from('subscriptions_safe')
+        .select('*')
+        .maybeSingle();
+
+      if (fetchError) {
+        console.error('Error fetching updated subscription:', fetchError);
+        // Still return success since upsert worked
+        return new Response(
+          JSON.stringify({ success: true }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
       return new Response(
-        JSON.stringify({ success: true, subscription: data }),
+        JSON.stringify({ success: true, subscription: safeSubscription }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }

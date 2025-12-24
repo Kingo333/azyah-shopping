@@ -4169,56 +4169,47 @@ export type Database = {
       }
       subscriptions_safe: {
         Row: {
-          ai_tryon_limit: number | null
           created_at: string | null
           currency: string | null
           current_period_end: string | null
           current_period_start: string | null
           features_granted: Json | null
           id: string | null
-          nail_salon_reward_eligible: boolean | null
           plan: string | null
           plan_tier: string | null
           price_cents: number | null
           renewal_at: string | null
           status: string | null
-          ugc_collaboration_enabled: boolean | null
           updated_at: string | null
           user_id: string | null
         }
         Insert: {
-          ai_tryon_limit?: number | null
           created_at?: string | null
           currency?: string | null
           current_period_end?: string | null
           current_period_start?: string | null
           features_granted?: Json | null
           id?: string | null
-          nail_salon_reward_eligible?: boolean | null
           plan?: string | null
           plan_tier?: string | null
           price_cents?: number | null
           renewal_at?: string | null
           status?: string | null
-          ugc_collaboration_enabled?: boolean | null
           updated_at?: string | null
           user_id?: string | null
         }
         Update: {
-          ai_tryon_limit?: number | null
           created_at?: string | null
           currency?: string | null
           current_period_end?: string | null
           current_period_start?: string | null
           features_granted?: Json | null
           id?: string | null
-          nail_salon_reward_eligible?: boolean | null
           plan?: string | null
           plan_tier?: string | null
           price_cents?: number | null
           renewal_at?: string | null
           status?: string | null
-          ugc_collaboration_enabled?: boolean | null
           updated_at?: string | null
           user_id?: string | null
         }
