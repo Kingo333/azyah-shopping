@@ -85,10 +85,10 @@ export const ClosetOutfitsSection: React.FC = () => {
         {/* Left Card - Closet Items (Grid Layout) */}
         <div 
           onClick={() => handleNavigate('/dress-me/wardrobe')}
-          className="bg-card rounded-xl p-2 border border-border/50 shadow-sm cursor-pointer hover:shadow-md transition-shadow flex flex-col"
+          className="bg-card rounded-xl p-1.5 border border-border/50 shadow-sm cursor-pointer hover:shadow-md transition-shadow flex flex-col"
         >
           {/* Grid of items with Create button */}
-          <div className="grid grid-cols-2 gap-1 flex-1">
+          <div className="grid grid-cols-2 gap-0.5 flex-1">
             {/* Create Button - circular */}
             <div className="aspect-square flex items-center justify-center">
               <button 
