@@ -126,30 +126,32 @@ export function useSubscription(): UseSubscriptionReturn {
     try {
       setLoading(true);
       
-      // Update both tables - subscriptions and profiles
-      const [subResult, profileResult] = await Promise.all([
-        supabase
-          .from('subscriptions')
-          .update({ 
-            status: 'canceled',
-            updated_at: new Date().toISOString()
-          })
-          .eq('user_id', user.id),
-        supabase
-          .from('profiles')
-          .update({
-            is_premium: false,
-            plan_type: null,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', user.id)
-      ]);
+      // Update profiles table only - subscriptions table is managed by webhook
+      // This is safe because profiles doesn't contain sensitive payment IDs
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({
+          is_premium: false,
+          plan_type: null,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', user.id);
+      
+      // Also update subscription status (only non-sensitive field)
+      const { error: subError } = await supabase
+        .from('subscriptions')
+        .update({ 
+          status: 'canceled',
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', user.id);
 
-      if (subResult.error) {
-        console.error('Subscription cancellation error:', subResult.error);
+      if (subError || profileError) {
+        const errorMsg = subError?.message || profileError?.message || 'Unknown error';
+        console.error('Subscription cancellation error:', errorMsg);
         toast({
           title: "Cancellation Error",
-          description: subResult.error.message,
+          description: errorMsg,
           variant: "destructive"
         });
       } else {
