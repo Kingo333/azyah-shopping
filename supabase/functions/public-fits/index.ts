@@ -26,15 +26,12 @@ serve(async (req) => {
       .from('fits')
       .select(`
         id,
+        user_id,
         title,
         render_path,
+        image_preview,
         like_count,
-        created_at,
-        users!fits_user_id_fkey (
-          username,
-          name,
-          avatar_url
-        )
+        created_at
       `)
       .eq('is_public', true)
       .range(offset, offset + limit - 1);
@@ -45,20 +42,39 @@ serve(async (req) => {
       query = query.order('created_at', { ascending: false });
     }
 
-    const { data, error } = await query;
+    const { data: fitsData, error: fitsError } = await query;
 
-    if (error) throw error;
+    if (fitsError) throw fitsError;
+
+    // Get unique user IDs and fetch their public profiles
+    const userIds = [...new Set(fitsData?.map(f => f.user_id) || [])];
+    
+    let usersMap: Record<string, any> = {};
+    if (userIds.length > 0) {
+      const { data: usersData } = await supabaseClient
+        .from('users_public')
+        .select('id, username, name, avatar_url')
+        .in('id', userIds);
+      
+      if (usersData) {
+        usersMap = usersData.reduce((acc, user) => {
+          acc[user.id] = user;
+          return acc;
+        }, {} as Record<string, any>);
+      }
+    }
 
     // Transform data
-    const fits = data.map(fit => ({
+    const fits = (fitsData || []).map(fit => ({
       id: fit.id,
       title: fit.title,
       render_path: fit.render_path,
+      image_preview: fit.image_preview,
       like_count: fit.like_count,
       created_at: fit.created_at,
-      creator_username: fit.users?.username || 'Unknown',
-      creator_name: fit.users?.name,
-      creator_avatar: fit.users?.avatar_url,
+      creator_username: usersMap[fit.user_id]?.username || 'Unknown',
+      creator_name: usersMap[fit.user_id]?.name,
+      creator_avatar: usersMap[fit.user_id]?.avatar_url,
     }));
 
     return new Response(JSON.stringify({ fits }), {
