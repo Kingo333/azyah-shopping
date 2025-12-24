@@ -158,15 +158,18 @@ export async function updatePremiumStatus(
 
 /**
  * Also update the subscriptions table for consistency
+ * Note: This only writes non-sensitive fields. Apple transaction IDs are 
+ * written by the RevenueCat webhook (service role) for security.
  */
 export async function syncSubscriptionRecord(
   userId: string,
   planType: 'monthly' | 'yearly',
-  expiresAt: Date | null,
-  appleTransactionId?: string,
-  appleProductId?: string
+  expiresAt: Date | null
 ): Promise<{ success: boolean; error?: string }> {
   try {
+    // Only write non-sensitive subscription fields from client
+    // Sensitive payment IDs (apple_transaction_id, etc.) are written 
+    // by RevenueCat webhook using service role
     const { error } = await supabase
       .from('subscriptions')
       .upsert({
@@ -177,8 +180,6 @@ export async function syncSubscriptionRecord(
         currency: 'AED',
         price_cents: planType === 'yearly' ? 20000 : 3000,
         current_period_end: expiresAt?.toISOString() ?? null,
-        apple_transaction_id: appleTransactionId ?? null,
-        apple_product_id: appleProductId ?? null,
         features_granted: {
           ugc_collaboration: true,
           ai_tryon_limit: 10,
