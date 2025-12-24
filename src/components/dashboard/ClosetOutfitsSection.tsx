@@ -85,12 +85,12 @@ export const ClosetOutfitsSection: React.FC = () => {
         {/* Left Card - Closet Items (Grid Layout) */}
         <div 
           onClick={() => handleNavigate('/dress-me/wardrobe')}
-          className="bg-card rounded-lg p-1 border border-border/50 shadow-sm cursor-pointer hover:shadow-md transition-shadow flex flex-col max-h-[140px]"
+          className="bg-card rounded-lg p-1 border border-border/50 shadow-sm cursor-pointer hover:shadow-md transition-shadow flex flex-col max-h-[130px]"
         >
           {/* Grid of items with Create button */}
-          <div className="grid grid-cols-2 gap-0.5 flex-1 max-h-[100px]">
+          <div className="grid grid-cols-2 gap-0.5 flex-1 max-h-[90px]">
             {/* Create Button - circular */}
-            <div className="aspect-square flex items-center justify-center max-h-[48px]">
+            <div className="aspect-square flex items-center justify-center max-h-[42px]">
               <button 
                 onClick={(e) => {
                   e.stopPropagation();
@@ -106,7 +106,7 @@ export const ClosetOutfitsSection: React.FC = () => {
             {displayClosetItems.map((item) => (
               <div 
                 key={item.id} 
-                className="aspect-square rounded-md overflow-hidden bg-secondary/30 max-h-[48px]"
+                className="aspect-square rounded-md overflow-hidden bg-secondary/30 max-h-[42px]"
               >
                 <img 
                   src={item.image_bg_removed_url || item.image_url || '/placeholder.svg'} 
@@ -119,7 +119,7 @@ export const ClosetOutfitsSection: React.FC = () => {
             {/* Fill empty slots if less than 3 items */}
             {displayClosetItems.length < 3 && 
               Array.from({ length: 3 - displayClosetItems.length }).map((_, i) => (
-                <div key={`empty-${i}`} className="aspect-square rounded-md bg-secondary/20 max-h-[48px]" />
+                <div key={`empty-${i}`} className="aspect-square rounded-md bg-secondary/20 max-h-[42px]" />
               ))
             }
           </div>
@@ -134,7 +134,7 @@ export const ClosetOutfitsSection: React.FC = () => {
         {/* Right Card - Outfits (Full image with small plus button) */}
         <div 
           onClick={() => handleNavigate('/dress-me/fits')}
-          className="bg-card rounded-lg p-1 border border-border/50 shadow-sm cursor-pointer hover:shadow-md transition-shadow flex flex-col max-h-[140px]"
+          className="bg-card rounded-lg p-1 border border-border/50 shadow-sm cursor-pointer hover:shadow-md transition-shadow flex flex-col max-h-[130px]"
         >
           {/* Image container with overlay plus button */}
           <div className="relative aspect-square rounded-md overflow-hidden bg-secondary/30 flex-1">
