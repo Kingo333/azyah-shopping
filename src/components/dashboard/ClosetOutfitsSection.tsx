@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useWardrobeItems } from '@/hooks/useWardrobeItems';
@@ -7,6 +8,8 @@ import { useSuggestedEssentials } from '@/hooks/useSuggestedEssentials';
 import { usePublicFits } from '@/hooks/useFits';
 import { isGuestMode } from '@/hooks/useGuestMode';
 import { useAuth } from '@/contexts/AuthContext';
+
+const IMAGE_CYCLE_INTERVAL = 3000;
 
 export const ClosetOutfitsSection: React.FC = () => {
   const navigate = useNavigate();
@@ -20,6 +23,21 @@ export const ClosetOutfitsSection: React.FC = () => {
   
   // Outfits data (public community fits)
   const { data: publicFits = [] } = usePublicFits(20);
+  
+  // Outfit image cycling
+  const [currentOutfitIndex, setCurrentOutfitIndex] = useState(0);
+  
+  useEffect(() => {
+    if (publicFits.length <= 1) return;
+    
+    const interval = setInterval(() => {
+      setCurrentOutfitIndex((prev) => (prev + 1) % publicFits.length);
+    }, IMAGE_CYCLE_INTERVAL);
+    
+    return () => clearInterval(interval);
+  }, [publicFits.length]);
+  
+  const currentOutfit = publicFits[currentOutfitIndex];
   
   // Get outfit image URL
   const getOutfitImageUrl = (fit: any): string => {
@@ -44,15 +62,14 @@ export const ClosetOutfitsSection: React.FC = () => {
     }
   };
 
-  // Show first 4 items for the grid
-  const displayClosetItems = closetItems.slice(0, 4);
-  const displayOutfits = publicFits.slice(0, 4);
+  // Show first 3 items for the grid (plus button takes one slot)
+  const displayClosetItems = closetItems.slice(0, 3);
 
   return (
-    <section className="px-4 pt-6">
+    <section className="px-4 pt-5">
       {/* Section Header */}
-      <div className="flex items-center justify-between mb-3">
-        <h2 className="text-lg font-serif font-medium text-foreground">Closet</h2>
+      <div className="flex items-center justify-between mb-2">
+        <h2 className="text-base font-serif font-medium text-foreground">Closet</h2>
         <Button 
           variant="link" 
           size="sm" 
@@ -64,14 +81,14 @@ export const ClosetOutfitsSection: React.FC = () => {
       </div>
       
       {/* Two-Card Grid */}
-      <div className="grid grid-cols-2 gap-3">
-        {/* Left Card - Closet Items */}
+      <div className="grid grid-cols-2 gap-2">
+        {/* Left Card - Closet Items (Grid Layout) */}
         <div 
           onClick={() => handleNavigate('/dress-me/wardrobe')}
-          className="bg-card rounded-2xl p-3 border border-border/50 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
+          className="bg-card rounded-xl p-2 border border-border/50 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
         >
           {/* Grid of items with Create button */}
-          <div className="grid grid-cols-2 gap-2 mb-3">
+          <div className="grid grid-cols-2 gap-1.5 mb-2">
             {/* Create Button - circular */}
             <button 
               onClick={(e) => {
@@ -80,14 +97,14 @@ export const ClosetOutfitsSection: React.FC = () => {
               }}
               className="aspect-square rounded-full bg-secondary flex items-center justify-center hover:bg-secondary/80 transition-colors"
             >
-              <Plus className="h-6 w-6 text-muted-foreground" />
+              <Plus className="h-5 w-5 text-muted-foreground" />
             </button>
             
             {/* Item thumbnails */}
-            {displayClosetItems.slice(0, 3).map((item, index) => (
+            {displayClosetItems.map((item) => (
               <div 
                 key={item.id} 
-                className="aspect-square rounded-lg overflow-hidden bg-secondary/30"
+                className="aspect-square rounded-md overflow-hidden bg-secondary/30"
               >
                 <img 
                   src={item.image_bg_removed_url || item.image_url || '/placeholder.svg'} 
@@ -100,62 +117,63 @@ export const ClosetOutfitsSection: React.FC = () => {
             {/* Fill empty slots if less than 3 items */}
             {displayClosetItems.length < 3 && 
               Array.from({ length: 3 - displayClosetItems.length }).map((_, i) => (
-                <div key={`empty-${i}`} className="aspect-square rounded-lg bg-secondary/20" />
+                <div key={`empty-${i}`} className="aspect-square rounded-md bg-secondary/20" />
               ))
             }
           </div>
           
           {/* Bottom Label */}
-          <div className="pt-2">
-            <p className="text-sm font-medium text-foreground">All clothes</p>
-            <p className="text-xs text-muted-foreground">{closetItems.length} items</p>
+          <div>
+            <p className="text-xs font-medium text-foreground">All clothes</p>
+            <p className="text-[10px] text-muted-foreground">{closetItems.length} items</p>
           </div>
         </div>
         
-        {/* Right Card - Outfits */}
+        {/* Right Card - Outfits (Slideshow with Plus Button) */}
         <div 
           onClick={() => handleNavigate('/dress-me/fits')}
-          className="bg-card rounded-2xl p-3 border border-border/50 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
+          className="bg-card rounded-xl p-2 border border-border/50 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
         >
-          {/* Grid of outfits with Create button */}
-          <div className="grid grid-cols-2 gap-2 mb-3">
+          {/* Content area with plus button and transitioning image */}
+          <div className="flex gap-1.5 mb-2">
             {/* Create Button - circular */}
             <button 
               onClick={(e) => {
                 e.stopPropagation();
                 handleNavigate('/dress-me/fits');
               }}
-              className="aspect-square rounded-full bg-secondary flex items-center justify-center hover:bg-secondary/80 transition-colors"
+              className="w-10 h-10 flex-shrink-0 rounded-full bg-secondary flex items-center justify-center hover:bg-secondary/80 transition-colors"
             >
-              <Plus className="h-6 w-6 text-muted-foreground" />
+              <Plus className="h-5 w-5 text-muted-foreground" />
             </button>
             
-            {/* Outfit thumbnails */}
-            {displayOutfits.slice(0, 3).map((fit, index) => (
-              <div 
-                key={fit.id} 
-                className="aspect-square rounded-lg overflow-hidden bg-secondary/30"
-              >
-                <img 
-                  src={getOutfitImageUrl(fit)} 
-                  alt={fit.title || 'Outfit'}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            ))}
-            
-            {/* Fill empty slots if less than 3 outfits */}
-            {displayOutfits.length < 3 && 
-              Array.from({ length: 3 - displayOutfits.length }).map((_, i) => (
-                <div key={`empty-outfit-${i}`} className="aspect-square rounded-lg bg-secondary/20" />
-              ))
-            }
+            {/* Transitioning Outfit Image */}
+            <div className="flex-1 aspect-[4/3] rounded-md overflow-hidden bg-secondary/30 relative">
+              <AnimatePresence mode="wait">
+                {currentOutfit ? (
+                  <motion.img
+                    key={currentOutfit.id}
+                    src={getOutfitImageUrl(currentOutfit)}
+                    alt={currentOutfit.title || 'Outfit'}
+                    className="w-full h-full object-cover"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.4 }}
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <span className="text-[10px] text-muted-foreground">No outfits</span>
+                  </div>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
           
           {/* Bottom Label */}
-          <div className="pt-2">
-            <p className="text-sm font-medium text-foreground">Outfits</p>
-            <p className="text-xs text-muted-foreground">{publicFits.length} looks</p>
+          <div>
+            <p className="text-xs font-medium text-foreground">Outfits</p>
+            <p className="text-[10px] text-muted-foreground">{publicFits.length} looks</p>
           </div>
         </div>
       </div>
