@@ -241,7 +241,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden bg-gradient-to-br from-primary/5 via-card to-accent/5 border-border/50 rounded-2xl shadow-2xl fixed top-[5%] left-[50%] translate-x-[-50%] translate-y-0 sm:top-[8%] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:slide-out-to-top-[10%] data-[state=open]:slide-in-from-top-[10%]">
+      <DialogContent className="!max-w-2xl max-h-[85vh] overflow-hidden !p-4 sm:!p-6 bg-gradient-to-br from-primary/5 via-card to-accent/5 border-border/50 !rounded-2xl shadow-2xl fixed top-[5%] left-[50%] translate-x-[-50%] translate-y-0 sm:top-[8%] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:slide-out-to-top-[10%] data-[state=open]:slide-in-from-top-[10%]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Search className="h-5 w-5 text-primary" />
@@ -264,24 +264,24 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({
           </div>
 
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'products' | 'users' | 'brands')}>
-            <TabsList className="flex w-full gap-1.5 sm:gap-2 bg-transparent p-0 h-auto">
+            <TabsList className="!grid w-full !grid-cols-3 gap-1.5 sm:gap-2 bg-transparent !p-0 !h-auto min-w-0">
               <TabsTrigger 
                 value="products" 
-                className="flex-1 min-w-0 flex items-center justify-center gap-1.5 py-1.5 sm:py-2 px-2 sm:px-3 rounded-lg bg-background/60 border border-border/30 text-xs sm:text-sm text-muted-foreground hover:bg-primary/10 hover:border-primary/30 hover:text-primary transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary overflow-hidden"
+                className="w-full min-w-0 flex items-center justify-center gap-1.5 !py-1.5 sm:!py-2 !px-2 sm:!px-3 !rounded-lg bg-background/60 border border-border/30 !text-xs sm:!text-sm text-muted-foreground hover:bg-primary/10 hover:border-primary/30 hover:text-primary transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary overflow-hidden"
               >
                 <Package className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
                 <span className="min-w-0 truncate">Products</span>
               </TabsTrigger>
               <TabsTrigger 
                 value="users" 
-                className="flex-1 min-w-0 flex items-center justify-center gap-1.5 py-1.5 sm:py-2 px-2 sm:px-3 rounded-lg bg-background/60 border border-border/30 text-xs sm:text-sm text-muted-foreground hover:bg-primary/10 hover:border-primary/30 hover:text-primary transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary overflow-hidden"
+                className="w-full min-w-0 flex items-center justify-center gap-1.5 !py-1.5 sm:!py-2 !px-2 sm:!px-3 !rounded-lg bg-background/60 border border-border/30 !text-xs sm:!text-sm text-muted-foreground hover:bg-primary/10 hover:border-primary/30 hover:text-primary transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary overflow-hidden"
               >
                 <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
                 <span className="min-w-0 truncate">Shoppers</span>
               </TabsTrigger>
               <TabsTrigger 
                 value="brands" 
-                className="flex-1 min-w-0 flex items-center justify-center gap-1.5 py-1.5 sm:py-2 px-2 sm:px-3 rounded-lg bg-background/60 border border-border/30 text-xs sm:text-sm text-muted-foreground hover:bg-primary/10 hover:border-primary/30 hover:text-primary transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary overflow-hidden"
+                className="w-full min-w-0 flex items-center justify-center gap-1.5 !py-1.5 sm:!py-2 !px-2 sm:!px-3 !rounded-lg bg-background/60 border border-border/30 !text-xs sm:!text-sm text-muted-foreground hover:bg-primary/10 hover:border-primary/30 hover:text-primary transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary overflow-hidden"
               >
                 <Store className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
                 <span className="min-w-0 truncate">Brands</span>
@@ -293,11 +293,11 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({
                 {filterResultsByType('product').map((result) => (
                   <div
                     key={result.id}
-                    className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg hover:bg-background/60 cursor-pointer transition-colors w-full overflow-hidden"
+                    className="grid grid-cols-[auto,minmax(0,1fr)] items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg hover:bg-background/60 cursor-pointer transition-colors w-full overflow-hidden"
                     onClick={() => handleProductClick(result.id)}
                   >
                     {renderResultImage(result, 'w-10 h-10 sm:w-12 sm:h-12 flex-shrink-0')}
-                    <div className="flex-1 min-w-0 overflow-hidden max-w-full">
+                    <div className="min-w-0 overflow-hidden">
                       <h4 className="font-medium text-sm sm:text-base truncate block w-full">{result.title}</h4>
                       {result.subtitle && (
                         <p className="text-xs sm:text-sm text-muted-foreground truncate block w-full">{result.subtitle}</p>
