@@ -1,18 +1,139 @@
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, ExternalLink, Package, Heart, Star } from 'lucide-react';
+import { ArrowLeft, ExternalLink, Package, Heart, Star, ShoppingBag, User, Image } from 'lucide-react';
 import { SEOHead } from '@/components/SEOHead';
-import { getResponsiveImageProps } from '@/utils/asosImageUtils';
+import { SmartImage } from '@/components/SmartImage';
+import { getPrimaryImageUrl, hasMultipleImages, getImageCount } from '@/utils/imageHelpers';
+import { useAuth } from '@/contexts/AuthContext';
+import { useWishlist } from '@/hooks/useWishlist';
+import { useToast } from '@/hooks/use-toast';
+import { useProductHasOutfit } from '@/hooks/useProductOutfits';
+import { useGuestGate } from '@/hooks/useGuestGate';
+import { GuestActionPrompt } from '@/components/GuestActionPrompt';
+import ProductTryOnModal from '@/components/ProductTryOnModal';
+
+// ProductCard component for seamless grid display
+const BrandProductCard: React.FC<{
+  product: any;
+  onProductClick: (id: string) => void;
+  onLike: (product: any) => void;
+  formatPrice: (cents: number, currency?: string) => string;
+  user: any;
+  requireAuth: (action: string, callback: () => void) => void;
+}> = ({ product, onProductClick, onLike, formatPrice, user, requireAuth }) => {
+  const { addToWishlist, isLoading: wishlistLoading } = useWishlist(product.id);
+  const { data: hasOutfit } = useProductHasOutfit(product.id);
+  const [tryOnModalOpen, setTryOnModalOpen] = useState(false);
+  const { toast } = useToast();
+
+  const handleAddToWishlist = async () => {
+    requireAuth('add to wishlist', async () => {
+      if (!user) return;
+      try {
+        await addToWishlist(product.id);
+        toast({ description: `${product.title} added to your wishlist!` });
+      } catch (error) {
+        toast({ title: "Error", description: "Failed to add to wishlist.", variant: "destructive" });
+      }
+    });
+  };
+
+  return (
+    <div className="group relative bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl shadow-md hover:shadow-xl transition-all duration-500 hover:-translate-y-1">
+      <div 
+        className="w-full aspect-[3/4] bg-muted rounded-xl overflow-hidden relative cursor-pointer"
+        onClick={() => onProductClick(product.id)}
+      >
+        <SmartImage
+          src={getPrimaryImageUrl(product)}
+          alt={product.title}
+          className="w-full h-full object-cover"
+          sizes="(max-width: 768px) 33vw, 25vw"
+        />
+        
+        {/* Multiple images indicator */}
+        {hasMultipleImages(product) && (
+          <div className="absolute top-1.5 left-1.5 bg-primary text-primary-foreground text-[10px] px-1.5 py-0.5 rounded-full flex items-center gap-0.5 opacity-90">
+            <Image className="h-2.5 w-2.5" />
+            {getImageCount(product)}
+          </div>
+        )}
+
+        {/* Try On label */}
+        {hasOutfit && (
+          <div 
+            className="absolute top-7 left-1.5 bg-accent text-white text-[9px] px-1.5 py-0.5 rounded-full opacity-90 cursor-pointer hover:opacity-100"
+            onClick={(e) => { e.stopPropagation(); setTryOnModalOpen(true); }}
+          >
+            Try On
+          </div>
+        )}
+        
+        {/* Hover gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-primary/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+        
+        {/* Top-right action buttons */}
+        <div className="absolute top-1 right-1 flex flex-col space-y-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-7 w-7 rounded-full bg-white/90 hover:bg-white backdrop-blur-sm"
+            onClick={(e) => { e.stopPropagation(); onLike(product); }}
+          >
+            <Heart className="h-4 w-4" />
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-7 w-7 rounded-full bg-white/90 hover:bg-white backdrop-blur-sm"
+            onClick={(e) => { e.stopPropagation(); handleAddToWishlist(); }}
+            disabled={wishlistLoading}
+          >
+            <ShoppingBag className="h-4 w-4" />
+          </Button>
+          {hasOutfit && (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 w-7 rounded-full bg-accent/90 hover:bg-accent backdrop-blur-sm"
+              onClick={(e) => { e.stopPropagation(); setTryOnModalOpen(true); }}
+            >
+              <User className="h-4 w-4 text-white" />
+            </Button>
+          )}
+        </div>
+        
+        {/* Product Info Overlay */}
+        <div className="absolute bottom-2 left-2 right-2 bg-white/60 backdrop-blur-sm rounded-lg p-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+          <div className="text-[10px] font-medium line-clamp-1 mb-0.5">{product.title}</div>
+          <div className="text-[10px] font-semibold text-primary">
+            {formatPrice(product.price_cents, product.currency)}
+          </div>
+        </div>
+      </div>
+      
+      <ProductTryOnModal
+        isOpen={tryOnModalOpen}
+        onClose={() => setTryOnModalOpen(false)}
+        product={product}
+      />
+    </div>
+  );
+};
 
 const BrandDetail = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const { requireAuth, showPrompt, setShowPrompt, promptAction } = useGuestGate();
 
   const { data: brand, isLoading: brandLoading } = useQuery({
     queryKey: ['brand', slug],
@@ -34,10 +155,7 @@ const BrandDetail = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('products')
-        .select(`
-          *,
-          brands!inner(name)
-        `)
+        .select(`*, brands!inner(name)`)
         .eq('brand_id', brand.id)
         .eq('status', 'active')
         .order('created_at', { ascending: false });
@@ -55,30 +173,36 @@ const BrandDetail = () => {
     }).format(cents / 100);
   };
 
-  const getImageUrl = (product: any) => {
-    // Handle different media_urls formats
-    if (product.image_url) {
-      return product.image_url;
-    }
-    
-    if (product.media_urls) {
-      // If it's a JSON string, parse it
-      if (typeof product.media_urls === 'string') {
-        try {
-          const parsed = JSON.parse(product.media_urls);
-          return Array.isArray(parsed) ? parsed[0] : parsed;
-        } catch {
-          return product.media_urls;
+  const handleLike = useCallback(async (product: any) => {
+    requireAuth('save likes', async () => {
+      if (!user) return;
+      try {
+        const { error } = await supabase.from('likes').insert([{
+          user_id: user.id,
+          product_id: product.id
+        }]);
+
+        if (error) {
+          if (error.code === '23505') {
+            await supabase
+              .from('likes')
+              .update({ created_at: new Date().toISOString() })
+              .eq('user_id', user.id)
+              .eq('product_id', product.id);
+            toast({ description: `${product.title} moved to top of likes!` });
+          } else {
+            throw error;
+          }
+        } else {
+          toast({ description: `${product.title} added to your likes!` });
         }
+        queryClient.invalidateQueries({ queryKey: ['likes'] });
+        queryClient.invalidateQueries({ queryKey: ['liked-products'] });
+      } catch (error) {
+        toast({ title: "Error", description: "Failed to like product.", variant: "destructive" });
       }
-      // If it's already an array
-      if (Array.isArray(product.media_urls)) {
-        return product.media_urls[0];
-      }
-    }
-    
-    return '/placeholder.svg';
-  };
+    });
+  }, [user, toast, queryClient, requireAuth]);
 
   if (brandLoading) {
     return (
@@ -87,9 +211,9 @@ const BrandDetail = () => {
           <div className="animate-pulse">
             <div className="h-8 w-32 bg-muted rounded mb-8"></div>
             <div className="h-32 bg-muted rounded mb-8"></div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {[...Array(8)].map((_, i) => (
-                <div key={i} className="h-64 bg-muted rounded"></div>
+            <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 md:gap-4">
+              {[...Array(9)].map((_, i) => (
+                <div key={i} className="aspect-[3/4] bg-muted rounded-xl"></div>
               ))}
             </div>
           </div>
@@ -171,75 +295,29 @@ const BrandDetail = () => {
           </CardContent>
         </Card>
 
-        {/* Products List - Compact Mobile View */}
+        {/* Products Grid - 3 columns mobile, 4 tablet, 5 desktop */}
         <div className="mb-8">
           <h2 className="text-xl font-semibold mb-4">All Products</h2>
           
           {productsLoading ? (
-            <div className="space-y-3">
-              {[...Array(6)].map((_, i) => (
-                <div key={i} className="flex gap-3 p-3 bg-card rounded-lg animate-pulse">
-                  <div className="w-16 h-16 bg-muted rounded-lg flex-shrink-0"></div>
-                  <div className="flex-1 space-y-2">
-                    <div className="h-4 bg-muted rounded w-3/4"></div>
-                    <div className="h-3 bg-muted rounded w-1/4"></div>
-                  </div>
-                </div>
+            <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 md:gap-4">
+              {[...Array(9)].map((_, i) => (
+                <div key={i} className="animate-pulse bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl aspect-[3/4]" />
               ))}
             </div>
           ) : products && products.length > 0 ? (
-            <div className="space-y-2">
-              {products.map((product) => {
-                const imageUrl = getImageUrl(product);
-                const imageProps = imageUrl.includes('asos-media.com') 
-                  ? getResponsiveImageProps(imageUrl, "64px")
-                  : { src: imageUrl };
-
-                return (
-                  <div 
-                    key={product.id} 
-                    className="flex items-center gap-3 p-3 bg-card rounded-lg border border-border hover:bg-muted/50 transition-colors cursor-pointer"
-                    onClick={() => navigate(`/p/${product.id}`)}
-                  >
-                    {/* Compact Image */}
-                    <div className="w-14 h-14 md:w-16 md:h-16 flex-shrink-0 overflow-hidden rounded-lg bg-muted">
-                      <img
-                        {...imageProps}
-                        alt={product.title}
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          e.currentTarget.src = '/placeholder.svg';
-                        }}
-                      />
-                    </div>
-                    
-                    {/* Product Info */}
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-medium text-sm line-clamp-2 text-foreground">
-                        {product.title}
-                      </h3>
-                      <p className="text-sm font-semibold text-primary mt-0.5">
-                        {formatPrice(product.price_cents, product.currency)}
-                      </p>
-                    </div>
-                    
-                    {/* External Link (optional) */}
-                    {product.external_url && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0 flex-shrink-0"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          window.open(product.external_url, '_blank');
-                        }}
-                      >
-                        <ExternalLink className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-                );
-              })}
+            <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 md:gap-4">
+              {products.map((product) => (
+                <BrandProductCard
+                  key={product.id}
+                  product={product}
+                  onProductClick={(id) => navigate(`/p/${id}`)}
+                  onLike={handleLike}
+                  formatPrice={formatPrice}
+                  user={user}
+                  requireAuth={requireAuth}
+                />
+              ))}
             </div>
           ) : (
             <div className="text-center py-12">
@@ -250,6 +328,12 @@ const BrandDetail = () => {
           )}
         </div>
       </div>
+
+      <GuestActionPrompt 
+        open={showPrompt} 
+        onOpenChange={setShowPrompt} 
+        action={promptAction} 
+      />
     </div>
   );
 };
