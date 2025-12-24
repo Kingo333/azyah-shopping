@@ -66,9 +66,9 @@ export const ClosetOutfitsSection: React.FC = () => {
   const displayClosetItems = closetItems.slice(0, 3);
 
   return (
-    <section className="px-4 pt-3">
+    <section className="px-4 pt-1">
       {/* Section Header */}
-      <div className="flex items-center justify-between mb-1">
+      <div className="flex items-center justify-between mb-0.5">
         <h2 className="text-base font-serif font-medium text-foreground">Closet</h2>
         <Button 
           variant="link" 
@@ -85,10 +85,10 @@ export const ClosetOutfitsSection: React.FC = () => {
         {/* Left Card - Closet Items (Grid Layout) */}
         <div 
           onClick={() => handleNavigate('/dress-me/wardrobe')}
-          className="bg-card rounded-xl p-1.5 border border-border/50 shadow-sm cursor-pointer hover:shadow-md transition-shadow flex flex-col"
+          className="bg-card rounded-lg p-1 border border-border/50 shadow-sm cursor-pointer hover:shadow-md transition-shadow flex flex-col"
         >
           {/* Grid of items with Create button */}
-          <div className="grid grid-cols-2 gap-1 flex-1">
+          <div className="grid grid-cols-2 gap-0.5 flex-1">
             {/* Create Button - circular */}
             <div className="aspect-square flex items-center justify-center">
               <button 
@@ -96,7 +96,7 @@ export const ClosetOutfitsSection: React.FC = () => {
                   e.stopPropagation();
                   handleNavigate('/dress-me/wardrobe');
                 }}
-                className="w-full h-full max-w-[40px] max-h-[40px] rounded-full bg-secondary flex items-center justify-center hover:bg-secondary/80 transition-colors"
+                className="w-full h-full max-w-[28px] max-h-[28px] rounded-full bg-secondary flex items-center justify-center hover:bg-secondary/80 transition-colors"
               >
                 <Plus className="h-4 w-4 text-muted-foreground" />
               </button>
@@ -125,7 +125,7 @@ export const ClosetOutfitsSection: React.FC = () => {
           </div>
           
           {/* Bottom Label */}
-          <div className="mt-1">
+          <div className="mt-0.5">
             <p className="text-xs font-medium text-foreground">All clothes</p>
             <p className="text-[10px] text-muted-foreground">{closetItems.length} items</p>
           </div>
@@ -134,7 +134,7 @@ export const ClosetOutfitsSection: React.FC = () => {
         {/* Right Card - Outfits (Full image with small plus button) */}
         <div 
           onClick={() => handleNavigate('/dress-me/fits')}
-          className="bg-card rounded-xl p-1.5 border border-border/50 shadow-sm cursor-pointer hover:shadow-md transition-shadow flex flex-col"
+          className="bg-card rounded-lg p-1 border border-border/50 shadow-sm cursor-pointer hover:shadow-md transition-shadow flex flex-col"
         >
           {/* Image container with overlay plus button */}
           <div className="relative aspect-square rounded-md overflow-hidden bg-secondary/30 flex-1">
@@ -171,7 +171,7 @@ export const ClosetOutfitsSection: React.FC = () => {
           </div>
           
           {/* Bottom Label */}
-          <div className="mt-1">
+          <div className="mt-0.5">
             <p className="text-xs font-medium text-foreground">Outfits</p>
             <p className="text-[10px] text-muted-foreground">{publicFits.length} looks</p>
           </div>
