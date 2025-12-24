@@ -22,7 +22,7 @@ import TrendingStylesCarousel from '@/components/TrendingStylesCarousel';
 import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
 import { FeedbackModal } from '@/components/FeedbackModal';
 import { TutorialTooltip } from '@/components/ui/tutorial-tooltip';
-import { ProfileCompletionBanner } from '@/components/ProfileCompletionBanner';
+import { DashboardTopCarousel } from '@/components/dashboard/DashboardTopCarousel';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CATEGORY_TREE, getCategoryDisplayName } from '@/lib/categories';
 import type { TopCategory } from '@/lib/categories';
@@ -68,6 +68,7 @@ const RoleDashboard: React.FC = () => {
   const [stats, setStats] = useState<DashboardStats>({});
   const [loading, setLoading] = useState(true);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [searchInitialQuery, setSearchInitialQuery] = useState('');
   const [activeLeaderboard, setActiveLeaderboard] = useState<'global' | 'country'>('global');
   const [aiStudioModalOpen, setAiStudioModalOpen] = useState(false);
   const [isClosetsMinimized, setIsClosetsMinimized] = useState(true);
@@ -282,11 +283,19 @@ const RoleDashboard: React.FC = () => {
       </div>;
   }
   console.log('Rendering dashboard for user:', userProfile);
+  const handleOpenSearchFromCard = (query: string) => {
+    setSearchInitialQuery(query);
+    setSearchOpen(true);
+  };
+
   const renderShopperDashboard = () => <div className="space-y-0 pb-20">
-      {/* Combined Status Banner */}
-      <section className="px-4 pt-4">
-        <ProfileCompletionBanner />
-      </section>
+      {/* Dashboard Top Carousel - Profile, Search, Points */}
+      <DashboardTopCarousel
+        showProfileCard={true}
+        showSearchCard={true}
+        showPointsCard={true}
+        onOpenGlobalSearch={handleOpenSearchFromCard}
+      />
 
       {/* Feature Strip - 5 Square Tiles (ADNOC-inspired) */}
       <section className="px-4 pt-4">
@@ -719,7 +728,14 @@ const RoleDashboard: React.FC = () => {
         
 
         {/* Global Search Modal */}
-        <GlobalSearch isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
+        <GlobalSearch 
+          isOpen={searchOpen} 
+          onClose={() => {
+            setSearchOpen(false);
+            setSearchInitialQuery('');
+          }}
+          initialQuery={searchInitialQuery}
+        />
         
         {/* AI Studio Modal */}
         <AiStudioModal open={aiStudioModalOpen} onClose={() => setAiStudioModalOpen(false)} />

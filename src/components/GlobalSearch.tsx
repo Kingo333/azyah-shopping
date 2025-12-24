@@ -23,15 +23,30 @@ interface SearchResult {
 interface GlobalSearchProps {
   isOpen: boolean;
   onClose: () => void;
+  initialQuery?: string;
+  initialTab?: 'products' | 'users' | 'brands';
 }
 
-const GlobalSearch: React.FC<GlobalSearchProps> = ({ isOpen, onClose }) => {
+const GlobalSearch: React.FC<GlobalSearchProps> = ({ 
+  isOpen, 
+  onClose, 
+  initialQuery = '',
+  initialTab = 'products'
+}) => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState(initialQuery);
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState('products');
+  const [activeTab, setActiveTab] = useState(initialTab);
+
+  // Sync with initialQuery when modal opens
+  React.useEffect(() => {
+    if (isOpen) {
+      setQuery(initialQuery);
+      setActiveTab(initialTab);
+    }
+  }, [isOpen, initialQuery, initialTab]);
 
   const performSearch = async (searchQuery: string) => {
     if (!searchQuery.trim()) {
@@ -181,7 +196,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ isOpen, onClose }) => {
             />
           </div>
 
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'products' | 'users' | 'brands')}>
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="products" className="flex items-center gap-2">
                 <Package className="h-4 w-4" />
