@@ -12,7 +12,7 @@ interface DashboardTopCarouselProps {
   showProfileCard?: boolean;
   showSearchCard?: boolean;
   showPointsCard?: boolean;
-  onOpenGlobalSearch: (query: string) => void;
+  onOpenGlobalSearch: (query: string, tab?: 'products' | 'users' | 'brands') => void;
 }
 
 const DISMISS_KEY = 'profile-completion-dismissed';

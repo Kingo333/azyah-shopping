@@ -302,8 +302,9 @@ const RoleDashboard: React.FC = () => {
       </div>;
   }
   console.log('Rendering dashboard for user:', userProfile);
-  const handleOpenSearchFromCard = (query: string) => {
+  const handleOpenSearchFromCard = (query: string, tab?: 'products' | 'users' | 'brands') => {
     setSearchInitialQuery(query);
+    if (tab) setSearchInitialTab(tab);
     setSearchOpen(true);
   };
 
