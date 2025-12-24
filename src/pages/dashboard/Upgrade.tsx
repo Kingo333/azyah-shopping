@@ -169,13 +169,11 @@ export default function Upgrade() {
           console.error('Failed to update premium status:', updateResult.error);
         }
 
-        // Sync subscription record for consistency
+        // Sync subscription record for consistency (sensitive IDs handled by webhook)
         await syncSubscriptionRecord(
           user.id,
           planType,
-          expiresAt,
-          result.transactionId,
-          result.productId
+          expiresAt
         );
 
         // Refetch premium status
@@ -260,13 +258,11 @@ export default function Upgrade() {
       // Update premium status in profiles table
       await updatePremiumStatus(user.id, true, planType, result.expiresAt || null);
       
-      // Sync subscription record
+      // Sync subscription record (sensitive IDs handled by webhook)
       await syncSubscriptionRecord(
         user.id,
         planType,
-        result.expiresAt || null,
-        undefined,
-        result.activeProductId
+        result.expiresAt || null
       );
 
       await refetchPremium();

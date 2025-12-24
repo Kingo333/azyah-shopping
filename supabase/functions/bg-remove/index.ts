@@ -30,16 +30,15 @@ serve(async (req) => {
       });
     }
 
-    // Check subscription status for quota
+    // Check subscription status for quota (using safe view)
     const { data: subscription } = await supabaseClient
-      .from('subscriptions')
+      .from('subscriptions_safe')
       .select('status, current_period_end')
-      .eq('user_id', user.id)
-      .eq('status', 'active')
-      .gt('current_period_end', new Date().toISOString())
-      .single();
+      .maybeSingle();
 
-    const isPremium = !!subscription;
+    const isPremium = subscription?.status === 'active' && 
+      subscription?.current_period_end && 
+      new Date(subscription.current_period_end) > new Date();
 
     // Get or create user credits record
     let { data: credits } = await supabaseClient

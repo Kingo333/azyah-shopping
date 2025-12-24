@@ -60,11 +60,10 @@ export function useSubscription(): UseSubscriptionReturn {
       
       // Fetch both subscription and profile premium status in parallel
       const [subResult, profileResult] = await Promise.all([
-        // Select only non-sensitive columns - excludes payment provider IDs
+        // Query the safe view which only exposes non-sensitive columns
         supabase
-          .from('subscriptions')
+          .from('subscriptions_safe')
           .select('id, user_id, plan, status, current_period_start, current_period_end, created_at, updated_at')
-          .eq('user_id', user.id)
           .maybeSingle(),
         supabase
           .from('profiles')

@@ -36,12 +36,11 @@ serve(async (req) => {
       );
     }
 
-    // GET: Return current subscription
+    // GET: Return current subscription (using safe view to exclude sensitive columns)
     if (req.method === 'GET') {
       const { data: subscription, error } = await supabaseClient
-        .from('subscriptions')
+        .from('subscriptions_safe')
         .select('*')
-        .eq('user_id', user.id)
         .maybeSingle();
 
       if (error) {
