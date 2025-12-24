@@ -135,7 +135,7 @@ export const ClosetOutfitsSection: React.FC = () => {
           className="bg-card rounded-xl p-2 border border-border/50 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
         >
           {/* Image container with overlay plus button */}
-          <div className="relative aspect-[4/5] rounded-md overflow-hidden bg-secondary/30 mb-2">
+          <div className="relative aspect-square rounded-md overflow-hidden bg-secondary/30 mb-2">
             {/* Small Plus Button - top left corner */}
             <button 
               onClick={(e) => {
@@ -154,7 +154,7 @@ export const ClosetOutfitsSection: React.FC = () => {
                   key={currentOutfit.id}
                   src={getOutfitImageUrl(currentOutfit)}
                   alt={currentOutfit.title || 'Outfit'}
-                  className="w-full h-full object-contain"
+                  className="w-full h-full object-cover"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
