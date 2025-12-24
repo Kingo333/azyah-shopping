@@ -368,9 +368,9 @@ const RoleDashboard: React.FC = () => {
       <ClosetOutfitsSection />
 
       {/* Trending Looks Section */}
-      <section className="px-4 pt-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-serif font-medium text-foreground">Trending Looks</h2>
+      <section className="px-4 pt-3">
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-base font-serif font-medium text-foreground">Trending Looks</h2>
           
           {/* Category Filter */}
           <Popover open={isTrendingFilterOpen} onOpenChange={setIsTrendingFilterOpen}>
@@ -378,11 +378,11 @@ const RoleDashboard: React.FC = () => {
               <Button 
                 variant="outline" 
                 size="sm" 
-                className="gap-1.5 h-7 px-2.5 rounded-full text-xs"
+                className="gap-1 h-6 px-2 rounded-full text-[10px]"
               >
-                <SlidersHorizontal className="h-3 w-3" />
+                <SlidersHorizontal className="h-2.5 w-2.5" />
                 {selectedTrendingCategory ? getCategoryDisplayName(selectedTrendingCategory).substring(0, 8) + '...' : 'All'}
-                <ChevronDown className="h-3 w-3" />
+                <ChevronDown className="h-2.5 w-2.5" />
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-48 p-3" align="end">
@@ -423,9 +423,9 @@ const RoleDashboard: React.FC = () => {
       </section>
 
       {/* Events Section */}
-      <section className="px-4 pt-6">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-serif font-medium text-foreground">Events</h2>
+      <section className="px-4 pt-3">
+        <div className="flex items-center justify-between mb-1">
+          <h2 className="text-base font-serif font-medium text-foreground">Events</h2>
           <Button 
             variant="link" 
             size="sm" 
@@ -485,7 +485,7 @@ const RoleDashboard: React.FC = () => {
       </section>
 
       {/* Rewards & Offers Section */}
-      <section className="px-4 pt-6">
+      <section className="px-4 pt-3">
         <Card 
           className="bg-card border-border shadow-sm cursor-pointer hover:shadow-md transition-shadow"
           onClick={() => navigate('/rewards')}
@@ -504,19 +504,19 @@ const RoleDashboard: React.FC = () => {
       </section>
 
       {/* Fashion Leaderboard Section */}
-      <section className="px-4 pt-6">
-        <div className="mb-2">
-          <h2 className="text-lg font-serif font-medium text-foreground flex items-center gap-2">
-            <Trophy className="h-5 w-5 text-yellow-500" />
+      <section className="px-4 pt-3">
+        <div className="mb-1">
+          <h2 className="text-base font-serif font-medium text-foreground flex items-center gap-2">
+            <Trophy className="h-4 w-4 text-yellow-500" />
             Fashion Leaderboard
           </h2>
-          <p className="text-xs font-light text-muted-foreground">
+          <p className="text-[10px] font-light text-muted-foreground">
             Compete with style enthusiasts worldwide
           </p>
         </div>
         
         {/* Global/Country Toggle */}
-        <div className="flex justify-end mb-4">
+        <div className="flex justify-end mb-2">
           <div className="flex bg-muted rounded-lg p-1 text-xs">
             <button
               onClick={() => setActiveLeaderboard('global')}
