@@ -134,38 +134,43 @@ export const ClosetOutfitsSection: React.FC = () => {
           onClick={() => handleNavigate('/dress-me/fits')}
           className="bg-card rounded-xl p-2 border border-border/50 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
         >
-          {/* Layout with small plus button and outfit image */}
-          <div className="flex gap-2 mb-2">
-            {/* Create Button - smaller circular */}
+          {/* Grid layout matching All clothes */}
+          <div className="grid grid-cols-2 gap-1.5 mb-2">
+            {/* Create Button - circular */}
             <button 
               onClick={(e) => {
                 e.stopPropagation();
                 handleNavigate('/dress-me/fits');
               }}
-              className="w-8 h-8 flex-shrink-0 rounded-full bg-secondary flex items-center justify-center hover:bg-secondary/80 transition-colors"
+              className="aspect-square rounded-full bg-secondary flex items-center justify-center hover:bg-secondary/80 transition-colors"
             >
-              <Plus className="h-4 w-4 text-muted-foreground" />
+              <Plus className="h-5 w-5 text-muted-foreground" />
             </button>
             
-            {/* Outfit Image - shows full image without cropping */}
-            <div className="flex-1 h-20 rounded-md overflow-hidden bg-secondary/30 flex items-center justify-center">
+            {/* Transitioning Outfit Image - takes remaining 3 slots visually */}
+            <div className="aspect-square col-span-1 row-span-2 rounded-md overflow-hidden bg-secondary/30 relative">
               <AnimatePresence mode="wait">
                 {currentOutfit ? (
                   <motion.img
                     key={currentOutfit.id}
                     src={getOutfitImageUrl(currentOutfit)}
                     alt={currentOutfit.title || 'Outfit'}
-                    className="max-w-full max-h-full object-contain"
+                    className="w-full h-full object-cover"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.4 }}
                   />
                 ) : (
-                  <span className="text-[10px] text-muted-foreground">No outfits</span>
+                  <div className="w-full h-full flex items-center justify-center">
+                    <span className="text-[10px] text-muted-foreground">No outfits</span>
+                  </div>
                 )}
               </AnimatePresence>
             </div>
+            
+            {/* Empty slot below plus button */}
+            <div className="aspect-square rounded-md bg-secondary/20" />
           </div>
           
           {/* Bottom Label */}
