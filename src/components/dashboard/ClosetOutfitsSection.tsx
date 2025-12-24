@@ -95,7 +95,7 @@ export const ClosetOutfitsSection: React.FC = () => {
                 e.stopPropagation();
                 handleNavigate('/dress-me/wardrobe');
               }}
-              className="aspect-square rounded-full bg-secondary flex items-center justify-center hover:bg-secondary/80 transition-colors max-h-16"
+              className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center hover:bg-secondary/80 transition-colors"
             >
               <Plus className="h-4 w-4 text-muted-foreground" />
             </button>
@@ -104,7 +104,7 @@ export const ClosetOutfitsSection: React.FC = () => {
             {displayClosetItems.map((item) => (
               <div 
                 key={item.id} 
-                className="aspect-square rounded-md overflow-hidden bg-secondary/30 max-h-16"
+                className="w-12 h-12 rounded-md overflow-hidden bg-secondary/30"
               >
                 <img 
                   src={item.image_bg_removed_url || item.image_url || '/placeholder.svg'} 
@@ -117,7 +117,7 @@ export const ClosetOutfitsSection: React.FC = () => {
             {/* Fill empty slots if less than 3 items */}
             {displayClosetItems.length < 3 && 
               Array.from({ length: 3 - displayClosetItems.length }).map((_, i) => (
-                <div key={`empty-${i}`} className="aspect-square rounded-md bg-secondary/20 max-h-16" />
+                <div key={`empty-${i}`} className="w-12 h-12 rounded-md bg-secondary/20" />
               ))
             }
           </div>
