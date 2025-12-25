@@ -80,10 +80,27 @@ export const ClosetOutfitsSection: React.FC = () => {
     }
   };
 
-  const displayClosetItems = closetItems.slice(0, 3);
+  // Custom display order: keep shirts, show blue jeans instead of dress
+  const getDisplayItems = () => {
+    const shirts = closetItems.filter(item => 
+      item.category === 'top' && (item.color === 'black' || item.color === 'white')
+    ).slice(0, 2);
+    
+    const blueJeans = closetItems.find(item => 
+      item.category === 'bottom' && item.color === 'blue'
+    );
+    
+    if (shirts.length === 2 && blueJeans) {
+      return [...shirts, blueJeans];
+    }
+    
+    return closetItems.slice(0, 3);
+  };
+
+  const displayClosetItems = getDisplayItems();
 
   return (
-    <section className="px-4 pt-3 md:max-w-lg md:mx-auto lg:max-w-xl">
+    <section className="px-4 pt-3 md:max-w-lg lg:max-w-xl">
       {/* Section Header */}
       <div className="flex items-center justify-between mb-1">
         <h2 className="text-base font-serif font-medium text-foreground">Closet</h2>
