@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useEmblaCarousel from 'embla-carousel-react';
+import Autoplay from 'embla-carousel-autoplay';
 import { useProfileCompletion } from '@/hooks/useProfileCompletion';
 import { useAuth } from '@/contexts/AuthContext';
 import { ProfileCompletionCard } from './ProfileCompletionCard';
@@ -87,13 +88,20 @@ export function DashboardTopCarousel({
     });
   }
 
-  // Setup Embla carousel
+  // Setup Embla carousel with autoplay
   const [emblaRef, emblaApi] = useEmblaCarousel({
     align: 'start',
     containScroll: 'trimSnaps',
-    loop: false,
+    loop: true,
     skipSnaps: false
-  });
+  }, [
+    Autoplay({ 
+      delay: 4000,
+      stopOnInteraction: false,
+      stopOnMouseEnter: true,
+      stopOnFocusIn: true
+    })
+  ]);
 
   const onSelect = useCallback(() => {
     if (!emblaApi) return;
