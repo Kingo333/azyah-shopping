@@ -102,6 +102,16 @@ export default {
 				sm: 'calc(var(--radius) - 4px)'
 			},
 			keyframes: {
+				'pulse-scale': {
+					'0%, 100%': {
+						transform: 'scale(1)',
+						opacity: '0.8'
+					},
+					'50%': {
+						transform: 'scale(1.15)',
+						opacity: '1'
+					}
+				},
 				'accordion-down': {
 					from: {
 						height: '0'
