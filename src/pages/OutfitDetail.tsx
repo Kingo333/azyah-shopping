@@ -163,7 +163,7 @@ export default function OutfitDetail() {
               <img
                 src={fit.render_path || fit.image_preview}
                 alt={fit.title || 'Outfit'}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-contain"
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center text-muted-foreground">
