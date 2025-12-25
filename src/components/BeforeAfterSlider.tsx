@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import beforeOutfit from '@/assets/before-outfit.jpg';
 import afterOutfit from '@/assets/after-outfit.jpg';
@@ -10,10 +10,42 @@ interface BeforeAfterSliderProps {
 export const BeforeAfterSlider: React.FC<BeforeAfterSliderProps> = ({ className = "" }) => {
   const [sliderPosition, setSliderPosition] = useState(50);
   const [isDragging, setIsDragging] = useState(false);
+  const [hasInteracted, setHasInteracted] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Sway animation to demonstrate interaction
+  useEffect(() => {
+    if (hasInteracted || isDragging) return;
+
+    let isCancelled = false;
+
+    const runSwayAnimation = async () => {
+      if (isCancelled) return;
+      
+      // Animate using smooth steps
+      const steps = [35, 65, 50];
+      const durations = [600, 800, 500];
+      
+      for (let i = 0; i < steps.length; i++) {
+        if (isCancelled) return;
+        setSliderPosition(steps[i]);
+        await new Promise(r => setTimeout(r, durations[i]));
+      }
+    };
+
+    const timeout = setTimeout(runSwayAnimation, 500);
+    const interval = setInterval(runSwayAnimation, 4000);
+
+    return () => {
+      isCancelled = true;
+      clearTimeout(timeout);
+      clearInterval(interval);
+    };
+  }, [hasInteracted, isDragging]);
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
+    setHasInteracted(true);
     setIsDragging(true);
   }, []);
 
@@ -32,6 +64,7 @@ export const BeforeAfterSlider: React.FC<BeforeAfterSliderProps> = ({ className 
 
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     e.preventDefault();
+    setHasInteracted(true);
     setIsDragging(true);
   }, []);
 

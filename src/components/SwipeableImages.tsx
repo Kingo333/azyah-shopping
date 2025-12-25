@@ -1,6 +1,6 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { motion, PanInfo, useMotionValue, useTransform, animate } from 'framer-motion';
-import { ChevronLeft, ChevronRight, MoveHorizontal } from 'lucide-react';
+import { MoveHorizontal } from 'lucide-react';
 
 interface SwipeableImagesProps {
   images: string[];
@@ -11,6 +11,7 @@ const DISTANCE_THRESHOLD = 100;
 
 export const SwipeableImages = ({ images, productInfo }: SwipeableImagesProps) => {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [hasInteracted, setHasInteracted] = useState(false);
 
   // Motion values for swipe effect
   const x = useMotionValue(0);
@@ -20,7 +21,28 @@ export const SwipeableImages = ({ images, productInfo }: SwipeableImagesProps) =
   const currentImage = useMemo(() => images[currentIndex], [images, currentIndex]);
   const currentProduct = useMemo(() => productInfo?.[currentIndex], [productInfo, currentIndex]);
 
+  // Sway animation to demonstrate interaction
+  useEffect(() => {
+    if (hasInteracted) return;
+
+    const runSwayAnimation = async () => {
+      if (hasInteracted) return;
+      await animate(x, -40, { duration: 0.6, ease: "easeInOut" });
+      await animate(x, 40, { duration: 0.9, ease: "easeInOut" });
+      await animate(x, 0, { duration: 0.6, ease: "easeInOut" });
+    };
+
+    const timeout = setTimeout(runSwayAnimation, 800);
+    const interval = setInterval(runSwayAnimation, 4000);
+
+    return () => {
+      clearTimeout(timeout);
+      clearInterval(interval);
+    };
+  }, [hasInteracted, x]);
+
   const handleSwipeEnd = useCallback((event: any, info: PanInfo) => {
+    setHasInteracted(true);
     const { offset } = info;
 
     if (offset.x > DISTANCE_THRESHOLD) {
