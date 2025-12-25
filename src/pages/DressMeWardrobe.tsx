@@ -15,7 +15,7 @@ import { AccessoriesTray } from '@/components/AccessoriesTray';
 import { SEOHead } from '@/components/SEOHead';
 import { BackButton } from '@/components/ui/back-button';
 import { Card } from '@/components/ui/card';
-import { useFits, usePublicFits, useDeleteFit, useGiftedFits, useSuggestionFits } from '@/hooks/useFits';
+import { useFits, usePublicFits, useDeleteFit, useGiftedFits, useSuggestionFits, useUpdateFit } from '@/hooks/useFits';
 import { OutfitPreviewCard } from '@/components/OutfitPreviewCard';
 import { useDressMeAnalytics } from '@/hooks/useDressMeAnalytics';
 import { CommunityOutfits } from './CommunityOutfits';
@@ -67,6 +67,7 @@ export default function DressMeWardrobe() {
   const [layerMode, setLayerMode] = useState<LayerMode>('topBottomsShoes');
   
   const deleteFit = useDeleteFit();
+  const updateFit = useUpdateFit();
   const deleteItemMutation = useDeleteWardrobeItem();
   const { requireAuth, showPrompt, setShowPrompt, promptAction } = useGuestGate();
 
@@ -636,6 +637,10 @@ export default function DressMeWardrobe() {
                           setSelectedOutfitId(fit.id);
                         }}
                         onDelete={(showGifted || showSuggestions) ? undefined : (fitId) => setFitToDelete(fitId)}
+                        onTogglePublic={(showGifted || showSuggestions) ? undefined : (fitId, isPublic) => {
+                          updateFit.mutate({ id: fitId, updates: { is_public: isPublic } });
+                          toast.success(isPublic ? 'Outfit is now public' : 'Outfit is now private');
+                        }}
                         creator={(showGifted || showSuggestions) ? fit.creator : undefined}
                         showCreator={showGifted || showSuggestions}
                       />

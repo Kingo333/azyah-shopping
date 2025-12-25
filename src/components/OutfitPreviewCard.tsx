@@ -1,12 +1,13 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Trash2 } from 'lucide-react';
+import { Trash2, Globe, Lock } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 interface OutfitPreviewCardProps {
   fit: any;
   onClick: () => void;
   onDelete?: (fitId: string) => void;
+  onTogglePublic?: (fitId: string, isPublic: boolean) => void;
   creator?: {
     id: string;
     username: string;
@@ -19,6 +20,7 @@ export const OutfitPreviewCard: React.FC<OutfitPreviewCardProps> = ({
   fit,
   onClick,
   onDelete,
+  onTogglePublic,
   creator,
   showCreator,
 }) => {
@@ -50,6 +52,24 @@ export const OutfitPreviewCard: React.FC<OutfitPreviewCardProps> = ({
               @{creator.username || 'Anonymous'}
             </span>
           </div>
+        )}
+
+        {/* Public/Private toggle button */}
+        {onTogglePublic && (
+          <button
+            className="absolute top-2 right-2 z-10 p-1.5 rounded-full bg-background/80 backdrop-blur-sm hover:bg-background transition-colors"
+            onClick={(e) => {
+              e.stopPropagation();
+              onTogglePublic(fit.id, !fit.is_public);
+            }}
+            title={fit.is_public ? 'Make private' : 'Make public'}
+          >
+            {fit.is_public ? (
+              <Globe className="h-4 w-4 text-primary" />
+            ) : (
+              <Lock className="h-4 w-4 text-muted-foreground" />
+            )}
+          </button>
         )}
       </div>
 
