@@ -15,9 +15,9 @@ import DashboardHeader from '@/components/DashboardHeader';
 import AffiliateHub from '@/components/AffiliateHub';
 import AiStudioModal from '@/components/AiStudioModal';
 
-import { Heart, ShoppingBag, Search, Shirt, Package, BarChart3, Users, Settings, Store, TrendingUp, Plus, Eye, DollarSign, Globe, Bell, LogOut, User, Archive, Trophy, MapPin, Blocks, WandSparkles, ChevronDown, ChevronUp, Gift, ChevronLeft, ChevronRight, Home, SlidersHorizontal, CalendarIcon, Crown, Check } from 'lucide-react';
+import { Heart, ShoppingBag, Search, Shirt, Package, BarChart3, Users, Settings, Store, TrendingUp, Plus, Eye, DollarSign, Globe, Bell, LogOut, User, Archive, MapPin, Blocks, WandSparkles, ChevronDown, ChevronUp, Gift, ChevronLeft, ChevronRight, Home, SlidersHorizontal, CalendarIcon, Crown, Check, MoreHorizontal } from 'lucide-react';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
-import MinimizedLeaderboard from '@/components/MinimizedLeaderboard';
+import { Trophy } from 'lucide-react';
 import TrendingStylesCarousel from '@/components/TrendingStylesCarousel';
 import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
 import { FeedbackModal } from '@/components/FeedbackModal';
@@ -87,7 +87,6 @@ const RoleDashboard: React.FC = () => {
       }
     }
   }, []);
-  const [activeLeaderboard, setActiveLeaderboard] = useState<'global' | 'country'>('global');
   const [aiStudioModalOpen, setAiStudioModalOpen] = useState(false);
   const [isClosetsMinimized, setIsClosetsMinimized] = useState(true);
   const [isAffiliateMinimized, setIsAffiliateMinimized] = useState(true);
@@ -304,7 +303,7 @@ const RoleDashboard: React.FC = () => {
         onOpenGlobalSearch={handleOpenSearchFromCard}
       />
 
-      {/* Feature Strip - 5 Square Tiles (ADNOC-inspired) */}
+      {/* Feature Strip - 3 Square Tiles (AI Studio, UGC Collab, More) */}
       <section className="px-4 pt-4">
         <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
           {/* AI Studio */}
@@ -329,38 +328,41 @@ const RoleDashboard: React.FC = () => {
             <span className="text-[10px] font-medium text-muted-foreground text-center leading-tight">UGC Collab</span>
           </button>
 
-          {/* Wishlist */}
-          <button 
-            onClick={() => navigate('/wishlist')} 
-            className="flex flex-col items-center justify-center gap-1.5 p-3 bg-card rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.3)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.12)] transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] min-w-[64px] border border-border/50"
-          >
-            <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center">
-              <Heart className="h-4 w-4 text-muted-foreground" />
-            </div>
-            <span className="text-[10px] font-medium text-muted-foreground text-center leading-tight">Wishlist</span>
-          </button>
-
-          {/* Beauty */}
-          <button 
-            onClick={() => navigate('/beauty-consultant')} 
-            className="flex flex-col items-center justify-center gap-1.5 p-3 bg-card rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.3)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.12)] transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] min-w-[64px] border border-border/50"
-          >
-            <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center">
-              <WandSparkles className="h-4 w-4 text-muted-foreground" />
-            </div>
-            <span className="text-[10px] font-medium text-muted-foreground text-center leading-tight">Beauty</span>
-          </button>
-
-          {/* Profile */}
-          <button 
-            onClick={() => navigate('/settings')} 
-            className="flex flex-col items-center justify-center gap-1.5 p-3 bg-card rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.3)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.12)] transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] min-w-[64px] border border-border/50"
-          >
-            <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center">
-              <User className="h-4 w-4 text-muted-foreground" />
-            </div>
-            <span className="text-[10px] font-medium text-muted-foreground text-center leading-tight">Profile</span>
-          </button>
+          {/* More - Popover with Beauty & Wishlist */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <button 
+                className="flex flex-col items-center justify-center gap-1.5 p-3 bg-card rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.3)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.12)] transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] min-w-[64px] border border-border/50"
+              >
+                <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center">
+                  <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
+                </div>
+                <span className="text-[10px] font-medium text-muted-foreground text-center leading-tight">More</span>
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-40 p-2" align="start">
+              <div className="grid gap-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="justify-start h-9 text-sm"
+                  onClick={() => navigate('/beauty-consultant')}
+                >
+                  <WandSparkles className="h-4 w-4 mr-2" />
+                  Beauty
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="justify-start h-9 text-sm"
+                  onClick={() => navigate('/wishlist')}
+                >
+                  <Heart className="h-4 w-4 mr-2" />
+                  Wishlist
+                </Button>
+              </div>
+            </PopoverContent>
+          </Popover>
         </div>
       </section>
 
@@ -437,12 +439,10 @@ const RoleDashboard: React.FC = () => {
         </div>
 
         {!featuredEvent ? (
-          <Card className="bg-card border-border shadow-sm">
-            <CardContent className="p-8 text-center">
-              <CalendarIcon className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-              <p className="text-sm text-muted-foreground">No upcoming events</p>
-            </CardContent>
-          </Card>
+          <div className="flex items-center justify-center py-2 text-sm text-muted-foreground">
+            <CalendarIcon className="h-4 w-4 mr-2" />
+            <span>No upcoming events</span>
+          </div>
         ) : (
           <Card className="bg-card border-border shadow-sm overflow-hidden">
             <CardContent className="p-0 flex gap-3">
@@ -503,46 +503,6 @@ const RoleDashboard: React.FC = () => {
         </Card>
       </section>
 
-      {/* Fashion Leaderboard Section */}
-      <section className="px-4 pt-3">
-        <div className="mb-1">
-          <h2 className="text-base font-serif font-medium text-foreground flex items-center gap-2">
-            <Trophy className="h-4 w-4 text-yellow-500" />
-            Fashion Leaderboard
-          </h2>
-          <p className="text-[10px] font-light text-muted-foreground">
-            Compete with style enthusiasts worldwide
-          </p>
-        </div>
-        
-        {/* Global/Country Toggle */}
-        <div className="flex justify-end mb-2">
-          <div className="flex bg-muted rounded-lg p-1 text-xs">
-            <button
-              onClick={() => setActiveLeaderboard('global')}
-              className={`px-2.5 py-1 rounded-md transition-colors font-medium ${
-                activeLeaderboard === 'global' 
-                  ? 'bg-background shadow-sm text-foreground' 
-                  : 'text-muted-foreground'
-              }`}
-            >
-              global
-            </button>
-            <button
-              onClick={() => setActiveLeaderboard('country')}
-              className={`px-2.5 py-1 rounded-md transition-colors font-medium ${
-                activeLeaderboard === 'country' 
-                  ? 'bg-background shadow-sm text-foreground' 
-                  : 'text-muted-foreground'
-              }`}
-            >
-              country
-            </button>
-          </div>
-        </div>
-        
-        <MinimizedLeaderboard type={activeLeaderboard} country={user?.user_metadata?.country} />
-      </section>
 
     </div>;
   const renderBrandDashboard = () => {
