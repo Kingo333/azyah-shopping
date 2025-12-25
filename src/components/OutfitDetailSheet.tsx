@@ -1,10 +1,20 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { X, Share2, Globe, Lock } from 'lucide-react';
 import { Button } from './ui/button';
 import { WardrobeItem } from '@/hooks/useWardrobeItems';
 import { useNavigate } from 'react-router-dom';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from './ui/alert-dialog';
 
 interface OutfitDetailSheetProps {
   fitId: string | null;
@@ -20,6 +30,7 @@ export const OutfitDetailSheet: React.FC<OutfitDetailSheetProps> = ({
   onTogglePublic,
 }) => {
   const navigate = useNavigate();
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
   // Fetch fit and its items
   const { data: fitData } = useQuery({
@@ -66,6 +77,17 @@ export const OutfitDetailSheet: React.FC<OutfitDetailSheetProps> = ({
   if (!isOpen || !fitData) return null;
 
   const { fit, items } = fitData;
+
+  const handleToggleClick = () => {
+    setShowConfirmDialog(true);
+  };
+
+  const handleConfirmToggle = () => {
+    if (onTogglePublic && fitId) {
+      onTogglePublic(fitId, !fit.is_public);
+    }
+    setShowConfirmDialog(false);
+  };
 
   return (
     <>
@@ -140,7 +162,7 @@ export const OutfitDetailSheet: React.FC<OutfitDetailSheetProps> = ({
               <Button 
                 variant="outline" 
                 className="flex-1"
-                onClick={() => onTogglePublic(fitId!, !fit.is_public)}
+                onClick={handleToggleClick}
               >
                 {fit.is_public ? (
                   <>
@@ -162,6 +184,28 @@ export const OutfitDetailSheet: React.FC<OutfitDetailSheetProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Confirmation Dialog */}
+      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {fit.is_public ? 'Make outfit private?' : 'Make outfit public?'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {fit.is_public 
+                ? 'This outfit will no longer be visible to the community.'
+                : 'This outfit will be visible to everyone in the community.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmToggle}>
+              {fit.is_public ? 'Make Private' : 'Make Public'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 };
