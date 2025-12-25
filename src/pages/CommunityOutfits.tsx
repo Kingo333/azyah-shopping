@@ -16,6 +16,7 @@ interface PublicFit {
   id: string;
   title: string | null;
   render_path: string | null;
+  image_preview: string | null;
   like_count: number;
   comment_count: number;
   created_at: string;
@@ -87,6 +88,7 @@ export const CommunityOutfits = () => {
           id,
           title,
           render_path,
+          image_preview,
           like_count,
           comment_count,
           created_at,
@@ -163,9 +165,9 @@ export const CommunityOutfits = () => {
           onClick={() => handleFitClick(fit.id)}
         >
           <div className="outfit-image-frame relative">
-            {fit.render_path ? (
+            {(fit.render_path || fit.image_preview) ? (
               <img
-                src={fit.render_path}
+                src={fit.render_path || fit.image_preview}
                 alt={fit.title || 'Outfit'}
                 className="outfit-image"
               />
