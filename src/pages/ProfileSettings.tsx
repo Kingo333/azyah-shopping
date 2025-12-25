@@ -12,14 +12,12 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/hooks/useSubscription';
 import { supabase } from '@/integrations/supabase/client';
-import { Trash2, Upload, Instagram, Twitter, Globe, Music, Crown, CreditCard, Calendar, LogOut, Users, Sparkles, TrendingUp, Gift, Check, ChevronsUpDown, Coins } from 'lucide-react';
+import { Trash2, Upload, Instagram, Twitter, Globe, Music, Crown, CreditCard, Calendar, LogOut, Users, Sparkles, TrendingUp, Gift, Check, ChevronsUpDown } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { COUNTRIES } from '@/lib/countries';
 import { CITIES } from '@/lib/cities';
-import { DailyCheckin } from '@/components/rewards/DailyCheckin';
-import { PointsBalance } from '@/components/rewards/PointsBalance';
 import { useNavigate } from 'react-router-dom';
 
 interface ProfileData {
@@ -228,21 +226,6 @@ const ProfileSettings: React.FC = () => {
 
       <div className="container mx-auto max-w-2xl p-4">
         <div className="space-y-6">
-          {/* Points & Rewards Section */}
-          <PointsBalance variant="compact" showProgress={false} showCTA={false} />
-          
-          <DailyCheckin />
-          
-          {/* View All Rewards Link */}
-          <Button 
-            variant="outline" 
-            className="w-full"
-            onClick={() => navigate('/rewards')}
-          >
-            <Coins className="h-4 w-4 mr-2" />
-            View All Rewards & Offers
-          </Button>
-          
           {/* Profile Picture */}
           <Card>
             <CardHeader>
