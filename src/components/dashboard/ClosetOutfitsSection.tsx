@@ -80,21 +80,31 @@ export const ClosetOutfitsSection: React.FC = () => {
     }
   };
 
-  // Custom display order: keep shirts, show blue jeans instead of dress
+  // Custom display order: keep shirts, show light blue jeans instead of dress/shoes
   const getDisplayItems = () => {
     const shirts = closetItems.filter(item => 
       item.category === 'top' && (item.color === 'black' || item.color === 'white')
     ).slice(0, 2);
     
+    // Look for light blue jeans - check multiple color variations
     const blueJeans = closetItems.find(item => 
-      item.category === 'bottom' && item.color === 'blue'
+      item.category === 'bottom' && 
+      (item.color === 'light blue' || item.color === 'lightblue' || item.color === 'blue')
     );
     
     if (shirts.length === 2 && blueJeans) {
       return [...shirts, blueJeans];
     }
     
-    return closetItems.slice(0, 3);
+    // Fallback: prioritize tops and bottoms only
+    const preferredItems = closetItems.filter(item => 
+      item.category === 'top' || item.category === 'bottom'
+    ).slice(0, 3);
+    
+    if (preferredItems.length >= 3) return preferredItems;
+    
+    // Final fallback: exclude shoes
+    return closetItems.filter(item => item.category !== 'shoes').slice(0, 3);
   };
 
   const displayClosetItems = getDisplayItems();

@@ -485,7 +485,7 @@ export default function IntroCarousel() {
                 </div>
 
                 {/* Title & Subtitle */}
-                <div className="flex-1 flex flex-col items-center justify-start pt-6 px-8 text-center">
+                <div className="flex-1 flex flex-col items-center justify-start pt-2 pb-20 px-8 text-center">
                   <h2 className="text-2xl md:text-3xl font-serif font-medium text-foreground mb-3">{slide.title}</h2>
                   <p className="text-base font-light text-muted-foreground leading-relaxed max-w-xl">{slide.subtitle}</p>
                 </div>
