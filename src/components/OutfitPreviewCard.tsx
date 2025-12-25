@@ -26,9 +26,9 @@ export const OutfitPreviewCard: React.FC<OutfitPreviewCardProps> = ({
     <div className="outfit-card" onClick={onClick}>
       {/* Fixed 3:4 aspect ratio frame */}
       <div className="outfit-image-frame relative">
-        {fit.render_path ? (
+        {(fit.render_path || fit.image_preview) ? (
           <img
-            src={fit.render_path}
+            src={fit.render_path || fit.image_preview}
             alt={fit.title || 'Outfit'}
             className="outfit-image"
             loading="lazy"
