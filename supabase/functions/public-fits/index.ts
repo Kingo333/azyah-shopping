@@ -65,17 +65,21 @@ serve(async (req) => {
     }
 
     // Transform data
-    const fits = (fitsData || []).map(fit => ({
-      id: fit.id,
-      title: fit.title,
-      render_path: fit.render_path,
-      image_preview: fit.image_preview,
-      like_count: fit.like_count,
-      created_at: fit.created_at,
-      creator_username: usersMap[fit.user_id]?.username || 'Unknown',
-      creator_name: usersMap[fit.user_id]?.name,
-      creator_avatar: usersMap[fit.user_id]?.avatar_url,
-    }));
+    const fits = (fitsData || []).map(fit => {
+      const user = usersMap[fit.user_id];
+      return {
+        id: fit.id,
+        user_id: fit.user_id,
+        title: fit.title,
+        render_path: fit.render_path,
+        image_preview: fit.image_preview,
+        like_count: fit.like_count,
+        created_at: fit.created_at,
+        creator_username: user?.username || null,
+        creator_name: user?.name || null,
+        creator_avatar: user?.avatar_url || null,
+      };
+    });
 
     return new Response(JSON.stringify({ fits }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

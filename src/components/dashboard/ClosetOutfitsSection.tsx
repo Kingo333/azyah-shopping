@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Sparkles } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useWardrobeItems } from '@/hooks/useWardrobeItems';
@@ -54,9 +54,20 @@ export const ClosetOutfitsSection: React.FC = () => {
     return '/placeholder.svg';
   };
 
+  // Get creator display name - show "You" if current user
+  const getCreatorDisplayName = (fit: any): string => {
+    if (user && fit?.user_id === user.id) {
+      return 'You';
+    }
+    return fit?.creator_name || fit?.creator_username || 'Creator';
+  };
+
   // Get creator initials
   const getCreatorInitials = (fit: any): string => {
-    const name = fit?.creator_name || fit?.creator_username || 'U';
+    if (user && fit?.user_id === user.id) {
+      return 'Y';
+    }
+    const name = fit?.creator_name || fit?.creator_username || 'C';
     return name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2);
   };
 
@@ -152,10 +163,10 @@ export const ClosetOutfitsSection: React.FC = () => {
                 e.stopPropagation();
                 handleNavigate('/dress-me/fits');
               }}
-              className="absolute top-1.5 left-1.5 z-10 flex items-center gap-1 px-2 py-1 rounded-full bg-[hsl(var(--azyah-maroon))]/90 backdrop-blur-sm hover:bg-[hsl(var(--azyah-maroon))] transition-colors"
+              className="absolute top-1.5 left-1.5 z-10 flex items-center gap-1 px-2 py-1 rounded-full bg-secondary/80 backdrop-blur-sm hover:bg-secondary transition-colors"
             >
-              <Sparkles className="h-2.5 w-2.5 text-white" />
-              <span className="text-[8px] font-medium text-white">Create & Earn</span>
+              <Plus className="h-2.5 w-2.5 text-muted-foreground" />
+              <span className="text-[8px] font-medium text-muted-foreground">Create & Earn</span>
             </button>
             
             {/* Full Outfit Image */}
@@ -180,7 +191,7 @@ export const ClosetOutfitsSection: React.FC = () => {
           </div>
           
           {/* Bottom Label with Creator Info */}
-          <div className="mt-1.5 flex items-center justify-between">
+          <div className="mt-1.5 flex items-center">
             {currentOutfit ? (
               <div className="flex items-center gap-1.5">
                 <Avatar className="h-4 w-4">
@@ -189,14 +200,13 @@ export const ClosetOutfitsSection: React.FC = () => {
                     {getCreatorInitials(currentOutfit)}
                   </AvatarFallback>
                 </Avatar>
-                <p className="text-[10px] font-medium text-foreground truncate max-w-[60px]">
-                  {currentOutfit.creator_name || currentOutfit.creator_username || 'Unknown'}
+                <p className="text-[10px] font-medium text-foreground truncate max-w-[80px]">
+                  {getCreatorDisplayName(currentOutfit)}
                 </p>
               </div>
             ) : (
               <p className="text-[10px] font-medium text-foreground">Outfits</p>
             )}
-            <span className="text-[10px] text-muted-foreground">• {publicFits.length}</span>
           </div>
         </div>
       </div>
