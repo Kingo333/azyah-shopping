@@ -11,6 +11,7 @@ interface PublicFit {
   id: string;
   title: string | null;
   render_path: string | null;
+  image_preview: string | null;
   like_count: number;
   created_at: string;
   creator_username: string;
@@ -155,9 +156,9 @@ export const FitDetailsModal: React.FC<FitDetailsModalProps> = ({
         <div className="space-y-4">
           {/* Hero Image */}
           <div className="aspect-square rounded-lg bg-muted overflow-hidden">
-            {fit.render_path ? (
+            {(fit.render_path || fit.image_preview) ? (
               <img 
-                src={fit.render_path}
+                src={fit.render_path || fit.image_preview}
                 alt={fit.title || 'Fit'}
                 className="w-full h-full object-cover"
               />
