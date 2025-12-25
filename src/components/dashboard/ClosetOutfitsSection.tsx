@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus } from 'lucide-react';
+import { Plus, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useWardrobeItems } from '@/hooks/useWardrobeItems';
 import { useSuggestedEssentials } from '@/hooks/useSuggestedEssentials';
 import { usePublicFits } from '@/hooks/useFits';
@@ -51,6 +52,12 @@ export const ClosetOutfitsSection: React.FC = () => {
       return fit.image_preview;
     }
     return '/placeholder.svg';
+  };
+
+  // Get creator initials
+  const getCreatorInitials = (fit: any): string => {
+    const name = fit?.creator_name || fit?.creator_username || 'U';
+    return name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2);
   };
 
   // Handle navigation - redirect guests to sign-in
@@ -132,22 +139,23 @@ export const ClosetOutfitsSection: React.FC = () => {
           </div>
         </div>
         
-        {/* Right Card - Outfits (Full image with small plus button) */}
+        {/* Right Card - Outfits (Full image with creator info) */}
         <div 
           onClick={() => handleNavigate('/dress-me/fits')}
           className="bg-card rounded-xl p-2 border border-border/50 shadow-sm cursor-pointer hover:shadow-md transition-shadow flex flex-col"
         >
           {/* Image container with overlay plus button */}
           <div className="relative aspect-square rounded-md overflow-hidden bg-secondary/30 flex-1">
-            {/* Small Plus Button - top left corner */}
+            {/* Create & Earn CTA - top left corner */}
             <button 
               onClick={(e) => {
                 e.stopPropagation();
                 handleNavigate('/dress-me/fits');
               }}
-              className="absolute top-1.5 left-1.5 z-10 w-6 h-6 rounded-full bg-secondary/80 backdrop-blur-sm flex items-center justify-center hover:bg-secondary transition-colors"
+              className="absolute top-1.5 left-1.5 z-10 flex items-center gap-1 px-2 py-1 rounded-full bg-[hsl(var(--azyah-maroon))]/90 backdrop-blur-sm hover:bg-[hsl(var(--azyah-maroon))] transition-colors"
             >
-              <Plus className="h-3.5 w-3.5 text-muted-foreground" />
+              <Sparkles className="h-2.5 w-2.5 text-white" />
+              <span className="text-[8px] font-medium text-white">Create & Earn</span>
             </button>
             
             {/* Full Outfit Image */}
@@ -171,11 +179,24 @@ export const ClosetOutfitsSection: React.FC = () => {
             </AnimatePresence>
           </div>
           
-          {/* Bottom Label */}
-          <div className="mt-1">
-            <p className="text-[10px] font-medium text-foreground">
-              Outfits <span className="text-muted-foreground font-normal">• {publicFits.length}</span>
-            </p>
+          {/* Bottom Label with Creator Info */}
+          <div className="mt-1.5 flex items-center justify-between">
+            {currentOutfit ? (
+              <div className="flex items-center gap-1.5">
+                <Avatar className="h-4 w-4">
+                  <AvatarImage src={currentOutfit.creator_avatar} />
+                  <AvatarFallback className="text-[6px] bg-secondary">
+                    {getCreatorInitials(currentOutfit)}
+                  </AvatarFallback>
+                </Avatar>
+                <p className="text-[10px] font-medium text-foreground truncate max-w-[60px]">
+                  {currentOutfit.creator_name || currentOutfit.creator_username || 'Unknown'}
+                </p>
+              </div>
+            ) : (
+              <p className="text-[10px] font-medium text-foreground">Outfits</p>
+            )}
+            <span className="text-[10px] text-muted-foreground">• {publicFits.length}</span>
           </div>
         </div>
       </div>
