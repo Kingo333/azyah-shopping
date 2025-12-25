@@ -36,6 +36,7 @@ export default function OutfitDetail() {
           id,
           title,
           render_path,
+          image_preview,
           like_count,
           comment_count,
           created_at,
@@ -158,9 +159,9 @@ export default function OutfitDetail() {
         <div className="container max-w-screen-md mx-auto px-4 py-6">
           {/* Main outfit image */}
           <div className="aspect-square bg-muted rounded-lg overflow-hidden mb-4">
-            {fit.render_path ? (
+            {(fit.render_path || fit.image_preview) ? (
               <img
-                src={fit.render_path}
+                src={fit.render_path || fit.image_preview}
                 alt={fit.title || 'Outfit'}
                 className="w-full h-full object-cover"
               />
