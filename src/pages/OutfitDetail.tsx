@@ -159,7 +159,7 @@ export default function OutfitDetail() {
         <div className="container max-w-screen-md mx-auto px-4 py-6">
           {/* Main outfit image */}
           <div className="relative rounded-2xl overflow-hidden mb-6 shadow-lg bg-gradient-to-br from-secondary/30 via-background to-muted/50">
-            <div className="aspect-[4/5] flex items-center justify-center p-4">
+            <div className="aspect-[3/4] flex items-center justify-center p-4">
               {(fit.render_path || fit.image_preview) ? (
                 <img
                   src={fit.render_path || fit.image_preview}
