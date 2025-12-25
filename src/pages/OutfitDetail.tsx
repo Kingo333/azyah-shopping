@@ -158,18 +158,20 @@ export default function OutfitDetail() {
 
         <div className="container max-w-screen-md mx-auto px-4 py-6">
           {/* Main outfit image */}
-          <div className="aspect-square bg-muted rounded-lg overflow-hidden mb-4">
-            {(fit.render_path || fit.image_preview) ? (
-              <img
-                src={fit.render_path || fit.image_preview}
-                alt={fit.title || 'Outfit'}
-                className="w-full h-full object-contain"
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                No preview available
-              </div>
-            )}
+          <div className="relative rounded-2xl overflow-hidden mb-6 shadow-lg bg-gradient-to-br from-secondary/30 via-background to-muted/50">
+            <div className="aspect-[4/5] flex items-center justify-center p-4">
+              {(fit.render_path || fit.image_preview) ? (
+                <img
+                  src={fit.render_path || fit.image_preview}
+                  alt={fit.title || 'Outfit'}
+                  className="max-w-full max-h-full object-contain rounded-lg drop-shadow-md"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                  No preview available
+                </div>
+              )}
+            </div>
           </div>
 
           {/* User info */}
