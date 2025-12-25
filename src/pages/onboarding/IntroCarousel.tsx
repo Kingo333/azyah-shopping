@@ -383,30 +383,35 @@ export default function IntroCarousel() {
               setCurrentSlide((prev) => prev - 1);
               setTimeout(() => setIsUserInteracting(false), 8000);
             }}
-            className="fixed left-4 bottom-32 z-30 w-8 h-8 md:w-10 md:h-10 rounded-full bg-primary/60 backdrop-blur-md border border-white/30 flex items-center justify-center hover:bg-primary/80 hover:scale-110 transition-all shadow-lg hover:shadow-xl animate-pulse"
+            className="fixed left-4 bottom-32 z-30 w-8 h-8 md:w-10 md:h-10 rounded-full bg-primary/60 backdrop-blur-md border border-white/30 flex items-center justify-center hover:bg-primary/80 transition-all shadow-lg hover:shadow-xl animate-[pulse-scale_2s_ease-in-out_infinite]"
             aria-label="Previous slide"
           >
             <ChevronLeft className="w-5 h-5 md:w-6 md:h-6 text-white drop-shadow-lg" strokeWidth={2.5} />
           </button>
         )}
 
-        <button
-          onClick={() => {
-            setIsUserInteracting(true);
-            if (currentSlide === slides.length - 1) {
-              setDirection(-1);
-              setCurrentSlide(0);
-            } else {
-              setDirection(1);
-              setCurrentSlide((prev) => prev + 1);
-            }
-            setTimeout(() => setIsUserInteracting(false), 8000);
-          }}
-          className="fixed right-4 bottom-32 z-30 w-8 h-8 md:w-10 md:h-10 rounded-full bg-primary/60 backdrop-blur-md border border-white/30 flex items-center justify-center hover:bg-primary/80 hover:scale-110 transition-all shadow-lg hover:shadow-xl animate-pulse"
-          aria-label={currentSlide === slides.length - 1 ? "Back to start" : "Next slide"}
-        >
-          <ChevronRight className="w-5 h-5 md:w-6 md:h-6 text-white drop-shadow-lg" strokeWidth={2.5} />
-        </button>
+        <div className="fixed right-4 bottom-32 z-30 flex flex-col items-center gap-2">
+          <span className="text-[10px] text-white/80 font-medium bg-black/30 backdrop-blur-sm px-2 py-0.5 rounded-full animate-pulse">
+            Swipe →
+          </span>
+          <button
+            onClick={() => {
+              setIsUserInteracting(true);
+              if (currentSlide === slides.length - 1) {
+                setDirection(-1);
+                setCurrentSlide(0);
+              } else {
+                setDirection(1);
+                setCurrentSlide((prev) => prev + 1);
+              }
+              setTimeout(() => setIsUserInteracting(false), 8000);
+            }}
+            className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-primary/60 backdrop-blur-md border border-white/30 flex items-center justify-center hover:bg-primary/80 transition-all shadow-lg hover:shadow-xl animate-[pulse-scale_2s_ease-in-out_infinite]"
+            aria-label={currentSlide === slides.length - 1 ? "Back to start" : "Next slide"}
+          >
+            <ChevronRight className="w-5 h-5 md:w-6 md:h-6 text-white drop-shadow-lg" strokeWidth={2.5} />
+          </button>
+        </div>
 
         <AnimatePresence initial={false} custom={direction}>
           <motion.div
