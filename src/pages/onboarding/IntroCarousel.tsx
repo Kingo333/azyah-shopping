@@ -193,7 +193,7 @@ export default function IntroCarousel() {
     const interval = setInterval(() => {
       setDirection(1);
       setCurrentSlide((prev) => (prev + 1) % slides.length);
-    }, 5000); // 5 seconds between slides
+    }, 3000); // 3 seconds between slides
 
     return () => clearInterval(interval);
   }, [isUserInteracting, isCarouselDragging]);
