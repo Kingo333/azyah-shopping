@@ -80,16 +80,10 @@ export const ClosetOutfitsSection: React.FC = () => {
     }
   };
 
-  // Sort items to prioritize bottoms (jeans) for display
-  const sortedItems = [...closetItems].sort((a, b) => {
-    if (a.category === 'bottom' && b.category !== 'bottom') return -1;
-    if (a.category !== 'bottom' && b.category === 'bottom') return 1;
-    return 0;
-  });
-  const displayClosetItems = sortedItems.slice(0, 3);
+  const displayClosetItems = closetItems.slice(0, 3);
 
   return (
-    <section className="px-4 pt-3 md:max-w-md md:mx-auto">
+    <section className="px-4 pt-3 md:max-w-lg md:mx-auto lg:max-w-xl">
       {/* Section Header */}
       <div className="flex items-center justify-between mb-1">
         <h2 className="text-base font-serif font-medium text-foreground">Closet</h2>
