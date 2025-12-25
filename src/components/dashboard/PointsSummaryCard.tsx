@@ -45,7 +45,7 @@ export function PointsSummaryCard() {
         ) : (
           <div className="flex flex-col gap-2">
             {/* Header with points */}
-            <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="w-7 h-7 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
                   <Gift className="h-3.5 w-3.5 text-primary" />
@@ -59,7 +59,10 @@ export function PointsSummaryCard() {
                   </div>
                 </div>
               </div>
-              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              <div className="flex items-center gap-1">
+                <span className="text-[10px] text-muted-foreground">Tap to view rewards</span>
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              </div>
             </div>
 
             {/* Progress info */}

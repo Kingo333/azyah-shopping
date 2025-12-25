@@ -241,7 +241,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-[calc(100vw-1rem)] max-w-2xl max-h-[85vh] overflow-hidden overflow-x-hidden !p-3 sm:!p-6 bg-gradient-to-br from-primary/5 via-card to-accent/5 border-border/50 !rounded-2xl shadow-2xl fixed top-[5%] left-[50%] translate-x-[-50%] translate-y-0 sm:top-[8%] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:slide-out-to-top-[10%] data-[state=open]:slide-in-from-top-[10%]">
+      <DialogContent className="w-[calc(100vw-1rem)] max-w-2xl max-h-[85vh] overflow-hidden overflow-x-hidden !p-3 sm:!p-6 bg-gradient-to-br from-primary/5 via-card to-accent/5 border-border/50 !rounded-2xl shadow-2xl fixed top-[5%] left-[50%] translate-x-[-50%] translate-y-0 sm:top-[8%] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:slide-out-to-top-[10%] data-[state=open]:slide-in-from-top-[10%]" overlayClassName="bg-black/85">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Search className="h-5 w-5 text-primary" />
