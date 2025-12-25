@@ -119,7 +119,8 @@ export const BeforeAfterSlider: React.FC<BeforeAfterSliderProps> = ({ className 
       <div 
         className="absolute inset-0"
         style={{
-          clipPath: `polygon(0 0, ${sliderPosition}% 0, ${sliderPosition}% 100%, 0 100%)`
+          clipPath: `polygon(0 0, ${sliderPosition}% 0, ${sliderPosition}% 100%, 0 100%)`,
+          transition: 'clip-path 0.5s ease-out'
         }}
       >
         <img
@@ -136,7 +137,7 @@ export const BeforeAfterSlider: React.FC<BeforeAfterSliderProps> = ({ className 
       {/* Slider Handle */}
       <motion.div
         className="absolute top-0 bottom-0 w-1 bg-white shadow-lg z-10 cursor-ew-resize animate-pulse"
-        style={{ left: `${sliderPosition}%`, transform: 'translateX(-50%)' }}
+        style={{ left: `${sliderPosition}%`, transform: 'translateX(-50%)', transition: 'left 0.5s ease-out' }}
         onMouseDown={handleMouseDown}
         onTouchStart={handleTouchStart}
         whileHover={{ scale: 1.1 }}
