@@ -161,7 +161,7 @@ export const ClosetOutfitsSection: React.FC = () => {
             <button 
               onClick={(e) => {
                 e.stopPropagation();
-                handleNavigate('/dress-me/fits');
+                handleNavigate('/dress-me');
               }}
               className="absolute top-1.5 left-1.5 z-10 flex items-center gap-1 px-2 py-1 rounded-full bg-secondary/80 backdrop-blur-sm hover:bg-secondary transition-colors"
             >
