@@ -217,9 +217,7 @@ const Swipe = () => {
                   <Tooltip open={showTooltip} onOpenChange={setShowTooltip}>
                     <TooltipTrigger asChild>
                       <div 
-                        className={`flex items-center gap-0.5 sm:gap-1 px-1 sm:px-1.5 py-0.5 sm:py-1 rounded-full bg-muted/40 transition-all ${
-                          showDiscoverTutorial ? 'ring-2 ring-primary/60 shadow-[0_0_15px_hsl(var(--primary)/0.4)] animate-pulse' : ''
-                        }`}
+                        className="flex items-center gap-0.5 sm:gap-1 px-1 sm:px-1.5 py-0.5 sm:py-1 rounded-full bg-muted/40 transition-all ring-2 ring-primary/50 shadow-[0_0_12px_hsl(var(--primary)/0.3)] animate-pulse"
                       >
                         <button 
                           onClick={() => setViewMode('swipe')}
