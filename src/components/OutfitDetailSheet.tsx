@@ -107,7 +107,7 @@ export const OutfitDetailSheet: React.FC<OutfitDetailSheetProps> = ({
           {/* Hero Image */}
           <div className="outfit-hero">
             <img
-              src={fit.render_path || '/placeholder.svg'}
+              src={fit.render_path || fit.image_preview || '/placeholder.svg'}
               alt={fit.title || 'Outfit'}
               className="outfit-hero-image"
             />
