@@ -16,15 +16,19 @@ import { useSalons, useSalonOffers, useRedemptions } from '@/hooks/useSalons';
 import { useUserPoints, formatActionType } from '@/hooks/useUserPoints';
 import { usePremium } from '@/hooks/usePremium';
 import { useNavigate } from 'react-router-dom';
-import { Coins, Store, History, Crown, ArrowUp, ArrowDown } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { Coins, Store, History, Crown, ArrowUp, ArrowDown, Trophy } from 'lucide-react';
 import { format } from 'date-fns';
+import MinimizedLeaderboard from '@/components/MinimizedLeaderboard';
 
 type CityFilter = 'all' | 'dubai' | 'abudhabi' | 'sharjah';
 
 export default function Rewards() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [cityFilter, setCityFilter] = useState<CityFilter>('all');
   const [selectedSalonId, setSelectedSalonId] = useState<string | null>(null);
+  const [activeLeaderboard, setActiveLeaderboard] = useState<'global' | 'country'>('global');
   
   const { data: pointsData, isLoading: pointsLoading } = useUserPoints();
   const { data: salons = [], isLoading: salonsLoading } = useSalons(
@@ -262,6 +266,47 @@ export default function Rewards() {
             )}
           </TabsContent>
         </Tabs>
+
+        {/* Fashion Leaderboard Section */}
+        <section className="mt-6">
+          <div className="mb-2">
+            <h2 className="text-base font-serif font-medium text-foreground flex items-center gap-2">
+              <Trophy className="h-4 w-4 text-yellow-500" />
+              Fashion Leaderboard
+            </h2>
+            <p className="text-[10px] font-light text-muted-foreground">
+              Compete with style enthusiasts worldwide
+            </p>
+          </div>
+          
+          {/* Global/Country Toggle */}
+          <div className="flex justify-end mb-2">
+            <div className="flex bg-muted rounded-lg p-1 text-xs">
+              <button
+                onClick={() => setActiveLeaderboard('global')}
+                className={`px-2.5 py-1 rounded-md transition-colors font-medium ${
+                  activeLeaderboard === 'global' 
+                    ? 'bg-background shadow-sm text-foreground' 
+                    : 'text-muted-foreground'
+                }`}
+              >
+                global
+              </button>
+              <button
+                onClick={() => setActiveLeaderboard('country')}
+                className={`px-2.5 py-1 rounded-md transition-colors font-medium ${
+                  activeLeaderboard === 'country' 
+                    ? 'bg-background shadow-sm text-foreground' 
+                    : 'text-muted-foreground'
+                }`}
+              >
+                country
+              </button>
+            </div>
+          </div>
+          
+          <MinimizedLeaderboard type={activeLeaderboard} country={user?.user_metadata?.country} />
+        </section>
       </div>
     </div>
   );
