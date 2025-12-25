@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Heart, Search, List, LayoutGrid } from "lucide-react";
+import { ArrowLeft, Heart, Search, List, LayoutGrid, ArrowUp } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAuth } from "@/contexts/AuthContext";
 import SwipeDeck from '@/components/SwipeDeck';
@@ -14,6 +14,8 @@ import type { SubCategory } from '@/lib/categories';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { isGuestMode } from '@/hooks/useGuestMode';
+import { motion, AnimatePresence } from 'framer-motion';
+
 const Swipe = () => {
   const navigate = useNavigate();
   const {
@@ -42,6 +44,8 @@ const Swipe = () => {
   const [viewMode, setViewMode] = useState<'swipe' | 'list'>('list');
   const [showTooltip, setShowTooltip] = useState(false);
   const [isProductDetailOpen, setIsProductDetailOpen] = useState(false);
+  const [showDiscoverTutorial, setShowDiscoverTutorial] = useState(false);
+  const [tutorialStep, setTutorialStep] = useState<'initial' | 'demo' | 'done'>('initial');
 
   // Check user's swipe count to determine when to show list view option
   const {
@@ -64,9 +68,41 @@ const Swipe = () => {
   });
   const showListToggle = true; // Always show toggle
 
+  // First-time tutorial for Discover page
+  useEffect(() => {
+    const hasSeenTutorial = localStorage.getItem('discover-tutorial-seen');
+    if (!hasSeenTutorial && !loading) {
+      // Start in swipe mode to show toggle demo
+      setViewMode('swipe');
+      setShowDiscoverTutorial(true);
+      setTutorialStep('initial');
+    }
+  }, [loading]);
+
+  // Handle tutorial demo - switch view after delay
+  useEffect(() => {
+    if (tutorialStep === 'demo') {
+      const timer = setTimeout(() => {
+        setViewMode(prev => prev === 'swipe' ? 'list' : 'swipe');
+        setTutorialStep('done');
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [tutorialStep]);
+
+  const handleDismissTutorial = () => {
+    localStorage.setItem('discover-tutorial-seen', 'true');
+    setShowDiscoverTutorial(false);
+    setTutorialStep('done');
+  };
+
+  const handleStartTutorialDemo = () => {
+    setTutorialStep('demo');
+  };
+
   // Show tooltip when the toggle first becomes available
   useEffect(() => {
-    if (showListToggle && !showTooltip && (swipeCount || 0) >= 5) {
+    if (showListToggle && !showTooltip && (swipeCount || 0) >= 5 && !showDiscoverTutorial) {
       setShowTooltip(true);
       const timer = setTimeout(() => {
         setShowTooltip(false);
@@ -74,7 +110,7 @@ const Swipe = () => {
 
       return () => clearTimeout(timer);
     }
-  }, [showListToggle, swipeCount]);
+  }, [showListToggle, swipeCount, showDiscoverTutorial]);
 
   // Use unified products hook - handle multiple categories for list view
   const {
@@ -180,7 +216,11 @@ const Swipe = () => {
                 <TooltipProvider>
                   <Tooltip open={showTooltip} onOpenChange={setShowTooltip}>
                     <TooltipTrigger asChild>
-                      <div className="flex items-center gap-0.5 sm:gap-1 px-1 sm:px-1.5 py-0.5 sm:py-1 rounded-full bg-muted/40">
+                      <div 
+                        className={`flex items-center gap-0.5 sm:gap-1 px-1 sm:px-1.5 py-0.5 sm:py-1 rounded-full bg-muted/40 transition-all ${
+                          showDiscoverTutorial ? 'ring-2 ring-primary/60 shadow-[0_0_15px_hsl(var(--primary)/0.4)] animate-pulse' : ''
+                        }`}
+                      >
                         <button 
                           onClick={() => setViewMode('swipe')}
                           className={`p-1.5 sm:p-2 rounded-full transition-all ${viewMode === 'swipe' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
@@ -265,6 +305,74 @@ const Swipe = () => {
             />
           </div>}
       </main>
+
+      {/* First-time Tutorial Overlay */}
+      <AnimatePresence>
+        {showDiscoverTutorial && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-black/80 flex items-start justify-center pt-20"
+            onClick={handleDismissTutorial}
+          >
+            {/* Tutorial Card - positioned to point at toggle */}
+            <motion.div
+              initial={{ y: -20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: -20, opacity: 0 }}
+              transition={{ delay: 0.2 }}
+              className="relative mx-4 mt-8 bg-card rounded-xl p-4 shadow-xl border border-border max-w-xs"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Arrow pointing up to toggle */}
+              <div className="absolute -top-3 right-8 w-0 h-0 border-l-8 border-r-8 border-b-8 border-transparent border-b-card" />
+              <ArrowUp className="absolute -top-8 right-9 h-5 w-5 text-primary animate-bounce" />
+              
+              <h3 className="font-semibold text-foreground mb-2 text-sm">
+                Switch Between Views
+              </h3>
+              <p className="text-muted-foreground text-xs mb-3">
+                Tap the toggle to switch between swipe mode and list view. Try it now!
+              </p>
+              
+              <div className="flex gap-2">
+                {tutorialStep === 'initial' && (
+                  <Button 
+                    size="sm" 
+                    onClick={handleStartTutorialDemo}
+                    className="flex-1 text-xs"
+                  >
+                    Show me
+                  </Button>
+                )}
+                {tutorialStep === 'demo' && (
+                  <div className="flex-1 text-center py-1">
+                    <span className="text-xs text-primary animate-pulse">Switching...</span>
+                  </div>
+                )}
+                {tutorialStep === 'done' && (
+                  <Button 
+                    size="sm" 
+                    onClick={handleDismissTutorial}
+                    className="flex-1 text-xs"
+                  >
+                    Got it!
+                  </Button>
+                )}
+                <Button 
+                  size="sm" 
+                  variant="ghost" 
+                  onClick={handleDismissTutorial}
+                  className="text-xs text-muted-foreground"
+                >
+                  Skip
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>;
 };
 export default Swipe;

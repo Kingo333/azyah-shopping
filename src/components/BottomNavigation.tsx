@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Home, Search, ChevronUp } from 'lucide-react';
+import { Home, ShoppingBag, ChevronUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { isGuestMode } from '@/hooks/useGuestMode';
@@ -32,7 +32,7 @@ const HangerIcon: React.FC<{ className?: string }> = ({ className }) => (
 
 const navItems: NavItem[] = [
   { id: 'home', label: 'Home', icon: Home, path: '/dashboard' },
-  { id: 'find', label: 'Find', icon: Search, path: '/swipe' },
+  { id: 'discover', label: 'Discover', icon: ShoppingBag, path: '/swipe' },
   { id: 'dress-me', label: 'Dress Me', icon: HangerIcon, path: '/dress-me' },
 ];
 

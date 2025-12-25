@@ -105,11 +105,11 @@ const CategoryCarousel: React.FC<CategoryCarouselProps> = ({
         opts={{
           align: "start",
           loop: true,
-          dragFree: true,
-          skipSnaps: false
+          skipSnaps: true,
+          duration: 25
         }}
       >
-        <CarouselContent className="-ml-2 md:-ml-4 max-w-full">
+        <CarouselContent className="-ml-2 md:-ml-4 max-w-full transition-transform duration-300 ease-out">
           {CATEGORIES.map(category => <CarouselItem key={category.slug} className="pl-2 md:pl-4 basis-1/2 md:basis-1/3 lg:basis-1/4 max-w-full overflow-hidden">
               <CategoryCard category={category} isSelected={selectedCategories.includes(category.slug)} onToggle={() => onCategoryToggle(category.slug)} />
             </CarouselItem>)}

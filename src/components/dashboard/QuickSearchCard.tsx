@@ -35,7 +35,7 @@ export function QuickSearchCard({ onOpenSearch }: QuickSearchCardProps) {
           {/* Branded title */}
           <div className="flex items-center gap-1.5">
             <Search className="h-3.5 w-3.5 text-primary" />
-            <h3 className="text-xs font-semibold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+            <h3 className="text-xs font-semibold text-foreground md:text-primary">
               Find items, friends & brands
             </h3>
           </div>

@@ -288,6 +288,13 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({
               </TabsTrigger>
             </TabsList>
 
+            {/* Hint for Products tab */}
+            {activeTab === 'products' && (
+              <p className="text-xs text-muted-foreground text-center mt-2 px-2">
+                💡 Tap "Discover" in the navigation for a better browsing experience
+              </p>
+            )}
+
             <div className="max-h-96 w-full overflow-y-auto overflow-x-hidden mt-3">
               <TabsContent value="products" className="space-y-1.5 mt-0 min-w-0 overflow-hidden">
                 {filterResultsByType('product').map((result) => (
