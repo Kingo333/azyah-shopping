@@ -637,10 +637,6 @@ export default function DressMeWardrobe() {
                           setSelectedOutfitId(fit.id);
                         }}
                         onDelete={(showGifted || showSuggestions) ? undefined : (fitId) => setFitToDelete(fitId)}
-                        onTogglePublic={(showGifted || showSuggestions) ? undefined : (fitId, isPublic) => {
-                          updateFit.mutate({ id: fitId, updates: { is_public: isPublic } });
-                          toast.success(isPublic ? 'Outfit is now public' : 'Outfit is now private');
-                        }}
                         creator={(showGifted || showSuggestions) ? fit.creator : undefined}
                         showCreator={showGifted || showSuggestions}
                       />
@@ -747,6 +743,10 @@ export default function DressMeWardrobe() {
         fitId={selectedOutfitId}
         isOpen={!!selectedOutfitId}
         onClose={() => setSelectedOutfitId(null)}
+        onTogglePublic={(fitId, isPublic) => {
+          updateFit.mutate({ id: fitId, updates: { is_public: isPublic } });
+          toast.success(isPublic ? 'Outfit is now public' : 'Outfit is now private');
+        }}
       />
 
       {/* Delete Confirmation Dialog */}
