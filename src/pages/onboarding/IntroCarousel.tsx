@@ -182,8 +182,21 @@ export default function IntroCarousel() {
   const [creatorCount, setCreatorCount] = useState(0);
   const [cardOffset, setCardOffset] = useState(0);
   const [isCarouselDragging, setIsCarouselDragging] = useState(false);
+  const [isUserInteracting, setIsUserInteracting] = useState(false);
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+
+  // Auto-advance slides
+  useEffect(() => {
+    if (isUserInteracting || isCarouselDragging) return;
+    
+    const interval = setInterval(() => {
+      setDirection(1);
+      setCurrentSlide((prev) => (prev + 1) % slides.length);
+    }, 5000); // 5 seconds between slides
+
+    return () => clearInterval(interval);
+  }, [isUserInteracting, isCarouselDragging]);
 
   // Preload hero image immediately with high priority
   useEffect(() => {
@@ -266,6 +279,8 @@ export default function IntroCarousel() {
   };
   const handleDragEnd = (event: any, info: PanInfo) => {
     handleSwipe(info.offset.x);
+    setIsUserInteracting(true);
+    setTimeout(() => setIsUserInteracting(false), 8000); // Resume after 8 seconds
   };
   const handleJoinCommunity = () => {
     navigate("/onboarding/signup");
@@ -363,10 +378,12 @@ export default function IntroCarousel() {
         {currentSlide > 0 && (
           <button
             onClick={() => {
+              setIsUserInteracting(true);
               setDirection(-1);
               setCurrentSlide((prev) => prev - 1);
+              setTimeout(() => setIsUserInteracting(false), 8000);
             }}
-            className="fixed left-4 bottom-32 z-30 w-8 h-8 md:w-10 md:h-10 rounded-full bg-primary/60 backdrop-blur-md border border-white/30 flex items-center justify-center hover:bg-primary/80 hover:scale-110 transition-all shadow-lg hover:shadow-xl"
+            className="fixed left-4 bottom-32 z-30 w-8 h-8 md:w-10 md:h-10 rounded-full bg-primary/60 backdrop-blur-md border border-white/30 flex items-center justify-center hover:bg-primary/80 hover:scale-110 transition-all shadow-lg hover:shadow-xl animate-pulse"
             aria-label="Previous slide"
           >
             <ChevronLeft className="w-5 h-5 md:w-6 md:h-6 text-white drop-shadow-lg" strokeWidth={2.5} />
@@ -375,6 +392,7 @@ export default function IntroCarousel() {
 
         <button
           onClick={() => {
+            setIsUserInteracting(true);
             if (currentSlide === slides.length - 1) {
               setDirection(-1);
               setCurrentSlide(0);
@@ -382,8 +400,9 @@ export default function IntroCarousel() {
               setDirection(1);
               setCurrentSlide((prev) => prev + 1);
             }
+            setTimeout(() => setIsUserInteracting(false), 8000);
           }}
-          className="fixed right-4 bottom-32 z-30 w-8 h-8 md:w-10 md:h-10 rounded-full bg-primary/60 backdrop-blur-md border border-white/30 flex items-center justify-center hover:bg-primary/80 hover:scale-110 transition-all shadow-lg hover:shadow-xl"
+          className="fixed right-4 bottom-32 z-30 w-8 h-8 md:w-10 md:h-10 rounded-full bg-primary/60 backdrop-blur-md border border-white/30 flex items-center justify-center hover:bg-primary/80 hover:scale-110 transition-all shadow-lg hover:shadow-xl animate-pulse"
           aria-label={currentSlide === slides.length - 1 ? "Back to start" : "Next slide"}
         >
           <ChevronRight className="w-5 h-5 md:w-6 md:h-6 text-white drop-shadow-lg" strokeWidth={2.5} />
