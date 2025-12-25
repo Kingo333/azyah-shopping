@@ -5,16 +5,6 @@ import { X, Share2, Globe, Lock } from 'lucide-react';
 import { Button } from './ui/button';
 import { WardrobeItem } from '@/hooks/useWardrobeItems';
 import { useNavigate } from 'react-router-dom';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from './ui/alert-dialog';
 
 interface OutfitDetailSheetProps {
   fitId: string | null;
@@ -30,7 +20,7 @@ export const OutfitDetailSheet: React.FC<OutfitDetailSheetProps> = ({
   onTogglePublic,
 }) => {
   const navigate = useNavigate();
-  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   // Fetch fit and its items
   const { data: fitData } = useQuery({
@@ -79,14 +69,18 @@ export const OutfitDetailSheet: React.FC<OutfitDetailSheetProps> = ({
   const { fit, items } = fitData;
 
   const handleToggleClick = () => {
-    setShowConfirmDialog(true);
+    setShowConfirm(true);
   };
 
   const handleConfirmToggle = () => {
     if (onTogglePublic && fitId) {
       onTogglePublic(fitId, !fit.is_public);
     }
-    setShowConfirmDialog(false);
+    setShowConfirm(false);
+  };
+
+  const handleCancelToggle = () => {
+    setShowConfirm(false);
   };
 
   return (
@@ -158,54 +152,61 @@ export const OutfitDetailSheet: React.FC<OutfitDetailSheetProps> = ({
 
           {/* Action buttons */}
           <div className="outfit-actions">
-            {onTogglePublic && (
-              <Button 
-                variant="outline" 
-                className="flex-1"
-                onClick={handleToggleClick}
-              >
-                {fit.is_public ? (
-                  <>
-                    <Globe className="w-4 h-4 mr-2" />
-                    Public
-                  </>
-                ) : (
-                  <>
-                    <Lock className="w-4 h-4 mr-2" />
-                    Private
-                  </>
+            {showConfirm ? (
+              /* Inline confirmation */
+              <div className="w-full space-y-3">
+                <p className="text-sm text-center text-muted-foreground">
+                  {fit.is_public 
+                    ? 'Make this outfit private? It will no longer be visible to the community.'
+                    : 'Make this outfit public? Everyone in the community will be able to see it.'}
+                </p>
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    className="flex-1"
+                    onClick={handleCancelToggle}
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    className="flex-1"
+                    onClick={handleConfirmToggle}
+                  >
+                    {fit.is_public ? 'Yes, Make Private' : 'Yes, Make Public'}
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              /* Default buttons */
+              <>
+                {onTogglePublic && (
+                  <Button 
+                    variant="outline" 
+                    className="flex-1"
+                    onClick={handleToggleClick}
+                  >
+                    {fit.is_public ? (
+                      <>
+                        <Globe className="w-4 h-4 mr-2" />
+                        Public
+                      </>
+                    ) : (
+                      <>
+                        <Lock className="w-4 h-4 mr-2" />
+                        Private
+                      </>
+                    )}
+                  </Button>
                 )}
-              </Button>
+                <Button variant="outline" className={onTogglePublic ? "flex-1" : "w-full"}>
+                  <Share2 className="w-4 h-4 mr-2" />
+                  Share
+                </Button>
+              </>
             )}
-            <Button variant="outline" className={onTogglePublic ? "flex-1" : "w-full"}>
-              <Share2 className="w-4 h-4 mr-2" />
-              Share
-            </Button>
           </div>
         </div>
       </div>
-
-      {/* Confirmation Dialog */}
-      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              {fit.is_public ? 'Make outfit private?' : 'Make outfit public?'}
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {fit.is_public 
-                ? 'This outfit will no longer be visible to the community.'
-                : 'This outfit will be visible to everyone in the community.'}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmToggle}>
-              {fit.is_public ? 'Make Private' : 'Make Public'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </>
   );
 };
