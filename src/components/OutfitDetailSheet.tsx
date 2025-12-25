@@ -1,7 +1,7 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { X, Share2 } from 'lucide-react';
+import { X, Share2, Globe, Lock } from 'lucide-react';
 import { Button } from './ui/button';
 import { WardrobeItem } from '@/hooks/useWardrobeItems';
 import { useNavigate } from 'react-router-dom';
@@ -10,12 +10,14 @@ interface OutfitDetailSheetProps {
   fitId: string | null;
   isOpen: boolean;
   onClose: () => void;
+  onTogglePublic?: (fitId: string, isPublic: boolean) => void;
 }
 
 export const OutfitDetailSheet: React.FC<OutfitDetailSheetProps> = ({
   fitId,
   isOpen,
   onClose,
+  onTogglePublic,
 }) => {
   const navigate = useNavigate();
 
@@ -134,7 +136,26 @@ export const OutfitDetailSheet: React.FC<OutfitDetailSheetProps> = ({
 
           {/* Action buttons */}
           <div className="outfit-actions">
-            <Button variant="outline" className="w-full">
+            {onTogglePublic && (
+              <Button 
+                variant="outline" 
+                className="flex-1"
+                onClick={() => onTogglePublic(fitId!, !fit.is_public)}
+              >
+                {fit.is_public ? (
+                  <>
+                    <Globe className="w-4 h-4 mr-2" />
+                    Public
+                  </>
+                ) : (
+                  <>
+                    <Lock className="w-4 h-4 mr-2" />
+                    Private
+                  </>
+                )}
+              </Button>
+            )}
+            <Button variant="outline" className={onTogglePublic ? "flex-1" : "w-full"}>
               <Share2 className="w-4 h-4 mr-2" />
               Share
             </Button>
