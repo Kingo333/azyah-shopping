@@ -168,7 +168,7 @@ export const ClosetOutfitsSection: React.FC = () => {
         
         {/* Right Card - Outfits (Full image with creator info) */}
         <div 
-          onClick={() => handleNavigate('/dress-me/fits')}
+          onClick={() => handleNavigate('/dress-me/wardrobe?tab=community')}
           className="bg-card rounded-xl p-2 border border-border/50 shadow-sm cursor-pointer hover:shadow-md transition-shadow flex flex-col"
         >
           {/* Image container with overlay plus button */}

@@ -1,7 +1,7 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { X, Share2, Edit } from 'lucide-react';
+import { X, Share2 } from 'lucide-react';
 import { Button } from './ui/button';
 import { WardrobeItem } from '@/hooks/useWardrobeItems';
 import { useNavigate } from 'react-router-dom';
@@ -134,18 +134,7 @@ export const OutfitDetailSheet: React.FC<OutfitDetailSheetProps> = ({
 
           {/* Action buttons */}
           <div className="outfit-actions">
-            <Button 
-              variant="outline" 
-              className="flex-1"
-              onClick={() => {
-                navigate(`/dress-me/canvas?fitId=${fitId}`);
-                onClose();
-              }}
-            >
-              <Edit className="w-4 h-4 mr-2" />
-              Edit in Canvas
-            </Button>
-            <Button variant="outline" className="flex-1">
+            <Button variant="outline" className="w-full">
               <Share2 className="w-4 h-4 mr-2" />
               Share
             </Button>
