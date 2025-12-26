@@ -594,27 +594,7 @@ export default function SignUp() {
             </Button>
           </div>
 
-          {/* Already have account + Guest buttons */}
-          {!isBrandOrRetailer && (
-            <div className="flex items-center justify-center gap-3">
-              <Button
-                variant="ghost"
-                onClick={() => setStep('email-entry')}
-                className="text-white/80 hover:text-white hover:bg-white/10 text-xs md:text-sm px-3 py-2 h-auto"
-              >
-                Already have an account?
-              </Button>
-              <div className="w-px h-4 bg-white/30" />
-              <Button
-                variant="ghost"
-                onClick={handleGuestContinue}
-                className="text-white/80 hover:text-white hover:bg-white/10 text-xs md:text-sm px-3 py-2 h-auto"
-              >
-                <User className="w-3 h-3 mr-1.5" />
-                Guest
-              </Button>
-            </div>
-          )}
+          {/* Spacer where the "Already have account + Guest" buttons used to be */}
 
           {!isBrandOrRetailer && (
             <div 
