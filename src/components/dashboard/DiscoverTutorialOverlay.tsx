@@ -29,15 +29,17 @@ export function DiscoverTutorialOverlay({ isVisible, onDismiss }: DiscoverTutori
             onClick={onDismiss}
           />
 
-          {/* Tooltip centered above the Discover button (center of nav) */}
+          {/* Tooltip positioned above the Discover button (left of center in nav) */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 10 }}
             transition={{ duration: 0.3, delay: 0.15 }}
-            className="fixed z-50 left-1/2 -translate-x-1/2 flex flex-col items-center"
+            className="fixed z-50 flex flex-col items-center"
             style={{
-              bottom: 'calc(64px + var(--safe-bottom, 0px) + 24px)'
+              bottom: 'calc(64px + var(--safe-bottom, 0px) + 32px)',
+              left: '35%',
+              transform: 'translateX(-50%)'
             }}
           >
             {/* Compact Card */}
