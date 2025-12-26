@@ -135,15 +135,15 @@ export const ClosetOutfitsSection: React.FC = () => {
           <div className="grid grid-cols-2 gap-0.5 flex-1">
             {/* Create Button - circular */}
             <div className="aspect-square flex items-center justify-center">
-              <button 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleNavigate('/dress-me/wardrobe');
-                }}
-                className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center hover:bg-secondary/80 transition-colors"
-              >
-                <Plus className="h-3.5 w-3.5 text-muted-foreground" />
-              </button>
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleNavigate('/dress-me/wardrobe');
+                  }}
+                  className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center hover:bg-secondary/80 transition-colors border border-[hsl(var(--azyah-maroon))]/30"
+                >
+                  <Plus className="h-3.5 w-3.5 text-[hsl(var(--azyah-maroon))]" />
+                </button>
             </div>
             
             {/* Item thumbnails */}
@@ -189,10 +189,10 @@ export const ClosetOutfitsSection: React.FC = () => {
                 e.stopPropagation();
                 handleNavigate('/dress-me');
               }}
-              className="absolute top-1.5 left-1.5 z-10 flex items-center gap-1 px-2 py-1 rounded-full bg-secondary/80 backdrop-blur-sm hover:bg-secondary transition-colors"
+              className="absolute top-1.5 left-1.5 z-10 flex items-center gap-1 px-2 py-1 rounded-full bg-secondary/80 backdrop-blur-sm hover:bg-secondary transition-colors border border-[hsl(var(--azyah-maroon))]/25"
             >
-              <Plus className="h-2.5 w-2.5 text-muted-foreground" />
-              <span className="text-[8px] font-medium text-muted-foreground">Create & Earn</span>
+              <Plus className="h-2.5 w-2.5 text-[hsl(var(--azyah-maroon))]" />
+              <span className="text-[8px] font-medium text-[hsl(var(--azyah-maroon))]">Create & Earn</span>
             </button>
             
             {/* Full Outfit Image */}

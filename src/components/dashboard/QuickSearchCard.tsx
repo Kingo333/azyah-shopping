@@ -61,10 +61,10 @@ export function QuickSearchCard({ onOpenSearch }: QuickSearchCardProps) {
               <button
                 key={id}
                 onClick={() => handleCategoryClick(id)}
-                className="flex-1 flex items-center justify-center gap-1 py-1.5 px-2 rounded-lg bg-background/60 hover:bg-primary/10 border border-border/30 hover:border-primary/30 transition-all duration-200 group"
+                className="flex-1 flex items-center justify-center gap-1 py-1.5 px-2 rounded-lg bg-background/60 hover:bg-[hsl(var(--azyah-maroon))]/10 border border-[hsl(var(--azyah-maroon))]/20 hover:border-[hsl(var(--azyah-maroon))]/40 transition-all duration-200 group"
               >
-                <Icon className="h-3 w-3 text-muted-foreground group-hover:text-primary transition-colors" />
-                <span className="text-[10px] font-medium text-muted-foreground group-hover:text-primary transition-colors">
+                <Icon className="h-3 w-3 text-[hsl(var(--azyah-maroon))]/70 group-hover:text-[hsl(var(--azyah-maroon))] transition-colors" />
+                <span className="text-[10px] font-medium text-muted-foreground group-hover:text-[hsl(var(--azyah-maroon))] transition-colors">
                   {label}
                 </span>
               </button>
