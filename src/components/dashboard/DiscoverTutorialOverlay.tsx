@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Compass } from 'lucide-react';
+import { X, ShoppingBag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface DiscoverTutorialOverlayProps {
@@ -29,17 +29,15 @@ export function DiscoverTutorialOverlay({ isVisible, onDismiss }: DiscoverTutori
             onClick={onDismiss}
           />
 
-          {/* Tooltip positioned above the Discover button (2nd from left in 5-item nav) */}
+          {/* Tooltip centered above the Discover button (center of nav) */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 10 }}
             transition={{ duration: 0.3, delay: 0.15 }}
-            className="fixed z-50 flex flex-col items-center"
+            className="fixed z-50 left-1/2 -translate-x-1/2 flex flex-col items-center"
             style={{
-              bottom: 'calc(64px + var(--safe-bottom, 0px) + 12px)',
-              left: '30%',
-              transform: 'translateX(-50%)'
+              bottom: 'calc(64px + var(--safe-bottom, 0px) + 24px)'
             }}
           >
             {/* Compact Card */}
@@ -52,7 +50,7 @@ export function DiscoverTutorialOverlay({ isVisible, onDismiss }: DiscoverTutori
               </button>
 
               <div className="flex items-center justify-center gap-1.5 mb-1">
-                <Compass className="h-4 w-4 text-[hsl(var(--azyah-maroon))]" />
+                <ShoppingBag className="h-4 w-4 text-[hsl(var(--azyah-maroon))]" />
                 <span className="text-sm font-medium text-foreground">Discover</span>
               </div>
               
@@ -69,7 +67,7 @@ export function DiscoverTutorialOverlay({ isVisible, onDismiss }: DiscoverTutori
               </Button>
             </div>
 
-            {/* Arrow pointing down to Discover icon */}
+            {/* Arrow pointing down to center Discover button */}
             <motion.div
               animate={{ y: [0, 6, 0] }}
               transition={{ duration: 1, repeat: Infinity, ease: "easeInOut" }}
