@@ -338,8 +338,8 @@ const RoleDashboard: React.FC = () => {
             onClick={() => setAiStudioModalOpen(true)} 
             className="flex flex-col items-center justify-center gap-1.5 p-3 bg-card rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.3)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.12)] transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] min-w-[64px] border border-border/50"
           >
-            <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center">
-              <Shirt className="h-4 w-4 text-muted-foreground" />
+            <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center border border-[hsl(var(--azyah-maroon))]/25">
+              <Shirt className="h-4 w-4 text-[hsl(var(--azyah-maroon))]/70" />
             </div>
             <span className="text-[10px] font-medium text-muted-foreground text-center leading-tight">AI Studio</span>
           </button>
@@ -349,8 +349,8 @@ const RoleDashboard: React.FC = () => {
             onClick={() => navigate('/ugc')} 
             className="flex flex-col items-center justify-center gap-1.5 p-3 bg-card rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.3)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.12)] transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] min-w-[64px] border border-border/50"
           >
-            <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center">
-              <Users className="h-4 w-4 text-muted-foreground" />
+            <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center border border-[hsl(var(--azyah-maroon))]/25">
+              <Users className="h-4 w-4 text-[hsl(var(--azyah-maroon))]/70" />
             </div>
             <span className="text-[10px] font-medium text-muted-foreground text-center leading-tight">UGC Collab</span>
           </button>
@@ -361,8 +361,8 @@ const RoleDashboard: React.FC = () => {
               <button 
                 className="flex flex-col items-center justify-center gap-1.5 p-3 bg-card rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.3)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.12)] transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] min-w-[64px] border border-border/50"
               >
-                <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center">
-                  <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
+                <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center border border-[hsl(var(--azyah-maroon))]/25">
+                  <MoreHorizontal className="h-4 w-4 text-[hsl(var(--azyah-maroon))]/70" />
                 </div>
                 <span className="text-[10px] font-medium text-muted-foreground text-center leading-tight">More</span>
               </button>

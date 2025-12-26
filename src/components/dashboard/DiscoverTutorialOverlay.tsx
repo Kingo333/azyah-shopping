@@ -35,10 +35,9 @@ export function DiscoverTutorialOverlay({ isVisible, onDismiss }: DiscoverTutori
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 10 }}
             transition={{ duration: 0.3, delay: 0.15 }}
-            className="fixed z-50 flex flex-col items-center"
+            className="fixed z-50 flex flex-col items-center left-[28%] md:left-[45%]"
             style={{
               bottom: 'calc(64px + var(--safe-bottom, 0px) + 32px)',
-              left: '28%',
               transform: 'translateX(-50%)'
             }}
           >
