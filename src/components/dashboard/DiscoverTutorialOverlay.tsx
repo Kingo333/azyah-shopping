@@ -38,7 +38,7 @@ export function DiscoverTutorialOverlay({ isVisible, onDismiss }: DiscoverTutori
             className="fixed z-50 flex flex-col items-center"
             style={{
               bottom: 'calc(64px + var(--safe-bottom, 0px) + 32px)',
-              left: '35%',
+              left: '28%',
               transform: 'translateX(-50%)'
             }}
           >
