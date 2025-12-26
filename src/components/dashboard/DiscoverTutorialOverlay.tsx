@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X } from 'lucide-react';
+import { X, Compass } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface DiscoverTutorialOverlayProps {
@@ -29,19 +29,21 @@ export function DiscoverTutorialOverlay({ isVisible, onDismiss }: DiscoverTutori
             onClick={onDismiss}
           />
 
-          {/* Compact tooltip centered above Discover button */}
+          {/* Tooltip positioned above the Discover button (2nd from left in 5-item nav) */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 10 }}
             transition={{ duration: 0.3, delay: 0.15 }}
-            className="fixed z-50 left-1/2 -translate-x-1/2 flex flex-col items-center"
+            className="fixed z-50 flex flex-col items-center"
             style={{
-              bottom: 'calc(64px + var(--safe-bottom, 0px) + 16px)'
+              bottom: 'calc(64px + var(--safe-bottom, 0px) + 12px)',
+              left: '30%',
+              transform: 'translateX(-50%)'
             }}
           >
             {/* Compact Card */}
-            <div className="bg-card rounded-xl px-4 py-3 shadow-2xl border border-border text-center relative">
+            <div className="bg-card rounded-xl px-4 py-3 shadow-2xl border border-border text-center relative max-w-[220px]">
               <button
                 onClick={onDismiss}
                 className="absolute -top-2 -right-2 p-1 rounded-full bg-card border border-border hover:bg-muted transition-colors"
@@ -49,20 +51,25 @@ export function DiscoverTutorialOverlay({ isVisible, onDismiss }: DiscoverTutori
                 <X className="h-3 w-3 text-muted-foreground" />
               </button>
 
-              <p className="text-sm font-medium text-foreground mb-2">
-                Shop items in a new way!
+              <div className="flex items-center justify-center gap-1.5 mb-1">
+                <Compass className="h-4 w-4 text-[hsl(var(--azyah-maroon))]" />
+                <span className="text-sm font-medium text-foreground">Discover</span>
+              </div>
+              
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Find products in a new way — swipe through items you love!
               </p>
 
               <Button
                 onClick={onDismiss}
                 size="sm"
-                className="h-7 text-xs bg-[hsl(var(--azyah-maroon))] hover:bg-[hsl(var(--azyah-maroon))]/90 text-white rounded-full px-4"
+                className="h-7 text-xs bg-[hsl(var(--azyah-maroon))] hover:bg-[hsl(var(--azyah-maroon))]/90 text-white rounded-full px-4 mt-2"
               >
                 Got it
               </Button>
             </div>
 
-            {/* Arrow pointing down */}
+            {/* Arrow pointing down to Discover icon */}
             <motion.div
               animate={{ y: [0, 6, 0] }}
               transition={{ duration: 1, repeat: Infinity, ease: "easeInOut" }}
