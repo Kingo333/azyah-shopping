@@ -31,6 +31,7 @@ import { isGuestMode } from '@/hooks/useGuestMode';
 import { useGuestGate } from '@/hooks/useGuestGate';
 import { GuestActionPrompt } from '@/components/GuestActionPrompt';
 import { ClosetOutfitsSection } from '@/components/dashboard/ClosetOutfitsSection';
+import { DiscoverTutorialOverlay } from '@/components/dashboard/DiscoverTutorialOverlay';
 
 
 interface UserProfile {
@@ -93,6 +94,7 @@ const RoleDashboard: React.FC = () => {
   const [selectedTrendingCategory, setSelectedTrendingCategory] = useState<TopCategory | null>(null);
   const [isTrendingFilterOpen, setIsTrendingFilterOpen] = useState(false);
   const [featuredEvent, setFeaturedEvent] = useState<any>(null);
+  const [showDiscoverTutorial, setShowDiscoverTutorial] = useState(false);
   
   // Load saved category selection on component mount
   useEffect(() => {
@@ -247,6 +249,31 @@ const RoleDashboard: React.FC = () => {
     // Navigate to the toy replica page
     navigate('/toy-replica');
   };
+
+  // Discover tutorial overlay for guests and first-time users
+  const DISCOVER_TUTORIAL_KEY = 'dashboard-discover-tutorial-seen';
+  
+  const handleDismissDiscoverTutorial = () => {
+    localStorage.setItem(DISCOVER_TUTORIAL_KEY, 'true');
+    setShowDiscoverTutorial(false);
+  };
+
+  // Check if should show discover tutorial (after loading is complete)
+  useEffect(() => {
+    if (loading) return;
+    
+    const hasSeenTutorial = localStorage.getItem(DISCOVER_TUTORIAL_KEY) === 'true';
+    const isGuestUser = isGuestMode();
+    
+    // Show tutorial for guests or first-time authenticated users who haven't seen it
+    if (!hasSeenTutorial && (isGuestUser || user)) {
+      // Small delay to let the dashboard render first
+      const timer = setTimeout(() => {
+        setShowDiscoverTutorial(true);
+      }, 800);
+      return () => clearTimeout(timer);
+    }
+  }, [loading, user]);
 
   // Show loading spinner
   if (loading) {
@@ -664,6 +691,12 @@ const RoleDashboard: React.FC = () => {
         
         {/* AI Studio Modal */}
         <AiStudioModal open={aiStudioModalOpen} onClose={() => setAiStudioModalOpen(false)} />
+        
+        {/* Discover Tutorial Overlay */}
+        <DiscoverTutorialOverlay 
+          isVisible={showDiscoverTutorial} 
+          onDismiss={handleDismissDiscoverTutorial} 
+        />
       </div>
     </ErrorBoundary>;
 };
