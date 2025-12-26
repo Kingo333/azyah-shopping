@@ -38,7 +38,7 @@ const DashboardHeader: React.FC = () => {
 
   return (
     <section 
-      className="sticky z-50 bg-white border-b border-[hsl(var(--azyah-border))] px-4 py-3"
+      className="sticky z-50 bg-background border-b border-border px-4 py-3"
       style={{ top: 'env(safe-area-inset-top, 0px)' }}
     >
       <div className="flex items-center justify-between">
