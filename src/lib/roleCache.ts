@@ -1,4 +1,5 @@
 // Role cache utility to optimize ProtectedRoute performance
+// Now uses the secure user_roles table as the source of truth
 import { supabase } from '@/integrations/supabase/client';
 import type { UserRole } from '@/lib/rbac';
 import { isVisualEditsMode } from '@/utils/visualEditsDetection';
@@ -82,7 +83,7 @@ export const getUserRole = async (user: any): Promise<UserRole> => {
   // In Visual Edits mode, prioritize metadata for stability
   if (isVisualEditsMode()) {
     const metadataRole = user.user_metadata?.role;
-    if (metadataRole && ['shopper', 'brand', 'retailer'].includes(metadataRole)) { // Admin excluded
+    if (metadataRole && ['shopper', 'brand', 'retailer'].includes(metadataRole)) {
       setCachedRole(userId, metadataRole as UserRole);
       return metadataRole as UserRole;
     }
@@ -94,35 +95,33 @@ export const getUserRole = async (user: any): Promise<UserRole> => {
     return cachedRole;
   }
   
-  // 2. STRICT: Use user_metadata.role as SINGLE source of truth (set during signup)
+  // 2. Query the secure user_roles table (source of truth)
+  try {
+    const { data, error } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', userId)
+      .order('role', { ascending: true }) // admin comes first if multiple
+      .limit(1)
+      .single();
+      
+    if (!error && data) {
+      const dbRole = data.role as UserRole;
+      setCachedRole(userId, dbRole);
+      return dbRole;
+    }
+  } catch (dbError) {
+    console.warn('Failed to fetch role from user_roles:', dbError);
+  }
+  
+  // 3. Fallback to user_metadata (for new signups before trigger runs)
   const metadataRole = user.user_metadata?.role;
-  if (metadataRole && ['shopper', 'brand', 'retailer'].includes(metadataRole)) { // Admin excluded
+  if (metadataRole && ['shopper', 'brand', 'retailer'].includes(metadataRole)) {
     setCachedRole(userId, metadataRole as UserRole);
-    
-    // Sync with database in background (don't wait)
-    setTimeout(() => {
-      const syncRole = async () => {
-        try {
-          await supabase
-            .from('users')
-            .upsert({ 
-              id: userId,
-              email: user.email,
-              role: metadataRole as UserRole,
-              updated_at: new Date().toISOString()
-            });
-          console.log('Role synced to database');
-        } catch (err) {
-          console.warn('Role sync failed:', err);
-        }
-      };
-      syncRole();
-    }, 0);
-    
     return metadataRole as UserRole;
   }
   
-  // 3. Fallback to database only if metadata is missing
+  // 4. Final fallback to public.users table (legacy)
   try {
     const { data, error } = await supabase
       .from('users')
@@ -130,20 +129,18 @@ export const getUserRole = async (user: any): Promise<UserRole> => {
       .eq('id', userId)
       .single();
       
-    if (error || !data) {
-      // STRICT: No fallback role - user must have a role
-      throw new Error('User role not found in database');
+    if (!error && data?.role) {
+      const legacyRole = data.role as UserRole;
+      setCachedRole(userId, legacyRole);
+      return legacyRole;
     }
-    
-    const dbRole = data.role as UserRole;
-    setCachedRole(userId, dbRole);
-    return dbRole;
-    
-  } catch (dbError) {
-    // STRICT: Only fallback to shopper for new users
-    console.warn('Database role query failed:', dbError);
-    const defaultRole: UserRole = 'shopper';
-    setCachedRole(userId, defaultRole);
-    return defaultRole;
+  } catch (legacyError) {
+    console.warn('Legacy role lookup failed:', legacyError);
   }
+  
+  // 5. Default to shopper if no role found anywhere
+  console.warn('No role found for user, defaulting to shopper');
+  const defaultRole: UserRole = 'shopper';
+  setCachedRole(userId, defaultRole);
+  return defaultRole;
 };
