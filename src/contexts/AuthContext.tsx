@@ -71,8 +71,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (event === 'SIGNED_IN' && session) {
             clearGuestModeStorage(); // Clear guest mode when user signs in
             const provider = session.user.app_metadata?.provider;
-            const role = session.user.user_metadata?.role || 'shopper';
-            console.log('OAuth sign-in detected:', { provider, role });
+            const userRole = session.user.user_metadata?.role || 'shopper';
+            console.log('Auth sign-in detected:', { provider, role: userRole });
+            
+            // SECURITY: Enforce OAuth restriction for non-shoppers
+            // Google and Apple login are ONLY allowed for shoppers
+            if ((provider === 'google' || provider === 'apple') && userRole !== 'shopper') {
+              console.warn('OAuth attempted by non-shopper - blocking access');
+              toast({
+                title: "Access Restricted",
+                description: "Google and Apple login are only available for shopper accounts. Please use email login for brand or retailer accounts.",
+                variant: "destructive"
+              });
+              
+              // Sign out immediately to prevent unauthorized access
+              await supabase.auth.signOut();
+              return;
+            }
             
             // Initialize IAP and identify user in RevenueCat on iOS
             if (Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'ios') {
@@ -158,9 +173,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return { error };
     }
 
-    // Dynamic redirect based on role - go directly to dashboard
+    // Dynamic redirect using auth callback for proper token handling
     const userRole = userData?.role || 'shopper';
-    const redirectUrl = `${window.location.origin}/dashboard`;
+    const redirectUrl = `${window.location.origin}/auth/callback`;
     
     const { data, error } = await supabase.auth.signUp({
       email,

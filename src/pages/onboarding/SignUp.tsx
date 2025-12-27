@@ -176,12 +176,15 @@ export default function SignUp() {
   };
 
   const handleOAuthSignIn = async (provider: 'google' | 'apple') => {
+    // SECURITY: Only allow OAuth for shoppers
+    if (userRole !== 'shopper') {
+      toast.error('Google and Apple login are only available for shopper accounts');
+      return;
+    }
+
     try {
-      const redirectUrl = userRole === 'shopper' 
-        ? `${window.location.origin}/dashboard`
-        : userRole === 'brand'
-        ? `${window.location.origin}/brand-portal`
-        : `${window.location.origin}/retailer-portal`;
+      // Use auth/callback for proper token handling
+      const redirectUrl = `${window.location.origin}/auth/callback`;
 
       const { error } = await supabase.auth.signInWithOAuth({
         provider: provider,
