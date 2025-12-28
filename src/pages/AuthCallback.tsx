@@ -9,7 +9,8 @@ import { toast } from 'sonner';
  * - Email confirmation (type=signup)
  * - Password recovery (type=recovery)
  * - Magic link login (type=magiclink)
- * - OAuth callbacks (Google, Apple)
+ * 
+ * Note: OAuth (Google, Apple) has been removed - email/password only for all roles.
  * 
  * Supabase returns tokens in the URL hash fragment (#), not query params (?).
  * Format: #access_token=xxx&refresh_token=xxx&type=signup|recovery|magiclink

@@ -74,20 +74,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const userRole = session.user.user_metadata?.role || 'shopper';
             console.log('Auth sign-in detected:', { provider, role: userRole });
             
-            // SECURITY: Enforce OAuth restriction for non-shoppers
-            // Google and Apple login are ONLY allowed for shoppers
-            if ((provider === 'google' || provider === 'apple') && userRole !== 'shopper') {
-              console.warn('OAuth attempted by non-shopper - blocking access');
-              toast({
-                title: "Access Restricted",
-                description: "Google and Apple login are only available for shopper accounts. Please use email login for brand or retailer accounts.",
-                variant: "destructive"
-              });
-              
-              // Sign out immediately to prevent unauthorized access
-              await supabase.auth.signOut();
-              return;
-            }
+            // OAuth has been removed - email/password only for all roles
+            // Legacy OAuth users will be prompted to reset their password
             
             // Initialize IAP and identify user in RevenueCat on iOS
             if (Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'ios') {
