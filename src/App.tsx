@@ -9,6 +9,7 @@ import { FeatureFlagsProvider } from '@/contexts/FeatureFlagsContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { useSessionMonitor } from '@/hooks/useSessionMonitor';
 import { useAuthNavigation } from '@/hooks/useAuthNavigation';
+import { useDeepLinkHandler } from '@/hooks/useDeepLinkHandler';
 
 import Index from './pages/Index';
 import Landing from './pages/Landing';
@@ -76,6 +77,7 @@ const queryClient = new QueryClient({
 function AppContent() {
   useSessionMonitor();
   useAuthNavigation(); // Set up soft navigation for auth recovery
+  useDeepLinkHandler(); // Handle deep links for Capacitor iOS/Android
   return (
     <>
       <StatusBarScrim />

@@ -198,7 +198,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           error.message.includes('duplicate key') || 
           error.message.includes('already been taken')) {
         return { 
-          error: { message: 'This email is already registered. If you signed up with Google, please use "Continue with Google" instead.' }, 
+          error: { message: 'This email is already registered. Please log in or reset your password if needed.' }, 
           isExistingUser: true, 
           email: email 
         };
