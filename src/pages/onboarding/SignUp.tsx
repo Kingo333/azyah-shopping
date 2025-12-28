@@ -25,8 +25,8 @@ export default function SignUp() {
   const [showPassword, setShowPassword] = useState(false);
   const [showUsernameFields, setShowUsernameFields] = useState(false);
   const [emailExists, setEmailExists] = useState<boolean | null>(null);
-  const [isOAuthUser, setIsOAuthUser] = useState(false);
-  const [oauthProvider, setOauthProvider] = useState<string | null>(null);
+  const [isLegacyOAuthUser, setIsLegacyOAuthUser] = useState(false);
+  const [legacyOAuthProvider, setLegacyOAuthProvider] = useState<string | null>(null);
   const [checkingEmail, setCheckingEmail] = useState(false);
   const [checkingUsername, setCheckingUsername] = useState(false);
   const [isUsernameAvailable, setIsUsernameAvailable] = useState<boolean | null>(null);
@@ -75,9 +75,9 @@ export default function SignUp() {
       setEmailExists(exists || false);
       
       if (exists && provider && provider !== 'email') {
-        // This is an OAuth user (Google, Apple, etc.)
-        setIsOAuthUser(true);
-        setOauthProvider(provider);
+        // This is a legacy OAuth user (Google, Apple) - they need to reset password
+        setIsLegacyOAuthUser(true);
+        setLegacyOAuthProvider(provider);
       } else if (exists) {
         // Existing email/password user - show password field
         setShowPassword(true);
@@ -175,40 +175,12 @@ export default function SignUp() {
     }
   };
 
-  const handleOAuthSignIn = async (provider: 'google' | 'apple') => {
-    // SECURITY: Only allow OAuth for shoppers
-    if (userRole !== 'shopper') {
-      toast.error('Google and Apple login are only available for shopper accounts');
-      return;
-    }
-
-    try {
-      // Use auth/callback for proper token handling
-      const redirectUrl = `${window.location.origin}/auth/callback`;
-
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: provider,
-        options: {
-          redirectTo: redirectUrl,
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-          },
-        },
-      });
-      
-      if (error) {
-        toast.error(`Failed to sign in with ${provider === 'google' ? 'Google' : 'Apple'}`);
-      }
-    } catch (error) {
-      toast.error('OAuth sign-in failed');
-    }
-  };
+  // OAuth has been removed - email/password only for all roles
 
   const handleBack = () => {
-    if (isOAuthUser || showPassword || showUsernameFields) {
-      setIsOAuthUser(false);
-      setOauthProvider(null);
+    if (isLegacyOAuthUser || showPassword || showUsernameFields) {
+      setIsLegacyOAuthUser(false);
+      setLegacyOAuthProvider(null);
       setShowPassword(false);
       setShowUsernameFields(false);
       setPassword('');
@@ -406,34 +378,26 @@ export default function SignUp() {
                 </div>
               )}
 
-              {/* OAuth User Prompt */}
-              {isOAuthUser && (
+              {/* Legacy OAuth User - Prompt to Reset Password */}
+              {isLegacyOAuthUser && (
                 <div className="animate-in fade-in slide-in-from-top-2 duration-300 space-y-4">
-                  <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 text-center space-y-4">
-                    <p className="text-sm text-blue-800">
-                      This email is linked to {oauthProvider === 'google' ? 'Google' : 'another provider'}. 
-                      Please sign in with {oauthProvider === 'google' ? 'Google' : 'that provider'}.
+                  <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 text-center space-y-4">
+                    <p className="text-sm text-amber-800">
+                      This email was previously linked to {legacyOAuthProvider === 'google' ? 'Google' : legacyOAuthProvider === 'apple' ? 'Apple' : 'a social login'}. 
+                      We've moved to email-only login for security. Please reset your password to continue.
                     </p>
-                    {oauthProvider === 'google' && (
-                      <Button
-                        type="button"
-                        onClick={() => handleOAuthSignIn('google')}
-                        className="w-full h-12 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-full font-medium"
-                      >
-                        <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
-                          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                          <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                        </svg>
-                        Continue with Google
-                      </Button>
-                    )}
+                    <Button
+                      type="button"
+                      onClick={() => navigate('/reset-password-request')}
+                      className="w-full h-12 bg-amber-600 hover:bg-amber-700 text-white rounded-full font-medium"
+                    >
+                      Reset Password
+                    </Button>
                   </div>
                 </div>
               )}
 
-              {!isOAuthUser && (
+              {!isLegacyOAuthUser && (
                 <Button
                   type="submit"
                   disabled={loading || checkingEmail || checkingUsername || (showUsernameFields && !isUsernameAvailable)}
@@ -486,9 +450,7 @@ export default function SignUp() {
     );
   }
 
-  // Initial OAuth screen (only for shoppers)
-  const isBrandOrRetailer = userRole === 'brand' || userRole === 'retailer';
-
+  // Initial welcome screen - email only for all roles
   return (
     <div 
       className="flex flex-col overflow-hidden relative bg-background"
@@ -538,56 +500,6 @@ export default function SignUp() {
           </p>
 
           <div className="space-y-3 md:space-y-4">
-            {!isBrandOrRetailer && (
-              <>
-                <Button
-                  onClick={() => handleOAuthSignIn('google')}
-                  className="w-full h-12 md:h-14 text-sm md:text-base font-semibold rounded-full bg-white hover:bg-gray-50 text-gray-800 border border-[#7A143E]/15 shadow-lg transition-all duration-200 hover:shadow-xl hover:shadow-[#7A143E]/10"
-                >
-                  <svg className="mr-3 h-5 w-5" viewBox="0 0 24 24">
-                    <path
-                      fill="#4285F4"
-                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                    />
-                    <path
-                      fill="#34A853"
-                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                    />
-                    <path
-                      fill="#FBBC05"
-                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                    />
-                    <path
-                      fill="#EA4335"
-                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                    />
-                  </svg>
-                  Continue with Google
-                </Button>
-
-                <Button
-                  onClick={() => handleOAuthSignIn('apple')}
-                  className="w-full h-12 md:h-14 text-sm md:text-base font-semibold rounded-full bg-black hover:bg-gray-900 text-white border border-[#7A143E]/20 shadow-lg transition-all duration-200 hover:shadow-xl hover:shadow-[#7A143E]/10"
-                >
-                  <svg className="mr-3 h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
-                  </svg>
-                  Continue with Apple
-                </Button>
-              </>
-            )}
-
-            {!isBrandOrRetailer && (
-              <div className="relative py-2">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-[#E68BA5]/30"></div>
-                </div>
-                <div className="relative flex justify-center text-xs md:text-sm">
-                  <span className="px-3 md:px-4 bg-[#16213e] text-[#E68BA5] font-medium">or</span>
-                </div>
-              </div>
-            )}
-
             <Button
               onClick={() => setStep('email-entry')}
               className="w-full h-12 md:h-14 text-sm md:text-base font-semibold rounded-full bg-white hover:bg-gray-50 text-gray-800 border border-[#7A143E]/20 shadow-lg transition-all duration-200 hover:shadow-xl hover:shadow-[#7A143E]/10"
@@ -597,36 +509,32 @@ export default function SignUp() {
             </Button>
           </div>
 
-          {/* Spacer where the "Already have account + Guest" buttons used to be */}
-
-          {!isBrandOrRetailer && (
-            <div 
-              className="relative z-10 text-center text-xs md:text-sm text-white/90 space-y-1 pb-2 flex-shrink-0"
-              style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}
-            >
-              <p>
-                Are you a brand?{' '}
-                <button
-                  onClick={() => navigate('/onboarding/signup?role=brand')}
-                  className="text-white hover:underline font-semibold"
-                >
-                  Create a brand account
-                </button>
-              </p>
-              <p className="flex items-center justify-center gap-1">
-                <span>•</span>
-              </p>
-              <p>
-                Are you a retailer?{' '}
-                <button
-                  onClick={() => navigate('/onboarding/signup?role=retailer')}
-                  className="text-white hover:underline font-semibold"
-                >
-                  Create a retailer account
-                </button>
-              </p>
-            </div>
-          )}
+          <div 
+            className="relative z-10 text-center text-xs md:text-sm text-white/90 space-y-1 pb-2 flex-shrink-0"
+            style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}
+          >
+            <p>
+              Are you a brand?{' '}
+              <button
+                onClick={() => navigate('/onboarding/signup?role=brand')}
+                className="text-white hover:underline font-semibold"
+              >
+                Create a brand account
+              </button>
+            </p>
+            <p className="flex items-center justify-center gap-1">
+              <span>•</span>
+            </p>
+            <p>
+              Are you a retailer?{' '}
+              <button
+                onClick={() => navigate('/onboarding/signup?role=retailer')}
+                className="text-white hover:underline font-semibold"
+              >
+                Create a retailer account
+              </button>
+            </p>
+          </div>
         </div>
       </div>
     </div>
