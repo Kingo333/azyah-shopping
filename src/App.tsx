@@ -7,6 +7,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { FeatureFlagsProvider } from '@/contexts/FeatureFlagsContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import AuthAwareRoute from '@/components/AuthAwareRoute';
 import { useSessionMonitor } from '@/hooks/useSessionMonitor';
 import { useAuthNavigation } from '@/hooks/useAuthNavigation';
 import { useDeepLinkHandler } from '@/hooks/useDeepLinkHandler';
@@ -82,7 +83,12 @@ function AppContent() {
     <>
       <StatusBarScrim />
       <Routes>
-                  <Route path="/" element={<IntroCarousel />} />
+                  {/* Root route - show IntroCarousel only if NOT authenticated */}
+                  <Route path="/" element={
+                    <AuthAwareRoute redirectAuthenticatedTo="dashboard">
+                      <IntroCarousel />
+                    </AuthAwareRoute>
+                  } />
                   <Route path="/landing" element={<Landing />} />
                   <Route path="/dashboard" element={
                     <ProtectedRoute>
@@ -100,9 +106,17 @@ function AppContent() {
                     </ProtectedRoute>
                   } />
                   
-                  {/* Onboarding routes */}
-                  <Route path="/onboarding/intro" element={<IntroCarousel />} />
-                  <Route path="/onboarding/signup" element={<SignUp />} />
+                  {/* Onboarding routes - redirect authenticated users away */}
+                  <Route path="/onboarding/intro" element={
+                    <AuthAwareRoute redirectAuthenticatedTo="dashboard">
+                      <IntroCarousel />
+                    </AuthAwareRoute>
+                  } />
+                  <Route path="/onboarding/signup" element={
+                    <AuthAwareRoute redirectAuthenticatedTo="dashboard">
+                      <SignUp />
+                    </AuthAwareRoute>
+                  } />
                   <Route path="/auth/callback" element={<AuthCallback />} />
                   <Route path="/reset-password-request" element={<ResetPasswordRequest />} />
                   <Route path="/reset-password" element={<ResetPassword />} />

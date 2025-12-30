@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, RefreshCw } from 'lucide-react';
+import { Loader2, RefreshCw, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 
@@ -88,7 +88,7 @@ function getDashboardPath(role: UserRole): string {
 
 export default function AuthCallback() {
   const navigate = useNavigate();
-  const [status, setStatus] = useState<'processing' | 'error' | 'retry_failed'>('processing');
+  const [status, setStatus] = useState<'processing' | 'success' | 'error' | 'retry_failed'>('processing');
   const [errorMessage, setErrorMessage] = useState<string>('');
 
   const handleCallback = async () => {
@@ -135,6 +135,9 @@ export default function AuthCallback() {
 
         if (type === 'signup') {
           toast.success('Email confirmed! Welcome to Azyah');
+          // Show success state briefly before redirect
+          setStatus('success');
+          await new Promise(resolve => setTimeout(resolve, 1500));
         } else if (type === 'magiclink') {
           toast.success('Successfully signed in!');
         }
@@ -197,9 +200,23 @@ export default function AuthCallback() {
       <div className="text-center space-y-4 px-6">
         {status === 'processing' ? (
           <>
-            <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
-            <p className="text-muted-foreground">Completing authentication...</p>
-            <p className="text-muted-foreground/60 text-sm">Setting up your account...</p>
+            <div className="relative">
+              <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
+            </div>
+            <div className="space-y-1">
+              <p className="text-foreground font-medium">Verifying your account...</p>
+              <p className="text-muted-foreground text-sm">Please wait while we set things up</p>
+            </div>
+          </>
+        ) : status === 'success' ? (
+          <>
+            <div className="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center mx-auto">
+              <CheckCircle className="h-8 w-8 text-green-600" />
+            </div>
+            <div className="space-y-1">
+              <p className="text-foreground font-medium">Email verified ✅</p>
+              <p className="text-muted-foreground text-sm">Redirecting to your dashboard...</p>
+            </div>
           </>
         ) : status === 'retry_failed' ? (
           <>
