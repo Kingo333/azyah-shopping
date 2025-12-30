@@ -152,6 +152,7 @@ export default function SignUp() {
         // New user - sign up with username
         if (password !== confirmPassword) {
           toast.error('Passwords do not match');
+          setLoading(false);
           return;
         }
 
@@ -249,7 +250,7 @@ export default function SignUp() {
               }
             </p>
 
-            <form onSubmit={showPassword ? handlePasswordSubmit : handleEmailContinue} className="space-y-3 md:space-y-4">
+            <form onSubmit={(showPassword || showUsernameFields) ? handlePasswordSubmit : handleEmailContinue} className="space-y-3 md:space-y-4">
               <div>
                 <label className="text-xs md:text-sm text-muted-foreground mb-1 md:mb-2 block">
                   Email address
