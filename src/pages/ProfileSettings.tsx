@@ -83,8 +83,8 @@ const ProfileSettings: React.FC = () => {
 
       if (data) {
         setProfileData({
-          name: data.name || '',
-          username: data.email?.split('@')[0] || '',
+          name: data.name || data.username || '',
+          username: data.username || '',
           bio: data.bio || '',
           country: data.country || '',
           city: (data as any).city || '',

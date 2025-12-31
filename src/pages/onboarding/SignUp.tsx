@@ -424,6 +424,8 @@ export default function SignUp() {
               <div className="mt-4 md:mt-6 text-center text-xs md:text-sm text-muted-foreground space-y-1 md:space-y-2">
                 <p>
                   Are you a brand?{' '}
+                  <span className="text-muted-foreground/80">(Clothing brands, agencies & studios)</span>
+                  {' '}
                   <button
                     onClick={() => navigate('/onboarding/signup?role=brand')}
                     className="text-primary hover:underline font-medium"
@@ -435,7 +437,7 @@ export default function SignUp() {
                   <span>•</span>
                 </p>
                 <p>
-                  Are you a retailer?{' '}
+                  Are you a retailer or pop-up?{' '}
                   <button
                     onClick={() => navigate('/onboarding/signup?role=retailer')}
                     className="text-primary hover:underline font-medium"
@@ -516,6 +518,8 @@ export default function SignUp() {
           >
             <p>
               Are you a brand?{' '}
+              <span className="text-white/70">(Clothing brands, agencies & studios)</span>
+              {' '}
               <button
                 onClick={() => navigate('/onboarding/signup?role=brand')}
                 className="text-white hover:underline font-semibold"
@@ -527,7 +531,7 @@ export default function SignUp() {
               <span>•</span>
             </p>
             <p>
-              Are you a retailer?{' '}
+              Are you a retailer or pop-up?{' '}
               <button
                 onClick={() => navigate('/onboarding/signup?role=retailer')}
                 className="text-white hover:underline font-semibold"

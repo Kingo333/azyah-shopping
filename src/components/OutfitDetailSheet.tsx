@@ -92,7 +92,7 @@ export const OutfitDetailSheet: React.FC<OutfitDetailSheetProps> = ({
       />
 
       {/* Sheet */}
-      <div className="outfit-sheet">
+      <div className="outfit-sheet" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="outfit-sheet-header">
           <button onClick={onClose} className="sheet-close-btn">
@@ -135,8 +135,9 @@ export const OutfitDetailSheet: React.FC<OutfitDetailSheetProps> = ({
                 <button
                   key={item.id}
                   className="item-thumb"
-                  onClick={() => {
-                    navigate(`/dress-me/wardrobe`);
+                  onClick={(e) => {
+                    e.stopPropagation(); // Prevent backdrop close
+                    navigate(`/community/item/${item.id}`); // Navigate to item detail (same as Community)
                     onClose();
                   }}
                 >
