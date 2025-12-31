@@ -92,26 +92,129 @@ export const RetailerEvents: React.FC<RetailerEventsProps> = ({ retailerId }) =>
   const uploadBannerImage = async (file: File): Promise<string | null> => {
     try {
       setUploadingBanner(true);
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Math.random()}.${fileExt}`;
-      const filePath = `event-banners/${fileName}`;
+      
+      // Validate file type
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
+      const isAllowedType = allowedTypes.includes(file.type) || 
+        /\.(jpe?g|png|webp|heic|heif)$/i.test(file.name);
+      
+      if (!file.type.startsWith('image/') && !isAllowedType) {
+        toast({
+          title: "Unsupported File Type",
+          description: "Please use JPG, PNG, or WebP images",
+          variant: "destructive"
+        });
+        return null;
+      }
 
+      // Check file size (max 10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        toast({
+          title: "File Too Large",
+          description: "Please choose an image under 10MB",
+          variant: "destructive"
+        });
+        return null;
+      }
+
+      // Process and compress image using canvas
+      let processedBlob: Blob;
+      let mimeType = 'image/jpeg';
+      
+      try {
+        // Check if HEIC/HEIF - show conversion message
+        const isHeic = file.type.includes('heic') || file.type.includes('heif') || 
+          /\.(heic|heif)$/i.test(file.name);
+        
+        if (isHeic) {
+          toast({
+            title: "Converting Image",
+            description: "Converting HEIC to JPEG...",
+          });
+        }
+
+        // Use canvas to resize and compress
+        const dataUrl = await new Promise<string>((resolve, reject) => {
+          const img = document.createElement('img');
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          
+          if (!ctx) {
+            reject(new Error('Canvas context not available'));
+            return;
+          }
+
+          img.onload = () => {
+            // Resize to max 2400px width, keeping aspect ratio
+            const maxWidth = 2400;
+            const scale = Math.min(1, maxWidth / Math.max(img.width, img.height));
+            canvas.width = Math.round(img.width * scale);
+            canvas.height = Math.round(img.height * scale);
+
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            URL.revokeObjectURL(img.src);
+
+            // Compress to JPEG with 0.8 quality
+            const result = canvas.toDataURL('image/jpeg', 0.8);
+            resolve(result);
+          };
+
+          img.onerror = () => {
+            URL.revokeObjectURL(img.src);
+            reject(new Error('Failed to load image'));
+          };
+
+          img.src = URL.createObjectURL(file);
+        });
+
+        // Convert dataUrl to blob
+        const response = await fetch(dataUrl);
+        processedBlob = await response.blob();
+      } catch (conversionError) {
+        console.error('Image conversion error:', conversionError);
+        toast({
+          title: "Conversion Failed",
+          description: "Could not process image. Please try a different file.",
+          variant: "destructive"
+        });
+        return null;
+      }
+
+      // Generate unique filename
+      const timestamp = Date.now();
+      const randomId = Math.random().toString(36).substring(2, 8);
+      const fileName = `event-banners/${retailerId}/${timestamp}-${randomId}.jpg`;
+
+      // Upload to event-assets bucket with correct contentType
       const { data, error } = await supabase.storage
-        .from('avatars')
-        .upload(filePath, file);
+        .from('event-assets')
+        .upload(fileName, processedBlob, {
+          contentType: mimeType,
+          upsert: false
+        });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Storage upload error:', error);
+        toast({
+          title: "Upload Failed",
+          description: error.message.includes('exceeded') 
+            ? "File too large. Please use a smaller image."
+            : "Failed to upload banner. Please try again.",
+          variant: "destructive"
+        });
+        return null;
+      }
 
       const { data: { publicUrl } } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(filePath);
+        .from('event-assets')
+        .getPublicUrl(fileName);
 
       return publicUrl;
     } catch (error) {
       console.error('Banner upload error:', error);
       toast({
-        title: "Error",
-        description: "Failed to upload banner image",
+        title: "Upload Error",
+        description: "Something went wrong. Please try a different image.",
         variant: "destructive"
       });
       return null;
@@ -398,7 +501,7 @@ export const RetailerEvents: React.FC<RetailerEventsProps> = ({ retailerId }) =>
                 <div className="flex gap-2">
                   <Input
                     type="file"
-                    accept="image/*"
+                    accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.jpg,.jpeg,.png,.webp,.heic,.heif"
                     onChange={(e) => {
                       const file = e.target.files?.[0];
                       if (file) setBannerFile(file);
