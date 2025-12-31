@@ -21,6 +21,7 @@ import { BulkImportActions } from '@/components/BulkImportActions';
 import { CollabDashboard } from '@/components/ugc/CollabDashboard';
 import { BrandSettingsForm } from '@/components/BrandSettingsForm';
 import { BrandCategorySelectorModal } from '@/components/brand/BrandCategorySelectorModal';
+import { BrandCategoryChangeCard } from '@/components/brand/BrandCategoryChangeCard';
 import { BrandServicesManager } from '@/components/brand/BrandServicesManager';
 import { ServicesMarketplace } from '@/components/brand/ServicesMarketplace';
 import { SalonDashboard } from '@/components/salon/SalonDashboard';
@@ -43,6 +44,7 @@ interface Brand {
   socials: any;
   shipping_regions: string[];
   category?: string | null;
+  created_at?: string;
 }
 const BrandPortal: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -462,6 +464,18 @@ const BrandPortal: React.FC = () => {
         <div className="mb-4 md:mb-8 flex justify-end">
           <FeedbackModal userType="brand" />
         </div>
+
+        {/* Category Change Card - only shows within 2 weeks of account creation */}
+        {brand.category && brand.created_at && (
+          <div className="mb-4 md:mb-6">
+            <BrandCategoryChangeCard
+              brandId={brand.id}
+              currentCategory={brand.category}
+              brandCreatedAt={brand.created_at}
+              onCategoryChanged={(category) => setBrand({ ...brand, category })}
+            />
+          </div>
+        )}
 
         {/* Salon category - render SalonDashboard with its own tabs */}
         {isSalon ? (
