@@ -2661,6 +2661,71 @@ export type Database = {
           },
         ]
       }
+      referrals: {
+        Row: {
+          created_at: string
+          id: string
+          points_awarded: number | null
+          qualified_at: string | null
+          referral_code: string
+          referred_id: string | null
+          referrer_id: string
+          rewarded_at: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          points_awarded?: number | null
+          qualified_at?: string | null
+          referral_code: string
+          referred_id?: string | null
+          referrer_id: string
+          rewarded_at?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          points_awarded?: number | null
+          qualified_at?: string | null
+          referral_code?: string
+          referred_id?: string | null
+          referrer_id?: string
+          rewarded_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referrals_referred_id_fkey"
+            columns: ["referred_id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referrals_referred_id_fkey"
+            columns: ["referred_id"]
+            isOneToOne: true
+            referencedRelation: "users_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referrals_referrer_id_fkey"
+            columns: ["referrer_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referrals_referrer_id_fkey"
+            columns: ["referrer_id"]
+            isOneToOne: false
+            referencedRelation: "users_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       retail_events: {
         Row: {
           banner_image_url: string | null
@@ -3682,6 +3747,7 @@ export type Database = {
           premium_expires_at: string | null
           provider: string | null
           provider_id: string | null
+          referral_code: string | null
           referral_source: string | null
           role: Database["public"]["Enums"]["user_role"]
           social_links: Json | null
@@ -3710,6 +3776,7 @@ export type Database = {
           premium_expires_at?: string | null
           provider?: string | null
           provider_id?: string | null
+          referral_code?: string | null
           referral_source?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           social_links?: Json | null
@@ -3738,6 +3805,7 @@ export type Database = {
           premium_expires_at?: string | null
           provider?: string | null
           provider_id?: string | null
+          referral_code?: string | null
           referral_source?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           social_links?: Json | null
@@ -3786,6 +3854,9 @@ export type Database = {
           public_reuse_permitted: boolean | null
           season: string | null
           source: string | null
+          source_product_id: string | null
+          source_url: string | null
+          source_vendor_name: string | null
           tags: string[] | null
           thumb_path: string | null
           trim_offset_x: number | null
@@ -3808,6 +3879,9 @@ export type Database = {
           public_reuse_permitted?: boolean | null
           season?: string | null
           source?: string | null
+          source_product_id?: string | null
+          source_url?: string | null
+          source_vendor_name?: string | null
           tags?: string[] | null
           thumb_path?: string | null
           trim_offset_x?: number | null
@@ -3830,13 +3904,31 @@ export type Database = {
           public_reuse_permitted?: boolean | null
           season?: string | null
           source?: string | null
+          source_product_id?: string | null
+          source_url?: string | null
+          source_vendor_name?: string | null
           tags?: string[] | null
           thumb_path?: string | null
           trim_offset_x?: number | null
           trim_offset_y?: number | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "wardrobe_items_source_product_id_fkey"
+            columns: ["source_product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wardrobe_items_source_product_id_fkey"
+            columns: ["source_product_id"]
+            isOneToOne: false
+            referencedRelation: "products_public"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       wardrobe_layers: {
         Row: {
@@ -4460,6 +4552,7 @@ export type Database = {
           premium_expires_at: string | null
           provider: string | null
           provider_id: string | null
+          referral_code: string | null
           referral_source: string | null
           role: Database["public"]["Enums"]["user_role"]
           social_links: Json | null
@@ -4520,6 +4613,7 @@ export type Database = {
           premium_expires_at: string | null
           provider: string | null
           provider_id: string | null
+          referral_code: string | null
           referral_source: string | null
           role: Database["public"]["Enums"]["user_role"]
           social_links: Json | null
@@ -4565,6 +4659,10 @@ export type Database = {
         Args: { target_user_id: string }
         Returns: boolean
       }
+      check_and_reward_referral: {
+        Args: { p_referred_id: string }
+        Returns: Json
+      }
       check_daily_checkin_status: { Args: never; Returns: Json }
       check_payment_encryption: { Args: never; Returns: string }
       check_retailer_data_security: { Args: never; Returns: Json }
@@ -4607,6 +4705,7 @@ export type Database = {
             Args: { force_orphaned_deletion?: boolean; target_email: string }
             Returns: Json
           }
+        | { Args: { target_user_id: string }; Returns: Json }
       detect_orphaned_users: {
         Args: never
         Returns: {

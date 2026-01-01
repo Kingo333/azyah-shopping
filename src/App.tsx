@@ -54,6 +54,8 @@ import RetailerBrandDetail from './pages/RetailerBrandDetail';
 import NotFound from './pages/NotFound';
 import PhotoCloseup from './components/PhotoCloseup';
 import UserDeletionTool from './components/UserDeletionTool';
+import PublicOutfitView from './pages/PublicOutfitView';
+import PublicItemView from './pages/PublicItemView';
 
 import { DebugHealthPage } from './components/DebugHealthPage';
 import { BottomNavigation } from './components/BottomNavigation';
@@ -255,6 +257,10 @@ function AppContent() {
                   } />
                   <Route path="/terms" element={<Terms />} />
                   <Route path="/privacy" element={<Privacy />} />
+                  
+                  {/* Task 5: Public share routes (no auth required) */}
+                  <Route path="/share/outfit/:id" element={<PublicOutfitView />} />
+                  <Route path="/share/item/:id" element={<PublicItemView />} />
                   
                   <Route path="/admin/delete-user" element={
                     <ProtectedRoute roles={['admin']}>

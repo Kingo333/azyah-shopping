@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { X, Share2, Heart, ShoppingBag, ExternalLink, ArrowLeft, Ruler } from 'lucide-react';
+import { X, Share2, Heart, ShoppingBag, ExternalLink, ArrowLeft, Ruler, Shirt } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useWishlist } from '@/hooks/useWishlist';
+import { useAddProductToWardrobe } from '@/hooks/useAddProductToWardrobe';
 import { supabase } from '@/integrations/supabase/client';
 import { Product } from '@/types';
 import SimilarItemsGrid from './SimilarItemsGrid';
@@ -62,6 +63,7 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
   });
 
   const { addToWishlist, isLoading: wishlistLoading } = useWishlist(productId);
+  const { mutate: addToWardrobe, isPending: wardrobeLoading } = useAddProductToWardrobe();
 
   // Initialize browsing stack
   useEffect(() => {
@@ -369,13 +371,23 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
               sizes="(max-width: 768px) 100vw, 50vw"
             />
             
-            {/* Mobile Thumbnails - Bottom Right */}
+            {/* Mobile Thumbnails - Bottom Right - TASK 2: Fixed touch handling */}
             {productImages.length > 1 && (
               <div className="absolute bottom-4 right-4 flex gap-2 max-w-[calc(100%-2rem)] overflow-x-auto">
                 {productImages.slice(0, 4).map((imageUrl, index) => (
                   <button
                     key={index}
-                    onClick={() => setCurrentImageIndex(index)}
+                    type="button"
+                    style={{ touchAction: 'manipulation' }}
+                    onTouchEnd={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setCurrentImageIndex(index);
+                    }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setCurrentImageIndex(index);
+                    }}
                     className={`w-12 h-12 rounded-lg overflow-hidden border-2 transition-all hover:scale-105 flex-shrink-0 ${
                       currentImageIndex === index 
                         ? 'border-white shadow-lg' 
@@ -385,7 +397,7 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
                     <SmartImage
                       src={imageUrl}
                       alt={`${product.title} view ${index + 1}`}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover pointer-events-none"
                       sizes="48px"
                     />
                   </button>
@@ -412,14 +424,14 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
             </div>
 
             {/* Action Buttons */}
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={handleLike}
-                className="flex-1"
+                className="flex-1 min-w-[70px]"
               >
-                <Heart className="h-4 w-4 mr-2" />
+                <Heart className="h-4 w-4 mr-1" />
                 Like
               </Button>
               <Button
@@ -427,19 +439,30 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
                 size="sm"
                 onClick={handleAddToWishlist}
                 disabled={wishlistLoading}
-                className="flex-1"
+                className="flex-1 min-w-[70px]"
               >
-                <ShoppingBag className="h-4 w-4 mr-2" />
+                <ShoppingBag className="h-4 w-4 mr-1" />
                 Save
+              </Button>
+              {/* TASK 3: Save to Dress Me button */}
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => product && addToWardrobe(product)}
+                disabled={wardrobeLoading || !user}
+                className="flex-1 min-w-[90px]"
+              >
+                <Shirt className="h-4 w-4 mr-1" />
+                Dress Me
               </Button>
               {sizeChartUrl && (
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => setShowSizeChart(true)}
-                  className="flex-1"
+                  className="flex-1 min-w-[70px]"
                 >
-                  <Ruler className="h-4 w-4 mr-2" />
+                  <Ruler className="h-4 w-4 mr-1" />
                   Size
                 </Button>
               )}
@@ -523,13 +546,23 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
               sizes="50vw"
             />
             
-            {/* Thumbnails */}
+            {/* Thumbnails - TASK 2: Fixed touch handling for desktop */}
             {productImages.length > 1 && (
               <div className="absolute top-4 left-4 flex flex-col gap-2 max-h-[calc(100%-2rem)] overflow-y-auto">
                 {productImages.slice(0, 6).map((imageUrl, index) => (
                     <button
                       key={index}
-                      onClick={() => setCurrentImageIndex(index)}
+                      type="button"
+                      style={{ touchAction: 'manipulation' }}
+                      onTouchEnd={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setCurrentImageIndex(index);
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setCurrentImageIndex(index);
+                      }}
                       className={`w-12 h-12 rounded-lg overflow-hidden border-2 transition-all hover:scale-105 ${
                         currentImageIndex === index 
                           ? 'border-primary shadow-md' 
@@ -539,7 +572,7 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
                       <SmartImage
                         src={imageUrl}
                         alt={`${product.title} view ${index + 1}`}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover pointer-events-none"
                         sizes="48px"
                       />
                     </button>
@@ -568,7 +601,7 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
               </div>
 
               {/* Action Buttons */}
-              <div className="flex gap-3">
+              <div className="flex gap-3 flex-wrap">
                 <Button
                   variant="ghost"
                   onClick={handleLike}
@@ -585,6 +618,16 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
                 >
                   <ShoppingBag className="h-4 w-4 mr-2" />
                   Save
+                </Button>
+                {/* TASK 3: Save to Dress Me button - Desktop */}
+                <Button
+                  variant="secondary"
+                  onClick={() => product && addToWardrobe(product)}
+                  disabled={wardrobeLoading || !user}
+                  className="flex-1"
+                >
+                  <Shirt className="h-4 w-4 mr-2" />
+                  Dress Me
                 </Button>
                 {sizeChartUrl && (
                   <Button
