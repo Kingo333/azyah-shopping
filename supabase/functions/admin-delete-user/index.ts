@@ -113,22 +113,34 @@ serve(async (req) => {
 
     let targetUserId = user_id;
 
-    // If email provided, find user_id
+    // If email provided, find user_id from public.users first
     if (email && !user_id) {
       const { data: publicUser } = await supabaseAdmin
         .from('users')
         .select('id')
-        .eq('email', email)
+        .ilike('email', email)
         .single();
 
       if (publicUser) {
         targetUserId = publicUser.id;
+      } else {
+        // User not in public.users - try to find in auth.users by email
+        console.log(`📧 User not in public.users, checking auth.users for email: ${email}`);
+        const { data: { users: authUsers }, error: listError } = await supabaseAdmin.auth.admin.listUsers();
+        
+        if (!listError && authUsers) {
+          const authUser = authUsers.find(u => u.email?.toLowerCase() === email.toLowerCase());
+          if (authUser) {
+            targetUserId = authUser.id;
+            console.log(`✅ Found user in auth.users: ${targetUserId}`);
+          }
+        }
       }
     }
 
     if (!targetUserId) {
       return new Response(
-        JSON.stringify({ error: 'User not found', success: false }),
+        JSON.stringify({ error: 'User not found in public.users or auth.users', success: false }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 404 }
       );
     }
@@ -138,38 +150,57 @@ serve(async (req) => {
       email: email,
       deleted_from_public: false,
       deleted_from_auth: false,
+      deleted_counts: {},
       errors: [],
       justification: justification || 'No justification provided'
     };
 
-    // Step 1: Delete from public.users (triggers cascades)
-    console.log(`🗑️ Deleting from public.users: ${targetUserId}`);
-    const { error: publicError } = await supabaseAdmin
-      .from('users')
-      .delete()
-      .eq('id', targetUserId);
+    // Step 1: Use the comprehensive delete_user_completely function
+    console.log(`🗑️ Calling delete_user_completely for: ${targetUserId}`);
+    const { data: deleteResult, error: deleteError } = await supabaseAdmin
+      .rpc('delete_user_completely', { target_user_id: targetUserId });
 
-    if (publicError) {
-      console.error('❌ Failed to delete from public.users:', publicError);
-      result.errors.push(`Public delete failed: ${publicError.message}`);
-    } else {
-      result.deleted_from_public = true;
-      console.log('✅ Deleted from public.users');
+    if (deleteError) {
+      console.error('❌ delete_user_completely failed:', deleteError);
+      result.errors.push(`Database deletion failed: ${deleteError.message}`);
+    } else if (deleteResult) {
+      console.log('✅ delete_user_completely result:', deleteResult);
+      result.deleted_from_public = deleteResult.success;
+      result.deleted_counts = deleteResult.deleted_counts || {};
+      
+      if (!deleteResult.success && deleteResult.error) {
+        result.errors.push(`Database error: ${deleteResult.error}`);
+      }
     }
 
-    // Step 2: Delete from auth.users using Admin API
+    // Step 2: Delete from auth.users using Admin API (always attempt)
     console.log(`🗑️ Deleting from auth.users: ${targetUserId}`);
-    const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(targetUserId);
+    const { error: authDeleteError } = await supabaseAdmin.auth.admin.deleteUser(targetUserId);
 
-    if (authError) {
-      console.error('❌ Failed to delete from auth.users:', authError);
-      result.errors.push(`Auth delete failed: ${authError.message}`);
+    if (authDeleteError) {
+      console.error('❌ Failed to delete from auth.users:', authDeleteError);
+      result.errors.push(`Auth delete failed: ${authDeleteError.message}`);
     } else {
       result.deleted_from_auth = true;
       console.log('✅ Deleted from auth.users');
     }
 
     result.success = result.deleted_from_public || result.deleted_from_auth;
+
+    // Verification: Check if user is fully deleted
+    const { data: verifyPublic } = await supabaseAdmin
+      .from('users')
+      .select('id')
+      .eq('id', targetUserId)
+      .single();
+    
+    const { data: verifyAuth } = await supabaseAdmin.auth.admin.getUserById(targetUserId);
+    
+    result.verification = {
+      still_in_public: !!verifyPublic,
+      still_in_auth: !!verifyAuth?.user,
+      fully_deleted: !verifyPublic && !verifyAuth?.user
+    };
 
     return new Response(
       JSON.stringify(result),

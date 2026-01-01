@@ -55,7 +55,7 @@ export const useDeepLinkHandler = () => {
         
         console.log('Deep link navigating to:', fullPath);
         
-        // Navigate to the path (this will trigger AuthCallback for /auth/callback)
+        // Navigate to the path (handles /auth/callback, /share/outfit/:id, /share/item/:id, etc.)
         navigate(fullPath, { replace: true });
       } catch (error) {
         console.error('Error parsing deep link:', error);
