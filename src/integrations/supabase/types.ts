@@ -4352,6 +4352,7 @@ export type Database = {
           created_at: string | null
           id: string | null
           name: string | null
+          referral_code: string | null
           username: string | null
         }
         Insert: {
@@ -4359,6 +4360,7 @@ export type Database = {
           created_at?: string | null
           id?: string | null
           name?: string | null
+          referral_code?: string | null
           username?: string | null
         }
         Update: {
@@ -4366,6 +4368,7 @@ export type Database = {
           created_at?: string | null
           id?: string | null
           name?: string | null
+          referral_code?: string | null
           username?: string | null
         }
         Relationships: []
