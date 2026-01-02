@@ -8,7 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { SEOHead } from '@/components/SEOHead';
-import { Share2, Plus } from 'lucide-react';
+import { Share2, Plus, ExternalLink, ShoppingBag } from 'lucide-react';
 import { toast } from 'sonner';
 
 const seasonIcons: Record<string, string> = {
@@ -229,21 +229,35 @@ export default function ClothingItemDetail() {
           </div>
         </div>
 
-        {/* Fixed bottom action */}
-        {item.public_reuse_permitted && (
-          <div className="fixed bottom-0 left-0 right-0 bg-background border-t p-4">
-            <div className="container max-w-screen-md mx-auto">
+        {/* Fixed bottom actions */}
+        <div className="fixed bottom-0 left-0 right-0 bg-background border-t p-4">
+          <div className="container max-w-screen-md mx-auto flex gap-3">
+            {/* Shop link if source_url exists (from Discover) */}
+            {(item as any).source_url && (
               <Button
-                className="w-full"
+                variant="default"
+                className="flex-1"
+                onClick={() => window.open((item as any).source_url, '_blank', 'noopener,noreferrer')}
+              >
+                <ShoppingBag className="w-4 h-4 mr-2" />
+                Shop Item
+              </Button>
+            )}
+            
+            {/* Add to wardrobe if public_reuse_permitted */}
+            {item.public_reuse_permitted && (
+              <Button
+                variant={!(item as any).source_url ? "default" : "outline"}
+                className="flex-1"
                 onClick={handleAddToWardrobe}
                 disabled={isPending}
               >
                 <Plus className="w-4 h-4 mr-2" />
-                Add to Your Wardrobe
+                Add to Wardrobe
               </Button>
-            </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
     </>
   );

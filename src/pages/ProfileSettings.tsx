@@ -12,13 +12,14 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/hooks/useSubscription';
 import { supabase } from '@/integrations/supabase/client';
-import { Trash2, Upload, Instagram, Twitter, Globe, Music, Crown, CreditCard, Calendar, LogOut, Users, Sparkles, TrendingUp, Gift, Check, ChevronsUpDown } from 'lucide-react';
+import { Trash2, Upload, Instagram, Twitter, Globe, Music, Crown, CreditCard, Calendar, LogOut, Users, Sparkles, TrendingUp, Gift, Check, ChevronsUpDown, Copy, Share2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { COUNTRIES } from '@/lib/countries';
 import { CITIES } from '@/lib/cities';
 import { useNavigate } from 'react-router-dom';
+import { useUserReferralCode, useReferralStats, shareReferralCode, copyReferralCode } from '@/hooks/useReferrals';
 
 interface ProfileData {
   name: string;
@@ -48,6 +49,10 @@ const ProfileSettings: React.FC = () => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  
+  // Referral system hooks
+  const { data: referralCode } = useUserReferralCode();
+  const { data: referralStats } = useReferralStats();
   const [profileData, setProfileData] = useState<ProfileData>({
     name: '',
     username: '',
@@ -551,6 +556,62 @@ const ProfileSettings: React.FC = () => {
                   />
                 </div>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Referral System */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 font-serif font-medium">
+                <Gift className="h-5 w-5 text-primary" />
+                Invite Friends
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Share your referral code with friends. When they sign up and complete their first action, you'll earn 15 points!
+              </p>
+              
+              {referralCode ? (
+                <>
+                  <div className="flex items-center gap-2">
+                    <Input 
+                      value={referralCode} 
+                      readOnly 
+                      className="font-mono text-center text-lg font-bold tracking-wider"
+                    />
+                    <Button 
+                      variant="outline" 
+                      size="icon"
+                      onClick={() => copyReferralCode(referralCode)}
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="icon"
+                      onClick={() => shareReferralCode(referralCode)}
+                    >
+                      <Share2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  
+                  {referralStats && (
+                    <div className="grid grid-cols-2 gap-4 pt-2">
+                      <div className="text-center p-3 bg-muted/50 rounded-lg">
+                        <p className="text-2xl font-bold">{referralStats.total_referrals}</p>
+                        <p className="text-xs text-muted-foreground">People Referred</p>
+                      </div>
+                      <div className="text-center p-3 bg-muted/50 rounded-lg">
+                        <p className="text-2xl font-bold">{referralStats.total_points_earned}</p>
+                        <p className="text-xs text-muted-foreground">Points Earned</p>
+                      </div>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <p className="text-sm text-muted-foreground italic">Loading referral code...</p>
+              )}
             </CardContent>
           </Card>
 

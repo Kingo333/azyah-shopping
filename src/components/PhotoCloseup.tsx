@@ -444,16 +444,16 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
                 <ShoppingBag className="h-4 w-4 mr-1" />
                 Save
               </Button>
-              {/* TASK 3: Save to Dress Me button */}
+              {/* TASK 3: Save to Dress Me button - softened styling */}
               <Button
-                variant="secondary"
+                variant="outline"
                 size="sm"
                 onClick={() => product && addToWardrobe(product)}
                 disabled={wardrobeLoading || !user}
-                className="flex-1 min-w-[90px]"
+                className="flex-1 min-w-[90px] opacity-80 hover:opacity-100"
               >
                 <Shirt className="h-4 w-4 mr-1" />
-                Dress Me
+                + Dress Me
               </Button>
               {sizeChartUrl && (
                 <Button

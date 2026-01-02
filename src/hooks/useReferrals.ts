@@ -79,7 +79,7 @@ export const useReferralStats = () => {
   });
 };
 
-// Validate a referral code
+// Validate a referral code - uses users_public view for cross-user lookups
 export const useValidateReferralCode = () => {
   return useMutation({
     mutationFn: async (code: string): Promise<{ valid: boolean; referrer_id?: string }> => {
@@ -87,8 +87,9 @@ export const useValidateReferralCode = () => {
         return { valid: false };
       }
 
+      // Use users_public view which allows reading other users' referral codes
       const { data, error } = await supabase
-        .from('users')
+        .from('users_public')
         .select('id, referral_code')
         .eq('referral_code', code.toUpperCase())
         .single();
@@ -102,7 +103,7 @@ export const useValidateReferralCode = () => {
   });
 };
 
-// Apply referral code for new user
+// Apply referral code for new user - uses users_public for cross-user lookups
 export const useApplyReferralCode = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -111,9 +112,9 @@ export const useApplyReferralCode = () => {
     mutationFn: async (code: string): Promise<boolean> => {
       if (!user || !code) return false;
 
-      // Find referrer by code
+      // Find referrer by code using users_public view
       const { data: referrer, error: lookupError } = await supabase
-        .from('users')
+        .from('users_public')
         .select('id')
         .eq('referral_code', code.toUpperCase())
         .single();
