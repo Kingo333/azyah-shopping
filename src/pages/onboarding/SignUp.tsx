@@ -5,11 +5,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import { Mail, ArrowLeft, Loader2, CheckCircle, XCircle, User } from 'lucide-react';
+import { Mail, ArrowLeft, Loader2, CheckCircle, XCircle, User, Gift } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { trackOnboardingEvent } from '@/lib/analytics/onboarding';
 import { FloatingFashionIcons } from '@/components/FloatingFashionIcons';
 import { useGuestMode } from '@/hooks/useGuestMode';
+import { useApplyReferralCode, useValidateReferralCode } from '@/hooks/useReferrals';
 
 type FlowStep = 'initial' | 'email-entry';
 type UserRole = 'shopper' | 'brand' | 'retailer';
@@ -21,6 +22,7 @@ export default function SignUp() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [username, setUsername] = useState('');
+  const [referralCode, setReferralCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showUsernameFields, setShowUsernameFields] = useState(false);
@@ -35,16 +37,19 @@ export default function SignUp() {
   const { signUp, signIn } = useAuth();
   const navigate = useNavigate();
   const { setGuestMode } = useGuestMode();
+  const { mutate: validateReferralCode, data: referralValidation, isPending: checkingReferral } = useValidateReferralCode();
+  const { mutateAsync: applyReferralCode } = useApplyReferralCode();
 
   const handleGuestContinue = () => {
     setGuestMode();
     navigate('/dashboard');
   };
 
-  // Handle role-based signup and login mode from URL params
+  // Handle role-based signup, login mode, and referral code from URL params
   useEffect(() => {
     const roleParam = searchParams.get('role');
     const modeParam = searchParams.get('mode');
+    const refParam = searchParams.get('ref');
     
     if (roleParam && (roleParam === 'brand' || roleParam === 'retailer')) {
       setUserRole(roleParam);
@@ -52,7 +57,13 @@ export default function SignUp() {
     } else if (modeParam === 'login') {
       setStep('email-entry'); // Go directly to email entry for login
     }
-  }, [searchParams]);
+    
+    // Pre-fill referral code from URL
+    if (refParam) {
+      setReferralCode(refParam.toUpperCase());
+      validateReferralCode(refParam);
+    }
+  }, [searchParams, validateReferralCode]);
 
   const handleEmailContinue = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -348,6 +359,43 @@ export default function SignUp() {
                       required
                       minLength={6}
                     />
+                  </div>
+
+                  {/* Referral code input (optional) */}
+                  <div>
+                    <Label className="text-xs md:text-sm text-muted-foreground mb-1 md:mb-2 block">
+                      Referral Code (optional)
+                    </Label>
+                    <div className="relative">
+                      <div className="absolute left-3 top-1/2 -translate-y-1/2">
+                        <Gift className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                      <Input
+                        type="text"
+                        placeholder="Enter code"
+                        value={referralCode}
+                        onChange={(e) => {
+                          const value = e.target.value.toUpperCase();
+                          setReferralCode(value);
+                          if (value.length >= 6) {
+                            validateReferralCode(value);
+                          }
+                        }}
+                        className="h-11 md:h-12 rounded-xl pl-10 pr-10 uppercase"
+                        maxLength={12}
+                      />
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                        {checkingReferral && <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />}
+                        {!checkingReferral && referralValidation?.valid && <CheckCircle className="h-5 w-5 text-green-600" />}
+                        {!checkingReferral && referralCode.length >= 6 && referralValidation && !referralValidation.valid && <XCircle className="h-5 w-5 text-red-600" />}
+                      </div>
+                    </div>
+                    {referralCode.length >= 6 && referralValidation?.valid && (
+                      <p className="text-[10px] md:text-xs text-green-600 mt-1">Valid! You'll both earn points.</p>
+                    )}
+                    {referralCode.length >= 6 && referralValidation && !referralValidation.valid && (
+                      <p className="text-[10px] md:text-xs text-red-600 mt-1">Invalid referral code</p>
+                    )}
                   </div>
                 </div>
               )}

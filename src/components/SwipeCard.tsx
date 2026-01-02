@@ -3,12 +3,14 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { motion } from 'framer-motion';
-import { Info, Image, Sparkles } from 'lucide-react';
+import { Info, Image, Sparkles, Shirt } from 'lucide-react';
 import { SmartImage } from '@/components/SmartImage';
 import { SwipeActionBar } from '@/components/SwipeActionBar';
 import { getPrimaryImageUrl, hasMultipleImages, getImageCount } from '@/utils/imageHelpers';
 import { getBrandDisplayName } from '@/utils/brandHelpers';
 import { cn } from '@/lib/utils';
+import { useAddProductToWardrobe } from '@/hooks/useAddProductToWardrobe';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface SwipeProduct {
   id: string;
@@ -41,6 +43,29 @@ interface SwipeCardProps {
   wishlistLoading: boolean;
   motionProps: any;
 }
+
+// Separate component for Add to Dress Me button to use hooks
+const AddToDressMeButton = memo(({ product }: { product: SwipeProduct }) => {
+  const { user } = useAuth();
+  const { mutate: addToWardrobe, isPending } = useAddProductToWardrobe();
+  
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      onClick={(e) => {
+        e.stopPropagation();
+        if (user) addToWardrobe(product as any);
+      }}
+      disabled={isPending || !user}
+      className="h-9 w-9 rounded-full bg-background/70 backdrop-blur-sm hover:bg-background/90 shadow-lg opacity-80 hover:opacity-100"
+      title="Add to Dress Me"
+    >
+      <Shirt className="h-4 w-4" strokeWidth={2.5} />
+    </Button>
+  );
+});
+AddToDressMeButton.displayName = 'AddToDressMeButton';
 
 const SwipeCard = memo(({
   product,
@@ -135,18 +160,24 @@ const SwipeCard = memo(({
               )}
             </div>
 
-            {/* Info button */}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={(e) => {
-                e.stopPropagation();
-                onProductClick(product);
-              }}
-              className="h-9 w-9 rounded-full bg-background/90 backdrop-blur-sm hover:bg-background shadow-lg"
-            >
-              <Info className="h-4 w-4" strokeWidth={2.5} />
-            </Button>
+            {/* Right side action buttons */}
+            <div className="flex flex-col gap-2">
+              {/* Info button */}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onProductClick(product);
+                }}
+                className="h-9 w-9 rounded-full bg-background/90 backdrop-blur-sm hover:bg-background shadow-lg"
+              >
+                <Info className="h-4 w-4" strokeWidth={2.5} />
+              </Button>
+              
+              {/* Add to Dress Me button - semi-transparent */}
+              <AddToDressMeButton product={product} />
+            </div>
           </div>
 
           {/* Bottom content overlay */}
