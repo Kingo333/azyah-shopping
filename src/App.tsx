@@ -42,6 +42,7 @@ import ToyReplica from './pages/ToyReplica';
 import BeautyConsultant from './pages/BeautyConsultant';
 import Events from './pages/Events';
 import UGCCollaborations from './pages/UGCCollaborations';
+import Favorites from './pages/Favorites';
 import Upgrade from './pages/dashboard/Upgrade';
 import Rewards from './pages/Rewards';
 import Terms from './pages/Terms';
@@ -136,6 +137,11 @@ function AppContent() {
                   <Route path="/swipe" element={
                     <ProtectedRoute roles={['shopper', 'admin']}>
                       <Swipe />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/favorites" element={
+                    <ProtectedRoute roles={['shopper', 'admin']}>
+                      <Favorites />
                     </ProtectedRoute>
                   } />
                   <Route path="/wishlist" element={
