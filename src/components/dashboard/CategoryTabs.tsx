@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { type TopCategory } from '@/lib/categories';
-import { Shirt, Moon, Footprints, Watch, Gem, Palette, ShoppingBag, Wind } from 'lucide-react';
+import { Shirt, Moon, Footprints, Watch, Gem, Flower2, Briefcase, Wind } from 'lucide-react';
 
 // Category config with icons and labels
 const CATEGORY_CONFIG: { category: TopCategory; label: string; icon: React.ElementType }[] = [
@@ -10,8 +10,8 @@ const CATEGORY_CONFIG: { category: TopCategory; label: string; icon: React.Eleme
   { category: 'footwear', label: 'Footwear', icon: Footprints },
   { category: 'accessories', label: 'Accessories', icon: Watch },
   { category: 'jewelry', label: 'Jewelry', icon: Gem },
-  { category: 'beauty', label: 'Beauty', icon: Palette },
-  { category: 'bags', label: 'Bags', icon: ShoppingBag },
+  { category: 'beauty', label: 'Beauty', icon: Flower2 },
+  { category: 'bags', label: 'Bags', icon: Briefcase },
   { category: 'fragrance', label: 'Fragrance', icon: Wind },
 ];
 
