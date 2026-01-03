@@ -3847,6 +3847,7 @@ export type Database = {
           id: string
           image_bg_removed_url: string | null
           image_url: string
+          is_default: boolean | null
           is_favorite: boolean | null
           name: string | null
           original_height: number | null
@@ -3872,6 +3873,7 @@ export type Database = {
           id?: string
           image_bg_removed_url?: string | null
           image_url: string
+          is_default?: boolean | null
           is_favorite?: boolean | null
           name?: string | null
           original_height?: number | null
@@ -3897,6 +3899,7 @@ export type Database = {
           id?: string
           image_bg_removed_url?: string | null
           image_url?: string
+          is_default?: boolean | null
           is_favorite?: boolean | null
           name?: string | null
           original_height?: number | null
