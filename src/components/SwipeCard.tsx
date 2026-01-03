@@ -49,19 +49,32 @@ const AddToDressMeButton = memo(({ product }: { product: SwipeProduct }) => {
   const { user } = useAuth();
   const { mutate: addToWardrobe, isPending } = useAddProductToWardrobe();
   
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    console.log('[DressMe] clicked', product?.id, 'user:', !!user);
+    
+    if (!user) {
+      // Show explicit toast for non-logged-in users
+      import('sonner').then(({ toast }) => {
+        toast.error('Sign in to save to Dress Me');
+      });
+      return;
+    }
+    
+    addToWardrobe(product as any);
+  };
+  
   return (
     <Button
       variant="ghost"
-      size="icon"
-      onClick={(e) => {
-        e.stopPropagation();
-        if (user) addToWardrobe(product as any);
-      }}
-      disabled={isPending || !user}
-      className="h-9 w-9 rounded-full bg-background/70 backdrop-blur-sm hover:bg-background/90 shadow-lg opacity-80 hover:opacity-100"
+      size="sm"
+      onClick={handleClick}
+      disabled={isPending}
+      className="h-auto px-2.5 py-1.5 rounded-full bg-background/70 backdrop-blur-sm hover:bg-background/90 shadow-lg opacity-80 hover:opacity-100 flex items-center gap-1.5"
       title="Add to Dress Me"
     >
-      <Shirt className="h-4 w-4" strokeWidth={2.5} />
+      <Shirt className="h-3.5 w-3.5" strokeWidth={2.5} />
+      <span className="text-xs font-medium">+ Dress Me</span>
     </Button>
   );
 });

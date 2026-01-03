@@ -29,23 +29,35 @@ export const useAddProductToWardrobe = () => {
 
   return useMutation({
     mutationFn: async (product: Product) => {
-      if (!user) throw new Error('You must be signed in to save items');
+      console.log('[DressMe] mutationFn called with product:', product?.id);
+      
+      if (!user) {
+        console.log('[DressMe] No user, throwing error');
+        throw new Error('You must be signed in to save items');
+      }
 
       // Check limit before inserting
+      console.log('[DressMe] Checking wardrobe limit for user:', user.id);
       const { data: canAdd, error: checkError } = await supabase
         .rpc('can_add_wardrobe_item', { target_user_id: user.id });
 
-      if (checkError) throw checkError;
+      if (checkError) {
+        console.error('[DressMe] Limit check error:', checkError);
+        throw checkError;
+      }
       
       if (!canAdd) {
+        console.log('[DressMe] Limit reached');
         throw new Error('Wardrobe item limit reached. Upgrade to premium for unlimited items.');
       }
 
       // Get the primary image
       const images = getProductImageUrls(product);
       const primaryImage = images[0] || '';
+      console.log('[DressMe] Images found:', images.length, 'Primary:', primaryImage?.substring(0, 50));
 
       if (!primaryImage) {
+        console.log('[DressMe] No valid image found');
         throw new Error('Product has no valid image');
       }
 
@@ -81,12 +93,14 @@ export const useAddProductToWardrobe = () => {
         .single();
 
       if (error) {
+        console.error('[DressMe] Insert error:', error);
         if (error.code === '23505') {
           throw new Error('This item is already in your wardrobe');
         }
         throw error;
       }
       
+      console.log('[DressMe] Success! Inserted wardrobe item:', data?.id);
       return data;
     },
     onSuccess: (data) => {

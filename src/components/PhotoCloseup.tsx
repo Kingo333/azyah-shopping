@@ -444,12 +444,19 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
                 <ShoppingBag className="h-4 w-4 mr-1" />
                 Save
               </Button>
-              {/* TASK 3: Save to Dress Me button - softened styling */}
+              {/* Save to Dress Me button - softened styling with explicit feedback */}
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => product && addToWardrobe(product)}
-                disabled={wardrobeLoading || !user}
+                onClick={() => {
+                  console.log('[DressMe] clicked', product?.id, 'user:', !!user);
+                  if (!user) {
+                    toast({ title: 'Sign in to save to Dress Me', variant: 'destructive' });
+                    return;
+                  }
+                  if (product) addToWardrobe(product);
+                }}
+                disabled={wardrobeLoading}
                 className="flex-1 min-w-[90px] opacity-80 hover:opacity-100"
               >
                 <Shirt className="h-4 w-4 mr-1" />
@@ -619,15 +626,22 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
                   <ShoppingBag className="h-4 w-4 mr-2" />
                   Save
                 </Button>
-                {/* TASK 3: Save to Dress Me button - Desktop */}
+                {/* Save to Dress Me button - Desktop with explicit feedback */}
                 <Button
-                  variant="secondary"
-                  onClick={() => product && addToWardrobe(product)}
-                  disabled={wardrobeLoading || !user}
-                  className="flex-1"
+                  variant="outline"
+                  onClick={() => {
+                    console.log('[DressMe] clicked', product?.id, 'user:', !!user);
+                    if (!user) {
+                      toast({ title: 'Sign in to save to Dress Me', variant: 'destructive' });
+                      return;
+                    }
+                    if (product) addToWardrobe(product);
+                  }}
+                  disabled={wardrobeLoading}
+                  className="flex-1 opacity-80 hover:opacity-100"
                 >
                   <Shirt className="h-4 w-4 mr-2" />
-                  Dress Me
+                  + Dress Me
                 </Button>
                 {sizeChartUrl && (
                   <Button
