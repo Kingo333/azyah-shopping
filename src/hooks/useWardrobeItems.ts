@@ -187,7 +187,7 @@ export const useDeleteWardrobeItem = () => {
   });
 };
 
-// Hook to check wardrobe item limit
+// Hook to check wardrobe item limit (excludes default items from count)
 export const useWardrobeLimit = () => {
   const { user } = useAuth();
 
@@ -202,6 +202,7 @@ export const useWardrobeLimit = () => {
           .from('wardrobe_items')
           .select('*', { count: 'exact', head: true })
           .eq('user_id', user.id)
+          .or('is_default.is.null,is_default.eq.false') // Exclude default items
       ]);
 
       if (limitResult.error) throw limitResult.error;
