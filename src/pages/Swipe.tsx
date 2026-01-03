@@ -243,7 +243,7 @@ const Swipe = () => {
               <Button 
                 variant="ghost" 
                 size="icon" 
-                onClick={() => navigate("/likes")} 
+                onClick={() => navigate("/favorites")} 
                 className="h-8 w-8 sm:h-9 sm:w-9 rounded-full hover:bg-accent/60 transition-colors"
               >
                 <Heart className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
