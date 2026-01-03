@@ -322,40 +322,20 @@ const RoleDashboard: React.FC = () => {
   };
 
   const renderShopperDashboard = () => <div className="space-y-0 pb-20">
-      {/* Dashboard Top Carousel - Profile, Search, Points */}
+      {/* Dashboard Top Carousel - Profile, Search, Points, AI Try-On */}
       <DashboardTopCarousel
         showProfileCard={true}
         showSearchCard={true}
         showPointsCard={true}
+        showAiTryOnCard={true}
         onOpenGlobalSearch={handleOpenSearchFromCard}
+        onOpenAiTryOn={() => setAiStudioModalOpen(true)}
       />
 
-      {/* Feature Strip - 3 Square Tiles (AI Studio, UGC Collab, More) */}
+      {/* Feature Strip - More menu only (AI Try-On moved to carousel, UGC moved to bottom nav) */}
       <section className="px-4 pt-4">
         <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
-          {/* AI Studio */}
-          <button 
-            onClick={() => setAiStudioModalOpen(true)} 
-            className="flex flex-col items-center justify-center gap-1.5 p-3 bg-card rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.3)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.12)] transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] min-w-[64px] border border-border/50"
-          >
-            <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center border border-[hsl(var(--azyah-maroon))]/25">
-              <Shirt className="h-4 w-4 text-[hsl(var(--azyah-maroon))]/70" />
-            </div>
-            <span className="text-[10px] font-medium text-muted-foreground text-center leading-tight">AI Try-On</span>
-          </button>
-
-          {/* UGC Collab */}
-          <button 
-            onClick={() => navigate('/ugc')} 
-            className="flex flex-col items-center justify-center gap-1.5 p-3 bg-card rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.3)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.12)] transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] min-w-[64px] border border-border/50"
-          >
-            <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center border border-[hsl(var(--azyah-maroon))]/25">
-              <Users className="h-4 w-4 text-[hsl(var(--azyah-maroon))]/70" />
-            </div>
-            <span className="text-[10px] font-medium text-muted-foreground text-center leading-tight">UGC Collab</span>
-          </button>
-
-          {/* More - Popover with Beauty & Wishlist */}
+          {/* More - Popover with Wishlist only (Beauty hidden, UGC moved to nav) */}
           <Popover>
             <PopoverTrigger asChild>
               <button 
@@ -373,16 +353,7 @@ const RoleDashboard: React.FC = () => {
                   variant="ghost"
                   size="sm"
                   className="justify-start h-9 text-sm"
-                  onClick={() => navigate('/beauty-consultant')}
-                >
-                  <WandSparkles className="h-4 w-4 mr-2" />
-                  Beauty
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="justify-start h-9 text-sm"
-                  onClick={() => navigate('/wishlist')}
+                  onClick={() => navigate('/favorites?tab=wishlist')}
                 >
                   <Heart className="h-4 w-4 mr-2" />
                   Wishlist
