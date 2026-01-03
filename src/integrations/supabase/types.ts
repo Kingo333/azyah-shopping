@@ -1035,6 +1035,42 @@ export type Database = {
           },
         ]
       }
+      default_wardrobe_items: {
+        Row: {
+          brand: string | null
+          category: string
+          color: string | null
+          created_at: string | null
+          id: string
+          image_bg_removed_url: string | null
+          image_url: string
+          season: string | null
+          tags: string[] | null
+        }
+        Insert: {
+          brand?: string | null
+          category: string
+          color?: string | null
+          created_at?: string | null
+          id?: string
+          image_bg_removed_url?: string | null
+          image_url: string
+          season?: string | null
+          tags?: string[] | null
+        }
+        Update: {
+          brand?: string | null
+          category?: string
+          color?: string | null
+          created_at?: string | null
+          id?: string
+          image_bg_removed_url?: string | null
+          image_url?: string
+          season?: string | null
+          tags?: string[] | null
+        }
+        Relationships: []
+      }
       event_brand_products: {
         Row: {
           created_at: string
@@ -4690,6 +4726,10 @@ export type Database = {
           cleanup_summary: string
           deleted_count: number
         }[]
+      }
+      copy_default_wardrobe_items: {
+        Args: { target_user_id: string }
+        Returns: undefined
       }
       create_admin_user: { Args: never; Returns: undefined }
       deduct_ai_studio_credit: {
