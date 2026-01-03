@@ -332,37 +332,6 @@ const RoleDashboard: React.FC = () => {
         onOpenAiTryOn={() => setAiStudioModalOpen(true)}
       />
 
-      {/* Feature Strip - More menu only (AI Try-On moved to carousel, UGC moved to bottom nav) */}
-      <section className="px-4 pt-4">
-        <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
-          {/* More - Popover with Wishlist only (Beauty hidden, UGC moved to nav) */}
-          <Popover>
-            <PopoverTrigger asChild>
-              <button 
-                className="flex flex-col items-center justify-center gap-1.5 p-3 bg-card rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.3)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.12)] transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] min-w-[64px] border border-border/50"
-              >
-                <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center border border-[hsl(var(--azyah-maroon))]/25">
-                  <MoreHorizontal className="h-4 w-4 text-[hsl(var(--azyah-maroon))]/70" />
-                </div>
-                <span className="text-[10px] font-medium text-muted-foreground text-center leading-tight">More</span>
-              </button>
-            </PopoverTrigger>
-            <PopoverContent className="w-40 p-2" align="start">
-              <div className="grid gap-1">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="justify-start h-9 text-sm"
-                  onClick={() => navigate('/favorites?tab=wishlist')}
-                >
-                  <Heart className="h-4 w-4 mr-2" />
-                  Wishlist
-                </Button>
-              </div>
-            </PopoverContent>
-          </Popover>
-        </div>
-      </section>
 
       {/* Closet & Outfits Section */}
       <ClosetOutfitsSection />

@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { HelmetProvider } from 'react-helmet-async';
 import { ThemeProvider } from 'next-themes';
@@ -144,16 +144,8 @@ function AppContent() {
                       <Favorites />
                     </ProtectedRoute>
                   } />
-                  <Route path="/wishlist" element={
-                    <ProtectedRoute roles={['shopper', 'admin']}>
-                      <Wishlist />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/likes" element={
-                    <ProtectedRoute roles={['shopper', 'admin']}>
-                      <Likes />
-                    </ProtectedRoute>
-                  } />
+                  <Route path="/wishlist" element={<Navigate to="/favorites?tab=wishlist" replace />} />
+                  <Route path="/likes" element={<Navigate to="/favorites?tab=likes" replace />} />
                   <Route path="/cart" element={
                     <ProtectedRoute roles={['shopper', 'admin']}>
                       <ShoppingCart />

@@ -425,7 +425,7 @@ const SwipeDeck: React.FC<SwipeDeckProps> = ({
       {/* End of deck celebration */}
       {index >= products.length && products.length > 0 && (
         <SwipeCelebration
-          onViewLikes={() => navigate("/likes")}
+          onViewLikes={() => navigate("/favorites")}
           onStartOver={() => {
             setIndex(0);
             window.location.reload();
