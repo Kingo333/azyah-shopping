@@ -45,33 +45,23 @@ export const HorizontalCarousel: React.FC<HorizontalCarouselProps> = ({
           {headerAction}
         </div>
         
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 rounded-full hidden sm:flex"
+            className="h-7 w-7 sm:h-8 sm:w-8 rounded-full"
             onClick={() => scroll('left')}
           >
-            <ChevronLeft className="h-4 w-4" />
+            <ChevronLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
           </Button>
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 rounded-full hidden sm:flex"
+            className="h-7 w-7 sm:h-8 sm:w-8 rounded-full"
             onClick={() => scroll('right')}
           >
-            <ChevronRight className="h-4 w-4" />
+            <ChevronRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
           </Button>
-          {showViewMore && onViewMore && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onViewMore}
-              className="text-primary hover:text-primary/80"
-            >
-              View All
-            </Button>
-          )}
         </div>
       </div>
 

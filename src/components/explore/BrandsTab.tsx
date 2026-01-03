@@ -98,38 +98,28 @@ export const BrandsTab: React.FC = () => {
         <HorizontalCarousel
           key={brand.id}
           title={brand.name}
-          onViewMore={() => navigate(`/brand/${brand.slug}`)}
+          showViewMore={false}
           headerAction={
-            <FollowButton
-              isFollowing={isFollowing(brand.id)}
-              onToggle={() => toggleFollow(brand.id)}
-              isLoading={isToggling}
-            />
-          }
-        >
-          {/* Brand Logo Card */}
-          <Card
-            className="flex-shrink-0 w-24 h-48 cursor-pointer hover:shadow-lg transition-shadow snap-start"
-            onClick={() => navigate(`/brand/${brand.slug}`)}
-          >
-            <CardContent className="flex flex-col items-center justify-center h-full p-4">
-              <Avatar className="h-16 w-16 mb-3">
+            <div className="flex items-center gap-2">
+              <Avatar className="h-6 w-6">
                 <AvatarImage src={brand.logo_url || undefined} alt={brand.name} />
-                <AvatarFallback className="text-lg font-semibold">
+                <AvatarFallback className="text-[10px] font-semibold">
                   {brand.name.slice(0, 2).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
-              <p className="text-xs text-center text-muted-foreground line-clamp-2">
-                View All
-              </p>
-            </CardContent>
-          </Card>
-
-          {/* Product Cards */}
+              <FollowButton
+                isFollowing={isFollowing(brand.id)}
+                onToggle={() => toggleFollow(brand.id)}
+                isLoading={isToggling}
+              />
+            </div>
+          }
+        >
+          {/* Product Cards Only - no brand card */}
           {brand.products.map((product) => (
             <Card
               key={product.id}
-              className="flex-shrink-0 w-36 overflow-hidden cursor-pointer hover:shadow-lg transition-all duration-300 hover:-translate-y-1 snap-start"
+              className="flex-shrink-0 w-32 sm:w-36 overflow-hidden cursor-pointer hover:shadow-lg transition-all duration-300 hover:-translate-y-1 snap-start"
               onClick={() => navigate(`/p/${product.id}`)}
             >
               <div className="aspect-[3/4] relative">
@@ -137,7 +127,7 @@ export const BrandsTab: React.FC = () => {
                   src={getPrimaryImageUrl(product)}
                   alt={product.title}
                   className="w-full h-full object-cover"
-                  sizes="144px"
+                  sizes="(max-width: 640px) 128px, 144px"
                 />
               </div>
               <CardContent className="p-2">

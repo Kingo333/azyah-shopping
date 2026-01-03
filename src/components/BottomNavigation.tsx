@@ -17,7 +17,7 @@ const navItems: NavItem[] = [
   { id: 'home', label: 'Home', icon: Home, path: '/dashboard' },
   { id: 'explore', label: 'Explore', icon: Compass, path: '/explore' },
   { id: 'discover', label: 'Discover', icon: ShoppingBag, path: '/swipe', isCenter: true },
-  { id: 'dressme', label: 'Dress Me', icon: Shirt, path: '/dress-me' },
+  { id: 'dressme', label: 'Closet', icon: Shirt, path: '/dress-me' },
   { id: 'ugc', label: 'UGC', icon: Users, path: '/ugc' },
 ];
 

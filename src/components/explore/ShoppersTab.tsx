@@ -58,8 +58,8 @@ export const ShoppersTab: React.FC = () => {
         }
       });
 
-      // Get user details for each unique user
-      const userIds = Array.from(userOutfitsMap.keys()).filter(id => id !== user?.id);
+      // Get user details for each unique user (include current user)
+      const userIds = Array.from(userOutfitsMap.keys());
       if (!userIds.length) return [];
 
       const { data: usersData } = await supabase
@@ -69,13 +69,20 @@ export const ShoppersTab: React.FC = () => {
 
       if (!usersData?.length) return [];
 
-      // Combine data
-      const shoppersWithOutfits: ShopperWithOutfits[] = usersData.map((u: any) => ({
-        id: u.id,
-        display_name: u.name,
-        avatar_url: u.avatar_url,
-        outfits: userOutfitsMap.get(u.id) || [],
-      })).filter(s => s.outfits.length > 0);
+      // Combine data - put current user last as fallback
+      const shoppersWithOutfits: ShopperWithOutfits[] = usersData
+        .sort((a: any, b: any) => {
+          // Put current user at the end
+          if (a.id === user?.id) return 1;
+          if (b.id === user?.id) return -1;
+          return 0;
+        })
+        .map((u: any) => ({
+          id: u.id,
+          display_name: u.name,
+          avatar_url: u.avatar_url,
+          outfits: userOutfitsMap.get(u.id) || [],
+        })).filter(s => s.outfits.length > 0);
 
       return shoppersWithOutfits;
     },
@@ -115,38 +122,32 @@ export const ShoppersTab: React.FC = () => {
         <HorizontalCarousel
           key={shopper.id}
           title={shopper.display_name || 'Fashion Lover'}
-          onViewMore={() => navigate(`/profile/${shopper.id}`)}
+          showViewMore={false}
           headerAction={
-            <FollowButton
-              isFollowing={isFollowing(shopper.id)}
-              onToggle={() => toggleFollow(shopper.id)}
-              isLoading={isToggling}
-            />
-          }
-        >
-          {/* User Avatar Card */}
-          <Card
-            className="flex-shrink-0 w-24 h-48 cursor-pointer hover:shadow-lg transition-shadow snap-start"
-            onClick={() => navigate(`/profile/${shopper.id}`)}
-          >
-            <CardContent className="flex flex-col items-center justify-center h-full p-4">
-              <Avatar className="h-16 w-16 mb-3">
+            <div className="flex items-center gap-2">
+              <Avatar className="h-6 w-6">
                 <AvatarImage src={shopper.avatar_url || undefined} alt={shopper.display_name || 'User'} />
-                <AvatarFallback className="text-lg font-semibold">
+                <AvatarFallback className="text-[10px] font-semibold">
                   {(shopper.display_name || 'U').slice(0, 2).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
-              <p className="text-xs text-center text-muted-foreground line-clamp-2">
-                View Profile
-              </p>
-            </CardContent>
-          </Card>
+              {/* Don't show follow button for self */}
+              {shopper.id !== user?.id && (
+                <FollowButton
+                  isFollowing={isFollowing(shopper.id)}
+                  onToggle={() => toggleFollow(shopper.id)}
+                  isLoading={isToggling}
+                />
+              )}
+            </div>
+          }
+        >
 
-          {/* Outfit Cards */}
+          {/* Outfit Cards Only - no avatar card */}
           {shopper.outfits.map((outfit) => (
             <Card
               key={outfit.id}
-              className="flex-shrink-0 w-36 overflow-hidden cursor-pointer hover:shadow-lg transition-all duration-300 hover:-translate-y-1 snap-start"
+              className="flex-shrink-0 w-32 sm:w-36 overflow-hidden cursor-pointer hover:shadow-lg transition-all duration-300 hover:-translate-y-1 snap-start"
               onClick={() => navigate(`/dress-me/outfit/${outfit.id}`)}
             >
               <div className="aspect-[3/4] relative bg-muted">
@@ -154,7 +155,7 @@ export const ShoppersTab: React.FC = () => {
                   src={outfit.render_path || outfit.image_preview || '/placeholder.svg'}
                   alt={outfit.title || 'Outfit'}
                   className="w-full h-full object-cover"
-                  sizes="144px"
+                  sizes="(max-width: 640px) 128px, 144px"
                 />
               </div>
               <CardContent className="p-2">
