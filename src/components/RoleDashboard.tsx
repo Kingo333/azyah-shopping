@@ -32,6 +32,7 @@ import { useGuestGate } from '@/hooks/useGuestGate';
 import { GuestActionPrompt } from '@/components/GuestActionPrompt';
 import { ClosetOutfitsSection } from '@/components/dashboard/ClosetOutfitsSection';
 import { DiscoverTutorialOverlay } from '@/components/dashboard/DiscoverTutorialOverlay';
+import { CategoryTabs } from '@/components/dashboard/CategoryTabs';
 
 
 interface UserProfile {
@@ -332,6 +333,8 @@ const RoleDashboard: React.FC = () => {
         onOpenAiTryOn={() => setAiStudioModalOpen(true)}
       />
 
+      {/* Category Tabs - Quick access to Discover categories */}
+      <CategoryTabs />
 
       {/* Closet & Outfits Section */}
       <ClosetOutfitsSection />
