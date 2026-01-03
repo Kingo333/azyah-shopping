@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Home, ShoppingBag, ChevronUp } from 'lucide-react';
+import { Home, Compass, ShoppingBag, Camera, Users, ChevronUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { isGuestMode } from '@/hooks/useGuestMode';
@@ -10,30 +10,15 @@ interface NavItem {
   label: string;
   icon: React.ComponentType<{ className?: string }>;
   path: string;
+  isCenter?: boolean;
 }
-
-// Custom Hanger Icon Component for Dress Me
-const HangerIcon: React.FC<{ className?: string }> = ({ className }) => (
-  <svg 
-    xmlns="http://www.w3.org/2000/svg" 
-    viewBox="0 0 24 24" 
-    fill="none" 
-    stroke="currentColor" 
-    strokeWidth="2" 
-    strokeLinecap="round" 
-    strokeLinejoin="round" 
-    className={className}
-  >
-    <path d="M12 3a3 3 0 0 0-3 3v1" />
-    <path d="M3 21h18" />
-    <path d="M12 7l9 7v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2l9-7z" />
-  </svg>
-);
 
 const navItems: NavItem[] = [
   { id: 'home', label: 'Home', icon: Home, path: '/dashboard' },
-  { id: 'discover', label: 'Discover', icon: ShoppingBag, path: '/swipe' },
-  { id: 'dress-me', label: 'Dress Me', icon: HangerIcon, path: '/dress-me' },
+  { id: 'explore', label: 'Explore', icon: Compass, path: '/explore' },
+  { id: 'discover', label: 'Discover', icon: ShoppingBag, path: '/swipe', isCenter: true },
+  { id: 'ai-tryon', label: 'AI Try On', icon: Camera, path: '/ar-tryon' },
+  { id: 'ugc', label: 'UGC', icon: Users, path: '/ugc' },
 ];
 
 // Routes where auto-hide behavior applies (minimized after 2 seconds)
@@ -138,14 +123,13 @@ export const BottomNavigation: React.FC = () => {
           >
             {/* Background bar */}
             <div className="relative border-t border-border">
-              <div className="flex items-end justify-around h-16 px-4">
-                {navItems.map((item, index) => {
+              <div className="flex items-end justify-around h-16 px-2">
+                {navItems.map((item) => {
                   const Icon = item.icon;
                   const active = isActive(item.path);
-                  const isCenter = index === 1; // Find button is center
 
-                  if (isCenter) {
-                    // Center "Find" button - ADNOC style pop-out
+                  if (item.isCenter) {
+                    // Center "Discover" button - pop-out style
                     return (
                       <button
                         key={item.id}
@@ -179,19 +163,19 @@ export const BottomNavigation: React.FC = () => {
                     );
                   }
 
-                  // Regular nav items (Home, Dress Me)
+                  // Regular nav items
                   return (
                     <button
                       key={item.id}
                       onClick={() => navigate(item.path)}
-                      className={`flex flex-col items-center justify-center gap-1 py-2 px-4 transition-colors ${
+                      className={`flex flex-col items-center justify-center gap-1 py-2 px-2 transition-colors ${
                         active 
                           ? 'text-[hsl(var(--azyah-maroon))]' 
                           : 'text-muted-foreground hover:text-foreground'
                       }`}
                     >
                       <Icon className={`h-5 w-5 ${active ? 'text-[hsl(var(--azyah-maroon))]' : ''}`} />
-                      <span className={`text-[10px] font-medium ${active ? 'text-[hsl(var(--azyah-maroon))]' : ''}`}>
+                      <span className={`text-[9px] font-medium ${active ? 'text-[hsl(var(--azyah-maroon))]' : ''}`}>
                         {item.label}
                       </span>
                     </button>

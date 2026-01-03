@@ -5,7 +5,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Heart, X, ShoppingBag, Sparkles, Info, ExternalLink, Image, User } from 'lucide-react';
+import { Heart, X, ShoppingBag, Sparkles, Info, ExternalLink, Image, User, Shirt } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useWishlist } from '@/hooks/useWishlist';
@@ -22,6 +22,7 @@ import { getBrandDisplayName } from '@/utils/brandHelpers';
 import type { SubCategory } from '@/lib/categories';
 import { useGuestGate } from '@/hooks/useGuestGate';
 import { GuestActionPrompt } from '@/components/GuestActionPrompt';
+import { useAddProductToWardrobe } from '@/hooks/useAddProductToWardrobe';
 
 interface ProductListViewProps {
   products: Product[];
@@ -45,6 +46,7 @@ const ProductCard: React.FC<{
 }> = ({ product, handleLike, handleProductClick, formatPrice, user, toast, requireAuth }) => {
   const { addToWishlist, isLoading: wishlistLoading } = useWishlist(product.id);
   const { data: hasOutfit, isLoading: outfitLoading, error: outfitError } = useProductHasOutfit(product.id);
+  const { mutate: addToWardrobe, isPending: wardrobeLoading } = useAddProductToWardrobe();
   const [tryOnModalOpen, setTryOnModalOpen] = useState(false);
 
   // Show head icon when outfit exists
@@ -68,6 +70,13 @@ const ProductCard: React.FC<{
           variant: "destructive"
         });
       }
+    });
+  };
+
+  const handleAddToWardrobe = () => {
+    requireAuth('save to Dress Me', () => {
+      if (!user) return;
+      addToWardrobe(product as any);
     });
   };
 
@@ -163,27 +172,44 @@ const ProductCard: React.FC<{
           </div>
           
           {/* Action buttons */}
-          <div className="flex space-x-2">
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-8 w-8 p-0 rounded-full bg-primary/10"
-              onClick={() => handleProductClick(product)}
-            >
-              <Info className="h-3 w-3" />
-            </Button>
-            
-            {/* Shop Now button */}
-            {product.external_url && (
+          <div className="flex flex-col gap-2">
+            <div className="flex space-x-2">
               <Button
-                variant="destructive"
                 size="sm"
-                onClick={() => window.open(product.external_url, '_blank', 'noopener,noreferrer')}
-                className="flex-1 text-xs h-8"
+                variant="ghost"
+                className="h-8 w-8 p-0 rounded-full bg-primary/10"
+                onClick={() => handleProductClick(product)}
               >
-                Shop Now
+                <Info className="h-3 w-3" />
               </Button>
-            )}
+              
+              {/* Shop Now button */}
+              {product.external_url && (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => window.open(product.external_url, '_blank', 'noopener,noreferrer')}
+                  className="flex-1 text-xs h-8"
+                >
+                  Shop Now
+                </Button>
+              )}
+            </div>
+            
+            {/* + Dress Me button - semi-transparent */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleAddToWardrobe();
+              }}
+              disabled={wardrobeLoading}
+              className="w-full text-xs h-8 opacity-80 hover:opacity-100 backdrop-blur-sm"
+            >
+              <Shirt className="h-3.5 w-3.5 mr-1" />
+              + Dress Me
+            </Button>
           </div>
         </div>
       </div>
