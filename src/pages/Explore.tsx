@@ -40,17 +40,17 @@ const Explore: React.FC = () => {
         {/* Main Tabs */}
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
           <TabsList className="grid w-full grid-cols-3 mb-6">
-            <TabsTrigger value="brands" className="flex items-center gap-2">
+            <TabsTrigger value="brands" className="flex items-center gap-1.5">
               <Store className="h-4 w-4" />
-              <span className="hidden sm:inline">Brands</span>
+              <span className="text-xs sm:text-sm">Brands</span>
             </TabsTrigger>
-            <TabsTrigger value="shoppers" className="flex items-center gap-2">
+            <TabsTrigger value="shoppers" className="flex items-center gap-1.5">
               <Users className="h-4 w-4" />
-              <span className="hidden sm:inline">Shoppers</span>
+              <span className="text-xs sm:text-sm">Shoppers</span>
             </TabsTrigger>
-            <TabsTrigger value="following" className="flex items-center gap-2">
+            <TabsTrigger value="following" className="flex items-center gap-1.5">
               <UserCheck className="h-4 w-4" />
-              <span className="hidden sm:inline">Following</span>
+              <span className="text-xs sm:text-sm">Following</span>
             </TabsTrigger>
           </TabsList>
 
