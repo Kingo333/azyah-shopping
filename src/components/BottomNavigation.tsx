@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Home, Compass, ShoppingBag, Shirt, Users, ChevronUp } from 'lucide-react';
+import { Home, Compass, ShoppingBag, Layers, Users, ChevronUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { isGuestMode } from '@/hooks/useGuestMode';
@@ -17,7 +17,7 @@ const navItems: NavItem[] = [
   { id: 'home', label: 'Home', icon: Home, path: '/dashboard' },
   { id: 'explore', label: 'Explore', icon: Compass, path: '/explore' },
   { id: 'discover', label: 'Discover', icon: ShoppingBag, path: '/swipe', isCenter: true },
-  { id: 'dressme', label: 'Closet', icon: Shirt, path: '/dress-me' },
+  { id: 'dressme', label: 'Closet', icon: Layers, path: '/dress-me' },
   { id: 'ugc', label: 'UGC', icon: Users, path: '/ugc' },
 ];
 
