@@ -163,10 +163,10 @@ export const FollowingTab: React.FC = () => {
           {brand.products.map((product: any) => (
             <Card
               key={product.id}
-              className="flex-shrink-0 w-36 overflow-hidden cursor-pointer hover:shadow-lg transition-all duration-300 hover:-translate-y-1 snap-start"
+              className="flex-shrink-0 w-36 flex flex-col overflow-hidden cursor-pointer hover:shadow-lg transition-all duration-300 hover:-translate-y-1 snap-start"
               onClick={() => navigate(`/p/${product.id}`)}
             >
-              <div className="aspect-[3/4] relative">
+              <div className="aspect-[3/4] relative overflow-hidden flex-shrink-0">
                 <SmartImage
                   src={getPrimaryImageUrl(product)}
                   alt={product.title}
@@ -174,7 +174,7 @@ export const FollowingTab: React.FC = () => {
                   sizes="144px"
                 />
               </div>
-              <CardContent className="p-2">
+              <CardContent className="p-2 bg-card">
                 <p className="text-xs line-clamp-1 font-medium">{product.title}</p>
                 <p className="text-xs text-primary font-semibold">
                   {new Intl.NumberFormat('en-US', {
@@ -218,10 +218,10 @@ export const FollowingTab: React.FC = () => {
           {shopper.outfits.map((outfit: any) => (
             <Card
               key={outfit.id}
-              className="flex-shrink-0 w-36 overflow-hidden cursor-pointer hover:shadow-lg transition-all duration-300 hover:-translate-y-1 snap-start"
+              className="flex-shrink-0 w-36 flex flex-col overflow-hidden cursor-pointer hover:shadow-lg transition-all duration-300 hover:-translate-y-1 snap-start"
               onClick={() => navigate(`/dress-me/outfit/${outfit.id}`)}
             >
-              <div className="aspect-[3/4] relative bg-muted">
+              <div className="aspect-[3/4] relative overflow-hidden flex-shrink-0 bg-muted">
                 <SmartImage
                   src={outfit.render_path || outfit.image_preview || '/placeholder.svg'}
                   alt={outfit.title || 'Outfit'}
@@ -229,7 +229,7 @@ export const FollowingTab: React.FC = () => {
                   sizes="144px"
                 />
               </div>
-              <CardContent className="p-2">
+              <CardContent className="p-2 bg-card">
                 <p className="text-xs line-clamp-1 font-medium">
                   {outfit.title || 'Untitled Outfit'}
                 </p>

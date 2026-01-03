@@ -125,9 +125,9 @@ export const ShoppersTab: React.FC = () => {
           showViewMore={false}
           headerAction={
             <div className="flex items-center gap-2">
-              <Avatar className="h-6 w-6">
+              <Avatar className="h-8 w-8">
                 <AvatarImage src={shopper.avatar_url || undefined} alt={shopper.display_name || 'User'} />
-                <AvatarFallback className="text-[10px] font-semibold">
+                <AvatarFallback className="text-xs font-semibold">
                   {(shopper.display_name || 'U').slice(0, 2).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
@@ -147,10 +147,10 @@ export const ShoppersTab: React.FC = () => {
           {shopper.outfits.map((outfit) => (
             <Card
               key={outfit.id}
-              className="flex-shrink-0 w-32 sm:w-36 overflow-hidden cursor-pointer hover:shadow-lg transition-all duration-300 hover:-translate-y-1 snap-start"
+              className="flex-shrink-0 w-32 sm:w-36 flex flex-col overflow-hidden cursor-pointer hover:shadow-lg transition-all duration-300 hover:-translate-y-1 snap-start"
               onClick={() => navigate(`/dress-me/outfit/${outfit.id}`)}
             >
-              <div className="aspect-[3/4] relative bg-muted">
+              <div className="aspect-[3/4] relative overflow-hidden flex-shrink-0 bg-muted">
                 <SmartImage
                   src={outfit.render_path || outfit.image_preview || '/placeholder.svg'}
                   alt={outfit.title || 'Outfit'}
@@ -158,7 +158,7 @@ export const ShoppersTab: React.FC = () => {
                   sizes="(max-width: 640px) 128px, 144px"
                 />
               </div>
-              <CardContent className="p-2">
+              <CardContent className="p-2 bg-card">
                 <p className="text-xs line-clamp-1 font-medium">
                   {outfit.title || 'Untitled Outfit'}
                 </p>

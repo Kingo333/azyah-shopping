@@ -101,9 +101,9 @@ export const BrandsTab: React.FC = () => {
           showViewMore={false}
           headerAction={
             <div className="flex items-center gap-2">
-              <Avatar className="h-6 w-6">
+              <Avatar className="h-8 w-8">
                 <AvatarImage src={brand.logo_url || undefined} alt={brand.name} />
-                <AvatarFallback className="text-[10px] font-semibold">
+                <AvatarFallback className="text-xs font-semibold">
                   {brand.name.slice(0, 2).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
@@ -119,10 +119,10 @@ export const BrandsTab: React.FC = () => {
           {brand.products.map((product) => (
             <Card
               key={product.id}
-              className="flex-shrink-0 w-32 sm:w-36 overflow-hidden cursor-pointer hover:shadow-lg transition-all duration-300 hover:-translate-y-1 snap-start"
+              className="flex-shrink-0 w-32 sm:w-36 flex flex-col overflow-hidden cursor-pointer hover:shadow-lg transition-all duration-300 hover:-translate-y-1 snap-start"
               onClick={() => navigate(`/p/${product.id}`)}
             >
-              <div className="aspect-[3/4] relative">
+              <div className="aspect-[3/4] relative overflow-hidden flex-shrink-0">
                 <SmartImage
                   src={getPrimaryImageUrl(product)}
                   alt={product.title}
@@ -130,7 +130,7 @@ export const BrandsTab: React.FC = () => {
                   sizes="(max-width: 640px) 128px, 144px"
                 />
               </div>
-              <CardContent className="p-2">
+              <CardContent className="p-2 bg-card">
                 <p className="text-xs line-clamp-1 font-medium">{product.title}</p>
                 <p className="text-xs text-primary font-semibold">
                   {new Intl.NumberFormat('en-US', {
