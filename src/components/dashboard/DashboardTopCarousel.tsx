@@ -7,13 +7,16 @@ import { useAuth } from '@/contexts/AuthContext';
 import { ProfileCompletionCard } from './ProfileCompletionCard';
 import { QuickSearchCard } from './QuickSearchCard';
 import { PointsSummaryCard } from './PointsSummaryCard';
+import { AiTryOnCard } from './AiTryOnCard';
 import { cn } from '@/lib/utils';
 
 interface DashboardTopCarouselProps {
   showProfileCard?: boolean;
   showSearchCard?: boolean;
   showPointsCard?: boolean;
+  showAiTryOnCard?: boolean;
   onOpenGlobalSearch: (query: string, tab?: 'products' | 'users' | 'brands') => void;
+  onOpenAiTryOn?: () => void;
 }
 
 const DISMISS_KEY = 'profile-completion-dismissed';
@@ -22,7 +25,9 @@ export function DashboardTopCarousel({
   showProfileCard = true,
   showSearchCard = true,
   showPointsCard = true,
-  onOpenGlobalSearch
+  showAiTryOnCard = true,
+  onOpenGlobalSearch,
+  onOpenAiTryOn
 }: DashboardTopCarouselProps) {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -85,6 +90,13 @@ export function DashboardTopCarousel({
     slides.push({
       key: 'points',
       component: <PointsSummaryCard />
+    });
+  }
+  
+  if (showAiTryOnCard && onOpenAiTryOn) {
+    slides.push({
+      key: 'ai-tryon',
+      component: <AiTryOnCard onTryNow={onOpenAiTryOn} />
     });
   }
 
