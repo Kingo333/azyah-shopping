@@ -157,7 +157,7 @@ export const BottomNavigation: React.FC = () => {
                         >
                           <Icon className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
                         </div>
-                        <span className={`mt-8 text-[9px] font-medium ${active ? 'text-[hsl(var(--azyah-maroon))]' : 'text-muted-foreground'}`}>
+                        <span className={`mt-9 text-[9px] font-medium ${active ? 'text-[hsl(var(--azyah-maroon))]' : 'text-muted-foreground'}`}>
                           {item.label}
                         </span>
                       </button>
@@ -169,7 +169,7 @@ export const BottomNavigation: React.FC = () => {
                     <button
                       key={item.id}
                       onClick={() => navigate(item.path)}
-                      className={`flex flex-col items-center justify-start gap-0.5 pt-1 pb-1 px-2 transition-colors ${
+                      className={`flex flex-col items-center justify-start gap-0.5 pt-0.5 pb-1.5 px-2 transition-colors ${
                         active 
                           ? 'text-[hsl(var(--azyah-maroon))]' 
                           : 'text-muted-foreground hover:text-foreground'
