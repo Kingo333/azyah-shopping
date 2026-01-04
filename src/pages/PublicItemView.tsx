@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { SEOHead } from '@/components/SEOHead';
 import { ArrowLeft, ExternalLink, Share2, ShoppingBag } from 'lucide-react';
 import { toast } from 'sonner';
+import { openExternalUrl } from '@/lib/openExternalUrl';
 
 interface PublicItem {
   id: string;
@@ -108,9 +109,7 @@ export default function PublicItemView() {
   };
 
   const handleShopNow = () => {
-    if (item?.source_url) {
-      window.open(item.source_url, '_blank', 'noopener,noreferrer');
-    }
+    openExternalUrl(item?.source_url);
   };
 
   if (isLoading) {

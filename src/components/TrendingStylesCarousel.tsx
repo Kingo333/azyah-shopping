@@ -20,6 +20,7 @@ import { getPrimaryImageUrl } from '@/utils/imageHelpers';
 import { TopCategory } from '@/lib/categories';
 import { useGuestGate } from '@/hooks/useGuestGate';
 import { GuestActionPrompt } from '@/components/GuestActionPrompt';
+import { openExternalUrl } from '@/lib/openExternalUrl';
 
 interface TrendingProduct {
   id: string;
@@ -357,24 +358,16 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
     }
   });
 
-  const handleShopNow = (product: TrendingProduct) => {
-    if (product.external_url?.trim()) {
-      window.open(product.external_url, '_blank', 'noopener,noreferrer');
-      
-      // Track analytics if user is logged in
-      if (user) {
-        supabase.from('events').insert({
-          user_id: user.id,
-          event_type: 'trending_carousel_shop_now',
-          event_data: { source: 'trending_carousel' },
-          product_id: product.id
-        });
-      }
-    } else {
-      toast({
-        title: "Shop link not available",
-        description: "This product doesn't have a shop link available.",
-        variant: "destructive"
+  const handleShopNow = async (product: TrendingProduct) => {
+    const opened = await openExternalUrl(product.external_url);
+    
+    // Track analytics if user is logged in and link was opened
+    if (opened && user) {
+      supabase.from('events').insert({
+        user_id: user.id,
+        event_type: 'trending_carousel_shop_now',
+        event_data: { source: 'trending_carousel' },
+        product_id: product.id
       });
     }
   };

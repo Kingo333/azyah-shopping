@@ -18,6 +18,7 @@ import { imageUrlFrom, extractSupabasePath } from '@/lib/imageUrl';
 import { isSupabaseAbsoluteUrl } from '@/lib/urlGuards';
 import { DuplicateClosetDialog } from '@/components/DuplicateClosetDialog';
 import { cn } from '@/lib/utils';
+import { openExternalUrl } from '@/lib/openExternalUrl';
 
 interface PhotoCloseupProps {
   onClose?: () => void;
@@ -244,7 +245,7 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
       brand_id: product.brand_id
     });
 
-    window.open(product.external_url, '_blank', 'noopener,noreferrer');
+    openExternalUrl(product.external_url);
   };
 
   // Track closeup open

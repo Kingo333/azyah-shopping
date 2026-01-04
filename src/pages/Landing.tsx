@@ -17,6 +17,7 @@ import { FloatingFashionIcons } from "@/components/FloatingFashionIcons";
 import { TrustBadges } from "@/components/TrustBadges";
 import { LiveActivityIndicator } from "@/components/LiveActivityIndicator";
 import { BeautyAssistantFab } from "@/components/BeautyAssistantFab";
+import { openExternalUrl } from "@/lib/openExternalUrl";
 function FeatureCarousel() {
   const [currentFeature, setCurrentFeature] = useState(0);
   const features = ["Virtual Try-On Technology", "UGC Collaboration Hub", "Beauty AI Assistant", "AI-Curated Fashion", "Personalized Recommendations", "Global Style Community"];
@@ -539,12 +540,10 @@ export default function Landing() {
                       console.log('Shop now clicked for product:', product);
                       console.log('External URL:', product.external_url);
                       if (product.external_url) {
-                        // Always open in new tab/window
-                        window.open(product.external_url, '_blank', 'noopener,noreferrer');
-                        console.log('Opened external link in new tab');
+                        openExternalUrl(product.external_url);
+                        console.log('Opened external link');
                       } else {
                         console.warn('No external URL found for product:', product.id);
-                        // Could show a toast notification here if needed
                       }
                     }} title="Shop Now">
                               <ExternalLink className="w-3 h-3" />

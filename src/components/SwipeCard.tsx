@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils';
 import { useAddProductToWardrobe, checkClosetDuplicate } from '@/hooks/useAddProductToWardrobe';
 import { useAuth } from '@/contexts/AuthContext';
 import { DuplicateClosetDialog } from '@/components/DuplicateClosetDialog';
+import { openExternalUrl } from '@/lib/openExternalUrl';
 
 interface SwipeProduct {
   id: string;
@@ -139,21 +140,7 @@ const SwipeCard = memo(({
   const handleShopNow = useCallback(async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    
-    if (product.external_url) {
-      try {
-        const url = product.external_url.startsWith('http') 
-          ? product.external_url 
-          : `https://${product.external_url}`;
-        
-        const newWindow = window.open(url, '_blank', 'noopener,noreferrer');
-        if (!newWindow) {
-          window.location.href = url;
-        }
-      } catch (error) {
-        console.warn('Failed to open product page');
-      }
-    }
+    openExternalUrl(product.external_url);
   }, [product.external_url]);
 
   const handleImageLoadInternal = (e: React.SyntheticEvent<HTMLImageElement>) => {

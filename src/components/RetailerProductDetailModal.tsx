@@ -6,6 +6,7 @@ import { Separator } from '@/components/ui/separator';
 import { Product } from '@/types';
 import { Edit, ExternalLink, Package, Heart, Share } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { openExternalUrl } from '@/lib/openExternalUrl';
 
 interface RetailerProductDetailModalProps {
   product: Product | null;
@@ -50,9 +51,7 @@ export const RetailerProductDetailModal: React.FC<RetailerProductDetailModalProp
   };
 
   const handleExternalLink = () => {
-    if (product.external_url) {
-      window.open(product.external_url, '_blank', 'noopener,noreferrer');
-    }
+    openExternalUrl(product.external_url);
   };
 
   const images = Array.isArray(product.media_urls) ? product.media_urls : [];

@@ -9,6 +9,7 @@ import { AdvancedSizeColorSelector } from './AdvancedSizeColorSelector';
 import { useToast } from '@/hooks/use-toast';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { getProductImageUrls } from '@/utils/imageHelpers';
+import { openExternalUrl } from '@/lib/openExternalUrl';
 interface ProductDetailPageProps {
   product: Product;
   onBack: () => void;
@@ -29,31 +30,13 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
   const priceCurrency = product?.currency || 'USD';
   const priceCents = product?.price_cents ?? 0;
   const compareAtCents = product?.compare_at_price_cents ?? null;
-  const handleShopNow = () => {
+  const handleShopNow = async () => {
     console.log('Product Detail Shop Now clicked - URL:', product?.external_url);
     if (product?.external_url && product?.id) {
-      try {
-        // Validate URL
-        const url = product.external_url.startsWith('http') ? product.external_url : `https://${product.external_url}`;
-        console.log('Opening URL:', url);
-        
-        // Create a temporary anchor element to ensure new tab opens
-        const link = document.createElement('a');
-        link.href = url;
-        link.target = '_blank';
-        link.rel = 'noopener noreferrer';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        
+      const opened = await openExternalUrl(product.external_url);
+      if (opened) {
         toast({
           description: 'Opening product page...'
-        });
-      } catch (error) {
-        console.error('Failed to open URL:', error);
-        toast({
-          description: 'Failed to open product page',
-          variant: 'destructive'
         });
       }
     } else {

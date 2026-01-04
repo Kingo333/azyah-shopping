@@ -10,6 +10,7 @@ import { toast } from '@/hooks/use-toast';
 import { useProductHasOutfit } from '@/hooks/useProductOutfits';
 import ProductTryOnModal from '@/components/ProductTryOnModal';
 import { BackButton } from '@/components/ui/back-button';
+import { openExternalUrl } from '@/lib/openExternalUrl';
 
 interface LikedProduct {
   id: string;
@@ -35,15 +36,7 @@ const LikeCard: React.FC<{ like: LikedProduct; onRemove: (productId: string) => 
   const shouldShowTryOnButton = hasOutfit === true;
 
   const handleShopNow = (product: LikedProduct['products']) => {
-    if (product?.external_url) {
-      window.open(product.external_url, '_blank', 'noopener,noreferrer');
-    } else {
-      toast({
-        title: "Shop link not available",
-        description: "This product doesn't have a shop link available.",
-        variant: "destructive"
-      });
-    }
+    openExternalUrl(product?.external_url);
   };
 
   const formatPrice = (cents: number, currency: string) => {
