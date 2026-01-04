@@ -169,14 +169,14 @@ export const BottomNavigation: React.FC = () => {
                     <button
                       key={item.id}
                       onClick={() => navigate(item.path)}
-                      className={`flex flex-col items-center justify-start pt-1 pb-1 px-2 transition-colors ${
+                      className={`flex flex-col items-center justify-start gap-0.5 pt-0.5 pb-1.5 px-2 transition-colors ${
                         active 
                           ? 'text-[hsl(var(--azyah-maroon))]' 
                           : 'text-muted-foreground hover:text-foreground'
                       }`}
                     >
                       <Icon className={`h-5 w-5 ${active ? 'text-[hsl(var(--azyah-maroon))]' : ''}`} />
-                      <span className={`mt-2 text-[9px] font-medium ${active ? 'text-[hsl(var(--azyah-maroon))]' : ''}`}>
+                      <span className={`text-[9px] font-medium ${active ? 'text-[hsl(var(--azyah-maroon))]' : ''}`}>
                         {item.label}
                       </span>
                     </button>
