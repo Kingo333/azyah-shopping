@@ -124,7 +124,7 @@ export const BottomNavigation: React.FC = () => {
           >
             {/* Background bar */}
             <div className="relative border-t border-border">
-              <div className="flex items-center justify-around h-14 px-2">
+              <div className="flex items-end justify-around h-16 px-2">
                 {navItems.map((item) => {
                   const Icon = item.icon;
                   const active = isActive(item.path);
@@ -135,7 +135,7 @@ export const BottomNavigation: React.FC = () => {
                       <button
                         key={item.id}
                         onClick={() => navigate(item.path)}
-                        className="relative flex flex-col items-center pt-2 pb-3 px-3"
+                        className="relative flex flex-col items-center justify-end gap-1 py-2 px-3"
                       >
                         {/* Pop-out circular button - positioned above */}
                         <div 
@@ -157,7 +157,9 @@ export const BottomNavigation: React.FC = () => {
                         >
                           <Icon className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
                         </div>
-                        <span className={`absolute bottom-1 text-[9px] font-medium ${active ? 'text-[hsl(var(--azyah-maroon))]' : 'text-muted-foreground'}`}>
+                        {/* Spacer to match icon height */}
+                        <div className="h-5" />
+                        <span className={`text-[9px] font-medium ${active ? 'text-[hsl(var(--azyah-maroon))]' : 'text-muted-foreground'}`}>
                           {item.label}
                         </span>
                       </button>
@@ -169,14 +171,14 @@ export const BottomNavigation: React.FC = () => {
                     <button
                       key={item.id}
                       onClick={() => navigate(item.path)}
-                      className={`relative flex flex-col items-center pt-2 pb-3 px-3 transition-colors ${
+                      className={`flex flex-col items-center justify-end gap-1 py-2 px-3 transition-colors ${
                         active 
                           ? 'text-[hsl(var(--azyah-maroon))]' 
                           : 'text-muted-foreground hover:text-foreground'
                       }`}
                     >
                       <Icon className={`h-5 w-5 ${active ? 'text-[hsl(var(--azyah-maroon))]' : ''}`} />
-                      <span className={`absolute bottom-1 text-[9px] font-medium ${active ? 'text-[hsl(var(--azyah-maroon))]' : ''}`}>
+                      <span className={`text-[9px] font-medium ${active ? 'text-[hsl(var(--azyah-maroon))]' : ''}`}>
                         {item.label}
                       </span>
                     </button>
