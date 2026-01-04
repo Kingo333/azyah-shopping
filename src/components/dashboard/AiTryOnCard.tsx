@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Sparkles, Shirt } from 'lucide-react';
+import { Shirt } from 'lucide-react';
 
 interface AiTryOnCardProps {
   onTryNow: () => void;
@@ -19,7 +19,6 @@ export function AiTryOnCard({ onTryNow }: AiTryOnCardProps) {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 mb-0.5">
             <h3 className="font-semibold text-sm text-foreground">AI Virtual Try-On</h3>
-            <Sparkles className="h-3.5 w-3.5 text-[hsl(var(--azyah-maroon))]" />
           </div>
           <p className="text-xs text-muted-foreground leading-snug">
             See how outfits look on you instantly

@@ -135,7 +135,7 @@ export const BottomNavigation: React.FC = () => {
                       <button
                         key={item.id}
                         onClick={() => navigate(item.path)}
-                        className="relative flex flex-col items-center justify-end h-full pb-2"
+                        className="relative flex flex-col items-center justify-start h-full pt-1"
                       >
                         {/* Pop-out circular button - positioned above */}
                         <div 
@@ -157,7 +157,7 @@ export const BottomNavigation: React.FC = () => {
                         >
                           <Icon className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
                         </div>
-                        <span className={`text-[10px] font-medium ${active ? 'text-[hsl(var(--azyah-maroon))]' : 'text-muted-foreground'}`}>
+                        <span className={`mt-8 text-[9px] font-medium ${active ? 'text-[hsl(var(--azyah-maroon))]' : 'text-muted-foreground'}`}>
                           {item.label}
                         </span>
                       </button>
@@ -169,7 +169,7 @@ export const BottomNavigation: React.FC = () => {
                     <button
                       key={item.id}
                       onClick={() => navigate(item.path)}
-                      className={`flex flex-col items-center justify-center gap-1 py-2 px-2 transition-colors ${
+                      className={`flex flex-col items-center justify-start gap-0.5 pt-1 pb-1 px-2 transition-colors ${
                         active 
                           ? 'text-[hsl(var(--azyah-maroon))]' 
                           : 'text-muted-foreground hover:text-foreground'
