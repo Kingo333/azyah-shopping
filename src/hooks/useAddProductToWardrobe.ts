@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -23,41 +23,94 @@ const mapProductCategoryToWardrobe = (categorySlug: string | null): 'top' | 'bot
   return 'top'; // Default fallback
 };
 
+// Hook to check if product already exists in closet
+export const useCheckClosetDuplicate = (productId: string | undefined) => {
+  const { user } = useAuth();
+  
+  return useQuery({
+    queryKey: ['closet-duplicate-check', productId, user?.id],
+    queryFn: async () => {
+      if (!user || !productId) return null;
+      
+      const { data, error } = await supabase
+        .from('wardrobe_items')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('source_product_id', productId)
+        .maybeSingle();
+      
+      if (error) {
+        console.error('[Closet] Duplicate check error:', error);
+        return null;
+      }
+      
+      return data;
+    },
+    enabled: !!user && !!productId,
+    staleTime: 1000 * 60, // 1 minute
+  });
+};
+
+// Function to check duplicate before adding (for manual checks)
+export const checkClosetDuplicate = async (userId: string, productId: string): Promise<boolean> => {
+  const { data, error } = await supabase
+    .from('wardrobe_items')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('source_product_id', productId)
+    .maybeSingle();
+  
+  if (error) {
+    console.error('[Closet] Duplicate check error:', error);
+    return false;
+  }
+  
+  return !!data;
+};
+
 export const useAddProductToWardrobe = () => {
   const queryClient = useQueryClient();
   const { user } = useAuth();
 
   return useMutation({
-    mutationFn: async (product: Product) => {
-      console.log('[DressMe] mutationFn called with product:', product?.id);
+    mutationFn: async ({ product, skipDuplicateCheck = false }: { product: Product; skipDuplicateCheck?: boolean }) => {
+      console.log('[Closet] mutationFn called with product:', product?.id);
       
       if (!user) {
-        console.log('[DressMe] No user, throwing error');
+        console.log('[Closet] No user, throwing error');
         throw new Error('You must be signed in to save items');
       }
 
+      // Check for duplicates unless skipped
+      if (!skipDuplicateCheck && product.id) {
+        const isDuplicate = await checkClosetDuplicate(user.id, product.id);
+        if (isDuplicate) {
+          throw new Error('DUPLICATE_ITEM');
+        }
+      }
+
       // Check limit before inserting
-      console.log('[DressMe] Checking wardrobe limit for user:', user.id);
+      console.log('[Closet] Checking wardrobe limit for user:', user.id);
       const { data: canAdd, error: checkError } = await supabase
         .rpc('can_add_wardrobe_item', { target_user_id: user.id });
 
       if (checkError) {
-        console.error('[DressMe] Limit check error:', checkError);
+        console.error('[Closet] Limit check error:', checkError);
         throw checkError;
       }
       
       if (!canAdd) {
-        console.log('[DressMe] Limit reached');
+        console.log('[Closet] Limit reached');
         throw new Error('Wardrobe item limit reached. Upgrade to premium for unlimited items.');
       }
 
       // Get the primary image
       const images = getProductImageUrls(product);
       const primaryImage = images[0] || '';
-      console.log('[DressMe] Images found:', images.length, 'Primary:', primaryImage?.substring(0, 50));
+      console.log('[Closet] Images found:', images.length, 'Primary:', primaryImage?.substring(0, 50));
 
       if (!primaryImage) {
-        console.log('[DressMe] No valid image found');
+        console.log('[Closet] No valid image found');
         throw new Error('Product has no valid image');
       }
 
@@ -73,18 +126,17 @@ export const useAddProductToWardrobe = () => {
         .insert({
           user_id: user.id,
           image_url: primaryImage,
-          image_bg_removed_url: null, // Could trigger bg removal later
+          image_bg_removed_url: null,
           category,
-          color: null, // Could extract from product attributes later
+          color: null,
           season: null,
           brand: brandName,
           is_favorite: false,
           tags: null,
           source: 'discover',
-          public_reuse_permitted: false, // User can enable later
+          public_reuse_permitted: false,
           attribution_user_id: null,
           thumb_path: null,
-          // NEW: Product source linking fields
           source_product_id: product.id,
           source_url: product.external_url || null,
           source_vendor_name: brandName,
@@ -93,21 +145,22 @@ export const useAddProductToWardrobe = () => {
         .single();
 
       if (error) {
-        console.error('[DressMe] Insert error:', error);
+        console.error('[Closet] Insert error:', error);
         if (error.code === '23505') {
-          throw new Error('This item is already in your wardrobe');
+          throw new Error('This item is already in your Closet');
         }
         throw error;
       }
       
-      console.log('[DressMe] Success! Inserted wardrobe item:', data?.id);
+      console.log('[Closet] Success! Inserted wardrobe item:', data?.id);
       return data;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['wardrobe-items'] });
       queryClient.invalidateQueries({ queryKey: ['wardrobe-limit'] });
-      toast.success('Saved to Dress Me!', {
-        description: 'Item added to your wardrobe',
+      queryClient.invalidateQueries({ queryKey: ['closet-duplicate-check'] });
+      toast.success('Added to Closet ✅', {
+        description: 'Item saved to your closet',
       });
       
       // Award points for adding wardrobe item (fire and forget)
@@ -116,14 +169,18 @@ export const useAddProductToWardrobe = () => {
       }
     },
     onError: (error: any) => {
-      console.error('Error adding product to wardrobe:', error);
+      console.error('Error adding product to closet:', error);
+      // Don't show toast for DUPLICATE_ITEM - handled by component
+      if (error.message === 'DUPLICATE_ITEM') {
+        return;
+      }
       if (error.message.includes('limit reached')) {
-        toast.error('Wardrobe limit reached', {
+        toast.error('Closet limit reached', {
           description: 'Upgrade to premium for unlimited items',
         });
-      } else if (error.message.includes('already in your wardrobe')) {
+      } else if (error.message.includes('already in your Closet')) {
         toast.info('Already saved', {
-          description: 'This item is already in your wardrobe',
+          description: 'This item is already in your Closet',
         });
       } else {
         toast.error('Failed to save item', {

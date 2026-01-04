@@ -3,14 +3,15 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { motion } from 'framer-motion';
-import { Info, Image, Sparkles, Shirt } from 'lucide-react';
+import { Info, Image, Sparkles, Shirt, Check } from 'lucide-react';
 import { SmartImage } from '@/components/SmartImage';
 import { SwipeActionBar } from '@/components/SwipeActionBar';
 import { getPrimaryImageUrl, hasMultipleImages, getImageCount } from '@/utils/imageHelpers';
 import { getBrandDisplayName } from '@/utils/brandHelpers';
 import { cn } from '@/lib/utils';
-import { useAddProductToWardrobe } from '@/hooks/useAddProductToWardrobe';
+import { useAddProductToWardrobe, checkClosetDuplicate } from '@/hooks/useAddProductToWardrobe';
 import { useAuth } from '@/contexts/AuthContext';
+import { DuplicateClosetDialog } from '@/components/DuplicateClosetDialog';
 
 interface SwipeProduct {
   id: string;
@@ -44,41 +45,84 @@ interface SwipeCardProps {
   motionProps: any;
 }
 
-// Separate component for Add to Dress Me button to use hooks
-const AddToDressMeButton = memo(({ product }: { product: SwipeProduct }) => {
+// Separate component for Add to Closet button to use hooks
+const AddToClosetButton = memo(({ product }: { product: SwipeProduct }) => {
   const { user } = useAuth();
   const { mutate: addToWardrobe, isPending } = useAddProductToWardrobe();
+  const [isAdded, setIsAdded] = useState(false);
+  const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
   
-  const handleClick = (e: React.MouseEvent) => {
+  const handleClick = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    console.log('[DressMe] clicked', product?.id, 'user:', !!user);
+    console.log('[Closet] clicked', product?.id, 'user:', !!user);
     
     if (!user) {
-      // Show explicit toast for non-logged-in users
       import('sonner').then(({ toast }) => {
-        toast.error('Sign in to save to Dress Me');
+        toast.error('Sign in to save to Closet');
       });
       return;
     }
     
-    addToWardrobe(product as any);
+    // Check for duplicates first
+    const isDuplicate = await checkClosetDuplicate(user.id, product.id);
+    if (isDuplicate) {
+      setShowDuplicateDialog(true);
+      return;
+    }
+    
+    addToWardrobe({ product: product as any, skipDuplicateCheck: true }, {
+      onSuccess: () => {
+        setIsAdded(true);
+        setTimeout(() => setIsAdded(false), 1500);
+      }
+    });
+  };
+
+  const handleConfirmDuplicate = () => {
+    setShowDuplicateDialog(false);
+    addToWardrobe({ product: product as any, skipDuplicateCheck: true }, {
+      onSuccess: () => {
+        setIsAdded(true);
+        setTimeout(() => setIsAdded(false), 1500);
+      }
+    });
   };
   
   return (
-    <Button
-      variant="ghost"
-      size="sm"
-      onClick={handleClick}
-      disabled={isPending}
-      className="h-auto px-2.5 py-1.5 rounded-full bg-background/70 backdrop-blur-sm hover:bg-background/90 shadow-lg opacity-80 hover:opacity-100 flex items-center gap-1.5"
-      title="Add to Dress Me"
-    >
-      <Shirt className="h-3.5 w-3.5" strokeWidth={2.5} />
-      <span className="text-xs font-medium">+ Dress Me</span>
-    </Button>
+    <>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={handleClick}
+        disabled={isPending || isAdded}
+        className={cn(
+          "h-auto px-2.5 py-1.5 rounded-full bg-background/70 backdrop-blur-sm hover:bg-background/90 shadow-lg opacity-80 hover:opacity-100 flex items-center gap-1.5 transition-all",
+          isAdded && "bg-green-500/80 text-white"
+        )}
+        title="Add to Closet"
+      >
+        {isAdded ? (
+          <>
+            <Check className="h-3.5 w-3.5" strokeWidth={2.5} />
+            <span className="text-xs font-medium">Added</span>
+          </>
+        ) : (
+          <>
+            <Shirt className="h-3.5 w-3.5" strokeWidth={2.5} />
+            <span className="text-xs font-medium">+ Closet</span>
+          </>
+        )}
+      </Button>
+      
+      <DuplicateClosetDialog
+        isOpen={showDuplicateDialog}
+        onClose={() => setShowDuplicateDialog(false)}
+        onConfirm={handleConfirmDuplicate}
+      />
+    </>
   );
 });
-AddToDressMeButton.displayName = 'AddToDressMeButton';
+AddToClosetButton.displayName = 'AddToClosetButton';
 
 const SwipeCard = memo(({
   product,
@@ -173,8 +217,8 @@ const SwipeCard = memo(({
               )}
             </div>
 
-            {/* Right side action buttons */}
-            <div className="flex flex-col gap-2">
+            {/* Right side action buttons - moved down slightly to avoid gesture conflicts */}
+            <div className="flex flex-col gap-2 mt-8">
               {/* Info button */}
               <Button
                 variant="ghost"
@@ -188,8 +232,8 @@ const SwipeCard = memo(({
                 <Info className="h-4 w-4" strokeWidth={2.5} />
               </Button>
               
-              {/* Add to Dress Me button - semi-transparent */}
-              <AddToDressMeButton product={product} />
+              {/* Add to Closet button */}
+              <AddToClosetButton product={product} />
             </div>
           </div>
 
