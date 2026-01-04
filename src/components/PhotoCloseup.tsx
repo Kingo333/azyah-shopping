@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { X, Share2, Heart, ShoppingBag, ExternalLink, ArrowLeft, Ruler, Shirt } from 'lucide-react';
+import { X, Share2, Heart, ShoppingBag, ExternalLink, ArrowLeft, Ruler, Shirt, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useWishlist } from '@/hooks/useWishlist';
-import { useAddProductToWardrobe } from '@/hooks/useAddProductToWardrobe';
+import { useAddProductToWardrobe, checkClosetDuplicate } from '@/hooks/useAddProductToWardrobe';
 import { supabase } from '@/integrations/supabase/client';
 import { Product } from '@/types';
 import SimilarItemsGrid from './SimilarItemsGrid';
@@ -16,6 +16,8 @@ import { getProductImageUrls } from '@/utils/imageHelpers';
 import { SmartImage } from '@/components/SmartImage';
 import { imageUrlFrom, extractSupabasePath } from '@/lib/imageUrl';
 import { isSupabaseAbsoluteUrl } from '@/lib/urlGuards';
+import { DuplicateClosetDialog } from '@/components/DuplicateClosetDialog';
+import { cn } from '@/lib/utils';
 
 interface PhotoCloseupProps {
   onClose?: () => void;
@@ -34,6 +36,8 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
   const [showProductDetail, setShowProductDetail] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showSizeChart, setShowSizeChart] = useState(false);
+  const [isAddedToCloset, setIsAddedToCloset] = useState(false);
+  const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
   
   const isOverlay = searchParams.get('from') === 'list';
   const productId = id || initialProduct?.id;
@@ -444,23 +448,47 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
                 <ShoppingBag className="h-4 w-4 mr-1" />
                 Save
               </Button>
-              {/* Save to Dress Me button - softened styling with explicit feedback */}
+              {/* Save to Closet button */}
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => {
-                  console.log('[DressMe] clicked', product?.id, 'user:', !!user);
+                onClick={async () => {
+                  console.log('[Closet] clicked', product?.id, 'user:', !!user);
                   if (!user) {
-                    toast({ title: 'Sign in to save to Dress Me', variant: 'destructive' });
+                    toast({ title: 'Sign in to save to Closet', variant: 'destructive' });
                     return;
                   }
-                  if (product) addToWardrobe(product);
+                  if (product) {
+                    const isDuplicate = await checkClosetDuplicate(user.id, product.id);
+                    if (isDuplicate) {
+                      setShowDuplicateDialog(true);
+                      return;
+                    }
+                    addToWardrobe({ product, skipDuplicateCheck: true }, {
+                      onSuccess: () => {
+                        setIsAddedToCloset(true);
+                        setTimeout(() => setIsAddedToCloset(false), 1500);
+                      }
+                    });
+                  }
                 }}
-                disabled={wardrobeLoading}
-                className="flex-1 min-w-[90px] opacity-80 hover:opacity-100"
+                disabled={wardrobeLoading || isAddedToCloset}
+                className={cn(
+                  "flex-1 min-w-[90px] opacity-80 hover:opacity-100 transition-all",
+                  isAddedToCloset && "bg-green-500/80 text-white border-green-500"
+                )}
               >
-                <Shirt className="h-4 w-4 mr-1" />
-                + Dress Me
+                {isAddedToCloset ? (
+                  <>
+                    <Check className="h-4 w-4 mr-1" />
+                    Added
+                  </>
+                ) : (
+                  <>
+                    <Shirt className="h-4 w-4 mr-1" />
+                    + Closet
+                  </>
+                )}
               </Button>
               {sizeChartUrl && (
                 <Button
@@ -626,22 +654,46 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
                   <ShoppingBag className="h-4 w-4 mr-2" />
                   Save
                 </Button>
-                {/* Save to Dress Me button - Desktop with explicit feedback */}
+                {/* Save to Closet button - Desktop */}
                 <Button
                   variant="outline"
-                  onClick={() => {
-                    console.log('[DressMe] clicked', product?.id, 'user:', !!user);
+                  onClick={async () => {
+                    console.log('[Closet] clicked', product?.id, 'user:', !!user);
                     if (!user) {
-                      toast({ title: 'Sign in to save to Dress Me', variant: 'destructive' });
+                      toast({ title: 'Sign in to save to Closet', variant: 'destructive' });
                       return;
                     }
-                    if (product) addToWardrobe(product);
+                    if (product) {
+                      const isDuplicate = await checkClosetDuplicate(user.id, product.id);
+                      if (isDuplicate) {
+                        setShowDuplicateDialog(true);
+                        return;
+                      }
+                      addToWardrobe({ product, skipDuplicateCheck: true }, {
+                        onSuccess: () => {
+                          setIsAddedToCloset(true);
+                          setTimeout(() => setIsAddedToCloset(false), 1500);
+                        }
+                      });
+                    }
                   }}
-                  disabled={wardrobeLoading}
-                  className="flex-1 opacity-80 hover:opacity-100"
+                  disabled={wardrobeLoading || isAddedToCloset}
+                  className={cn(
+                    "flex-1 opacity-80 hover:opacity-100 transition-all",
+                    isAddedToCloset && "bg-green-500/80 text-white border-green-500"
+                  )}
                 >
-                  <Shirt className="h-4 w-4 mr-2" />
-                  + Dress Me
+                  {isAddedToCloset ? (
+                    <>
+                      <Check className="h-4 w-4 mr-2" />
+                      Added
+                    </>
+                  ) : (
+                    <>
+                      <Shirt className="h-4 w-4 mr-2" />
+                      + Closet
+                    </>
+                  )}
                 </Button>
                 {sizeChartUrl && (
                   <Button
@@ -726,6 +778,23 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
           />
         </div>
       )}
+
+      {/* Duplicate Closet Dialog */}
+      <DuplicateClosetDialog
+        isOpen={showDuplicateDialog}
+        onClose={() => setShowDuplicateDialog(false)}
+        onConfirm={() => {
+          setShowDuplicateDialog(false);
+          if (product) {
+            addToWardrobe({ product, skipDuplicateCheck: true }, {
+              onSuccess: () => {
+                setIsAddedToCloset(true);
+                setTimeout(() => setIsAddedToCloset(false), 1500);
+              }
+            });
+          }
+        }}
+      />
     </div>
   );
 };

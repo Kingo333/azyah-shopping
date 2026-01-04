@@ -5,7 +5,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Heart, X, ShoppingBag, Sparkles, Info, ExternalLink, Image, User, Shirt } from 'lucide-react';
+import { Heart, X, ShoppingBag, Sparkles, Info, ExternalLink, Image, User, Shirt, Check } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useWishlist } from '@/hooks/useWishlist';
@@ -22,7 +22,9 @@ import { getBrandDisplayName } from '@/utils/brandHelpers';
 import type { SubCategory } from '@/lib/categories';
 import { useGuestGate } from '@/hooks/useGuestGate';
 import { GuestActionPrompt } from '@/components/GuestActionPrompt';
-import { useAddProductToWardrobe } from '@/hooks/useAddProductToWardrobe';
+import { useAddProductToWardrobe, checkClosetDuplicate } from '@/hooks/useAddProductToWardrobe';
+import { DuplicateClosetDialog } from '@/components/DuplicateClosetDialog';
+import { cn } from '@/lib/utils';
 
 interface ProductListViewProps {
   products: Product[];
@@ -48,6 +50,8 @@ const ProductCard: React.FC<{
   const { data: hasOutfit, isLoading: outfitLoading, error: outfitError } = useProductHasOutfit(product.id);
   const { mutate: addToWardrobe, isPending: wardrobeLoading } = useAddProductToWardrobe();
   const [tryOnModalOpen, setTryOnModalOpen] = useState(false);
+  const [isAdded, setIsAdded] = useState(false);
+  const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
 
   // Show head icon when outfit exists
   const shouldShowHeadIcon = hasOutfit === true;
@@ -73,10 +77,33 @@ const ProductCard: React.FC<{
     });
   };
 
-  const handleAddToWardrobe = () => {
-    requireAuth('save to Dress Me', () => {
+  const handleAddToWardrobe = async () => {
+    requireAuth('save to Closet', async () => {
       if (!user) return;
-      addToWardrobe(product as any);
+      
+      // Check for duplicates first
+      const isDuplicate = await checkClosetDuplicate(user.id, product.id);
+      if (isDuplicate) {
+        setShowDuplicateDialog(true);
+        return;
+      }
+      
+      addToWardrobe({ product: product as any, skipDuplicateCheck: true }, {
+        onSuccess: () => {
+          setIsAdded(true);
+          setTimeout(() => setIsAdded(false), 1500);
+        }
+      });
+    });
+  };
+
+  const handleConfirmDuplicate = () => {
+    setShowDuplicateDialog(false);
+    addToWardrobe({ product: product as any, skipDuplicateCheck: true }, {
+      onSuccess: () => {
+        setIsAdded(true);
+        setTimeout(() => setIsAdded(false), 1500);
+      }
     });
   };
 
@@ -196,7 +223,7 @@ const ProductCard: React.FC<{
               )}
             </div>
             
-            {/* + Dress Me button - semi-transparent */}
+            {/* + Closet button */}
             <Button
               variant="outline"
               size="sm"
@@ -204,11 +231,23 @@ const ProductCard: React.FC<{
                 e.stopPropagation();
                 handleAddToWardrobe();
               }}
-              disabled={wardrobeLoading}
-              className="w-full text-xs h-8 opacity-80 hover:opacity-100 backdrop-blur-sm"
+              disabled={wardrobeLoading || isAdded}
+              className={cn(
+                "w-full text-xs h-8 opacity-80 hover:opacity-100 backdrop-blur-sm transition-all",
+                isAdded && "bg-green-500/80 text-white border-green-500"
+              )}
             >
-              <Shirt className="h-3.5 w-3.5 mr-1" />
-              + Dress Me
+              {isAdded ? (
+                <>
+                  <Check className="h-3.5 w-3.5 mr-1" />
+                  Added
+                </>
+              ) : (
+                <>
+                  <Shirt className="h-3.5 w-3.5 mr-1" />
+                  + Closet
+                </>
+              )}
             </Button>
           </div>
         </div>
@@ -219,6 +258,13 @@ const ProductCard: React.FC<{
         isOpen={tryOnModalOpen}
         onClose={() => setTryOnModalOpen(false)}
         product={product}
+      />
+      
+      {/* Duplicate Closet Dialog */}
+      <DuplicateClosetDialog
+        isOpen={showDuplicateDialog}
+        onClose={() => setShowDuplicateDialog(false)}
+        onConfirm={handleConfirmDuplicate}
       />
     </div>
   );

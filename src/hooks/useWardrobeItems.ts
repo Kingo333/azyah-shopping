@@ -20,6 +20,10 @@ export interface WardrobeItem {
   attribution_user_id: string | null;
   thumb_path: string | null;
   created_at: string;
+  // Product source linking fields
+  source_product_id?: string | null;
+  source_url?: string | null;
+  source_vendor_name?: string | null;
 }
 
 export const useWardrobeItems = () => {

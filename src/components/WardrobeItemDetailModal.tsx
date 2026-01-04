@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { WardrobeItem } from '@/hooks/useWardrobeItems';
-import { Sparkles, Loader2, CheckCircle } from 'lucide-react';
+import { Sparkles, Loader2, CheckCircle, ExternalLink } from 'lucide-react';
 import { useEnhanceWardrobeItem } from '@/hooks/useEnhanceWardrobeItem';
 import { useUserCredits } from '@/hooks/useUserCredits';
 import { toast } from 'sonner';
@@ -72,6 +72,12 @@ export const WardrobeItemDetailModal: React.FC<WardrobeItemDetailModalProps> = (
     }
   };
 
+  const handleShopItem = () => {
+    if (item.source_url) {
+      window.open(item.source_url, '_blank', 'noopener,noreferrer');
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-lg">
@@ -101,6 +107,12 @@ export const WardrobeItemDetailModal: React.FC<WardrobeItemDetailModalProps> = (
                 <span className="font-medium capitalize">{item.color}</span>
               </div>
             )}
+            {item.brand && (
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Brand</span>
+                <span className="font-medium">{item.brand}</span>
+              </div>
+            )}
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Uploaded</span>
               <span className="font-medium">
@@ -108,6 +120,18 @@ export const WardrobeItemDetailModal: React.FC<WardrobeItemDetailModalProps> = (
               </span>
             </div>
           </div>
+
+          {/* Shop This Item Button */}
+          {item.source_url && (
+            <Button
+              onClick={handleShopItem}
+              variant="outline"
+              className="w-full"
+            >
+              <ExternalLink className="w-4 h-4 mr-2" />
+              Shop This Item
+            </Button>
+          )}
 
           {/* Enhancement Status */}
           {enhanceMutation.isPending && (
