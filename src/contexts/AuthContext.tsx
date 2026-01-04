@@ -77,15 +77,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             // OAuth has been removed - email/password only for all roles
             // Legacy OAuth users will be prompted to reset their password
             
-            // Initialize IAP and identify user in RevenueCat on iOS
+            // Initialize IAP and identify user in RevenueCat on iOS (fire-and-forget)
             if (Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'ios') {
-              try {
-                const { initIap, setIapUserId } = await import('@/lib/iap');
-                await initIap();
-                await setIapUserId(session.user.id);
-              } catch (error) {
-                console.error('Failed to initialize IAP after sign-in:', error);
-              }
+              setTimeout(async () => {
+                try {
+                  const { initIap, setIapUserId } = await import('@/lib/iap');
+                  await initIap();
+                  await setIapUserId(session.user.id);
+                } catch (error) {
+                  console.error('Failed to initialize IAP after sign-in:', error);
+                }
+              }, 0);
             }
           }
           
@@ -123,15 +125,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return;
         }
         
-        // If we have an existing session on iOS, initialize IAP
+        // If we have an existing session on iOS, initialize IAP (fire-and-forget)
         if (session && Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'ios') {
-          try {
-            const { initIap, setIapUserId } = await import('@/lib/iap');
-            await initIap();
-            await setIapUserId(session.user.id);
-          } catch (error) {
-            console.error('Failed to initialize IAP on session restore:', error);
-          }
+          setTimeout(async () => {
+            try {
+              const { initIap, setIapUserId } = await import('@/lib/iap');
+              await initIap();
+              await setIapUserId(session.user.id);
+            } catch (error) {
+              console.error('Failed to initialize IAP on session restore:', error);
+            }
+          }, 0);
         }
         
         setSession(session);
