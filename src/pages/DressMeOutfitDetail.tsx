@@ -8,6 +8,7 @@ import { SEOHead } from '@/components/SEOHead';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/contexts/AuthContext';
+import { nativeShare } from '@/lib/nativeShare';
 
 export default function DressMeOutfitDetail() {
   const { id } = useParams<{ id: string }>();
@@ -84,21 +85,10 @@ export default function DressMeOutfitDetail() {
   const handleShare = async () => {
     if (!outfit) return;
     
-    const shareUrl = `${window.location.origin}/dress-me/outfit/${outfit.id}`;
-    
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: outfit.title || 'Check out this outfit!',
-          url: shareUrl,
-        });
-      } catch (err) {
-        // User cancelled or error
-      }
-    } else {
-      await navigator.clipboard.writeText(shareUrl);
-      toast.success('Link copied to clipboard!');
-    }
+    await nativeShare({
+      title: outfit.title || 'Check out this outfit!',
+      url: `${window.location.origin}/dress-me/outfit/${outfit.id}`,
+    });
   };
 
   if (isLoading) {

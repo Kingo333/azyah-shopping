@@ -98,12 +98,15 @@ export function useAwardPoints() {
 /**
  * Convenience function to award points after a successful action
  * Fire-and-forget - doesn't block the main flow
+ * @param showToast - Whether to show a toast notification (default: true)
+ * @returns The points awarded, or null if failed/duplicate/limit
  */
 export async function awardPointsAsync(
   actionType: PointsActionType,
   sourceId?: string,
-  idempotencyKey?: string
-): Promise<void> {
+  idempotencyKey?: string,
+  showToast: boolean = true
+): Promise<number | null> {
   try {
     const { data, error } = await supabase.rpc('award_points', {
       p_action_type: actionType,
@@ -114,15 +117,21 @@ export async function awardPointsAsync(
 
     if (error) {
       console.error('[awardPointsAsync] Error:', error);
-      return;
+      return null;
     }
 
     const result = data as unknown as AwardPointsResult;
     
     if (result.success) {
-      toast.success(`+${result.points_awarded} points!`, { duration: 2000 });
+      if (showToast) {
+        toast.success(`+${result.points_awarded} points!`, { duration: 2000 });
+      }
+      return result.points_awarded || null;
     }
+    
+    return null;
   } catch (err) {
     console.error('[awardPointsAsync] Unexpected error:', err);
+    return null;
   }
 }

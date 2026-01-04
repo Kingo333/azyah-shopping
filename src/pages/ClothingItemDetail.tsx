@@ -11,6 +11,7 @@ import { SEOHead } from '@/components/SEOHead';
 import { Share2, Plus, ExternalLink, ShoppingBag } from 'lucide-react';
 import { toast } from 'sonner';
 import { openExternalUrl } from '@/lib/openExternalUrl';
+import { nativeShare } from '@/lib/nativeShare';
 
 const seasonIcons: Record<string, string> = {
   spring: '🌸',
@@ -72,21 +73,10 @@ export default function ClothingItemDetail() {
   });
 
   const handleShare = async () => {
-    const url = window.location.href;
-
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: item?.name || 'Check out this item',
-          url,
-        });
-      } catch (error) {
-        // User cancelled
-      }
-    } else {
-      await navigator.clipboard.writeText(url);
-      toast.success('Link copied to clipboard');
-    }
+    await nativeShare({
+      title: item?.name || 'Check out this item',
+      url: window.location.href,
+    });
   };
 
   const handleAddToWardrobe = () => {

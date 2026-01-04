@@ -6,6 +6,7 @@ import { Heart, Share2, Flag, Copy, Download } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { nativeShare } from '@/lib/nativeShare';
 
 interface PublicFit {
   id: string;
@@ -39,21 +40,11 @@ export const FitDetailsModal: React.FC<FitDetailsModalProps> = ({
   if (!fit) return null;
 
   const handleShare = async () => {
-    if (navigator.share && fit.render_path) {
-      try {
-        await navigator.share({
-          title: fit.title || 'Check out this fit!',
-          text: `By @${fit.creator_username}`,
-          url: window.location.href,
-        });
-      } catch (err) {
-        await navigator.clipboard.writeText(window.location.href);
-        toast.success('Link copied to clipboard');
-      }
-    } else {
-      await navigator.clipboard.writeText(window.location.href);
-      toast.success('Link copied to clipboard');
-    }
+    await nativeShare({
+      title: fit.title || 'Check out this fit!',
+      text: `By @${fit.creator_username}`,
+      url: window.location.href,
+    });
   };
 
   const handleReport = async () => {

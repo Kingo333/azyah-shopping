@@ -6,6 +6,7 @@ import { SEOHead } from '@/components/SEOHead';
 import { ArrowLeft, ExternalLink, Share2, ShoppingBag } from 'lucide-react';
 import { toast } from 'sonner';
 import { openExternalUrl } from '@/lib/openExternalUrl';
+import { nativeShare } from '@/lib/nativeShare';
 
 interface PublicItem {
   id: string;
@@ -91,21 +92,10 @@ export default function PublicItemView() {
   });
 
   const handleShare = async () => {
-    const url = window.location.href;
-
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: `${item?.brand || 'Item'} - Azyah`,
-          url,
-        });
-      } catch {
-        // User cancelled
-      }
-    } else {
-      await navigator.clipboard.writeText(url);
-      toast.success('Link copied to clipboard');
-    }
+    await nativeShare({
+      title: `${item?.brand || 'Item'} - Azyah`,
+      url: window.location.href,
+    });
   };
 
   const handleShopNow = () => {
