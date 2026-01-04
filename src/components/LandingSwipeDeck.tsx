@@ -10,6 +10,7 @@ import { motion, AnimatePresence, PanInfo, useMotionValue, useTransform, animate
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import ProductDetailPage from '@/components/ProductDetailPage';
+import { openExternalUrl } from '@/lib/openExternalUrl';
 
 interface LandingSwipeDeckProps {
   filter: string;
@@ -506,13 +507,12 @@ const LandingSwipeDeck: React.FC<LandingSwipeDeckProps> = ({
                         
                         const url = currentProduct.external_url;
                         if (url) {
-                          // Always open in new tab/window
-                          window.open(url, '_blank', 'noopener,noreferrer');
+                          openExternalUrl(url);
                         } else {
                           // Fallback: search for the product on Google
                           const searchQuery = encodeURIComponent(`${currentProduct.title} ${currentProduct.brand?.name || ''}`);
                           const searchUrl = `https://www.google.com/search?q=${searchQuery}`;
-                          window.open(searchUrl, '_blank', 'noopener,noreferrer');
+                          openExternalUrl(searchUrl);
                         }
                       }}
                       className="w-full gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground font-semibold shadow-lg"

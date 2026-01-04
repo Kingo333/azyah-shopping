@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useWishlist } from '@/hooks/useWishlist';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { openExternalUrl } from '@/lib/openExternalUrl';
 
 interface SimilarItemCardProps {
   item: Product;
@@ -169,7 +170,7 @@ const SimilarItemCard: React.FC<SimilarItemCardProps> = ({ item, onItemClick, on
                 size="sm"
                 onClick={(e) => {
                   e.stopPropagation();
-                  window.open(item.external_url, '_blank', 'noopener,noreferrer');
+                  openExternalUrl(item.external_url);
                 }}
                 className="flex-1 text-xs h-8"
               >

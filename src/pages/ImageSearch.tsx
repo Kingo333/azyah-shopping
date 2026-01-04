@@ -22,6 +22,7 @@ import {
 import { pipeline } from '@huggingface/transformers';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Product } from '@/types';
+import { openExternalUrl } from '@/lib/openExternalUrl';
 
 interface SearchResult {
   id: string;
@@ -361,7 +362,7 @@ const ImageSearch: React.FC = () => {
   };
 
   const handleExternalProductClick = (result: ExternalSearchResult) => {
-    window.open(result.external_url, '_blank');
+    openExternalUrl(result.external_url);
   };
 
   return (

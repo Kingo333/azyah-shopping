@@ -25,6 +25,7 @@ import { GuestActionPrompt } from '@/components/GuestActionPrompt';
 import { useAddProductToWardrobe, checkClosetDuplicate } from '@/hooks/useAddProductToWardrobe';
 import { DuplicateClosetDialog } from '@/components/DuplicateClosetDialog';
 import { cn } from '@/lib/utils';
+import { openExternalUrl } from '@/lib/openExternalUrl';
 
 interface ProductListViewProps {
   products: Product[];
@@ -215,7 +216,7 @@ const ProductCard: React.FC<{
                 <Button
                   variant="destructive"
                   size="sm"
-                  onClick={() => window.open(product.external_url, '_blank', 'noopener,noreferrer')}
+                  onClick={() => openExternalUrl(product.external_url)}
                   className="flex-1 text-xs h-8"
                 >
                   Shop Now

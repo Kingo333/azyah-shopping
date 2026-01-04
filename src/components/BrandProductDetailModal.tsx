@@ -14,6 +14,7 @@ import { AdvancedSizeColorSelector } from '@/components/AdvancedSizeColorSelecto
 import { SizeChartUpload } from '@/components/SizeChartUpload';
 import { useProductAnalytics } from '@/hooks/useAnalytics';
 import { getProductImageUrls } from '@/utils/imageHelpers';
+import { openExternalUrl } from '@/lib/openExternalUrl';
 
 interface BrandProductDetailModalProps {
   product: Product | null;
@@ -208,7 +209,7 @@ export const BrandProductDetailModal: React.FC<BrandProductDetailModalProps> = (
                   <Share2 className="h-4 w-4" />
                 </Button>
                 {product.external_url && (
-                  <Button variant="ghost" size="sm" onClick={() => window.open(product.external_url, '_blank')}>
+                  <Button variant="ghost" size="sm" onClick={() => openExternalUrl(product.external_url)}>
                     <ExternalLink className="h-4 w-4" />
                   </Button>
                 )}
@@ -400,7 +401,7 @@ export const BrandProductDetailModal: React.FC<BrandProductDetailModalProps> = (
                 <Button 
                   variant="outline" 
                   size="sm" 
-                  onClick={() => window.open(product.external_url, '_blank')}
+                  onClick={() => openExternalUrl(product.external_url)}
                   className="border-purple-300 text-purple-600 hover:bg-purple-100"
                 >
                   <ExternalLink className="h-3 w-3 mr-1" />

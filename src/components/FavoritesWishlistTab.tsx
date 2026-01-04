@@ -12,6 +12,7 @@ import { Heart, Plus, Trash2, ExternalLink, Grid, List } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { SmartImage } from '@/components/SmartImage';
 import { getPrimaryImageUrl } from '@/utils/imageHelpers';
+import { openExternalUrl } from '@/lib/openExternalUrl';
 
 interface Wishlist {
   id: string;
@@ -297,7 +298,7 @@ const FavoritesWishlistTab: React.FC = () => {
                     </p>
                     {item.product.external_url && (
                       <Button
-                        onClick={() => window.open(item.product.external_url, '_blank')}
+                        onClick={() => openExternalUrl(item.product.external_url)}
                         className="w-full mt-2"
                         size="sm"
                       >

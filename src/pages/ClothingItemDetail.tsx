@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { SEOHead } from '@/components/SEOHead';
 import { Share2, Plus, ExternalLink, ShoppingBag } from 'lucide-react';
 import { toast } from 'sonner';
+import { openExternalUrl } from '@/lib/openExternalUrl';
 
 const seasonIcons: Record<string, string> = {
   spring: '🌸',
@@ -237,7 +238,7 @@ export default function ClothingItemDetail() {
               <Button
                 variant="default"
                 className="flex-1"
-                onClick={() => window.open((item as any).source_url, '_blank', 'noopener,noreferrer')}
+                onClick={() => openExternalUrl((item as any).source_url)}
               >
                 <ShoppingBag className="w-4 h-4 mr-2" />
                 Shop Item

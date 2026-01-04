@@ -11,6 +11,7 @@ import { useProductHasOutfit } from '@/hooks/useProductOutfits';
 import ProductTryOnModal from '@/components/ProductTryOnModal';
 import { SmartImage } from '@/components/SmartImage';
 import { getPrimaryImageUrl } from '@/utils/imageHelpers';
+import { openExternalUrl } from '@/lib/openExternalUrl';
 
 interface LikedProduct {
   id: string;
@@ -121,7 +122,7 @@ const LikeCard: React.FC<{
                   variant="default"
                   size="sm"
                   className="flex-1 h-8"
-                  onClick={() => window.open(like.products!.external_url, '_blank')}
+                  onClick={() => openExternalUrl(like.products!.external_url)}
                 >
                   <ExternalLink className="h-3 w-3 mr-1" />
                   Shop

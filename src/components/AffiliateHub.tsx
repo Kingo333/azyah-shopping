@@ -37,6 +37,7 @@ import {
   ChevronUp,
   Share2
 } from 'lucide-react';
+import { openExternalUrl } from '@/lib/openExternalUrl';
 
 interface AffiliateLink {
   id: string;
@@ -416,7 +417,7 @@ const AffiliateHub: React.FC<AffiliateHubProps> = ({ showTitle = true }) => {
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => window.open(link.affiliate_url, '_blank')}
+                              onClick={() => openExternalUrl(link.affiliate_url)}
                               className="h-8 w-8 p-0 rounded-lg"
                             >
                               <ExternalLink className="h-3 w-3" />

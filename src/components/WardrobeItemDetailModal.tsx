@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { Progress } from '@/components/ui/progress';
 import { Switch } from '@/components/ui/switch';
 import { supabase } from '@/integrations/supabase/client';
+import { openExternalUrl } from '@/lib/openExternalUrl';
 
 interface WardrobeItemDetailModalProps {
   item: WardrobeItem | null;
@@ -73,9 +74,7 @@ export const WardrobeItemDetailModal: React.FC<WardrobeItemDetailModalProps> = (
   };
 
   const handleShopItem = () => {
-    if (item.source_url) {
-      window.open(item.source_url, '_blank', 'noopener,noreferrer');
-    }
+    openExternalUrl(item.source_url);
   };
 
   return (

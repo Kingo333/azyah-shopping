@@ -13,6 +13,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useProductAnalytics } from '@/hooks/useAnalytics';
 import { SmartImage } from '@/components/SmartImage';
 import { getPrimaryImageUrl } from '@/utils/imageHelpers';
+import { openExternalUrl } from '@/lib/openExternalUrl';
 
 interface Wishlist {
   id: string;
@@ -179,17 +180,9 @@ export const WishlistManager: React.FC = () => {
 
   // Privacy toggle removed - all wishlists are now private for security
 
-  const handleShopNow = (product: WishlistItem['product']) => {
-    if (product.external_url) {
-      trackProductClick(product.id, 'wishlist_shop_now');
-      window.open(product.external_url, '_blank', 'noopener,noreferrer');
-    } else {
-      toast({
-        title: "Shop link not available",
-        description: "This product doesn't have a shop link available.",
-        variant: "destructive"
-      });
-    }
+  const handleShopNow = async (product: WishlistItem['product']) => {
+    trackProductClick(product.id, 'wishlist_shop_now');
+    await openExternalUrl(product.external_url);
   };
 
   const formatPrice = (cents: number, currency: string = 'USD') => {

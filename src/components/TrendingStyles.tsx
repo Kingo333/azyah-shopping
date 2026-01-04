@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { TrendingUp, Heart, ShoppingBag, ExternalLink } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { openExternalUrl } from '@/lib/openExternalUrl';
 
 interface TrendingStyle {
   category: string;
@@ -171,23 +172,15 @@ const TrendingStyles: React.FC<TrendingStylesProps> = ({ limit = 6, showMore = t
         .eq('id', productId)
         .single();
 
-      if (product?.external_url) {
-        window.open(product.external_url, '_blank', 'noopener,noreferrer');
-        
-        // Track analytics if user is logged in
-        if (user) {
-          supabase.from('events').insert({
-            user_id: user.id,
-            event_type: 'trending_styles_shop_now',
-            event_data: { source: 'trending_styles' },
-            product_id: productId
-          });
-        }
-      } else {
-        toast({
-          title: "Shop link not available",
-          description: "This product doesn't have a shop link available.",
-          variant: "destructive"
+      const opened = await openExternalUrl(product?.external_url);
+      
+      // Track analytics if user is logged in and link was opened
+      if (opened && user) {
+        supabase.from('events').insert({
+          user_id: user.id,
+          event_type: 'trending_styles_shop_now',
+          event_data: { source: 'trending_styles' },
+          product_id: productId
         });
       }
     } catch (error) {
