@@ -155,18 +155,21 @@ export const useAddProductToWardrobe = () => {
       console.log('[Closet] Success! Inserted wardrobe item:', data?.id);
       return data;
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       queryClient.invalidateQueries({ queryKey: ['wardrobe-items'] });
       queryClient.invalidateQueries({ queryKey: ['wardrobe-limit'] });
       queryClient.invalidateQueries({ queryKey: ['closet-duplicate-check'] });
-      toast.success('Added to Closet ✅', {
+      
+      // Award points for adding wardrobe item (don't show separate toast)
+      let pointsAwarded: number | null = null;
+      if (data?.id) {
+        pointsAwarded = await awardPointsAsync('wardrobe_add', data.id, `wardrobe:${data.id}`, false);
+      }
+      
+      // Show single combined toast
+      toast.success(`Added to Closet${pointsAwarded ? ` +${pointsAwarded} points` : ''} ✅`, {
         description: 'Item saved to your closet',
       });
-      
-      // Award points for adding wardrobe item (fire and forget)
-      if (data?.id) {
-        awardPointsAsync('wardrobe_add', data.id, `wardrobe:${data.id}`);
-      }
     },
     onError: (error: any) => {
       console.error('Error adding product to closet:', error);

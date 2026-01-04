@@ -262,12 +262,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           description: errorMessage,
           variant: "destructive"
         });
-      } else {
-        toast({
-          title: "Welcome back!",
-          description: "You have been successfully logged in."
-        });
       }
+      // Note: Success toast is shown in SignUp.tsx to avoid duplicate toasts
 
       return { error };
     } catch (err) {

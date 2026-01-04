@@ -7,6 +7,7 @@ import { SEOHead } from '@/components/SEOHead';
 import { Share2, ExternalLink, Heart, ArrowLeft } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
+import { nativeShare } from '@/lib/nativeShare';
 
 interface OutfitItem {
   id: string;
@@ -93,21 +94,10 @@ export default function PublicOutfitView() {
   });
 
   const handleShare = async () => {
-    const url = window.location.href;
-
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: outfit?.title || 'Check out this outfit on Azyah',
-          url,
-        });
-      } catch {
-        // User cancelled
-      }
-    } else {
-      await navigator.clipboard.writeText(url);
-      toast.success('Link copied to clipboard');
-    }
+    await nativeShare({
+      title: outfit?.title || 'Check out this outfit on Azyah',
+      url: window.location.href,
+    });
   };
 
   const handleItemClick = (item: OutfitItem) => {

@@ -12,6 +12,7 @@ import { Share2 } from 'lucide-react';
 import { SEOHead } from '@/components/SEOHead';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
+import { nativeShare } from '@/lib/nativeShare';
 
 export default function OutfitDetail() {
   const { id } = useParams();
@@ -88,21 +89,10 @@ export default function OutfitDetail() {
   });
 
   const handleShare = async () => {
-    const url = window.location.href;
-
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: fit?.title || 'Check out this outfit',
-          url,
-        });
-      } catch (error) {
-        // User cancelled
-      }
-    } else {
-      await navigator.clipboard.writeText(url);
-      toast.success('Link copied to clipboard');
-    }
+    await nativeShare({
+      title: fit?.title || 'Check out this outfit',
+      url: window.location.href,
+    });
   };
 
   const handleUseOutfit = () => {
