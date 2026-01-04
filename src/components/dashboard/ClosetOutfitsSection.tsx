@@ -131,7 +131,7 @@ export const ClosetOutfitsSection: React.FC = () => {
         </div>
         
         {/* Rewards hint text */}
-        <p className="text-[9px] text-muted-foreground mb-1.5 leading-tight">
+        <p className="text-[10px] text-muted-foreground mb-1.5 leading-tight">
           Style outfits with brand items to earn salon rewards
         </p>
         

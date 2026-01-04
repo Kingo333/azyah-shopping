@@ -127,8 +127,11 @@ export const EnhancedProductGallery: React.FC<EnhancedProductGalleryProps> = ({
             {images.map((image, index) => (
               <motion.button
                 key={index}
-                onClick={() => handleImageChange(index)}
-                className={`flex-shrink-0 w-10 h-10 md:w-12 md:h-12 rounded border-2 overflow-hidden transition-all duration-200 bg-background/90 backdrop-blur-sm ${
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleImageChange(index);
+                }}
+                className={`flex-shrink-0 w-10 h-10 md:w-12 md:h-12 rounded border-2 overflow-hidden transition-all duration-200 bg-background/90 backdrop-blur-sm cursor-pointer ${
                   selectedImage === index 
                     ? 'border-primary shadow-md scale-105' 
                     : 'border-border hover:border-primary/50'
@@ -139,7 +142,7 @@ export const EnhancedProductGallery: React.FC<EnhancedProductGalleryProps> = ({
                 <SmartImage
                   src={image}
                   alt={`${productTitle} thumbnail ${index + 1}`}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover pointer-events-none"
                   sizes="40px"
                   loading="lazy"
                 />

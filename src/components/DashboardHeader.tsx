@@ -56,7 +56,7 @@ const DashboardHeader: React.FC = () => {
             onClick={handleUpgradeClick}
             variant="outline"
             size="sm"
-            className="text-[10px] px-2.5 py-0.5 h-6 rounded-full border-[hsl(var(--azyah-border))] hover:bg-[hsl(var(--azyah-ivory))]"
+            className="text-[10px] px-2.5 py-0.5 h-6 rounded-full border-[hsl(var(--azyah-border))] hover:bg-[hsl(var(--azyah-ivory))] ring-2 ring-[hsl(var(--azyah-maroon))]/30 shadow-[0_0_10px_hsl(var(--azyah-maroon)/0.2)] animate-pulse"
           >
             Upgrade to Premium
           </Button>

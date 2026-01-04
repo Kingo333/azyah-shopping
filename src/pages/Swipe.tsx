@@ -217,20 +217,19 @@ const Swipe = () => {
                   <Tooltip open={showTooltip} onOpenChange={setShowTooltip}>
                     <TooltipTrigger asChild>
                       <div 
-                        className="flex items-center gap-0.5 sm:gap-1 px-1 sm:px-1.5 py-0.5 sm:py-1 rounded-full bg-muted/40 transition-all ring-2 ring-primary/50 shadow-[0_0_12px_hsl(var(--primary)/0.3)] animate-pulse"
+                        className="flex items-center gap-0.5 sm:gap-1 px-1 sm:px-1.5 py-0.5 sm:py-1 rounded-full bg-muted/40 transition-all ring-2 ring-primary/50 shadow-[0_0_12px_hsl(var(--primary)/0.3)] animate-pulse cursor-pointer"
+                        onClick={() => setViewMode(prev => prev === 'swipe' ? 'list' : 'swipe')}
                       >
-                        <button 
-                          onClick={() => setViewMode('swipe')}
-                          className={`p-1.5 sm:p-2 rounded-full transition-all ${viewMode === 'swipe' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                        <div 
+                          className={`p-1.5 sm:p-2 rounded-full transition-all pointer-events-none ${viewMode === 'swipe' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground'}`}
                         >
                           <LayoutGrid className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                        </button>
-                        <button 
-                          onClick={() => setViewMode('list')}
-                          className={`p-1.5 sm:p-2 rounded-full transition-all ${viewMode === 'list' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                        </div>
+                        <div 
+                          className={`p-1.5 sm:p-2 rounded-full transition-all pointer-events-none ${viewMode === 'list' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground'}`}
                         >
                           <List className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                        </button>
+                        </div>
                       </div>
                     </TooltipTrigger>
                     <TooltipContent className="bg-popover border shadow-lg max-w-[180px]">

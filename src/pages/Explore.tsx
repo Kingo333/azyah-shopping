@@ -12,7 +12,7 @@ import FollowingTab from '@/components/explore/FollowingTab';
 const Explore: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const initialTab = searchParams.get('tab') || 'brands';
+  const initialTab = searchParams.get('tab') || 'following';
   const [activeTab, setActiveTab] = useState(initialTab);
 
   const handleTabChange = (value: string) => {
@@ -40,17 +40,17 @@ const Explore: React.FC = () => {
         {/* Main Tabs */}
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
           <TabsList className="grid w-full grid-cols-3 mb-6">
-            <TabsTrigger value="brands" className="flex items-center gap-1.5">
-              <Store className="h-4 w-4" />
-              <span className="text-xs sm:text-sm">Brands</span>
+            <TabsTrigger value="following" className="flex items-center gap-1.5">
+              <UserCheck className="h-4 w-4" />
+              <span className="text-xs sm:text-sm">Following</span>
             </TabsTrigger>
             <TabsTrigger value="shoppers" className="flex items-center gap-1.5">
               <Users className="h-4 w-4" />
               <span className="text-xs sm:text-sm">Shoppers</span>
             </TabsTrigger>
-            <TabsTrigger value="following" className="flex items-center gap-1.5">
-              <UserCheck className="h-4 w-4" />
-              <span className="text-xs sm:text-sm">Following</span>
+            <TabsTrigger value="brands" className="flex items-center gap-1.5">
+              <Store className="h-4 w-4" />
+              <span className="text-xs sm:text-sm">Brands</span>
             </TabsTrigger>
           </TabsList>
 
