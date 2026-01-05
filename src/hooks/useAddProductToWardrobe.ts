@@ -156,20 +156,34 @@ export const useAddProductToWardrobe = () => {
       return data;
     },
     onSuccess: async (data) => {
+      // Invalidate queries
       queryClient.invalidateQueries({ queryKey: ['wardrobe-items'] });
       queryClient.invalidateQueries({ queryKey: ['wardrobe-limit'] });
       queryClient.invalidateQueries({ queryKey: ['closet-duplicate-check'] });
       
-      // Award points for adding wardrobe item (don't show separate toast)
-      let pointsAwarded: number | null = null;
-      if (data?.id) {
-        pointsAwarded = await awardPointsAsync('wardrobe_add', data.id, `wardrobe:${data.id}`, false);
-      }
-      
-      // Show single combined toast
-      toast.success(`Added to Closet${pointsAwarded ? ` +${pointsAwarded} points` : ''} ✅`, {
+      // Show toast IMMEDIATELY (before awaiting points)
+      const toastId = toast.success('Added to Closet ✅', {
         description: 'Item saved to your closet',
+        duration: 4000,
       });
+      
+      // Award points in background, then update toast with points
+      if (data?.id) {
+        try {
+          const pointsAwarded = await awardPointsAsync('wardrobe_add', data.id, `wardrobe:${data.id}`, false);
+          if (pointsAwarded) {
+            // Update toast to show points (dismiss old, show new combined message)
+            toast.dismiss(toastId);
+            toast.success(`Added to Closet +${pointsAwarded} points ✅`, {
+              description: 'Item saved to your closet',
+              duration: 3000,
+            });
+          }
+        } catch (e) {
+          // Points failed but item was added - toast already shown
+          console.error('[Closet] Points award failed:', e);
+        }
+      }
     },
     onError: (error: any) => {
       console.error('Error adding product to closet:', error);
