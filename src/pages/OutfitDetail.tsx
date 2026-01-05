@@ -177,12 +177,12 @@ export default function OutfitDetail() {
           </div>
         </header>
 
-        <div className="container max-w-screen-xl mx-auto px-4 py-6">
-          {/* Mobile: stacked layout, Desktop: two-column */}
-          <div className="flex flex-col md:grid md:grid-cols-[1fr,320px] lg:grid-cols-[1fr,360px] gap-4 md:gap-6">
-            {/* Outfit Image - larger on mobile */}
-            <div className="relative rounded-2xl overflow-hidden shadow-lg bg-gradient-to-br from-secondary/30 via-background to-muted/50">
-              <div className="aspect-[3/4] flex items-center justify-center p-3 sm:p-4">
+        <div className="container max-w-screen-xl mx-auto px-4 py-4 sm:py-6">
+          {/* Grid layout on all sizes - outfit left, details right */}
+          <div className="grid grid-cols-[1fr,120px] sm:grid-cols-[1fr,180px] md:grid-cols-[1fr,320px] lg:grid-cols-[1fr,360px] gap-3 sm:gap-4 md:gap-6">
+            {/* Outfit Image */}
+            <div className="relative rounded-xl sm:rounded-2xl overflow-hidden shadow-lg bg-gradient-to-br from-secondary/30 via-background to-muted/50">
+              <div className="aspect-[3/4] flex items-center justify-center p-2 sm:p-3 md:p-4">
                 {(fit.render_path || fit.image_preview) ? (
                   <img
                     src={fit.render_path || fit.image_preview}
@@ -197,64 +197,51 @@ export default function OutfitDetail() {
               </div>
             </div>
 
-            {/* Details Sidebar */}
-            <div className="space-y-4 md:space-y-5">
-              {/* User info with likes/comments */}
-              <div className="space-y-2">
-                <div 
-                  className="flex items-center gap-2 cursor-pointer"
-                  onClick={() => navigate(`/profile/${fit.user_id}`)}
-                >
-                  <Avatar className="w-8 h-8 sm:w-10 sm:w-10 md:w-12 md:h-12">
-                    <AvatarImage src={fit.user.avatar_url || undefined} />
-                    <AvatarFallback className="text-xs sm:text-sm">
-                      {username[0].toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="min-w-0 flex-1">
-                    <p className="font-semibold text-xs sm:text-sm truncate">{username}</p>
-                    <p className="text-[10px] sm:text-xs text-muted-foreground">
-                      {formatDistanceToNow(new Date(fit.created_at), { addSuffix: true })}
-                    </p>
-                  </div>
-                </div>
-                {/* Likes/Comments below user on mobile, inline on larger */}
-                <div className="flex items-center gap-1 sm:gap-2">
-                  <LikeButton fitId={fit.id} likeCount={fit.like_count} size="sm" />
-                  <CommentButton
-                    commentCount={fit.comment_count}
-                    onClick={() => setShowComments(true)}
-                    size="sm"
-                  />
+            {/* Details Sidebar - compact on mobile */}
+            <div className="flex flex-col gap-2 sm:gap-3 md:gap-4">
+              {/* User info - compact on mobile */}
+              <div 
+                className="flex items-center gap-1.5 sm:gap-2 cursor-pointer"
+                onClick={() => navigate(`/profile/${fit.user_id}`)}
+              >
+                <Avatar className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10">
+                  <AvatarImage src={fit.user.avatar_url || undefined} />
+                  <AvatarFallback className="text-[9px] sm:text-xs">
+                    {username[0].toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="min-w-0 flex-1">
+                  <p className="font-semibold text-[10px] sm:text-xs md:text-sm truncate">{username}</p>
+                  <p className="text-[9px] sm:text-[10px] md:text-xs text-muted-foreground">
+                    {formatDistanceToNow(new Date(fit.created_at), { addSuffix: true })}
+                  </p>
                 </div>
               </div>
 
-              {/* Title */}
+              {/* Title - hidden on mobile to save space */}
               {fit.title && (
-                <div>
-                  <h2 className="text-sm sm:text-base md:text-xl font-bold line-clamp-2">{fit.title}</h2>
-                </div>
+                <h2 className="hidden sm:block text-xs md:text-sm lg:text-base font-bold line-clamp-2">{fit.title}</h2>
               )}
 
-              {/* Clothes in outfit - vertical stack on all sizes */}
+              {/* Clothes in outfit - compact on mobile, expanded on larger */}
               {fit.items && fit.items.length > 0 && (
-                <div>
-                  <h3 className="font-semibold text-xs sm:text-sm mb-2">Clothes in outfit</h3>
-                  <div className="space-y-2 max-h-[200px] sm:max-h-[300px] overflow-y-auto scrollbar-hide">
+                <div className="flex-1 min-h-0">
+                  <h3 className="font-semibold text-[10px] sm:text-xs md:text-sm mb-1.5 sm:mb-2">Items</h3>
+                  <div className="space-y-1.5 sm:space-y-2 max-h-[180px] sm:max-h-[250px] md:max-h-[300px] overflow-y-auto scrollbar-hide">
                     {fit.items.map((item: any) => (
                       <div
                         key={item.id}
-                        className="flex items-center gap-2 cursor-pointer group"
+                        className="flex items-center gap-1.5 sm:gap-2 cursor-pointer group"
                         onClick={() => navigate(`/community/item/${item.id}`)}
                       >
-                        <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 flex-shrink-0 bg-muted rounded-lg overflow-hidden group-hover:ring-2 ring-primary transition-all">
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 flex-shrink-0 bg-muted rounded-md sm:rounded-lg overflow-hidden group-hover:ring-2 ring-primary transition-all">
                           <img
                             src={item.image_bg_removed_url || item.image_url}
                             alt={item.name || 'Item'}
                             className="w-full h-full object-contain"
                           />
                         </div>
-                        <p className="text-[10px] sm:text-xs line-clamp-2 flex-1">
+                        <p className="text-[9px] sm:text-[10px] md:text-xs line-clamp-2 flex-1 leading-tight">
                           {item.name || item.brand || 'Untitled'}
                         </p>
                       </div>
