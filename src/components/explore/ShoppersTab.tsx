@@ -64,8 +64,9 @@ export const ShoppersTab: React.FC = () => {
 
       const { data: usersData } = await supabase
         .from('public_profiles')
-        .select('id, name, username, avatar_url')
-        .in('id', userIds.slice(0, 10));
+        .select('id, name, username, avatar_url, role')
+        .in('id', userIds.slice(0, 10))
+        .or('role.eq.shopper,role.is.null');
 
       if (!usersData?.length) return [];
 
