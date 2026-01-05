@@ -352,9 +352,14 @@ export default function DressMeWardrobe() {
   const handleDeleteSelected = async () => {
     if (selectedItems.length === 0) return;
     
+    const count = selectedItems.length;
     try {
-      await Promise.all(selectedItems.map(itemId => deleteItemMutation.mutateAsync(itemId)));
-      toast.success(`Deleted ${selectedItems.length} item(s)`);
+      // Pass silent: true so individual toasts don't fire during batch delete
+      await Promise.all(selectedItems.map(itemId => 
+        deleteItemMutation.mutateAsync({ id: itemId, silent: true })
+      ));
+      // Show only one consolidated toast
+      toast.success(`Deleted ${count} item${count !== 1 ? 's' : ''}`, { duration: 2000 });
       setSelectedItems([]);
       setSelectionMode(false);
     } catch (error) {

@@ -171,18 +171,22 @@ export const useDeleteWardrobeItem = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (id: string) => {
+    mutationFn: async ({ id, silent = false }: { id: string; silent?: boolean }) => {
       const { error } = await supabase
         .from('wardrobe_items')
         .delete()
         .eq('id', id);
 
       if (error) throw error;
+      return { silent };
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['wardrobe-items'] });
       queryClient.invalidateQueries({ queryKey: ['wardrobe-limit'] });
-      toast.success('Item removed', { duration: 2000 });
+      // Only show toast if not in silent mode (for batch deletes)
+      if (!result?.silent) {
+        toast.success('Item removed', { duration: 2000 });
+      }
     },
     onError: (error) => {
       console.error('Error deleting wardrobe item:', error);

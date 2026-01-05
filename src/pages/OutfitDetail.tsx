@@ -9,7 +9,7 @@ import { CommentButton } from '@/components/CommentButton';
 import { CommentsSheet } from '@/components/CommentsSheet';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Share2, ChevronRight } from 'lucide-react';
+import { Share2 } from 'lucide-react';
 import { SEOHead } from '@/components/SEOHead';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
@@ -178,11 +178,11 @@ export default function OutfitDetail() {
         </header>
 
         <div className="container max-w-screen-xl mx-auto px-4 py-6">
-          {/* Two-column layout for desktop, stacked for mobile */}
-          <div className="grid grid-cols-1 lg:grid-cols-[1fr,320px] gap-6 lg:gap-8">
-            {/* Left Column - Outfit Image */}
+          {/* Two-column layout - consistent on mobile and desktop */}
+          <div className="grid grid-cols-[1fr,140px] sm:grid-cols-[1fr,200px] md:grid-cols-[1fr,280px] lg:grid-cols-[1fr,320px] gap-3 sm:gap-4 md:gap-6">
+            {/* Left Column - Outfit Image (reduced size) */}
             <div className="relative rounded-2xl overflow-hidden shadow-lg bg-gradient-to-br from-secondary/30 via-background to-muted/50">
-              <div className="aspect-[3/4] flex items-center justify-center p-4">
+              <div className="aspect-square sm:aspect-[3/4] flex items-center justify-center p-2 sm:p-4">
                 {(fit.render_path || fit.image_preview) ? (
                   <img
                     src={fit.render_path || fit.image_preview}
@@ -197,33 +197,34 @@ export default function OutfitDetail() {
               </div>
             </div>
 
-            {/* Right Column - Details Sidebar */}
-            <div className="space-y-6">
+            {/* Right Column - Details Sidebar (same layout on mobile + desktop) */}
+            <div className="space-y-3 sm:space-y-4 md:space-y-6">
               {/* User info with likes/comments */}
-              <div className="flex items-center justify-between">
+              <div className="space-y-2">
                 <div 
-                  className="flex items-center gap-3 cursor-pointer"
+                  className="flex items-center gap-2 cursor-pointer"
                   onClick={() => navigate(`/profile/${fit.user_id}`)}
                 >
-                  <Avatar className="w-12 h-12">
+                  <Avatar className="w-8 h-8 sm:w-10 sm:w-10 md:w-12 md:h-12">
                     <AvatarImage src={fit.user.avatar_url || undefined} />
-                    <AvatarFallback>
+                    <AvatarFallback className="text-xs sm:text-sm">
                       {username[0].toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
-                  <div>
-                    <p className="font-semibold">{username}</p>
-                    <p className="text-sm text-muted-foreground">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold text-xs sm:text-sm truncate">{username}</p>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground">
                       {formatDistanceToNow(new Date(fit.created_at), { addSuffix: true })}
                     </p>
                   </div>
                 </div>
-                {/* Likes/Comments next to user */}
-                <div className="flex items-center gap-2">
-                  <LikeButton fitId={fit.id} likeCount={fit.like_count} />
+                {/* Likes/Comments below user on mobile, inline on larger */}
+                <div className="flex items-center gap-1 sm:gap-2">
+                  <LikeButton fitId={fit.id} likeCount={fit.like_count} size="sm" />
                   <CommentButton
                     commentCount={fit.comment_count}
                     onClick={() => setShowComments(true)}
+                    size="sm"
                   />
                 </div>
               </div>
@@ -231,29 +232,29 @@ export default function OutfitDetail() {
               {/* Title */}
               {fit.title && (
                 <div>
-                  <h2 className="text-xl font-bold">{fit.title}</h2>
+                  <h2 className="text-sm sm:text-base md:text-xl font-bold line-clamp-2">{fit.title}</h2>
                 </div>
               )}
 
-              {/* Clothes in outfit - Now in sidebar */}
+              {/* Clothes in outfit - vertical stack on all sizes */}
               {fit.items && fit.items.length > 0 && (
                 <div>
-                  <h3 className="font-semibold mb-3">Clothes in outfit</h3>
-                  <div className="grid grid-cols-3 gap-2">
+                  <h3 className="font-semibold text-xs sm:text-sm mb-2">Clothes in outfit</h3>
+                  <div className="space-y-2 max-h-[200px] sm:max-h-[300px] overflow-y-auto scrollbar-hide">
                     {fit.items.map((item: any) => (
                       <div
                         key={item.id}
-                        className="cursor-pointer group"
+                        className="flex items-center gap-2 cursor-pointer group"
                         onClick={() => navigate(`/community/item/${item.id}`)}
                       >
-                        <div className="aspect-square bg-muted rounded-lg overflow-hidden mb-1 group-hover:ring-2 ring-primary transition-all">
+                        <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 flex-shrink-0 bg-muted rounded-lg overflow-hidden group-hover:ring-2 ring-primary transition-all">
                           <img
                             src={item.image_bg_removed_url || item.image_url}
                             alt={item.name || 'Item'}
                             className="w-full h-full object-contain"
                           />
                         </div>
-                        <p className="text-xs text-center line-clamp-1">
+                        <p className="text-[10px] sm:text-xs line-clamp-2 flex-1">
                           {item.name || item.brand || 'Untitled'}
                         </p>
                       </div>
@@ -262,32 +263,22 @@ export default function OutfitDetail() {
                 </div>
               )}
 
-              {/* Use This Outfit Button */}
-              <Button onClick={handleUseOutfit} className="w-full">
+              {/* Use This Outfit Button - hidden on mobile (shown in bottom bar) */}
+              <Button onClick={handleUseOutfit} className="w-full hidden sm:flex" size="sm">
                 Use This Outfit
               </Button>
             </div>
           </div>
 
-          {/* Other Outfits by This User - Full width below */}
+          {/* Other Outfits by This User - Horizontal scrollable carousel only */}
           {otherOutfits && otherOutfits.length > 0 && (
-            <div className="mt-8 pt-6 border-t">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold text-lg">More by {username}</h3>
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  onClick={() => navigate(`/profile/${fit.user_id}`)}
-                  className="text-primary"
-                >
-                  View All <ChevronRight className="h-4 w-4 ml-1" />
-                </Button>
-              </div>
-              <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+            <div className="mt-6 sm:mt-8 pt-4 sm:pt-6 border-t">
+              <h3 className="font-semibold text-sm sm:text-lg mb-3 sm:mb-4">More by {username}</h3>
+              <div className="flex gap-2 sm:gap-3 overflow-x-auto pb-2 scrollbar-hide snap-x snap-mandatory">
                 {otherOutfits.map((outfit) => (
                   <Card
                     key={outfit.id}
-                    className="flex-shrink-0 w-28 sm:w-32 cursor-pointer hover:shadow-lg transition-all duration-300 hover:-translate-y-1 overflow-hidden"
+                    className="flex-shrink-0 w-24 sm:w-28 md:w-32 cursor-pointer hover:shadow-lg transition-all duration-300 hover:-translate-y-1 overflow-hidden snap-start"
                     onClick={() => navigate(`/dress-me/outfit/${outfit.id}`)}
                   >
                     <div className="aspect-[3/4] bg-muted overflow-hidden">
@@ -298,8 +289,8 @@ export default function OutfitDetail() {
                         sizes="128px"
                       />
                     </div>
-                    <CardContent className="p-2">
-                      <p className="text-xs line-clamp-1 font-medium">
+                    <CardContent className="p-1.5 sm:p-2">
+                      <p className="text-[10px] sm:text-xs line-clamp-1 font-medium">
                         {outfit.title || 'Untitled'}
                       </p>
                     </CardContent>
