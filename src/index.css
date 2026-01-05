@@ -4,6 +4,12 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Ensure Sonner toasts appear above all content including modals and overlays */
+[data-sonner-toaster],
+[data-sonner-toast] {
+  z-index: 99999 !important;
+}
+
 @layer base {
   :root {
     /* ===== iOS Safe Area Insets ===== */
