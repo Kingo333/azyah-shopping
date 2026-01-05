@@ -80,11 +80,11 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({
         })));
       }
 
-      // Search users (shoppers) using public profiles
+      // Search users (shoppers) using users_public view - search both name AND username
       const { data: users } = await supabase
-        .from('public_profiles')
-        .select('id, name, avatar_url')
-        .ilike('name', `%${searchQuery}%`)
+        .from('users_public')
+        .select('id, name, username, avatar_url')
+        .or(`name.ilike.%${searchQuery}%,username.ilike.%${searchQuery}%`)
         .limit(10);
 
       if (users && user) {
@@ -100,8 +100,8 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({
         searchResults.push(...users.map(userData => ({
           id: userData.id,
           type: 'user' as const,
-          title: userData.name || 'Anonymous User',
-          subtitle: 'Fashion Enthusiast',
+          title: userData.name || userData.username || 'Anonymous User',
+          subtitle: userData.username ? `@${userData.username}` : 'Fashion Enthusiast',
           image: userData.avatar_url || undefined,
           isFollowing: followingIds.has(userData.id)
         })));
@@ -110,8 +110,8 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({
         searchResults.push(...users.map(userData => ({
           id: userData.id,
           type: 'user' as const,
-          title: userData.name || 'Anonymous User',
-          subtitle: 'Fashion Enthusiast',
+          title: userData.name || userData.username || 'Anonymous User',
+          subtitle: userData.username ? `@${userData.username}` : 'Fashion Enthusiast',
           image: userData.avatar_url || undefined,
           isFollowing: false
         })));

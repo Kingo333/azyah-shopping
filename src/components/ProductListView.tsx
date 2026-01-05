@@ -17,7 +17,7 @@ import ProductTryOnModal from '@/components/ProductTryOnModal';
 import { SmartImage } from '@/components/SmartImage';
 import { getPrimaryImageUrl, hasMultipleImages, getImageCount } from '@/utils/imageHelpers';
 import { useProductHasOutfit } from '@/hooks/useProductOutfits';
-import CategoryCarousel from '@/components/CategoryCarousel';
+import CategoryGrid from '@/components/CategoryGrid';
 import { getBrandDisplayName } from '@/utils/brandHelpers';
 import type { SubCategory } from '@/lib/categories';
 import { useGuestGate } from '@/hooks/useGuestGate';
@@ -357,7 +357,7 @@ const ProductListView: React.FC<ProductListViewProps> = ({
   return (
     <>
       {showCategoryCarousel && (
-        <CategoryCarousel 
+        <CategoryGrid 
           selectedCategories={selectedCategories as any}
           onCategoryToggle={onCategoryToggle}
           selectedSubcategories={selectedSubcategories}
