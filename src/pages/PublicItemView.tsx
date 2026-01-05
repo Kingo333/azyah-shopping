@@ -6,7 +6,7 @@ import { SEOHead } from '@/components/SEOHead';
 import { ArrowLeft, ExternalLink, Share2, ShoppingBag } from 'lucide-react';
 import { toast } from 'sonner';
 import { openExternalUrl } from '@/lib/openExternalUrl';
-import { nativeShare } from '@/lib/nativeShare';
+import { nativeShare, getShareableUrl } from '@/lib/nativeShare';
 
 interface PublicItem {
   id: string;
@@ -92,9 +92,12 @@ export default function PublicItemView() {
   });
 
   const handleShare = async () => {
+    const shareUrl = getShareableUrl('item', id!);
     await nativeShare({
-      title: `${item?.brand || 'Item'} - Azyah`,
-      url: window.location.href,
+      title: `${item?.brand || 'Item'} - Azyah Style`,
+      text: `Check out this ${item?.category || 'item'} on Azyah Style!`,
+      url: shareUrl,
+      dialogTitle: 'Share Item',
     });
   };
 

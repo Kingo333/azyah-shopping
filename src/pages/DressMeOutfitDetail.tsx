@@ -8,7 +8,7 @@ import { SEOHead } from '@/components/SEOHead';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/contexts/AuthContext';
-import { nativeShare } from '@/lib/nativeShare';
+import { nativeShare, getShareableUrl } from '@/lib/nativeShare';
 
 export default function DressMeOutfitDetail() {
   const { id } = useParams<{ id: string }>();
@@ -84,10 +84,12 @@ export default function DressMeOutfitDetail() {
 
   const handleShare = async () => {
     if (!outfit) return;
-    
+    const shareUrl = getShareableUrl('outfit', outfit.id);
     await nativeShare({
-      title: outfit.title || 'Check out this outfit!',
-      url: `${window.location.origin}/dress-me/outfit/${outfit.id}`,
+      title: outfit.title || 'Check out this outfit on Azyah Style!',
+      text: `Created on Azyah Style`,
+      url: shareUrl,
+      dialogTitle: 'Share Outfit',
     });
   };
 

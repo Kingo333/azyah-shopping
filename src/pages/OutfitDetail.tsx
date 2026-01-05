@@ -12,7 +12,7 @@ import { Share2 } from 'lucide-react';
 import { SEOHead } from '@/components/SEOHead';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
-import { nativeShare } from '@/lib/nativeShare';
+import { nativeShare, getShareableUrl } from '@/lib/nativeShare';
 
 export default function OutfitDetail() {
   const { id } = useParams();
@@ -89,9 +89,12 @@ export default function OutfitDetail() {
   });
 
   const handleShare = async () => {
+    const shareUrl = getShareableUrl('outfit', id!);
     await nativeShare({
-      title: fit?.title || 'Check out this outfit',
-      url: window.location.href,
+      title: fit?.title || 'Check out this outfit on Azyah Style',
+      text: `${fit?.user?.username || 'Someone'} shared an outfit with you!`,
+      url: shareUrl,
+      dialogTitle: 'Share Outfit',
     });
   };
 

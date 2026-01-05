@@ -9,6 +9,15 @@ interface ShareOptions {
 }
 
 /**
+ * Generate a share URL that works with link previews.
+ * Points to the edge function which returns proper OG meta tags for bots,
+ * then redirects browsers to the actual SPA route.
+ */
+export function getShareableUrl(type: 'outfit' | 'item', id: string): string {
+  return `https://klwolsopucgswhtdlsps.supabase.co/functions/v1/share-meta?type=${type}&id=${id}`;
+}
+
+/**
  * Cross-platform share utility that uses native sharing on iOS/Android
  * and falls back to Web Share API or clipboard on web.
  */
@@ -21,7 +30,7 @@ export async function nativeShare(options: ShareOptions): Promise<boolean> {
         title: options.title,
         text: options.text,
         url: options.url,
-        dialogTitle: options.dialogTitle || 'Share',
+        dialogTitle: options.dialogTitle || 'Share via Azyah Style',
       });
       return true;
     }
