@@ -162,22 +162,19 @@ export default function OutfitDetail() {
           style={{ paddingTop: 'var(--safe-top, 0px)' }}
         >
           <div className="container flex items-center justify-between h-14 max-w-screen-2xl">
-            <div className="flex items-center">
+            <div className="flex items-center min-w-0 flex-1">
               <BackButton />
-              <h1 className="text-lg font-semibold ml-2">Outfit</h1>
-              {fit.title && (
-                <span className="text-muted-foreground ml-2 hidden sm:inline">
-                  — {fit.title}
-                </span>
-              )}
+              <h1 className="text-lg font-semibold ml-2 truncate">
+                {fit.title ? `Outfit — ${fit.title}` : 'Outfit'}
+              </h1>
             </div>
-            <Button variant="ghost" size="icon" onClick={handleShare}>
+            <Button variant="ghost" size="icon" className="flex-shrink-0" onClick={handleShare}>
               <Share2 className="w-5 h-5" />
             </Button>
           </div>
         </header>
 
-        <div className="container max-w-screen-xl mx-auto px-4 py-4 sm:py-6">
+        <div className="container max-w-screen-xl mx-auto px-4 py-4 sm:py-6 pb-6">
           {/* Grid layout on all sizes - outfit left, details right */}
           <div className="grid grid-cols-[1fr,120px] sm:grid-cols-[1fr,180px] md:grid-cols-[1fr,320px] lg:grid-cols-[1fr,360px] gap-3 sm:gap-4 md:gap-6">
             {/* Outfit Image */}
@@ -257,6 +254,19 @@ export default function OutfitDetail() {
             </div>
           </div>
 
+          {/* Title and engagement - below the grid */}
+          <div className="mt-4 flex items-center justify-between">
+            {fit.title && (
+              <h2 className="font-bold text-base sm:text-lg line-clamp-1 flex-1 mr-4">{fit.title}</h2>
+            )}
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <LikeButton fitId={fit.id} likeCount={fit.like_count} />
+              <CommentButton
+                commentCount={fit.comment_count}
+                onClick={() => setShowComments(true)}
+              />
+            </div>
+          </div>
         </div>
 
         {/* Other Outfits by This User - Full width, with indent on mobile */}
@@ -289,21 +299,6 @@ export default function OutfitDetail() {
           </div>
         )}
 
-        {/* Fixed bottom actions - simplified on mobile */}
-        <div className="fixed bottom-0 left-0 right-0 bg-background border-t p-4 lg:hidden">
-          <div className="container max-w-screen-md mx-auto flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <LikeButton fitId={fit.id} likeCount={fit.like_count} />
-              <CommentButton
-                commentCount={fit.comment_count}
-                onClick={() => setShowComments(true)}
-              />
-            </div>
-            <Button onClick={handleUseOutfit}>
-              Use This Outfit
-            </Button>
-          </div>
-        </div>
 
         <CommentsSheet
           fitId={fit.id}
