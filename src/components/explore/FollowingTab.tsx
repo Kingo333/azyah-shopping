@@ -24,10 +24,10 @@ export const FollowingTab: React.FC = () => {
     queryFn: async () => {
       if (!following?.length) return { users: [], brands: [] };
 
-      // Get user details for followed users
+      // Get user details for followed users (using public_profiles table)
       const { data: usersData } = await supabase
-        .from('users')
-        .select('id, name, avatar_url')
+        .from('public_profiles')
+        .select('id, name, username, avatar_url')
         .in('id', following);
 
       // Get outfits from followed users
@@ -82,7 +82,7 @@ export const FollowingTab: React.FC = () => {
       return {
         users: (usersData || []).map((u: any) => ({
           ...u,
-          display_name: u.name,
+          display_name: u.username || u.name || 'Anonymous',
           outfits: userOutfitsMap.get(u.id) || [],
         })).filter((u: any) => u.outfits.length > 0),
         brands: (brandsData || []).map((b: any) => ({

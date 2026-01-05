@@ -75,10 +75,10 @@ const ExploreSearch: React.FC<ExploreSearchProps> = ({
         }
       }
 
-      // Search users (using public view for safe fields only)
+      // Search users (using public_profiles table)
       if (activeTab === 'all' || activeTab === 'users') {
         const { data: users } = await supabase
-          .from('users_public')
+          .from('public_profiles')
           .select('id, name, username, avatar_url')
           .or(`name.ilike.%${debouncedQuery}%,username.ilike.%${debouncedQuery}%`)
           .limit(10);
@@ -87,8 +87,8 @@ const ExploreSearch: React.FC<ExploreSearchProps> = ({
           results.push({
             type: 'user',
             id: user.id,
-            title: user.name || user.username || 'User',
-            subtitle: `@${user.username || 'anonymous'}`,
+            title: user.username || user.name || 'Anonymous',
+            subtitle: user.username ? `@${user.username}` : (user.name || 'Fashion Enthusiast'),
             image: user.avatar_url,
             badge: undefined,
             data: user

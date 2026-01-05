@@ -33,9 +33,9 @@ const TopInfluencers: React.FC<TopInfluencersProps> = ({ limit = 6, showMore = t
   const { data: topInfluencers, isLoading } = useQuery({
     queryKey: ['top-influencers', limit],
     queryFn: async () => {
-      // Get users with their activity data (using public view for safe fields)
+      // Get users with their activity data (using public_profiles table)
       const { data: users, error: usersError } = await supabase
-        .from('users_public')
+        .from('public_profiles')
         .select(`
           id,
           name,

@@ -58,9 +58,9 @@ export default function PublicOutfitView() {
         return null;
       }
 
-      // Fetch user info (public view)
+      // Fetch user info (using public_profiles table)
       const { data: userData } = await supabase
-        .from('users_public')
+        .from('public_profiles')
         .select('id, username, name, avatar_url')
         .eq('id', fitData.user_id)
         .single();

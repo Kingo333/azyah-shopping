@@ -31,9 +31,9 @@ export const AddFriendModal: React.FC<AddFriendModalProps> = ({ open, onOpenChan
       if (!searchQuery || searchQuery.length < 2) return [];
       
       const { data, error } = await supabase
-        .from('users_public')
-        .select('id, username, avatar_url')
-        .ilike('username', `%${searchQuery}%`)
+        .from('public_profiles')
+        .select('id, username, name, avatar_url')
+        .or(`username.ilike.%${searchQuery}%,name.ilike.%${searchQuery}%`)
         .neq('id', user?.id || '')
         .limit(10);
 
@@ -105,11 +105,11 @@ export const AddFriendModal: React.FC<AddFriendModalProps> = ({ open, onOpenChan
                       <Avatar className="h-10 w-10">
                         <AvatarImage src={result.avatar_url || undefined} />
                         <AvatarFallback>
-                          {result.username?.charAt(0).toUpperCase()}
+                          {(result.username || result.name || 'U').charAt(0).toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1">
-                        <p className="font-medium">@{result.username}</p>
+                        <p className="font-medium">{result.username ? `@${result.username}` : result.name || 'Anonymous'}</p>
                       </div>
                       <Button
                         size="sm"

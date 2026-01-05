@@ -41,10 +41,10 @@ export const useFriends = () => {
       if (friendError) throw friendError;
       if (!friendIds || friendIds.length === 0) return [];
 
-      // Get profile data for friends (using public view for safe fields)
+      // Get profile data for friends (using public_profiles table)
       const { data: profiles, error: profileError } = await supabase
-        .from('users_public')
-        .select('id, username, avatar_url')
+        .from('public_profiles')
+        .select('id, username, name, avatar_url')
         .in('id', friendIds.map(f => f.friend_id));
 
       if (profileError) throw profileError;
@@ -68,7 +68,7 @@ export const useFriends = () => {
         const friendData = friendIds.find(f => f.friend_id === profile.id);
         return {
           id: profile.id,
-          username: profile.username || 'Anonymous',
+          username: profile.username || profile.name || 'Anonymous',
           avatar_url: profile.avatar_url,
           friends_since: friendData?.friends_since || '',
           public_items_count: countMap[profile.id] || 0,
@@ -99,10 +99,10 @@ export const usePendingFriendRequests = () => {
       if (friendshipsError) throw friendshipsError;
       if (!friendships || friendships.length === 0) return [];
 
-      // Get requester profile data (using public view for safe fields)
+      // Get requester profile data (using public_profiles table)
       const { data: profiles, error: profilesError } = await supabase
-        .from('users_public')
-        .select('id, username, avatar_url')
+        .from('public_profiles')
+        .select('id, username, name, avatar_url')
         .in('id', friendships.map(f => f.user_id));
 
       if (profilesError) throw profilesError;

@@ -63,8 +63,8 @@ export const ShoppersTab: React.FC = () => {
       if (!userIds.length) return [];
 
       const { data: usersData } = await supabase
-        .from('users')
-        .select('id, name, avatar_url')
+        .from('public_profiles')
+        .select('id, name, username, avatar_url')
         .in('id', userIds.slice(0, 10));
 
       if (!usersData?.length) return [];
@@ -79,7 +79,7 @@ export const ShoppersTab: React.FC = () => {
         })
         .map((u: any) => ({
           id: u.id,
-          display_name: u.name,
+          display_name: u.username || u.name || 'Anonymous',
           avatar_url: u.avatar_url,
           outfits: userOutfitsMap.get(u.id) || [],
         })).filter(s => s.outfits.length > 0);

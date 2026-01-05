@@ -201,11 +201,11 @@ export const useGiftedFits = () => {
 
       if (error) throw error;
       
-      // Fetch creator profiles
+      // Fetch creator profiles (using public_profiles table)
       const creatorIds = [...new Set(data.map(fit => fit.user_id))];
       const { data: profiles } = await supabase
-        .from('users_public')
-        .select('id, username, avatar_url')
+        .from('public_profiles')
+        .select('id, username, name, avatar_url')
         .in('id', creatorIds);
       
       return data.map(fit => ({
@@ -235,11 +235,11 @@ export const useSuggestionFits = () => {
 
       if (error) throw error;
       
-      // Fetch creator profiles
+      // Fetch creator profiles (using public_profiles table)
       const creatorIds = [...new Set(data.map(fit => fit.user_id))];
       const { data: profiles } = await supabase
-        .from('users_public')
-        .select('id, username, avatar_url')
+        .from('public_profiles')
+        .select('id, username, name, avatar_url')
         .in('id', creatorIds);
       
       return data.map(fit => ({

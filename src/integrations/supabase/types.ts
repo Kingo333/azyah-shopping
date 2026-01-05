@@ -2595,6 +2595,8 @@ export type Database = {
           id: string
           is_public: boolean
           name: string | null
+          role: string | null
+          username: string | null
           website: string | null
         }
         Insert: {
@@ -2605,6 +2607,8 @@ export type Database = {
           id: string
           is_public?: boolean
           name?: string | null
+          role?: string | null
+          username?: string | null
           website?: string | null
         }
         Update: {
@@ -2615,6 +2619,8 @@ export type Database = {
           id?: string
           is_public?: boolean
           name?: string | null
+          role?: string | null
+          username?: string | null
           website?: string | null
         }
         Relationships: [

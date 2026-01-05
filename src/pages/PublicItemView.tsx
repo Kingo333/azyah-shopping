@@ -76,7 +76,7 @@ export default function PublicItemView() {
       let attributionUser = null;
       if (itemData.attribution_user_id) {
         const { data: userData } = await supabase
-          .from('users_public')
+          .from('public_profiles')
           .select('id, username, name, avatar_url')
           .eq('id', itemData.attribution_user_id)
           .single();
