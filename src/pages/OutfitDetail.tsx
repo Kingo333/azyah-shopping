@@ -199,20 +199,20 @@ export default function OutfitDetail() {
 
             {/* Details Sidebar - compact on mobile */}
             <div className="flex flex-col gap-2 sm:gap-3 md:gap-4">
-              {/* User info - compact on mobile */}
+              {/* User info */}
               <div 
-                className="flex items-center gap-1.5 sm:gap-2 cursor-pointer"
+                className="flex items-center gap-2 cursor-pointer"
                 onClick={() => navigate(`/profile/${fit.user_id}`)}
               >
-                <Avatar className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10">
+                <Avatar className="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10">
                   <AvatarImage src={fit.user.avatar_url || undefined} />
-                  <AvatarFallback className="text-[9px] sm:text-xs">
+                  <AvatarFallback className="text-[10px] sm:text-xs">
                     {username[0].toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
                 <div className="min-w-0 flex-1">
-                  <p className="font-semibold text-[10px] sm:text-xs md:text-sm truncate">{username}</p>
-                  <p className="text-[9px] sm:text-[10px] md:text-xs text-muted-foreground">
+                  <p className="font-semibold text-xs sm:text-sm md:text-sm truncate">{username}</p>
+                  <p className="text-[10px] sm:text-xs md:text-xs text-muted-foreground">
                     {formatDistanceToNow(new Date(fit.created_at), { addSuffix: true })}
                   </p>
                 </div>
@@ -223,25 +223,25 @@ export default function OutfitDetail() {
                 <h2 className="hidden sm:block text-xs md:text-sm lg:text-base font-bold line-clamp-2">{fit.title}</h2>
               )}
 
-              {/* Clothes in outfit - compact on mobile, expanded on larger */}
+              {/* Clothes in outfit */}
               {fit.items && fit.items.length > 0 && (
                 <div className="flex-1 min-h-0">
-                  <h3 className="font-semibold text-[10px] sm:text-xs md:text-sm mb-1.5 sm:mb-2">Items</h3>
-                  <div className="space-y-1.5 sm:space-y-2 max-h-[180px] sm:max-h-[250px] md:max-h-[300px] overflow-y-auto scrollbar-hide">
+                  <h3 className="font-semibold text-xs sm:text-sm md:text-sm mb-2">Items</h3>
+                  <div className="space-y-2 max-h-[200px] sm:max-h-[250px] md:max-h-[300px] overflow-y-auto scrollbar-hide">
                     {fit.items.map((item: any) => (
                       <div
                         key={item.id}
-                        className="flex items-center gap-1.5 sm:gap-2 cursor-pointer group"
+                        className="flex items-center gap-2 cursor-pointer group"
                         onClick={() => navigate(`/community/item/${item.id}`)}
                       >
-                        <div className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 flex-shrink-0 bg-muted rounded-md sm:rounded-lg overflow-hidden group-hover:ring-2 ring-primary transition-all">
+                        <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 flex-shrink-0 bg-muted rounded-lg overflow-hidden group-hover:ring-2 ring-primary transition-all">
                           <img
                             src={item.image_bg_removed_url || item.image_url}
                             alt={item.name || 'Item'}
                             className="w-full h-full object-contain"
                           />
                         </div>
-                        <p className="text-[9px] sm:text-[10px] md:text-xs line-clamp-2 flex-1 leading-tight">
+                        <p className="text-[10px] sm:text-xs md:text-sm line-clamp-2 flex-1 leading-tight">
                           {item.name || item.brand || 'Untitled'}
                         </p>
                       </div>
@@ -259,9 +259,9 @@ export default function OutfitDetail() {
 
         </div>
 
-        {/* Other Outfits by This User - Full width, pushed lower */}
+        {/* Other Outfits by This User - Full width, with indent on mobile */}
         {otherOutfits && otherOutfits.length > 0 && (
-          <div className="mt-8 sm:mt-10 pt-6 border-t">
+          <div className="mt-8 sm:mt-10 pt-6 border-t px-4 sm:px-6">
             <h3 className="font-semibold text-base sm:text-lg mb-4">More by {username}</h3>
             <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide snap-x snap-mandatory">
               {otherOutfits.map((outfit) => (
