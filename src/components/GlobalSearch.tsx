@@ -81,10 +81,12 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({
       }
 
       // Search users (shoppers) using users_public view - search both name AND username
+      // Build OR filter properly - handle null values
       const { data: users } = await supabase
         .from('users_public')
         .select('id, name, username, avatar_url')
         .or(`name.ilike.%${searchQuery}%,username.ilike.%${searchQuery}%`)
+        .not('name', 'is', null) // Only show users with display names
         .limit(10);
 
       if (users && user) {

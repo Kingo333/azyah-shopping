@@ -178,11 +178,11 @@ export default function OutfitDetail() {
         </header>
 
         <div className="container max-w-screen-xl mx-auto px-4 py-6">
-          {/* Two-column layout - consistent on mobile and desktop */}
-          <div className="grid grid-cols-[1fr,140px] sm:grid-cols-[1fr,200px] md:grid-cols-[1fr,280px] lg:grid-cols-[1fr,320px] gap-3 sm:gap-4 md:gap-6">
-            {/* Left Column - Outfit Image (reduced size) */}
+          {/* Mobile: stacked layout, Desktop: two-column */}
+          <div className="flex flex-col md:grid md:grid-cols-[1fr,320px] lg:grid-cols-[1fr,360px] gap-4 md:gap-6">
+            {/* Outfit Image - larger on mobile */}
             <div className="relative rounded-2xl overflow-hidden shadow-lg bg-gradient-to-br from-secondary/30 via-background to-muted/50">
-              <div className="aspect-square sm:aspect-[3/4] flex items-center justify-center p-2 sm:p-4">
+              <div className="aspect-[3/4] flex items-center justify-center p-3 sm:p-4">
                 {(fit.render_path || fit.image_preview) ? (
                   <img
                     src={fit.render_path || fit.image_preview}
@@ -197,8 +197,8 @@ export default function OutfitDetail() {
               </div>
             </div>
 
-            {/* Right Column - Details Sidebar (same layout on mobile + desktop) */}
-            <div className="space-y-3 sm:space-y-4 md:space-y-6">
+            {/* Details Sidebar */}
+            <div className="space-y-4 md:space-y-5">
               {/* User info with likes/comments */}
               <div className="space-y-2">
                 <div 
@@ -270,36 +270,37 @@ export default function OutfitDetail() {
             </div>
           </div>
 
-          {/* Other Outfits by This User - Horizontal scrollable carousel only */}
-          {otherOutfits && otherOutfits.length > 0 && (
-            <div className="mt-6 sm:mt-8 pt-4 sm:pt-6 border-t">
-              <h3 className="font-semibold text-sm sm:text-lg mb-3 sm:mb-4">More by {username}</h3>
-              <div className="flex gap-2 sm:gap-3 overflow-x-auto pb-2 scrollbar-hide snap-x snap-mandatory">
-                {otherOutfits.map((outfit) => (
-                  <Card
-                    key={outfit.id}
-                    className="flex-shrink-0 w-24 sm:w-28 md:w-32 cursor-pointer hover:shadow-lg transition-all duration-300 hover:-translate-y-1 overflow-hidden snap-start"
-                    onClick={() => navigate(`/dress-me/outfit/${outfit.id}`)}
-                  >
-                    <div className="aspect-[3/4] bg-muted overflow-hidden">
-                      <SmartImage
-                        src={outfit.render_path || outfit.image_preview || '/placeholder.svg'}
-                        alt={outfit.title || 'Outfit'}
-                        className="w-full h-full object-cover"
-                        sizes="128px"
-                      />
-                    </div>
-                    <CardContent className="p-1.5 sm:p-2">
-                      <p className="text-[10px] sm:text-xs line-clamp-1 font-medium">
-                        {outfit.title || 'Untitled'}
-                      </p>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
+
+        {/* Other Outfits by This User - Full width, pushed lower */}
+        {otherOutfits && otherOutfits.length > 0 && (
+          <div className="mt-8 sm:mt-10 pt-6 border-t">
+            <h3 className="font-semibold text-base sm:text-lg mb-4">More by {username}</h3>
+            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide snap-x snap-mandatory">
+              {otherOutfits.map((outfit) => (
+                <Card
+                  key={outfit.id}
+                  className="flex-shrink-0 w-28 sm:w-32 cursor-pointer hover:shadow-lg transition-all duration-300 hover:-translate-y-1 overflow-hidden snap-start"
+                  onClick={() => navigate(`/dress-me/outfit/${outfit.id}`)}
+                >
+                  <div className="aspect-[3/4] bg-muted overflow-hidden">
+                    <SmartImage
+                      src={outfit.render_path || outfit.image_preview || '/placeholder.svg'}
+                      alt={outfit.title || 'Outfit'}
+                      className="w-full h-full object-cover"
+                      sizes="128px"
+                    />
+                  </div>
+                  <CardContent className="p-2">
+                    <p className="text-xs line-clamp-1 font-medium">
+                      {outfit.title || 'Untitled'}
+                    </p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Fixed bottom actions - simplified on mobile */}
         <div className="fixed bottom-0 left-0 right-0 bg-background border-t p-4 lg:hidden">
