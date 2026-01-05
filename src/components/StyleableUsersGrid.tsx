@@ -40,9 +40,9 @@ export const StyleableUsersGrid = () => {
       const userIds = Object.keys(userCounts).filter(id => id !== user?.id);
       if (userIds.length === 0) return [];
 
-      // Fetch user profiles
+      // Fetch user profiles (using public_profiles table)
       const { data: users, error: usersError } = await supabase
-        .from('users_public')
+        .from('public_profiles')
         .select('id, username, name, avatar_url')
         .in('id', userIds);
 

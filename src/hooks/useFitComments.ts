@@ -35,11 +35,11 @@ export const useFitComments = (fitId: string) => {
 
       if (error) throw error;
       
-      // Fetch user data separately
+      // Fetch user data separately (using public_profiles table)
       const commentsWithUsers = await Promise.all(
         (data || []).map(async (comment) => {
           const { data: userData } = await supabase
-            .from('users')
+            .from('public_profiles')
             .select('id, username, name, avatar_url')
             .eq('id', comment.user_id)
             .single();
@@ -77,9 +77,9 @@ export const useAddComment = (fitId: string) => {
 
       if (error) throw error;
       
-      // Fetch user data
+      // Fetch user data (using public_profiles table)
       const { data: userData } = await supabase
-        .from('users')
+        .from('public_profiles')
         .select('id, username, name, avatar_url')
         .eq('id', user.id)
         .single();

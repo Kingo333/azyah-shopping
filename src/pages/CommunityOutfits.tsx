@@ -99,11 +99,11 @@ export const CommunityOutfits = () => {
 
       if (error) throw error;
       
-      // Fetch user data separately
+      // Fetch user data separately (using public_profiles table)
       const fitsWithUsers = await Promise.all(
         (data || []).map(async (fit) => {
           const { data: userData } = await supabase
-            .from('users_public')
+            .from('public_profiles')
             .select('id, username, name, avatar_url')
             .eq('id', fit.user_id)
             .single();

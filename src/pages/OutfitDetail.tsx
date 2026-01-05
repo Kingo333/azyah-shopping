@@ -52,9 +52,9 @@ export default function OutfitDetail() {
 
       if (error) throw error;
 
-      // Fetch user data
+      // Fetch user data (using public_profiles table)
       const { data: userData } = await supabase
-        .from('users_public')
+        .from('public_profiles')
         .select('id, username, name, avatar_url')
         .eq('id', data.user_id)
         .single();
