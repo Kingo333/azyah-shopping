@@ -6,7 +6,7 @@ import { Heart, Share2, Flag, Copy, Download } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { nativeShare } from '@/lib/nativeShare';
+import { nativeShare, getShareableUrl } from '@/lib/nativeShare';
 
 interface PublicFit {
   id: string;
@@ -40,10 +40,12 @@ export const FitDetailsModal: React.FC<FitDetailsModalProps> = ({
   if (!fit) return null;
 
   const handleShare = async () => {
+    const shareUrl = getShareableUrl('outfit', fit.id);
     await nativeShare({
-      title: fit.title || 'Check out this fit!',
+      title: fit.title || 'Check out this fit on Azyah Style!',
       text: `By @${fit.creator_username}`,
-      url: window.location.href,
+      url: shareUrl,
+      dialogTitle: 'Share Outfit',
     });
   };
 
