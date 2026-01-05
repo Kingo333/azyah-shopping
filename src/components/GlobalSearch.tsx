@@ -80,12 +80,15 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({
         })));
       }
 
-      // Search users (shoppers) using public_profiles table - search both name AND username
-      const { data: users } = await supabase
+      // Search users (shoppers only, not brands/retailers) using public_profiles table
+      const { data: allUsers } = await supabase
         .from('public_profiles')
-        .select('id, name, username, avatar_url')
+        .select('id, name, username, avatar_url, role')
         .or(`name.ilike.%${searchQuery}%,username.ilike.%${searchQuery}%`)
-        .limit(10);
+        .limit(20);
+      
+      // Filter to only shoppers (role = 'shopper' or null)
+      const users = allUsers?.filter(u => !u.role || u.role === 'shopper').slice(0, 10);
 
       if (users && user) {
         // Check follow status for each user
