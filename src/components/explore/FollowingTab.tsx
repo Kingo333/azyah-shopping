@@ -8,7 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { SmartImage } from '@/components/SmartImage';
 import { getPrimaryImageUrl } from '@/utils/imageHelpers';
-import { Users } from 'lucide-react';
+import { Users, Palette } from 'lucide-react';
 import HorizontalCarousel from './HorizontalCarousel';
 import { useFollows } from '@/hooks/useFollows';
 import { useAuth } from '@/contexts/AuthContext';
@@ -133,6 +133,22 @@ export const FollowingTab: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {/* Friend Styling Tip */}
+      <Card className="bg-gradient-to-r from-primary/5 to-accent/5 border-primary/20">
+        <CardContent className="py-3 px-4 flex items-center gap-3">
+          <Palette className="h-5 w-5 text-primary flex-shrink-0" />
+          <p className="text-sm text-muted-foreground">
+            <span className="font-medium text-foreground">Tip:</span> You can style friends using their own clothes.{' '}
+            <button 
+              onClick={() => navigate('/dress-me/canvas?mode=friends')}
+              className="text-primary hover:underline font-medium"
+            >
+              Try it now →
+            </button>
+          </p>
+        </CardContent>
+      </Card>
+
       {/* Followed Brands */}
       {followedContent.brands.map((brand: any) => (
         <HorizontalCarousel

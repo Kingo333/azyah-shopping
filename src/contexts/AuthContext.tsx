@@ -178,12 +178,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     });
 
-    // If signup successful and username provided, store it
+    // If signup successful and username provided, store it AND set display name
     if (!error && data.user && userData?.username) {
+      // Use the username as the initial display name (capitalized nicely)
+      const displayName = userData.username
+        .split(/[_.-]/)
+        .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(' ');
+      
       const { error: usernameError } = await supabase
         .from('users')
         .update({
           username: userData.username.toLowerCase(),
+          name: displayName, // Set display name from username
           onboarding_completed: true
         })
         .eq('id', data.user.id);
