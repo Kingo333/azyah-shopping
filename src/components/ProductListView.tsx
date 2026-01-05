@@ -23,7 +23,7 @@ import type { SubCategory } from '@/lib/categories';
 import { useGuestGate } from '@/hooks/useGuestGate';
 import { GuestActionPrompt } from '@/components/GuestActionPrompt';
 import { useAddProductToWardrobe, checkClosetDuplicate } from '@/hooks/useAddProductToWardrobe';
-import { DuplicateClosetDialog } from '@/components/DuplicateClosetDialog';
+import { toast as sonnerToast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { openExternalUrl } from '@/lib/openExternalUrl';
 
@@ -52,7 +52,6 @@ const ProductCard: React.FC<{
   const { mutate: addToWardrobe, isPending: wardrobeLoading } = useAddProductToWardrobe();
   const [tryOnModalOpen, setTryOnModalOpen] = useState(false);
   const [isAdded, setIsAdded] = useState(false);
-  const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
 
   // Show head icon when outfit exists
   const shouldShowHeadIcon = hasOutfit === true;
@@ -85,7 +84,10 @@ const ProductCard: React.FC<{
       // Check for duplicates first
       const isDuplicate = await checkClosetDuplicate(user.id, product.id);
       if (isDuplicate) {
-        setShowDuplicateDialog(true);
+        sonnerToast.info('Already in Closet', {
+          description: 'This item is already saved',
+          duration: 2000,
+        });
         return;
       }
       
@@ -95,16 +97,6 @@ const ProductCard: React.FC<{
           setTimeout(() => setIsAdded(false), 1500);
         }
       });
-    });
-  };
-
-  const handleConfirmDuplicate = () => {
-    setShowDuplicateDialog(false);
-    addToWardrobe({ product: product as any, skipDuplicateCheck: true }, {
-      onSuccess: () => {
-        setIsAdded(true);
-        setTimeout(() => setIsAdded(false), 1500);
-      }
     });
   };
 
@@ -259,13 +251,6 @@ const ProductCard: React.FC<{
         isOpen={tryOnModalOpen}
         onClose={() => setTryOnModalOpen(false)}
         product={product}
-      />
-      
-      {/* Duplicate Closet Dialog */}
-      <DuplicateClosetDialog
-        isOpen={showDuplicateDialog}
-        onClose={() => setShowDuplicateDialog(false)}
-        onConfirm={handleConfirmDuplicate}
       />
     </div>
   );

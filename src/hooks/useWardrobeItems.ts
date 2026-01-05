@@ -182,7 +182,7 @@ export const useDeleteWardrobeItem = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['wardrobe-items'] });
       queryClient.invalidateQueries({ queryKey: ['wardrobe-limit'] });
-      toast.success('Item removed from wardrobe');
+      toast.success('Item removed', { duration: 2000 });
     },
     onError: (error) => {
       console.error('Error deleting wardrobe item:', error);

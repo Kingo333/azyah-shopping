@@ -164,7 +164,7 @@ export const useAddProductToWardrobe = () => {
       // Show toast IMMEDIATELY (before awaiting points)
       const toastId = toast.success('Added to Closet ✅', {
         description: 'Item saved to your closet',
-        duration: 4000,
+        duration: 2500,
       });
       
       // Award points in background, then update toast with points
@@ -176,7 +176,7 @@ export const useAddProductToWardrobe = () => {
             toast.dismiss(toastId);
             toast.success(`Added to Closet +${pointsAwarded} points ✅`, {
               description: 'Item saved to your closet',
-              duration: 3000,
+              duration: 2500,
             });
           }
         } catch (e) {
