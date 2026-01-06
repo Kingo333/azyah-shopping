@@ -55,9 +55,9 @@ serve(async (req) => {
       console.log(`[share-meta] Outfit query result:`, fit, fitError);
 
       if (fit) {
-        // Get creator info
+        // Get creator info from public_profiles (not users_public)
         const { data: user } = await supabaseClient
-          .from('users_public')
+          .from('public_profiles')
           .select('username, name')
           .eq('id', fit.user_id)
           .single();

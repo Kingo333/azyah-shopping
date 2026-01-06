@@ -1,6 +1,12 @@
 import { Capacitor } from '@capacitor/core';
 import { toast } from 'sonner';
 
+/**
+ * Centralized production site URL for all share links.
+ * This ensures all shared URLs use the correct domain.
+ */
+export const SITE_URL = 'https://azyahstyle.com';
+
 interface ShareOptions {
   title?: string;
   text?: string;
@@ -9,12 +15,19 @@ interface ShareOptions {
 }
 
 /**
- * Generate a share URL that works with link previews.
- * Points to the edge function which returns proper OG meta tags for bots,
- * then redirects browsers to the actual SPA route.
+ * Generate a share URL for outfits and wardrobe items.
+ * Always uses the production domain (azyahstyle.com).
  */
 export function getShareableUrl(type: 'outfit' | 'item', id: string): string {
-  return `https://klwolsopucgswhtdlsps.supabase.co/functions/v1/share-meta?type=${type}&id=${id}`;
+  return `${SITE_URL}/share/${type}/${id}`;
+}
+
+/**
+ * Generate a share URL for products.
+ * Products use /products/:id route, not /share/item/:id (which is for wardrobe items).
+ */
+export function getProductShareUrl(productId: string): string {
+  return `${SITE_URL}/products/${productId}`;
 }
 
 /**

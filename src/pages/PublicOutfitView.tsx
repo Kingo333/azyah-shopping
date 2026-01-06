@@ -142,6 +142,8 @@ export default function PublicOutfitView() {
         title={`${outfit.title || 'Outfit'} by ${username} - Azyah`}
         description={`Check out this outfit created by ${username} on Azyah`}
         image={outfitImage || undefined}
+        canonical={`https://azyahstyle.com/share/outfit/${id}`}
+        url={`https://azyahstyle.com/share/outfit/${id}`}
       />
 
       <div className="min-h-screen bg-background">
