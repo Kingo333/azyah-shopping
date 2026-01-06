@@ -6,7 +6,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { SEOHead } from '@/components/SEOHead';
 import { Share2, ExternalLink, Heart, ArrowLeft } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-import { nativeShare, getShareableUrl } from '@/lib/nativeShare';
+import { nativeShare, getShareableUrl, SITE_URL } from '@/lib/nativeShare';
+import { buildOutfitSlug } from '@/lib/slugify';
 
 interface OutfitItem {
   id: string;
@@ -75,7 +76,11 @@ export default function PublicOutfitView() {
   });
 
   const handleShare = async () => {
-    const shareUrl = getShareableUrl('outfit', id!);
+    const creatorName = outfit?.user?.name || outfit?.user?.username;
+    const shareUrl = getShareableUrl('outfit', id!, {
+      creatorName,
+      title: outfit?.title,
+    });
     await nativeShare({
       title: outfit?.title || 'Check out this outfit on Azyah Style',
       text: `${getDisplayName(outfit?.user)} shared an outfit with you!`,
@@ -122,6 +127,8 @@ export default function PublicOutfitView() {
 
   const displayName = getDisplayName(outfit.user);
   const outfitImage = outfit.render_path || outfit.image_preview;
+  const slug = buildOutfitSlug(outfit.user?.name || outfit.user?.username, outfit.title, id);
+  const canonicalUrl = `${SITE_URL}/share/outfit/${id}/${slug}`;
 
   return (
     <>
@@ -129,8 +136,8 @@ export default function PublicOutfitView() {
         title={`${outfit.title || 'Outfit'} by ${displayName} - Azyah`}
         description={`Check out this outfit created by ${displayName} on Azyah`}
         image={outfitImage || undefined}
-        canonical={`https://azyahstyle.com/share/outfit/${id}`}
-        url={`https://azyahstyle.com/share/outfit/${id}`}
+        canonical={canonicalUrl}
+        url={canonicalUrl}
       />
 
       <div className="min-h-screen bg-background">

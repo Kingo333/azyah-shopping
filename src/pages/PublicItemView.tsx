@@ -6,7 +6,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { SEOHead } from '@/components/SEOHead';
 import { ArrowLeft, ExternalLink, Share2, ShoppingBag } from 'lucide-react';
 import { openExternalUrl } from '@/lib/openExternalUrl';
-import { nativeShare, getShareableUrl } from '@/lib/nativeShare';
+import { nativeShare, getShareableUrl, SITE_URL } from '@/lib/nativeShare';
+import { buildItemSlug } from '@/lib/slugify';
 
 interface PublicItem {
   id: string;
@@ -77,7 +78,11 @@ export default function PublicItemView() {
   });
 
   const handleShare = async () => {
-    const shareUrl = getShareableUrl('item', id!);
+    const shareUrl = getShareableUrl('item', id!, {
+      creatorName: item?.creator_name || item?.creator_username,
+      brand: item?.brand,
+      category: item?.category,
+    });
     await nativeShare({
       title: `${item?.brand || 'Item'} - Azyah Style`,
       text: `Check out this ${item?.category || 'item'} on Azyah Style!`,
@@ -90,8 +95,9 @@ export default function PublicItemView() {
     openExternalUrl(item?.source_url);
   };
 
-  const handleOutfitClick = (outfitId: string) => {
-    navigate(`/share/outfit/${outfitId}`);
+  const handleOutfitClick = (outfit: CreatorOutfit) => {
+    const slug = buildItemSlug(item?.creator_name || item?.creator_username, null, null, outfit.id);
+    navigate(`/share/outfit/${outfit.id}/${slug}`);
   };
 
   // Helper to get display name with proper fallback
@@ -129,6 +135,8 @@ export default function PublicItemView() {
   const displayImage = item.image_bg_removed_url || item.image_url;
   const displayName = item.brand || item.source_vendor_name || item.category;
   const creatorName = getCreatorDisplayName();
+  const slug = buildItemSlug(item.creator_name || item.creator_username, item.brand, item.category, id);
+  const canonicalUrl = `${SITE_URL}/share/item/${id}/${slug}`;
 
   return (
     <>
@@ -136,8 +144,8 @@ export default function PublicItemView() {
         title={`${displayName} - Azyah`}
         description={`Check out this ${item.category} item styled by ${creatorName} on Azyah`}
         image={displayImage}
-        canonical={`https://azyahstyle.com/share/item/${id}`}
-        url={`https://azyahstyle.com/share/item/${id}`}
+        canonical={canonicalUrl}
+        url={canonicalUrl}
       />
 
       <div className="min-h-screen bg-background">
@@ -238,7 +246,7 @@ export default function PublicItemView() {
                   <div
                     key={outfit.id}
                     className="flex-shrink-0 cursor-pointer group"
-                    onClick={() => handleOutfitClick(outfit.id)}
+                    onClick={() => handleOutfitClick(outfit)}
                   >
                     <div className="w-28 aspect-[3/4] bg-muted rounded-lg overflow-hidden">
                       {(outfit.render_path || outfit.image_preview) ? (
