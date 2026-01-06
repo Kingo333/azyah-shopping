@@ -198,13 +198,15 @@ const FashionFeed: React.FC = () => {
   };
 
   const handleShare = (postId: string) => {
+    // Note: /feed/:id route requires auth - sharing current page for logged-in context
+    const shareUrl = `${window.location.origin}/feed/${postId}`;
     if (navigator.share) {
       navigator.share({
         title: 'Fashion Post from Azyah',
-        url: `${window.location.origin}/feed/${postId}`
+        url: shareUrl
       });
     } else {
-      navigator.clipboard.writeText(`${window.location.origin}/feed/${postId}`);
+      navigator.clipboard.writeText(shareUrl);
       toast({ description: "Link copied to clipboard!" });
     }
   };
