@@ -4843,6 +4843,16 @@ export type Database = {
           total_jobs: number
         }[]
       }
+      get_creator_public_outfits: {
+        Args: { creator_id: string; exclude_outfit_id?: string }
+        Returns: {
+          created_at: string
+          id: string
+          image_preview: string
+          render_path: string
+          title: string
+        }[]
+      }
       get_current_user_role: {
         Args: never
         Returns: Database["public"]["Enums"]["user_role"]
@@ -5025,6 +5035,48 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      get_public_item_with_creator: {
+        Args: { item_id: string }
+        Returns: {
+          brand: string
+          category: string
+          color: string
+          created_at: string
+          creator_avatar_url: string
+          creator_id: string
+          creator_name: string
+          creator_username: string
+          id: string
+          image_bg_removed_url: string
+          image_url: string
+          outfit_id: string
+          outfit_title: string
+          season: string
+          source_url: string
+          source_vendor_name: string
+          tags: string[]
+        }[]
+      }
+      get_public_outfit_creator: {
+        Args: { outfit_id: string }
+        Returns: {
+          avatar_url: string
+          name: string
+          username: string
+        }[]
+      }
+      get_public_outfit_items: {
+        Args: { outfit_id: string }
+        Returns: {
+          brand: string
+          category: string
+          id: string
+          image_bg_removed_url: string
+          image_url: string
+          source_url: string
+          source_vendor_name: string
+        }[]
       }
       get_public_products: {
         Args: { p_category?: string; p_limit?: number; p_offset?: number }
