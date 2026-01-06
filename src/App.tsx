@@ -36,10 +36,7 @@ import Explore from './pages/Explore';
 import TrendingStyles from './pages/TrendingStyles';
 import FeaturedBrands from './pages/FeaturedBrands';
 import BrandDetail from './pages/BrandDetail';
-import TopInfluencers from './pages/TopInfluencers';
-import ImageSearch from './pages/ImageSearch';
 import Affiliate from './pages/Affiliate';
-import ToyReplica from './pages/ToyReplica';
 import BeautyConsultant from './pages/BeautyConsultant';
 import Events from './pages/Events';
 import UGCCollaborations from './pages/UGCCollaborations';
@@ -203,20 +200,9 @@ function AppContent() {
                   <Route path="/trending-styles" element={<TrendingStyles />} />
                   <Route path="/featured-brands" element={<FeaturedBrands />} />
                   <Route path="/brand/:slug" element={<BrandDetail />} />
-                  <Route path="/top-influencers" element={<TopInfluencers />} />
-                  <Route path="/image-search" element={
-                    <ProtectedRoute roles={['shopper', 'admin']}>
-                      <ImageSearch />
-                    </ProtectedRoute>
-                  } />
                   <Route path="/affiliate" element={
                     <ProtectedRoute>
                       <Affiliate />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/toy-replica" element={
-                    <ProtectedRoute roles={['shopper', 'admin']}>
-                      <ToyReplica />
                     </ProtectedRoute>
                   } />
                   <Route path="/beauty-consultant" element={
@@ -257,9 +243,9 @@ function AppContent() {
                   <Route path="/terms" element={<Terms />} />
                   <Route path="/privacy" element={<Privacy />} />
                   
-                  {/* Task 5: Public share routes (no auth required) */}
-                  <Route path="/share/outfit/:id" element={<PublicOutfitView />} />
-                  <Route path="/share/item/:id" element={<PublicItemView />} />
+                  {/* Public share routes with optional slug (backward compatible) */}
+                  <Route path="/share/outfit/:id/:slug?" element={<PublicOutfitView />} />
+                  <Route path="/share/item/:id/:slug?" element={<PublicItemView />} />
                   
                   <Route path="/admin/delete-user" element={
                     <ProtectedRoute roles={['admin']}>

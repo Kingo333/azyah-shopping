@@ -1,5 +1,6 @@
 import { Capacitor } from '@capacitor/core';
 import { toast } from 'sonner';
+import { buildOutfitSlug, buildItemSlug } from './slugify';
 
 /**
  * Centralized production site URL for all share links.
@@ -14,12 +15,38 @@ interface ShareOptions {
   dialogTitle?: string;
 }
 
+interface ShareableUrlOptions {
+  creatorName?: string | null;
+  title?: string | null;
+  brand?: string | null;
+  category?: string | null;
+}
+
 /**
  * Generate a share URL for outfits and wardrobe items.
  * Always uses the production domain (azyahstyle.com).
+ * Optionally includes a human-friendly slug.
  */
-export function getShareableUrl(type: 'outfit' | 'item', id: string): string {
-  return `${SITE_URL}/share/${type}/${id}`;
+export function getShareableUrl(
+  type: 'outfit' | 'item',
+  id: string,
+  options?: ShareableUrlOptions
+): string {
+  const base = `${SITE_URL}/share/${type}/${id}`;
+  
+  if (!options) {
+    return base;
+  }
+
+  // Generate slug based on type
+  let slug: string;
+  if (type === 'outfit') {
+    slug = buildOutfitSlug(options.creatorName, options.title, id);
+  } else {
+    slug = buildItemSlug(options.creatorName, options.brand, options.category, id);
+  }
+
+  return `${base}/${slug}`;
 }
 
 /**

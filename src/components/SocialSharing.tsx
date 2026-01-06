@@ -32,6 +32,10 @@ interface SocialSharingProps {
     image_url?: string;
     url?: string;
     type: 'product' | 'outfit' | 'mood-board' | 'post' | 'item';
+    // Optional metadata for friendly slug generation
+    creatorName?: string | null;
+    brand?: string | null;
+    category?: string | null;
   };
   user?: {
     name: string;
@@ -47,18 +51,25 @@ const SocialSharing = ({ item, user, onShare }: SocialSharingProps) => {
   const [customMessage, setCustomMessage] = useState('');
   const [isGeneratingQR, setIsGeneratingQR] = useState(false);
 
-  // Generate the correct share URL based on item type
+  // Generate the correct share URL based on item type (with friendly slugs)
   const getShareUrl = (): string => {
     // If a custom URL is provided, use it
     if (item.url) return item.url;
     
-    // Route based on item type
+    // Route based on item type - include slug metadata for friendly URLs
+    const slugOptions = {
+      creatorName: item.creatorName,
+      title: item.title,
+      brand: item.brand,
+      category: item.category,
+    };
+    
     switch (item.type) {
       case 'outfit':
-        return getShareableUrl('outfit', item.id);
+        return getShareableUrl('outfit', item.id, slugOptions);
       case 'item':
         // 'item' refers to wardrobe items
-        return getShareableUrl('item', item.id);
+        return getShareableUrl('item', item.id, slugOptions);
       case 'product':
         // Products use /products/:id route
         return getProductShareUrl(item.id);

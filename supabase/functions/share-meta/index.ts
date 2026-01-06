@@ -41,6 +41,7 @@ serve(async (req) => {
     let description = 'Discover fashion on Azyah Style';
     let image = 'https://azyahstyle.com/og-image.png';
     const baseUrl = 'https://azyahstyle.com';
+    // Note: shareUrl does NOT include slug for meta tags - slug is cosmetic only
     const shareUrl = `${baseUrl}/share/${type}/${id}`;
 
     if (type === 'outfit') {
