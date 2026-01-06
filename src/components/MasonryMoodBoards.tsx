@@ -221,15 +221,16 @@ const MasonryMoodBoards = ({
     if (onShare) {
       onShare(board);
     } else {
-      // Default share behavior
+      // Note: /mood-boards/:id route requires auth - sharing current page for logged-in context
+      const shareUrl = `${window.location.origin}/mood-boards/${board.id}`;
       if (navigator.share) {
         navigator.share({
           title: board.title,
           text: board.description,
-          url: window.location.href
+          url: shareUrl
         });
       } else {
-        navigator.clipboard.writeText(window.location.href);
+        navigator.clipboard.writeText(shareUrl);
         toast({
           title: "Link copied!",
           description: "Mood board link copied to clipboard.",

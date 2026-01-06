@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { SITE_URL } from '@/lib/nativeShare';
 
 export interface Referral {
   id: string;
@@ -168,9 +169,9 @@ export const useApplyReferralCode = () => {
   });
 };
 
-// Share referral code
+// Share referral code - uses production domain for public landing
 export const shareReferralCode = async (code: string) => {
-  const shareUrl = `${window.location.origin}/onboarding/signup?ref=${code}`;
+  const shareUrl = `${SITE_URL}/onboarding/signup?ref=${code}`;
   const shareData = {
     title: 'Join Azyah!',
     text: `Use my referral code ${code} to join Azyah and we both earn points!`,
