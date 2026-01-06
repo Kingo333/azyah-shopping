@@ -269,15 +269,16 @@ const InfiniteScrollForum = ({ onShare }: InfiniteScrollForumProps) => {
     if (onShare) {
       onShare(post);
     } else {
-      // Default share behavior
+      // Default share behavior - use production URL
+      const shareUrl = `https://azyahstyle.com/forum/${post.id}`;
       if (navigator.share) {
         navigator.share({
           title: post.title,
           text: post.content,
-          url: window.location.href
+          url: shareUrl
         });
       } else {
-        navigator.clipboard.writeText(window.location.href);
+        navigator.clipboard.writeText(shareUrl);
         toast({
           title: "Link copied!",
           description: "Post link copied to clipboard.",

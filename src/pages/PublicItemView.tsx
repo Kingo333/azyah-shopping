@@ -140,6 +140,8 @@ export default function PublicItemView() {
         title={`${displayName} - Azyah`}
         description={`Check out this ${item.category} item on Azyah`}
         image={displayImage}
+        canonical={`https://azyahstyle.com/share/item/${id}`}
+        url={`https://azyahstyle.com/share/item/${id}`}
       />
 
       <div className="min-h-screen bg-background">

@@ -116,7 +116,7 @@ export const BrandProductDetailModal: React.FC<BrandProductDetailModalProps> = (
   };
 
   const handleShare = async () => {
-    const productUrl = `${window.location.origin}/products/${product.id}`;
+    const productUrl = `https://azyahstyle.com/products/${product.id}`;
     if (navigator.share) {
       try {
         await navigator.share({ 

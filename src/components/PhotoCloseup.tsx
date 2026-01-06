@@ -202,17 +202,18 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
   const handleShare = async () => {
     if (!product) return;
 
+    const shareUrl = `https://azyahstyle.com/products/${product.id}`;
     const shareData = {
       title: product.title,
       text: `Check out this ${product.title} from ${product.brand?.name || 'Azyah'}`,
-      url: `${window.location.origin}/p/${product.id}`
+      url: shareUrl
     };
 
     try {
       if (navigator.share) {
         await navigator.share(shareData);
       } else {
-        await navigator.clipboard.writeText(shareData.url);
+        await navigator.clipboard.writeText(shareUrl);
         toast({
           description: "Link copied to clipboard!"
         });

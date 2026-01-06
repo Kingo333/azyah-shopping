@@ -32,15 +32,16 @@ export const RetailerProductDetailModal: React.FC<RetailerProductDetailModalProp
   };
 
   const handleShare = async () => {
+    const shareUrl = `https://azyahstyle.com/products/${product.id}`;
     try {
       if (navigator.share) {
         await navigator.share({
           title: product.title,
           text: `Check out this ${product.title}`,
-          url: window.location.href,
+          url: shareUrl,
         });
       } else {
-        await navigator.clipboard.writeText(window.location.href);
+        await navigator.clipboard.writeText(shareUrl);
         toast({
           description: "Product link copied to clipboard!",
         });

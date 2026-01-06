@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import QRCode from 'qrcode';
+import { getShareableUrl, getProductShareUrl, SITE_URL } from '@/lib/nativeShare';
 
 interface SocialSharingProps {
   item: {
@@ -30,7 +31,7 @@ interface SocialSharingProps {
     description?: string;
     image_url?: string;
     url?: string;
-    type: 'product' | 'outfit' | 'mood-board' | 'post';
+    type: 'product' | 'outfit' | 'mood-board' | 'post' | 'item';
   };
   user?: {
     name: string;
@@ -46,7 +47,31 @@ const SocialSharing = ({ item, user, onShare }: SocialSharingProps) => {
   const [customMessage, setCustomMessage] = useState('');
   const [isGeneratingQR, setIsGeneratingQR] = useState(false);
 
-  const shareUrl = item.url || `${window.location.origin}/${item.type}s/${item.id}`;
+  // Generate the correct share URL based on item type
+  const getShareUrl = (): string => {
+    // If a custom URL is provided, use it
+    if (item.url) return item.url;
+    
+    // Route based on item type
+    switch (item.type) {
+      case 'outfit':
+        return getShareableUrl('outfit', item.id);
+      case 'item':
+        // 'item' refers to wardrobe items
+        return getShareableUrl('item', item.id);
+      case 'product':
+        // Products use /products/:id route
+        return getProductShareUrl(item.id);
+      case 'mood-board':
+        return `${SITE_URL}/mood-boards/${item.id}`;
+      case 'post':
+        return `${SITE_URL}/posts/${item.id}`;
+      default:
+        return `${SITE_URL}/${item.type}s/${item.id}`;
+    }
+  };
+
+  const shareUrl = getShareUrl();
   const defaultMessage = `Check out this amazing ${item.type}: ${item.title}`;
 
   const platforms = [
@@ -185,7 +210,7 @@ const SocialSharing = ({ item, user, onShare }: SocialSharingProps) => {
         });
         trackShare('native');
       } catch (error) {
-        if (error.name !== 'AbortError') {
+        if ((error as Error).name !== 'AbortError') {
           toast({
             title: "Error",
             description: "Failed to share using native share.",

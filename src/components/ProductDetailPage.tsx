@@ -48,19 +48,20 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
     }
   };
   const handleShare = async () => {
+    const shareUrl = `https://azyahstyle.com/products/${product.id}`;
     if (navigator.share) {
       try {
         await navigator.share({
           title: product.title,
           text: `Check out this ${product.title} from ${product.brand?.name}`,
-          url: window.location.href
+          url: shareUrl
         });
       } catch (error) {
         console.log('Error sharing:', error);
       }
     } else {
       // Fallback - copy to clipboard
-      navigator.clipboard.writeText(window.location.href);
+      navigator.clipboard.writeText(shareUrl);
       toast({
         description: 'Link copied to clipboard!'
       });
