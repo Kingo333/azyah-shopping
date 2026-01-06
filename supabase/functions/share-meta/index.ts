@@ -55,14 +55,15 @@ serve(async (req) => {
       console.log(`[share-meta] Outfit query result:`, fit, fitError);
 
       if (fit) {
-        // Get creator info from public_profiles (not users_public)
-        const { data: user } = await supabaseClient
-          .from('public_profiles')
-          .select('username, name')
-          .eq('id', fit.user_id)
-          .single();
+        // Use RPC to get creator info (bypasses RLS on public_profiles)
+        const { data: creatorData, error: creatorError } = await supabaseClient
+          .rpc('get_public_outfit_creator', { outfit_id: id });
 
-        const creatorName = user?.username || user?.name || 'a stylist';
+        console.log(`[share-meta] Creator RPC result:`, creatorData, creatorError);
+
+        const creator = creatorData?.[0];
+        const creatorName = creator?.name || creator?.username || 'a stylist';
+        
         title = fit.title ? `${fit.title} - Outfit by ${creatorName}` : `Outfit by ${creatorName}`;
         description = `Check out this outfit created by ${creatorName} on Azyah Style`;
         
@@ -80,19 +81,19 @@ serve(async (req) => {
         console.log('[share-meta] Outfit not found or not public');
       }
     } else if (type === 'item') {
-      // Fetch item data
-      const { data: item, error: itemError } = await supabaseClient
-        .from('wardrobe_items')
-        .select('id, brand, category, image_url, image_bg_removed_url, source_vendor_name')
-        .eq('id', id)
-        .single();
+      // Use RPC to get item with creator (bypasses RLS)
+      const { data: itemData, error: itemError } = await supabaseClient
+        .rpc('get_public_item_with_creator', { item_id: id });
 
-      console.log(`[share-meta] Item query result:`, item, itemError);
+      console.log(`[share-meta] Item RPC result:`, itemData, itemError);
 
+      const item = itemData?.[0];
       if (item) {
         const displayName = item.brand || item.source_vendor_name || item.category || 'Fashion Item';
-        title = `${displayName} - Azyah Style`;
-        description = `Check out this ${item.category || 'fashion item'} on Azyah Style`;
+        const creatorName = item.creator_name || item.creator_username || 'a stylist';
+        
+        title = `${displayName} - Styled by ${creatorName}`;
+        description = `Check out this ${item.category || 'fashion item'} styled by ${creatorName} on Azyah Style`;
         
         // Get image - ensure it's an absolute URL
         const itemImage = item.image_bg_removed_url || item.image_url;
@@ -105,7 +106,7 @@ serve(async (req) => {
         }
         console.log(`[share-meta] Item found: ${title}, image: ${image}`);
       } else {
-        console.log('[share-meta] Item not found');
+        console.log('[share-meta] Item not found or not public');
       }
     }
 

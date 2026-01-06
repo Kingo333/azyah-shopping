@@ -2,9 +2,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { SEOHead } from '@/components/SEOHead';
 import { ArrowLeft, ExternalLink, Share2, ShoppingBag } from 'lucide-react';
-import { toast } from 'sonner';
 import { openExternalUrl } from '@/lib/openExternalUrl';
 import { nativeShare, getShareableUrl } from '@/lib/nativeShare';
 
@@ -17,78 +17,63 @@ interface PublicItem {
   color: string | null;
   season: string | null;
   tags: string[] | null;
-  source_product_id: string | null;
   source_url: string | null;
   source_vendor_name: string | null;
   created_at: string;
-  // Attribution
-  attribution_user: {
-    id: string;
-    username: string | null;
-    name: string | null;
-    avatar_url: string | null;
-  } | null;
+  // Creator attribution (from outfit or item owner)
+  creator_id: string | null;
+  creator_username: string | null;
+  creator_name: string | null;
+  creator_avatar_url: string | null;
+  // If item came from a public outfit
+  outfit_id: string | null;
+  outfit_title: string | null;
+}
+
+interface CreatorOutfit {
+  id: string;
+  title: string | null;
+  render_path: string | null;
+  image_preview: string | null;
 }
 
 export default function PublicItemView() {
   const { id } = useParams();
   const navigate = useNavigate();
 
+  // Fetch item with creator using RPC (bypasses RLS)
   const { data: item, isLoading, error } = useQuery({
     queryKey: ['public-item', id],
     queryFn: async (): Promise<PublicItem | null> => {
       if (!id) return null;
 
-      // Fetch wardrobe item
-      // Note: We check if this item belongs to a public outfit OR is public_reuse_permitted
-      const { data: itemData, error: itemError } = await supabase
-        .from('wardrobe_items')
-        .select(`
-          id, image_url, image_bg_removed_url, brand, category, color, season, tags,
-          source_product_id, source_url, source_vendor_name, created_at, 
-          attribution_user_id, public_reuse_permitted, user_id
-        `)
-        .eq('id', id)
-        .single();
+      const { data, error } = await supabase
+        .rpc('get_public_item_with_creator', { item_id: id });
 
-      if (itemError || !itemData) {
+      if (error || !data || data.length === 0) {
         return null;
       }
 
-      // Check if item is publicly accessible:
-      // Either public_reuse_permitted OR belongs to a public outfit
-      if (!itemData.public_reuse_permitted) {
-        // Check if it's part of any public outfit
-        const { data: publicFitItem } = await supabase
-          .from('fit_items')
-          .select('fit_id, fits!inner(is_public)')
-          .eq('wardrobe_item_id', id)
-          .eq('fits.is_public', true)
-          .limit(1)
-          .single();
-
-        if (!publicFitItem) {
-          return null; // Not publicly accessible
-        }
-      }
-
-      // Fetch attribution user if exists
-      let attributionUser = null;
-      if (itemData.attribution_user_id) {
-        const { data: userData } = await supabase
-          .from('public_profiles')
-          .select('id, username, name, avatar_url')
-          .eq('id', itemData.attribution_user_id)
-          .single();
-        attributionUser = userData;
-      }
-
-      return {
-        ...itemData,
-        attribution_user: attributionUser,
-      };
+      return data[0] as PublicItem;
     },
     enabled: !!id,
+  });
+
+  // Fetch creator's other public outfits
+  const { data: creatorOutfits } = useQuery({
+    queryKey: ['creator-public-outfits', item?.creator_id, item?.outfit_id],
+    queryFn: async (): Promise<CreatorOutfit[]> => {
+      if (!item?.creator_id) return [];
+
+      const { data } = await supabase
+        .rpc('get_creator_public_outfits', { 
+          creator_id: item.creator_id,
+          exclude_outfit_id: item.outfit_id || null
+        });
+
+      return (data || []) as CreatorOutfit[];
+    },
+    enabled: !!item?.creator_id,
   });
 
   const handleShare = async () => {
@@ -103,6 +88,16 @@ export default function PublicItemView() {
 
   const handleShopNow = () => {
     openExternalUrl(item?.source_url);
+  };
+
+  const handleOutfitClick = (outfitId: string) => {
+    navigate(`/share/outfit/${outfitId}`);
+  };
+
+  // Helper to get display name with proper fallback
+  const getCreatorDisplayName = () => {
+    if (!item) return 'Azyah user';
+    return item.creator_name || item.creator_username || 'Azyah user';
   };
 
   if (isLoading) {
@@ -133,12 +128,13 @@ export default function PublicItemView() {
 
   const displayImage = item.image_bg_removed_url || item.image_url;
   const displayName = item.brand || item.source_vendor_name || item.category;
+  const creatorName = getCreatorDisplayName();
 
   return (
     <>
       <SEOHead
         title={`${displayName} - Azyah`}
-        description={`Check out this ${item.category} item on Azyah`}
+        description={`Check out this ${item.category} item styled by ${creatorName} on Azyah`}
         image={displayImage}
         canonical={`https://azyahstyle.com/share/item/${id}`}
         url={`https://azyahstyle.com/share/item/${id}`}
@@ -182,6 +178,24 @@ export default function PublicItemView() {
               <p className="text-muted-foreground capitalize">{item.category}</p>
             </div>
 
+            {/* Creator attribution */}
+            {item.creator_id && (
+              <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                <Avatar className="w-10 h-10">
+                  <AvatarImage src={item.creator_avatar_url || undefined} />
+                  <AvatarFallback>
+                    {creatorName[0].toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <p className="text-sm text-muted-foreground">
+                    {item.outfit_id ? 'Styled by' : 'Saved by'}
+                  </p>
+                  <p className="font-medium">{creatorName}</p>
+                </div>
+              </div>
+            )}
+
             {/* Details */}
             <div className="flex flex-wrap gap-2">
               {item.color && (
@@ -214,6 +228,48 @@ export default function PublicItemView() {
               </div>
             )}
           </div>
+
+          {/* More by creator section */}
+          {creatorOutfits && creatorOutfits.length > 0 && (
+            <div className="mt-8">
+              <h3 className="font-semibold mb-3">More by {creatorName}</h3>
+              <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
+                {creatorOutfits.map((outfit) => (
+                  <div
+                    key={outfit.id}
+                    className="flex-shrink-0 cursor-pointer group"
+                    onClick={() => handleOutfitClick(outfit.id)}
+                  >
+                    <div className="w-28 aspect-[3/4] bg-muted rounded-lg overflow-hidden">
+                      {(outfit.render_path || outfit.image_preview) ? (
+                        <img
+                          src={outfit.render_path || outfit.image_preview || ''}
+                          alt={outfit.title || 'Outfit'}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">
+                          No preview
+                        </div>
+                      )}
+                    </div>
+                    <p className="text-xs mt-1 line-clamp-1 text-center">
+                      {outfit.title || 'Untitled'}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Empty state for "More by creator" */}
+          {item.creator_id && (!creatorOutfits || creatorOutfits.length === 0) && (
+            <div className="mt-8 p-4 bg-muted/30 rounded-lg text-center">
+              <p className="text-sm text-muted-foreground">
+                No more public outfits by {creatorName} yet
+              </p>
+            </div>
+          )}
 
           {/* CTA */}
           <div className="mt-8 p-4 bg-muted/50 rounded-xl text-center">

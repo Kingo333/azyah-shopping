@@ -6,7 +6,6 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { SEOHead } from '@/components/SEOHead';
 import { Share2, ExternalLink, Heart, ArrowLeft } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-import { toast } from 'sonner';
 import { nativeShare, getShareableUrl } from '@/lib/nativeShare';
 
 interface OutfitItem {
@@ -15,7 +14,6 @@ interface OutfitItem {
   image_bg_removed_url: string | null;
   brand: string | null;
   category: string;
-  source_product_id: string | null;
   source_url: string | null;
   source_vendor_name: string | null;
 }
@@ -29,7 +27,6 @@ interface PublicOutfit {
   comment_count: number;
   created_at: string;
   user: {
-    id: string;
     username: string | null;
     name: string | null;
     avatar_url: string | null;
@@ -46,10 +43,10 @@ export default function PublicOutfitView() {
     queryFn: async (): Promise<PublicOutfit | null> => {
       if (!id) return null;
 
-      // Fetch outfit (ONLY public)
+      // Fetch outfit basic info (ONLY public)
       const { data: fitData, error: fitError } = await supabase
         .from('fits')
-        .select('id, title, render_path, image_preview, like_count, comment_count, created_at, user_id')
+        .select('id, title, render_path, image_preview, like_count, comment_count, created_at')
         .eq('id', id)
         .eq('is_public', true) // CRITICAL: Only public outfits
         .single();
@@ -58,36 +55,20 @@ export default function PublicOutfitView() {
         return null;
       }
 
-      // Fetch user info (using public_profiles table)
-      const { data: userData } = await supabase
-        .from('public_profiles')
-        .select('id, username, name, avatar_url')
-        .eq('id', fitData.user_id)
-        .single();
+      // Use RPC to get creator info (bypasses RLS on public_profiles)
+      const { data: creatorData } = await supabase
+        .rpc('get_public_outfit_creator', { outfit_id: id });
 
-      // Fetch fit items
-      const { data: fitItems } = await supabase
-        .from('fit_items')
-        .select('wardrobe_item_id')
-        .eq('fit_id', id);
+      const creator = creatorData?.[0] || { username: null, name: null, avatar_url: null };
 
-      // Fetch wardrobe items
-      const wardrobeItemIds = (fitItems || []).map(item => item.wardrobe_item_id);
-      let wardrobeItems: OutfitItem[] = [];
-
-      if (wardrobeItemIds.length > 0) {
-        const { data: items } = await supabase
-          .from('wardrobe_items')
-          .select('id, image_url, image_bg_removed_url, brand, category, source_product_id, source_url, source_vendor_name')
-          .in('id', wardrobeItemIds);
-        
-        wardrobeItems = (items || []) as OutfitItem[];
-      }
+      // Use RPC to get all outfit items (bypasses RLS on wardrobe_items)
+      const { data: itemsData } = await supabase
+        .rpc('get_public_outfit_items', { outfit_id: id });
 
       return {
         ...fitData,
-        user: userData || { id: fitData.user_id, username: null, name: null, avatar_url: null },
-        items: wardrobeItems,
+        user: creator,
+        items: (itemsData || []) as OutfitItem[],
       };
     },
     enabled: !!id,
@@ -97,7 +78,7 @@ export default function PublicOutfitView() {
     const shareUrl = getShareableUrl('outfit', id!);
     await nativeShare({
       title: outfit?.title || 'Check out this outfit on Azyah Style',
-      text: `${outfit?.user?.username || 'Someone'} shared an outfit with you!`,
+      text: `${getDisplayName(outfit?.user)} shared an outfit with you!`,
       url: shareUrl,
       dialogTitle: 'Share Outfit',
     });
@@ -105,6 +86,12 @@ export default function PublicOutfitView() {
 
   const handleItemClick = (item: OutfitItem) => {
     navigate(`/share/item/${item.id}`);
+  };
+
+  // Helper to get display name with proper fallback
+  const getDisplayName = (user?: { username: string | null; name: string | null }) => {
+    if (!user) return 'Azyah user';
+    return user.name || user.username || 'Azyah user';
   };
 
   if (isLoading) {
@@ -133,14 +120,14 @@ export default function PublicOutfitView() {
     );
   }
 
-  const username = outfit.user.username || outfit.user.name || 'Anonymous';
+  const displayName = getDisplayName(outfit.user);
   const outfitImage = outfit.render_path || outfit.image_preview;
 
   return (
     <>
       <SEOHead
-        title={`${outfit.title || 'Outfit'} by ${username} - Azyah`}
-        description={`Check out this outfit created by ${username} on Azyah`}
+        title={`${outfit.title || 'Outfit'} by ${displayName} - Azyah`}
+        description={`Check out this outfit created by ${displayName} on Azyah`}
         image={outfitImage || undefined}
         canonical={`https://azyahstyle.com/share/outfit/${id}`}
         url={`https://azyahstyle.com/share/outfit/${id}`}
@@ -188,11 +175,11 @@ export default function PublicOutfitView() {
             <Avatar className="w-10 h-10">
               <AvatarImage src={outfit.user.avatar_url || undefined} />
               <AvatarFallback>
-                {username[0].toUpperCase()}
+                {displayName[0].toUpperCase()}
               </AvatarFallback>
             </Avatar>
             <div>
-              <p className="font-semibold">{username}</p>
+              <p className="font-semibold">{displayName}</p>
               <p className="text-sm text-muted-foreground">
                 {formatDistanceToNow(new Date(outfit.created_at), { addSuffix: true })}
               </p>
