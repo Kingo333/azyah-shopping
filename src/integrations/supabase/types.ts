@@ -1545,6 +1545,7 @@ export type Database = {
           occasion: string | null
           outfit_data: Json | null
           render_path: string | null
+          share_slug: string | null
           title: string | null
           user_id: string
         }
@@ -1562,6 +1563,7 @@ export type Database = {
           occasion?: string | null
           outfit_data?: Json | null
           render_path?: string | null
+          share_slug?: string | null
           title?: string | null
           user_id: string
         }
@@ -1579,6 +1581,7 @@ export type Database = {
           occasion?: string | null
           outfit_data?: Json | null
           render_path?: string | null
+          share_slug?: string | null
           title?: string | null
           user_id?: string
         }
@@ -3896,6 +3899,7 @@ export type Database = {
           original_width: number | null
           public_reuse_permitted: boolean | null
           season: string | null
+          share_slug: string | null
           source: string | null
           source_product_id: string | null
           source_url: string | null
@@ -3922,6 +3926,7 @@ export type Database = {
           original_width?: number | null
           public_reuse_permitted?: boolean | null
           season?: string | null
+          share_slug?: string | null
           source?: string | null
           source_product_id?: string | null
           source_url?: string | null
@@ -3948,6 +3953,7 @@ export type Database = {
           original_width?: number | null
           public_reuse_permitted?: boolean | null
           season?: string | null
+          share_slug?: string | null
           source?: string | null
           source_product_id?: string | null
           source_url?: string | null
@@ -4853,6 +4859,16 @@ export type Database = {
           title: string
         }[]
       }
+      get_creator_public_outfits_by_slug: {
+        Args: { creator_id_param: string; exclude_slug_param?: string }
+        Returns: {
+          id: string
+          image_preview: string
+          render_path: string
+          share_slug: string
+          title: string
+        }[]
+      }
       get_current_user_role: {
         Args: never
         Returns: Database["public"]["Enums"]["user_role"]
@@ -5036,6 +5052,31 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      get_public_item_by_slug: {
+        Args: { slug_param: string }
+        Returns: {
+          brand: string
+          category: string
+          color: string
+          created_at: string
+          creator_avatar_url: string
+          creator_id: string
+          creator_name: string
+          creator_username: string
+          id: string
+          image_bg_removed_url: string
+          image_url: string
+          name: string
+          outfit_id: string
+          outfit_slug: string
+          outfit_title: string
+          season: string
+          share_slug: string
+          source_url: string
+          source_vendor_name: string
+          tags: string[]
+        }[]
+      }
       get_public_item_with_creator: {
         Args: { item_id: string }
         Returns: {
@@ -5058,10 +5099,32 @@ export type Database = {
           tags: string[]
         }[]
       }
+      get_public_outfit_by_slug: {
+        Args: { slug_param: string }
+        Returns: {
+          comment_count: number
+          created_at: string
+          id: string
+          image_preview: string
+          like_count: number
+          render_path: string
+          share_slug: string
+          title: string
+        }[]
+      }
       get_public_outfit_creator: {
         Args: { outfit_id: string }
         Returns: {
           avatar_url: string
+          name: string
+          username: string
+        }[]
+      }
+      get_public_outfit_creator_by_slug: {
+        Args: { slug_param: string }
+        Returns: {
+          avatar_url: string
+          creator_id: string
           name: string
           username: string
         }[]
@@ -5074,6 +5137,20 @@ export type Database = {
           id: string
           image_bg_removed_url: string
           image_url: string
+          source_url: string
+          source_vendor_name: string
+        }[]
+      }
+      get_public_outfit_items_by_slug: {
+        Args: { slug_param: string }
+        Returns: {
+          brand: string
+          category: string
+          id: string
+          image_bg_removed_url: string
+          image_url: string
+          name: string
+          share_slug: string
           source_url: string
           source_vendor_name: string
         }[]
@@ -5429,6 +5506,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      slugify: { Args: { text_input: string }; Returns: string }
       tier_from_price_aed: { Args: { aed_price: number }; Returns: string }
       upsert_beauty_profile: {
         Args: { profile_updates: Json; target_user_id: string }

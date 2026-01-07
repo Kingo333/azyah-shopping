@@ -243,9 +243,9 @@ function AppContent() {
                   <Route path="/terms" element={<Terms />} />
                   <Route path="/privacy" element={<Privacy />} />
                   
-                  {/* Public share routes with optional slug (backward compatible) */}
-                  <Route path="/share/outfit/:id/:slug?" element={<PublicOutfitView />} />
-                  <Route path="/share/item/:id/:slug?" element={<PublicItemView />} />
+                  {/* Public share routes - SLUG ONLY (no UUIDs) */}
+                  <Route path="/share/outfit/:slug" element={<PublicOutfitView />} />
+                  <Route path="/share/item/:slug" element={<PublicItemView />} />
                   
                   <Route path="/admin/delete-user" element={
                     <ProtectedRoute roles={['admin']}>

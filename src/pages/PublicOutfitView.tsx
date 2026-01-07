@@ -3,18 +3,21 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Card, CardContent } from '@/components/ui/card';
 import { SEOHead } from '@/components/SEOHead';
 import { Share2, ExternalLink, Heart, ArrowLeft } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { nativeShare, getShareableUrl, SITE_URL } from '@/lib/nativeShare';
-import { buildOutfitSlug } from '@/lib/slugify';
+import { openExternalUrl } from '@/lib/openExternalUrl';
 
 interface OutfitItem {
   id: string;
+  share_slug: string | null;
   image_url: string;
   image_bg_removed_url: string | null;
   brand: string | null;
   category: string;
+  name: string | null;
   source_url: string | null;
   source_vendor_name: string | null;
 }
@@ -27,7 +30,9 @@ interface PublicOutfit {
   like_count: number;
   comment_count: number;
   created_at: string;
+  share_slug: string;
   user: {
+    creator_id: string | null;
     username: string | null;
     name: string | null;
     avatar_url: string | null;
@@ -35,52 +40,72 @@ interface PublicOutfit {
   items: OutfitItem[];
 }
 
+interface CreatorOutfit {
+  id: string;
+  title: string | null;
+  render_path: string | null;
+  image_preview: string | null;
+  share_slug: string;
+}
+
 export default function PublicOutfitView() {
-  const { id } = useParams();
+  const { slug } = useParams();
   const navigate = useNavigate();
 
   const { data: outfit, isLoading, error } = useQuery({
-    queryKey: ['public-outfit', id],
+    queryKey: ['public-outfit-slug', slug],
     queryFn: async (): Promise<PublicOutfit | null> => {
-      if (!id) return null;
+      if (!slug) return null;
 
-      // Fetch outfit basic info (ONLY public)
+      // Fetch outfit by slug
       const { data: fitData, error: fitError } = await supabase
-        .from('fits')
-        .select('id, title, render_path, image_preview, like_count, comment_count, created_at')
-        .eq('id', id)
-        .eq('is_public', true) // CRITICAL: Only public outfits
-        .single();
+        .rpc('get_public_outfit_by_slug', { slug_param: slug });
 
-      if (fitError || !fitData) {
+      if (fitError || !fitData || fitData.length === 0) {
         return null;
       }
 
-      // Use RPC to get creator info (bypasses RLS on public_profiles)
+      const fit = fitData[0];
+
+      // Get creator info by slug
       const { data: creatorData } = await supabase
-        .rpc('get_public_outfit_creator', { outfit_id: id });
+        .rpc('get_public_outfit_creator_by_slug', { slug_param: slug });
 
-      const creator = creatorData?.[0] || { username: null, name: null, avatar_url: null };
+      const creator = creatorData?.[0] || { creator_id: null, username: null, name: null, avatar_url: null };
 
-      // Use RPC to get all outfit items (bypasses RLS on wardrobe_items)
+      // Get all outfit items by slug
       const { data: itemsData } = await supabase
-        .rpc('get_public_outfit_items', { outfit_id: id });
+        .rpc('get_public_outfit_items_by_slug', { slug_param: slug });
 
       return {
-        ...fitData,
+        ...fit,
         user: creator,
         items: (itemsData || []) as OutfitItem[],
       };
     },
-    enabled: !!id,
+    enabled: !!slug,
+  });
+
+  // Fetch creator's other public outfits
+  const { data: creatorOutfits } = useQuery({
+    queryKey: ['creator-public-outfits-slug', outfit?.user?.creator_id, slug],
+    queryFn: async (): Promise<CreatorOutfit[]> => {
+      if (!outfit?.user?.creator_id) return [];
+
+      const { data } = await supabase
+        .rpc('get_creator_public_outfits_by_slug', { 
+          creator_id_param: outfit.user.creator_id,
+          exclude_slug_param: slug || null
+        });
+
+      return (data || []) as CreatorOutfit[];
+    },
+    enabled: !!outfit?.user?.creator_id,
   });
 
   const handleShare = async () => {
-    const creatorName = outfit?.user?.name || outfit?.user?.username;
-    const shareUrl = getShareableUrl('outfit', id!, {
-      creatorName,
-      title: outfit?.title,
-    });
+    if (!outfit?.share_slug) return;
+    const shareUrl = getShareableUrl('outfit', outfit.share_slug);
     await nativeShare({
       title: outfit?.title || 'Check out this outfit on Azyah Style',
       text: `${getDisplayName(outfit?.user)} shared an outfit with you!`,
@@ -90,7 +115,20 @@ export default function PublicOutfitView() {
   };
 
   const handleItemClick = (item: OutfitItem) => {
-    navigate(`/share/item/${item.id}`);
+    if (item.share_slug) {
+      navigate(`/share/item/${item.share_slug}`);
+    }
+  };
+
+  const handleOutfitClick = (outfitData: CreatorOutfit) => {
+    navigate(`/share/outfit/${outfitData.share_slug}`);
+  };
+
+  const handleShopItem = (e: React.MouseEvent, item: OutfitItem) => {
+    e.stopPropagation();
+    if (item.source_url) {
+      openExternalUrl(item.source_url);
+    }
   };
 
   // Helper to get display name with proper fallback
@@ -127,8 +165,7 @@ export default function PublicOutfitView() {
 
   const displayName = getDisplayName(outfit.user);
   const outfitImage = outfit.render_path || outfit.image_preview;
-  const slug = buildOutfitSlug(outfit.user?.name || outfit.user?.username, outfit.title, id);
-  const canonicalUrl = `${SITE_URL}/share/outfit/${id}/${slug}`;
+  const canonicalUrl = `${SITE_URL}/share/outfit/${outfit.share_slug}`;
 
   return (
     <>
@@ -140,7 +177,7 @@ export default function PublicOutfitView() {
         url={canonicalUrl}
       />
 
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-background pb-24">
         {/* Header */}
         <header 
           className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b"
@@ -151,7 +188,9 @@ export default function PublicOutfitView() {
               <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
                 <ArrowLeft className="h-5 w-5" />
               </Button>
-              <h1 className="text-lg font-semibold">Outfit</h1>
+              <h1 className="text-lg font-semibold truncate">
+                {outfit.title ? `Outfit — ${outfit.title}` : 'Outfit'}
+              </h1>
             </div>
             <Button variant="ghost" size="icon" onClick={handleShare}>
               <Share2 className="w-5 h-5" />
@@ -159,90 +198,140 @@ export default function PublicOutfitView() {
           </div>
         </header>
 
-        <div className="container max-w-screen-md mx-auto px-4 py-6 pb-24">
-          {/* Main outfit image */}
-          <div className="relative rounded-2xl overflow-hidden mb-6 shadow-lg bg-gradient-to-br from-secondary/30 via-background to-muted/50">
-            <div className="aspect-[3/4] flex items-center justify-center p-4">
-              {outfitImage ? (
-                <img
-                  src={outfitImage}
-                  alt={outfit.title || 'Outfit'}
-                  className="max-w-full max-h-full object-contain rounded-lg drop-shadow-md"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                  No preview available
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* User info */}
-          <div className="flex items-center gap-3 mb-4">
-            <Avatar className="w-10 h-10">
-              <AvatarImage src={outfit.user.avatar_url || undefined} />
-              <AvatarFallback>
-                {displayName[0].toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            <div>
-              <p className="font-semibold">{displayName}</p>
-              <p className="text-sm text-muted-foreground">
-                {formatDistanceToNow(new Date(outfit.created_at), { addSuffix: true })}
-              </p>
-            </div>
-          </div>
-
-          {/* Title */}
-          {outfit.title && (
-            <h2 className="text-xl font-bold mb-4">{outfit.title}</h2>
-          )}
-
-          {/* Stats */}
-          <div className="flex items-center gap-4 mb-6">
-            <div className="flex items-center gap-1 text-sm text-muted-foreground">
-              <Heart className="h-4 w-4" />
-              <span>{outfit.like_count}</span>
-            </div>
-            <span className="text-sm text-muted-foreground">
-              {outfit.comment_count} {outfit.comment_count === 1 ? 'comment' : 'comments'}
-            </span>
-          </div>
-
-          {/* Items in outfit */}
-          {outfit.items && outfit.items.length > 0 && (
-            <div className="mb-6">
-              <h3 className="font-semibold mb-3">Items in this outfit</h3>
-              <div className="grid grid-cols-3 gap-3">
-                {outfit.items.map((item) => (
-                  <div
-                    key={item.id}
-                    className="cursor-pointer group"
-                    onClick={() => handleItemClick(item)}
-                  >
-                    <div className="aspect-square bg-muted rounded-lg overflow-hidden mb-2 relative">
-                      <img
-                        src={item.image_bg_removed_url || item.image_url}
-                        alt={item.brand || 'Item'}
-                        className="w-full h-full object-contain group-hover:scale-105 transition-transform"
-                      />
-                      {item.source_url && (
-                        <div className="absolute top-1 right-1 bg-background/80 rounded-full p-1">
-                          <ExternalLink className="h-3 w-3 text-primary" />
-                        </div>
-                      )}
-                    </div>
-                    <p className="text-xs text-center line-clamp-1">
-                      {item.brand || item.category}
-                    </p>
+        <div className="container max-w-screen-xl mx-auto px-4 py-4 sm:py-6 pb-6">
+          {/* Grid layout - outfit left, details right (matching OutfitDetail.tsx) */}
+          <div className="grid grid-cols-[1fr,120px] sm:grid-cols-[1fr,180px] md:grid-cols-[1fr,320px] lg:grid-cols-[1fr,360px] gap-3 sm:gap-4 md:gap-6">
+            {/* Outfit Image */}
+            <div className="relative rounded-xl sm:rounded-2xl overflow-hidden shadow-lg bg-gradient-to-br from-secondary/30 via-background to-muted/50">
+              <div className="aspect-[3/4] flex items-center justify-center p-2 sm:p-3 md:p-4">
+                {outfitImage ? (
+                  <img
+                    src={outfitImage}
+                    alt={outfit.title || 'Outfit'}
+                    className="max-w-full max-h-full object-contain rounded-lg drop-shadow-md"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                    No preview available
                   </div>
-                ))}
+                )}
               </div>
             </div>
-          )}
 
-          {/* CTA */}
-          <div className="mt-8 p-4 bg-muted/50 rounded-xl text-center">
+            {/* Details Sidebar - compact on mobile */}
+            <div className="flex flex-col gap-2 sm:gap-3 md:gap-4">
+              {/* User info */}
+              <div className="flex items-center gap-2">
+                <Avatar className="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10">
+                  <AvatarImage src={outfit.user.avatar_url || undefined} />
+                  <AvatarFallback className="text-[10px] sm:text-xs">
+                    {displayName[0].toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="min-w-0 flex-1">
+                  <p className="font-semibold text-xs sm:text-sm md:text-sm truncate">{displayName}</p>
+                  <p className="text-[10px] sm:text-xs md:text-xs text-muted-foreground">
+                    {formatDistanceToNow(new Date(outfit.created_at), { addSuffix: true })}
+                  </p>
+                </div>
+              </div>
+
+              {/* Title - hidden on mobile to save space */}
+              {outfit.title && (
+                <h2 className="hidden sm:block text-xs md:text-sm lg:text-base font-bold line-clamp-2">{outfit.title}</h2>
+              )}
+
+              {/* Clothes in outfit */}
+              {outfit.items && outfit.items.length > 0 && (
+                <div className="flex-1 min-h-0">
+                  <h3 className="font-semibold text-xs sm:text-sm md:text-sm mb-2">Items</h3>
+                  <div className="space-y-2 max-h-[200px] sm:max-h-[250px] md:max-h-[300px] overflow-y-auto scrollbar-hide">
+                    {outfit.items.map((item) => (
+                      <div
+                        key={item.id}
+                        className="flex items-center gap-2 cursor-pointer group"
+                        onClick={() => handleItemClick(item)}
+                      >
+                        <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 flex-shrink-0 bg-muted rounded-lg overflow-hidden group-hover:ring-2 ring-primary transition-all relative">
+                          <img
+                            src={item.image_bg_removed_url || item.image_url}
+                            alt={item.name || item.brand || 'Item'}
+                            className="w-full h-full object-contain"
+                          />
+                          {item.source_url && (
+                            <button
+                              onClick={(e) => handleShopItem(e, item)}
+                              className="absolute top-0.5 right-0.5 bg-background/90 rounded-full p-0.5 hover:bg-primary hover:text-primary-foreground transition-colors"
+                            >
+                              <ExternalLink className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                            </button>
+                          )}
+                        </div>
+                        <p className="text-[10px] sm:text-xs md:text-sm line-clamp-2 flex-1 leading-tight">
+                          {item.name || item.brand || item.category}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Join Azyah Button */}
+              <Button onClick={() => navigate('/onboarding/signup')} className="w-full hidden sm:flex" size="sm">
+                Join Azyah
+              </Button>
+            </div>
+          </div>
+
+          {/* Title and engagement - below the grid */}
+          <div className="mt-4 flex items-center justify-between">
+            {outfit.title && (
+              <h2 className="font-bold text-base sm:text-lg line-clamp-1 flex-1 mr-4">{outfit.title}</h2>
+            )}
+            <div className="flex items-center gap-4 flex-shrink-0">
+              <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                <Heart className="h-4 w-4" />
+                <span>{outfit.like_count}</span>
+              </div>
+              <span className="text-sm text-muted-foreground">
+                {outfit.comment_count} {outfit.comment_count === 1 ? 'comment' : 'comments'}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* More by creator section */}
+        {creatorOutfits && creatorOutfits.length > 0 && (
+          <div className="mt-8 sm:mt-10 pt-6 border-t px-4 sm:px-6">
+            <h3 className="font-semibold text-base sm:text-lg mb-4">More by {displayName}</h3>
+            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide snap-x snap-mandatory">
+              {creatorOutfits.map((creatorOutfit) => (
+                <Card
+                  key={creatorOutfit.id}
+                  className="flex-shrink-0 w-28 sm:w-32 cursor-pointer hover:shadow-lg transition-all duration-300 hover:-translate-y-1 overflow-hidden snap-start"
+                  onClick={() => handleOutfitClick(creatorOutfit)}
+                >
+                  <div className="aspect-[3/4] bg-muted overflow-hidden">
+                    <img
+                      src={creatorOutfit.render_path || creatorOutfit.image_preview || '/placeholder.svg'}
+                      alt={creatorOutfit.title || 'Outfit'}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <CardContent className="p-2">
+                    <p className="text-xs line-clamp-1 font-medium">
+                      {creatorOutfit.title || 'Untitled'}
+                    </p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* CTA section */}
+        <div className="container max-w-screen-md mx-auto px-4 mt-8">
+          <div className="p-4 bg-muted/50 rounded-xl text-center">
             <p className="text-sm text-muted-foreground mb-3">
               Want to create outfits like this?
             </p>

@@ -31,6 +31,7 @@ export default function DressMeOutfitDetail() {
         .from('fits')
         .select(`
           *,
+          share_slug,
           creator:users!fits_user_id_fkey(username, name, avatar_url)
         `)
         .eq('id', outfitId)
@@ -84,7 +85,9 @@ export default function DressMeOutfitDetail() {
 
   const handleShare = async () => {
     if (!outfit) return;
-    const shareUrl = getShareableUrl('outfit', outfit.id);
+    // Use share_slug for clean URLs (fallback to ID for non-public outfits)
+    const slugOrId = outfit.share_slug || outfit.id;
+    const shareUrl = getShareableUrl('outfit', slugOrId);
     await nativeShare({
       title: outfit.title || 'Check out this outfit on Azyah Style!',
       text: `Created on Azyah Style`,

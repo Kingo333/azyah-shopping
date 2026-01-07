@@ -3,32 +3,33 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Card, CardContent } from '@/components/ui/card';
 import { SEOHead } from '@/components/SEOHead';
 import { ArrowLeft, ExternalLink, Share2, ShoppingBag } from 'lucide-react';
 import { openExternalUrl } from '@/lib/openExternalUrl';
 import { nativeShare, getShareableUrl, SITE_URL } from '@/lib/nativeShare';
-import { buildItemSlug } from '@/lib/slugify';
 
 interface PublicItem {
   id: string;
+  share_slug: string;
   image_url: string;
   image_bg_removed_url: string | null;
   brand: string | null;
   category: string;
+  name: string | null;
   color: string | null;
   season: string | null;
   tags: string[] | null;
   source_url: string | null;
   source_vendor_name: string | null;
   created_at: string;
-  // Creator attribution (from outfit or item owner)
   creator_id: string | null;
   creator_username: string | null;
   creator_name: string | null;
   creator_avatar_url: string | null;
-  // If item came from a public outfit
   outfit_id: string | null;
   outfit_title: string | null;
+  outfit_slug: string | null;
 }
 
 interface CreatorOutfit {
@@ -36,20 +37,21 @@ interface CreatorOutfit {
   title: string | null;
   render_path: string | null;
   image_preview: string | null;
+  share_slug: string;
 }
 
 export default function PublicItemView() {
-  const { id } = useParams();
+  const { slug } = useParams();
   const navigate = useNavigate();
 
-  // Fetch item with creator using RPC (bypasses RLS)
+  // Fetch item by slug
   const { data: item, isLoading, error } = useQuery({
-    queryKey: ['public-item', id],
+    queryKey: ['public-item-slug', slug],
     queryFn: async (): Promise<PublicItem | null> => {
-      if (!id) return null;
+      if (!slug) return null;
 
       const { data, error } = await supabase
-        .rpc('get_public_item_with_creator', { item_id: id });
+        .rpc('get_public_item_by_slug', { slug_param: slug });
 
       if (error || !data || data.length === 0) {
         return null;
@@ -57,19 +59,19 @@ export default function PublicItemView() {
 
       return data[0] as PublicItem;
     },
-    enabled: !!id,
+    enabled: !!slug,
   });
 
   // Fetch creator's other public outfits
   const { data: creatorOutfits } = useQuery({
-    queryKey: ['creator-public-outfits', item?.creator_id, item?.outfit_id],
+    queryKey: ['creator-public-outfits-slug', item?.creator_id, item?.outfit_slug],
     queryFn: async (): Promise<CreatorOutfit[]> => {
       if (!item?.creator_id) return [];
 
       const { data } = await supabase
-        .rpc('get_creator_public_outfits', { 
-          creator_id: item.creator_id,
-          exclude_outfit_id: item.outfit_id || null
+        .rpc('get_creator_public_outfits_by_slug', { 
+          creator_id_param: item.creator_id,
+          exclude_slug_param: item.outfit_slug || null
         });
 
       return (data || []) as CreatorOutfit[];
@@ -78,11 +80,8 @@ export default function PublicItemView() {
   });
 
   const handleShare = async () => {
-    const shareUrl = getShareableUrl('item', id!, {
-      creatorName: item?.creator_name || item?.creator_username,
-      brand: item?.brand,
-      category: item?.category,
-    });
+    if (!item?.share_slug) return;
+    const shareUrl = getShareableUrl('item', item.share_slug);
     await nativeShare({
       title: `${item?.brand || 'Item'} - Azyah Style`,
       text: `Check out this ${item?.category || 'item'} on Azyah Style!`,
@@ -96,8 +95,7 @@ export default function PublicItemView() {
   };
 
   const handleOutfitClick = (outfit: CreatorOutfit) => {
-    const slug = buildItemSlug(item?.creator_name || item?.creator_username, null, null, outfit.id);
-    navigate(`/share/outfit/${outfit.id}/${slug}`);
+    navigate(`/share/outfit/${outfit.share_slug}`);
   };
 
   // Helper to get display name with proper fallback
@@ -133,10 +131,9 @@ export default function PublicItemView() {
   }
 
   const displayImage = item.image_bg_removed_url || item.image_url;
-  const displayName = item.brand || item.source_vendor_name || item.category;
+  const displayName = item.name || item.brand || item.source_vendor_name || item.category;
   const creatorName = getCreatorDisplayName();
-  const slug = buildItemSlug(item.creator_name || item.creator_username, item.brand, item.category, id);
-  const canonicalUrl = `${SITE_URL}/share/item/${id}/${slug}`;
+  const canonicalUrl = `${SITE_URL}/share/item/${item.share_slug}`;
 
   return (
     <>
@@ -243,12 +240,12 @@ export default function PublicItemView() {
               <h3 className="font-semibold mb-3">More by {creatorName}</h3>
               <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
                 {creatorOutfits.map((outfit) => (
-                  <div
+                  <Card
                     key={outfit.id}
-                    className="flex-shrink-0 cursor-pointer group"
+                    className="flex-shrink-0 w-28 cursor-pointer group hover:shadow-lg transition-all"
                     onClick={() => handleOutfitClick(outfit)}
                   >
-                    <div className="w-28 aspect-[3/4] bg-muted rounded-lg overflow-hidden">
+                    <div className="aspect-[3/4] bg-muted overflow-hidden rounded-t-lg">
                       {(outfit.render_path || outfit.image_preview) ? (
                         <img
                           src={outfit.render_path || outfit.image_preview || ''}
@@ -261,10 +258,12 @@ export default function PublicItemView() {
                         </div>
                       )}
                     </div>
-                    <p className="text-xs mt-1 line-clamp-1 text-center">
-                      {outfit.title || 'Untitled'}
-                    </p>
-                  </div>
+                    <CardContent className="p-2">
+                      <p className="text-xs line-clamp-1 text-center">
+                        {outfit.title || 'Untitled'}
+                      </p>
+                    </CardContent>
+                  </Card>
                 ))}
               </div>
             </div>

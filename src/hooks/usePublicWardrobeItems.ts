@@ -15,6 +15,7 @@ export interface PublicWardrobeItem {
   created_at: string;
   public_reuse_permitted: boolean;
   attribution_user_id: string | null;
+  share_slug: string | null;
   user: {
     id: string;
     username: string | null;
@@ -93,7 +94,8 @@ export const useWardrobeItem = (itemId: string) => {
           image_bg_removed_url,
           created_at,
           public_reuse_permitted,
-          attribution_user_id
+          attribution_user_id,
+          share_slug
         `)
         .eq('id', itemId)
         .single();
