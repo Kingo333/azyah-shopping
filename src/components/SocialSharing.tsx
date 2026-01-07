@@ -32,7 +32,9 @@ interface SocialSharingProps {
     image_url?: string;
     url?: string;
     type: 'product' | 'outfit' | 'mood-board' | 'post' | 'item';
-    // Optional metadata for friendly slug generation
+    // share_slug is required for outfit/item types (slug-only URLs)
+    share_slug?: string | null;
+    // Optional metadata (kept for backward compatibility)
     creatorName?: string | null;
     brand?: string | null;
     category?: string | null;
@@ -51,25 +53,26 @@ const SocialSharing = ({ item, user, onShare }: SocialSharingProps) => {
   const [customMessage, setCustomMessage] = useState('');
   const [isGeneratingQR, setIsGeneratingQR] = useState(false);
 
-  // Generate the correct share URL based on item type (with friendly slugs)
+  // Generate the correct share URL based on item type (slug-only for outfit/item)
   const getShareUrl = (): string => {
     // If a custom URL is provided, use it
     if (item.url) return item.url;
     
-    // Route based on item type - include slug metadata for friendly URLs
-    const slugOptions = {
-      creatorName: item.creatorName,
-      title: item.title,
-      brand: item.brand,
-      category: item.category,
-    };
-    
     switch (item.type) {
       case 'outfit':
-        return getShareableUrl('outfit', item.id, slugOptions);
+        // Must use share_slug for slug-only URLs
+        if (item.share_slug) {
+          return getShareableUrl('outfit', item.share_slug);
+        }
+        // Fallback: just use the ID (legacy support)
+        return `${SITE_URL}/share/outfit/${item.id}`;
       case 'item':
-        // 'item' refers to wardrobe items
-        return getShareableUrl('item', item.id, slugOptions);
+        // Must use share_slug for slug-only URLs
+        if (item.share_slug) {
+          return getShareableUrl('item', item.share_slug);
+        }
+        // Fallback: just use the ID (legacy support)
+        return `${SITE_URL}/share/item/${item.id}`;
       case 'product':
         // Products use /products/:id route
         return getProductShareUrl(item.id);
@@ -81,7 +84,6 @@ const SocialSharing = ({ item, user, onShare }: SocialSharingProps) => {
         return `${SITE_URL}/${item.type}s/${item.id}`;
     }
   };
-
   const shareUrl = getShareUrl();
   const defaultMessage = `Check out this amazing ${item.type}: ${item.title}`;
 

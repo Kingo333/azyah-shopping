@@ -40,6 +40,7 @@ export const FitDetailsModal: React.FC<FitDetailsModalProps> = ({
   if (!fit) return null;
 
   const handleShare = async () => {
+    // FitDetailsModal doesn't have share_slug, fallback to ID
     const shareUrl = getShareableUrl('outfit', fit.id);
     await nativeShare({
       title: fit.title || 'Check out this fit on Azyah Style!',

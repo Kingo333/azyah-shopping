@@ -73,7 +73,9 @@ export default function ClothingItemDetail() {
   });
 
   const handleShare = async () => {
-    const shareUrl = getShareableUrl('item', id!);
+    // Use share_slug for clean URLs (fallback to ID)
+    const slugOrId = item?.share_slug || id!;
+    const shareUrl = getShareableUrl('item', slugOrId);
     await nativeShare({
       title: item?.name || 'Check out this item on Azyah Style',
       text: `${item?.brand || 'Fashion item'} on Azyah Style`,

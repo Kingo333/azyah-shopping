@@ -44,7 +44,8 @@ export default function OutfitDetail() {
           comment_count,
           created_at,
           user_id,
-          canvas_json
+          canvas_json,
+          share_slug
         `)
         .eq('id', id)
         .eq('is_public', true)
@@ -112,7 +113,9 @@ export default function OutfitDetail() {
   });
 
   const handleShare = async () => {
-    const shareUrl = getShareableUrl('outfit', id!);
+    // Use share_slug for clean URLs
+    const slugOrId = fit?.share_slug || id!;
+    const shareUrl = getShareableUrl('outfit', slugOrId);
     await nativeShare({
       title: fit?.title || 'Check out this outfit on Azyah Style',
       text: `${fit?.user?.username || 'Someone'} shared an outfit with you!`,
