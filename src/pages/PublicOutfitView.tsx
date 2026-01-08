@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent } from '@/components/ui/card';
 import { SEOHead } from '@/components/SEOHead';
+import { PromoCard } from '@/components/affiliate/PromoCard';
+import { useOutfitDeal } from '@/hooks/useAffiliatePromos';
 import { Share2, ExternalLink, Heart, ArrowLeft } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { nativeShare, getShareableUrl, SITE_URL } from '@/lib/nativeShare';
@@ -57,6 +59,9 @@ interface CreatorOutfit {
 export default function PublicOutfitView() {
   const { slug } = useParams();
   const navigate = useNavigate();
+  
+  // Fetch deal for this outfit
+  const { data: outfitDeal } = useOutfitDeal(slug);
 
   const { data: outfit, isLoading, error } = useQuery({
     queryKey: ['public-outfit-slug', slug],
@@ -224,6 +229,13 @@ export default function PublicOutfitView() {
         </header>
 
         <div className="container max-w-screen-xl mx-auto px-4 py-4 sm:py-6 pb-6">
+          {/* Promo Card - show at top if deal exists */}
+          {outfitDeal && (
+            <div className="mb-4">
+              <PromoCard deal={outfitDeal} />
+            </div>
+          )}
+          
           {/* Grid layout - outfit left, details right (matching OutfitDetail.tsx) */}
           <div className="grid grid-cols-[1fr,120px] sm:grid-cols-[1fr,180px] md:grid-cols-[1fr,320px] lg:grid-cols-[1fr,360px] gap-3 sm:gap-4 md:gap-6">
             {/* Outfit Image */}

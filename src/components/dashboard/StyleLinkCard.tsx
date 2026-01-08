@@ -1,13 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Link2, Copy, Share2, QrCode, User } from 'lucide-react';
+import { User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
-import { useUserReferralCode } from '@/hooks/useReferrals';
-import { SITE_URL, nativeShare } from '@/lib/nativeShare';
-import { StyleLinkModal } from '@/components/StyleLinkModal';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
@@ -15,8 +12,6 @@ export function StyleLinkCard() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { data: referralCode } = useUserReferralCode();
-  const [showQRModal, setShowQRModal] = useState(false);
 
   // Fetch user profile from database (not auth metadata)
   const { data: userProfile, isLoading: profileLoading } = useQuery({
@@ -82,54 +77,6 @@ export function StyleLinkCard() {
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   };
 
-  // Build the Style Link URL (only if we have a handle)
-  const styleLinkUrl = effectiveHandle
-    ? (referralCode
-        ? `${SITE_URL}/u/${effectiveHandle}?ref=${referralCode}`
-        : `${SITE_URL}/u/${effectiveHandle}`)
-    : null;
-
-  const handleCopyLink = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!styleLinkUrl) {
-      toast.error('Setting up your link... try again in a moment');
-      return;
-    }
-    try {
-      await navigator.clipboard.writeText(styleLinkUrl);
-      toast.success('Link copied! Earn more when friends join.');
-    } catch {
-      toast.error('Failed to copy link');
-    }
-  };
-
-  const handleShare = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!styleLinkUrl) {
-      toast.error('Setting up your link... try again in a moment');
-      return;
-    }
-    const success = await nativeShare({
-      title: 'My Azyah Style Link',
-      text: 'Check out my outfits and style on Azyah! Shop my looks and earn rewards.',
-      url: styleLinkUrl,
-      dialogTitle: 'Share your Style Link',
-    });
-    
-    if (success) {
-      toast.success('Shared! Earn more when friends join & create.');
-    }
-  };
-
-  const handleShowQR = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!effectiveHandle) {
-      toast.error('Setting up your link... try again in a moment');
-      return;
-    }
-    setShowQRModal(true);
-  };
-
   const handleViewMyPage = () => {
     if (effectiveHandle) {
       navigate(`/u/${effectiveHandle}`);
@@ -143,80 +90,38 @@ export function StyleLinkCard() {
   const isSettingUp = profileLoading || ensureUsernameMutation.isPending || !effectiveHandle;
 
   return (
-    <>
-      <div className="h-full rounded-xl border bg-gradient-to-br from-[hsl(var(--azyah-maroon))]/5 via-background to-[hsl(var(--azyah-maroon))]/10 p-3 flex flex-col">
-        {/* Profile Preview */}
-        <div className="flex items-center gap-2 mb-2">
-          <Avatar className="h-10 w-10 ring-1 ring-[hsl(var(--azyah-maroon))]/20">
-            <AvatarImage src={userProfile?.avatar_url || undefined} />
-            <AvatarFallback className="bg-[hsl(var(--azyah-maroon))]/10 text-[hsl(var(--azyah-maroon))]">
-              {getInitials(displayName)}
-            </AvatarFallback>
-          </Avatar>
-          <div className="min-w-0 flex-1">
-            <p className="text-xs font-semibold truncate">{displayName}</p>
-            <p className="text-[10px] text-muted-foreground truncate">
-              {effectiveHandle ? `@${effectiveHandle}` : 'Setting up...'}
-            </p>
-          </div>
-        </div>
-
-        {/* Helper text */}
-        <p className="text-[9px] text-muted-foreground mb-2 leading-tight">
-          Your shareable style page — like LinkMe with outfits + shop links
-        </p>
-
-        {/* Primary Action */}
-        <Button
-          size="sm"
-          className="w-full h-7 text-[10px] mb-2 bg-[hsl(var(--azyah-maroon))] hover:bg-[hsl(var(--azyah-maroon))]/90"
-          onClick={handleViewMyPage}
-          disabled={isSettingUp}
-        >
-          <User className="h-3 w-3 mr-1" />
-          View My Page
-        </Button>
-
-        {/* Secondary Actions (smaller) */}
-        <div className="grid grid-cols-3 gap-1">
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={handleCopyLink} 
-            className="h-6 text-[9px] px-1"
-            disabled={isSettingUp}
-          >
-            <Copy className="h-3 w-3" />
-          </Button>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={handleShare} 
-            className="h-6 text-[9px] px-1"
-            disabled={isSettingUp}
-          >
-            <Share2 className="h-3 w-3" />
-          </Button>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={handleShowQR} 
-            className="h-6 text-[9px] px-1"
-            disabled={isSettingUp}
-          >
-            <QrCode className="h-3 w-3" />
-          </Button>
+    <div className="h-full rounded-xl border bg-gradient-to-br from-[hsl(var(--azyah-maroon))]/5 via-background to-[hsl(var(--azyah-maroon))]/10 p-3 flex flex-col">
+      {/* Profile Preview */}
+      <div className="flex items-center gap-2 mb-2">
+        <Avatar className="h-10 w-10 ring-1 ring-[hsl(var(--azyah-maroon))]/20">
+          <AvatarImage src={userProfile?.avatar_url || undefined} />
+          <AvatarFallback className="bg-[hsl(var(--azyah-maroon))]/10 text-[hsl(var(--azyah-maroon))]">
+            {getInitials(displayName)}
+          </AvatarFallback>
+        </Avatar>
+        <div className="min-w-0 flex-1">
+          <p className="text-xs font-semibold truncate">{displayName}</p>
+          <p className="text-[10px] text-muted-foreground truncate">
+            {effectiveHandle ? `@${effectiveHandle}` : 'Setting up...'}
+          </p>
         </div>
       </div>
 
-      {effectiveHandle && (
-        <StyleLinkModal
-          isOpen={showQRModal}
-          onClose={() => setShowQRModal(false)}
-          username={effectiveHandle}
-          referralCode={referralCode}
-        />
-      )}
-    </>
+      {/* Helper text */}
+      <p className="text-[9px] text-muted-foreground mb-2 leading-tight">
+        Your shareable style page — outfits, deals & shop links
+      </p>
+
+      {/* Primary Action Only */}
+      <Button
+        size="sm"
+        className="w-full h-8 text-xs bg-[hsl(var(--azyah-maroon))] hover:bg-[hsl(var(--azyah-maroon))]/90"
+        onClick={handleViewMyPage}
+        disabled={isSettingUp}
+      >
+        <User className="h-3.5 w-3.5 mr-1.5" />
+        View My Page
+      </Button>
+    </div>
   );
 }
