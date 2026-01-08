@@ -177,6 +177,10 @@ export default function StyleLinkPage() {
 
   const getOutfitImage = (outfit: typeof outfits[0]) => {
     if (outfit.render_path) {
+      // If render_path is already a full URL, use it directly
+      if (outfit.render_path.startsWith('http')) {
+        return outfit.render_path;
+      }
       return `https://klwolsopucgswhtdlsps.supabase.co/storage/v1/object/public/outfit-renders/${outfit.render_path}`;
     }
     return outfit.image_preview || '/placeholder.svg';
@@ -224,7 +228,7 @@ export default function StyleLinkPage() {
         canonical={`${getPublicBaseUrl()}/u/${userData.username || identifier}`}
       />
 
-      <div className="min-h-screen bg-background pb-24">
+      <div className="min-h-screen bg-background pb-8">
         {/* Header with Back Button */}
         <div className="bg-gradient-to-b from-[hsl(var(--azyah-maroon))]/5 to-transparent pt-12 pb-6 px-4 relative">
           {/* Back button for owner */}
@@ -255,93 +259,140 @@ export default function StyleLinkPage() {
               <p className="text-sm text-muted-foreground mt-2 max-w-xs mx-auto">{userData.bio}</p>
             )}
 
-            {/* Social Links */}
-            {hasSocials && (
-              <div className="flex justify-center gap-3 mt-3">
-                {userData.socials?.instagram_url && (
-                  <a 
-                    href={`https://instagram.com/${userData.socials.instagram_url}`} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    <Instagram className="h-5 w-5" />
-                  </a>
-                )}
-                {userData.socials?.tiktok_url && (
-                  <a 
-                    href={`https://tiktok.com/@${userData.socials.tiktok_url}`} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    <TikTokIcon className="h-5 w-5" />
-                  </a>
-                )}
-                {userData.socials?.twitter_url && (
-                  <a 
-                    href={`https://x.com/${userData.socials.twitter_url}`} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    <Twitter className="h-5 w-5" />
-                  </a>
-                )}
-                {userData.socials?.website && (
-                  <a 
-                    href={userData.socials.website.startsWith('http') ? userData.socials.website : `https://${userData.socials.website}`} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    <Globe className="h-5 w-5" />
-                  </a>
-                )}
-              </div>
-            )}
-
             {/* Owner Controls - Compact Icon Buttons */}
             {isOwner && (
-              <TooltipProvider>
-                <div className="flex justify-center gap-1.5 mt-4">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button variant="outline" size="icon" className="h-8 w-8" onClick={handleCopyLink}>
-                        <Copy className="h-4 w-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Copy link</TooltipContent>
-                  </Tooltip>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button variant="outline" size="icon" className="h-8 w-8" onClick={handleShare}>
-                        <Share2 className="h-4 w-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Share</TooltipContent>
-                  </Tooltip>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setShowQRModal(true)}>
-                        <QrCode className="h-4 w-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Show QR Code</TooltipContent>
-                  </Tooltip>
-                </div>
-              </TooltipProvider>
+              <>
+                {/* Social Links for owner */}
+                {hasSocials && (
+                  <div className="flex justify-center gap-3 mt-3">
+                    {userData.socials?.instagram_url && (
+                      <a 
+                        href={`https://instagram.com/${userData.socials.instagram_url}`} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        <Instagram className="h-5 w-5" />
+                      </a>
+                    )}
+                    {userData.socials?.tiktok_url && (
+                      <a 
+                        href={`https://tiktok.com/@${userData.socials.tiktok_url}`} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        <TikTokIcon className="h-5 w-5" />
+                      </a>
+                    )}
+                    {userData.socials?.twitter_url && (
+                      <a 
+                        href={`https://x.com/${userData.socials.twitter_url}`} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        <Twitter className="h-5 w-5" />
+                      </a>
+                    )}
+                    {userData.socials?.website && (
+                      <a 
+                        href={userData.socials.website.startsWith('http') ? userData.socials.website : `https://${userData.socials.website}`} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        <Globe className="h-5 w-5" />
+                      </a>
+                    )}
+                  </div>
+                )}
+                <TooltipProvider>
+                  <div className="flex justify-center gap-1.5 mt-4">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="outline" size="icon" className="h-8 w-8" onClick={handleCopyLink}>
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Copy link</TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="outline" size="icon" className="h-8 w-8" onClick={handleShare}>
+                          <Share2 className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Share</TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setShowQRModal(true)}>
+                          <QrCode className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Show QR Code</TooltipContent>
+                    </Tooltip>
+                  </div>
+                </TooltipProvider>
+              </>
             )}
 
-            {/* Visitor CTA */}
+            {/* Visitor CTA with Social Links */}
             {!isOwner && (
-              <Button 
-                onClick={handleOpenInApp}
-                className="mt-4 bg-[hsl(var(--azyah-maroon))] hover:bg-[hsl(var(--azyah-maroon))]/90 gap-2"
-              >
-                <ExternalLink className="h-4 w-4" />
-                Open in Azyah
-              </Button>
+              <div className="mt-4 flex flex-col items-center gap-3">
+                {hasSocials && (
+                  <div className="flex justify-center gap-3">
+                    {userData.socials?.instagram_url && (
+                      <a 
+                        href={`https://instagram.com/${userData.socials.instagram_url}`} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        <Instagram className="h-5 w-5" />
+                      </a>
+                    )}
+                    {userData.socials?.tiktok_url && (
+                      <a 
+                        href={`https://tiktok.com/@${userData.socials.tiktok_url}`} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        <TikTokIcon className="h-5 w-5" />
+                      </a>
+                    )}
+                    {userData.socials?.twitter_url && (
+                      <a 
+                        href={`https://x.com/${userData.socials.twitter_url}`} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        <Twitter className="h-5 w-5" />
+                      </a>
+                    )}
+                    {userData.socials?.website && (
+                      <a 
+                        href={userData.socials.website.startsWith('http') ? userData.socials.website : `https://${userData.socials.website}`} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        <Globe className="h-5 w-5" />
+                      </a>
+                    )}
+                  </div>
+                )}
+                <Button 
+                  onClick={handleOpenInApp}
+                  className="bg-[hsl(var(--azyah-maroon))] hover:bg-[hsl(var(--azyah-maroon))]/90 gap-2"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  Open in Azyah
+                </Button>
+              </div>
             )}
           </div>
         </div>
@@ -504,50 +555,22 @@ export default function StyleLinkPage() {
                   ))}
                 </div>
 
-                {/* CTAs */}
-                <div className="flex gap-2 mt-4">
-                  <Button asChild variant="outline" size="sm" className="flex-1">
-                    <Link to="/swipe">
-                      <Sparkles className="h-4 w-4 mr-1.5" />
-                      Swipe to Discover
-                    </Link>
-                  </Button>
-                </div>
               </>
             ) : (
               <Card className="p-4 text-center bg-gradient-to-br from-[hsl(var(--azyah-maroon))]/5 to-transparent">
                 <p className="text-sm text-muted-foreground mb-3">
-                  Swipe to discover products that match your style
+                  Discover products that match your style
                 </p>
-                <div className="flex justify-center gap-2">
-                  <Button asChild variant="outline" size="sm">
-                    <Link to="/swipe">
-                      <Sparkles className="h-4 w-4 mr-1.5" />
-                      Swipe to Discover
-                    </Link>
-                  </Button>
-                </div>
+                <Button asChild variant="outline" size="sm">
+                  <Link to="/swipe">
+                    Browse All
+                    <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
+                  </Link>
+                </Button>
               </Card>
             )}
           </div>
         </div>
-
-        {/* Sticky Bottom Bar (Visitor Only) */}
-        {!isOwner && (
-          <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t p-3 safe-area-inset-bottom">
-            <div className="max-w-lg mx-auto flex gap-2">
-              <Button 
-                onClick={handleOpenInApp}
-                className="flex-1 bg-[hsl(var(--azyah-maroon))] hover:bg-[hsl(var(--azyah-maroon))]/90"
-              >
-                Open in Azyah
-              </Button>
-              <Button variant="outline" asChild className="flex-1">
-                <Link to="/swipe">Shop Discover</Link>
-              </Button>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* QR Modal */}
