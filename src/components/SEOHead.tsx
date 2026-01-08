@@ -1,5 +1,6 @@
 import React from 'react';
 import { Helmet } from 'react-helmet-async';
+import { getPublicBaseUrl } from '@/lib/urls';
 
 interface SEOHeadProps {
   title?: string;
@@ -18,15 +19,16 @@ export const SEOHead: React.FC<SEOHeadProps> = ({
   description = 'Swipe, discover, and try on fashion items with AR. Join the future of fashion discovery with personalized recommendations and virtual try-ons.',
   keywords = 'fashion, AR try-on, virtual fitting, fashion discovery, online shopping, swipe fashion, personalized style',
   image = '/og-image.jpg',
-  url = 'https://www.azyahstyle.com',
+  url,
   type = 'website',
   noIndex = false,
   canonical,
   structuredData,
 }) => {
+  const baseUrl = getPublicBaseUrl();
   const fullTitle = title.includes('Azyah') ? title : `${title} | Azyah`;
-  const fullUrl = url.startsWith('http') ? url : `https://www.azyahstyle.com${url}`;
-  const fullImage = image.startsWith('http') ? image : `https://www.azyahstyle.com${image}`;
+  const fullUrl = url ? (url.startsWith('http') ? url : `${baseUrl}${url}`) : baseUrl;
+  const fullImage = image.startsWith('http') ? image : `${baseUrl}${image}`;
 
   return (
     <Helmet>
@@ -77,24 +79,27 @@ export const SEOHead: React.FC<SEOHeadProps> = ({
 };
 
 // Pre-defined SEO configurations for common pages
-export const HomeSEO = () => (
-  <SEOHead
-    title="Azyah - Discover Fashion Like Never Before"
-    description="Swipe through fashion items, try them on with AR, and discover your perfect style. Join thousands of fashion lovers on Azyah."
-    structuredData={{
-      "@context": "https://schema.org",
-      "@type": "WebSite",
-      "name": "Azyah",
-      "url": "https://www.azyahstyle.com",
-      "description": "Fashion discovery platform with AR try-on",
-      "potentialAction": {
-        "@type": "SearchAction",
-        "target": "https://www.azyahstyle.com/search?q={search_term_string}",
-        "query-input": "required name=search_term_string"
-      }
-    }}
-  />
-);
+export const HomeSEO = () => {
+  const baseUrl = getPublicBaseUrl();
+  return (
+    <SEOHead
+      title="Azyah - Discover Fashion Like Never Before"
+      description="Swipe through fashion items, try them on with AR, and discover your perfect style. Join thousands of fashion lovers on Azyah."
+      structuredData={{
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "Azyah",
+        "url": baseUrl,
+        "description": "Fashion discovery platform with AR try-on",
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": `${baseUrl}/search?q={search_term_string}`,
+          "query-input": "required name=search_term_string"
+        }
+      }}
+    />
+  );
+};
 
 export const ProductSEO = ({ product }: { product: any }) => (
   <SEOHead
@@ -131,19 +136,22 @@ export const CategorySEO = ({ category }: { category: string }) => (
   />
 );
 
-export const BrandSEO = ({ brand }: { brand: any }) => (
-  <SEOHead
-    title={`${brand.name} - Fashion Brand on Azyah`}
-    description={`Shop ${brand.name} fashion items on Azyah. Try on their latest collections with AR and discover your perfect style.`}
-    keywords={`${brand.name}, fashion brand, clothing, AR try-on`}
-    image={brand.logo_url}
-    structuredData={{
-      "@context": "https://schema.org",
-      "@type": "Brand",
-      "name": brand.name,
-      "description": brand.bio,
-      "logo": brand.logo_url,
-      "url": `https://www.azyahstyle.com/brand/${brand.slug}`
-    }}
-  />
-);
+export const BrandSEO = ({ brand }: { brand: any }) => {
+  const baseUrl = getPublicBaseUrl();
+  return (
+    <SEOHead
+      title={`${brand.name} - Fashion Brand on Azyah`}
+      description={`Shop ${brand.name} fashion items on Azyah. Try on their latest collections with AR and discover your perfect style.`}
+      keywords={`${brand.name}, fashion brand, clothing, AR try-on`}
+      image={brand.logo_url}
+      structuredData={{
+        "@context": "https://schema.org",
+        "@type": "Brand",
+        "name": brand.name,
+        "description": brand.bio,
+        "logo": brand.logo_url,
+        "url": `${baseUrl}/brand/${brand.slug}`
+      }}
+    />
+  );
+};

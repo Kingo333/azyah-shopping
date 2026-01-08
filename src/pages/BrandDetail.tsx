@@ -244,7 +244,6 @@ const BrandDetail = () => {
       <SEOHead 
         title={`${brand.name} - Luxury Fashion Brand`}
         description={brand.bio || `Discover premium fashion from ${brand.name}. Explore the latest collections and trending styles.`}
-        canonical={`https://azyah.app/brand/${brand.slug}`}
       />
 
       <div className="container max-w-6xl mx-auto p-4">

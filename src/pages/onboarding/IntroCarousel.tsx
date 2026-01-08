@@ -307,7 +307,6 @@ export default function IntroCarousel() {
       <SEOHead
         title="Azyah — Luxury Fashion Curation"
         description="AI-curated luxury fashion discovery. Exclusive designer collections for the discerning style connoisseur."
-        canonical="https://azyah.app/"
       />
 
       {/* Floating Navigation Elements - Only on first slide */}

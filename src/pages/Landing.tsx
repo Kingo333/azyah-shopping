@@ -154,7 +154,7 @@ export default function Landing() {
       </div>;
   }
   return <div className="min-h-screen bg-background">
-        <SEOHead title="Azyah — Luxury Fashion Curation" description="AI-curated luxury fashion discovery. Exclusive designer collections for the discerning style connoisseur." canonical="https://azyah.app/" />
+        <SEOHead title="Azyah — Luxury Fashion Curation" description="AI-curated luxury fashion discovery. Exclusive designer collections for the discerning style connoisseur." />
       {/* NAV - More Minimal for Mobile */}
       <header 
         className="sticky z-50 bg-background/95 backdrop-blur-md border-b border-primary/10 animate-slide-down-fade"

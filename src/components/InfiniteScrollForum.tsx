@@ -269,21 +269,11 @@ const InfiniteScrollForum = ({ onShare }: InfiniteScrollForumProps) => {
     if (onShare) {
       onShare(post);
     } else {
-      // Default share behavior - use production URL
-      const shareUrl = `https://azyahstyle.com/forum/${post.id}`;
-      if (navigator.share) {
-        navigator.share({
-          title: post.title,
-          text: post.content,
-          url: shareUrl
-        });
-      } else {
-        navigator.clipboard.writeText(shareUrl);
-        toast({
-          title: "Link copied!",
-          description: "Post link copied to clipboard.",
-        });
-      }
+      // NOTE: /forum/:id route doesn't exist yet - show toast instead of dead link
+      toast({
+        title: "Sharing coming soon",
+        description: "Forum post sharing will be available soon!",
+      });
     }
   };
 

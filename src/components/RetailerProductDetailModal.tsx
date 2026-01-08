@@ -32,23 +32,11 @@ export const RetailerProductDetailModal: React.FC<RetailerProductDetailModalProp
   };
 
   const handleShare = async () => {
-    const shareUrl = `https://azyahstyle.com/products/${product.id}`;
-    try {
-      if (navigator.share) {
-        await navigator.share({
-          title: product.title,
-          text: `Check out this ${product.title}`,
-          url: shareUrl,
-        });
-      } else {
-        await navigator.clipboard.writeText(shareUrl);
-        toast({
-          description: "Product link copied to clipboard!",
-        });
-      }
-    } catch (error) {
-      console.error('Error sharing:', error);
-    }
+    // NOTE: /products/:id route doesn't exist yet - show toast instead of dead link
+    toast({
+      title: "Sharing coming soon",
+      description: "Product sharing will be available soon!",
+    });
   };
 
   const handleExternalLink = () => {

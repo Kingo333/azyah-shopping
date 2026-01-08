@@ -48,24 +48,11 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
     }
   };
   const handleShare = async () => {
-    const shareUrl = `https://azyahstyle.com/products/${product.id}`;
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: product.title,
-          text: `Check out this ${product.title} from ${product.brand?.name}`,
-          url: shareUrl
-        });
-      } catch (error) {
-        console.log('Error sharing:', error);
-      }
-    } else {
-      // Fallback - copy to clipboard
-      navigator.clipboard.writeText(shareUrl);
-      toast({
-        description: 'Link copied to clipboard!'
-      });
-    }
+    // NOTE: /products/:id route doesn't exist yet - show toast instead of dead link
+    toast({
+      title: "Sharing coming soon",
+      description: "Product sharing will be available soon!",
+    });
   };
   const availableSizes = ['XS', 'S', 'M', 'L', 'XL'].map(size => ({
     value: size,

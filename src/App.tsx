@@ -57,6 +57,7 @@ import PublicOutfitView from './pages/PublicOutfitView';
 import PublicItemView from './pages/PublicItemView';
 import StyleLinkPage from './pages/StyleLinkPage';
 import PublicDealsPage from './pages/PublicDealsPage';
+import AffiliateRedirect from './pages/AffiliateRedirect';
 
 import { DebugHealthPage } from './components/DebugHealthPage';
 import { BottomNavigation } from './components/BottomNavigation';
@@ -253,8 +254,8 @@ function AppContent() {
                   <Route path="/u/:username" element={<StyleLinkPage />} />
                   <Route path="/u/:username/deals" element={<PublicDealsPage />} />
                   
-                  {/* Legacy affiliate route - redirect to username deals */}
-                  <Route path="/affiliate/:userId" element={<Navigate to="/dashboard" replace />} />
+                  {/* Legacy affiliate route - resolve username and redirect to deals */}
+                  <Route path="/affiliate/:userId" element={<AffiliateRedirect />} />
                   
                   <Route path="/admin/delete-user" element={
                     <ProtectedRoute roles={['admin']}>

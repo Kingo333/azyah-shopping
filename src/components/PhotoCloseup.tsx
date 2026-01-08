@@ -202,33 +202,19 @@ const PhotoCloseup: React.FC<PhotoCloseupProps> = ({ onClose, initialProduct }) 
   const handleShare = async () => {
     if (!product) return;
 
-    const shareUrl = `https://azyahstyle.com/products/${product.id}`;
-    const shareData = {
-      title: product.title,
-      text: `Check out this ${product.title} from ${product.brand?.name || 'Azyah'}`,
-      url: shareUrl
-    };
+    // NOTE: /products/:id route doesn't exist yet - show toast instead of dead link
+    toast({
+      title: "Sharing coming soon",
+      description: "Product sharing will be available soon!",
+    });
 
-    try {
-      if (navigator.share) {
-        await navigator.share(shareData);
-      } else {
-        await navigator.clipboard.writeText(shareUrl);
-        toast({
-          description: "Link copied to clipboard!"
-        });
-      }
-
-      // Track analytics
-      supabase.from('events').insert({
-        user_id: user?.id,
-        event_type: 'share_clicked',
-        event_data: { source: 'closeup' },
-        product_id: product.id
-      });
-    } catch (error) {
-      console.error('Error sharing:', error);
-    }
+    // Track analytics
+    supabase.from('events').insert({
+      user_id: user?.id,
+      event_type: 'share_clicked',
+      event_data: { source: 'closeup', status: 'route_not_available' },
+      product_id: product.id
+    });
   };
 
   const handleVisitBrand = () => {
