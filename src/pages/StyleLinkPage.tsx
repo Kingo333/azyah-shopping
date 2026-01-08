@@ -4,12 +4,14 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useStyleLinkData } from '@/hooks/useStyleLinkData';
 import { useStyleLinkStats, useLogStyleLinkEvent } from '@/hooks/useStyleLinkAnalytics';
 import { StyleLinkModal } from '@/components/StyleLinkModal';
+import { DealsAndCodesCenter } from '@/components/affiliate/DealsAndCodesCenter';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { 
   Loader2, Copy, Share2, QrCode, ExternalLink, Heart, MessageCircle, 
-  Eye, MousePointer, ShoppingBag, Sparkles, ArrowRight,
+  Eye, MousePointer, ShoppingBag, Sparkles, ArrowRight, Tag,
   Instagram, Globe, Twitter
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -338,22 +340,11 @@ export default function StyleLinkPage() {
           </div>
         )}
 
-        {/* Owner Affiliate Tools */}
+        {/* Owner Deals & Codes Center */}
         {isOwner && (
-          <div className="px-4 py-4 border-b bg-muted/30">
+          <div className="px-4 py-4 border-b">
             <div className="max-w-lg mx-auto">
-              <h3 className="text-xs font-medium mb-2">Affiliate Tools</h3>
-              <p className="text-[10px] text-muted-foreground mb-3">
-                Attach affiliate links to your closet items. When visitors shop through your links, you earn commissions!
-              </p>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => navigate('/dress-me/wardrobe')}
-                className="w-full"
-              >
-                Manage Closet Items
-              </Button>
+              <DealsAndCodesCenter />
             </div>
           </div>
         )}

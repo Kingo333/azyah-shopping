@@ -56,6 +56,7 @@ import UserDeletionTool from './components/UserDeletionTool';
 import PublicOutfitView from './pages/PublicOutfitView';
 import PublicItemView from './pages/PublicItemView';
 import StyleLinkPage from './pages/StyleLinkPage';
+import PublicDealsPage from './pages/PublicDealsPage';
 
 import { DebugHealthPage } from './components/DebugHealthPage';
 import { BottomNavigation } from './components/BottomNavigation';
@@ -250,6 +251,10 @@ function AppContent() {
                   
                   {/* Style Link page - public profile with outfits */}
                   <Route path="/u/:username" element={<StyleLinkPage />} />
+                  <Route path="/u/:username/deals" element={<PublicDealsPage />} />
+                  
+                  {/* Legacy affiliate route - redirect to username deals */}
+                  <Route path="/affiliate/:userId" element={<Navigate to="/dashboard" replace />} />
                   
                   <Route path="/admin/delete-user" element={
                     <ProtectedRoute roles={['admin']}>

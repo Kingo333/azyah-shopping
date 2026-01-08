@@ -83,6 +83,78 @@ export type Database = {
           },
         ]
       }
+      affiliate_promo_outfits: {
+        Row: {
+          created_at: string
+          id: string
+          outfit_id: string
+          promo_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          outfit_id: string
+          promo_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          outfit_id?: string
+          promo_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "affiliate_promo_outfits_outfit_id_fkey"
+            columns: ["outfit_id"]
+            isOneToOne: true
+            referencedRelation: "fits"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "affiliate_promo_outfits_promo_id_fkey"
+            columns: ["promo_id"]
+            isOneToOne: false
+            referencedRelation: "affiliate_promos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      affiliate_promos: {
+        Row: {
+          affiliate_code: string | null
+          affiliate_url: string | null
+          created_at: string
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          owner_user_id: string
+          promo_name: string | null
+          updated_at: string
+        }
+        Insert: {
+          affiliate_code?: string | null
+          affiliate_url?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          owner_user_id: string
+          promo_name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          affiliate_code?: string | null
+          affiliate_url?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          owner_user_id?: string
+          promo_name?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       ai_assets: {
         Row: {
           asset_type: string
@@ -4957,6 +5029,18 @@ export type Database = {
           slug: string
         }[]
       }
+      get_my_outfits_with_promo_status: {
+        Args: never
+        Returns: {
+          attached_promo_id: string
+          attached_promo_name: string
+          image_preview: string
+          is_public: boolean
+          outfit_id: string
+          share_slug: string
+          title: string
+        }[]
+      }
       get_my_payment_summary: {
         Args: never
         Returns: {
@@ -4979,6 +5063,20 @@ export type Database = {
           user_name: string
           user_role: Database["public"]["Enums"]["user_role"]
           user_website: string
+        }[]
+      }
+      get_my_promos_with_outfit_counts: {
+        Args: never
+        Returns: {
+          affiliate_code: string
+          affiliate_url: string
+          created_at: string
+          days_left: number
+          expires_at: string
+          is_active: boolean
+          outfit_count: number
+          promo_id: string
+          promo_name: string
         }[]
       }
       get_my_subscription_status: {
@@ -5089,6 +5187,31 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      get_public_deal_for_outfit_slug: {
+        Args: { p_slug: string }
+        Returns: {
+          affiliate_code: string
+          affiliate_url: string
+          days_left: number
+          expires_at: string
+          owner_name: string
+          owner_username: string
+          promo_id: string
+          promo_name: string
+        }[]
+      }
+      get_public_deals_for_username: {
+        Args: { p_username: string }
+        Returns: {
+          affiliate_code: string
+          affiliate_url: string
+          attached_outfits: Json
+          days_left: number
+          expires_at: string
+          promo_id: string
+          promo_name: string
+        }[]
       }
       get_public_item_by_slug: {
         Args: { slug_param: string }
