@@ -263,7 +263,7 @@ const ProfileSettings: React.FC = () => {
               <CardTitle className="font-serif font-medium">Personal Information</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="name">Display Name</Label>
                   <Input
@@ -272,20 +272,28 @@ const ProfileSettings: React.FC = () => {
                     onChange={(e) => handleInputChange('name', e.target.value)}
                     placeholder="Your display name"
                   />
+                  <p className="text-xs text-muted-foreground">
+                    Your name as shown to others (e.g., "Sarah Fashion")
+                  </p>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="username">Username</Label>
+                  <Label htmlFor="username">Style Handle</Label>
                   <Input
                     id="username"
                     value={profileData.username}
-                    onChange={(e) => handleInputChange('username', e.target.value)}
-                    placeholder="yourname123"
-                    pattern="[a-zA-Z0-9_]{3,20}"
+                    onChange={(e) => handleInputChange('username', e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+                    placeholder="yourhandle"
+                    pattern="[a-z0-9_]{3,20}"
                     maxLength={20}
                   />
                   <p className="text-xs text-muted-foreground">
-                    3-20 characters, letters, numbers, and underscore only
+                    Your unique handle for your Style Link
                   </p>
+                  {profileData.username && (
+                    <p className="text-xs text-primary font-medium">
+                      azyah.style/u/{profileData.username}
+                    </p>
+                  )}
                 </div>
               </div>
 
