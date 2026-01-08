@@ -3235,6 +3235,36 @@ export type Database = {
           },
         ]
       }
+      style_link_analytics: {
+        Row: {
+          created_at: string | null
+          event_type: string
+          id: string
+          metadata: Json | null
+          owner_user_id: string
+          referrer_url: string | null
+          target_slug: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          event_type: string
+          id?: string
+          metadata?: Json | null
+          owner_user_id: string
+          referrer_url?: string | null
+          target_slug?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          event_type?: string
+          id?: string
+          metadata?: Json | null
+          owner_user_id?: string
+          referrer_url?: string | null
+          target_slug?: string | null
+        }
+        Relationships: []
+      }
       subscriptions: {
         Row: {
           ai_tryon_limit: number | null
@@ -3884,6 +3914,7 @@ export type Database = {
       }
       wardrobe_items: {
         Row: {
+          affiliate_url: string | null
           attribution_user_id: string | null
           brand: string | null
           category: string
@@ -3911,6 +3942,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          affiliate_url?: string | null
           attribution_user_id?: string | null
           brand?: string | null
           category: string
@@ -3938,6 +3970,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          affiliate_url?: string | null
           attribution_user_id?: string | null
           brand?: string | null
           category?: string
@@ -5342,6 +5375,13 @@ export type Database = {
           title: string
         }[]
       }
+      get_style_link_stats: {
+        Args: { owner_user_id_param: string }
+        Returns: {
+          count: number
+          event_type: string
+        }[]
+      }
       get_trending_categories: {
         Args: { days_back?: number; limit_count?: number }
         Returns: {
@@ -5414,6 +5454,17 @@ export type Database = {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["user_role"]
       }
+      get_user_style_link_data: {
+        Args: { username_param: string }
+        Returns: {
+          avatar_url: string
+          bio: string
+          name: string
+          referral_code: string
+          user_id: string
+          username: string
+        }[]
+      }
       get_voice_usage_today: {
         Args: { target_user_id: string }
         Returns: {
@@ -5470,6 +5521,16 @@ export type Database = {
           access_type: string
           table_name: string
           user_id_accessed: string
+        }
+        Returns: undefined
+      }
+      log_style_link_event: {
+        Args: {
+          event_type_param: string
+          metadata_param?: Json
+          referrer_url_param?: string
+          target_slug_param?: string
+          username_param: string
         }
         Returns: undefined
       }

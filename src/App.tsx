@@ -55,6 +55,7 @@ import PhotoCloseup from './components/PhotoCloseup';
 import UserDeletionTool from './components/UserDeletionTool';
 import PublicOutfitView from './pages/PublicOutfitView';
 import PublicItemView from './pages/PublicItemView';
+import StyleLinkPage from './pages/StyleLinkPage';
 
 import { DebugHealthPage } from './components/DebugHealthPage';
 import { BottomNavigation } from './components/BottomNavigation';
@@ -246,6 +247,9 @@ function AppContent() {
                   {/* Public share routes - SLUG ONLY (no UUIDs) */}
                   <Route path="/share/outfit/:slug" element={<PublicOutfitView />} />
                   <Route path="/share/item/:slug" element={<PublicItemView />} />
+                  
+                  {/* Style Link page - public profile with outfits */}
+                  <Route path="/u/:username" element={<StyleLinkPage />} />
                   
                   <Route path="/admin/delete-user" element={
                     <ProtectedRoute roles={['admin']}>
