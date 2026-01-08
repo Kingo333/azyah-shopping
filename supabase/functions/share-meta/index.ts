@@ -37,10 +37,12 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_ANON_KEY') ?? ''
     );
 
+    // Use env var for base URL, fallback to production domain
+    const baseUrl = Deno.env.get('PUBLIC_WEB_URL') || 'https://azyahstyle.com';
+    
     let title = 'Azyah Style';
     let description = 'Discover fashion on Azyah Style';
-    let image = 'https://azyahstyle.com/og-image.png';
-    const baseUrl = 'https://azyahstyle.com';
+    let image = `${baseUrl}/og-image.png`;
     // Note: shareUrl does NOT include slug for meta tags - slug is cosmetic only
     const shareUrl = `${baseUrl}/share/${type}/${id}`;
 
@@ -159,9 +161,10 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('[share-meta] Error:', error);
-    // Fallback redirect to home
+    // Fallback redirect to home using env var
+    const baseUrl = Deno.env.get('PUBLIC_WEB_URL') || 'https://azyahstyle.com';
     return new Response(
-      `<!DOCTYPE html><html><head><meta http-equiv="refresh" content="0;url=https://azyahstyle.com"></head><body>Redirecting...</body></html>`,
+      `<!DOCTYPE html><html><head><meta http-equiv="refresh" content="0;url=${baseUrl}"></head><body>Redirecting...</body></html>`,
       { headers: { 'Content-Type': 'text/html' } }
     );
   }

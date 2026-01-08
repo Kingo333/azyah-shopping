@@ -1,77 +1,48 @@
 /**
  * Centralized URL generation for all public share links.
  * 
- * RULES:
- * 1. If native (Capacitor) or capacitor:// protocol → always use env canonical
- * 2. Else if env var exists AND not on localhost/preview → use env var
- * 3. Else use window.location.origin (for dev/testing)
+ * RULES (Canonical Domain Always):
+ * 1. If VITE_PUBLIC_WEB_URL is set → ALWAYS use it for share links
+ * 2. If VITE_SHARE_USE_RUNTIME_ORIGIN=true AND on localhost → use runtime origin (dev only)
+ * 3. Default fallback is azyahstyle.com
+ * 
+ * Share links ALWAYS use the canonical production domain, even on preview/localhost.
+ * This ensures QR codes, copy links, and shares work correctly everywhere.
  */
 
 // Canonical production domain - set via environment variable
 const PRODUCTION_DOMAIN = import.meta.env.VITE_PUBLIC_WEB_URL || 'https://azyahstyle.com';
 
-/**
- * Check if we're running on a native Capacitor platform.
- * Uses safe detection without direct import to avoid build issues on web-only envs.
- */
-function isNativePlatform(): boolean {
-  if (typeof window === 'undefined') return false;
-  
-  // Check protocol
-  if (window.location.protocol === 'capacitor:') return true;
-  
-  // Check for Capacitor object on window
-  const cap = (window as any).Capacitor;
-  if (cap?.isNativePlatform?.()) return true;
-  
-  return false;
-}
+// Optional dev flag to allow runtime origin for local testing only
+const USE_RUNTIME_ORIGIN = import.meta.env.VITE_SHARE_USE_RUNTIME_ORIGIN === 'true';
 
 /**
- * Check if we're on localhost or a preview/staging environment.
+ * Check if we're on localhost (for dev override only).
  */
-function isLocalOrPreview(): boolean {
+function isLocalhost(): boolean {
   if (typeof window === 'undefined') return false;
-  
   const origin = window.location.origin;
-  return (
-    origin.includes('localhost') ||
-    origin.includes('127.0.0.1') ||
-    origin.includes('lovableproject.com') ||
-    origin.includes('.lovable.app')
-  );
+  return origin.includes('localhost') || origin.includes('127.0.0.1');
 }
 
 /**
  * Get the public base URL for shareable links.
  * 
- * - On native platforms: always use production domain (links must work externally)
- * - On localhost/preview: use current origin (for testing)
- * - On production domain: use current origin
+ * ALWAYS returns the canonical production domain for share links,
+ * except when explicitly overridden with VITE_SHARE_USE_RUNTIME_ORIGIN=true on localhost.
  */
 export function getPublicBaseUrl(): string {
-  // On native platforms, always use production URL (capacitor://localhost is useless for sharing)
-  if (isNativePlatform()) {
-    return PRODUCTION_DOMAIN;
+  // Dev override: only if explicitly enabled AND on localhost
+  if (USE_RUNTIME_ORIGIN && isLocalhost() && typeof window !== 'undefined') {
+    return window.location.origin;
   }
   
-  if (typeof window !== 'undefined') {
-    const origin = window.location.origin;
-    
-    // If on localhost or preview, use current origin for easier testing
-    if (isLocalOrPreview()) {
-      return origin;
-    }
-    
-    // On any production domain, use current origin
-    return origin;
-  }
-  
+  // ALWAYS return canonical production domain for share links
   return PRODUCTION_DOMAIN;
 }
 
 // ============================================
-// Centralized URL generators
+// Centralized URL generators for share links
 // ============================================
 
 /**
@@ -111,10 +82,19 @@ export function getDealsUrl(username: string): string {
 
 /**
  * Generate the product detail page URL.
+ * NOTE: /products/:id route does NOT exist yet. Use only for internal reference.
  * @param productId - The product ID
  */
 export function getProductShareUrl(productId: string): string {
   return `${getPublicBaseUrl()}/products/${productId}`;
+}
+
+/**
+ * Generate a brand page URL.
+ * @param slug - The brand's slug
+ */
+export function getBrandUrl(slug: string): string {
+  return `${getPublicBaseUrl()}/brand/${slug}`;
 }
 
 // Legacy export for backward compatibility

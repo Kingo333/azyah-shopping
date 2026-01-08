@@ -54,7 +54,7 @@ const SocialSharing = ({ item, user, onShare }: SocialSharingProps) => {
   const [isGeneratingQR, setIsGeneratingQR] = useState(false);
 
   // Generate the correct share URL based on item type (slug-only for outfit/item)
-  const getShareUrl = (): string => {
+  const getShareUrl = (): string | null => {
     // If a custom URL is provided, use it
     if (item.url) return item.url;
     
@@ -74,16 +74,19 @@ const SocialSharing = ({ item, user, onShare }: SocialSharingProps) => {
         // Fallback: just use the ID (legacy support)
         return `${getPublicBaseUrl()}/share/item/${item.id}`;
       case 'product':
-        // Products use /products/:id route
-        return getProductShareUrl(item.id);
+        // Products route doesn't exist - return null to guard
+        return null;
       case 'mood-board':
-        return `${getPublicBaseUrl()}/mood-boards/${item.id}`;
+        // Auth-gated - return null (private share only)
+        return null;
       case 'post':
-        return `${getPublicBaseUrl()}/posts/${item.id}`;
+        // Auth-gated - return null (private share only)
+        return null;
       default:
-        return `${getPublicBaseUrl()}/${item.type}s/${item.id}`;
+        return null;
     }
   };
+  
   const shareUrl = getShareUrl();
   const defaultMessage = `Check out this amazing ${item.type}: ${item.title}`;
 
@@ -261,6 +264,16 @@ const SocialSharing = ({ item, user, onShare }: SocialSharingProps) => {
       });
     }
   };
+
+  // Guard: if shareUrl is null, the route doesn't exist - show disabled share
+  if (!shareUrl) {
+    return (
+      <Button variant="ghost" size="sm" className="gap-2" disabled>
+        <Share2 className="h-4 w-4" />
+        Share (Coming Soon)
+      </Button>
+    );
+  }
 
   return (
     <>

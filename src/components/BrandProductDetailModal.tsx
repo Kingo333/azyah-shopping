@@ -116,21 +116,11 @@ export const BrandProductDetailModal: React.FC<BrandProductDetailModalProps> = (
   };
 
   const handleShare = async () => {
-    const productUrl = `https://azyahstyle.com/products/${product.id}`;
-    if (navigator.share) {
-      try {
-        await navigator.share({ 
-          title: product.title, 
-          text: product.description, 
-          url: productUrl 
-        });
-      } catch {
-        /* user canceled share */
-      }
-    } else {
-      await navigator.clipboard.writeText(productUrl);
-      toast({ title: 'Link copied', description: 'Product link has been copied to clipboard.' });
-    }
+    // NOTE: /products/:id route doesn't exist yet - show toast instead of dead link
+    toast({ 
+      title: 'Sharing coming soon', 
+      description: 'Product sharing will be available soon!' 
+    });
   };
 
   const attributes = product.attributes as any;

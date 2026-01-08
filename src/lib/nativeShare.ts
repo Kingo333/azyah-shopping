@@ -8,10 +8,25 @@ export {
   getOutfitShareUrl,
   getItemShareUrl,
   getProductShareUrl,
-  getDealsUrl 
+  getDealsUrl,
+  getBrandUrl
 } from './urls';
 
 import { getOutfitShareUrl, getItemShareUrl } from './urls';
+
+/**
+ * Copy a URL to clipboard with toast notification.
+ */
+export async function copyToClipboard(url: string): Promise<boolean> {
+  try {
+    await navigator.clipboard.writeText(url);
+    toast.success('Link copied!');
+    return true;
+  } catch {
+    toast.error('Failed to copy link');
+    return false;
+  }
+}
 
 interface ShareOptions {
   title?: string;
