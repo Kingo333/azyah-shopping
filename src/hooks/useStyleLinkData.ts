@@ -2,13 +2,21 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
+export interface StyleLinkSocials {
+  instagram_url?: string;
+  tiktok_url?: string;
+  twitter_url?: string;
+  website?: string;
+}
+
 export interface StyleLinkUserData {
   user_id: string;
-  username: string;
+  username: string | null;
   name: string | null;
   avatar_url: string | null;
   bio: string | null;
   referral_code: string | null;
+  socials: StyleLinkSocials | null;
 }
 
 export interface StyleLinkOutfit {
@@ -22,17 +30,17 @@ export interface StyleLinkOutfit {
   comment_count: number;
 }
 
-export const useStyleLinkData = (username: string | undefined) => {
+export const useStyleLinkData = (identifier: string | undefined) => {
   const { user } = useAuth();
 
-  // Fetch user profile data via RPC
+  // Fetch user profile data via RPC (accepts username OR UUID)
   const userDataQuery = useQuery({
-    queryKey: ['style-link-user', username],
+    queryKey: ['style-link-user', identifier],
     queryFn: async (): Promise<StyleLinkUserData | null> => {
-      if (!username) return null;
+      if (!identifier) return null;
 
       const { data, error } = await supabase.rpc('get_user_style_link_data', {
-        username_param: username
+        identifier_param: identifier
       });
 
       if (error) {
@@ -41,10 +49,16 @@ export const useStyleLinkData = (username: string | undefined) => {
       }
 
       // RPC returns an array, get first item
-      const userData = Array.isArray(data) ? data[0] : data;
-      return userData || null;
+      const rawData = Array.isArray(data) ? data[0] : data;
+      if (!rawData) return null;
+      
+      // Cast socials to proper type (it comes as Json from Supabase)
+      return {
+        ...rawData,
+        socials: rawData.socials as StyleLinkSocials | null,
+      } as StyleLinkUserData;
     },
-    enabled: !!username,
+    enabled: !!identifier,
   });
 
   // Fetch user's public outfits

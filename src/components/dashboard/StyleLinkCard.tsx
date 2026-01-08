@@ -1,27 +1,100 @@
-import { useState } from 'react';
-import { Link2, Copy, Share2, QrCode } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Link2, Copy, Share2, QrCode, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserReferralCode } from '@/hooks/useReferrals';
 import { SITE_URL, nativeShare } from '@/lib/nativeShare';
 import { StyleLinkModal } from '@/components/StyleLinkModal';
+import { supabase } from '@/integrations/supabase/client';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 export function StyleLinkCard() {
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { data: referralCode } = useUserReferralCode();
   const [showQRModal, setShowQRModal] = useState(false);
 
-  // Get username from user metadata or fallback to user id
-  const username = user?.user_metadata?.username || user?.id;
+  // Fetch user profile from database (not auth metadata)
+  const { data: userProfile, isLoading: profileLoading } = useQuery({
+    queryKey: ['user-profile-stylelink', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const { data, error } = await supabase
+        .from('users')
+        .select('username, name, avatar_url')
+        .eq('id', user.id)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user?.id,
+  });
 
-  // Build the Style Link URL
-  const styleLinkUrl = referralCode
-    ? `${SITE_URL}/u/${username}?ref=${referralCode}`
-    : `${SITE_URL}/u/${username}`;
+  // Sync profile from auth metadata (one-time if name/avatar missing)
+  const syncProfileMutation = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.rpc('sync_my_profile_from_auth');
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user-profile-stylelink', user?.id] });
+    },
+  });
+
+  // Ensure username exists (collision-safe, server-side)
+  const ensureUsernameMutation = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.rpc('ensure_my_username');
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user-profile-stylelink', user?.id] });
+    },
+  });
+
+  // On mount: sync profile and ensure username if needed
+  useEffect(() => {
+    if (userProfile && !profileLoading) {
+      // Sync name/avatar if missing
+      if (!userProfile.name || !userProfile.avatar_url) {
+        syncProfileMutation.mutate();
+      }
+      // Ensure username if missing
+      if (!userProfile.username) {
+        ensureUsernameMutation.mutate();
+      }
+    }
+  }, [userProfile, profileLoading]);
+
+  // Effective handle: use database username or fallback to pending state
+  const effectiveHandle = userProfile?.username || null;
+  const displayName = userProfile?.name || user?.user_metadata?.name || 'Your Name';
+  
+  // Get initials for avatar fallback
+  const getInitials = (name: string | null | undefined) => {
+    if (!name) return '?';
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  };
+
+  // Build the Style Link URL (only if we have a handle)
+  const styleLinkUrl = effectiveHandle
+    ? (referralCode
+        ? `${SITE_URL}/u/${effectiveHandle}?ref=${referralCode}`
+        : `${SITE_URL}/u/${effectiveHandle}`)
+    : null;
 
   const handleCopyLink = async (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (!styleLinkUrl) {
+      toast.error('Setting up your link... try again in a moment');
+      return;
+    }
     try {
       await navigator.clipboard.writeText(styleLinkUrl);
       toast.success('Link copied! Earn more when friends join.');
@@ -32,6 +105,10 @@ export function StyleLinkCard() {
 
   const handleShare = async (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (!styleLinkUrl) {
+      toast.error('Setting up your link... try again in a moment');
+      return;
+    }
     const success = await nativeShare({
       title: 'My Azyah Style Link',
       text: 'Check out my outfits and style on Azyah! Shop my looks and earn rewards.',
@@ -46,70 +123,100 @@ export function StyleLinkCard() {
 
   const handleShowQR = (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (!effectiveHandle) {
+      toast.error('Setting up your link... try again in a moment');
+      return;
+    }
     setShowQRModal(true);
+  };
+
+  const handleViewMyPage = () => {
+    if (effectiveHandle) {
+      navigate(`/u/${effectiveHandle}`);
+    } else {
+      toast.error('Setting up your page... try again in a moment');
+    }
   };
 
   if (!user) return null;
 
+  const isSettingUp = profileLoading || ensureUsernameMutation.isPending || !effectiveHandle;
+
   return (
     <>
       <div className="h-full rounded-xl border bg-gradient-to-br from-[hsl(var(--azyah-maroon))]/5 via-background to-[hsl(var(--azyah-maroon))]/10 p-3 flex flex-col">
-        {/* Header */}
+        {/* Profile Preview */}
         <div className="flex items-center gap-2 mb-2">
-          <div className="p-1.5 rounded-lg bg-[hsl(var(--azyah-maroon))]/10">
-            <Link2 className="h-4 w-4 text-[hsl(var(--azyah-maroon))]" />
-          </div>
+          <Avatar className="h-10 w-10 ring-1 ring-[hsl(var(--azyah-maroon))]/20">
+            <AvatarImage src={userProfile?.avatar_url || undefined} />
+            <AvatarFallback className="bg-[hsl(var(--azyah-maroon))]/10 text-[hsl(var(--azyah-maroon))]">
+              {getInitials(displayName)}
+            </AvatarFallback>
+          </Avatar>
           <div className="min-w-0 flex-1">
-            <h3 className="text-xs font-semibold truncate">My Style Link</h3>
-            <p className="text-[9px] text-muted-foreground leading-tight truncate">
-              Share outfits + shop links
+            <p className="text-xs font-semibold truncate">{displayName}</p>
+            <p className="text-[10px] text-muted-foreground truncate">
+              {effectiveHandle ? `@${effectiveHandle}` : 'Setting up...'}
             </p>
           </div>
         </div>
 
-        {/* Subtitle */}
-        <p className="text-[10px] text-muted-foreground mb-3 leading-snug">
-          Earn rewards when friends join & create
+        {/* Helper text */}
+        <p className="text-[9px] text-muted-foreground mb-2 leading-tight">
+          Your shareable style page — like LinkMe with outfits + shop links
         </p>
 
-        {/* Action Buttons */}
-        <div className="mt-auto grid grid-cols-3 gap-1.5">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleCopyLink}
-            className="h-7 text-[10px] px-1.5 gap-1"
+        {/* Primary Action */}
+        <Button
+          size="sm"
+          className="w-full h-7 text-[10px] mb-2 bg-[hsl(var(--azyah-maroon))] hover:bg-[hsl(var(--azyah-maroon))]/90"
+          onClick={handleViewMyPage}
+          disabled={isSettingUp}
+        >
+          <User className="h-3 w-3 mr-1" />
+          View My Page
+        </Button>
+
+        {/* Secondary Actions (smaller) */}
+        <div className="grid grid-cols-3 gap-1">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={handleCopyLink} 
+            className="h-6 text-[9px] px-1"
+            disabled={isSettingUp}
           >
             <Copy className="h-3 w-3" />
-            Copy
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleShare}
-            className="h-7 text-[10px] px-1.5 gap-1"
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={handleShare} 
+            className="h-6 text-[9px] px-1"
+            disabled={isSettingUp}
           >
             <Share2 className="h-3 w-3" />
-            Share
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleShowQR}
-            className="h-7 text-[10px] px-1.5 gap-1"
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={handleShowQR} 
+            className="h-6 text-[9px] px-1"
+            disabled={isSettingUp}
           >
             <QrCode className="h-3 w-3" />
-            QR
           </Button>
         </div>
       </div>
 
-      <StyleLinkModal
-        isOpen={showQRModal}
-        onClose={() => setShowQRModal(false)}
-        username={username || ''}
-        referralCode={referralCode}
-      />
+      {effectiveHandle && (
+        <StyleLinkModal
+          isOpen={showQRModal}
+          onClose={() => setShowQRModal(false)}
+          username={effectiveHandle}
+          referralCode={referralCode}
+        />
+      )}
     </>
   );
 }

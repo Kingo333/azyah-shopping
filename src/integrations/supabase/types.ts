@@ -4809,6 +4809,7 @@ export type Database = {
         }[]
       }
       embed_query: { Args: { query_text: string }; Returns: number[] }
+      ensure_my_username: { Args: never; Returns: string }
       ensure_payment_data_encryption: { Args: never; Returns: string }
       ensure_payment_security: { Args: never; Returns: string }
       get_beauty_profile: {
@@ -5455,12 +5456,13 @@ export type Database = {
         Returns: Database["public"]["Enums"]["user_role"]
       }
       get_user_style_link_data: {
-        Args: { username_param: string }
+        Args: { identifier_param: string }
         Returns: {
           avatar_url: string
           bio: string
           name: string
           referral_code: string
+          socials: Json
           user_id: string
           username: string
         }[]
@@ -5573,6 +5575,13 @@ export type Database = {
         Returns: boolean
       }
       slugify: { Args: { text_input: string }; Returns: string }
+      sync_my_profile_from_auth: {
+        Args: never
+        Returns: {
+          synced_avatar_url: string
+          synced_name: string
+        }[]
+      }
       tier_from_price_aed: { Args: { aed_price: number }; Returns: string }
       upsert_beauty_profile: {
         Args: { profile_updates: Json; target_user_id: string }
