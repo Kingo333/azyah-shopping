@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useStyleLinkData } from '@/hooks/useStyleLinkData';
@@ -9,16 +9,15 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { 
   Loader2, Copy, Share2, QrCode, ExternalLink, Heart, MessageCircle, 
   Eye, MousePointer, ShoppingBag, Sparkles, ArrowRight, Tag,
-  Instagram, Globe, Twitter
+  Instagram, Globe, Twitter, ArrowLeft
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { SITE_URL, nativeShare } from '@/lib/nativeShare';
-import { useState } from 'react';
+import { getStyleLinkUrl, getPublicBaseUrl, nativeShare } from '@/lib/nativeShare';
 import { SEOHead } from '@/components/SEOHead';
-import { Capacitor } from '@capacitor/core';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -90,11 +89,17 @@ export default function StyleLinkPage() {
     },
   });
 
-  // Build Style Link URL using username (canonical)
+  // Build Style Link URL using centralized helper
   const displayUsername = userData?.username || identifier;
-  const styleLinkUrl = userData?.referral_code
-    ? `${SITE_URL}/u/${displayUsername}?ref=${userData.referral_code}`
-    : `${SITE_URL}/u/${displayUsername}`;
+  const styleLinkUrl = getStyleLinkUrl(displayUsername || '', userData?.referral_code);
+
+  const handleBack = () => {
+    if (window.history.length > 1) {
+      navigate(-1);
+    } else {
+      navigate('/dashboard');
+    }
+  };
 
   const handleCopyLink = async () => {
     try {
@@ -114,6 +119,12 @@ export default function StyleLinkPage() {
     });
   };
 
+  // Check if we're on native platform (safe detection)
+  const isNativePlatform = typeof window !== 'undefined' && (
+    window.location.protocol === 'capacitor:' ||
+    (window as any).Capacitor?.isNativePlatform?.()
+  );
+
   const handleOpenInApp = () => {
     logEvent.mutate({
       username: displayUsername!,
@@ -122,7 +133,7 @@ export default function StyleLinkPage() {
 
     const deepLink = `com.azyah.style://u/${displayUsername}`;
     
-    if (!Capacitor.isNativePlatform()) {
+    if (!isNativePlatform) {
       const now = Date.now();
       window.location.href = deepLink;
       
@@ -210,12 +221,24 @@ export default function StyleLinkPage() {
         title={`${userData.name || displayUsername}'s Style | Azyah`}
         description={userData.bio || `Check out ${userData.name || displayUsername}'s outfits and style on Azyah`}
         image={userData.avatar_url || undefined}
-        canonical={`${SITE_URL}/u/${userData.username || identifier}`}
+        canonical={`${getPublicBaseUrl()}/u/${userData.username || identifier}`}
       />
 
       <div className="min-h-screen bg-background pb-24">
-        {/* Header */}
-        <div className="bg-gradient-to-b from-[hsl(var(--azyah-maroon))]/5 to-transparent pt-12 pb-6 px-4">
+        {/* Header with Back Button */}
+        <div className="bg-gradient-to-b from-[hsl(var(--azyah-maroon))]/5 to-transparent pt-12 pb-6 px-4 relative">
+          {/* Back button for owner */}
+          {isOwner && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleBack}
+              className="absolute top-4 left-4 gap-1 text-muted-foreground hover:text-foreground"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back
+            </Button>
+          )}
           <div className="max-w-lg mx-auto text-center">
             <Avatar className="h-20 w-20 mx-auto mb-3 ring-2 ring-[hsl(var(--azyah-maroon))]/20 ring-offset-2">
               <AvatarImage src={userData.avatar_url || undefined} alt={userData.name || displayUsername} />
@@ -278,22 +301,36 @@ export default function StyleLinkPage() {
               </div>
             )}
 
-            {/* Owner Controls */}
+            {/* Owner Controls - Compact Icon Buttons */}
             {isOwner && (
-              <div className="flex justify-center gap-2 mt-4">
-                <Button variant="outline" size="sm" onClick={handleCopyLink} className="gap-1.5">
-                  <Copy className="h-3.5 w-3.5" />
-                  Copy
-                </Button>
-                <Button variant="outline" size="sm" onClick={handleShare} className="gap-1.5">
-                  <Share2 className="h-3.5 w-3.5" />
-                  Share
-                </Button>
-                <Button variant="outline" size="sm" onClick={() => setShowQRModal(true)} className="gap-1.5">
-                  <QrCode className="h-3.5 w-3.5" />
-                  QR
-                </Button>
-              </div>
+              <TooltipProvider>
+                <div className="flex justify-center gap-1.5 mt-4">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="outline" size="icon" className="h-8 w-8" onClick={handleCopyLink}>
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Copy link</TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="outline" size="icon" className="h-8 w-8" onClick={handleShare}>
+                        <Share2 className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Share</TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setShowQRModal(true)}>
+                        <QrCode className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Show QR Code</TooltipContent>
+                  </Tooltip>
+                </div>
+              </TooltipProvider>
             )}
 
             {/* Visitor CTA */}

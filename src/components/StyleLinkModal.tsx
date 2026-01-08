@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Copy, Share2, Download, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import QRCode from 'qrcode';
-import { SITE_URL, nativeShare } from '@/lib/nativeShare';
+import { getStyleLinkUrl, nativeShare } from '@/lib/nativeShare';
 
 interface StyleLinkModalProps {
   isOpen: boolean;
@@ -23,10 +23,8 @@ export const StyleLinkModal = ({
   const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
   const [isGeneratingQR, setIsGeneratingQR] = useState(false);
 
-  // Build the Style Link URL with optional referral
-  const styleLinkUrl = referralCode
-    ? `${SITE_URL}/u/${username}?ref=${referralCode}`
-    : `${SITE_URL}/u/${username}`;
+  // Build the Style Link URL using centralized helper
+  const styleLinkUrl = getStyleLinkUrl(username, referralCode);
 
   // Generate QR code when modal opens
   useEffect(() => {

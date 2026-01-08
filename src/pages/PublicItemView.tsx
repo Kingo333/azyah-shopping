@@ -7,7 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { SEOHead } from '@/components/SEOHead';
 import { ArrowLeft, ExternalLink, Share2, ShoppingBag } from 'lucide-react';
 import { openExternalUrl } from '@/lib/openExternalUrl';
-import { nativeShare, getShareableUrl, SITE_URL } from '@/lib/nativeShare';
+import { nativeShare, getShareableUrl, getPublicBaseUrl } from '@/lib/nativeShare';
 
 interface PublicItem {
   id: string;
@@ -133,7 +133,7 @@ export default function PublicItemView() {
   const displayImage = item.image_bg_removed_url || item.image_url;
   const displayName = item.name || item.brand || item.source_vendor_name || item.category;
   const creatorName = getCreatorDisplayName();
-  const canonicalUrl = `${SITE_URL}/share/item/${item.share_slug}`;
+  const canonicalUrl = `${getPublicBaseUrl()}/share/item/${item.share_slug}`;
 
   return (
     <>
