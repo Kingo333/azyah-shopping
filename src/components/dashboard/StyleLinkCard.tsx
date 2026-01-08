@@ -90,37 +90,27 @@ export function StyleLinkCard() {
   const isSettingUp = profileLoading || ensureUsernameMutation.isPending || !effectiveHandle;
 
   return (
-    <div className="h-full rounded-xl border bg-gradient-to-br from-[hsl(var(--azyah-maroon))]/5 via-background to-[hsl(var(--azyah-maroon))]/10 p-3 flex flex-col">
-      {/* Profile Preview */}
-      <div className="flex items-center gap-2 mb-2">
-        <Avatar className="h-10 w-10 ring-1 ring-[hsl(var(--azyah-maroon))]/20">
-          <AvatarImage src={userProfile?.avatar_url || undefined} />
-          <AvatarFallback className="bg-[hsl(var(--azyah-maroon))]/10 text-[hsl(var(--azyah-maroon))]">
-            {getInitials(displayName)}
-          </AvatarFallback>
-        </Avatar>
-        <div className="min-w-0 flex-1">
-          <p className="text-xs font-semibold truncate">{displayName}</p>
-          <p className="text-[10px] text-muted-foreground truncate">
-            {effectiveHandle ? `@${effectiveHandle}` : 'Setting up...'}
-          </p>
-        </div>
+    <div className="h-full rounded-xl border bg-gradient-to-br from-[hsl(var(--azyah-maroon))]/5 via-background to-[hsl(var(--azyah-maroon))]/10 p-2 flex items-center gap-2">
+      <Avatar className="h-8 w-8 ring-1 ring-[hsl(var(--azyah-maroon))]/20 flex-shrink-0">
+        <AvatarImage src={userProfile?.avatar_url || undefined} />
+        <AvatarFallback className="bg-[hsl(var(--azyah-maroon))]/10 text-[hsl(var(--azyah-maroon))] text-xs">
+          {getInitials(displayName)}
+        </AvatarFallback>
+      </Avatar>
+      <div className="min-w-0 flex-1">
+        <p className="text-xs font-medium truncate">{displayName}</p>
+        <p className="text-[10px] text-muted-foreground truncate">
+          {effectiveHandle ? `@${effectiveHandle}` : 'Setting up...'}
+        </p>
       </div>
-
-      {/* Helper text */}
-      <p className="text-[9px] text-muted-foreground mb-2 leading-tight">
-        Your shareable style page — outfits, deals & shop links
-      </p>
-
-      {/* Primary Action Only */}
       <Button
         size="sm"
-        className="w-full h-8 text-xs bg-[hsl(var(--azyah-maroon))] hover:bg-[hsl(var(--azyah-maroon))]/90"
+        className="h-7 px-2.5 text-[10px] bg-[hsl(var(--azyah-maroon))] hover:bg-[hsl(var(--azyah-maroon))]/90 flex-shrink-0"
         onClick={handleViewMyPage}
         disabled={isSettingUp}
       >
-        <User className="h-3.5 w-3.5 mr-1.5" />
-        View My Page
+        <User className="h-3 w-3 mr-1" />
+        View
       </Button>
     </div>
   );
