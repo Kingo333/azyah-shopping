@@ -5145,12 +5145,17 @@ export type Database = {
         Args: { slug_param: string }
         Returns: {
           brand: string
+          brand_id: string
+          brand_logo_url: string
+          brand_name: string
           category: string
           id: string
           image_bg_removed_url: string
           image_url: string
           name: string
+          product_title: string
           share_slug: string
+          source_product_id: string
           source_url: string
           source_vendor_name: string
         }[]
