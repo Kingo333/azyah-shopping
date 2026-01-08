@@ -3877,6 +3877,7 @@ export type Database = {
         Row: {
           avatar_url: string | null
           bio: string | null
+          city: string | null
           country: string | null
           created_at: string
           date_of_birth: string | null
@@ -3906,6 +3907,7 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           bio?: string | null
+          city?: string | null
           country?: string | null
           created_at?: string
           date_of_birth?: string | null
@@ -3935,6 +3937,7 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           bio?: string | null
+          city?: string | null
           country?: string | null
           created_at?: string
           date_of_birth?: string | null
@@ -4694,6 +4697,7 @@ export type Database = {
         Returns: {
           avatar_url: string | null
           bio: string | null
+          city: string | null
           country: string | null
           created_at: string
           date_of_birth: string | null
@@ -4755,6 +4759,7 @@ export type Database = {
         Returns: {
           avatar_url: string | null
           bio: string | null
+          city: string | null
           country: string | null
           created_at: string
           date_of_birth: string | null

@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,18 +7,19 @@ import { Separator } from '@/components/ui/separator';
 import { BackButton } from '@/components/ui/back-button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/hooks/useSubscription';
 import { supabase } from '@/integrations/supabase/client';
-import { Trash2, Upload, Instagram, Twitter, Globe, Music, Crown, CreditCard, Calendar, LogOut, Users, Sparkles, TrendingUp, Gift, Check, ChevronsUpDown, Copy, Share2 } from 'lucide-react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Trash2, Upload, Instagram, Twitter, Globe, Music, Crown, CreditCard, Calendar, LogOut, Users, Sparkles, TrendingUp, Gift, Check, ChevronsUpDown, Copy, Share2, ChevronDown, User, Link2 } from 'lucide-react';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { COUNTRIES } from '@/lib/countries';
 import { CITIES } from '@/lib/cities';
 import { useNavigate } from 'react-router-dom';
 import { useUserReferralCode, useReferralStats, shareReferralCode, copyReferralCode } from '@/hooks/useReferrals';
+import { cn } from '@/lib/utils';
 
 interface ProfileData {
   name: string;
@@ -47,8 +47,17 @@ const ProfileSettings: React.FC = () => {
   const { subscription, isPremium, createPaymentIntent, cancelSubscription } = useSubscription();
   const { toast } = useToast();
   const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  
+  // Section open states
+  const [personalInfoOpen, setPersonalInfoOpen] = useState(false);
+  const [socialLinksOpen, setSocialLinksOpen] = useState(false);
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [subscriptionOpen, setSubscriptionOpen] = useState(false);
+  
+  // Loading states for each section
+  const [savingPersonalInfo, setSavingPersonalInfo] = useState(false);
+  const [savingSocialLinks, setSavingSocialLinks] = useState(false);
   
   // Referral system hooks
   const { data: referralCode } = useUserReferralCode();
@@ -119,10 +128,10 @@ const ProfileSettings: React.FC = () => {
     }));
   };
 
-  const saveProfile = async () => {
+  const savePersonalInfo = async () => {
     if (!user) return;
 
-    setIsLoading(true);
+    setSavingPersonalInfo(true);
     try {
       const { error } = await supabase
         .from('users')
@@ -132,19 +141,15 @@ const ProfileSettings: React.FC = () => {
           bio: profileData.bio,
           country: profileData.country,
           city: profileData.city,
-          avatar_url: profileData.avatar_url,
-          socials: profileData.socials,
           updated_at: new Date().toISOString()
         })
         .eq('id', user.id);
 
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
 
       toast({
-        title: "Profile Updated",
-        description: "Your profile has been successfully updated."
+        title: "Personal Info Updated",
+        description: "Your personal information has been saved."
       });
     } catch (error: any) {
       toast({
@@ -153,7 +158,37 @@ const ProfileSettings: React.FC = () => {
         variant: "destructive"
       });
     } finally {
-      setIsLoading(false);
+      setSavingPersonalInfo(false);
+    }
+  };
+
+  const saveSocialLinks = async () => {
+    if (!user) return;
+
+    setSavingSocialLinks(true);
+    try {
+      const { error } = await supabase
+        .from('users')
+        .update({
+          socials: profileData.socials,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', user.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Social Links Updated",
+        description: "Your social links have been saved."
+      });
+    } catch (error: any) {
+      toast({
+        title: "Update Failed",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setSavingSocialLinks(false);
     }
   };
 
@@ -162,13 +197,11 @@ const ProfileSettings: React.FC = () => {
 
     setIsDeletingAccount(true);
     try {
-      // Re-authenticate user before deletion
       const { error: reAuthError } = await supabase.auth.reauthenticate();
       if (reAuthError) {
         throw new Error('Re-authentication required for account deletion');
       }
 
-      // Soft delete - mark account for deletion
       const { error } = await supabase
         .from('users')
         .update({
@@ -181,16 +214,13 @@ const ProfileSettings: React.FC = () => {
         })
         .eq('id', user.id);
 
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
 
       toast({
         title: "Account Scheduled for Deletion",
-        description: "Your account will be permanently deleted in 30 days. You can contact support to recover it before then."
+        description: "Your account will be permanently deleted in 30 days."
       });
 
-      // Sign out user
       await signOut();
     } catch (error: any) {
       toast({
@@ -205,6 +235,29 @@ const ProfileSettings: React.FC = () => {
 
   const characterCount = profileData.bio.length;
   const maxBioLength = 160;
+
+  // Helper to get summary text for collapsed sections
+  const getPersonalInfoSummary = () => {
+    const parts = [];
+    if (profileData.name) parts.push(profileData.name);
+    if (profileData.city && profileData.country) {
+      parts.push(`${profileData.city}, ${profileData.country}`);
+    } else if (profileData.country) {
+      parts.push(profileData.country);
+    } else if (profileData.city) {
+      parts.push(profileData.city);
+    }
+    return parts.length > 0 ? parts.join(' • ') : 'Add your information';
+  };
+
+  const getSocialLinksSummary = () => {
+    const links = [];
+    if (profileData.socials.instagram) links.push('Instagram');
+    if (profileData.socials.twitter) links.push('Twitter');
+    if (profileData.socials.tiktok) links.push('TikTok');
+    if (profileData.socials.website) links.push('Website');
+    return links.length > 0 ? links.join(', ') : 'No social links added';
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -230,71 +283,76 @@ const ProfileSettings: React.FC = () => {
       </div>
 
       <div className="container mx-auto max-w-2xl p-4">
-        <div className="space-y-6">
-          {/* Profile Picture */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="font-serif font-medium">Profile Picture</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center gap-4">
-                <Avatar className="w-20 h-20">
-                  <AvatarImage src={profileData.avatar_url} />
-                  <AvatarFallback className="text-lg">
-                    {profileData.name ? profileData.name[0].toUpperCase() : user?.email?.[0].toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="space-y-2">
-                  <Button variant="outline" size="sm">
-                    <Upload className="h-4 w-4 mr-2" />
-                    Upload Photo
-                  </Button>
-                  <p className="text-xs text-muted-foreground">
-                    Recommended: Square image, at least 200x200px
-                  </p>
-                </div>
+        <div className="space-y-3">
+          {/* Profile Picture - Always visible */}
+          <div className="p-4 rounded-lg border bg-card">
+            <div className="flex items-center gap-4">
+              <Avatar className="w-16 h-16">
+                <AvatarImage src={profileData.avatar_url} />
+                <AvatarFallback className="text-lg">
+                  {profileData.name ? profileData.name[0].toUpperCase() : user?.email?.[0].toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <div className="space-y-1">
+                <Button variant="outline" size="sm">
+                  <Upload className="h-4 w-4 mr-2" />
+                  Upload Photo
+                </Button>
+                <p className="text-xs text-muted-foreground">
+                  Square image, at least 200x200px
+                </p>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
-          {/* Personal Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="font-serif font-medium">Personal Information</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Display Name</Label>
-                  <Input
-                    id="name"
-                    value={profileData.name}
-                    onChange={(e) => handleInputChange('name', e.target.value)}
-                    placeholder="Your display name"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Your name as shown to others (e.g., "Sarah Fashion")
-                  </p>
+          {/* Personal Information - Collapsible */}
+          <Collapsible open={personalInfoOpen} onOpenChange={setPersonalInfoOpen}>
+            <CollapsibleTrigger asChild>
+              <div className="flex items-center justify-between p-4 cursor-pointer hover:bg-muted/50 rounded-lg border bg-card transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    <User className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="font-medium">Personal Information</h3>
+                    <p className="text-sm text-muted-foreground">{getPersonalInfoSummary()}</p>
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="username">Style Handle</Label>
-                  <Input
-                    id="username"
-                    value={profileData.username}
-                    onChange={(e) => handleInputChange('username', e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
-                    placeholder="yourhandle"
-                    pattern="[a-z0-9_]{3,20}"
-                    maxLength={20}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Your unique handle for your Style Link
+                <ChevronDown className={cn("h-5 w-5 text-muted-foreground transition-transform", personalInfoOpen && "rotate-180")} />
+              </div>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="px-4 pb-4 pt-2 border border-t-0 rounded-b-lg bg-card -mt-2 space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Display Name</Label>
+                <Input
+                  id="name"
+                  value={profileData.name}
+                  onChange={(e) => handleInputChange('name', e.target.value)}
+                  placeholder="Your display name"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Your name as shown to others (e.g., "Sarah Fashion")
+                </p>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="username">Style Handle</Label>
+                <Input
+                  id="username"
+                  value={profileData.username}
+                  onChange={(e) => handleInputChange('username', e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+                  placeholder="yourhandle"
+                  pattern="[a-z0-9_]{3,20}"
+                  maxLength={20}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Your unique handle for your Style Link
+                </p>
+                {profileData.username && (
+                  <p className="text-xs text-primary font-medium">
+                    azyah.style/u/{profileData.username}
                   </p>
-                  {profileData.username && (
-                    <p className="text-xs text-primary font-medium">
-                      azyah.style/u/{profileData.username}
-                    </p>
-                  )}
-                </div>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -399,19 +457,35 @@ const ProfileSettings: React.FC = () => {
                   </PopoverContent>
                 </Popover>
               </div>
-            </CardContent>
-          </Card>
 
-          {/* Social Links */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="font-serif font-medium">Social Links</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-4">
+              <Button onClick={savePersonalInfo} disabled={savingPersonalInfo} className="w-full">
+                {savingPersonalInfo ? 'Saving...' : 'Save Personal Info'}
+              </Button>
+            </CollapsibleContent>
+          </Collapsible>
+
+          {/* Social Links - Collapsible */}
+          <Collapsible open={socialLinksOpen} onOpenChange={setSocialLinksOpen}>
+            <CollapsibleTrigger asChild>
+              <div className="flex items-center justify-between p-4 cursor-pointer hover:bg-muted/50 rounded-lg border bg-card transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Link2 className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="font-medium">Social Links</h3>
+                    <p className="text-sm text-muted-foreground">{getSocialLinksSummary()}</p>
+                  </div>
+                </div>
+                <ChevronDown className={cn("h-5 w-5 text-muted-foreground transition-transform", socialLinksOpen && "rotate-180")} />
+              </div>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="px-4 pb-4 pt-2 border border-t-0 rounded-b-lg bg-card -mt-2 space-y-4">
+              {/* Instagram */}
+              <div className="space-y-3">
                 <Label className="text-base font-medium">Instagram</Label>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="space-y-1">
                     <Label htmlFor="instagram" className="text-sm">Username</Label>
                     <div className="flex">
                       <div className="flex items-center px-3 bg-muted border border-r-0 rounded-l-md">
@@ -426,7 +500,7 @@ const ProfileSettings: React.FC = () => {
                       />
                     </div>
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-1">
                     <Label htmlFor="instagram-followers" className="text-sm">Followers</Label>
                     <Input
                       id="instagram-followers"
@@ -438,11 +512,11 @@ const ProfileSettings: React.FC = () => {
                     />
                   </div>
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-1">
                   <Label htmlFor="instagram-url" className="text-sm">Profile Link</Label>
                   <div className="flex">
-                    <div className="flex items-center px-3 bg-muted border border-r-0 rounded-l-md text-sm text-muted-foreground">
-                      https://instagram.com/
+                    <div className="flex items-center px-3 bg-muted border border-r-0 rounded-l-md text-xs text-muted-foreground">
+                      instagram.com/
                     </div>
                     <Input
                       id="instagram-url"
@@ -455,10 +529,13 @@ const ProfileSettings: React.FC = () => {
                 </div>
               </div>
 
-              <div className="space-y-4">
+              <Separator />
+
+              {/* Twitter/X */}
+              <div className="space-y-3">
                 <Label className="text-base font-medium">Twitter/X</Label>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="space-y-1">
                     <Label htmlFor="twitter" className="text-sm">Username</Label>
                     <div className="flex">
                       <div className="flex items-center px-3 bg-muted border border-r-0 rounded-l-md">
@@ -473,7 +550,7 @@ const ProfileSettings: React.FC = () => {
                       />
                     </div>
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-1">
                     <Label htmlFor="twitter-followers" className="text-sm">Followers</Label>
                     <Input
                       id="twitter-followers"
@@ -485,11 +562,11 @@ const ProfileSettings: React.FC = () => {
                     />
                   </div>
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-1">
                   <Label htmlFor="twitter-url" className="text-sm">Profile Link</Label>
                   <div className="flex">
-                    <div className="flex items-center px-3 bg-muted border border-r-0 rounded-l-md text-sm text-muted-foreground">
-                      https://x.com/
+                    <div className="flex items-center px-3 bg-muted border border-r-0 rounded-l-md text-xs text-muted-foreground">
+                      x.com/
                     </div>
                     <Input
                       id="twitter-url"
@@ -502,10 +579,13 @@ const ProfileSettings: React.FC = () => {
                 </div>
               </div>
 
-              <div className="space-y-4">
+              <Separator />
+
+              {/* TikTok */}
+              <div className="space-y-3">
                 <Label className="text-base font-medium">TikTok</Label>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="space-y-1">
                     <Label htmlFor="tiktok" className="text-sm">Username</Label>
                     <div className="flex">
                       <div className="flex items-center px-3 bg-muted border border-r-0 rounded-l-md">
@@ -520,7 +600,7 @@ const ProfileSettings: React.FC = () => {
                       />
                     </div>
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-1">
                     <Label htmlFor="tiktok-followers" className="text-sm">Followers</Label>
                     <Input
                       id="tiktok-followers"
@@ -532,11 +612,11 @@ const ProfileSettings: React.FC = () => {
                     />
                   </div>
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-1">
                   <Label htmlFor="tiktok-url" className="text-sm">Profile Link</Label>
                   <div className="flex">
-                    <div className="flex items-center px-3 bg-muted border border-r-0 rounded-l-md text-sm text-muted-foreground">
-                      https://tiktok.com/@
+                    <div className="flex items-center px-3 bg-muted border border-r-0 rounded-l-md text-xs text-muted-foreground">
+                      tiktok.com/@
                     </div>
                     <Input
                       id="tiktok-url"
@@ -549,6 +629,9 @@ const ProfileSettings: React.FC = () => {
                 </div>
               </div>
 
+              <Separator />
+
+              {/* Website */}
               <div className="space-y-2">
                 <Label htmlFor="website">Website</Label>
                 <div className="flex">
@@ -564,18 +647,32 @@ const ProfileSettings: React.FC = () => {
                   />
                 </div>
               </div>
-            </CardContent>
-          </Card>
 
-          {/* Referral System */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 font-serif font-medium">
-                <Gift className="h-5 w-5 text-primary" />
-                Invite Friends
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+              <Button onClick={saveSocialLinks} disabled={savingSocialLinks} className="w-full">
+                {savingSocialLinks ? 'Saving...' : 'Save Social Links'}
+              </Button>
+            </CollapsibleContent>
+          </Collapsible>
+
+          {/* Invite Friends - Collapsible */}
+          <Collapsible open={inviteOpen} onOpenChange={setInviteOpen}>
+            <CollapsibleTrigger asChild>
+              <div className="flex items-center justify-between p-4 cursor-pointer hover:bg-muted/50 rounded-lg border bg-card transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Gift className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="font-medium">Invite Friends</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {referralStats ? `${referralStats.total_referrals} friends invited` : 'Earn 15 points per referral'}
+                    </p>
+                  </div>
+                </div>
+                <ChevronDown className={cn("h-5 w-5 text-muted-foreground transition-transform", inviteOpen && "rotate-180")} />
+              </div>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="px-4 pb-4 pt-2 border border-t-0 rounded-b-lg bg-card -mt-2 space-y-4">
               <p className="text-sm text-muted-foreground">
                 Share your referral code with friends. When they sign up and complete their first action, you'll earn 15 points!
               </p>
@@ -620,18 +717,31 @@ const ProfileSettings: React.FC = () => {
               ) : (
                 <p className="text-sm text-muted-foreground italic">Loading referral code...</p>
               )}
-            </CardContent>
-          </Card>
+            </CollapsibleContent>
+          </Collapsible>
 
-          {/* Subscription Management */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 font-serif font-medium">
-                <Crown className="h-5 w-5 text-yellow-500" />
-                Subscription
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          {/* Subscription - Collapsible */}
+          <Collapsible open={subscriptionOpen} onOpenChange={setSubscriptionOpen}>
+            <CollapsibleTrigger asChild>
+              <div className="flex items-center justify-between p-4 cursor-pointer hover:bg-muted/50 rounded-lg border bg-card transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className={cn(
+                    "w-10 h-10 rounded-full flex items-center justify-center",
+                    isPremium ? "bg-gradient-to-r from-purple-500 to-pink-500" : "bg-muted"
+                  )}>
+                    <Crown className={cn("h-5 w-5", isPremium ? "text-white" : "text-muted-foreground")} />
+                  </div>
+                  <div>
+                    <h3 className="font-medium">Subscription</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {isPremium ? 'Premium Active' : 'Basic Plan'}
+                    </p>
+                  </div>
+                </div>
+                <ChevronDown className={cn("h-5 w-5 text-muted-foreground transition-transform", subscriptionOpen && "rotate-180")} />
+              </div>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="px-4 pb-4 pt-2 border border-t-0 rounded-b-lg bg-card -mt-2 space-y-4">
               {isPremium ? (
                 <div className="space-y-4">
                   <div className="p-4 bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 rounded-lg border border-purple-200 dark:border-purple-800">
@@ -647,7 +757,6 @@ const ProfileSettings: React.FC = () => {
                       </div>
                     </div>
                     
-                    {/* Feature Chips */}
                     <div className="flex flex-wrap gap-2 mb-4">
                       <div className="flex items-center gap-1.5 bg-primary/10 text-primary px-3 py-1.5 rounded-full text-xs font-medium">
                         <Users className="h-4 w-4" />
@@ -753,7 +862,6 @@ const ProfileSettings: React.FC = () => {
 
                     <Separator className="my-4" />
 
-                    {/* Comparison List */}
                     <div className="space-y-2 text-sm">
                       <div className="flex items-center justify-between py-1">
                         <span className="text-muted-foreground">Create outfits</span>
@@ -795,25 +903,15 @@ const ProfileSettings: React.FC = () => {
                   </p>
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </CollapsibleContent>
+          </Collapsible>
 
-          {/* Stripe integration will be added here once API keys are configured */}
-
-          {/* Actions */}
-          <div className="flex justify-between">
-            <Button 
-              onClick={saveProfile} 
-              disabled={isLoading}
-              className="px-8"
-            >
-              {isLoading ? 'Saving...' : 'Save Changes'}
-            </Button>
-
-            {/* Danger Zone */}
+          {/* Danger Zone */}
+          <div className="pt-4 border-t mt-6">
+            <h3 className="text-sm font-medium text-destructive mb-3">Danger Zone</h3>
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button variant="destructive" size="sm">
+                <Button variant="outline" size="sm" className="border-destructive/50 text-destructive hover:bg-destructive/10">
                   <Trash2 className="h-4 w-4 mr-2" />
                   Delete Account
                 </Button>
@@ -828,7 +926,7 @@ const ProfileSettings: React.FC = () => {
                     </div>
                     {subscription && isPremium && (
                       <div className="p-3 bg-warning/10 border border-warning/20 rounded-md">
-                        <strong>💳 Subscription Notice:</strong> You have an active premium subscription. Please cancel your subscription first to avoid future charges, then proceed with account deletion.
+                        <strong>💳 Subscription Notice:</strong> You have an active premium subscription. Please cancel your subscription first to avoid future charges.
                       </div>
                     )}
                     <div className="text-sm text-muted-foreground">
