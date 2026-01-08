@@ -4812,6 +4812,10 @@ export type Database = {
       ensure_my_username: { Args: never; Returns: string }
       ensure_payment_data_encryption: { Args: never; Returns: string }
       ensure_payment_security: { Args: never; Returns: string }
+      ensure_username_for_user: {
+        Args: { target_user_id: string }
+        Returns: string
+      }
       get_beauty_profile: {
         Args: { target_user_id: string }
         Returns: {
