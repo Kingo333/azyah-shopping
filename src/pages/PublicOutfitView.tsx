@@ -20,6 +20,12 @@ interface OutfitItem {
   name: string | null;
   source_url: string | null;
   source_vendor_name: string | null;
+  // Product-linked item fields
+  source_product_id: string | null;
+  product_title: string | null;
+  brand_id: string | null;
+  brand_name: string | null;
+  brand_logo_url: string | null;
 }
 
 interface PublicOutfit {
@@ -137,6 +143,25 @@ export default function PublicOutfitView() {
     return user.name || user.username || 'Azyah user';
   };
 
+  // Match in-app behavior: product-linked items show product name, personal items show name/brand or "Untitled"
+  const getItemDisplayName = (item: OutfitItem): string => {
+    // Rule B: If linked to product from Discover, use product's real name
+    if (item.source_product_id && item.product_title) {
+      return item.product_title;
+    }
+    // Rule A: Personal item - use name/brand or "Untitled" (matches in-app OutfitDetail.tsx)
+    return item.name || item.brand || 'Untitled';
+  };
+
+  // Get first item with brand logo (for badge near title) - picks highest z_index item
+  const getBrandWithLogo = (items: OutfitItem[]): OutfitItem | null => {
+    return items.find(item => 
+      item.source_url && 
+      item.source_product_id && 
+      item.brand_logo_url
+    ) || null;
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -241,6 +266,23 @@ export default function PublicOutfitView() {
                 <h2 className="hidden sm:block text-xs md:text-sm lg:text-base font-bold line-clamp-2">{outfit.title}</h2>
               )}
 
+              {/* Brand logo badge - only when shop link + product + logo exists */}
+              {(() => {
+                const brandItem = outfit?.items ? getBrandWithLogo(outfit.items) : null;
+                return brandItem?.brand_logo_url ? (
+                  <div className="flex items-center gap-2">
+                    <img 
+                      src={brandItem.brand_logo_url} 
+                      alt={brandItem.brand_name || 'Brand'} 
+                      className="h-5 w-auto object-contain rounded"
+                    />
+                    {brandItem.brand_name && (
+                      <span className="text-xs text-muted-foreground">{brandItem.brand_name}</span>
+                    )}
+                  </div>
+                ) : null;
+              })()}
+
               {/* Clothes in outfit */}
               {outfit.items && outfit.items.length > 0 && (
                 <div className="flex-1 min-h-0">
@@ -268,7 +310,7 @@ export default function PublicOutfitView() {
                           )}
                         </div>
                         <p className="text-[10px] sm:text-xs md:text-sm line-clamp-2 flex-1 leading-tight">
-                          {item.name || item.brand || item.category}
+                          {getItemDisplayName(item)}
                         </p>
                       </div>
                     ))}
