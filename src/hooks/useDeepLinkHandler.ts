@@ -55,6 +55,13 @@ export const useDeepLinkHandler = () => {
         
         console.log('Deep link navigating to:', fullPath);
         
+        // Special handling for Style Link paths
+        if (fullPath.startsWith('/u/') || fullPath.startsWith('u/')) {
+          const normalizedPath = fullPath.startsWith('/') ? fullPath : `/${fullPath}`;
+          navigate(normalizedPath, { replace: true });
+          return;
+        }
+        
         // Navigate to the path (handles /auth/callback, /share/outfit/:id, /share/item/:id, etc.)
         navigate(fullPath, { replace: true });
       } catch (error) {

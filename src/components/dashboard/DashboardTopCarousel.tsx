@@ -8,6 +8,7 @@ import { ProfileCompletionCard } from './ProfileCompletionCard';
 import { QuickSearchCard } from './QuickSearchCard';
 import { PointsSummaryCard } from './PointsSummaryCard';
 import { AiTryOnCard } from './AiTryOnCard';
+import { StyleLinkCard } from './StyleLinkCard';
 import { cn } from '@/lib/utils';
 
 interface DashboardTopCarouselProps {
@@ -138,53 +139,72 @@ export function DashboardTopCarousel({
     }
   }, [emblaApi, slides.length]);
 
-  // If no slides to show, return null
+  // If no slides to show, just show StyleLinkCard
   if (slides.length === 0) {
-    return null;
-  }
-
-  // If only one slide, no need for carousel
-  if (slides.length === 1) {
     return (
       <div className="px-4 pt-4">
-        {slides[0].component}
+        <StyleLinkCard />
+      </div>
+    );
+  }
+
+  // If only one slide, show it alongside StyleLinkCard
+  if (slides.length === 1) {
+    return (
+      <div className="px-4 pt-4 flex gap-3">
+        <div className="w-[60%]">
+          {slides[0].component}
+        </div>
+        <div className="w-[40%]">
+          <StyleLinkCard />
+        </div>
       </div>
     );
   }
 
   return (
     <div className="px-4 pt-4">
-      <div className="overflow-hidden" ref={emblaRef}>
-        <div className="flex gap-3">
-          {slides.map((slide) => (
-            <div 
-              key={slide.key}
-              className="flex-[0_0_100%] min-w-0"
-            >
-              {slide.component}
+      <div className="flex gap-3">
+        {/* Carousel section - 60% width */}
+        <div className="w-[60%]">
+          <div className="overflow-hidden" ref={emblaRef}>
+            <div className="flex gap-3">
+              {slides.map((slide) => (
+                <div 
+                  key={slide.key}
+                  className="flex-[0_0_100%] min-w-0"
+                >
+                  {slide.component}
+                </div>
+              ))}
             </div>
-          ))}
+          </div>
+          
+          {/* Dot indicators */}
+          {slides.length > 1 && (
+            <div className="flex justify-center gap-1.5 mt-3">
+              {slides.map((slide, index) => (
+                <button
+                  key={slide.key}
+                  onClick={() => emblaApi?.scrollTo(index)}
+                  className={cn(
+                    "w-1.5 h-1.5 rounded-full transition-all duration-200",
+                    index === selectedIndex 
+                      ? "bg-[hsl(var(--azyah-maroon))] w-3" 
+                      : "bg-muted-foreground/30"
+                  )}
+                  aria-label={`Go to slide ${index + 1}`}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Fixed Style Link card - 40% width */}
+        <div className="w-[40%]">
+          <StyleLinkCard />
         </div>
       </div>
-      
-      {/* Dot indicators */}
-      {slides.length > 1 && (
-        <div className="flex justify-center gap-1.5 mt-3">
-          {slides.map((slide, index) => (
-            <button
-              key={slide.key}
-              onClick={() => emblaApi?.scrollTo(index)}
-              className={cn(
-                "w-1.5 h-1.5 rounded-full transition-all duration-200",
-                index === selectedIndex 
-                  ? "bg-[hsl(var(--azyah-maroon))] w-3" 
-                  : "bg-muted-foreground/30"
-              )}
-              aria-label={`Go to slide ${index + 1}`}
-            />
-          ))}
-        </div>
-      )}
     </div>
   );
 }

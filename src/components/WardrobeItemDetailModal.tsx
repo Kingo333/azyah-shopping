@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { WardrobeItem } from '@/hooks/useWardrobeItems';
-import { Sparkles, Loader2, CheckCircle, ExternalLink } from 'lucide-react';
+import { Sparkles, Loader2, CheckCircle, ExternalLink, Link2 } from 'lucide-react';
 import { useEnhanceWardrobeItem } from '@/hooks/useEnhanceWardrobeItem';
 import { useUserCredits } from '@/hooks/useUserCredits';
 import { toast } from 'sonner';
@@ -26,6 +27,15 @@ export const WardrobeItemDetailModal: React.FC<WardrobeItemDetailModalProps> = (
   const { credits, refetch: refetchCredits } = useUserCredits();
   const [isPublic, setIsPublic] = useState(item?.public_reuse_permitted || false);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [affiliateUrl, setAffiliateUrl] = useState('');
+
+  // Sync affiliate URL when item changes
+  useEffect(() => {
+    if (item) {
+      setAffiliateUrl((item as any).affiliate_url || '');
+      setIsPublic(item.public_reuse_permitted || false);
+    }
+  }, [item]);
 
   if (!item) return null;
 
@@ -73,8 +83,30 @@ export const WardrobeItemDetailModal: React.FC<WardrobeItemDetailModalProps> = (
     }
   };
 
+  const handleSaveAffiliateUrl = async () => {
+    setIsUpdating(true);
+    try {
+      const { error } = await supabase
+        .from('wardrobe_items')
+        .update({ affiliate_url: affiliateUrl || null })
+        .eq('id', item.id);
+      
+      if (error) throw error;
+      
+      toast.success('Affiliate link saved!');
+    } catch (error) {
+      toast.error('Failed to save affiliate link');
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   const handleShopItem = () => {
-    openExternalUrl(item.source_url);
+    // Prioritize affiliate URL over source URL
+    const shopUrl = affiliateUrl || item.source_url;
+    if (shopUrl) {
+      openExternalUrl(shopUrl);
+    }
   };
 
   return (
@@ -120,8 +152,35 @@ export const WardrobeItemDetailModal: React.FC<WardrobeItemDetailModalProps> = (
             </div>
           </div>
 
+          {/* Affiliate Link Input */}
+          <div className="space-y-2 pt-3 border-t">
+            <div className="flex items-center gap-2">
+              <Link2 className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-medium">Affiliate Link (optional)</span>
+            </div>
+            <div className="flex gap-2">
+              <Input
+                placeholder="https://your-affiliate-link.com"
+                value={affiliateUrl}
+                onChange={(e) => setAffiliateUrl(e.target.value)}
+                className="text-sm"
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleSaveAffiliateUrl}
+                disabled={isUpdating}
+              >
+                Save
+              </Button>
+            </div>
+            <p className="text-[10px] text-muted-foreground">
+              Earn commission when others shop via your link
+            </p>
+          </div>
+
           {/* Shop This Item Button */}
-          {item.source_url && (
+          {(item.source_url || affiliateUrl) && (
             <Button
               onClick={handleShopItem}
               variant="outline"
