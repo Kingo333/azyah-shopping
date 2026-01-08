@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { SEOHead } from '@/components/SEOHead';
-import { SITE_URL } from '@/lib/nativeShare';
+import { getPublicBaseUrl } from '@/lib/nativeShare';
 import { usePublicDeals } from '@/hooks/useAffiliatePromos';
 import { Tag, Copy, ExternalLink, Clock, ArrowLeft, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
@@ -96,7 +96,7 @@ export default function PublicDealsPage() {
       <SEOHead
         title={`${displayName}'s Deals & Codes | Azyah`}
         description={`Shop ${displayName}'s exclusive deals and discount codes on Azyah`}
-        canonical={`${SITE_URL}/u/${username}/deals`}
+        canonical={`${getPublicBaseUrl()}/u/${username}/deals`}
       />
 
       <div className="min-h-screen bg-background pb-24">

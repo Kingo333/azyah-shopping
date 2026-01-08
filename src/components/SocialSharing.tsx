@@ -22,7 +22,7 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import QRCode from 'qrcode';
-import { getShareableUrl, getProductShareUrl, SITE_URL } from '@/lib/nativeShare';
+import { getShareableUrl, getProductShareUrl, getPublicBaseUrl } from '@/lib/nativeShare';
 
 interface SocialSharingProps {
   item: {
@@ -65,23 +65,23 @@ const SocialSharing = ({ item, user, onShare }: SocialSharingProps) => {
           return getShareableUrl('outfit', item.share_slug);
         }
         // Fallback: just use the ID (legacy support)
-        return `${SITE_URL}/share/outfit/${item.id}`;
+        return `${getPublicBaseUrl()}/share/outfit/${item.id}`;
       case 'item':
         // Must use share_slug for slug-only URLs
         if (item.share_slug) {
           return getShareableUrl('item', item.share_slug);
         }
         // Fallback: just use the ID (legacy support)
-        return `${SITE_URL}/share/item/${item.id}`;
+        return `${getPublicBaseUrl()}/share/item/${item.id}`;
       case 'product':
         // Products use /products/:id route
         return getProductShareUrl(item.id);
       case 'mood-board':
-        return `${SITE_URL}/mood-boards/${item.id}`;
+        return `${getPublicBaseUrl()}/mood-boards/${item.id}`;
       case 'post':
-        return `${SITE_URL}/posts/${item.id}`;
+        return `${getPublicBaseUrl()}/posts/${item.id}`;
       default:
-        return `${SITE_URL}/${item.type}s/${item.id}`;
+        return `${getPublicBaseUrl()}/${item.type}s/${item.id}`;
     }
   };
   const shareUrl = getShareUrl();

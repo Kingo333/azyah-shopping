@@ -1,11 +1,17 @@
-import { Capacitor } from '@capacitor/core';
 import { toast } from 'sonner';
 
-/**
- * Centralized production site URL for all share links.
- * This ensures all shared URLs use the correct domain.
- */
-export const SITE_URL = 'https://azyahstyle.com';
+// Re-export URL helpers from centralized module
+export { 
+  SITE_URL,
+  getPublicBaseUrl,
+  getStyleLinkUrl,
+  getOutfitShareUrl,
+  getItemShareUrl,
+  getProductShareUrl,
+  getDealsUrl 
+} from './urls';
+
+import { getOutfitShareUrl, getItemShareUrl } from './urls';
 
 interface ShareOptions {
   title?: string;
@@ -16,22 +22,28 @@ interface ShareOptions {
 
 /**
  * Generate a share URL for outfits and wardrobe items using slug-only URLs.
- * Always uses the production domain (azyahstyle.com).
+ * Uses the centralized URL helpers.
  * NO UUIDs in URLs - only human-readable slugs.
  */
 export function getShareableUrl(
   type: 'outfit' | 'item',
   slug: string
 ): string {
-  return `${SITE_URL}/share/${type}/${slug}`;
+  return type === 'outfit' ? getOutfitShareUrl(slug) : getItemShareUrl(slug);
 }
 
 /**
- * Generate a share URL for products.
- * Products use /products/:id route, not /share/item/:id (which is for wardrobe items).
+ * Cross-platform share utility that uses native sharing on iOS/Android
+ * and falls back to Web Share API or clipboard on web.
  */
-export function getProductShareUrl(productId: string): string {
-  return `${SITE_URL}/products/${productId}`;
+/**
+ * Check if we're on a native Capacitor platform (safe detection).
+ */
+function isNativePlatform(): boolean {
+  if (typeof window === 'undefined') return false;
+  if (window.location.protocol === 'capacitor:') return true;
+  const cap = (window as any).Capacitor;
+  return cap?.isNativePlatform?.() === true;
 }
 
 /**
@@ -41,7 +53,7 @@ export function getProductShareUrl(productId: string): string {
 export async function nativeShare(options: ShareOptions): Promise<boolean> {
   try {
     // Check if running on native iOS/Android
-    if (Capacitor.isNativePlatform()) {
+    if (isNativePlatform()) {
       const { Share } = await import('@capacitor/share');
       await Share.share({
         title: options.title,

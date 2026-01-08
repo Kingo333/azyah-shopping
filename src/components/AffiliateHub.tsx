@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { SITE_URL } from '@/lib/nativeShare';
+import { getPublicBaseUrl } from '@/lib/nativeShare';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -222,7 +222,7 @@ const AffiliateHub: React.FC<AffiliateHubProps> = ({ showTitle = true }) => {
   };
 
   const copyPublicPageLink = () => {
-    const publicUrl = `${SITE_URL}/affiliate/${user?.id}`;
+    const publicUrl = `${getPublicBaseUrl()}/affiliate/${user?.id}`;
     navigator.clipboard.writeText(publicUrl);
     toast({
       title: "Copied!",

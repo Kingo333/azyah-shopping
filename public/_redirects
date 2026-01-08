@@ -1,0 +1,5 @@
+# SPA fallback for client-side routing
+# All routes serve index.html unless a static file exists
+# Works with Netlify, Lovable hosting, and similar platforms
+
+/*    /index.html   200

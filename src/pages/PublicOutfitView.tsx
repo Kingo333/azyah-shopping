@@ -9,7 +9,7 @@ import { PromoCard } from '@/components/affiliate/PromoCard';
 import { useOutfitDeal } from '@/hooks/useAffiliatePromos';
 import { Share2, ExternalLink, Heart, ArrowLeft } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-import { nativeShare, getShareableUrl, SITE_URL } from '@/lib/nativeShare';
+import { nativeShare, getShareableUrl, getPublicBaseUrl } from '@/lib/nativeShare';
 import { openExternalUrl } from '@/lib/openExternalUrl';
 
 interface OutfitItem {
@@ -195,7 +195,7 @@ export default function PublicOutfitView() {
 
   const displayName = getDisplayName(outfit.user);
   const outfitImage = outfit.render_path || outfit.image_preview;
-  const canonicalUrl = `${SITE_URL}/share/outfit/${outfit.share_slug}`;
+  const canonicalUrl = `${getPublicBaseUrl()}/share/outfit/${outfit.share_slug}`;
 
   return (
     <>
