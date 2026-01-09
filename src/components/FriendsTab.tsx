@@ -9,6 +9,7 @@ import { Users, Package, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { FriendProfileModal } from './FriendProfileModal';
 import { AddFriendModal } from './AddFriendModal';
+import { getDisplayName, getDisplayNameInitial, getHandleDisplay } from '@/utils/userDisplayName';
 
 export const FriendsTab: React.FC = () => {
   const navigate = useNavigate();
@@ -77,11 +78,12 @@ export const FriendsTab: React.FC = () => {
             <div className="flex items-center gap-4">
               <Avatar className="h-12 w-12">
                 <AvatarImage src={friend.avatar_url || undefined} />
-                <AvatarFallback>{friend.username.charAt(0).toUpperCase()}</AvatarFallback>
+                <AvatarFallback>{getDisplayNameInitial(friend)}</AvatarFallback>
               </Avatar>
               
               <div className="flex-1">
-                <h3 className="font-semibold">@{friend.username}</h3>
+                <h3 className="font-semibold">{getDisplayName(friend)}</h3>
+                <p className="text-xs text-muted-foreground">{getHandleDisplay(friend.username)}</p>
                 <p className="text-sm text-muted-foreground flex items-center gap-1">
                   <Package className="w-3 h-3" />
                   {friend.public_items_count || 0} public item{friend.public_items_count !== 1 ? 's' : ''}
@@ -110,7 +112,7 @@ export const FriendsTab: React.FC = () => {
                         </span>
                       </TooltipTrigger>
                       <TooltipContent>
-                        <p>@{friend.username} has no public items yet</p>
+                        <p>{getDisplayName(friend)} has no public items yet</p>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>

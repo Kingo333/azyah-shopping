@@ -11,6 +11,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { getDisplayName, getDisplayNameInitial, getHandleDisplay } from '@/utils/userDisplayName';
 
 interface AddFriendModalProps {
   open: boolean;
@@ -105,11 +106,12 @@ export const AddFriendModal: React.FC<AddFriendModalProps> = ({ open, onOpenChan
                       <Avatar className="h-10 w-10">
                         <AvatarImage src={result.avatar_url || undefined} />
                         <AvatarFallback>
-                          {(result.username || result.name || 'U').charAt(0).toUpperCase()}
+                          {getDisplayNameInitial(result)}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1">
-                        <p className="font-medium">{result.username ? `@${result.username}` : result.name || 'Anonymous'}</p>
+                        <p className="font-medium">{getDisplayName(result)}</p>
+                        <p className="text-xs text-muted-foreground">{getHandleDisplay(result.username)}</p>
                       </div>
                       <Button
                         size="sm"
@@ -152,11 +154,12 @@ export const AddFriendModal: React.FC<AddFriendModalProps> = ({ open, onOpenChan
                       <Avatar className="h-10 w-10">
                         <AvatarImage src={request.requester?.avatar_url || undefined} />
                         <AvatarFallback>
-                          {request.requester?.username?.charAt(0).toUpperCase()}
+                          {getDisplayNameInitial(request.requester)}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1">
-                        <p className="font-medium">@{request.requester?.username}</p>
+                        <p className="font-medium">{getDisplayName(request.requester)}</p>
+                        <p className="text-xs text-muted-foreground">{getHandleDisplay(request.requester?.username)}</p>
                         <p className="text-xs text-muted-foreground">Wants to be friends</p>
                       </div>
                       <Button

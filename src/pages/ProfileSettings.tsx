@@ -12,7 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/hooks/useSubscription';
 import { supabase } from '@/integrations/supabase/client';
-import { Trash2, Upload, Instagram, Twitter, Globe, Music, Crown, CreditCard, Calendar, LogOut, Users, Sparkles, TrendingUp, Gift, Check, ChevronsUpDown, Copy, Share2, ChevronDown, User, Link2 } from 'lucide-react';
+import { Trash2, Upload, Instagram, Twitter, Globe, Music, Crown, CreditCard, Calendar, LogOut, Users, Sparkles, TrendingUp, Gift, Check, ChevronsUpDown, Copy, Share2, ChevronDown, User, Link2, Lock } from 'lucide-react';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { COUNTRIES } from '@/lib/countries';
@@ -137,7 +137,6 @@ const ProfileSettings: React.FC = () => {
         .from('users')
         .update({
           name: profileData.name,
-          username: profileData.username.toLowerCase(),
           bio: profileData.bio,
           country: profileData.country,
           city: profileData.city,
@@ -159,6 +158,16 @@ const ProfileSettings: React.FC = () => {
       });
     } finally {
       setSavingPersonalInfo(false);
+    }
+  };
+  
+  const copyStyleLink = () => {
+    if (profileData.username) {
+      navigator.clipboard.writeText(`azyah.style/u/${profileData.username}`);
+      toast({
+        title: "Link Copied!",
+        description: "Your Style Link has been copied to clipboard."
+      });
     }
   };
 
@@ -336,17 +345,29 @@ const ProfileSettings: React.FC = () => {
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="username">Style Handle</Label>
-                <Input
-                  id="username"
-                  value={profileData.username}
-                  onChange={(e) => handleInputChange('username', e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
-                  placeholder="yourhandle"
-                  pattern="[a-z0-9_]{3,20}"
-                  maxLength={20}
-                />
+                <Label htmlFor="username" className="flex items-center gap-2">
+                  Style Handle
+                  <Lock className="h-3 w-3 text-muted-foreground" />
+                </Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="username"
+                    value={profileData.username}
+                    disabled
+                    className="bg-muted"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={copyStyleLink}
+                    disabled={!profileData.username}
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
                 <p className="text-xs text-muted-foreground">
-                  Your unique handle for your Style Link
+                  Your handle is permanent so your Style Link stays stable
                 </p>
                 {profileData.username && (
                   <p className="text-xs text-primary font-medium">

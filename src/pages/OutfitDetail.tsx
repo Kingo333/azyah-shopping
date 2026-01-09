@@ -15,6 +15,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
 import { nativeShare, getShareableUrl } from '@/lib/nativeShare';
 import { SmartImage } from '@/components/SmartImage';
+import { getDisplayName, getDisplayNameInitial } from '@/utils/userDisplayName';
 
 export default function OutfitDetail() {
   const { id } = useParams();
@@ -150,13 +151,13 @@ export default function OutfitDetail() {
     );
   }
 
-  const username = fit.user.username || fit.user.name || 'Anonymous';
+  const displayName = getDisplayName(fit.user);
 
   return (
     <>
       <SEOHead
-        title={`${fit.title || 'Outfit'} by ${username} - Azyah Community`}
-        description={`Check out this outfit created by ${username} on Azyah`}
+        title={`${fit.title || 'Outfit'} by ${displayName} - Azyah Community`}
+        description={`Check out this outfit created by ${displayName} on Azyah`}
       />
 
       <div className="min-h-screen bg-background pb-24">
@@ -207,11 +208,11 @@ export default function OutfitDetail() {
                 <Avatar className="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10">
                   <AvatarImage src={fit.user.avatar_url || undefined} />
                   <AvatarFallback className="text-[10px] sm:text-xs">
-                    {username[0].toUpperCase()}
+                    {getDisplayNameInitial(fit.user)}
                   </AvatarFallback>
                 </Avatar>
                 <div className="min-w-0 flex-1">
-                  <p className="font-semibold text-xs sm:text-sm md:text-sm truncate">{username}</p>
+                  <p className="font-semibold text-xs sm:text-sm md:text-sm truncate">{displayName}</p>
                   <p className="text-[10px] sm:text-xs md:text-xs text-muted-foreground">
                     {formatDistanceToNow(new Date(fit.created_at), { addSuffix: true })}
                   </p>
@@ -275,7 +276,7 @@ export default function OutfitDetail() {
         {/* Other Outfits by This User - Full width, with indent on mobile */}
         {otherOutfits && otherOutfits.length > 0 && (
           <div className="mt-8 sm:mt-10 pt-6 border-t px-4 sm:px-6">
-            <h3 className="font-semibold text-base sm:text-lg mb-4">More by {username}</h3>
+            <h3 className="font-semibold text-base sm:text-lg mb-4">More by {displayName}</h3>
             <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide snap-x snap-mandatory">
               {otherOutfits.map((outfit) => (
                 <Card

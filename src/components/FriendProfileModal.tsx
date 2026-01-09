@@ -11,6 +11,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useNavigate } from 'react-router-dom';
 import { Package, Shirt } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { getDisplayName, getDisplayNameInitial, getHandleDisplay } from '@/utils/userDisplayName';
 
 interface FriendProfileModalProps {
   friendId: string | null;
@@ -34,7 +35,7 @@ export const FriendProfileModal: React.FC<FriendProfileModalProps> = ({
       if (!friendId) return null;
       const { data, error } = await supabase
         .from('users')
-        .select('id, username, avatar_url')
+        .select('id, username, name, avatar_url')
         .eq('id', friendId)
         .single();
       if (error) throw error;
@@ -103,11 +104,12 @@ export const FriendProfileModal: React.FC<FriendProfileModalProps> = ({
                 <Avatar className="h-16 w-16">
                   <AvatarImage src={profile?.avatar_url || undefined} />
                   <AvatarFallback>
-                    {profile?.username?.charAt(0).toUpperCase() || 'F'}
+                    {getDisplayNameInitial(profile)}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1">
-                  <DialogTitle>@{profile?.username || 'Friend'}</DialogTitle>
+                  <DialogTitle>{getDisplayName(profile)}</DialogTitle>
+                  <p className="text-xs text-muted-foreground">{getHandleDisplay(profile?.username)}</p>
                   <p className="text-sm text-muted-foreground">
                     {items.length} public item{items.length !== 1 ? 's' : ''} • {giftedOutfits.length} outfit{giftedOutfits.length !== 1 ? 's' : ''}
                   </p>

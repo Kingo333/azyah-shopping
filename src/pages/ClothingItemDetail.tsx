@@ -12,6 +12,7 @@ import { Share2, Plus, ExternalLink, ShoppingBag } from 'lucide-react';
 import { toast } from 'sonner';
 import { openExternalUrl } from '@/lib/openExternalUrl';
 import { nativeShare, getShareableUrl } from '@/lib/nativeShare';
+import { getDisplayName, getDisplayNameInitial } from '@/utils/userDisplayName';
 
 const seasonIcons: Record<string, string> = {
   spring: '🌸',
@@ -117,15 +118,15 @@ export default function ClothingItemDetail() {
     );
   }
 
-  const username = item.user.username || item.user.name || 'Anonymous';
-  const displayName = item.name || item.brand || 'Untitled Item';
+  const creatorName = getDisplayName(item.user);
+  const itemDisplayName = item.name || item.brand || 'Untitled Item';
   const displayImage = item.image_bg_removed_url || item.image_url;
 
   return (
     <>
       <SEOHead
-        title={`${displayName} - Azyah Community`}
-        description={`Check out this ${item.category || 'item'} shared by ${username} on Azyah`}
+        title={`${itemDisplayName} - Azyah Community`}
+        description={`Check out this ${item.category || 'item'} shared by ${creatorName} on Azyah`}
       />
 
       <div className="min-h-screen bg-background pb-24">
@@ -147,7 +148,7 @@ export default function ClothingItemDetail() {
             {displayImage ? (
               <img
                 src={displayImage}
-                alt={displayName}
+                alt={itemDisplayName}
                 className="max-w-full max-h-full object-contain"
               />
             ) : (
@@ -156,7 +157,7 @@ export default function ClothingItemDetail() {
           </div>
 
           {/* Item name */}
-          <h2 className="text-2xl font-bold mb-2">{displayName}</h2>
+          <h2 className="text-2xl font-bold mb-2">{itemDisplayName}</h2>
 
           {/* Brand */}
           {item.brand && item.brand !== item.name && (
@@ -168,11 +169,11 @@ export default function ClothingItemDetail() {
             <Avatar className="w-10 h-10">
               <AvatarImage src={item.user.avatar_url || undefined} />
               <AvatarFallback>
-                {username[0].toUpperCase()}
+                {getDisplayNameInitial(item.user)}
               </AvatarFallback>
             </Avatar>
             <div>
-              <p className="font-semibold">{username}</p>
+              <p className="font-semibold">{creatorName}</p>
               <p className="text-sm text-muted-foreground">Creator</p>
             </div>
           </div>
