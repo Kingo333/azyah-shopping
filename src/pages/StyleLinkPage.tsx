@@ -228,36 +228,47 @@ export default function StyleLinkPage() {
         canonical={`${getPublicBaseUrl()}/u/${userData.username || identifier}`}
       />
 
-      <div className="min-h-screen bg-background pb-8">
-        {/* Header with Back Button */}
-        <div className="bg-gradient-to-b from-[hsl(var(--azyah-maroon))]/5 to-transparent pt-12 pb-6 px-4 relative">
-          {/* Back button for owner */}
-          {isOwner && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleBack}
-              className="absolute top-4 left-4 gap-1 text-muted-foreground hover:text-foreground"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Back
-            </Button>
-          )}
-          <div className="max-w-lg mx-auto text-center">
-            <Avatar className="h-20 w-20 mx-auto mb-3 ring-2 ring-[hsl(var(--azyah-maroon))]/20 ring-offset-2">
-              <AvatarImage src={userData.avatar_url || undefined} alt={userData.name || displayUsername} />
-              <AvatarFallback className="bg-[hsl(var(--azyah-maroon))]/10 text-[hsl(var(--azyah-maroon))] text-lg font-semibold">
-                {getInitials(userData.name)}
-              </AvatarFallback>
-            </Avatar>
+      <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/20 pb-8">
+        {/* Hero Header */}
+        <div className="relative overflow-hidden">
+          {/* Background decorative elements */}
+          <div className="absolute inset-0 bg-gradient-to-br from-[hsl(var(--azyah-maroon))]/8 via-transparent to-[hsl(var(--azyah-maroon))]/5" />
+          <div className="absolute top-0 right-0 w-64 h-64 bg-[hsl(var(--azyah-maroon))]/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-[hsl(var(--azyah-maroon))]/5 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
+          
+          <div className="relative pt-12 pb-8 px-4">
+            {/* Back button for owner */}
+            {isOwner && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleBack}
+                className="absolute top-4 left-4 gap-1 text-muted-foreground hover:text-foreground backdrop-blur-sm bg-background/50 rounded-full"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Back
+              </Button>
+            )}
             
-            <h1 className="text-xl font-semibold">{userData.name || displayUsername}</h1>
-            {userData.username && (
-              <p className="text-sm text-muted-foreground">@{userData.username}</p>
-            )}
-            {userData.bio && (
-              <p className="text-sm text-muted-foreground mt-2 max-w-xs mx-auto">{userData.bio}</p>
-            )}
+            <div className="max-w-lg mx-auto text-center">
+              {/* Avatar with glow effect */}
+              <div className="relative inline-block mb-4">
+                <div className="absolute inset-0 bg-[hsl(var(--azyah-maroon))]/20 rounded-full blur-xl scale-110" />
+                <Avatar className="relative h-24 w-24 ring-4 ring-background shadow-xl">
+                  <AvatarImage src={userData.avatar_url || undefined} alt={userData.name || displayUsername} />
+                  <AvatarFallback className="bg-gradient-to-br from-[hsl(var(--azyah-maroon))] to-[hsl(var(--azyah-maroon))]/80 text-white text-xl font-bold">
+                    {getInitials(userData.name)}
+                  </AvatarFallback>
+                </Avatar>
+              </div>
+              
+              <h1 className="text-2xl font-bold tracking-tight">{userData.name || displayUsername}</h1>
+              {userData.username && (
+                <p className="text-sm text-muted-foreground mt-0.5">@{userData.username}</p>
+              )}
+              {userData.bio && (
+                <p className="text-sm text-muted-foreground mt-3 max-w-xs mx-auto leading-relaxed">{userData.bio}</p>
+              )}
 
             {/* Owner Controls - Compact Icon Buttons */}
             {isOwner && (
@@ -394,35 +405,38 @@ export default function StyleLinkPage() {
                 </Button>
               </div>
             )}
+            </div>
           </div>
         </div>
 
         {/* Owner Stats Panel */}
         {isOwner && stats && (
-          <div className="px-4 py-4 border-b">
+          <div className="px-4 py-6">
             <div className="max-w-lg mx-auto">
-              <h3 className="text-xs font-medium text-muted-foreground mb-3">Your Stats</h3>
-              <div className="grid grid-cols-3 gap-2 text-center">
-                <Card className="p-2">
-                  <Eye className="h-4 w-4 mx-auto mb-1 text-muted-foreground" />
-                  <p className="text-lg font-semibold">{stats.page_views}</p>
-                  <p className="text-[10px] text-muted-foreground">Views</p>
+              <h3 className="text-sm font-semibold mb-4">Your Stats</h3>
+              <div className="grid grid-cols-3 gap-3">
+                <Card className="p-4 bg-gradient-to-br from-background to-muted/30 border-0 shadow-sm">
+                  <Eye className="h-5 w-5 mx-auto mb-2 text-[hsl(var(--azyah-maroon))]" />
+                  <p className="text-2xl font-bold text-center">{stats.page_views}</p>
+                  <p className="text-xs text-muted-foreground text-center mt-1">Views</p>
                 </Card>
-                <Card className="p-2">
-                  <MousePointer className="h-4 w-4 mx-auto mb-1 text-muted-foreground" />
-                  <p className="text-lg font-semibold">{stats.outfit_clicks}</p>
-                  <p className="text-[10px] text-muted-foreground">Outfit Clicks</p>
+                <Card className="p-4 bg-gradient-to-br from-background to-muted/30 border-0 shadow-sm">
+                  <MousePointer className="h-5 w-5 mx-auto mb-2 text-[hsl(var(--azyah-maroon))]" />
+                  <p className="text-2xl font-bold text-center">{stats.outfit_clicks}</p>
+                  <p className="text-xs text-muted-foreground text-center mt-1">Outfit Clicks</p>
                 </Card>
-                <Card className="p-2">
-                  <ShoppingBag className="h-4 w-4 mx-auto mb-1 text-muted-foreground" />
-                  <p className="text-lg font-semibold">{stats.shop_clicks}</p>
-                  <p className="text-[10px] text-muted-foreground">Shop Clicks</p>
+                <Card className="p-4 bg-gradient-to-br from-background to-muted/30 border-0 shadow-sm">
+                  <ShoppingBag className="h-5 w-5 mx-auto mb-2 text-[hsl(var(--azyah-maroon))]" />
+                  <p className="text-2xl font-bold text-center">{stats.shop_clicks}</p>
+                  <p className="text-xs text-muted-foreground text-center mt-1">Shop Clicks</p>
                 </Card>
               </div>
               {stats.installs_attributed > 0 && (
-                <p className="text-xs text-center text-muted-foreground mt-2">
-                  🎉 {stats.installs_attributed} people joined via your link!
-                </p>
+                <div className="mt-4 p-3 rounded-lg bg-[hsl(var(--azyah-maroon))]/5 text-center">
+                  <p className="text-sm font-medium text-[hsl(var(--azyah-maroon))]">
+                    🎉 {stats.installs_attributed} people joined via your link!
+                  </p>
+                </div>
               )}
             </div>
           </div>
@@ -445,39 +459,43 @@ export default function StyleLinkPage() {
             </h2>
 
             {outfits.length === 0 ? (
-              <Card className="p-8 text-center">
-                <p className="text-muted-foreground mb-2">No public outfits yet</p>
+              <Card className="p-8 text-center bg-gradient-to-br from-muted/30 to-transparent border-dashed">
+                <Sparkles className="h-8 w-8 mx-auto mb-3 text-muted-foreground/50" />
+                <p className="text-muted-foreground mb-3">No public outfits yet</p>
                 {isOwner && (
-                  <Button variant="link" onClick={() => navigate('/dress-me')} className="text-[hsl(var(--azyah-maroon))]">
-                    Create your first outfit →
+                  <Button onClick={() => navigate('/dress-me')} className="bg-[hsl(var(--azyah-maroon))] hover:bg-[hsl(var(--azyah-maroon))]/90">
+                    Create your first outfit
                   </Button>
                 )}
               </Card>
             ) : (
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-4">
                 {outfits.map((outfit) => (
                   <Card
                     key={outfit.id}
-                    className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
+                    className="group overflow-hidden cursor-pointer hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border-0 shadow-sm"
                     onClick={() => handleOutfitClick(outfit.share_slug)}
                   >
-                    <div className="aspect-square bg-muted">
+                    <div className="aspect-square bg-gradient-to-br from-muted/50 to-muted overflow-hidden">
                       <img
                         src={getOutfitImage(outfit)}
                         alt={outfit.title || 'Outfit'}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         loading="lazy"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = '/placeholder.svg';
+                        }}
                       />
                     </div>
-                    <div className="p-2">
-                      <p className="text-xs font-medium truncate">{outfit.title || 'Untitled Outfit'}</p>
-                      <div className="flex items-center gap-2 mt-1 text-[10px] text-muted-foreground">
-                        <span className="flex items-center gap-0.5">
-                          <Heart className="h-3 w-3" />
+                    <div className="p-3">
+                      <p className="text-sm font-medium truncate">{outfit.title || 'Untitled Outfit'}</p>
+                      <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <Heart className="h-3.5 w-3.5" />
                           {outfit.like_count}
                         </span>
-                        <span className="flex items-center gap-0.5">
-                          <MessageCircle className="h-3 w-3" />
+                        <span className="flex items-center gap-1">
+                          <MessageCircle className="h-3.5 w-3.5" />
                           {outfit.comment_count}
                         </span>
                       </div>
