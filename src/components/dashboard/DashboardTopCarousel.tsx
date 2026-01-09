@@ -143,7 +143,9 @@ export function DashboardTopCarousel({
   if (slides.length === 0) {
     return (
       <div className="px-4 pt-4">
-        <StyleLinkCard />
+        <div className="max-w-sm">
+          <StyleLinkCard />
+        </div>
       </div>
     );
   }
@@ -151,11 +153,11 @@ export function DashboardTopCarousel({
   // If only one slide, show it alongside StyleLinkCard
   if (slides.length === 1) {
     return (
-      <div className="px-4 pt-4 flex gap-3">
+      <div className="px-4 pt-4 flex gap-3 items-center">
         <div className="w-[60%]">
           {slides[0].component}
         </div>
-        <div className="w-[40%]">
+        <div className="w-[40%] flex items-center">
           <StyleLinkCard />
         </div>
       </div>
@@ -201,7 +203,7 @@ export function DashboardTopCarousel({
         </div>
 
         {/* Fixed Style Link card - 40% width */}
-        <div className="w-[40%]">
+        <div className="w-[40%] flex items-center">
           <StyleLinkCard />
         </div>
       </div>
