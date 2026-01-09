@@ -36,7 +36,8 @@ export function DashboardTopCarousel({
   const { percentage, isComplete, isLoading } = useProfileCompletion();
   const [isDismissed, setIsDismissed] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const isGuest = isGuestMode();
+  // Treat "guest mode" as guest only when there's no authenticated user.
+  const isGuest = isGuestMode() && !user;
 
   // Check if banner was dismissed recently
   useEffect(() => {
