@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useStyleLinkData } from '@/hooks/useStyleLinkData';
 import { useStyleLinkStats, useLogStyleLinkEvent } from '@/hooks/useStyleLinkAnalytics';
 import { StyleLinkModal } from '@/components/StyleLinkModal';
 import { DealsAndCodesCenter } from '@/components/affiliate/DealsAndCodesCenter';
+import { PublicPromoSection } from '@/components/affiliate/PublicPromoSection';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card } from '@/components/ui/card';
@@ -30,10 +31,16 @@ const TikTokIcon = ({ className }: { className?: string }) => (
 
 export default function StyleLinkPage() {
   const { username: identifier } = useParams<{ username: string }>();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { userData, outfits, isOwner, isLoading, isError } = useStyleLinkData(identifier);
-  const { data: stats } = useStyleLinkStats(isOwner ? userData?.user_id : undefined);
+  
+  // Check for preview mode - allows owner to see page as guest would
+  const isPreviewMode = searchParams.get('preview') === 'guest';
+  const effectiveIsOwner = isOwner && !isPreviewMode;
+  
+  const { data: stats } = useStyleLinkStats(effectiveIsOwner ? userData?.user_id : undefined);
   const logEvent = useLogStyleLinkEvent();
   const [showQRModal, setShowQRModal] = useState(false);
 
@@ -237,8 +244,8 @@ export default function StyleLinkPage() {
           <div className="absolute bottom-0 left-0 w-48 h-48 bg-[hsl(var(--azyah-maroon))]/5 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
           
           <div className="relative pt-12 pb-8 px-4">
-            {/* Back button for owner */}
-            {isOwner && (
+            {/* Back button for owner (not in preview mode) */}
+            {effectiveIsOwner && (
               <Button
                 variant="ghost"
                 size="sm"
@@ -271,7 +278,7 @@ export default function StyleLinkPage() {
               )}
 
             {/* Owner Controls - Compact Icon Buttons */}
-            {isOwner && (
+            {effectiveIsOwner && (
               <>
                 {/* Social Links for owner */}
                 {hasSocials && (
@@ -350,7 +357,7 @@ export default function StyleLinkPage() {
             )}
 
             {/* Visitor CTA with Social Links */}
-            {!isOwner && (
+            {!effectiveIsOwner && (
               <div className="mt-4 flex flex-col items-center gap-3">
                 {hasSocials && (
                   <div className="flex justify-center gap-3">
@@ -410,59 +417,82 @@ export default function StyleLinkPage() {
         </div>
 
         {/* Owner Stats Panel */}
-        {isOwner && stats && (
-          <div className="px-4 py-6">
-            <div className="max-w-lg mx-auto">
-              <h3 className="text-sm font-semibold mb-4">Your Stats</h3>
-              <div className="grid grid-cols-3 gap-3">
-                <Card className="p-4 bg-gradient-to-br from-background to-muted/30 border-0 shadow-sm">
-                  <Eye className="h-5 w-5 mx-auto mb-2 text-[hsl(var(--azyah-maroon))]" />
-                  <p className="text-2xl font-bold text-center">{stats.page_views}</p>
-                  <p className="text-xs text-muted-foreground text-center mt-1">Views</p>
+        {effectiveIsOwner && stats && (
+          <div className="px-4 py-4">
+            <div className="max-w-lg mx-auto space-y-3">
+              <h3 className="text-sm font-semibold">Your Stats</h3>
+              <div className="grid grid-cols-3 gap-2">
+                <Card className="p-3 bg-gradient-to-br from-background to-muted/30 border-0 shadow-sm">
+                  <Eye className="h-4 w-4 mx-auto mb-1.5 text-[hsl(var(--azyah-maroon))]" />
+                  <p className="text-lg font-bold text-center">{stats.page_views}</p>
+                  <p className="text-[10px] text-muted-foreground text-center mt-0.5">Views</p>
                 </Card>
-                <Card className="p-4 bg-gradient-to-br from-background to-muted/30 border-0 shadow-sm">
-                  <MousePointer className="h-5 w-5 mx-auto mb-2 text-[hsl(var(--azyah-maroon))]" />
-                  <p className="text-2xl font-bold text-center">{stats.outfit_clicks}</p>
-                  <p className="text-xs text-muted-foreground text-center mt-1">Outfit Clicks</p>
+                <Card className="p-3 bg-gradient-to-br from-background to-muted/30 border-0 shadow-sm">
+                  <MousePointer className="h-4 w-4 mx-auto mb-1.5 text-[hsl(var(--azyah-maroon))]" />
+                  <p className="text-lg font-bold text-center">{stats.outfit_clicks}</p>
+                  <p className="text-[10px] text-muted-foreground text-center mt-0.5">Outfit Clicks</p>
                 </Card>
-                <Card className="p-4 bg-gradient-to-br from-background to-muted/30 border-0 shadow-sm">
-                  <ShoppingBag className="h-5 w-5 mx-auto mb-2 text-[hsl(var(--azyah-maroon))]" />
-                  <p className="text-2xl font-bold text-center">{stats.shop_clicks}</p>
-                  <p className="text-xs text-muted-foreground text-center mt-1">Shop Clicks</p>
+                <Card className="p-3 bg-gradient-to-br from-background to-muted/30 border-0 shadow-sm">
+                  <ShoppingBag className="h-4 w-4 mx-auto mb-1.5 text-[hsl(var(--azyah-maroon))]" />
+                  <p className="text-lg font-bold text-center">{stats.shop_clicks}</p>
+                  <p className="text-[10px] text-muted-foreground text-center mt-0.5">Shop Clicks</p>
                 </Card>
               </div>
               {stats.installs_attributed > 0 && (
-                <div className="mt-4 p-3 rounded-lg bg-[hsl(var(--azyah-maroon))]/5 text-center">
+                <div className="p-3 rounded-lg bg-[hsl(var(--azyah-maroon))]/5 text-center">
                   <p className="text-sm font-medium text-[hsl(var(--azyah-maroon))]">
                     🎉 {stats.installs_attributed} people joined via your link!
                   </p>
                 </div>
               )}
+              
+              {/* Preview as Guest Bar */}
+              <div className="p-3 rounded-lg bg-muted/50 flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium">See how others view your page</p>
+                  <p className="text-xs text-muted-foreground">Preview without owner controls</p>
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => {
+                    window.open(`${window.location.pathname}?preview=guest`, '_blank');
+                  }}
+                >
+                  <Eye className="h-4 w-4 mr-1.5" />
+                  Preview
+                </Button>
+              </div>
             </div>
           </div>
         )}
 
         {/* Owner Deals & Codes Center */}
-        {isOwner && (
+        {effectiveIsOwner && (
           <div className="px-4 py-4 border-b">
             <div className="max-w-lg mx-auto">
               <DealsAndCodesCenter />
             </div>
           </div>
         )}
+        
+        {/* Public Promos for Visitors */}
+        {!effectiveIsOwner && displayUsername && (
+          <PublicPromoSection username={displayUsername} />
+        )}
 
         {/* Outfits Grid */}
         <div className="px-4 py-6">
           <div className="max-w-lg mx-auto">
             <h2 className="text-sm font-semibold mb-4">
-              {isOwner ? 'Your Public Outfits' : 'Outfits'}
+              {effectiveIsOwner ? 'Your Public Outfits' : 'Outfits'}
             </h2>
 
             {outfits.length === 0 ? (
               <Card className="p-8 text-center bg-gradient-to-br from-muted/30 to-transparent border-dashed">
                 <Sparkles className="h-8 w-8 mx-auto mb-3 text-muted-foreground/50" />
                 <p className="text-muted-foreground mb-3">No public outfits yet</p>
-                {isOwner && (
+                {effectiveIsOwner && (
                   <Button onClick={() => navigate('/dress-me')} className="bg-[hsl(var(--azyah-maroon))] hover:bg-[hsl(var(--azyah-maroon))]/90">
                     Create your first outfit
                   </Button>
@@ -487,17 +517,19 @@ export default function StyleLinkPage() {
                         }}
                       />
                     </div>
-                    <div className="p-3">
-                      <p className="text-sm font-medium truncate">{outfit.title || 'Untitled Outfit'}</p>
-                      <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <Heart className="h-3.5 w-3.5" />
-                          {outfit.like_count}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <MessageCircle className="h-3.5 w-3.5" />
-                          {outfit.comment_count}
-                        </span>
+                    <div className="p-2">
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-medium truncate flex-1 min-w-0">{outfit.title || 'Untitled Outfit'}</p>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground flex-shrink-0 ml-2">
+                          <span className="flex items-center gap-0.5">
+                            <Heart className="h-3 w-3" />
+                            {outfit.like_count}
+                          </span>
+                          <span className="flex items-center gap-0.5">
+                            <MessageCircle className="h-3 w-3" />
+                            {outfit.comment_count}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </Card>
@@ -508,7 +540,7 @@ export default function StyleLinkPage() {
         </div>
 
         {/* Referral Section (Visitor View) */}
-        {!isOwner && (
+        {!effectiveIsOwner && (
           <div className="px-4 py-6 bg-gradient-to-b from-transparent to-[hsl(var(--azyah-maroon))]/5">
             <div className="max-w-lg mx-auto text-center">
               <Sparkles className="h-8 w-8 mx-auto mb-3 text-[hsl(var(--azyah-maroon))]" />
