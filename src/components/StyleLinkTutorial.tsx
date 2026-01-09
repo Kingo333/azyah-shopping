@@ -119,7 +119,7 @@ export const StyleLinkTutorial: React.FC<StyleLinkTutorialProps> = ({
       {/* Portal-based Dialog for proper mobile overlay */}
       <Dialog open={isOpen} onOpenChange={(open) => !open && handleComplete()}>
         <DialogContent 
-          className="w-[calc(100vw-24px)] max-w-sm mx-auto p-0 gap-0 rounded-xl overflow-hidden"
+          className="z-[101] w-[calc(100vw-24px)] max-w-sm mx-auto p-0 gap-0 rounded-xl overflow-hidden"
           overlayClassName="z-[100]"
         >
           <DialogHeader className="px-4 pt-4 pb-2 space-y-0">
