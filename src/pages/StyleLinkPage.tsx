@@ -244,7 +244,7 @@ export default function StyleLinkPage() {
           <div className="absolute top-0 right-0 w-48 h-48 bg-[hsl(var(--azyah-maroon))]/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
           <div className="absolute bottom-0 left-0 w-36 h-36 bg-[hsl(var(--azyah-maroon))]/5 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
           
-          <div className="relative pt-10 pb-6 px-4">
+          <div className="relative pt-8 pb-4 px-4">
             {/* Back button and Tutorial for owner (not in preview mode) */}
             {effectiveIsOwner && (
               <div className="absolute top-3 left-3 right-3 flex items-center justify-between">
@@ -264,23 +264,23 @@ export default function StyleLinkPage() {
             )}
             
             <div className="max-w-lg mx-auto text-center">
-              {/* Avatar with glow effect - 20% smaller */}
-              <div className="relative inline-block mb-3">
+              {/* Avatar with glow effect - smaller */}
+              <div className="relative inline-block mb-2">
                 <div className="absolute inset-0 bg-[hsl(var(--azyah-maroon))]/20 rounded-full blur-lg scale-110" />
-                <Avatar className="relative h-20 w-20 ring-3 ring-background shadow-lg">
+                <Avatar className="relative h-16 w-16 ring-2 ring-background shadow-lg">
                   <AvatarImage src={userData.avatar_url || undefined} alt={userData.name || displayUsername} />
-                  <AvatarFallback className="bg-gradient-to-br from-[hsl(var(--azyah-maroon))] to-[hsl(var(--azyah-maroon))]/80 text-white text-lg font-bold">
+                  <AvatarFallback className="bg-gradient-to-br from-[hsl(var(--azyah-maroon))] to-[hsl(var(--azyah-maroon))]/80 text-white text-base font-bold">
                     {getInitials(userData.name)}
                   </AvatarFallback>
                 </Avatar>
               </div>
               
-              <h1 className="text-xl font-bold tracking-tight">{userData.name || displayUsername}</h1>
+              <h1 className="text-lg font-bold tracking-tight">{userData.name || displayUsername}</h1>
               {userData.username && (
-                <p className="text-xs text-muted-foreground mt-0.5">@{userData.username}</p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">@{userData.username}</p>
               )}
               {userData.bio && (
-                <p className="text-xs text-muted-foreground mt-2 max-w-xs mx-auto leading-relaxed">{userData.bio}</p>
+                <p className="text-[10px] text-muted-foreground mt-1.5 max-w-xs mx-auto leading-relaxed">{userData.bio}</p>
               )}
 
             {/* Owner Controls - Compact Icon Buttons */}
@@ -411,9 +411,9 @@ export default function StyleLinkPage() {
                 )}
                 <Button 
                   onClick={handleOpenInApp}
-                  className="bg-[hsl(var(--azyah-maroon))] hover:bg-[hsl(var(--azyah-maroon))]/90 gap-2"
+                  size="sm"
+                  className="bg-[hsl(var(--azyah-maroon))] hover:bg-[hsl(var(--azyah-maroon))]/90 h-8 text-xs px-3"
                 >
-                  <ExternalLink className="h-4 w-4" />
                   Open in Azyah
                 </Button>
               </div>
@@ -549,16 +549,18 @@ export default function StyleLinkPage() {
         {!effectiveIsOwner && (
           <div className="px-4 py-6 bg-gradient-to-b from-transparent to-[hsl(var(--azyah-maroon))]/5">
             <div className="max-w-lg mx-auto text-center">
-              <Sparkles className="h-8 w-8 mx-auto mb-3 text-[hsl(var(--azyah-maroon))]" />
+              <img src="/marketing/azyah-logo.png" alt="" className="h-8 w-8 mx-auto mb-3 object-contain" />
               <h3 className="font-semibold mb-1">Join Azyah</h3>
               <p className="text-sm text-muted-foreground mb-4">
                 Create outfits, earn points, redeem salon rewards
               </p>
               <Button 
                 asChild
+                size="sm"
                 className="bg-[hsl(var(--azyah-maroon))] hover:bg-[hsl(var(--azyah-maroon))]/90"
               >
-                <Link to={`/onboarding/signup${userData.referral_code ? `?ref=${userData.referral_code}` : ''}`}>
+                <Link to={`/onboarding/signup${userData.referral_code ? `?ref=${userData.referral_code}` : ''}`} className="gap-1.5">
+                  <img src="/marketing/azyah-logo.png" alt="" className="h-3.5 w-3.5 object-contain" />
                   Get Started Free
                 </Link>
               </Button>
