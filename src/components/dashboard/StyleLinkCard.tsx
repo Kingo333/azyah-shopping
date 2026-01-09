@@ -90,26 +90,26 @@ export function StyleLinkCard() {
   const isSettingUp = profileLoading || ensureUsernameMutation.isPending || !effectiveHandle;
 
   return (
-    <div className="w-full rounded-xl border bg-gradient-to-br from-[hsl(var(--azyah-maroon))]/5 via-background to-[hsl(var(--azyah-maroon))]/10 p-3 md:p-4 flex items-center gap-3">
-      <Avatar className="h-8 w-8 md:h-9 md:w-9 ring-1 ring-[hsl(var(--azyah-maroon))]/20 flex-shrink-0">
+    <div className="w-full rounded-xl border bg-gradient-to-br from-[hsl(var(--azyah-maroon))]/5 via-background to-[hsl(var(--azyah-maroon))]/10 p-2.5 lg:p-4 flex items-center gap-2.5 lg:gap-3">
+      <Avatar className="h-7 w-7 lg:h-9 lg:w-9 ring-1 ring-[hsl(var(--azyah-maroon))]/20 flex-shrink-0">
         <AvatarImage src={userProfile?.avatar_url || undefined} />
-        <AvatarFallback className="bg-[hsl(var(--azyah-maroon))]/10 text-[hsl(var(--azyah-maroon))] text-xs md:text-sm">
+        <AvatarFallback className="bg-[hsl(var(--azyah-maroon))]/10 text-[hsl(var(--azyah-maroon))] text-[10px] lg:text-sm">
           {getInitials(displayName)}
         </AvatarFallback>
       </Avatar>
       <div className="min-w-0 flex-1">
-        <p className="text-sm md:text-base font-medium truncate">{displayName}</p>
-        <p className="text-xs text-muted-foreground truncate">
+        <p className="text-xs lg:text-base font-medium truncate">{displayName}</p>
+        <p className="text-[10px] lg:text-xs text-muted-foreground truncate">
           {effectiveHandle ? `@${effectiveHandle}` : 'Setting up...'}
         </p>
       </div>
       <Button
         size="sm"
-        className="h-8 md:h-9 px-3 text-xs bg-[hsl(var(--azyah-maroon))] hover:bg-[hsl(var(--azyah-maroon))]/90 flex-shrink-0"
+        className="h-7 lg:h-9 px-2.5 lg:px-3 text-[10px] lg:text-xs bg-[hsl(var(--azyah-maroon))] hover:bg-[hsl(var(--azyah-maroon))]/90 flex-shrink-0"
         onClick={handleViewMyPage}
         disabled={isSettingUp}
       >
-        <User className="h-3.5 w-3.5 mr-1.5" />
+        <User className="h-3 w-3 lg:h-3.5 lg:w-3.5 mr-1 lg:mr-1.5" />
         View
       </Button>
     </div>
