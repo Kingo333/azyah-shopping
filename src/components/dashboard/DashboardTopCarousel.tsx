@@ -157,12 +157,12 @@ export function DashboardTopCarousel({
   // Stack on mobile, side-by-side on desktop
   if (slides.length === 1) {
     return (
-      <div className="px-4 pt-4 flex flex-col md:flex-row gap-3">
-        <div className={isGuest ? "w-full" : "w-full md:flex-1"}>
+      <div className="px-4 pt-4 flex flex-col sm:flex-row gap-3">
+        <div className={isGuest ? "w-full" : "w-full sm:flex-1"}>
           {slides[0].component}
         </div>
         {!isGuest && (
-          <div className="w-full md:w-auto md:min-w-[280px] md:max-w-[320px]">
+          <div className="w-full sm:w-auto sm:min-w-[260px] sm:max-w-[300px] md:min-w-[280px] md:max-w-[320px]">
             <StyleLinkCard />
           </div>
         )}
@@ -172,10 +172,10 @@ export function DashboardTopCarousel({
 
   return (
     <div className="px-4 pt-4">
-      {/* Stack on mobile, side-by-side on desktop */}
-      <div className="flex flex-col md:flex-row gap-3">
-        {/* Carousel section - full width on mobile, flexible on desktop */}
-        <div className="w-full md:flex-1">
+      {/* Stack on mobile, side-by-side on tablet and desktop */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        {/* Carousel section - full width on mobile, flexible on tablet/desktop */}
+        <div className="w-full sm:flex-1">
           <div className="overflow-hidden" ref={emblaRef}>
             <div className="flex gap-3">
               {slides.map((slide) => (
@@ -209,9 +209,9 @@ export function DashboardTopCarousel({
           )}
         </div>
 
-        {/* Fixed Style Link card - full width on mobile, fixed width on desktop (hidden for guests) */}
+        {/* Fixed Style Link card - shows on all screen sizes for logged-in users */}
         {!isGuest && (
-          <div className="w-full md:w-auto md:min-w-[280px] md:max-w-[320px] flex items-center">
+          <div className="w-full sm:w-auto sm:min-w-[260px] sm:max-w-[300px] md:min-w-[280px] md:max-w-[320px] flex items-center">
             <StyleLinkCard />
           </div>
         )}
