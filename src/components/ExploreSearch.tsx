@@ -11,6 +11,7 @@ import { Search, User, Package, Tag, Sparkles, TrendingUp, Store } from 'lucide-
 import { useNavigate } from 'react-router-dom';
 import { useDebounce } from '@/hooks/use-debounce';
 import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
+import { getDisplayName, getHandleDisplay } from '@/utils/userDisplayName';
 
 interface SearchResult {
   type: 'user' | 'product' | 'brand' | 'retailer' | 'style' | 'trend';
@@ -87,8 +88,8 @@ const ExploreSearch: React.FC<ExploreSearchProps> = ({
           results.push({
             type: 'user',
             id: user.id,
-            title: user.username || user.name || 'Anonymous',
-            subtitle: user.username ? `@${user.username}` : (user.name || 'Fashion Enthusiast'),
+            title: getDisplayName(user),
+            subtitle: getHandleDisplay(user.username) || 'Fashion Enthusiast',
             image: user.avatar_url,
             badge: undefined,
             data: user

@@ -11,6 +11,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useSendFriendRequest, useCheckFriendship } from '@/hooks/useFriends';
 import { useHasPublicItems } from '@/hooks/useUserPublicWardrobeItems';
 import { UserPlus, Check, Palette } from 'lucide-react';
+import { getDisplayName, getDisplayNameInitial } from '@/utils/userDisplayName';
 
 interface PublicFit {
   id: string;
@@ -180,11 +181,11 @@ export const CommunityOutfits = () => {
               <Avatar className="w-5 h-5">
                 <AvatarImage src={fit.user.avatar_url || undefined} />
                 <AvatarFallback className="text-xs">
-                  {(fit.user.username || 'U')[0].toUpperCase()}
+                  {getDisplayNameInitial(fit.user)}
                 </AvatarFallback>
               </Avatar>
               <span className="text-xs font-medium">
-                {fit.user.username || fit.user.name || 'Anonymous'}
+                {getDisplayName(fit.user)}
               </span>
               <AddFriendButton userId={fit.user.id} />
               <StyleButton userId={fit.user.id} />

@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 export interface Friend {
   id: string;
   username: string;
+  name: string | null;
   avatar_url: string | null;
   friends_since: string;
   public_items_count?: number;
@@ -68,7 +69,8 @@ export const useFriends = () => {
         const friendData = friendIds.find(f => f.friend_id === profile.id);
         return {
           id: profile.id,
-          username: profile.username || profile.name || 'Anonymous',
+          username: profile.username || 'anonymous',
+          name: profile.name,
           avatar_url: profile.avatar_url,
           friends_since: friendData?.friends_since || '',
           public_items_count: countMap[profile.id] || 0,

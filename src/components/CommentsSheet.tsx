@@ -13,6 +13,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useFitComments, useAddComment, useDeleteComment } from '@/hooks/useFitComments';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatDistanceToNow } from 'date-fns';
+import { getDisplayName, getDisplayNameInitial } from '@/utils/userDisplayName';
 
 interface CommentsSheetProps {
   fitId: string;
@@ -59,14 +60,14 @@ export const CommentsSheet = ({ fitId, isOpen, onClose }: CommentsSheetProps) =>
                   <Avatar className="w-8 h-8">
                     <AvatarImage src={comment.user.avatar_url || undefined} />
                     <AvatarFallback>
-                      {(comment.user.username || comment.user.name || 'U')[0].toUpperCase()}
+                      {getDisplayNameInitial(comment.user)}
                     </AvatarFallback>
                   </Avatar>
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <span className="font-semibold text-sm">
-                        {comment.user.username || comment.user.name || 'Anonymous'}
+                        {getDisplayName(comment.user)}
                       </span>
                       <span className="text-xs text-muted-foreground">
                         {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}

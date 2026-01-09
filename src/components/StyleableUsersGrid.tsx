@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Palette } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { getDisplayName, getDisplayNameInitial, getHandleDisplay } from '@/utils/userDisplayName';
 
 interface StyleableUser {
   id: string;
@@ -90,41 +91,38 @@ export const StyleableUsersGrid = () => {
 
   return (
     <div className="grid grid-cols-2 gap-4">
-      {styleableUsers.map((styleableUser) => {
-        const displayName = styleableUser.username || styleableUser.name || 'Anonymous';
-        
-        return (
-          <Card 
-            key={styleableUser.id} 
-            className="p-4 hover:shadow-lg transition-all"
-          >
-            <div className="flex flex-col items-center gap-3">
-              <Avatar className="w-16 h-16">
-                <AvatarImage src={styleableUser.avatar_url || undefined} />
-                <AvatarFallback className="text-xl">
-                  {displayName[0].toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              
-              <div className="text-center">
-                <p className="font-medium text-sm line-clamp-1">@{displayName}</p>
-                <p className="text-xs text-muted-foreground">
-                  {styleableUser.public_item_count} public item{styleableUser.public_item_count !== 1 ? 's' : ''}
-                </p>
-              </div>
-              
-              <Button
-                size="sm"
-                className="w-full"
-                onClick={() => handleStyleClick(styleableUser.id)}
-              >
-                <Palette className="w-4 h-4 mr-1.5" />
-                Style
-              </Button>
+      {styleableUsers.map((styleableUser) => (
+        <Card 
+          key={styleableUser.id} 
+          className="p-4 hover:shadow-lg transition-all"
+        >
+          <div className="flex flex-col items-center gap-3">
+            <Avatar className="w-16 h-16">
+              <AvatarImage src={styleableUser.avatar_url || undefined} />
+              <AvatarFallback className="text-xl">
+                {getDisplayNameInitial(styleableUser)}
+              </AvatarFallback>
+            </Avatar>
+            
+            <div className="text-center">
+              <p className="font-medium text-sm line-clamp-1">{getDisplayName(styleableUser)}</p>
+              <p className="text-xs text-muted-foreground">{getHandleDisplay(styleableUser.username)}</p>
+              <p className="text-xs text-muted-foreground">
+                {styleableUser.public_item_count} public item{styleableUser.public_item_count !== 1 ? 's' : ''}
+              </p>
             </div>
-          </Card>
-        );
-      })}
+            
+            <Button
+              size="sm"
+              className="w-full"
+              onClick={() => handleStyleClick(styleableUser.id)}
+            >
+              <Palette className="w-4 h-4 mr-1.5" />
+              Style
+            </Button>
+          </div>
+        </Card>
+      ))}
     </div>
   );
 };

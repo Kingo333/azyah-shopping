@@ -10,6 +10,7 @@ import HorizontalCarousel from './HorizontalCarousel';
 import FollowButton from './FollowButton';
 import { useFollows } from '@/hooks/useFollows';
 import { useAuth } from '@/contexts/AuthContext';
+import { getDisplayName, getDisplayNameInitial } from '@/utils/userDisplayName';
 
 interface ShopperWithOutfits {
   id: string;
@@ -80,7 +81,7 @@ export const ShoppersTab: React.FC = () => {
         })
         .map((u: any) => ({
           id: u.id,
-          display_name: u.username || u.name || 'Anonymous',
+          display_name: getDisplayName(u),
           avatar_url: u.avatar_url,
           outfits: userOutfitsMap.get(u.id) || [],
         })).filter(s => s.outfits.length > 0);
@@ -129,7 +130,7 @@ export const ShoppersTab: React.FC = () => {
               <Avatar className="h-8 w-8">
                 <AvatarImage src={shopper.avatar_url || undefined} alt={shopper.display_name || 'User'} />
                 <AvatarFallback className="text-xs font-semibold">
-                  {(shopper.display_name || 'U').slice(0, 2).toUpperCase()}
+                  {(shopper.display_name || 'U').slice(0, 1).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
               {/* Don't show follow button for self */}

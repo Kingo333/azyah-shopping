@@ -12,6 +12,7 @@ import { Users, Palette } from 'lucide-react';
 import HorizontalCarousel from './HorizontalCarousel';
 import { useFollows } from '@/hooks/useFollows';
 import { useAuth } from '@/contexts/AuthContext';
+import { getDisplayName, getDisplayNameInitial } from '@/utils/userDisplayName';
 
 export const FollowingTab: React.FC = () => {
   const navigate = useNavigate();
@@ -82,7 +83,7 @@ export const FollowingTab: React.FC = () => {
       return {
         users: (usersData || []).map((u: any) => ({
           ...u,
-          display_name: u.username || u.name || 'Anonymous',
+          display_name: getDisplayName(u),
           outfits: userOutfitsMap.get(u.id) || [],
         })).filter((u: any) => u.outfits.length > 0),
         brands: (brandsData || []).map((b: any) => ({
@@ -221,7 +222,7 @@ export const FollowingTab: React.FC = () => {
               <Avatar className="h-16 w-16 mb-3">
                 <AvatarImage src={shopper.avatar_url || undefined} alt={shopper.display_name || 'User'} />
                 <AvatarFallback className="text-lg font-semibold">
-                  {(shopper.display_name || 'U').slice(0, 2).toUpperCase()}
+                  {(shopper.display_name || 'U').slice(0, 1).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
               <p className="text-xs text-center text-muted-foreground line-clamp-2">

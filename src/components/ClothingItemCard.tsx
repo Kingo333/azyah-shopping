@@ -4,6 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { PublicWardrobeItem } from '@/hooks/usePublicWardrobeItems';
 import { useAuth } from '@/contexts/AuthContext';
 import { Palette } from 'lucide-react';
+import { getDisplayName, getDisplayNameInitial } from '@/utils/userDisplayName';
 
 interface ClothingItemCardProps {
   item: PublicWardrobeItem;
@@ -14,8 +15,7 @@ export const ClothingItemCard = ({ item, onClick }: ClothingItemCardProps) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const displayImage = item.image_bg_removed_url || item.image_url;
-  const displayName = item.name || item.brand || 'Untitled Item';
-  const username = item.user.username || item.user.name || 'Anonymous';
+  const itemDisplayName = item.name || item.brand || 'Untitled Item';
   const canStyle = user && user.id !== item.user_id;
 
   const handleStyleClick = (e: React.MouseEvent) => {
@@ -32,7 +32,7 @@ export const ClothingItemCard = ({ item, onClick }: ClothingItemCardProps) => {
         {displayImage ? (
           <img
             src={displayImage}
-            alt={displayName}
+            alt={itemDisplayName}
             className="w-full h-full object-contain"
           />
         ) : (
@@ -41,18 +41,18 @@ export const ClothingItemCard = ({ item, onClick }: ClothingItemCardProps) => {
       </div>
 
       <div className="p-3">
-        <p className="font-medium text-sm line-clamp-1">{displayName}</p>
+        <p className="font-medium text-sm line-clamp-1">{itemDisplayName}</p>
         
         <div className="flex items-center justify-between mt-2">
           <div className="flex items-center gap-2">
             <Avatar className="w-4 h-4">
               <AvatarImage src={item.user.avatar_url || undefined} />
               <AvatarFallback className="text-xs">
-                {username[0].toUpperCase()}
+                {getDisplayNameInitial(item.user)}
               </AvatarFallback>
             </Avatar>
             <span className="text-xs text-muted-foreground line-clamp-1">
-              {username}
+              {getDisplayName(item.user)}
             </span>
           </div>
           

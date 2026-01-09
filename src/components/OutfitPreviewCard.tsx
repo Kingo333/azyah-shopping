@@ -2,6 +2,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Trash2, Globe } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { getDisplayName, getDisplayNameInitial } from '@/utils/userDisplayName';
 
 interface OutfitPreviewCardProps {
   fit: any;
@@ -10,6 +11,7 @@ interface OutfitPreviewCardProps {
   creator?: {
     id: string;
     username: string;
+    name?: string | null;
     avatar_url: string | null;
   };
   showCreator?: boolean;
@@ -43,11 +45,11 @@ export const OutfitPreviewCard: React.FC<OutfitPreviewCardProps> = ({
             <Avatar className="w-5 h-5">
               <AvatarImage src={creator.avatar_url || undefined} />
               <AvatarFallback className="text-xs">
-                {(creator.username || 'U')[0].toUpperCase()}
+                {getDisplayNameInitial(creator)}
               </AvatarFallback>
             </Avatar>
             <span className="text-xs font-medium">
-              @{creator.username || 'Anonymous'}
+              {getDisplayName(creator)}
             </span>
           </div>
         )}
