@@ -1,17 +1,21 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User } from 'lucide-react';
+import { User, Link2, DollarSign } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { isGuestMode } from '@/hooks/useGuestMode';
+import { GuestActionPrompt } from '@/components/GuestActionPrompt';
 
 export function StyleLinkCard() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const isGuest = isGuestMode();
+  const [showGuestPrompt, setShowGuestPrompt] = useState(false);
 
   // Fetch user profile from database (not auth metadata)
   const { data: userProfile, isLoading: profileLoading } = useQuery({
@@ -85,7 +89,51 @@ export function StyleLinkCard() {
     }
   };
 
-  if (!user) return null;
+  const handleGuestClick = () => {
+    setShowGuestPrompt(true);
+  };
+
+  // Guest mode: show a preview card that prompts sign up
+  if (isGuest || !user) {
+    return (
+      <>
+        <div 
+          className="w-full rounded-xl border bg-gradient-to-br from-[hsl(var(--azyah-maroon))]/5 via-background to-[hsl(var(--azyah-maroon))]/10 p-2.5 lg:p-4 cursor-pointer hover:border-[hsl(var(--azyah-maroon))]/30 transition-colors"
+          onClick={handleGuestClick}
+        >
+          <div className="flex items-center gap-2.5 lg:gap-3 mb-2">
+            <Avatar className="h-7 w-7 lg:h-9 lg:w-9 ring-1 ring-[hsl(var(--azyah-maroon))]/20 flex-shrink-0">
+              <AvatarFallback className="bg-[hsl(var(--azyah-maroon))]/10 text-[hsl(var(--azyah-maroon))] text-[10px] lg:text-sm">
+                <User className="h-3.5 w-3.5 lg:h-4 lg:w-4" />
+              </AvatarFallback>
+            </Avatar>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs lg:text-base font-medium">Your Style Page</p>
+              <p className="text-[10px] lg:text-xs text-muted-foreground">
+                @yourhandle
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 text-[10px] lg:text-xs text-muted-foreground">
+            <div className="flex items-center gap-1">
+              <Link2 className="h-3 w-3" />
+              <span>Affiliate links</span>
+            </div>
+            <span>•</span>
+            <div className="flex items-center gap-1">
+              <DollarSign className="h-3 w-3" />
+              <span>Earn rewards</span>
+            </div>
+          </div>
+        </div>
+        <GuestActionPrompt
+          open={showGuestPrompt}
+          onOpenChange={setShowGuestPrompt}
+          action="create your style page with affiliate links"
+        />
+      </>
+    );
+  }
 
   const isSettingUp = profileLoading || ensureUsernameMutation.isPending || !effectiveHandle;
 

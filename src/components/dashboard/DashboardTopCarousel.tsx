@@ -141,9 +141,8 @@ export function DashboardTopCarousel({
     }
   }, [emblaApi, slides.length]);
 
-  // If no slides to show, just show StyleLinkCard (only for non-guests)
+  // If no slides to show, just show StyleLinkCard
   if (slides.length === 0) {
-    if (isGuest) return null;
     return (
       <div className="px-4 pt-4">
         <div className="max-w-md">
@@ -153,19 +152,17 @@ export function DashboardTopCarousel({
     );
   }
 
-  // If only one slide, show it alongside StyleLinkCard (if not guest)
+  // If only one slide, show it alongside StyleLinkCard
   // Stack on mobile, side-by-side on desktop
   if (slides.length === 1) {
     return (
       <div className="px-4 pt-4 flex flex-col lg:flex-row gap-3">
-        <div className={isGuest ? "w-full" : "w-full lg:flex-1"}>
+        <div className="w-full lg:flex-1">
           {slides[0].component}
         </div>
-        {!isGuest && (
-          <div className="w-full lg:w-auto lg:min-w-[280px] lg:max-w-[320px]">
-            <StyleLinkCard />
-          </div>
-        )}
+        <div className="w-full lg:w-auto lg:min-w-[280px] lg:max-w-[320px]">
+          <StyleLinkCard />
+        </div>
       </div>
     );
   }
@@ -210,11 +207,9 @@ export function DashboardTopCarousel({
         </div>
 
         {/* Fixed Style Link card - full width on mobile/tablet, fixed width on desktop */}
-        {!isGuest && (
-          <div className="w-full lg:w-auto lg:min-w-[280px] lg:max-w-[320px] flex items-center">
-            <StyleLinkCard />
-          </div>
-        )}
+        <div className="w-full lg:w-auto lg:min-w-[280px] lg:max-w-[320px] flex items-center">
+          <StyleLinkCard />
+        </div>
       </div>
     </div>
   );
