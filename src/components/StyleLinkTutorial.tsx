@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { X, ChevronRight, ChevronLeft, Tag, Link2, DollarSign, Eye, Sparkles, Users, Info } from 'lucide-react';
+import { X, ChevronRight, ChevronLeft, Tag, Link2, DollarSign, Eye, Sparkles, Info } from 'lucide-react';
+
 interface StyleLinkTutorialProps {
   isOwner: boolean;
   onComplete?: () => void;
@@ -100,7 +101,7 @@ export const StyleLinkTutorial: React.FC<StyleLinkTutorialProps> = ({
     <Button
       variant="ghost"
       size="icon"
-      className="h-7 w-7"
+      className="h-7 w-7 rounded-full bg-background/80 hover:bg-background"
       onClick={handleOpen}
       title="How to use Style Link"
     >
@@ -117,19 +118,27 @@ export const StyleLinkTutorial: React.FC<StyleLinkTutorialProps> = ({
   return (
     <>
       <TriggerButton />
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-        <Card className="max-w-sm w-full mx-auto animate-fade-in">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                {currentStepData.icon}
-                <CardTitle className="text-base">{currentStepData.title}</CardTitle>
+      {/* Full-screen overlay for mobile and desktop */}
+      <div 
+        className="fixed inset-0 bg-black/60 flex items-center justify-center z-[100] p-3 sm:p-4"
+        onClick={(e) => {
+          if (e.target === e.currentTarget) handleComplete();
+        }}
+      >
+        <Card className="w-full max-w-[calc(100vw-24px)] sm:max-w-sm mx-auto animate-fade-in shadow-2xl">
+          <CardHeader className="pb-2 px-3 sm:px-6 pt-3 sm:pt-6">
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                <div className="shrink-0">
+                  {currentStepData.icon}
+                </div>
+                <CardTitle className="text-sm sm:text-base leading-tight">{currentStepData.title}</CardTitle>
               </div>
-              <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={handleComplete}>
+              <Button variant="ghost" size="sm" className="h-6 w-6 p-0 shrink-0" onClick={handleComplete}>
                 <X className="h-4 w-4" />
               </Button>
             </div>
-            <div className="flex items-center gap-2 mt-1">
+            <div className="flex items-center gap-2 mt-2">
               <Badge variant="secondary" className="text-[10px]">
                 {currentStep + 1} of {steps.length}
               </Badge>
@@ -146,39 +155,39 @@ export const StyleLinkTutorial: React.FC<StyleLinkTutorialProps> = ({
             </div>
           </CardHeader>
           
-          <CardContent className="space-y-3 pt-0">
-            <p className="text-sm text-muted-foreground leading-relaxed">
+          <CardContent className="space-y-3 pt-0 px-3 sm:px-6 pb-3 sm:pb-6">
+            <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
               {currentStepData.description}
             </p>
             
             {currentStepData.action && (
-              <div className="p-2.5 bg-[hsl(var(--azyah-maroon))]/10 rounded-lg">
-                <p className="text-xs font-medium text-[hsl(var(--azyah-maroon))]">
+              <div className="p-2 sm:p-2.5 bg-[hsl(var(--azyah-maroon))]/10 rounded-lg">
+                <p className="text-[10px] sm:text-xs font-medium text-[hsl(var(--azyah-maroon))]">
                   💡 {currentStepData.action}
                 </p>
               </div>
             )}
             
-            <div className="flex items-center justify-between pt-3">
+            <div className="flex items-center justify-between pt-2 sm:pt-3">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={handlePrevious}
                 disabled={currentStep === 0}
-                className="gap-1 h-8 text-xs"
+                className="gap-1 h-8 text-xs px-2"
               >
                 <ChevronLeft className="h-3.5 w-3.5" />
                 Back
               </Button>
               
-              <div className="flex gap-2">
-                <Button variant="ghost" size="sm" onClick={handleComplete} className="h-8 text-xs">
+              <div className="flex gap-1 sm:gap-2">
+                <Button variant="ghost" size="sm" onClick={handleComplete} className="h-8 text-xs px-2">
                   Skip
                 </Button>
                 <Button 
                   onClick={handleNext} 
                   size="sm" 
-                  className="gap-1 h-8 text-xs bg-[hsl(var(--azyah-maroon))] hover:bg-[hsl(var(--azyah-maroon))]/90"
+                  className="gap-1 h-8 text-xs px-2 sm:px-3 bg-[hsl(var(--azyah-maroon))] hover:bg-[hsl(var(--azyah-maroon))]/90"
                 >
                   {currentStep === steps.length - 1 ? 'Got it!' : 'Next'}
                   {currentStep < steps.length - 1 && <ChevronRight className="h-3.5 w-3.5" />}

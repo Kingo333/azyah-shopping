@@ -77,7 +77,7 @@ export function PromoAttachModal({ promo, isOpen, onClose }: PromoAttachModalPro
             Attach "{promo.promo_name || promo.affiliate_code || 'Promo'}" to Outfits
           </DialogTitle>
           <p className="text-xs text-muted-foreground mt-1">
-            Tap to select or deselect outfits. Deselected outfits will be un-attached.
+            Tap once to select/unselect. Click Save to apply changes.
           </p>
         </DialogHeader>
 
