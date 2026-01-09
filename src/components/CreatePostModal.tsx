@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -7,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Camera, X, Upload } from 'lucide-react';
+import { useObjectUrls } from '@/hooks/useObjectUrl';
 
 interface CreatePostModalProps {
   isOpen: boolean;
@@ -25,6 +25,9 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  
+  // Use managed object URLs to prevent memory leaks
+  const previewUrls = useObjectUrls(selectedImages);
 
   const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
@@ -237,7 +240,7 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
                 {selectedImages.map((file, index) => (
                   <div key={index} className="relative group">
                     <img
-                      src={URL.createObjectURL(file)}
+                      src={previewUrls[index] || ''}
                       alt={`Preview ${index + 1}`}
                       className="w-full h-24 object-cover rounded-lg"
                     />

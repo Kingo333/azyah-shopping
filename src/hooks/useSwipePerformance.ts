@@ -1,4 +1,3 @@
-
 import { useRef, useCallback, useEffect } from 'react';
 
 const MAX_ENTRIES = 5;
@@ -25,13 +24,37 @@ export const useSwipePerformance = () => {
     lastCleanupRef.current = now;
   }, []);
 
-  // Periodic cleanup
+  // Periodic cleanup with tab visibility pause
   useEffect(() => {
-    const interval = setInterval(() => {
-      performCleanup();
-    }, CLEANUP_INTERVAL);
+    let interval: NodeJS.Timeout | null = null;
+    
+    const startInterval = () => {
+      if (interval) clearInterval(interval);
+      interval = setInterval(performCleanup, CLEANUP_INTERVAL);
+    };
+    
+    const stopInterval = () => {
+      if (interval) {
+        clearInterval(interval);
+        interval = null;
+      }
+    };
+    
+    const handleVisibility = () => {
+      if (document.hidden) {
+        stopInterval();
+      } else {
+        startInterval();
+      }
+    };
+    
+    startInterval();
+    document.addEventListener('visibilitychange', handleVisibility);
 
-    return () => clearInterval(interval);
+    return () => {
+      stopInterval();
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
   }, [performCleanup]);
 
   const trackViewStart = useCallback((productId: string) => {

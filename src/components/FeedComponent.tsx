@@ -326,9 +326,9 @@ const FeedComponent: React.FC<FeedComponentProps> = ({
                       key={index}
                       src={image}
                       alt={`Post image ${index + 1}`}
+                      loading="lazy"
                       className="w-full max-w-md h-auto object-cover rounded-lg"
                       onError={(e) => {
-                        console.log('Image failed to load:', image);
                         e.currentTarget.style.display = 'none';
                       }}
                     />
