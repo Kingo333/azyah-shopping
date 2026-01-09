@@ -11,7 +11,8 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { TooltipProvider } from '@/components/ui/tooltip';
+import { SmartTooltip } from '@/components/ui/smart-tooltip';
 import { 
   Loader2, Copy, Share2, QrCode, ExternalLink, Heart, MessageCircle, 
   Eye, MousePointer, ShoppingBag, Sparkles, ArrowRight, Tag,
@@ -333,30 +334,21 @@ export default function StyleLinkPage() {
                 )}
                 <TooltipProvider>
                   <div className="flex justify-center gap-1 mt-3">
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button variant="outline" size="icon" className="h-7 w-7" onClick={handleCopyLink}>
-                          <Copy className="h-3.5 w-3.5" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>Copy link</TooltipContent>
-                    </Tooltip>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button variant="outline" size="icon" className="h-7 w-7" onClick={handleShare}>
-                          <Share2 className="h-3.5 w-3.5" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>Share</TooltipContent>
-                    </Tooltip>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => setShowQRModal(true)}>
-                          <QrCode className="h-3.5 w-3.5" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>Show QR Code</TooltipContent>
-                    </Tooltip>
+                    <SmartTooltip content="Copy link">
+                      <Button variant="outline" size="icon" className="h-9 w-9 min-w-[36px] min-h-[36px]" onClick={handleCopyLink}>
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                    </SmartTooltip>
+                    <SmartTooltip content="Share">
+                      <Button variant="outline" size="icon" className="h-9 w-9 min-w-[36px] min-h-[36px]" onClick={handleShare}>
+                        <Share2 className="h-4 w-4" />
+                      </Button>
+                    </SmartTooltip>
+                    <SmartTooltip content="Show QR Code">
+                      <Button variant="outline" size="icon" className="h-9 w-9 min-w-[36px] min-h-[36px]" onClick={() => setShowQRModal(true)}>
+                        <QrCode className="h-4 w-4" />
+                      </Button>
+                    </SmartTooltip>
                   </div>
                 </TooltipProvider>
               </>
