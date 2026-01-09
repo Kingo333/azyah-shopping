@@ -1,5 +1,4 @@
-
-import React, { useEffect, useCallback, useState } from 'react';
+import React, { useEffect, useCallback, useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -21,6 +20,7 @@ import { TopCategory } from '@/lib/categories';
 import { useGuestGate } from '@/hooks/useGuestGate';
 import { GuestActionPrompt } from '@/components/GuestActionPrompt';
 import { openExternalUrl } from '@/lib/openExternalUrl';
+import { logger } from '@/utils/logger';
 
 interface TrendingProduct {
   id: string;
@@ -46,7 +46,7 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
   const { data: trendingProducts, isLoading, error } = useQuery({
     queryKey: ['trending-products-engagement', limit, categoryFilter],
     queryFn: async (): Promise<TrendingProduct[]> => {
-      console.log('TrendingProductsCarousel: Starting engagement-based fetch');
+      logger.log('TrendingProductsCarousel: Starting engagement-based fetch');
       
       try {
         // Start with recent products to ensure we show internal user products
@@ -76,11 +76,11 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
         const { data: recentData, error: recentError } = await recentQuery;
 
         if (recentError) {
-          console.error('TrendingProductsCarousel: Error fetching recent products:', recentError);
+          logger.error('TrendingProductsCarousel: Error fetching recent products:', recentError);
           throw recentError;
         }
 
-        console.log('TrendingProductsCarousel: Products fetched:', recentData?.length || 0);
+        logger.log('TrendingProductsCarousel: Products fetched:', recentData?.length || 0);
         return (recentData || []).map((product: any) => ({
           id: product.id,
           title: product.title,
@@ -93,7 +93,7 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
         }));
         
       } catch (error) {
-        console.error('TrendingProductsCarousel: Error in engagement fetch:', error);
+        logger.error('TrendingProductsCarousel: Error in engagement fetch:', error);
         // Fallback to recent products on error
         let fallbackQuery = supabase
           .from('products')
@@ -138,40 +138,67 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
     gcTime: 1000 * 60 * 60 * 48, // 48 hours
   });
 
-  // Auto-slide functionality
+  // Auto-slide functionality with proper cleanup
   const scrollNext = useCallback(() => {
     if (api) api.scrollNext();
   }, [api]);
 
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const isHoveredRef = useRef(false);
+
+  const startAutoSlide = useCallback(() => {
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    if (document.hidden || isHoveredRef.current) return;
+    intervalRef.current = setInterval(scrollNext, 4000);
+  }, [scrollNext]);
+
+  const stopAutoSlide = useCallback(() => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+  }, []);
+
   useEffect(() => {
     if (!api) return;
 
-    const autoSlide = setInterval(() => {
-      scrollNext();
-    }, 4000); // Slide every 4 seconds
+    const container = api.containerNode?.();
+    
+    const handleMouseEnter = () => {
+      isHoveredRef.current = true;
+      stopAutoSlide();
+    };
+    
+    const handleMouseLeave = () => {
+      isHoveredRef.current = false;
+      startAutoSlide();
+    };
+    
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        stopAutoSlide();
+      } else if (!isHoveredRef.current) {
+        startAutoSlide();
+      }
+    };
 
-    // Pause auto-slide on hover
-    const container = api.containerNode();
+    startAutoSlide();
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
     if (container) {
-      const handleMouseEnter = () => clearInterval(autoSlide);
-      const handleMouseLeave = () => {
-        clearInterval(autoSlide);
-        const newAutoSlide = setInterval(scrollNext, 4000);
-        return () => clearInterval(newAutoSlide);
-      };
-
       container.addEventListener('mouseenter', handleMouseEnter);
       container.addEventListener('mouseleave', handleMouseLeave);
-
-      return () => {
-        clearInterval(autoSlide);
-        container.removeEventListener('mouseenter', handleMouseEnter);
-        container.removeEventListener('mouseleave', handleMouseLeave);
-      };
     }
 
-    return () => clearInterval(autoSlide);
-  }, [api, scrollNext]);
+    return () => {
+      stopAutoSlide();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      if (container) {
+        container.removeEventListener('mouseenter', handleMouseEnter);
+        container.removeEventListener('mouseleave', handleMouseLeave);
+      }
+    };
+  }, [api, startAutoSlide, stopAutoSlide]);
 
 
   const formatProductTitle = (title: string) => {

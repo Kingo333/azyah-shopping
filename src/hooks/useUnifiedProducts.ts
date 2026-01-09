@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
+import { logger } from '@/utils/logger';
 import type { Product } from '@/types';
 
 export interface UnifiedProductFilters {
@@ -29,7 +30,7 @@ export const useUnifiedProducts = (filters: UnifiedProductFilters): UnifiedProdu
 
   const fetchProducts = useCallback(async () => {
     setIsLoading(true);
-    console.log('Fetching products with filters:', filters);
+    logger.log('Fetching products with filters:', filters);
     
     try {
       // Build base query with comprehensive joins

@@ -1,5 +1,8 @@
 import { useRef, useCallback } from 'react';
 
+const MAX_SEEN_PRODUCTS = 200;
+const CLEANUP_BATCH_SIZE = 50;
+
 interface SwipeMemoryState {
   seenProducts: Set<string>;
   lastSwipeTime: number;
@@ -14,6 +17,16 @@ export const useSwipeMemory = () => {
   });
 
   const addSeenProduct = useCallback((productId: string) => {
+    // If at capacity, remove oldest entries (LRU-like behavior)
+    if (memoryRef.current.seenProducts.size >= MAX_SEEN_PRODUCTS) {
+      const iterator = memoryRef.current.seenProducts.values();
+      // Remove first batch of entries
+      for (let i = 0; i < CLEANUP_BATCH_SIZE; i++) {
+        const oldest = iterator.next().value;
+        if (oldest) memoryRef.current.seenProducts.delete(oldest);
+      }
+    }
+    
     memoryRef.current.seenProducts.add(productId);
     memoryRef.current.lastSwipeTime = Date.now();
     memoryRef.current.swipeCount += 1;
@@ -39,10 +52,10 @@ export const useSwipeMemory = () => {
 
   // Cleanup old seen products if memory gets too large
   const optimizeMemory = useCallback(() => {
-    if (memoryRef.current.seenProducts.size > 500) {
-      // Keep only the most recent 300 products
+    if (memoryRef.current.seenProducts.size > MAX_SEEN_PRODUCTS) {
+      // Keep only the most recent 100 products
       const productsArray = Array.from(memoryRef.current.seenProducts);
-      const recentProducts = productsArray.slice(-300);
+      const recentProducts = productsArray.slice(-100);
       memoryRef.current.seenProducts = new Set(recentProducts);
     }
   }, []);

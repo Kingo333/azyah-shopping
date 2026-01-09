@@ -2,7 +2,9 @@ import { useRef, useCallback } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { toast } from 'sonner';
+import { logger } from '@/utils/logger';
+
+const MAX_QUEUE_SIZE = 50;
 
 interface SwipeTrackingData {
   productId: string;
@@ -100,11 +102,17 @@ export const useEnhancedSwipeTracking = () => {
           if (error) throw error;
           return data;
         } catch (error) {
-          console.error('Queued swipe tracking failed:', error);
+          logger.error('Queued swipe tracking failed:', error);
           throw error;
         }
       };
 
+      // Cap queue size to prevent unbounded growth
+      if (requestQueue.current.length >= MAX_QUEUE_SIZE) {
+        // Drop oldest half of requests
+        requestQueue.current = requestQueue.current.slice(-MAX_QUEUE_SIZE / 2);
+      }
+      
       requestQueue.current.push(swipeRequest);
       processQueue(); // Process queue asynchronously
       
@@ -115,7 +123,7 @@ export const useEnhancedSwipeTracking = () => {
       debouncedInvalidate();
     },
     onError: (error) => {
-      console.error('Failed to track swipe:', error);
+      logger.error('Failed to track swipe:', error);
       // Don't show toast for every error to avoid spam
     }
   });

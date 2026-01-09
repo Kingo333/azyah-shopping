@@ -4,6 +4,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { GlassPanel } from '@/components/ui/glass-panel';
 import { Upload } from 'lucide-react';
+import { useObjectUrl } from '@/hooks/useObjectUrl';
 
 interface AiStudioUploadPanelProps {
   personFile: File | null;
@@ -22,6 +23,10 @@ export const AiStudioUploadPanel: React.FC<AiStudioUploadPanelProps> = ({
   onPersonUpload,
   onOutfitUpload
 }) => {
+  // Use managed object URLs to prevent memory leaks
+  const personPreviewUrl = useObjectUrl(personFile);
+  const outfitPreviewUrl = useObjectUrl(outfitFile);
+
   return (
     <div className="space-y-2 lg:space-y-3">
       {/* Person Upload */}
@@ -37,10 +42,10 @@ export const AiStudioUploadPanel: React.FC<AiStudioUploadPanelProps> = ({
             onChange={onPersonUpload}
             className="w-full h-8 text-xs"
           />
-          {personFile && (
+          {personPreviewUrl && (
             <div className="relative">
               <img 
-                src={URL.createObjectURL(personFile)} 
+                src={personPreviewUrl} 
                 alt="Person preview" 
                 className="w-full h-12 sm:h-16 lg:h-20 object-contain rounded-md bg-gray-50"
               />
@@ -67,10 +72,10 @@ export const AiStudioUploadPanel: React.FC<AiStudioUploadPanelProps> = ({
             onChange={onOutfitUpload}
             className="w-full h-8 text-xs"
           />
-          {outfitFile && (
+          {outfitPreviewUrl && (
             <div className="relative">
               <img 
-                src={URL.createObjectURL(outfitFile)} 
+                src={outfitPreviewUrl} 
                 alt="Outfit preview" 
                 className="w-full h-12 sm:h-16 lg:h-20 object-contain rounded-md bg-gray-50"
               />

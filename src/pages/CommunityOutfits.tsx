@@ -96,27 +96,27 @@ export const CommunityOutfits = () => {
           user_id
         `)
         .eq('is_public', true)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(50); // Add pagination limit
 
       if (error) throw error;
+      if (!data?.length) return [];
       
-      // Fetch user data separately (using public_profiles table)
-      const fitsWithUsers = await Promise.all(
-        (data || []).map(async (fit) => {
-          const { data: userData } = await supabase
-            .from('public_profiles')
-            .select('id, username, name, avatar_url')
-            .eq('id', fit.user_id)
-            .single();
-          
-          return {
-            ...fit,
-            user: userData || { id: fit.user_id, username: null, name: null, avatar_url: null },
-          };
-        })
-      );
+      // Batch fetch users in single query (fixes N+1)
+      const userIds = [...new Set(data.map(fit => fit.user_id))];
+      const { data: users } = await supabase
+        .from('public_profiles')
+        .select('id, username, name, avatar_url')
+        .in('id', userIds);
       
-      return fitsWithUsers as PublicFit[];
+      const userMap = new Map(users?.map(u => [u.id, u]) || []);
+      
+      return data.map(fit => ({
+        ...fit,
+        user: userMap.get(fit.user_id) || { 
+          id: fit.user_id, username: null, name: null, avatar_url: null 
+        }
+      })) as PublicFit[];
     },
   });
 
