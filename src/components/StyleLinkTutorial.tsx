@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { X, ChevronRight, ChevronLeft, Tag, Link2, DollarSign, Eye, Sparkles, Users } from 'lucide-react';
-
+import { X, ChevronRight, ChevronLeft, Tag, Link2, DollarSign, Eye, Sparkles, Users, Info } from 'lucide-react';
 interface StyleLinkTutorialProps {
   isOwner: boolean;
   onComplete?: () => void;
@@ -96,16 +95,16 @@ export const StyleLinkTutorial: React.FC<StyleLinkTutorialProps> = ({
 
   if (!isOwner) return null;
 
-  // Eye icon button for triggering tutorial
+  // Info icon button for triggering tutorial
   const TriggerButton = () => (
     <Button
       variant="ghost"
       size="icon"
-      className="h-8 w-8"
+      className="h-7 w-7"
       onClick={handleOpen}
       title="How to use Style Link"
     >
-      <Eye className="h-4 w-4" />
+      <Info className="h-3.5 w-3.5" />
     </Button>
   );
 
