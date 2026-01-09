@@ -16,6 +16,7 @@ import { useProductOutfits } from '@/hooks/useProductOutfits';
 import { imageUrlFrom, extractSupabasePath } from '@/lib/imageUrl';
 import { isSupabaseAbsoluteUrl } from '@/lib/urlGuards';
 import { useDropzone } from 'react-dropzone';
+import { useObjectUrls } from '@/hooks/useObjectUrl';
 interface AddProductModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -54,6 +55,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [bulkImages, setBulkImages] = useState<File[]>([]);
   const [isBulkUploading, setIsBulkUploading] = useState(false);
+  const bulkPreviewUrls = useObjectUrls(bulkImages);
   
   // Try-on outfit functionality for brands
   const { 
@@ -410,7 +412,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
                     {bulkImages.map((file, index) => (
                       <div key={index} className="relative">
                         <img
-                          src={URL.createObjectURL(file)}
+                          src={bulkPreviewUrls[index] || ''}
                           alt={`Preview ${index + 1}`}
                           className="w-full h-20 object-cover rounded border"
                         />
