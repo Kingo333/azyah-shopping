@@ -143,7 +143,7 @@ export function DashboardTopCarousel({
   if (slides.length === 0) {
     return (
       <div className="px-4 pt-4">
-        <div className="max-w-sm">
+        <div className="max-w-md">
           <StyleLinkCard />
         </div>
       </div>
@@ -151,13 +151,14 @@ export function DashboardTopCarousel({
   }
 
   // If only one slide, show it alongside StyleLinkCard
+  // Stack on mobile, side-by-side on desktop
   if (slides.length === 1) {
     return (
-      <div className="px-4 pt-4 flex gap-3 items-center">
-        <div className="w-[60%]">
+      <div className="px-4 pt-4 flex flex-col md:flex-row gap-3">
+        <div className="w-full md:flex-1">
           {slides[0].component}
         </div>
-        <div className="w-[40%] flex items-center">
+        <div className="w-full md:w-auto md:min-w-[280px] md:max-w-[320px]">
           <StyleLinkCard />
         </div>
       </div>
@@ -166,9 +167,10 @@ export function DashboardTopCarousel({
 
   return (
     <div className="px-4 pt-4">
-      <div className="flex gap-3">
-        {/* Carousel section - 60% width */}
-        <div className="w-[60%]">
+      {/* Stack on mobile, side-by-side on desktop */}
+      <div className="flex flex-col md:flex-row gap-3">
+        {/* Carousel section - full width on mobile, flexible on desktop */}
+        <div className="w-full md:flex-1">
           <div className="overflow-hidden" ref={emblaRef}>
             <div className="flex gap-3">
               {slides.map((slide) => (
@@ -202,8 +204,8 @@ export function DashboardTopCarousel({
           )}
         </div>
 
-        {/* Fixed Style Link card - 40% width */}
-        <div className="w-[40%] flex items-center">
+        {/* Fixed Style Link card - full width on mobile, fixed width on desktop */}
+        <div className="w-full md:w-auto md:min-w-[280px] md:max-w-[320px] flex items-center">
           <StyleLinkCard />
         </div>
       </div>
