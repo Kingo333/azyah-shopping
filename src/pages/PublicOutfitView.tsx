@@ -207,22 +207,22 @@ export default function PublicOutfitView() {
         url={canonicalUrl}
       />
 
-      <div className="min-h-screen bg-background pb-24">
+      <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/20 pb-24">
         {/* Header */}
         <header 
-          className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b"
+          className="sticky top-0 z-10 bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60 border-b"
           style={{ paddingTop: 'var(--safe-top, 0px)' }}
         >
           <div className="container flex items-center justify-between h-14 max-w-screen-2xl px-4">
             <div className="flex items-center gap-2">
-              <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+              <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="rounded-full">
                 <ArrowLeft className="h-5 w-5" />
               </Button>
               <h1 className="text-lg font-semibold truncate">
                 {outfit.title ? `Outfit — ${outfit.title}` : 'Outfit'}
               </h1>
             </div>
-            <Button variant="ghost" size="icon" onClick={handleShare}>
+            <Button variant="ghost" size="icon" onClick={handleShare} className="rounded-full">
               <Share2 className="w-5 h-5" />
             </Button>
           </div>
@@ -238,14 +238,17 @@ export default function PublicOutfitView() {
           
           {/* Grid layout - outfit left, details right (matching OutfitDetail.tsx) */}
           <div className="grid grid-cols-[1fr,120px] sm:grid-cols-[1fr,180px] md:grid-cols-[1fr,320px] lg:grid-cols-[1fr,360px] gap-3 sm:gap-4 md:gap-6">
-            {/* Outfit Image */}
-            <div className="relative rounded-xl sm:rounded-2xl overflow-hidden shadow-lg bg-gradient-to-br from-secondary/30 via-background to-muted/50">
-              <div className="aspect-[3/4] flex items-center justify-center p-2 sm:p-3 md:p-4">
+            {/* Outfit Image with enhanced styling */}
+            <div className="relative rounded-2xl overflow-hidden shadow-xl bg-gradient-to-br from-muted/30 via-background to-muted/50 ring-1 ring-border/50">
+              <div className="aspect-[3/4] flex items-center justify-center p-3 sm:p-4 md:p-6">
                 {outfitImage ? (
                   <img
                     src={outfitImage}
                     alt={outfit.title || 'Outfit'}
-                    className="max-w-full max-h-full object-contain rounded-lg drop-shadow-md"
+                    className="max-w-full max-h-full object-contain rounded-xl drop-shadow-lg"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = '/placeholder.svg';
+                    }}
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-muted-foreground">
@@ -257,21 +260,23 @@ export default function PublicOutfitView() {
 
             {/* Details Sidebar - compact on mobile */}
             <div className="flex flex-col gap-2 sm:gap-3 md:gap-4">
-              {/* User info */}
-              <div className="flex items-center gap-2">
-                <Avatar className="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10">
-                  <AvatarImage src={outfit.user.avatar_url || undefined} />
-                  <AvatarFallback className="text-[10px] sm:text-xs">
-                    {displayName[0].toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="min-w-0 flex-1">
-                  <p className="font-semibold text-xs sm:text-sm md:text-sm truncate">{displayName}</p>
-                  <p className="text-[10px] sm:text-xs md:text-xs text-muted-foreground">
-                    {formatDistanceToNow(new Date(outfit.created_at), { addSuffix: true })}
-                  </p>
+              {/* User info with enhanced styling */}
+              <Card className="p-2 sm:p-3 bg-gradient-to-br from-background to-muted/30 border-0 shadow-sm">
+                <div className="flex items-center gap-2">
+                  <Avatar className="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 ring-2 ring-background shadow-md">
+                    <AvatarImage src={outfit.user.avatar_url || undefined} />
+                    <AvatarFallback className="bg-gradient-to-br from-[hsl(var(--azyah-maroon))] to-[hsl(var(--azyah-maroon))]/80 text-white text-[10px] sm:text-xs font-bold">
+                      {displayName[0].toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold text-xs sm:text-sm md:text-sm truncate">{displayName}</p>
+                    <p className="text-[10px] sm:text-xs md:text-xs text-muted-foreground">
+                      {formatDistanceToNow(new Date(outfit.created_at), { addSuffix: true })}
+                    </p>
+                  </div>
                 </div>
-              </div>
+              </Card>
 
               {/* Title - hidden on mobile to save space */}
               {outfit.title && (
@@ -385,14 +390,14 @@ export default function PublicOutfitView() {
 
         {/* CTA section */}
         <div className="container max-w-screen-md mx-auto px-4 mt-8">
-          <div className="p-4 bg-muted/50 rounded-xl text-center">
-            <p className="text-sm text-muted-foreground mb-3">
+          <Card className="p-6 bg-gradient-to-br from-[hsl(var(--azyah-maroon))]/5 via-background to-muted/30 border-0 text-center">
+            <p className="text-sm text-muted-foreground mb-4">
               Want to create outfits like this?
             </p>
-            <Button onClick={() => navigate('/onboarding/signup')}>
+            <Button onClick={() => navigate('/onboarding/signup')} className="bg-[hsl(var(--azyah-maroon))] hover:bg-[hsl(var(--azyah-maroon))]/90">
               Join Azyah
             </Button>
-          </div>
+          </Card>
         </div>
       </div>
     </>
