@@ -399,7 +399,7 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
     }
   };
 
-  console.log('TrendingProductsCarousel render:', { 
+  logger.log('TrendingProductsCarousel render:', { 
     isLoading, 
     error, 
     productsCount: trendingProducts?.length,
@@ -431,7 +431,7 @@ const TrendingStylesCarousel: React.FC<TrendingStylesCarouselProps> = ({ limit =
   }
 
   if (error) {
-    console.error('TrendingProductsCarousel error:', error);
+    logger.error('TrendingProductsCarousel error:', error);
     return (
       <div className="text-center py-8">
         <p className="text-muted-foreground">Error loading products. Please try again.</p>
