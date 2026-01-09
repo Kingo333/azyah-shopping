@@ -63,8 +63,8 @@ const CategoryGrid: React.FC<CategoryGridProps> = ({
         )}
       </div>
       
-      {/* 2x2 Grid */}
-      <div className="grid grid-cols-2 gap-3 md:gap-4">
+      {/* Responsive Grid: 2 cols mobile, 4 cols tablet+ */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
         {CATEGORIES.map(category => (
           <CategoryCard 
             key={category.slug}
