@@ -4,6 +4,7 @@ import useEmblaCarousel from 'embla-carousel-react';
 import Autoplay from 'embla-carousel-autoplay';
 import { useProfileCompletion } from '@/hooks/useProfileCompletion';
 import { useAuth } from '@/contexts/AuthContext';
+import { isGuestMode } from '@/hooks/useGuestMode';
 import { ProfileCompletionCard } from './ProfileCompletionCard';
 import { QuickSearchCard } from './QuickSearchCard';
 import { PointsSummaryCard } from './PointsSummaryCard';
@@ -35,6 +36,7 @@ export function DashboardTopCarousel({
   const { percentage, isComplete, isLoading } = useProfileCompletion();
   const [isDismissed, setIsDismissed] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const isGuest = isGuestMode();
 
   // Check if banner was dismissed recently
   useEffect(() => {
@@ -139,8 +141,9 @@ export function DashboardTopCarousel({
     }
   }, [emblaApi, slides.length]);
 
-  // If no slides to show, just show StyleLinkCard
+  // If no slides to show, just show StyleLinkCard (only for non-guests)
   if (slides.length === 0) {
+    if (isGuest) return null;
     return (
       <div className="px-4 pt-4">
         <div className="max-w-md">
@@ -150,17 +153,19 @@ export function DashboardTopCarousel({
     );
   }
 
-  // If only one slide, show it alongside StyleLinkCard
+  // If only one slide, show it alongside StyleLinkCard (if not guest)
   // Stack on mobile, side-by-side on desktop
   if (slides.length === 1) {
     return (
       <div className="px-4 pt-4 flex flex-col md:flex-row gap-3">
-        <div className="w-full md:flex-1">
+        <div className={isGuest ? "w-full" : "w-full md:flex-1"}>
           {slides[0].component}
         </div>
-        <div className="w-full md:w-auto md:min-w-[280px] md:max-w-[320px]">
-          <StyleLinkCard />
-        </div>
+        {!isGuest && (
+          <div className="w-full md:w-auto md:min-w-[280px] md:max-w-[320px]">
+            <StyleLinkCard />
+          </div>
+        )}
       </div>
     );
   }
@@ -204,10 +209,12 @@ export function DashboardTopCarousel({
           )}
         </div>
 
-        {/* Fixed Style Link card - full width on mobile, fixed width on desktop */}
-        <div className="w-full md:w-auto md:min-w-[280px] md:max-w-[320px] flex items-center">
-          <StyleLinkCard />
-        </div>
+        {/* Fixed Style Link card - full width on mobile, fixed width on desktop (hidden for guests) */}
+        {!isGuest && (
+          <div className="w-full md:w-auto md:min-w-[280px] md:max-w-[320px] flex items-center">
+            <StyleLinkCard />
+          </div>
+        )}
       </div>
     </div>
   );
