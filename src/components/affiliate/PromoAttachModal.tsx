@@ -8,7 +8,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
-import { Check, AlertCircle } from 'lucide-react';
+import { Check, AlertCircle, X } from 'lucide-react';
 import {
   useMyOutfitsWithPromoStatus,
   useAttachPromoToOutfits,
@@ -64,6 +64,11 @@ export function PromoAttachModal({ promo, isOpen, onClose }: PromoAttachModalPro
     return `https://klwolsopucgswhtdlsps.supabase.co/storage/v1/object/public/outfit-renders/${preview}`;
   };
 
+  // Get initial attached outfits for comparison
+  const initialAttached = outfits
+    ?.filter(o => o.attached_promo_id === promo.promo_id)
+    .map(o => o.outfit_id) || [];
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-md max-h-[80vh] flex flex-col">
@@ -71,6 +76,9 @@ export function PromoAttachModal({ promo, isOpen, onClose }: PromoAttachModalPro
           <DialogTitle className="text-base">
             Attach "{promo.promo_name || promo.affiliate_code || 'Promo'}" to Outfits
           </DialogTitle>
+          <p className="text-xs text-muted-foreground mt-1">
+            Tap to select or deselect outfits. Deselected outfits will be un-attached.
+          </p>
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto py-2">
@@ -86,7 +94,9 @@ export function PromoAttachModal({ promo, isOpen, onClose }: PromoAttachModalPro
             <div className="grid grid-cols-2 gap-2">
               {publicOutfits.map((outfit) => {
                 const isSelected = selectedOutfits.has(outfit.outfit_id);
+                const wasAttached = initialAttached.includes(outfit.outfit_id);
                 const hasOtherPromo = outfit.attached_promo_id && outfit.attached_promo_id !== promo.promo_id;
+                const willBeUnattached = wasAttached && !isSelected;
                 
                 return (
                   <div
@@ -94,6 +104,8 @@ export function PromoAttachModal({ promo, isOpen, onClose }: PromoAttachModalPro
                     className={`relative rounded-lg border-2 overflow-hidden cursor-pointer transition-all ${
                       isSelected 
                         ? 'border-[hsl(var(--azyah-maroon))] ring-2 ring-[hsl(var(--azyah-maroon))]/20' 
+                        : willBeUnattached
+                        ? 'border-destructive/50 bg-destructive/5'
                         : 'border-transparent hover:border-muted-foreground/30'
                     }`}
                     onClick={() => toggleOutfit(outfit.outfit_id)}
@@ -102,7 +114,7 @@ export function PromoAttachModal({ promo, isOpen, onClose }: PromoAttachModalPro
                       <img
                         src={getOutfitImage(outfit.image_preview)}
                         alt={outfit.title}
-                        className="w-full h-full object-cover"
+                        className={`w-full h-full object-cover ${willBeUnattached ? 'opacity-50' : ''}`}
                       />
                     </div>
                     
@@ -119,10 +131,24 @@ export function PromoAttachModal({ promo, isOpen, onClose }: PromoAttachModalPro
                       </div>
                     )}
                     
+                    {willBeUnattached && (
+                      <div className="absolute top-2 right-2 bg-destructive rounded-full p-0.5">
+                        <X className="h-3 w-3 text-white" />
+                      </div>
+                    )}
+                    
                     {hasOtherPromo && (
                       <div className="absolute bottom-0 left-0 right-0 bg-amber-500/90 px-2 py-1">
                         <p className="text-[9px] text-white truncate">
                           Has: {outfit.attached_promo_name || 'Another promo'}
+                        </p>
+                      </div>
+                    )}
+                    
+                    {willBeUnattached && !hasOtherPromo && (
+                      <div className="absolute bottom-0 left-0 right-0 bg-destructive/90 px-2 py-1">
+                        <p className="text-[9px] text-white truncate">
+                          Will be un-attached
                         </p>
                       </div>
                     )}
@@ -144,9 +170,9 @@ export function PromoAttachModal({ promo, isOpen, onClose }: PromoAttachModalPro
           <Button 
             className="flex-1 bg-[hsl(var(--azyah-maroon))] hover:bg-[hsl(var(--azyah-maroon))]/90"
             onClick={handleSave}
-            disabled={attachPromo.isPending || selectedOutfits.size === 0}
+            disabled={attachPromo.isPending}
           >
-            {attachPromo.isPending ? 'Saving...' : `Attach to ${selectedOutfits.size} Outfit${selectedOutfits.size !== 1 ? 's' : ''}`}
+            {attachPromo.isPending ? 'Saving...' : selectedOutfits.size === 0 ? 'Un-attach All' : `Save (${selectedOutfits.size} selected)`}
           </Button>
         </div>
       </DialogContent>

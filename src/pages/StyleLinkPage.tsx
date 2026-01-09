@@ -6,6 +6,7 @@ import { useStyleLinkStats, useLogStyleLinkEvent } from '@/hooks/useStyleLinkAna
 import { StyleLinkModal } from '@/components/StyleLinkModal';
 import { DealsAndCodesCenter } from '@/components/affiliate/DealsAndCodesCenter';
 import { PublicPromoSection } from '@/components/affiliate/PublicPromoSection';
+import { StyleLinkTutorial } from '@/components/StyleLinkTutorial';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card } from '@/components/ui/card';
@@ -236,45 +237,50 @@ export default function StyleLinkPage() {
       />
 
       <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/20 pb-8">
-        {/* Hero Header */}
+        {/* Hero Header - Compact */}
         <div className="relative overflow-hidden">
           {/* Background decorative elements */}
           <div className="absolute inset-0 bg-gradient-to-br from-[hsl(var(--azyah-maroon))]/8 via-transparent to-[hsl(var(--azyah-maroon))]/5" />
-          <div className="absolute top-0 right-0 w-64 h-64 bg-[hsl(var(--azyah-maroon))]/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-          <div className="absolute bottom-0 left-0 w-48 h-48 bg-[hsl(var(--azyah-maroon))]/5 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
+          <div className="absolute top-0 right-0 w-48 h-48 bg-[hsl(var(--azyah-maroon))]/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+          <div className="absolute bottom-0 left-0 w-36 h-36 bg-[hsl(var(--azyah-maroon))]/5 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
           
-          <div className="relative pt-12 pb-8 px-4">
-            {/* Back button for owner (not in preview mode) */}
+          <div className="relative pt-10 pb-6 px-4">
+            {/* Back button and Tutorial for owner (not in preview mode) */}
             {effectiveIsOwner && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleBack}
-                className="absolute top-4 left-4 gap-1 text-muted-foreground hover:text-foreground backdrop-blur-sm bg-background/50 rounded-full"
-              >
-                <ArrowLeft className="h-4 w-4" />
-                Back
-              </Button>
+              <div className="absolute top-3 left-3 right-3 flex items-center justify-between">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleBack}
+                  className="gap-1 text-muted-foreground hover:text-foreground backdrop-blur-sm bg-background/50 rounded-full h-8 text-xs"
+                >
+                  <ArrowLeft className="h-3.5 w-3.5" />
+                  Back
+                </Button>
+                <div className="backdrop-blur-sm bg-background/50 rounded-full">
+                  <StyleLinkTutorial isOwner={effectiveIsOwner} />
+                </div>
+              </div>
             )}
             
             <div className="max-w-lg mx-auto text-center">
-              {/* Avatar with glow effect */}
-              <div className="relative inline-block mb-4">
-                <div className="absolute inset-0 bg-[hsl(var(--azyah-maroon))]/20 rounded-full blur-xl scale-110" />
-                <Avatar className="relative h-24 w-24 ring-4 ring-background shadow-xl">
+              {/* Avatar with glow effect - 20% smaller */}
+              <div className="relative inline-block mb-3">
+                <div className="absolute inset-0 bg-[hsl(var(--azyah-maroon))]/20 rounded-full blur-lg scale-110" />
+                <Avatar className="relative h-20 w-20 ring-3 ring-background shadow-lg">
                   <AvatarImage src={userData.avatar_url || undefined} alt={userData.name || displayUsername} />
-                  <AvatarFallback className="bg-gradient-to-br from-[hsl(var(--azyah-maroon))] to-[hsl(var(--azyah-maroon))]/80 text-white text-xl font-bold">
+                  <AvatarFallback className="bg-gradient-to-br from-[hsl(var(--azyah-maroon))] to-[hsl(var(--azyah-maroon))]/80 text-white text-lg font-bold">
                     {getInitials(userData.name)}
                   </AvatarFallback>
                 </Avatar>
               </div>
               
-              <h1 className="text-2xl font-bold tracking-tight">{userData.name || displayUsername}</h1>
+              <h1 className="text-xl font-bold tracking-tight">{userData.name || displayUsername}</h1>
               {userData.username && (
-                <p className="text-sm text-muted-foreground mt-0.5">@{userData.username}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">@{userData.username}</p>
               )}
               {userData.bio && (
-                <p className="text-sm text-muted-foreground mt-3 max-w-xs mx-auto leading-relaxed">{userData.bio}</p>
+                <p className="text-xs text-muted-foreground mt-2 max-w-xs mx-auto leading-relaxed">{userData.bio}</p>
               )}
 
             {/* Owner Controls - Compact Icon Buttons */}
@@ -326,27 +332,27 @@ export default function StyleLinkPage() {
                   </div>
                 )}
                 <TooltipProvider>
-                  <div className="flex justify-center gap-1.5 mt-4">
+                  <div className="flex justify-center gap-1 mt-3">
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Button variant="outline" size="icon" className="h-8 w-8" onClick={handleCopyLink}>
-                          <Copy className="h-4 w-4" />
+                        <Button variant="outline" size="icon" className="h-7 w-7" onClick={handleCopyLink}>
+                          <Copy className="h-3.5 w-3.5" />
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent>Copy link</TooltipContent>
                     </Tooltip>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Button variant="outline" size="icon" className="h-8 w-8" onClick={handleShare}>
-                          <Share2 className="h-4 w-4" />
+                        <Button variant="outline" size="icon" className="h-7 w-7" onClick={handleShare}>
+                          <Share2 className="h-3.5 w-3.5" />
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent>Share</TooltipContent>
                     </Tooltip>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setShowQRModal(true)}>
-                          <QrCode className="h-4 w-4" />
+                        <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => setShowQRModal(true)}>
+                          <QrCode className="h-3.5 w-3.5" />
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent>Show QR Code</TooltipContent>
