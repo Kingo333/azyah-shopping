@@ -90,26 +90,26 @@ export function StyleLinkCard() {
   const isSettingUp = profileLoading || ensureUsernameMutation.isPending || !effectiveHandle;
 
   return (
-    <div className="h-full rounded-xl border bg-gradient-to-br from-[hsl(var(--azyah-maroon))]/5 via-background to-[hsl(var(--azyah-maroon))]/10 p-2 flex items-center gap-2">
-      <Avatar className="h-8 w-8 ring-1 ring-[hsl(var(--azyah-maroon))]/20 flex-shrink-0">
+    <div className="w-full rounded-xl border bg-gradient-to-br from-[hsl(var(--azyah-maroon))]/5 via-background to-[hsl(var(--azyah-maroon))]/10 p-3 md:p-4 flex items-center gap-3">
+      <Avatar className="h-8 w-8 md:h-9 md:w-9 ring-1 ring-[hsl(var(--azyah-maroon))]/20 flex-shrink-0">
         <AvatarImage src={userProfile?.avatar_url || undefined} />
-        <AvatarFallback className="bg-[hsl(var(--azyah-maroon))]/10 text-[hsl(var(--azyah-maroon))] text-xs">
+        <AvatarFallback className="bg-[hsl(var(--azyah-maroon))]/10 text-[hsl(var(--azyah-maroon))] text-xs md:text-sm">
           {getInitials(displayName)}
         </AvatarFallback>
       </Avatar>
       <div className="min-w-0 flex-1">
-        <p className="text-xs font-medium truncate">{displayName}</p>
-        <p className="text-[10px] text-muted-foreground truncate">
+        <p className="text-sm md:text-base font-medium truncate">{displayName}</p>
+        <p className="text-xs text-muted-foreground truncate">
           {effectiveHandle ? `@${effectiveHandle}` : 'Setting up...'}
         </p>
       </div>
       <Button
         size="sm"
-        className="h-7 px-2.5 text-[10px] bg-[hsl(var(--azyah-maroon))] hover:bg-[hsl(var(--azyah-maroon))]/90 flex-shrink-0"
+        className="h-8 md:h-9 px-3 text-xs bg-[hsl(var(--azyah-maroon))] hover:bg-[hsl(var(--azyah-maroon))]/90 flex-shrink-0"
         onClick={handleViewMyPage}
         disabled={isSettingUp}
       >
-        <User className="h-3 w-3 mr-1" />
+        <User className="h-3.5 w-3.5 mr-1.5" />
         View
       </Button>
     </div>
