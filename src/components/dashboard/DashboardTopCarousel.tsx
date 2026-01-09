@@ -157,12 +157,12 @@ export function DashboardTopCarousel({
   // Stack on mobile, side-by-side on desktop
   if (slides.length === 1) {
     return (
-      <div className="px-4 pt-4 flex flex-col sm:flex-row gap-3">
-        <div className={isGuest ? "w-full" : "w-full sm:flex-1"}>
+      <div className="px-4 pt-4 flex flex-col lg:flex-row gap-3">
+        <div className={isGuest ? "w-full" : "w-full lg:flex-1"}>
           {slides[0].component}
         </div>
         {!isGuest && (
-          <div className="w-full sm:w-auto sm:min-w-[260px] sm:max-w-[300px] md:min-w-[280px] md:max-w-[320px]">
+          <div className="w-full lg:w-auto lg:min-w-[280px] lg:max-w-[320px]">
             <StyleLinkCard />
           </div>
         )}
@@ -172,10 +172,10 @@ export function DashboardTopCarousel({
 
   return (
     <div className="px-4 pt-4">
-      {/* Stack on mobile, side-by-side on tablet and desktop */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        {/* Carousel section - full width on mobile, flexible on tablet/desktop */}
-        <div className="w-full sm:flex-1">
+      {/* Stack on mobile/tablet, side-by-side on desktop */}
+      <div className="flex flex-col lg:flex-row gap-3">
+        {/* Carousel section - full width on mobile/tablet, flexible on desktop */}
+        <div className="w-full lg:flex-1">
           <div className="overflow-hidden" ref={emblaRef}>
             <div className="flex gap-3">
               {slides.map((slide) => (
@@ -209,9 +209,9 @@ export function DashboardTopCarousel({
           )}
         </div>
 
-        {/* Fixed Style Link card - shows on all screen sizes for logged-in users */}
+        {/* Fixed Style Link card - full width on mobile/tablet, fixed width on desktop */}
         {!isGuest && (
-          <div className="w-full sm:w-auto sm:min-w-[260px] sm:max-w-[300px] md:min-w-[280px] md:max-w-[320px] flex items-center">
+          <div className="w-full lg:w-auto lg:min-w-[280px] lg:max-w-[320px] flex items-center">
             <StyleLinkCard />
           </div>
         )}
