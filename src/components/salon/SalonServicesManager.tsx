@@ -14,6 +14,7 @@ import { Plus, Edit, Trash2, Clock, Sparkles, Scissors, Palette, Heart, Loader2 
 
 interface SalonServicesManagerProps {
   salonId: string;
+  currency?: string;
 }
 
 const SERVICE_CATEGORIES = [
@@ -27,7 +28,7 @@ const SERVICE_CATEGORIES = [
 
 type ServiceCategory = typeof SERVICE_CATEGORIES[number]['value'];
 
-export const SalonServicesManager: React.FC<SalonServicesManagerProps> = ({ salonId }) => {
+export const SalonServicesManager: React.FC<SalonServicesManagerProps> = ({ salonId, currency = 'AED' }) => {
   const { data: services = [], isLoading } = useSalonServices(salonId);
   const { createService, updateService, deleteService } = useSalonServiceMutations(salonId);
   
