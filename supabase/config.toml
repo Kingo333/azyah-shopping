@@ -2,3 +2,6 @@ project_id = "klwolsopucgswhtdlsps"
 
 [functions.share-meta]
 verify_jwt = false
+
+[functions.refresh-fx-rates]
+verify_jwt = false

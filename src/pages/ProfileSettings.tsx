@@ -8,11 +8,12 @@ import { BackButton } from '@/components/ui/back-button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/hooks/useSubscription';
 import { supabase } from '@/integrations/supabase/client';
-import { Trash2, Upload, Instagram, Twitter, Globe, Music, Crown, CreditCard, Calendar, LogOut, Users, Sparkles, TrendingUp, Gift, Check, ChevronsUpDown, Copy, Share2, ChevronDown, User, Link2, Lock } from 'lucide-react';
+import { Trash2, Upload, Instagram, Twitter, Globe, Music, Crown, CreditCard, Calendar, LogOut, Users, Sparkles, TrendingUp, Gift, Check, ChevronsUpDown, Copy, Share2, ChevronDown, User, Link2, Lock, DollarSign } from 'lucide-react';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { COUNTRIES } from '@/lib/countries';
@@ -20,7 +21,8 @@ import { CITIES } from '@/lib/cities';
 import { useNavigate } from 'react-router-dom';
 import { useUserReferralCode, useReferralStats, shareReferralCode, copyReferralCode } from '@/hooks/useReferrals';
 import { cn } from '@/lib/utils';
-
+import { SUPPORTED_CURRENCIES } from '@/lib/currencies';
+import { getCurrencyForCountry, getCountryCodeFromName } from '@/lib/countryCurrency';
 interface ProfileData {
   name: string;
   username: string;
@@ -28,6 +30,7 @@ interface ProfileData {
   country: string;
   city: string;
   avatar_url: string;
+  preferred_currency: string;
   socials: {
     instagram?: string;
     instagram_followers?: number;
@@ -52,12 +55,14 @@ const ProfileSettings: React.FC = () => {
   // Section open states
   const [personalInfoOpen, setPersonalInfoOpen] = useState(false);
   const [socialLinksOpen, setSocialLinksOpen] = useState(false);
+  const [shoppingPrefsOpen, setShoppingPrefsOpen] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [subscriptionOpen, setSubscriptionOpen] = useState(false);
   
   // Loading states for each section
   const [savingPersonalInfo, setSavingPersonalInfo] = useState(false);
   const [savingSocialLinks, setSavingSocialLinks] = useState(false);
+  const [savingShoppingPrefs, setSavingShoppingPrefs] = useState(false);
   
   // Referral system hooks
   const { data: referralCode } = useUserReferralCode();
@@ -69,6 +74,7 @@ const ProfileSettings: React.FC = () => {
     country: '',
     city: '',
     avatar_url: '',
+    preferred_currency: '',
     socials: {}
   });
   const [countryOpen, setCountryOpen] = useState(false);
@@ -103,6 +109,7 @@ const ProfileSettings: React.FC = () => {
           country: data.country || '',
           city: (data as any).city || '',
           avatar_url: data.avatar_url || '',
+          preferred_currency: data.preferred_currency || '',
           socials: (typeof data.socials === 'object' && data.socials !== null) ? data.socials as any : {}
         });
       }
@@ -266,6 +273,48 @@ const ProfileSettings: React.FC = () => {
     if (profileData.socials.tiktok) links.push('TikTok');
     if (profileData.socials.website) links.push('Website');
     return links.length > 0 ? links.join(', ') : 'No social links added';
+  };
+
+  const getShoppingPrefsSummary = () => {
+    if (profileData.preferred_currency) {
+      const currency = SUPPORTED_CURRENCIES.find(c => c.code === profileData.preferred_currency);
+      return `Currency: ${currency?.name || profileData.preferred_currency}`;
+    }
+    if (profileData.country) {
+      const code = getCountryCodeFromName(profileData.country);
+      const autoCurrency = getCurrencyForCountry(code || '');
+      return `Currency: Auto (${autoCurrency})`;
+    }
+    return 'Set your display currency';
+  };
+
+  const saveShoppingPrefs = async () => {
+    if (!user) return;
+    setSavingShoppingPrefs(true);
+    try {
+      const { error } = await supabase
+        .from('users')
+        .update({
+          preferred_currency: profileData.preferred_currency || null,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', user.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Preferences Updated",
+        description: "Your shopping preferences have been saved."
+      });
+    } catch (error: any) {
+      toast({
+        title: "Update Failed",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setSavingShoppingPrefs(false);
+    }
   };
 
   return (
@@ -671,6 +720,62 @@ const ProfileSettings: React.FC = () => {
 
               <Button onClick={saveSocialLinks} disabled={savingSocialLinks} className="w-full">
                 {savingSocialLinks ? 'Saving...' : 'Save Social Links'}
+              </Button>
+            </CollapsibleContent>
+          </Collapsible>
+
+          {/* Shopping Preferences - Collapsible */}
+          <Collapsible open={shoppingPrefsOpen} onOpenChange={setShoppingPrefsOpen}>
+            <CollapsibleTrigger asChild>
+              <div className="flex items-center justify-between p-4 cursor-pointer hover:bg-muted/50 rounded-lg border bg-card transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    <DollarSign className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="font-medium">Shopping Preferences</h3>
+                    <p className="text-sm text-muted-foreground">{getShoppingPrefsSummary()}</p>
+                  </div>
+                </div>
+                <ChevronDown className={cn("h-5 w-5 text-muted-foreground transition-transform", shoppingPrefsOpen && "rotate-180")} />
+              </div>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="px-4 pb-4 pt-2 border border-t-0 rounded-b-lg bg-card -mt-2 space-y-4">
+              <div className="space-y-2">
+                <Label>Preferred Currency</Label>
+                <p className="text-xs text-muted-foreground">
+                  All prices will be shown in this currency
+                </p>
+                <Select 
+                  value={profileData.preferred_currency || 'auto'} 
+                  onValueChange={(v) => handleInputChange('preferred_currency', v === 'auto' ? '' : v)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Auto (based on country)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="auto">
+                      <div className="flex items-center gap-2">
+                        <Globe className="h-4 w-4" />
+                        <span>Auto (based on country)</span>
+                      </div>
+                    </SelectItem>
+                    {SUPPORTED_CURRENCIES.map(c => (
+                      <SelectItem key={c.code} value={c.code}>
+                        <span>{c.symbol} {c.name} ({c.code})</span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {!profileData.preferred_currency && profileData.country && (
+                  <p className="text-xs text-muted-foreground italic">
+                    Currently using {getCurrencyForCountry(getCountryCodeFromName(profileData.country) || '')} based on your country
+                  </p>
+                )}
+              </div>
+              
+              <Button onClick={saveShoppingPrefs} disabled={savingShoppingPrefs} className="w-full">
+                {savingShoppingPrefs ? 'Saving...' : 'Save Preferences'}
               </Button>
             </CollapsibleContent>
           </Collapsible>
