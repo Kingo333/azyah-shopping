@@ -21,6 +21,8 @@ interface PromoAttachModalProps {
   onClose: () => void;
 }
 
+const MAX_PROMOS_PER_OUTFIT = 4;
+
 export function PromoAttachModal({ promo, isOpen, onClose }: PromoAttachModalProps) {
   const { data: outfits, isLoading } = useMyOutfitsWithPromoStatus();
   const attachPromo = useAttachPromoToOutfits();
@@ -32,18 +34,22 @@ export function PromoAttachModal({ promo, isOpen, onClose }: PromoAttachModalPro
   useEffect(() => {
     if (outfits) {
       const alreadyAttached = outfits
-        .filter(o => o.attached_promo_id === promo.promo_id)
+        .filter(o => o.attached_promo_ids?.includes(promo.promo_id))
         .map(o => o.outfit_id);
       setSelectedOutfits(new Set(alreadyAttached));
     }
   }, [outfits, promo.promo_id]);
 
-  const toggleOutfit = (outfitId: string) => {
+  const toggleOutfit = (outfitId: string, currentPromoCount: number) => {
     setSelectedOutfits(prev => {
       const next = new Set(prev);
       if (next.has(outfitId)) {
         next.delete(outfitId);
       } else {
+        // Check if outfit already has max promos (excluding this promo if already attached)
+        if (currentPromoCount >= MAX_PROMOS_PER_OUTFIT) {
+          return prev; // Don't allow adding more
+        }
         next.add(outfitId);
       }
       return next;
@@ -66,7 +72,7 @@ export function PromoAttachModal({ promo, isOpen, onClose }: PromoAttachModalPro
 
   // Get initial attached outfits for comparison
   const initialAttached = outfits
-    ?.filter(o => o.attached_promo_id === promo.promo_id)
+    ?.filter(o => o.attached_promo_ids?.includes(promo.promo_id))
     .map(o => o.outfit_id) || [];
 
   return (
@@ -77,7 +83,7 @@ export function PromoAttachModal({ promo, isOpen, onClose }: PromoAttachModalPro
             Attach "{promo.promo_name || promo.affiliate_code || 'Promo'}" to Outfits
           </DialogTitle>
           <p className="text-xs text-muted-foreground mt-1">
-            Tap once to select/unselect. Click Save to apply changes.
+            Up to {MAX_PROMOS_PER_OUTFIT} codes per outfit. Tap to select/unselect.
           </p>
         </DialogHeader>
 
@@ -95,20 +101,27 @@ export function PromoAttachModal({ promo, isOpen, onClose }: PromoAttachModalPro
               {publicOutfits.map((outfit) => {
                 const isSelected = selectedOutfits.has(outfit.outfit_id);
                 const wasAttached = initialAttached.includes(outfit.outfit_id);
-                const hasOtherPromo = outfit.attached_promo_id && outfit.attached_promo_id !== promo.promo_id;
+                const promoCount = outfit.attached_promo_ids?.length || 0;
+                const isThisPromoAttached = outfit.attached_promo_ids?.includes(promo.promo_id);
+                const otherPromoCount = isThisPromoAttached ? promoCount - 1 : promoCount;
+                const isAtMax = otherPromoCount >= MAX_PROMOS_PER_OUTFIT;
                 const willBeUnattached = wasAttached && !isSelected;
                 
                 return (
                   <div
                     key={outfit.outfit_id}
-                    className={`relative rounded-lg border-2 overflow-hidden cursor-pointer transition-all ${
+                    className={`relative rounded-lg border-2 overflow-hidden transition-all ${
+                      isAtMax && !isSelected
+                        ? 'opacity-50 cursor-not-allowed'
+                        : 'cursor-pointer'
+                    } ${
                       isSelected 
                         ? 'border-[hsl(var(--azyah-maroon))] ring-2 ring-[hsl(var(--azyah-maroon))]/20' 
                         : willBeUnattached
                         ? 'border-destructive/50 bg-destructive/5'
                         : 'border-transparent hover:border-muted-foreground/30'
                     }`}
-                    onClick={() => toggleOutfit(outfit.outfit_id)}
+                    onClick={() => !isAtMax || isSelected ? toggleOutfit(outfit.outfit_id, otherPromoCount) : null}
                   >
                     <div className="aspect-square bg-muted">
                       <img
@@ -122,6 +135,7 @@ export function PromoAttachModal({ promo, isOpen, onClose }: PromoAttachModalPro
                       <Checkbox
                         checked={isSelected}
                         className="bg-background/80"
+                        disabled={isAtMax && !isSelected}
                       />
                     </div>
                     
@@ -137,15 +151,27 @@ export function PromoAttachModal({ promo, isOpen, onClose }: PromoAttachModalPro
                       </div>
                     )}
                     
-                    {hasOtherPromo && (
-                      <div className="absolute bottom-0 left-0 right-0 bg-amber-500/90 px-2 py-1">
+                    {/* Show promo count badge */}
+                    {promoCount > 0 && !isSelected && (
+                      <div className="absolute top-2 right-2">
+                        <Badge 
+                          variant={isAtMax ? "destructive" : "secondary"} 
+                          className="text-[9px] px-1 py-0"
+                        >
+                          {promoCount}/{MAX_PROMOS_PER_OUTFIT}
+                        </Badge>
+                      </div>
+                    )}
+                    
+                    {isAtMax && !isSelected && (
+                      <div className="absolute bottom-0 left-0 right-0 bg-destructive/90 px-2 py-1">
                         <p className="text-[9px] text-white truncate">
-                          Has: {outfit.attached_promo_name || 'Another promo'}
+                          Max {MAX_PROMOS_PER_OUTFIT} codes reached
                         </p>
                       </div>
                     )}
                     
-                    {willBeUnattached && !hasOtherPromo && (
+                    {willBeUnattached && (
                       <div className="absolute bottom-0 left-0 right-0 bg-destructive/90 px-2 py-1">
                         <p className="text-[9px] text-white truncate">
                           Will be un-attached

@@ -22,8 +22,8 @@ export interface OutfitWithPromoStatus {
   share_slug: string | null;
   image_preview: string | null;
   is_public: boolean;
-  attached_promo_id: string | null;
-  attached_promo_name: string | null;
+  attached_promo_ids: string[] | null;
+  attached_promo_names: string[] | null;
 }
 
 export interface PublicDeal {
@@ -98,7 +98,7 @@ export function usePublicDeals(username: string | undefined) {
   });
 }
 
-// Hook: Get deal for a specific outfit (for public outfit page)
+// Hook: Get deal for a specific outfit (for public outfit page) - single deal (backward compat)
 export function useOutfitDeal(slug: string | undefined) {
   return useQuery({
     queryKey: ['outfit-deal', slug],
@@ -109,6 +109,23 @@ export function useOutfitDeal(slug: string | undefined) {
       });
       if (error) throw error;
       return data && data.length > 0 ? (data[0] as OutfitDeal) : null;
+    },
+    enabled: !!slug,
+  });
+}
+
+// Hook: Get all deals for a specific outfit (up to 4)
+export function useOutfitDeals(slug: string | undefined) {
+  return useQuery({
+    queryKey: ['outfit-deals', slug],
+    queryFn: async (): Promise<OutfitDeal[]> => {
+      if (!slug) return [];
+      // Use type assertion since new RPC function may not be in generated types yet
+      const { data, error } = await (supabase.rpc as any)('get_public_deals_for_outfit_slug', {
+        p_slug: slug
+      });
+      if (error) throw error;
+      return (data || []) as OutfitDeal[];
     },
     enabled: !!slug,
   });
@@ -208,40 +225,62 @@ export function useDeletePromo() {
   });
 }
 
-// Mutation: Attach promo to outfits (replaces any existing attachment)
+// Mutation: Attach promo to outfits (now allows up to 4 promos per outfit)
 export function useAttachPromoToOutfits() {
   const queryClient = useQueryClient();
   
   return useMutation({
     mutationFn: async (data: { promo_id: string; outfit_ids: string[] }) => {
-      // For each outfit, we need to:
-      // 1. Delete any existing attachment (due to unique constraint)
-      // 2. Insert the new attachment
-      for (const outfit_id of data.outfit_ids) {
-        // Delete existing attachment if any
-        await supabase
+      // First, get all current attachments for this promo
+      const { data: existingAttachments } = await supabase
+        .from('affiliate_promo_outfits')
+        .select('outfit_id')
+        .eq('promo_id', data.promo_id);
+      
+      const currentOutfitIds = new Set(existingAttachments?.map(a => a.outfit_id) || []);
+      const newOutfitIds = new Set(data.outfit_ids);
+      
+      // Find outfits to remove (were attached, now not in selection)
+      const toRemove = [...currentOutfitIds].filter(id => !newOutfitIds.has(id));
+      
+      // Find outfits to add (not currently attached, now in selection)
+      const toAdd = [...newOutfitIds].filter(id => !currentOutfitIds.has(id));
+      
+      // Remove unselected attachments
+      if (toRemove.length > 0) {
+        const { error: deleteError } = await supabase
           .from('affiliate_promo_outfits')
           .delete()
-          .eq('outfit_id', outfit_id);
-        
-        // Insert new attachment
-        const { error } = await supabase
+          .eq('promo_id', data.promo_id)
+          .in('outfit_id', toRemove);
+        if (deleteError) throw deleteError;
+      }
+      
+      // Add new attachments
+      if (toAdd.length > 0) {
+        const { error: insertError } = await supabase
           .from('affiliate_promo_outfits')
-          .insert({
+          .insert(toAdd.map(outfit_id => ({
             promo_id: data.promo_id,
-            outfit_id: outfit_id,
-          });
-        if (error) throw error;
+            outfit_id,
+          })));
+        if (insertError) {
+          if (insertError.message?.includes('Maximum 4 promo codes')) {
+            throw new Error('One or more outfits already have 4 promo codes attached');
+          }
+          throw insertError;
+        }
       }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['my-affiliate-promos'] });
       queryClient.invalidateQueries({ queryKey: ['my-outfits-promo-status'] });
+      queryClient.invalidateQueries({ queryKey: ['outfit-deals'] });
       toast.success('Promo attached to outfits!');
     },
     onError: (error) => {
       console.error('Failed to attach promo:', error);
-      toast.error('Failed to attach promo');
+      toast.error(error instanceof Error ? error.message : 'Failed to attach promo');
     },
   });
 }
