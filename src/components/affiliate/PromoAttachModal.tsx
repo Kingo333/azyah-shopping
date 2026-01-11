@@ -181,6 +181,19 @@ export function PromoAttachModal({ promo, isOpen, onClose }: PromoAttachModalPro
                     
                     <div className="p-2 bg-background">
                       <p className="text-xs font-medium truncate">{outfit.title}</p>
+                      {/* Yellow tags showing attached promo names */}
+                      {outfit.attached_promo_names && outfit.attached_promo_names.length > 0 && (
+                        <div className="flex flex-wrap gap-0.5 mt-1">
+                          {outfit.attached_promo_names.map((name, i) => (
+                            <Badge 
+                              key={i} 
+                              className="text-[8px] px-1 py-0 bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300 border-0"
+                            >
+                              {name || 'Code'}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
                 );

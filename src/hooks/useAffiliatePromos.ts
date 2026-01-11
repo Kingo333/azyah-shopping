@@ -285,21 +285,23 @@ export function useAttachPromoToOutfits() {
   });
 }
 
-// Mutation: Detach promo from an outfit
+// Mutation: Detach a specific promo from an outfit (not all promos)
 export function useDetachPromoFromOutfit() {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async (outfit_id: string) => {
+    mutationFn: async (data: { promo_id: string; outfit_id: string }) => {
       const { error } = await supabase
         .from('affiliate_promo_outfits')
         .delete()
-        .eq('outfit_id', outfit_id);
+        .eq('promo_id', data.promo_id)
+        .eq('outfit_id', data.outfit_id);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['my-affiliate-promos'] });
       queryClient.invalidateQueries({ queryKey: ['my-outfits-promo-status'] });
+      queryClient.invalidateQueries({ queryKey: ['outfit-deals'] });
       toast.success('Promo detached!');
     },
     onError: (error) => {
