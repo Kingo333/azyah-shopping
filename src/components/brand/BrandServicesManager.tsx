@@ -10,7 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Plus, Edit, Trash2, Briefcase, Loader2, DollarSign, Percent } from 'lucide-react';
+import { TutorialTooltip } from '@/components/ui/tutorial-tooltip';
+import { Plus, Edit, Trash2, Briefcase, Loader2, DollarSign, Percent, HelpCircle } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 interface BrandService {
@@ -214,7 +215,25 @@ export const BrandServicesManager: React.FC<BrandServicesManagerProps> = ({
       <CardHeader>
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
           <div>
-            <CardTitle>Your Services</CardTitle>
+            <div className="flex items-center gap-2">
+              <CardTitle>Your Services</CardTitle>
+              <TutorialTooltip
+                feature="agency-services-tutorial"
+                content={
+                  <div className="space-y-2">
+                    <p className="font-medium">List your marketing services</p>
+                    <ul className="text-sm space-y-1 text-muted-foreground">
+                      <li>• Add services with pricing ranges</li>
+                      <li>• Offer Azyah partner discounts</li>
+                      <li>• Fashion brands can discover and contact you</li>
+                      <li>• Your services appear on your public profile</li>
+                    </ul>
+                  </div>
+                }
+              >
+                <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
+              </TutorialTooltip>
+            </div>
             <p className="text-sm text-muted-foreground mt-1">
               List the services you offer to fashion brands on Azyah
             </p>

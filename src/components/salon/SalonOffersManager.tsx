@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,40 +8,71 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { TutorialTooltip } from '@/components/ui/tutorial-tooltip';
 import { useSalonOffers, useSalonOfferMutations } from '@/hooks/useSalonOwner';
-import { Plus, Edit, Trash2, Percent, Coins, Clock, Loader2, Gift } from 'lucide-react';
+import { Plus, Edit, Trash2, Coins, Clock, Loader2, Gift, Sparkles } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 interface SalonOffersManagerProps {
   salonId: string;
 }
 
-const RECOMMENDED_OFFERS = [
-  { discount: 25, points: 450, label: 'Starter' },
-  { discount: 50, points: 1800, label: 'Popular' },
-  { discount: 60, points: 3000, label: 'Premium' },
+// Improved preset tiers with logical discount-to-points mapping
+const OFFER_PRESETS = [
+  { discount: 10, points: 150, label: 'Light' },
+  { discount: 15, points: 250, label: 'Starter' },
+  { discount: 20, points: 400, label: 'Standard', popular: true },
+  { discount: 25, points: 600, label: 'Value' },
+  { discount: 30, points: 850, label: 'Premium' },
 ];
+
+// Calculate recommended points for a given discount percentage
+const calculateRecommendedPoints = (discountPercent: number): number => {
+  // Formula: roughly discount² × 0.6 with a minimum
+  const calculated = Math.round(discountPercent * discountPercent * 0.6);
+  return Math.max(50, Math.min(10000, calculated));
+};
 
 export const SalonOffersManager: React.FC<SalonOffersManagerProps> = ({ salonId }) => {
   const { data: offers = [], isLoading } = useSalonOffers(salonId);
   const { createOffer, updateOffer, deleteOffer } = useSalonOfferMutations(salonId);
+  const { toast } = useToast();
   
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingOffer, setEditingOffer] = useState<any>(null);
   
   const [formData, setFormData] = useState({
     discount_type: 'PERCENT',
-    discount_value: 25,
-    points_cost: 450,
+    discount_value: 20,
+    points_cost: 400,
     min_spend_aed: 0,
     cooldown_days: 7,
     monthly_cap: 0,
     is_active: true,
   });
   
+  // Calculate recommended points based on current discount
+  const recommendedPoints = useMemo(() => {
+    return calculateRecommendedPoints(formData.discount_value);
+  }, [formData.discount_value]);
+  
+  // Validation
+  const validationError = useMemo(() => {
+    if (formData.discount_value < 1 || formData.discount_value > 100) {
+      return 'Discount must be between 1% and 100%';
+    }
+    if (formData.points_cost < 50) {
+      return 'Points must be at least 50';
+    }
+    if (formData.points_cost > 10000) {
+      return 'Points cannot exceed 10,000';
+    }
+    return null;
+  }, [formData.discount_value, formData.points_cost]);
+  
   const resetForm = () => {
     setFormData({
       discount_type: 'PERCENT',
-      discount_value: 25,
-      points_cost: 450,
+      discount_value: 20,
+      points_cost: 400,
       min_spend_aed: 0,
       cooldown_days: 7,
       monthly_cap: 0,
@@ -52,6 +83,15 @@ export const SalonOffersManager: React.FC<SalonOffersManagerProps> = ({ salonId 
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (validationError) {
+      toast({
+        title: 'Validation Error',
+        description: validationError,
+        variant: 'destructive'
+      });
+      return;
+    }
     
     const payload = {
       discount_type: formData.discount_type,
@@ -99,12 +139,18 @@ export const SalonOffersManager: React.FC<SalonOffersManagerProps> = ({ salonId 
     }
   };
   
-  const applyRecommended = (rec: typeof RECOMMENDED_OFFERS[0]) => {
+  const applyPreset = (preset: typeof OFFER_PRESETS[0]) => {
     setFormData({
       ...formData,
-      discount_value: rec.discount,
-      points_cost: rec.points,
+      discount_value: preset.discount,
+      points_cost: preset.points,
     });
+  };
+  
+  const handleDiscountChange = (value: number) => {
+    // Clamp value between 1 and 100
+    const clampedValue = Math.max(1, Math.min(100, value || 1));
+    setFormData({ ...formData, discount_value: clampedValue });
   };
   
   const formatPrice = (aed: number) => {
@@ -164,20 +210,28 @@ export const SalonOffersManager: React.FC<SalonOffersManagerProps> = ({ salonId 
                 {/* Quick presets */}
                 {!editingOffer && (
                   <div className="space-y-2">
-                    <Label>Quick Presets</Label>
-                    <div className="flex gap-2">
-                      {RECOMMENDED_OFFERS.map((rec) => (
+                    <Label className="flex items-center gap-2">
+                      Quick Presets
+                      <span className="text-xs text-muted-foreground font-normal">(click to apply)</span>
+                    </Label>
+                    <div className="flex flex-wrap gap-2">
+                      {OFFER_PRESETS.map((preset) => (
                         <Button
-                          key={rec.discount}
+                          key={preset.discount}
                           type="button"
-                          variant={formData.discount_value === rec.discount ? 'default' : 'outline'}
+                          variant={formData.discount_value === preset.discount && formData.points_cost === preset.points ? 'default' : 'outline'}
                           size="sm"
-                          onClick={() => applyRecommended(rec)}
+                          onClick={() => applyPreset(preset)}
+                          className="relative"
                         >
-                          {rec.discount}% off
-                          <Badge variant="secondary" className="ml-1 text-xs">
-                            {rec.label}
-                          </Badge>
+                          {preset.discount}% off
+                          <span className="text-xs opacity-70 ml-1">({preset.points} pts)</span>
+                          {preset.popular && (
+                            <Badge variant="secondary" className="absolute -top-2 -right-2 text-[10px] px-1 py-0 bg-primary text-primary-foreground">
+                              <Sparkles className="h-2 w-2 mr-0.5" />
+                              Popular
+                            </Badge>
+                          )}
                         </Button>
                       ))}
                     </div>
@@ -186,30 +240,51 @@ export const SalonOffersManager: React.FC<SalonOffersManagerProps> = ({ salonId 
                 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="discount">Discount %</Label>
+                    <Label htmlFor="discount">Discount % *</Label>
                     <Input
                       id="discount"
                       type="number"
                       min="1"
                       max="100"
                       value={formData.discount_value}
-                      onChange={(e) => setFormData({ ...formData, discount_value: parseInt(e.target.value) })}
+                      onChange={(e) => handleDiscountChange(parseInt(e.target.value))}
                       required
+                      className={validationError?.includes('Discount') ? 'border-destructive' : ''}
                     />
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="points">Points Cost</Label>
+                    <Label htmlFor="points">Points Cost *</Label>
                     <Input
                       id="points"
                       type="number"
-                      min="1"
+                      min="50"
+                      max="10000"
                       value={formData.points_cost}
-                      onChange={(e) => setFormData({ ...formData, points_cost: parseInt(e.target.value) })}
+                      onChange={(e) => setFormData({ ...formData, points_cost: parseInt(e.target.value) || 50 })}
                       required
+                      className={validationError?.includes('Points') ? 'border-destructive' : ''}
                     />
+                    {formData.points_cost !== recommendedPoints && (
+                      <p className="text-xs text-muted-foreground">
+                        Recommended: ~{recommendedPoints} pts
+                        <Button
+                          type="button"
+                          variant="link"
+                          size="sm"
+                          className="h-auto p-0 ml-1 text-xs"
+                          onClick={() => setFormData({ ...formData, points_cost: recommendedPoints })}
+                        >
+                          Apply
+                        </Button>
+                      </p>
+                    )}
                   </div>
                 </div>
+                
+                {validationError && (
+                  <p className="text-sm text-destructive">{validationError}</p>
+                )}
                 
                 <div className="space-y-2">
                   <Label htmlFor="min_spend">Minimum Spend (AED, optional)</Label>
@@ -263,7 +338,7 @@ export const SalonOffersManager: React.FC<SalonOffersManagerProps> = ({ salonId 
                   <Button type="button" variant="outline" onClick={() => setIsAddModalOpen(false)}>
                     Cancel
                   </Button>
-                  <Button type="submit" disabled={createOffer.isPending || updateOffer.isPending}>
+                  <Button type="submit" disabled={createOffer.isPending || updateOffer.isPending || !!validationError}>
                     {createOffer.isPending || updateOffer.isPending ? (
                       <Loader2 className="h-4 w-4 animate-spin mr-2" />
                     ) : null}

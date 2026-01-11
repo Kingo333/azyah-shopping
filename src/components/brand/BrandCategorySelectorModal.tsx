@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { ShoppingBag, Megaphone, Camera, Loader2, Sparkles } from 'lucide-react';
+import { ShoppingBag, Megaphone, Loader2, Scissors } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 type BrandCategory = 'fashion_brand' | 'agency' | 'studio' | 'salon';
@@ -30,20 +30,14 @@ const CATEGORY_OPTIONS: {
   {
     value: 'agency',
     label: 'Marketing Agency',
-    description: 'I provide marketing, growth, or creator services to brands',
+    description: 'I provide marketing, growth, content, or creator services to brands',
     icon: <Megaphone className="h-8 w-8" />
-  },
-  {
-    value: 'studio',
-    label: 'Studio / Production',
-    description: 'I provide content, photo/video, or production services',
-    icon: <Camera className="h-8 w-8" />
   },
   {
     value: 'salon',
     label: 'Salon & Spa',
     description: 'I provide nail, hair, beauty, or spa services',
-    icon: <Sparkles className="h-8 w-8" />
+    icon: <Scissors className="h-8 w-8" />
   }
 ];
 
