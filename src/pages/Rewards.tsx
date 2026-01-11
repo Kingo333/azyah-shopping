@@ -1,11 +1,11 @@
 /**
  * Rewards Page - Points wallet and salon rewards
+ * Salons are now country-gated based on shopper's country
  */
 
 import React, { useState } from 'react';
 import { BackButton } from '@/components/ui/back-button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { PointsBalance } from '@/components/rewards/PointsBalance';
@@ -17,23 +17,40 @@ import { useUserPoints, formatActionType } from '@/hooks/useUserPoints';
 import { usePremium } from '@/hooks/usePremium';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { Coins, Store, History, Crown, ArrowUp, ArrowDown, Trophy } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { Coins, Store, History, Crown, ArrowUp, ArrowDown, Trophy, MapPin } from 'lucide-react';
 import { format } from 'date-fns';
 import MinimizedLeaderboard from '@/components/MinimizedLeaderboard';
-
-type CityFilter = 'all' | 'dubai' | 'abudhabi' | 'sharjah';
+import { getCountryNameFromCode } from '@/lib/countryCurrency';
 
 export default function Rewards() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [cityFilter, setCityFilter] = useState<CityFilter>('all');
   const [selectedSalonId, setSelectedSalonId] = useState<string | null>(null);
   const [activeLeaderboard, setActiveLeaderboard] = useState<'global' | 'country'>('global');
   
+  // Fetch shopper's country for salon filtering
+  const { data: shopperProfile } = useQuery({
+    queryKey: ['shopper-country', user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      const { data } = await supabase
+        .from('users')
+        .select('country')
+        .eq('id', user.id)
+        .single();
+      return data;
+    },
+    enabled: !!user,
+    staleTime: 5 * 60 * 1000
+  });
+  
+  const shopperCountry = shopperProfile?.country || null;
+  
   const { data: pointsData, isLoading: pointsLoading } = useUserPoints();
-  const { data: salons = [], isLoading: salonsLoading } = useSalons(
-    cityFilter === 'all' ? undefined : cityFilter
-  );
+  // Pass shopper country to filter salons
+  const { data: salons = [], isLoading: salonsLoading } = useSalons(shopperCountry || undefined);
   const { data: offers = [], isLoading: offersLoading } = useSalonOffers(selectedSalonId || undefined);
   const { data: redemptions = [], isLoading: redemptionsLoading } = useRedemptions();
   const { isPremium } = usePremium();
@@ -99,17 +116,28 @@ export default function Rewards() {
 
           {/* Salons Tab */}
           <TabsContent value="salons" className="mt-4 space-y-4">
-            <Select value={cityFilter} onValueChange={(v) => setCityFilter(v as CityFilter)}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Filter by city" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Cities</SelectItem>
-                <SelectItem value="dubai">Dubai</SelectItem>
-                <SelectItem value="abudhabi">Abu Dhabi</SelectItem>
-                <SelectItem value="sharjah">Sharjah</SelectItem>
-              </SelectContent>
-            </Select>
+            {/* Country notice */}
+            {shopperCountry && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 p-3 rounded-lg">
+                <MapPin className="h-4 w-4" />
+                <span>Showing salons available in {getCountryNameFromCode(shopperCountry) || shopperCountry}</span>
+              </div>
+            )}
+            
+            {!shopperCountry && (
+              <div className="text-center py-4 text-muted-foreground bg-muted/30 rounded-lg">
+                <MapPin className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                <p className="text-sm font-medium">Set your country to see available salons</p>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="mt-2"
+                  onClick={() => navigate('/profile-settings')}
+                >
+                  Update Profile
+                </Button>
+              </div>
+            )}
 
             {salonsLoading ? (
               <div className="grid grid-cols-2 gap-3">
@@ -120,7 +148,12 @@ export default function Rewards() {
             ) : salons.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <Store className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                <p>No salons available in this area yet</p>
+                <p className="font-medium">No partner salons in your area yet</p>
+                <p className="text-sm mt-1">
+                  {shopperCountry 
+                    ? `We're working on bringing salon partners to ${getCountryNameFromCode(shopperCountry) || shopperCountry}!`
+                    : 'Set your country in settings to see available salons.'}
+                </p>
               </div>
             ) : (
               <div className="grid grid-cols-2 gap-3">

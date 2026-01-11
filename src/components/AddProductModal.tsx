@@ -28,6 +28,7 @@ interface AddProductModalProps {
   onAddProductToEvent?: (productId: string) => Promise<void>;
   selectedEvent?: any;
   selectedBrandForProducts?: string;
+  brandCurrency?: string; // Brand's default currency
 }
 export const AddProductModal: React.FC<AddProductModalProps> = ({
   isOpen,
@@ -39,7 +40,8 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
   isEventContext = false,
   onAddProductToEvent,
   selectedEvent,
-  selectedBrandForProducts
+  selectedBrandForProducts,
+  brandCurrency = 'AED'
 }) => {
   const {
     toast
@@ -65,11 +67,14 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
     isUploading: isUploadingOutfit,
     remainingSlots 
   } = useProductOutfits(userType === 'brand' ? brandId : undefined);
+  // Track if user has manually changed currency
+  const [hasManualCurrency, setHasManualCurrency] = useState(false);
+  
   const [formData, setFormData] = useState({
     title: '',
     description: '',
     price_cents: '',
-    currency: 'USD',
+    currency: brandCurrency, // Default to brand's currency, not USD
     category_slug: '',
     subcategory_slug: '',
     gender: '',
@@ -78,6 +83,13 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
     external_url: ''
   });
   const [availableSubcategories, setAvailableSubcategories] = useState<readonly SubCategory[]>([]);
+  
+  // Handle currency input change - track manual selection
+  const handleCurrencyChange = (value: string) => {
+    setHasManualCurrency(true);
+    handleInputChange('currency', value);
+  };
+  
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
       ...prev,
@@ -346,12 +358,12 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
         description: "Product added successfully!"
       });
 
-      // Reset form
+      // Reset form - use brand currency as default
       setFormData({
         title: '',
         description: '',
         price_cents: '',
-        currency: 'USD',
+        currency: brandCurrency,
         category_slug: '',
         subcategory_slug: '',
         gender: '',
@@ -359,6 +371,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
         stock_qty: '0',
         external_url: ''
       });
+      setHasManualCurrency(false);
       setImages([]);
       setSizeChartUrl(null);
       setOutfitImageUrl(null);
@@ -458,7 +471,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
               </div>
               <div>
                 <Label htmlFor="currency">Currency *</Label>
-                <Select value={formData.currency} onValueChange={value => handleInputChange('currency', value)}>
+                <Select value={formData.currency} onValueChange={handleCurrencyChange}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>

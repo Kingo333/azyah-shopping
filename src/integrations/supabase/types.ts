@@ -744,6 +744,7 @@ export type Database = {
           bio: string | null
           category: string | null
           contact_email: string | null
+          country_code: string | null
           cover_image_url: string | null
           created_at: string
           currency: string | null
@@ -761,6 +762,7 @@ export type Database = {
           bio?: string | null
           category?: string | null
           contact_email?: string | null
+          country_code?: string | null
           cover_image_url?: string | null
           created_at?: string
           currency?: string | null
@@ -778,6 +780,7 @@ export type Database = {
           bio?: string | null
           category?: string | null
           contact_email?: string | null
+          country_code?: string | null
           cover_image_url?: string | null
           created_at?: string
           currency?: string | null
@@ -1781,6 +1784,36 @@ export type Database = {
           status?: string
           updated_at?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      fx_rates: {
+        Row: {
+          base_currency: string
+          created_at: string
+          id: string
+          quote_currency: string
+          rate: number
+          source: string | null
+          updated_at: string
+        }
+        Insert: {
+          base_currency: string
+          created_at?: string
+          id?: string
+          quote_currency: string
+          rate: number
+          source?: string | null
+          updated_at?: string
+        }
+        Update: {
+          base_currency?: string
+          created_at?: string
+          id?: string
+          quote_currency?: string
+          rate?: number
+          source?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
@@ -3940,6 +3973,7 @@ export type Database = {
           plan_type: string | null
           preferences: Json | null
           preferences_completed: boolean | null
+          preferred_currency: string | null
           premium_expires_at: string | null
           provider: string | null
           provider_id: string | null
@@ -3970,6 +4004,7 @@ export type Database = {
           plan_type?: string | null
           preferences?: Json | null
           preferences_completed?: boolean | null
+          preferred_currency?: string | null
           premium_expires_at?: string | null
           provider?: string | null
           provider_id?: string | null
@@ -4000,6 +4035,7 @@ export type Database = {
           plan_type?: string | null
           preferences?: Json | null
           preferences_completed?: boolean | null
+          preferred_currency?: string | null
           premium_expires_at?: string | null
           provider?: string | null
           provider_id?: string | null
@@ -4760,6 +4796,7 @@ export type Database = {
           plan_type: string | null
           preferences: Json | null
           preferences_completed: boolean | null
+          preferred_currency: string | null
           premium_expires_at: string | null
           provider: string | null
           provider_id: string | null
@@ -4822,6 +4859,7 @@ export type Database = {
           plan_type: string | null
           preferences: Json | null
           preferences_completed: boolean | null
+          preferred_currency: string | null
           premium_expires_at: string | null
           provider: string | null
           provider_id: string | null
