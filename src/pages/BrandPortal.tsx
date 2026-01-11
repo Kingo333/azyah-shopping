@@ -106,7 +106,24 @@ const BrandPortal: React.FC = () => {
   const createBrandForUser = async (): Promise<Brand | null> => {
     if (!user) return null;
     try {
-      const brandName = user.user_metadata?.name || user.email?.split('@')[0] || 'My Brand';
+      let brandName = user.user_metadata?.name || user.email?.split('@')[0] || 'My Brand';
+      
+      // Check if display name is unique, if not, add a unique suffix
+      const checkNameUnique = async (name: string): Promise<boolean> => {
+        const { data } = await supabase
+          .from('brands')
+          .select('id')
+          .ilike('name', name.trim())
+          .maybeSingle();
+        return !data;
+      };
+      
+      let isUnique = await checkNameUnique(brandName);
+      if (!isUnique) {
+        // Add timestamp suffix to make it unique
+        brandName = `${brandName}-${Date.now().toString(36)}`;
+      }
+      
       const slug = await generateUniqueSlug(brandName);
       const {
         data,
