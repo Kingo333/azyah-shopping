@@ -5,8 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent } from '@/components/ui/card';
 import { SEOHead } from '@/components/SEOHead';
-import { PromoCard } from '@/components/affiliate/PromoCard';
-import { useOutfitDeal } from '@/hooks/useAffiliatePromos';
+import { CompactPromoStrip } from '@/components/affiliate/CompactPromoStrip';
+import { useOutfitDeals } from '@/hooks/useAffiliatePromos';
 import { Share2, ExternalLink, Heart, ArrowLeft } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { nativeShare, getShareableUrl, getPublicBaseUrl } from '@/lib/nativeShare';
@@ -60,8 +60,8 @@ export default function PublicOutfitView() {
   const { slug } = useParams();
   const navigate = useNavigate();
   
-  // Fetch deal for this outfit
-  const { data: outfitDeal } = useOutfitDeal(slug);
+  // Fetch deals for this outfit (up to 4)
+  const { data: outfitDeals } = useOutfitDeals(slug);
 
   const { data: outfit, isLoading, error } = useQuery({
     queryKey: ['public-outfit-slug', slug],
@@ -229,11 +229,9 @@ export default function PublicOutfitView() {
         </header>
 
         <div className="container max-w-screen-xl mx-auto px-4 py-4 sm:py-6 pb-6">
-          {/* Promo Card - show at top if deal exists */}
-          {outfitDeal && (
-            <div className="mb-4">
-              <PromoCard deal={outfitDeal} />
-            </div>
+          {/* Compact Promo Strip - show at top if deals exist */}
+          {outfitDeals && outfitDeals.length > 0 && (
+            <CompactPromoStrip deals={outfitDeals} className="mb-3" />
           )}
           
           {/* Grid layout - outfit left, details right (matching OutfitDetail.tsx) */}

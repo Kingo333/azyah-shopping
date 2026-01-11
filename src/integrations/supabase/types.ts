@@ -5037,8 +5037,8 @@ export type Database = {
       get_my_outfits_with_promo_status: {
         Args: never
         Returns: {
-          attached_promo_id: string
-          attached_promo_name: string
+          attached_promo_ids: string[]
+          attached_promo_names: string[]
           image_preview: string
           is_public: boolean
           outfit_id: string
