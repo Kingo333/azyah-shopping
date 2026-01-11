@@ -7,9 +7,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { LogoUpload } from '@/components/LogoUpload';
 import { Badge } from '@/components/ui/badge';
 import { InfoTooltip } from '@/components/ui/info-tooltip';
+import { RegionSelector, WORLDWIDE_VALUE } from '@/components/brand/RegionSelector';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { CheckCircle, AlertCircle, Globe, Mail, Users, Tag, Trash2, Loader2, DollarSign } from 'lucide-react';
+import { CheckCircle, AlertCircle, Globe, Mail, Users, Tag, Trash2, Loader2, DollarSign, MapPin } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { SUPPORTED_CURRENCIES } from '@/lib/currencies';
 
@@ -65,17 +66,24 @@ export const BrandSettingsForm: React.FC<BrandSettingsFormProps> = ({ brand, onB
 
   // Check if brand type supports currency selection (salon, agency)
   const showCurrencySelector = brand.category === 'salon' || brand.category === 'agency' || brand.category === 'studio';
+  
+  // Determine region label based on brand type
+  const isFashionBrand = brand.category === 'fashion_brand';
+  const regionLabel = isFashionBrand ? 'Shipping Regions' : 'Service Regions';
+  const regionTooltip = isFashionBrand ? 'Regions where you ship your products' : 'Regions where you offer your services';
 
   const { toast } = useToast();
 
   // Calculate profile completion - must match useProfileCompletion hook for consistency
   const getProfileCompletion = () => {
     const fields = {
-      name: { value: brand.name && brand.name !== 'My Brand', weight: 20 },
-      logo_url: { value: brand.logo_url, weight: 25 },
-      bio: { value: brand.bio, weight: 20 },
-      website: { value: brand.website, weight: 15 },
-      contact_email: { value: brand.contact_email, weight: 20 }
+      name: { value: brand.name && brand.name !== 'My Brand', weight: 15 },
+      logo_url: { value: brand.logo_url, weight: 20 },
+      bio: { value: brand.bio, weight: 15 },
+      website: { value: brand.website, weight: 10 },
+      contact_email: { value: brand.contact_email, weight: 15 },
+      currency: { value: brand.currency, weight: 10 },
+      regions: { value: brand.shipping_regions && brand.shipping_regions.length > 0, weight: 15 }
     };
 
     let totalScore = 0;
@@ -376,20 +384,27 @@ export const BrandSettingsForm: React.FC<BrandSettingsFormProps> = ({ brand, onB
               </div>
             </div>
 
-            {/* Shipping Regions */}
+            {/* Service/Shipping Regions */}
             <div>
               <label className="text-sm font-medium mb-2 block flex items-center gap-2">
-                <Users className="h-4 w-4" />
-                Shipping Regions
-                <InfoTooltip content="Regions where you ship your products" />
+                <MapPin className="h-4 w-4" />
+                {regionLabel}
+                <InfoTooltip content={regionTooltip} />
               </label>
               <div className="flex flex-wrap gap-2">
                 {brand.shipping_regions?.length > 0 ? (
-                  brand.shipping_regions.map((region, index) => (
-                    <Badge key={index} variant="outline">{region}</Badge>
-                  ))
+                  brand.shipping_regions.includes(WORLDWIDE_VALUE) ? (
+                    <Badge variant="default" className="bg-primary">
+                      <Globe className="h-3 w-3 mr-1" />
+                      Worldwide
+                    </Badge>
+                  ) : (
+                    brand.shipping_regions.map((region, index) => (
+                      <Badge key={index} variant="outline">{region}</Badge>
+                    ))
+                  )
                 ) : (
-                  <span className="text-muted-foreground text-sm">No shipping regions set</span>
+                  <span className="text-muted-foreground text-sm">No {isFashionBrand ? 'shipping' : 'service'} regions set</span>
                 )}
               </div>
             </div>
@@ -577,24 +592,18 @@ export const BrandSettingsForm: React.FC<BrandSettingsFormProps> = ({ brand, onB
             />
           </div>
 
-          {/* Shipping Regions */}
+          {/* Service/Shipping Regions */}
           <div>
             <label className="text-sm font-medium mb-2 block flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              Shipping Regions
+              <MapPin className="h-4 w-4" />
+              {regionLabel}
+              <InfoTooltip content={regionTooltip} />
             </label>
-            <div className="space-y-2">
-              <div className="flex flex-wrap gap-2">
-                {formData.shipping_regions.map((region, index) => (
-                  <Badge key={index} variant="outline" className="cursor-pointer" onClick={() => handleRemoveRegion(index)}>
-                    {region} ×
-                  </Badge>
-                ))}
-              </div>
-              <Button type="button" variant="outline" size="sm" onClick={handleAddRegion}>
-                Add Region
-              </Button>
-            </div>
+            <RegionSelector
+              selectedRegions={formData.shipping_regions}
+              onChange={(regions) => handleInputChange('shipping_regions', regions)}
+              maxHeight="200px"
+            />
           </div>
 
           {/* Social Media */}

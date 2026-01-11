@@ -21,6 +21,7 @@ import { BulkImportActions } from '@/components/BulkImportActions';
 import { CollabDashboard } from '@/components/ugc/CollabDashboard';
 import { BrandSettingsForm } from '@/components/BrandSettingsForm';
 import { BrandCategorySelectorModal } from '@/components/brand/BrandCategorySelectorModal';
+import { BrandOnboardingModal } from '@/components/brand/BrandOnboardingModal';
 import { BrandCategoryChangeCard } from '@/components/brand/BrandCategoryChangeCard';
 import { BrandServicesManager } from '@/components/brand/BrandServicesManager';
 import { PortfolioManager } from '@/components/brand/PortfolioManager';
@@ -75,6 +76,7 @@ const BrandPortal: React.FC = () => {
   const [isEditProductModalOpen, setIsEditProductModalOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const {
     toast
@@ -418,8 +420,25 @@ const BrandPortal: React.FC = () => {
 
   const handleCategorySelected = (category: string) => {
     setBrand({ ...brand, category });
+    // Show onboarding wizard after category selection
+    setShowOnboarding(true);
+  };
+
+  const handleOnboardingComplete = (updatedBrand: Brand) => {
+    setBrand(updatedBrand);
+    setShowOnboarding(false);
     // Set default tab based on category
-    if (category === 'agency' || category === 'studio' || category === 'salon') {
+    if (updatedBrand.category === 'agency' || updatedBrand.category === 'studio' || updatedBrand.category === 'salon') {
+      handleTabChange('services');
+    } else {
+      handleTabChange('products');
+    }
+  };
+
+  const handleOnboardingSkip = () => {
+    setShowOnboarding(false);
+    // Set default tab based on category
+    if (brand.category === 'agency' || brand.category === 'studio' || brand.category === 'salon') {
       handleTabChange('services');
     } else {
       handleTabChange('products');
@@ -474,6 +493,14 @@ const BrandPortal: React.FC = () => {
         brandId={brand.id}
         isOpen={needsCategorySelection}
         onCategorySelected={handleCategorySelected}
+      />
+
+      {/* Onboarding Modal - shows after category selection */}
+      <BrandOnboardingModal
+        isOpen={showOnboarding}
+        brand={brand}
+        onComplete={handleOnboardingComplete}
+        onSkip={handleOnboardingSkip}
       />
 
       <div className="container max-w-7xl mx-auto p-3 md:p-6">
