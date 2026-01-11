@@ -22,12 +22,14 @@ interface EditProductModalProps {
   isOpen: boolean;
   onClose: () => void;
   onProductUpdated: () => void;
+  brandCurrency?: string; // Brand's default currency for fallback
 }
 export const EditProductModal: React.FC<EditProductModalProps> = ({
   product,
   isOpen,
   onClose,
-  onProductUpdated
+  onProductUpdated,
+  brandCurrency = 'AED'
 }) => {
   const {
     toast
@@ -70,7 +72,7 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
         title: product.title || '',
         description: product.description || '',
         price_cents: product.price_cents ? (product.price_cents / 100).toString() : '',
-        currency: product.currency || 'USD',
+        currency: product.currency || brandCurrency, // Use product currency, fallback to brand
         category_slug: product.category_slug || '',
         subcategory_slug: product.subcategory_slug || '',
         gender: (product as any).gender || '',

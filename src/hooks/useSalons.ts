@@ -16,7 +16,7 @@ export interface Salon {
   cover_image_url: string | null;
   description: string | null;
   address: string | null;
-  city: 'dubai' | 'abudhabi' | 'sharjah';
+  city: string; // Changed from enum to text for flexibility
   phone: string | null;
   instagram: string | null;
   website: string | null;
@@ -24,6 +24,7 @@ export interface Salon {
   review_count: number;
   is_verified: boolean;
   is_active: boolean;
+  brand_id?: string | null;
 }
 
 export interface SalonRewardOffer {
@@ -64,30 +65,56 @@ export interface Redemption {
 }
 
 /**
- * Fetch all active salons, optionally filtered by city
+ * Fetch all active salons, filtered by shopper's country for country-gated rewards
+ * @param shopperCountry - Optional shopper country code (ISO2) or name for filtering
  */
-export function useSalons(city?: 'dubai' | 'abudhabi' | 'sharjah') {
+export function useSalons(shopperCountry?: string) {
   return useQuery({
-    queryKey: ['salons', city],
+    queryKey: ['salons', shopperCountry],
     queryFn: async (): Promise<Salon[]> => {
-      let query = supabase
+      // Fetch salons with their linked brand for country matching
+      const { data, error } = await supabase
         .from('salons')
-        .select('*')
+        .select(`
+          *,
+          brand:brands!salons_brand_id_fkey(country_code, shipping_regions)
+        `)
         .eq('is_active', true)
         .order('rating', { ascending: false });
-
-      if (city) {
-        query = query.eq('city', city);
-      }
-
-      const { data, error } = await query;
 
       if (error) {
         console.error('[useSalons] Error:', error);
         throw new Error(error.message);
       }
 
-      return (data || []) as Salon[];
+      const salons = (data || []) as (Salon & { brand?: { country_code: string | null; shipping_regions: string[] | null } })[];
+
+      // If no country filter, return all salons
+      if (!shopperCountry) {
+        return salons;
+      }
+
+      // Normalize shopper country (could be code or name)
+      const normalizedCountry = shopperCountry.length === 2 
+        ? shopperCountry.toUpperCase() 
+        : shopperCountry;
+
+      // Filter salons by brand country or shipping regions
+      return salons.filter(salon => {
+        if (!salon.brand) return false;
+        
+        const brandCountry = salon.brand.country_code;
+        const regions = salon.brand.shipping_regions || [];
+        
+        // Match by country code
+        if (brandCountry === normalizedCountry) return true;
+        
+        // Match by country name in regions (for backwards compatibility)
+        if (regions.includes(normalizedCountry)) return true;
+        if (regions.includes('WORLDWIDE')) return true;
+        
+        return false;
+      });
     },
     staleTime: 5 * 60 * 1000 // 5 minutes
   });

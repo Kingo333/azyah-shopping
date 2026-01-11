@@ -776,7 +776,7 @@ const BrandPortal: React.FC = () => {
         </Tabs>
       </div>
 
-      <AddProductModal isOpen={isAddProductModalOpen} onClose={() => setIsAddProductModalOpen(false)} onProductAdded={fetchProducts} userType="brand" brandId={brand.id} />
+      <AddProductModal isOpen={isAddProductModalOpen} onClose={() => setIsAddProductModalOpen(false)} onProductAdded={fetchProducts} userType="brand" brandId={brand.id} brandCurrency={brand.currency || 'AED'} />
 
       {selectedProduct && <>
           <BrandProductDetailModal isOpen={isDetailModalOpen} onClose={() => {
@@ -787,7 +787,7 @@ const BrandPortal: React.FC = () => {
           <EditProductModal isOpen={isEditProductModalOpen} onClose={() => {
         setIsEditProductModalOpen(false);
         setSelectedProduct(null);
-      }} onProductUpdated={fetchProducts} product={selectedProduct} />
+      }} onProductUpdated={fetchProducts} product={selectedProduct} brandCurrency={brand.currency || 'AED'} />
         </>}
 
       <ImportWizardModal open={isImportModalOpen} onOpenChange={setIsImportModalOpen} brandId={brand?.id} />

@@ -64,8 +64,8 @@ export const BrandSettingsForm: React.FC<BrandSettingsFormProps> = ({ brand, onB
     currency: brand.currency || 'AED'
   });
 
-  // Check if brand type supports currency selection (salon, agency)
-  const showCurrencySelector = brand.category === 'salon' || brand.category === 'agency' || brand.category === 'studio';
+  // Currency selector is now available for ALL brand types (fashion brands included)
+  const showCurrencySelector = true;
   
   // Determine region label based on brand type
   const isFashionBrand = brand.category === 'fashion_brand';
@@ -362,19 +362,17 @@ export const BrandSettingsForm: React.FC<BrandSettingsFormProps> = ({ brand, onB
               </div>
             </div>
 
-            {/* Currency - only for salon/agency */}
-            {showCurrencySelector && (
-              <div>
-                <label className="text-sm font-medium mb-2 block flex items-center gap-2">
-                  <DollarSign className="h-4 w-4" />
-                  Currency
-                  <InfoTooltip content="Currency used for your service pricing" />
-                </label>
-                <div className="p-3 bg-muted/50 rounded-md">
-                  {SUPPORTED_CURRENCIES.find(c => c.code === (brand.currency || 'AED'))?.name || 'AED'}
-                </div>
+            {/* Currency - now shown for ALL brand types */}
+            <div>
+              <label className="text-sm font-medium mb-2 block flex items-center gap-2">
+                <DollarSign className="h-4 w-4" />
+                Currency
+                <InfoTooltip content={isFashionBrand ? "Default currency for product pricing" : "Currency used for your service pricing"} />
+              </label>
+              <div className="p-3 bg-muted/50 rounded-md">
+                {SUPPORTED_CURRENCIES.find(c => c.code === (brand.currency || 'AED'))?.name || 'AED'}
               </div>
-            )}
+            </div>
 
             {/* Bio */}
             <div>
@@ -553,31 +551,34 @@ export const BrandSettingsForm: React.FC<BrandSettingsFormProps> = ({ brand, onB
             />
           </div>
 
-          {/* Currency Selector - only for salon/agency */}
-          {showCurrencySelector && (
-            <div>
-              <label className="text-sm font-medium mb-2 block flex items-center gap-2">
-                <DollarSign className="h-4 w-4" />
-                Currency
-                <InfoTooltip content="Select the currency for your service pricing" />
-              </label>
-              <Select
-                value={formData.currency}
-                onValueChange={(value) => handleInputChange('currency', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select currency" />
-                </SelectTrigger>
-                <SelectContent>
-                  {SUPPORTED_CURRENCIES.map((currency) => (
-                    <SelectItem key={currency.code} value={currency.code}>
-                      {currency.symbol} {currency.name} ({currency.code})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
+          {/* Currency Selector - available for ALL brand types */}
+          <div>
+            <label className="text-sm font-medium mb-2 block flex items-center gap-2">
+              <DollarSign className="h-4 w-4" />
+              Currency
+              <InfoTooltip content={isFashionBrand ? "Default currency for your product pricing" : "Select the currency for your service pricing"} />
+            </label>
+            <Select
+              value={formData.currency}
+              onValueChange={(value) => handleInputChange('currency', value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select currency" />
+              </SelectTrigger>
+              <SelectContent>
+                {SUPPORTED_CURRENCIES.map((currency) => (
+                  <SelectItem key={currency.code} value={currency.code}>
+                    {currency.symbol} {currency.name} ({currency.code})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {isFashionBrand && (
+              <p className="text-xs text-muted-foreground mt-1">
+                This will be the default currency when you add new products
+              </p>
+            )}
+          </div>
 
           {/* Description */}
           <div>
