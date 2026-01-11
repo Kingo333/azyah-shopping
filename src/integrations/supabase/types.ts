@@ -409,6 +409,51 @@ export type Database = {
           },
         ]
       }
+      brand_portfolios: {
+        Row: {
+          brand_id: string
+          created_at: string
+          description: string | null
+          id: string
+          image_urls: string[]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          brand_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_urls?: string[]
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          brand_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_urls?: string[]
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brand_portfolios_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "brand_portfolios_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       brand_questions: {
         Row: {
           body: string | null
@@ -701,6 +746,7 @@ export type Database = {
           contact_email: string | null
           cover_image_url: string | null
           created_at: string
+          currency: string | null
           id: string
           logo_url: string | null
           name: string
@@ -717,6 +763,7 @@ export type Database = {
           contact_email?: string | null
           cover_image_url?: string | null
           created_at?: string
+          currency?: string | null
           id?: string
           logo_url?: string | null
           name: string
@@ -733,6 +780,7 @@ export type Database = {
           contact_email?: string | null
           cover_image_url?: string | null
           created_at?: string
+          currency?: string | null
           id?: string
           logo_url?: string | null
           name?: string

@@ -3,13 +3,15 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { LogoUpload } from '@/components/LogoUpload';
 import { Badge } from '@/components/ui/badge';
 import { InfoTooltip } from '@/components/ui/info-tooltip';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { CheckCircle, AlertCircle, Globe, Mail, Users, Tag, Trash2, Loader2 } from 'lucide-react';
+import { CheckCircle, AlertCircle, Globe, Mail, Users, Tag, Trash2, Loader2, DollarSign } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { SUPPORTED_CURRENCIES } from '@/lib/currencies';
 
 // Helper function to check if a display name is already taken by another brand
 const checkDisplayNameAvailable = async (name: string, currentBrandId: string): Promise<boolean> => {
@@ -38,6 +40,8 @@ interface Brand {
   contact_email: string | null;
   socials: any;
   shipping_regions: string[];
+  currency?: string;
+  category?: string;
 }
 
 interface BrandSettingsFormProps {
@@ -55,8 +59,12 @@ export const BrandSettingsForm: React.FC<BrandSettingsFormProps> = ({ brand, onB
     website: brand.website || '',
     contact_email: brand.contact_email || '',
     shipping_regions: brand.shipping_regions || [],
-    socials: brand.socials || {}
+    socials: brand.socials || {},
+    currency: brand.currency || 'AED'
   });
+
+  // Check if brand type supports currency selection (salon, agency)
+  const showCurrencySelector = brand.category === 'salon' || brand.category === 'agency' || brand.category === 'studio';
 
   const { toast } = useToast();
 
@@ -161,6 +169,7 @@ export const BrandSettingsForm: React.FC<BrandSettingsFormProps> = ({ brand, onB
           contact_email: formData.contact_email,
           shipping_regions: formData.shipping_regions,
           socials: formData.socials,
+          currency: formData.currency,
           updated_at: new Date().toISOString()
         })
         .eq('id', brand.id)
@@ -205,7 +214,8 @@ export const BrandSettingsForm: React.FC<BrandSettingsFormProps> = ({ brand, onB
       website: brand.website || '',
       contact_email: brand.contact_email || '',
       shipping_regions: brand.shipping_regions || [],
-      socials: brand.socials || {}
+      socials: brand.socials || {},
+      currency: brand.currency || 'AED'
     });
     setIsEditing(false);
   };
@@ -339,10 +349,24 @@ export const BrandSettingsForm: React.FC<BrandSettingsFormProps> = ({ brand, onB
                 Website
                 <InfoTooltip content="Your brand's website or online store" />
               </label>
-              <div className="p-3 bg-muted/50 rounded-md">
+              <div className="p-3 bg-muted/50 rounded-md break-all">
                 {brand.website || 'Not set'}
               </div>
             </div>
+
+            {/* Currency - only for salon/agency */}
+            {showCurrencySelector && (
+              <div>
+                <label className="text-sm font-medium mb-2 block flex items-center gap-2">
+                  <DollarSign className="h-4 w-4" />
+                  Currency
+                  <InfoTooltip content="Currency used for your service pricing" />
+                </label>
+                <div className="p-3 bg-muted/50 rounded-md">
+                  {SUPPORTED_CURRENCIES.find(c => c.code === (brand.currency || 'AED'))?.name || 'AED'}
+                </div>
+              </div>
+            )}
 
             {/* Bio */}
             <div>
@@ -513,6 +537,32 @@ export const BrandSettingsForm: React.FC<BrandSettingsFormProps> = ({ brand, onB
               placeholder="https://yourbrand.com"
             />
           </div>
+
+          {/* Currency Selector - only for salon/agency */}
+          {showCurrencySelector && (
+            <div>
+              <label className="text-sm font-medium mb-2 block flex items-center gap-2">
+                <DollarSign className="h-4 w-4" />
+                Currency
+                <InfoTooltip content="Select the currency for your service pricing" />
+              </label>
+              <Select
+                value={formData.currency}
+                onValueChange={(value) => handleInputChange('currency', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select currency" />
+                </SelectTrigger>
+                <SelectContent>
+                  {SUPPORTED_CURRENCIES.map((currency) => (
+                    <SelectItem key={currency.code} value={currency.code}>
+                      {currency.symbol} {currency.name} ({currency.code})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           {/* Description */}
           <div>

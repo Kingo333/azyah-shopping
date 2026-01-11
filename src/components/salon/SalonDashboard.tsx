@@ -8,7 +8,8 @@ import { SalonRedemptionsManager } from './SalonRedemptionsManager';
 import { BrandSettingsForm } from '@/components/BrandSettingsForm';
 import { SetupChecklist } from '@/components/brand/SetupChecklist';
 import { TutorialTooltip } from '@/components/ui/tutorial-tooltip';
-import { Scissors, Gift, Ticket, Settings, BarChart3, Loader2, HelpCircle } from 'lucide-react';
+import { PortfolioManager } from '@/components/brand/PortfolioManager';
+import { Scissors, Gift, Ticket, Settings, BarChart3, Loader2, HelpCircle, Image } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 
 interface SalonDashboardProps {
@@ -199,14 +200,18 @@ export const SalonDashboard: React.FC<SalonDashboardProps> = ({ brandId, brand, 
             <Settings className="h-4 w-4 mr-1 hidden md:inline" />
             Settings
           </TabsTrigger>
+          <TabsTrigger value="portfolio" className="data-[state=active]:bg-background text-xs md:text-sm">
+            <Image className="h-4 w-4 mr-1 hidden md:inline" />
+            Portfolio
+          </TabsTrigger>
         </TabsList>
         
         <TabsContent value="services">
-          <SalonServicesManager salonId={salon.id} />
+          <SalonServicesManager salonId={salon.id} currency={brand?.currency || 'AED'} />
         </TabsContent>
         
         <TabsContent value="offers">
-          <SalonOffersManager salonId={salon.id} />
+          <SalonOffersManager salonId={salon.id} currency={brand?.currency || 'AED'} />
         </TabsContent>
         
         <TabsContent value="redemptions">
@@ -215,6 +220,10 @@ export const SalonDashboard: React.FC<SalonDashboardProps> = ({ brandId, brand, 
         
         <TabsContent value="settings">
           <BrandSettingsForm brand={brand} onBrandUpdate={onBrandUpdate} />
+        </TabsContent>
+        
+        <TabsContent value="portfolio">
+          <PortfolioManager brandId={brandId} />
         </TabsContent>
       </Tabs>
     </div>

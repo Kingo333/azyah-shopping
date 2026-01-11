@@ -13,6 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 
 interface SalonOffersManagerProps {
   salonId: string;
+  currency?: string;
 }
 
 // Improved preset tiers with logical discount-to-points mapping
@@ -31,7 +32,7 @@ const calculateRecommendedPoints = (discountPercent: number): number => {
   return Math.max(50, Math.min(10000, calculated));
 };
 
-export const SalonOffersManager: React.FC<SalonOffersManagerProps> = ({ salonId }) => {
+export const SalonOffersManager: React.FC<SalonOffersManagerProps> = ({ salonId, currency = 'AED' }) => {
   const { data: offers = [], isLoading } = useSalonOffers(salonId);
   const { createOffer, updateOffer, deleteOffer } = useSalonOfferMutations(salonId);
   const { toast } = useToast();
