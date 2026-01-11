@@ -5206,6 +5206,19 @@ export type Database = {
           promo_name: string
         }[]
       }
+      get_public_deals_for_outfit_slug: {
+        Args: { p_slug: string }
+        Returns: {
+          affiliate_code: string
+          affiliate_url: string
+          days_left: number
+          expires_at: string
+          owner_name: string
+          owner_username: string
+          promo_id: string
+          promo_name: string
+        }[]
+      }
       get_public_deals_for_username: {
         Args: { p_username: string }
         Returns: {
