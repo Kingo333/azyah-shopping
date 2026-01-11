@@ -44,7 +44,7 @@ export function useProfileCompletion() {
     const checkBrandCompletion = async () => {
       const { data: brand } = await supabase
         .from('brands')
-        .select('name, logo_url, bio, website, contact_email, socials')
+        .select('name, logo_url, bio, website, contact_email, socials, currency, shipping_regions, category')
         .eq('owner_user_id', user.id)
         .single();
 
@@ -53,12 +53,17 @@ export function useProfileCompletion() {
         return;
       }
 
+      const isFashionBrand = brand.category === 'fashion_brand';
+      const regionLabel = isFashionBrand ? 'Shipping Regions' : 'Service Regions';
+
       const fields = {
-        name: { value: brand.name && brand.name !== 'My Brand', weight: 20, label: 'Brand Name' },
-        logo_url: { value: brand.logo_url, weight: 25, label: 'Logo' },
-        bio: { value: brand.bio, weight: 20, label: 'Bio' },
-        website: { value: brand.website, weight: 15, label: 'Website' },
-        contact_email: { value: brand.contact_email, weight: 20, label: 'Contact Email' }
+        name: { value: brand.name && brand.name !== 'My Brand', weight: 15, label: 'Brand Name' },
+        logo_url: { value: brand.logo_url, weight: 20, label: 'Logo' },
+        bio: { value: brand.bio, weight: 15, label: 'Bio' },
+        website: { value: brand.website, weight: 10, label: 'Website' },
+        contact_email: { value: brand.contact_email, weight: 15, label: 'Contact Email' },
+        currency: { value: brand.currency, weight: 10, label: 'Currency' },
+        regions: { value: brand.shipping_regions && brand.shipping_regions.length > 0, weight: 15, label: regionLabel }
       };
 
       calculateCompletion(fields);
