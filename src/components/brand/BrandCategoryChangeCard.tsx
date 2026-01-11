@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { ShoppingBag, Megaphone, Camera, Sparkles, Loader2, Clock, AlertCircle, RefreshCw } from 'lucide-react';
+import { ShoppingBag, Megaphone, Scissors, Loader2, Clock, AlertCircle, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 type BrandCategory = 'fashion_brand' | 'agency' | 'studio' | 'salon';
@@ -16,6 +16,12 @@ interface BrandCategoryChangeCardProps {
   brandCreatedAt: string;
   onCategoryChanged: (category: string) => void;
 }
+
+// Map legacy 'studio' to 'agency' for display purposes
+const getCategoryDisplay = (category: string | null): string => {
+  if (category === 'studio') return 'agency';
+  return category || '';
+};
 
 const CATEGORY_OPTIONS: {
   value: BrandCategory;
@@ -32,20 +38,14 @@ const CATEGORY_OPTIONS: {
   {
     value: 'agency',
     label: 'Marketing Agency',
-    description: 'I provide marketing, growth, or creator services to brands',
+    description: 'I provide marketing, growth, content, or creator services to brands',
     icon: <Megaphone className="h-6 w-6" />
-  },
-  {
-    value: 'studio',
-    label: 'Studio / Production',
-    description: 'I provide content, photo/video, or production services',
-    icon: <Camera className="h-6 w-6" />
   },
   {
     value: 'salon',
     label: 'Salon & Spa',
     description: 'I provide nail, hair, beauty, or spa services',
-    icon: <Sparkles className="h-6 w-6" />
+    icon: <Scissors className="h-6 w-6" />
   }
 ];
 
@@ -80,10 +80,14 @@ export const BrandCategoryChangeCard: React.FC<BrandCategoryChangeCardProps> = (
     return null;
   }
 
-  const currentCategoryLabel = CATEGORY_OPTIONS.find(c => c.value === currentCategory)?.label || 'Not set';
+  // Map legacy 'studio' to 'agency' for display
+  const displayCategory = getCategoryDisplay(currentCategory);
+  const currentCategoryLabel = CATEGORY_OPTIONS.find(c => c.value === displayCategory || c.value === currentCategory)?.label || 'Not set';
 
   const handleOpenModal = () => {
-    setSelectedCategory(currentCategory as BrandCategory);
+    // If current category is 'studio', show as 'agency' selection
+    const initialSelection = currentCategory === 'studio' ? 'agency' : currentCategory;
+    setSelectedCategory(initialSelection as BrandCategory);
     setIsModalOpen(true);
   };
 
