@@ -23,6 +23,7 @@ import { BrandSettingsForm } from '@/components/BrandSettingsForm';
 import { BrandCategorySelectorModal } from '@/components/brand/BrandCategorySelectorModal';
 import { BrandCategoryChangeCard } from '@/components/brand/BrandCategoryChangeCard';
 import { BrandServicesManager } from '@/components/brand/BrandServicesManager';
+import { PortfolioManager } from '@/components/brand/PortfolioManager';
 import { ServicesMarketplace } from '@/components/brand/ServicesMarketplace';
 import { SalonDashboard } from '@/components/salon/SalonDashboard';
 import { Plus, Edit, Trash2, Upload, BarChart3, TrendingUp, Eye, Heart, ShoppingBag, DollarSign, Download, Filter, Globe, Package, Archive, Store, Briefcase } from 'lucide-react';
@@ -44,6 +45,7 @@ interface Brand {
   socials: any;
   shipping_regions: string[];
   category?: string | null;
+  currency?: string | null;
   created_at?: string;
 }
 const BrandPortal: React.FC = () => {
@@ -448,6 +450,7 @@ const BrandPortal: React.FC = () => {
     if (isAgencyOrStudio) {
       return [
         { value: 'services', label: 'Services' },
+        { value: 'portfolio', label: 'Portfolio' },
         { value: 'collabs', label: 'Collabs' },
         { value: 'analytics', label: 'Analytics' },
         { value: 'settings', label: 'Settings' }
@@ -612,7 +615,14 @@ const BrandPortal: React.FC = () => {
           {/* Services tab for agencies/studios */}
           {isAgencyOrStudio && (
             <TabsContent value="services">
-              <BrandServicesManager brandId={brand.id} brandCategory={brand.category as 'agency' | 'studio'} />
+              <BrandServicesManager brandId={brand.id} brandCategory={brand.category as 'agency' | 'studio'} currency={brand.currency || 'AED'} />
+            </TabsContent>
+          )}
+
+          {/* Portfolio tab for agencies/studios */}
+          {isAgencyOrStudio && (
+            <TabsContent value="portfolio">
+              <PortfolioManager brandId={brand.id} />
             </TabsContent>
           )}
 
@@ -623,104 +633,107 @@ const BrandPortal: React.FC = () => {
             </TabsContent>
           )}
 
-          <TabsContent value="products">
-            <Card>
-              <CardHeader>
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                  <CardTitle>Product Catalog</CardTitle>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    {selectedProducts.size > 0 && (
-                      <>
-                        <span className="text-sm text-muted-foreground">
-                          {selectedProducts.size} selected
-                        </span>
-                        <Button variant="outline" size="sm" onClick={() => handleBulkAction('Archive')} className="text-orange-600 border-orange-200 hover:bg-orange-50">
-                          <Archive className="h-4 w-4 mr-1" />
-                          Archive
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={() => handleBulkAction('Delete')} className="text-red-600 border-red-200 hover:bg-red-50">
-                          <Trash2 className="h-4 w-4 mr-1" />
-                          Delete
-                        </Button>
-                      </>
-                    )}
-                    <Button 
-                      onClick={() => {
-                        if (products.length >= 10) {
-                          toast({
-                            title: "Product Limit Reached",
-                            description: "You've reached the 10 product limit. Use the Feedback & Support button to request more.",
-                            variant: "destructive"
-                          });
-                          return;
-                        }
-                        setIsAddProductModalOpen(true);
-                      }} 
-                      className="gap-2 bg-primary hover:bg-primary/90"
-                    >
-                      <Plus className="h-4 w-4" />
-                      Add Product
-                    </Button>
+          {/* Products tab - only for fashion brands */}
+          {isFashionBrand && (
+            <TabsContent value="products">
+              <Card>
+                <CardHeader>
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                    <CardTitle>Product Catalog</CardTitle>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {selectedProducts.size > 0 && (
+                        <>
+                          <span className="text-sm text-muted-foreground">
+                            {selectedProducts.size} selected
+                          </span>
+                          <Button variant="outline" size="sm" onClick={() => handleBulkAction('Archive')} className="text-orange-600 border-orange-200 hover:bg-orange-50">
+                            <Archive className="h-4 w-4 mr-1" />
+                            Archive
+                          </Button>
+                          <Button variant="outline" size="sm" onClick={() => handleBulkAction('Delete')} className="text-red-600 border-red-200 hover:bg-red-50">
+                            <Trash2 className="h-4 w-4 mr-1" />
+                            Delete
+                          </Button>
+                        </>
+                      )}
+                      <Button 
+                        onClick={() => {
+                          if (products.length >= 10) {
+                            toast({
+                              title: "Product Limit Reached",
+                              description: "You've reached the 10 product limit. Use the Feedback & Support button to request more.",
+                              variant: "destructive"
+                            });
+                            return;
+                          }
+                          setIsAddProductModalOpen(true);
+                        }} 
+                        className="gap-2 bg-primary hover:bg-primary/90"
+                      >
+                        <Plus className="h-4 w-4" />
+                        Add Product
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {productsLoading ? <div className="text-center py-8">Loading products...</div> : products.length > 0 ? <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 md:gap-4">
-                    {products.map(product => <Card key={product.id} className="overflow-hidden border-border/50 hover:border-border transition-colors">
-                         <div className="aspect-square relative">
-                           <input type="checkbox" checked={selectedProducts.has(product.id)} onChange={() => handleSelectProduct(product.id)} className="absolute top-2 left-2 z-10 rounded border-gray-300" />
-                           <img src={product.media_urls?.[0] || '/placeholder.svg'} alt={product.title} className="w-full h-full object-cover cursor-pointer" onClick={() => handleViewProduct(product)} />
-                           {product.status === 'archived' && <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                               <Badge variant="secondary" className="text-white bg-destructive/90 border-destructive px-1 md:px-4 py-1 md:py-2 text-xs md:text-sm font-semibold">
-                                 ARCHIVED
+                </CardHeader>
+                <CardContent>
+                  {productsLoading ? <div className="text-center py-8">Loading products...</div> : products.length > 0 ? <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 md:gap-4">
+                      {products.map(product => <Card key={product.id} className="overflow-hidden border-border/50 hover:border-border transition-colors">
+                           <div className="aspect-square relative">
+                             <input type="checkbox" checked={selectedProducts.has(product.id)} onChange={() => handleSelectProduct(product.id)} className="absolute top-2 left-2 z-10 rounded border-gray-300" />
+                             <img src={product.media_urls?.[0] || '/placeholder.svg'} alt={product.title} className="w-full h-full object-cover cursor-pointer" onClick={() => handleViewProduct(product)} />
+                             {product.status === 'archived' && <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                                 <Badge variant="secondary" className="text-white bg-destructive/90 border-destructive px-1 md:px-4 py-1 md:py-2 text-xs md:text-sm font-semibold">
+                                   ARCHIVED
+                                 </Badge>
+                               </div>}
+                           </div>
+                           <CardContent className="p-2 md:p-4">
+                             <h3 className="font-medium text-xs md:text-sm mb-1 md:mb-2 line-clamp-2 leading-tight cursor-pointer hover:text-primary transition-colors" onClick={() => handleViewProduct(product)}>
+                               {product.title}
+                             </h3>
+                             <div className="flex items-center justify-between mb-1 md:mb-2">
+                               <span className="text-xs md:text-sm font-semibold text-primary">
+                                 {formatPrice(product.price_cents)}
+                               </span>
+                               <Badge variant={getStatusColor(product.status) as any} className="text-xs px-1 md:px-2 py-0.5">
+                                 {product.status.replace('_', ' ')}
                                </Badge>
-                             </div>}
-                         </div>
-                         <CardContent className="p-2 md:p-4">
-                           <h3 className="font-medium text-xs md:text-sm mb-1 md:mb-2 line-clamp-2 leading-tight cursor-pointer hover:text-primary transition-colors" onClick={() => handleViewProduct(product)}>
-                             {product.title}
-                           </h3>
-                           <div className="flex items-center justify-between mb-1 md:mb-2">
-                             <span className="text-xs md:text-sm font-semibold text-primary">
-                               {formatPrice(product.price_cents)}
-                             </span>
-                             <Badge variant={getStatusColor(product.status) as any} className="text-xs px-1 md:px-2 py-0.5">
-                               {product.status.replace('_', ' ')}
-                             </Badge>
-                           </div>
-                           <div className="flex justify-between gap-1">
-                             
-                             <Button variant="ghost" size="sm" onClick={() => handleEditProduct(product)} className="h-6 md:h-8 px-1 md:px-2 hover:bg-accent/50">
-                               <Edit className="h-3 w-3 md:h-4 md:w-4" />
-                             </Button>
-                             <Button variant="ghost" size="sm" onClick={() => handleDeleteProduct(product.id)} className="h-6 md:h-8 px-1 md:px-2 hover:bg-destructive/10 text-destructive">
-                               <Trash2 className="h-3 w-3 md:h-4 md:w-4" />
-                             </Button>
-                           </div>
-                         </CardContent>
-                       </Card>)}
-                  </div> : <div className="text-center py-12">
-                    <Package className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-medium mb-2">No products yet</h3>
-                    <p className="text-muted-foreground mb-6">Start building your brand catalog by adding your first product.</p>
-                    <Button onClick={() => {
-                  if (products.length >= 10) {
-                    toast({
-                      title: "Product Limit Reached",
-                      description: "You've reached the 10 product limit. Use the Feedback & Support button to request more.",
-                      variant: "destructive"
-                    });
-                    return;
-                  }
-                  setIsAddProductModalOpen(true);
-                }}>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Your First Product
-                    </Button>
-                  </div>}
-              </CardContent>
-            </Card>
-          </TabsContent>
+                             </div>
+                             <div className="flex justify-between gap-1">
+                               
+                               <Button variant="ghost" size="sm" onClick={() => handleEditProduct(product)} className="h-6 md:h-8 px-1 md:px-2 hover:bg-accent/50">
+                                 <Edit className="h-3 w-3 md:h-4 md:w-4" />
+                               </Button>
+                               <Button variant="ghost" size="sm" onClick={() => handleDeleteProduct(product.id)} className="h-6 md:h-8 px-1 md:px-2 hover:bg-destructive/10 text-destructive">
+                                 <Trash2 className="h-3 w-3 md:h-4 md:w-4" />
+                               </Button>
+                             </div>
+                           </CardContent>
+                         </Card>)}
+                    </div> : <div className="text-center py-12">
+                      <Package className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                      <h3 className="text-lg font-medium mb-2">No products yet</h3>
+                      <p className="text-muted-foreground mb-6">Start building your brand catalog by adding your first product.</p>
+                      <Button onClick={() => {
+                    if (products.length >= 10) {
+                      toast({
+                        title: "Product Limit Reached",
+                        description: "You've reached the 10 product limit. Use the Feedback & Support button to request more.",
+                        variant: "destructive"
+                      });
+                      return;
+                    }
+                    setIsAddProductModalOpen(true);
+                  }}>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Your First Product
+                      </Button>
+                    </div>}
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
 
           <TabsContent value="collabs">
             <CollabDashboard ownerOrgId={brand.id} orgType="brand" />

@@ -103,11 +103,15 @@ export const SalonServicesManager: React.FC<SalonServicesManagerProps> = ({ salo
     return <Sparkles className="h-4 w-4" />;
   };
   
-  const formatPrice = (aed: number) => {
-    return new Intl.NumberFormat('en-AE', {
+  const formatPrice = (amount: number) => {
+    const localeMap: Record<string, string> = {
+      'AED': 'en-AE', 'USD': 'en-US', 'EUR': 'de-DE', 
+      'GBP': 'en-GB', 'SAR': 'ar-SA', 'QAR': 'ar-QA'
+    };
+    return new Intl.NumberFormat(localeMap[currency] || 'en-US', {
       style: 'currency',
-      currency: 'AED',
-    }).format(aed);
+      currency: currency,
+    }).format(amount);
   };
   
   if (isLoading) {
