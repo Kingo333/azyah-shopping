@@ -31,6 +31,7 @@ interface BrandService {
 interface BrandServicesManagerProps {
   brandId: string;
   brandCategory: 'agency' | 'studio';
+  currency?: string;
 }
 
 const SERVICE_TYPES = [
@@ -58,7 +59,8 @@ const DEFAULT_FORM_DATA = {
 
 export const BrandServicesManager: React.FC<BrandServicesManagerProps> = ({
   brandId,
-  brandCategory
+  brandCategory,
+  currency = 'AED'
 }) => {
   const [services, setServices] = useState<BrandService[]>([]);
   const [loading, setLoading] = useState(true);
@@ -204,9 +206,10 @@ export const BrandServicesManager: React.FC<BrandServicesManagerProps> = ({
 
   const formatPrice = (min: number | null, max: number | null) => {
     if (!min && !max) return null;
-    if (min && max) return `$${min.toLocaleString()} - $${max.toLocaleString()}`;
-    if (min) return `From $${min.toLocaleString()}`;
-    if (max) return `Up to $${max.toLocaleString()}`;
+    const formatter = new Intl.NumberFormat('en-US', { style: 'currency', currency });
+    if (min && max) return `${formatter.format(min)} - ${formatter.format(max)}`;
+    if (min) return `From ${formatter.format(min)}`;
+    if (max) return `Up to ${formatter.format(max)}`;
     return null;
   };
 

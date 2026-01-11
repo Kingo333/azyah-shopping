@@ -6,7 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, ExternalLink, Package, Heart, Star, ShoppingBag, User, Image } from 'lucide-react';
+import { ArrowLeft, ExternalLink, Package, Heart, Star, ShoppingBag, User, Image, Briefcase } from 'lucide-react';
 import { SEOHead } from '@/components/SEOHead';
 import { SmartImage } from '@/components/SmartImage';
 import { getPrimaryImageUrl, hasMultipleImages, getImageCount } from '@/utils/imageHelpers';
@@ -17,6 +17,7 @@ import { useProductHasOutfit } from '@/hooks/useProductOutfits';
 import { useGuestGate } from '@/hooks/useGuestGate';
 import { GuestActionPrompt } from '@/components/GuestActionPrompt';
 import ProductTryOnModal from '@/components/ProductTryOnModal';
+import { PortfolioGallery } from '@/components/brand/PortfolioGallery';
 
 // ProductCard component for seamless grid display
 const BrandProductCard: React.FC<{
@@ -150,6 +151,10 @@ const BrandDetail = () => {
     enabled: !!slug,
   });
 
+  // Determine brand type
+  const isSalonOrAgency = brand?.category === 'salon' || brand?.category === 'agency' || brand?.category === 'studio';
+  const isFashionBrand = brand?.category === 'fashion_brand' || !brand?.category;
+
   const { data: products, isLoading: productsLoading } = useQuery({
     queryKey: ['brand-products', brand?.id],
     queryFn: async () => {
@@ -163,13 +168,14 @@ const BrandDetail = () => {
       if (error) throw error;
       return data;
     },
-    enabled: !!brand?.id,
+    enabled: !!brand?.id && !isSalonOrAgency,
   });
 
   const formatPrice = (cents: number, currency: string = 'USD') => {
+    const brandCurrency = brand?.currency || currency;
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: currency
+      currency: brandCurrency
     }).format(cents / 100);
   };
 
@@ -284,48 +290,66 @@ const BrandDetail = () => {
                     </Button>
                   )}
                   
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Package className="h-4 w-4" />
-                    {products?.length || 0} products
-                  </div>
+                  {isFashionBrand && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Package className="h-4 w-4" />
+                      {products?.length || 0} products
+                    </div>
+                  )}
+                  {isSalonOrAgency && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Briefcase className="h-4 w-4" />
+                      {brand.category === 'salon' ? 'Salon & Spa' : 'Marketing Agency'}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Products Grid - 3 columns mobile, 4 tablet, 5 desktop */}
-        <div className="mb-8">
-          <h2 className="text-xl font-semibold mb-4">All Products</h2>
-          
-          {productsLoading ? (
-            <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 md:gap-4">
-              {[...Array(9)].map((_, i) => (
-                <div key={i} className="animate-pulse bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl aspect-[3/4]" />
-              ))}
-            </div>
-          ) : products && products.length > 0 ? (
-            <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 md:gap-4">
-              {products.map((product) => (
-                <BrandProductCard
-                  key={product.id}
-                  product={product}
-                  onProductClick={(id) => navigate(`/p/${id}`)}
-                  onLike={handleLike}
-                  formatPrice={formatPrice}
-                  user={user}
-                  requireAuth={requireAuth}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-12">
-              <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-muted-foreground mb-2">No Products Yet</h3>
-              <p className="text-muted-foreground">This brand hasn't added any products yet.</p>
-            </div>
-          )}
-        </div>
+        {/* Products Grid - Only for Fashion Brands */}
+        {isFashionBrand && (
+          <div className="mb-8">
+            <h2 className="text-xl font-semibold mb-4">All Products</h2>
+            
+            {productsLoading ? (
+              <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 md:gap-4">
+                {[...Array(9)].map((_, i) => (
+                  <div key={i} className="animate-pulse bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl aspect-[3/4]" />
+                ))}
+              </div>
+            ) : products && products.length > 0 ? (
+              <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 md:gap-4">
+                {products.map((product) => (
+                  <BrandProductCard
+                    key={product.id}
+                    product={product}
+                    onProductClick={(id) => navigate(`/p/${id}`)}
+                    onLike={handleLike}
+                    formatPrice={formatPrice}
+                    user={user}
+                    requireAuth={requireAuth}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-xl font-semibold text-muted-foreground mb-2">No Products Yet</h3>
+                <p className="text-muted-foreground">This brand hasn't added any products yet.</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Portfolio Gallery - For Salons & Marketing Agencies */}
+        {isSalonOrAgency && brand?.id && (
+          <div className="mb-8">
+            <h2 className="text-xl font-semibold mb-4">Past Work</h2>
+            <PortfolioGallery brandId={brand.id} showEmptyState={false} />
+          </div>
+        )}
       </div>
 
       <GuestActionPrompt 
