@@ -5,10 +5,29 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { LogoUpload } from '@/components/LogoUpload';
+import { InfoTooltip } from '@/components/ui/info-tooltip';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Save, Plus, X, Trash2, CheckCircle } from 'lucide-react';
+import { Save, Plus, X, Trash2, CheckCircle, Loader2 } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+
+// Helper function to check if a display name is already taken by another retailer
+const checkDisplayNameAvailable = async (name: string, currentRetailerId: string): Promise<boolean> => {
+  const trimmedName = name.trim().toLowerCase();
+  const { data, error } = await supabase
+    .from('retailers')
+    .select('id')
+    .ilike('name', trimmedName)
+    .neq('id', currentRetailerId)
+    .maybeSingle();
+  
+  if (error) {
+    console.error('Error checking display name:', error);
+    return true; // Allow if check fails, DB constraint will catch it
+  }
+  
+  return !data; // Available if no matching retailer found
+};
 
 interface RetailerSettingsFormProps {
   retailer: {
@@ -108,10 +127,33 @@ export const RetailerSettingsForm: React.FC<RetailerSettingsFormProps> = ({
     try {
       setIsSaving(true);
 
+      // Validate display name is not empty
+      if (!formData.name.trim()) {
+        toast({
+          title: "Validation Error",
+          description: "Display name is required.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Check if display name is unique (only if it changed)
+      if (formData.name.trim().toLowerCase() !== retailer.name.trim().toLowerCase()) {
+        const isAvailable = await checkDisplayNameAvailable(formData.name, retailer.id);
+        if (!isAvailable) {
+          toast({
+            title: "Name Already Taken",
+            description: "This display name is already used by another retailer. Please choose a different name.",
+            variant: "destructive"
+          });
+          return;
+        }
+      }
+
       const { error } = await supabase
         .from('retailers')
         .update({
-          name: formData.name,
+          name: formData.name.trim(),
           bio: formData.bio,
           website: formData.website,
           contact_email: formData.contact_email,
@@ -121,11 +163,23 @@ export const RetailerSettingsForm: React.FC<RetailerSettingsFormProps> = ({
         })
         .eq('id', retailer.id);
 
-      if (error) throw error;
+      if (error) {
+        // Handle unique constraint violation
+        if (error.code === '23505' && error.message.includes('retailers_name_lower_unique')) {
+          toast({
+            title: "Name Already Taken",
+            description: "This display name is already used by another retailer. Please choose a different name.",
+            variant: "destructive"
+          });
+          return;
+        }
+        throw error;
+      }
 
       const updatedRetailer = {
         ...retailer,
-        ...formData
+        ...formData,
+        name: formData.name.trim()
       };
 
       onRetailerUpdate(updatedRetailer);
@@ -249,7 +303,10 @@ export const RetailerSettingsForm: React.FC<RetailerSettingsFormProps> = ({
                 <h3 className="text-lg font-medium mb-2">Store Information</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm font-medium">Store Name</label>
+                    <label className="text-sm font-medium flex items-center gap-2">
+                      Display Name
+                      <InfoTooltip content="This is the name shown to shoppers when they browse your products" />
+                    </label>
                     <p className="text-muted-foreground">{retailer.name || 'Not set'}</p>
                   </div>
                   <div>
@@ -381,11 +438,14 @@ export const RetailerSettingsForm: React.FC<RetailerSettingsFormProps> = ({
           {/* Basic Information */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="text-sm font-medium mb-2 block">Store Name</label>
+              <label className="text-sm font-medium mb-2 block flex items-center gap-2">
+                Display Name *
+                <InfoTooltip content="This is the name shown to shoppers when they browse your products" />
+              </label>
               <Input
                 value={formData.name}
                 onChange={(e) => handleInputChange('name', e.target.value)}
-                placeholder="Enter store name"
+                placeholder="Enter your display name"
               />
             </div>
             <div>

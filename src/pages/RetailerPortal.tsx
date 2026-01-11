@@ -94,7 +94,24 @@ const RetailerPortal = () => {
 
       if (!data && user) {
         // Auto-create retailer record for new retailer users
-        const defaultName = user.user_metadata?.name || user.email?.split('@')[0] || 'My Store';
+        let defaultName = user.user_metadata?.name || user.email?.split('@')[0] || 'My Store';
+        
+        // Check if display name is unique, if not, add a unique suffix
+        const checkNameUnique = async (name: string): Promise<boolean> => {
+          const { data } = await supabase
+            .from('retailers')
+            .select('id')
+            .ilike('name', name.trim())
+            .maybeSingle();
+          return !data;
+        };
+        
+        let isUnique = await checkNameUnique(defaultName);
+        if (!isUnique) {
+          // Add timestamp suffix to make it unique
+          defaultName = `${defaultName}-${Date.now().toString(36)}`;
+        }
+        
         const baseSlug = defaultName.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-');
         let slug = baseSlug;
         

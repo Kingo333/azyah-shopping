@@ -8,8 +8,26 @@ import { Badge } from '@/components/ui/badge';
 import { InfoTooltip } from '@/components/ui/info-tooltip';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { CheckCircle, AlertCircle, Globe, Mail, Users, Tag, Trash2 } from 'lucide-react';
+import { CheckCircle, AlertCircle, Globe, Mail, Users, Tag, Trash2, Loader2 } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+
+// Helper function to check if a display name is already taken by another brand
+const checkDisplayNameAvailable = async (name: string, currentBrandId: string): Promise<boolean> => {
+  const trimmedName = name.trim().toLowerCase();
+  const { data, error } = await supabase
+    .from('brands')
+    .select('id')
+    .ilike('name', trimmedName)
+    .neq('id', currentBrandId)
+    .maybeSingle();
+  
+  if (error) {
+    console.error('Error checking display name:', error);
+    return true; // Allow if check fails, DB constraint will catch it
+  }
+  
+  return !data; // Available if no matching brand found
+};
 
 interface Brand {
   id: string;
@@ -111,10 +129,33 @@ export const BrandSettingsForm: React.FC<BrandSettingsFormProps> = ({ brand, onB
     try {
       setIsSaving(true);
       
+      // Validate display name is not empty
+      if (!formData.name.trim()) {
+        toast({
+          title: "Validation Error",
+          description: "Display name is required.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Check if display name is unique (only if it changed)
+      if (formData.name.trim().toLowerCase() !== brand.name.trim().toLowerCase()) {
+        const isAvailable = await checkDisplayNameAvailable(formData.name, brand.id);
+        if (!isAvailable) {
+          toast({
+            title: "Name Already Taken",
+            description: "This display name is already used by another brand. Please choose a different name.",
+            variant: "destructive"
+          });
+          return;
+        }
+      }
+      
       const { data, error } = await supabase
         .from('brands')
         .update({
-          name: formData.name,
+          name: formData.name.trim(),
           bio: formData.bio,
           website: formData.website,
           contact_email: formData.contact_email,
@@ -126,7 +167,18 @@ export const BrandSettingsForm: React.FC<BrandSettingsFormProps> = ({ brand, onB
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        // Handle unique constraint violation
+        if (error.code === '23505' && error.message.includes('brands_name_lower_unique')) {
+          toast({
+            title: "Name Already Taken",
+            description: "This display name is already used by another brand. Please choose a different name.",
+            variant: "destructive"
+          });
+          return;
+        }
+        throw error;
+      }
 
       onBrandUpdate(data);
       setIsEditing(false);
@@ -261,7 +313,10 @@ export const BrandSettingsForm: React.FC<BrandSettingsFormProps> = ({ brand, onB
             {/* Basic Info Display */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="text-sm font-medium mb-2 block">Brand Name</label>
+                <label className="text-sm font-medium mb-2 block flex items-center gap-2">
+                  Display Name
+                  <InfoTooltip content="This is the name shown to shoppers when they browse your products" />
+                </label>
                 <div className="p-3 bg-muted/50 rounded-md">
                   {brand.name || 'Not set'}
                 </div>
@@ -422,13 +477,14 @@ export const BrandSettingsForm: React.FC<BrandSettingsFormProps> = ({ brand, onB
           {/* Basic Information */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="text-sm font-medium mb-2 block">
-                Brand Name *
+              <label className="text-sm font-medium mb-2 block flex items-center gap-2">
+                Display Name *
+                <InfoTooltip content="This is the name shown to shoppers when they browse your products" />
               </label>
               <Input
                 value={formData.name}
                 onChange={(e) => handleInputChange('name', e.target.value)}
-                placeholder="Enter your brand name"
+                placeholder="Enter your display name"
               />
             </div>
             <div>
