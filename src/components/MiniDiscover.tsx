@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback, memo } from 'react';
 import { motion, AnimatePresence, useMotionValue, useTransform, PanInfo } from 'framer-motion';
-import { ArrowRight, Heart, X, Star, ExternalLink, Check, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowRight, Heart, X, Star, ShoppingBag, Check, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -52,13 +52,15 @@ const MiniSwipeCard = memo(({
   onNext, 
   onPrev,
   hasNext,
-  hasPrev 
+  hasPrev,
+  isFirstCard = false
 }: { 
   product: MiniProduct;
   onNext: () => void;
   onPrev: () => void;
   hasNext: boolean;
   hasPrev: boolean;
+  isFirstCard?: boolean;
 }) => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -66,8 +68,26 @@ const MiniSwipeCard = memo(({
   const { addToWishlist, isLoading: wishlistLoading } = useWishlist();
   const [isAdded, setIsAdded] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
+  const [hasAnimated, setHasAnimated] = useState(false);
   
   const x = useMotionValue(0);
+  
+  // Demo animation for first card
+  React.useEffect(() => {
+    if (isFirstCard && !hasAnimated) {
+      const timer = setTimeout(() => {
+        x.set(-25);
+        setTimeout(() => {
+          x.set(25);
+          setTimeout(() => {
+            x.set(0);
+            setHasAnimated(true);
+          }, 250);
+        }, 250);
+      }, 600);
+      return () => clearTimeout(timer);
+    }
+  }, [isFirstCard, hasAnimated, x]);
   const rotate = useTransform(x, [-150, 0, 150], [-10, 0, 10]);
   const opacity = useTransform(x, [-150, -75, 0, 75, 150], [0.6, 1, 1, 1, 0.6]);
 
@@ -249,9 +269,9 @@ const MiniSwipeCard = memo(({
                   e.stopPropagation();
                   handleShop();
                 }}
-                className="px-3 py-2.5 text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
+                className="px-2.5 py-2.5 text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
               >
-                <ExternalLink className="h-4 w-4" strokeWidth={2} />
+                <ShoppingBag className="h-4 w-4" strokeWidth={2} />
               </button>
             )}
           </div>
@@ -278,7 +298,7 @@ const MiniSwipeCard = memo(({
       
       {/* Swipe hint */}
       <p className="text-center text-[10px] text-muted-foreground mt-2">
-        Swipe or tap arrows to explore
+        ← Pass • ↑ Save • → Like — Swipe to explore
       </p>
     </div>
   );
@@ -353,7 +373,7 @@ const MiniListCard = memo(({ product }: { product: MiniProduct }) => {
                 onClick={handleShop}
                 className="h-7 w-7 rounded-full"
               >
-                <ExternalLink className="h-3.5 w-3.5" />
+                <ShoppingBag className="h-3.5 w-3.5" />
               </Button>
             )}
           </div>
@@ -504,6 +524,7 @@ const MiniDiscover: React.FC<MiniDiscoverProps> = ({
                 onPrev={handlePrev}
                 hasNext={hasNext}
                 hasPrev={hasPrev}
+                isFirstCard={currentIndex === 0}
               />
             )}
             
