@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback, memo } from 'react';
 import { motion, AnimatePresence, useMotionValue, useTransform, animate, PanInfo } from 'framer-motion';
-import { ArrowRight, Heart, X, Star, ShoppingBag, Check, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowRight, Heart, X, Star, ShoppingBag, Check } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -49,18 +49,10 @@ const showGuestToast = (action: string, navigate: (path: string) => void) => {
 // Swipe card for mini discover - with StyleLinkCard action bar design
 const MiniSwipeCard = memo(({ 
   product, 
-  onNext, 
-  onPrev,
-  hasNext,
-  hasPrev,
-  isFirstCard = false
+  onSwipe
 }: { 
   product: MiniProduct;
-  onNext: () => void;
-  onPrev: () => void;
-  hasNext: boolean;
-  hasPrev: boolean;
-  isFirstCard?: boolean;
+  onSwipe: () => void;
 }) => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -121,15 +113,13 @@ const MiniSwipeCard = memo(({
 
   const handleDragEnd = useCallback((_: any, info: PanInfo) => {
     const threshold = 80;
-    if (info.offset.x > threshold && hasNext) {
+    // Any swipe beyond threshold triggers new random product
+    if (Math.abs(info.offset.x) > threshold) {
       swipeHaptics.selection();
-      onNext();
-    } else if (info.offset.x < -threshold && hasPrev) {
-      swipeHaptics.selection();
-      onPrev();
+      onSwipe();
     }
     x.set(0);
-  }, [x, onNext, onPrev, hasNext, hasPrev]);
+  }, [x, onSwipe]);
 
   const handleAddToCloset = useCallback(() => {
     if (!user) {
@@ -166,8 +156,8 @@ const MiniSwipeCard = memo(({
 
   const handlePass = useCallback(() => {
     swipeHaptics.selection();
-    if (hasNext) onNext();
-  }, [hasNext, onNext]);
+    onSwipe();
+  }, [onSwipe]);
 
   const handleShop = useCallback(() => {
     if (product.external_url) {
@@ -310,27 +300,9 @@ const MiniSwipeCard = memo(({
         </Card>
       </motion.div>
       
-      {/* Navigation arrows */}
-      {hasPrev && (
-        <button
-          onClick={onPrev}
-          className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 z-10 p-1.5 rounded-full bg-background/90 shadow-md hover:bg-background transition-colors"
-        >
-          <ChevronLeft className="h-4 w-4" />
-        </button>
-      )}
-      {hasNext && (
-        <button
-          onClick={onNext}
-          className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 z-10 p-1.5 rounded-full bg-background/90 shadow-md hover:bg-background transition-colors"
-        >
-          <ChevronRight className="h-4 w-4" />
-        </button>
-      )}
-      
-      {/* Swipe hint */}
-      <p className="text-center text-[10px] text-muted-foreground mt-2">
-        ← Pass • ↑ Save • → Like — Swipe to explore
+      {/* AI hint */}
+      <p className="text-center text-[10px] text-muted-foreground/70 mt-3 italic">
+        ✨ AI learns your style
       </p>
     </div>
   );
@@ -434,7 +406,8 @@ const MiniDiscover: React.FC<MiniDiscoverProps> = ({
   subtitle = "Swipe to explore styles"
 }) => {
   const [viewMode, setViewMode] = useState<'swipe' | 'list'>('swipe');
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [recentlyShown, setRecentlyShown] = useState<Set<string>>(new Set());
+  const [currentProduct, setCurrentProduct] = useState<MiniProduct | null>(null);
   
   const { products, isLoading } = useUnifiedProducts({
     category: 'all',
@@ -451,21 +424,45 @@ const MiniDiscover: React.FC<MiniDiscoverProps> = ({
       .slice(0, limit);
   }, [products, excludeProductIds, limit]);
   
-  const currentProduct = filteredProducts[currentIndex];
-  const hasNext = currentIndex < filteredProducts.length - 1;
-  const hasPrev = currentIndex > 0;
+  // Get a random product from available pool
+  const getRandomProduct = useCallback(() => {
+    if (!filteredProducts.length) return null;
+    
+    // Filter out recently shown products
+    const availableProducts = filteredProducts.filter(p => !recentlyShown.has(p.id));
+    
+    // If all products were recently shown, reset and use full list
+    const pool = availableProducts.length > 0 ? availableProducts : filteredProducts;
+    
+    // Pick random product
+    const randomIndex = Math.floor(Math.random() * pool.length);
+    return pool[randomIndex];
+  }, [filteredProducts, recentlyShown]);
   
-  const handleNext = useCallback(() => {
-    if (hasNext) {
-      setCurrentIndex(i => i + 1);
+  // Initialize with random product
+  React.useEffect(() => {
+    if (filteredProducts.length && !currentProduct) {
+      setCurrentProduct(getRandomProduct());
     }
-  }, [hasNext]);
+  }, [filteredProducts, currentProduct, getRandomProduct]);
   
-  const handlePrev = useCallback(() => {
-    if (hasPrev) {
-      setCurrentIndex(i => i - 1);
+  // Handle swipe - get new random product
+  const handleSwipe = useCallback(() => {
+    const nextProduct = getRandomProduct();
+    if (nextProduct) {
+      setRecentlyShown(prev => {
+        const newSet = new Set(prev);
+        if (currentProduct) newSet.add(currentProduct.id);
+        // Keep only last 5 to allow recycling
+        if (newSet.size > 5) {
+          const first = newSet.values().next().value;
+          if (first) newSet.delete(first);
+        }
+        return newSet;
+      });
+      setCurrentProduct(nextProduct);
     }
-  }, [hasPrev]);
+  }, [currentProduct, getRandomProduct]);
 
   if (isLoading) {
     return (
@@ -552,31 +549,9 @@ const MiniDiscover: React.FC<MiniDiscoverProps> = ({
             {currentProduct && (
               <MiniSwipeCard
                 product={currentProduct}
-                onNext={handleNext}
-                onPrev={handlePrev}
-                hasNext={hasNext}
-                hasPrev={hasPrev}
-                isFirstCard={currentIndex === 0}
+                onSwipe={handleSwipe}
               />
             )}
-            
-            {/* Progress indicator */}
-            <div className="flex justify-center gap-1 mt-3">
-              {filteredProducts.slice(0, 10).map((_, i) => (
-                <div
-                  key={i}
-                  className={cn(
-                    "w-1.5 h-1.5 rounded-full transition-colors",
-                    i === currentIndex ? "bg-primary" : "bg-muted-foreground/30"
-                  )}
-                />
-              ))}
-              {filteredProducts.length > 10 && (
-                <span className="text-[8px] text-muted-foreground ml-1">
-                  +{filteredProducts.length - 10}
-                </span>
-              )}
-            </div>
           </motion.div>
         ) : (
           <motion.div
