@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback, memo } from 'react';
 import { motion, AnimatePresence, useMotionValue, useTransform, PanInfo } from 'framer-motion';
-import { ArrowRight, Heart, ExternalLink, Check, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowRight, Heart, X, Star, ExternalLink, Check, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -13,6 +13,8 @@ import { SmartImage } from '@/components/SmartImage';
 import { HangerIcon } from '@/components/icons/HangerIcon';
 import { openExternalUrl } from '@/lib/openExternalUrl';
 import { swipeHaptics } from '@/utils/haptics';
+import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 
 interface MiniDiscoverProps {
   limit?: number;
@@ -32,7 +34,19 @@ interface MiniProduct {
   brands?: { name: string };
 }
 
-// Swipe card for mini discover
+// Non-blocking guest notification helper
+const showGuestToast = (action: string, navigate: (path: string) => void) => {
+  toast(`Sign in to ${action}`, {
+    description: 'Create an account to save your favorites',
+    action: {
+      label: 'Sign Up',
+      onClick: () => navigate('/onboarding/signup')
+    },
+    duration: 3000,
+  });
+};
+
+// Swipe card for mini discover - with StyleLinkCard action bar design
 const MiniSwipeCard = memo(({ 
   product, 
   onNext, 
@@ -47,6 +61,7 @@ const MiniSwipeCard = memo(({
   hasPrev: boolean;
 }) => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const { mutate: addToWardrobe, isPending } = useAddProductToWardrobe();
   const { addToWishlist, isLoading: wishlistLoading } = useWishlist();
   const [isAdded, setIsAdded] = useState(false);
@@ -69,19 +84,42 @@ const MiniSwipeCard = memo(({
   }, [x, onNext, onPrev, hasNext, hasPrev]);
 
   const handleAddToCloset = useCallback(() => {
-    if (!user || isPending || isAdded) return;
+    if (!user) {
+      showGuestToast('save to closet', navigate);
+      return;
+    }
+    if (isPending || isAdded) return;
     swipeHaptics.selection();
     addToWardrobe(product as any, {
       onSuccess: () => setIsAdded(true)
     });
-  }, [user, isPending, isAdded, addToWardrobe, product]);
+  }, [user, isPending, isAdded, addToWardrobe, product, navigate]);
 
   const handleLike = useCallback(async () => {
-    if (!user || wishlistLoading || isLiked) return;
+    if (!user) {
+      showGuestToast('like items', navigate);
+      return;
+    }
+    if (wishlistLoading || isLiked) return;
     swipeHaptics.like();
     await addToWishlist(product.id);
     setIsLiked(true);
-  }, [user, wishlistLoading, isLiked, addToWishlist, product.id]);
+  }, [user, wishlistLoading, isLiked, addToWishlist, product.id, navigate]);
+
+  const handleSave = useCallback(async () => {
+    if (!user) {
+      showGuestToast('save items', navigate);
+      return;
+    }
+    if (wishlistLoading) return;
+    swipeHaptics.selection();
+    await addToWishlist(product.id);
+  }, [user, wishlistLoading, addToWishlist, product.id, navigate]);
+
+  const handlePass = useCallback(() => {
+    swipeHaptics.selection();
+    if (hasNext) onNext();
+  }, [hasNext, onNext]);
 
   const handleShop = useCallback(() => {
     if (product.external_url) {
@@ -99,7 +137,7 @@ const MiniSwipeCard = memo(({
   };
 
   return (
-    <div className="relative w-full max-w-[280px] mx-auto">
+    <div className="relative w-full max-w-[300px] mx-auto">
       <motion.div
         drag="x"
         dragConstraints={{ left: 0, right: 0 }}
@@ -107,7 +145,7 @@ const MiniSwipeCard = memo(({
         style={{ x, rotate, opacity }}
         className="cursor-grab active:cursor-grabbing"
       >
-        <Card className="overflow-hidden shadow-lg">
+        <Card className="overflow-hidden shadow-lg rounded-2xl">
           {/* Image */}
           <div className="relative aspect-[3/4] bg-muted">
             <SmartImage
@@ -117,9 +155,38 @@ const MiniSwipeCard = memo(({
             />
             
             {/* Overlay gradient */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
             
-            {/* Product info */}
+            {/* Top right: Closet button */}
+            <div className="absolute top-3 right-3 z-10">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleAddToCloset();
+                }}
+                disabled={isPending || isAdded}
+                className={cn(
+                  "h-auto px-2.5 py-1.5 rounded-full bg-background/80 backdrop-blur-sm hover:bg-background/90 shadow-md flex items-center gap-1.5 transition-all",
+                  isAdded && "bg-green-500/90 text-white"
+                )}
+              >
+                {isAdded ? (
+                  <>
+                    <Check className="h-3.5 w-3.5" strokeWidth={2.5} />
+                    <span className="text-[10px] font-medium">Added</span>
+                  </>
+                ) : (
+                  <>
+                    <HangerIcon className="h-3.5 w-3.5" size={14} />
+                    <span className="text-[10px] font-medium">Closet</span>
+                  </>
+                )}
+              </Button>
+            </div>
+            
+            {/* Product info overlay */}
             <div className="absolute bottom-0 left-0 right-0 p-3 text-white">
               {brandName && (
                 <p className="text-[10px] font-medium opacity-80 mb-0.5">{brandName}</p>
@@ -131,54 +198,61 @@ const MiniSwipeCard = memo(({
             </div>
           </div>
           
-          {/* Action buttons */}
-          <div className="p-2 flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleLike}
-              disabled={wishlistLoading || isLiked}
+          {/* Action bar - StyleLinkCard design */}
+          <div className="flex items-center border-t border-border/50 divide-x divide-border/50 bg-background">
+            {/* Pass */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handlePass();
+              }}
+              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-muted-foreground hover:text-destructive hover:bg-destructive/5 transition-colors"
+            >
+              <X className="h-4 w-4" strokeWidth={2} />
+              <span className="text-xs font-medium">Pass</span>
+            </button>
+            
+            {/* Save */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleSave();
+              }}
+              disabled={wishlistLoading}
+              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-muted-foreground hover:text-primary hover:bg-primary/5 transition-colors disabled:opacity-50"
+            >
+              <Star className="h-4 w-4" strokeWidth={2} />
+              <span className="text-xs font-medium">Save</span>
+            </button>
+            
+            {/* Like */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleLike();
+              }}
               className={cn(
-                "flex-1 h-8 text-[10px]",
-                isLiked && "bg-pink-50 border-pink-300 text-pink-600"
+                "flex-1 flex items-center justify-center gap-1.5 py-2.5 transition-colors",
+                isLiked 
+                  ? "text-pink-500 bg-pink-50" 
+                  : "text-muted-foreground hover:text-pink-500 hover:bg-pink-50"
               )}
             >
-              <Heart className={cn("h-3.5 w-3.5 mr-1", isLiked && "fill-current")} />
-              {isLiked ? 'Liked' : 'Like'}
-            </Button>
+              <Heart className={cn("h-4 w-4", isLiked && "fill-current")} strokeWidth={2} />
+              <span className="text-xs font-medium">{isLiked ? 'Liked' : 'Like'}</span>
+            </button>
             
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleAddToCloset}
-              disabled={isPending || isAdded || !user}
-              className={cn(
-                "flex-1 h-8 text-[10px]",
-                isAdded && "bg-green-50 border-green-300 text-green-600"
-              )}
-            >
-              {isAdded ? (
-                <>
-                  <Check className="h-3.5 w-3.5 mr-1" />
-                  Added
-                </>
-              ) : (
-                <>
-                  <HangerIcon className="h-3.5 w-3.5 mr-1" size={14} />
-                  Closet
-                </>
-              )}
-            </Button>
-            
+            {/* Shop */}
             {product.external_url && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleShop}
-                className="h-8 px-2"
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleShop();
+                }}
+                className="px-3 py-2.5 text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
               >
-                <ExternalLink className="h-3.5 w-3.5" />
-              </Button>
+                <ExternalLink className="h-4 w-4" strokeWidth={2} />
+              </button>
             )}
           </div>
         </Card>
