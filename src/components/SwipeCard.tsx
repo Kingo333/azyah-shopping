@@ -140,9 +140,9 @@ const SwipeCard = memo(({
       className="absolute inset-0 flex items-center justify-center"
       {...motionProps}
     >
-      <Card className="w-full max-w-md mx-auto max-h-full rounded-3xl overflow-hidden border-0 shadow-2xl shadow-black/10 bg-card flex flex-col">
-        {/* Main image container - flexible height */}
-        <div className="relative w-full flex-1 min-h-0 bg-gradient-to-br from-muted/30 to-background">
+      <Card className="w-full max-w-md mx-auto rounded-3xl overflow-hidden border-0 shadow-2xl shadow-black/10 bg-card flex flex-col">
+        {/* Main image container with aspect ratio */}
+        <div className="relative w-full aspect-[9/13] bg-gradient-to-br from-muted/30 to-background">
           {/* Image with blur-up effect */}
           <div className={cn(
             "absolute inset-0 transition-opacity duration-300",
