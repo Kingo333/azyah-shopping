@@ -21,6 +21,8 @@ interface MiniDiscoverProps {
   excludeProductIds?: string[];
   title?: string;
   subtitle?: string;
+  category?: string;
+  onCategoryChange?: (category: string) => void;
 }
 
 interface MiniProduct {
@@ -187,7 +189,7 @@ const MiniSwipeCard = memo(({
         className="cursor-grab active:cursor-grabbing"
       >
         <Card className="overflow-hidden shadow-lg rounded-2xl">
-          {/* Image */}
+          {/* Image container with overlay action bar */}
           <div className="relative aspect-[3/4] bg-muted">
             <SmartImage
               src={product.image_url || '/placeholder.svg'}
@@ -196,7 +198,7 @@ const MiniSwipeCard = memo(({
             />
             
             {/* Overlay gradient */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
             
             {/* Top right: Closet button */}
             <div className="absolute top-3 right-3 z-10">
@@ -227,75 +229,78 @@ const MiniSwipeCard = memo(({
               </Button>
             </div>
             
-            {/* Product info overlay */}
-            <div className="absolute bottom-0 left-0 right-0 p-3 text-white">
-              {brandName && (
-                <p className="text-[10px] font-medium opacity-80 mb-0.5">{brandName}</p>
-              )}
-              <p className="text-xs font-semibold line-clamp-1">{product.title}</p>
-              <p className="text-sm font-bold mt-0.5">
-                {formatPrice(product.price_cents, product.currency)}
-              </p>
+            {/* Bottom overlay - product info + action bar */}
+            <div className="absolute bottom-0 left-0 right-0 z-10">
+              {/* Product info */}
+              <div className="px-3 pt-3 pb-2 text-white">
+                {brandName && (
+                  <p className="text-[10px] font-medium opacity-80 mb-0.5">{brandName}</p>
+                )}
+                <p className="text-xs font-semibold line-clamp-1">{product.title}</p>
+                <p className="text-sm font-bold mt-0.5">
+                  {formatPrice(product.price_cents, product.currency)}
+                </p>
+              </div>
+              
+              {/* Action bar - now part of overlay */}
+              <div className="flex items-center divide-x divide-white/20 bg-background/95 backdrop-blur-sm rounded-b-2xl">
+                {/* Pass */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handlePass();
+                  }}
+                  className="flex-1 flex items-center justify-center gap-1 py-2 text-muted-foreground hover:text-destructive hover:bg-destructive/5 transition-colors"
+                >
+                  <X className="h-3.5 w-3.5" strokeWidth={2} />
+                  <span className="text-[10px] font-medium">Pass</span>
+                </button>
+                
+                {/* Save */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleSave();
+                  }}
+                  disabled={wishlistLoading}
+                  className="flex-1 flex items-center justify-center gap-1 py-2 text-muted-foreground hover:text-primary hover:bg-primary/5 transition-colors disabled:opacity-50"
+                >
+                  <Star className="h-3.5 w-3.5" strokeWidth={2} />
+                  <span className="text-[10px] font-medium">Save</span>
+                </button>
+                
+                {/* Like */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleLike();
+                  }}
+                  className={cn(
+                    "flex-1 flex items-center justify-center gap-1 py-2 transition-colors",
+                    isLiked 
+                      ? "text-pink-500 bg-pink-50" 
+                      : "text-muted-foreground hover:text-pink-500 hover:bg-pink-50"
+                  )}
+                >
+                  <Heart className={cn("h-3.5 w-3.5", isLiked && "fill-current")} strokeWidth={2} />
+                  <span className="text-[10px] font-medium">{isLiked ? 'Liked' : 'Like'}</span>
+                </button>
+                
+                {/* Shop */}
+                {product.external_url && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleShop();
+                    }}
+                    className="flex items-center justify-center gap-1 px-3 py-2.5 bg-primary/10 text-primary hover:bg-primary/20 transition-colors font-medium rounded-br-2xl"
+                  >
+                    <ShoppingBag className="h-4 w-4" strokeWidth={2} />
+                    <span className="text-[11px] font-semibold">Shop</span>
+                  </button>
+                )}
+              </div>
             </div>
-          </div>
-          
-          {/* Action bar - StyleLinkCard design with smaller buttons */}
-          <div className="flex items-center border-t border-border/50 divide-x divide-border/50 bg-background">
-            {/* Pass - smaller */}
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                handlePass();
-              }}
-              className="flex-1 flex items-center justify-center gap-1 py-2 text-muted-foreground hover:text-destructive hover:bg-destructive/5 transition-colors"
-            >
-              <X className="h-3.5 w-3.5" strokeWidth={2} />
-              <span className="text-[10px] font-medium">Pass</span>
-            </button>
-            
-            {/* Save - smaller */}
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                handleSave();
-              }}
-              disabled={wishlistLoading}
-              className="flex-1 flex items-center justify-center gap-1 py-2 text-muted-foreground hover:text-primary hover:bg-primary/5 transition-colors disabled:opacity-50"
-            >
-              <Star className="h-3.5 w-3.5" strokeWidth={2} />
-              <span className="text-[10px] font-medium">Save</span>
-            </button>
-            
-            {/* Like - smaller */}
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                handleLike();
-              }}
-              className={cn(
-                "flex-1 flex items-center justify-center gap-1 py-2 transition-colors",
-                isLiked 
-                  ? "text-pink-500 bg-pink-50" 
-                  : "text-muted-foreground hover:text-pink-500 hover:bg-pink-50"
-              )}
-            >
-              <Heart className={cn("h-3.5 w-3.5", isLiked && "fill-current")} strokeWidth={2} />
-              <span className="text-[10px] font-medium">{isLiked ? 'Liked' : 'Like'}</span>
-            </button>
-            
-            {/* Shop - bigger with accent color */}
-            {product.external_url && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleShop();
-                }}
-                className="flex items-center justify-center gap-1 px-3 py-2.5 bg-primary/10 text-primary hover:bg-primary/20 transition-colors font-medium"
-              >
-                <ShoppingBag className="h-4 w-4" strokeWidth={2} />
-                <span className="text-[11px] font-semibold">Shop</span>
-              </button>
-            )}
           </div>
         </Card>
       </motion.div>
@@ -398,22 +403,33 @@ const MiniListCard = memo(({ product }: { product: MiniProduct }) => {
 });
 MiniListCard.displayName = 'MiniListCard';
 
+// Category options for filter tabs
+const DISCOVER_CATEGORIES = ['all', 'clothing', 'modestwear', 'footwear', 'bags', 'accessories', 'jewelry'] as const;
+
 // Main MiniDiscover component
 const MiniDiscover: React.FC<MiniDiscoverProps> = ({
   limit = 15,
   excludeProductIds = [],
   title = "Discover More",
-  subtitle = "Swipe to explore styles"
+  subtitle = "Swipe to explore styles",
+  category = 'all',
+  onCategoryChange
 }) => {
   const [viewMode, setViewMode] = useState<'swipe' | 'list'>('swipe');
   const [recentlyShown, setRecentlyShown] = useState<Set<string>>(new Set());
   const [currentProduct, setCurrentProduct] = useState<MiniProduct | null>(null);
   
-  const { products, isLoading } = useUnifiedProducts({
-    category: 'all',
+  const { products, isLoading, refetch } = useUnifiedProducts({
+    category: category === 'all' ? undefined : category,
     limit,
     priceRange: { min: 0, max: 100000 },
   });
+  
+  // Reset current product when category changes
+  React.useEffect(() => {
+    setCurrentProduct(null);
+    setRecentlyShown(new Set());
+  }, [category]);
   
   // Filter out excluded products
   const filteredProducts = useMemo(() => {
@@ -525,15 +541,35 @@ const MiniDiscover: React.FC<MiniDiscoverProps> = ({
             </button>
           </div>
           
-          {/* Browse All link */}
+          {/* Browse All link - passes selected category */}
           <Button variant="ghost" size="sm" asChild className="text-[hsl(var(--azyah-maroon))] gap-1 h-7 px-2 text-[10px]">
-            <Link to="/swipe">
+            <Link to={`/swipe${category && category !== 'all' ? `?category=${category}` : ''}`}>
               Browse All
               <ArrowRight className="h-3 w-3" />
             </Link>
           </Button>
         </div>
       </div>
+      
+      {/* Category Filter Tabs */}
+      {onCategoryChange && (
+        <div className="flex gap-1.5 overflow-x-auto scrollbar-hide pb-1">
+          {DISCOVER_CATEGORIES.map((cat) => (
+            <button
+              key={cat}
+              onClick={() => onCategoryChange(cat)}
+              className={cn(
+                "px-2.5 py-1 rounded-full text-[10px] font-medium whitespace-nowrap transition-colors",
+                category === cat 
+                  ? "bg-primary text-primary-foreground" 
+                  : "bg-muted text-muted-foreground hover:bg-muted/80"
+              )}
+            >
+              {cat === 'all' ? 'All' : cat.charAt(0).toUpperCase() + cat.slice(1)}
+            </button>
+          ))}
+        </div>
+      )}
       
       {/* Content */}
       <AnimatePresence mode="wait">
@@ -548,6 +584,7 @@ const MiniDiscover: React.FC<MiniDiscoverProps> = ({
           >
             {currentProduct && (
               <MiniSwipeCard
+                key={currentProduct.id}
                 product={currentProduct}
                 onSwipe={handleSwipe}
               />

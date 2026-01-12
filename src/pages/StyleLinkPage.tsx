@@ -46,6 +46,7 @@ export default function StyleLinkPage() {
   const { data: stats } = useStyleLinkStats(effectiveIsOwner ? userData?.user_id : undefined);
   const logEvent = useLogStyleLinkEvent();
   const [showQRModal, setShowQRModal] = useState(false);
+  const [discoverCategory, setDiscoverCategory] = useState<string>('all');
 
   // Redirect UUID URLs to canonical username URLs
   useEffect(() => {
@@ -568,6 +569,8 @@ export default function StyleLinkPage() {
               title="Discover More"
               subtitle="Swipe to explore styles"
               limit={15}
+              category={discoverCategory}
+              onCategoryChange={setDiscoverCategory}
             />
           </div>
         </div>
