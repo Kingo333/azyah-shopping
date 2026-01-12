@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import { Button } from '@/components/ui/button';
-import { Heart, X, Star, ExternalLink } from 'lucide-react';
+import { Heart, X, Star, ShoppingBag } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface SwipeActionBarProps {
@@ -37,7 +37,7 @@ export const SwipeActionBar = memo(({
             e.stopPropagation();
             onDislike();
           }}
-          className="flex items-center gap-1.5 px-4 py-2.5 text-muted-foreground hover:text-destructive hover:bg-destructive/5 transition-colors border-r border-border/50"
+          className="flex items-center gap-1 px-3 py-2.5 text-muted-foreground hover:text-destructive hover:bg-destructive/5 transition-colors border-r border-border/50"
         >
           <X className="h-4 w-4" strokeWidth={2} />
           <span className="text-xs font-medium">Pass</span>
@@ -50,7 +50,7 @@ export const SwipeActionBar = memo(({
             onWishlist();
           }}
           disabled={wishlistLoading}
-          className="flex items-center gap-1.5 px-4 py-2.5 text-muted-foreground hover:text-primary hover:bg-primary/5 transition-colors border-r border-border/50 disabled:opacity-50"
+          className="flex items-center gap-1 px-3 py-2.5 text-muted-foreground hover:text-primary hover:bg-primary/5 transition-colors border-r border-border/50 disabled:opacity-50"
         >
           <Star className="h-4 w-4" strokeWidth={2} />
           <span className="text-xs font-medium">Save</span>
@@ -62,7 +62,7 @@ export const SwipeActionBar = memo(({
             e.stopPropagation();
             onLike();
           }}
-          className="flex items-center gap-1.5 px-4 py-2.5 text-muted-foreground hover:text-pink-500 hover:bg-pink-50 transition-colors border-r border-border/50 last:border-r-0"
+          className="flex items-center gap-1 px-3 py-2.5 text-muted-foreground hover:text-pink-500 hover:bg-pink-50 transition-colors border-r border-border/50 last:border-r-0"
         >
           <Heart className="h-4 w-4" strokeWidth={2} />
           <span className="text-xs font-medium">Like</span>
@@ -75,9 +75,9 @@ export const SwipeActionBar = memo(({
               e.stopPropagation();
               onShopNow(e);
             }}
-            className="flex items-center justify-center px-3 py-2.5 text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
+            className="flex items-center justify-center px-2.5 py-2.5 text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
           >
-            <ExternalLink className="h-4 w-4" strokeWidth={2} />
+            <ShoppingBag className="h-4 w-4" strokeWidth={2} />
           </button>
         )}
       </div>
@@ -140,7 +140,7 @@ export const SwipeActionBar = memo(({
           }}
           className="h-14 w-14 rounded-full border-2 border-accent/20 bg-background/80 backdrop-blur-sm hover:bg-accent/10 hover:border-accent hover:scale-110 transition-all duration-200 shadow-lg"
         >
-          <ExternalLink className="h-5 w-5 text-accent-foreground" strokeWidth={2.5} />
+          <ShoppingBag className="h-5 w-5 text-accent-foreground" strokeWidth={2.5} />
         </Button>
       )}
     </div>
