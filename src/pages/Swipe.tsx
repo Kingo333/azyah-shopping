@@ -265,7 +265,7 @@ const Swipe = () => {
 
         {/* Content Container */}
         {viewMode === 'swipe' ? <div className="flex-1 flex items-center justify-center min-h-[400px] px-1">
-            <div className="relative w-full max-w-[380px] sm:max-w-md lg:max-w-lg h-[calc(100vh-10px)] lg:h-[calc(100vh-5px)] max-h-[850px] lg:max-h-[950px]">
+            <div className="relative w-full max-w-[380px] sm:max-w-md lg:max-w-lg h-[calc(100vh-140px)] lg:h-[calc(100vh-120px)] max-h-[750px] lg:max-h-[850px]">
               <SwipeDeck 
                 filter={filters.categories[0] || 'all'} 
                 subcategory={filters.subcategories[0] || ''} 
