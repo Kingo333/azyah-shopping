@@ -64,7 +64,8 @@ const MiniSwipeCard = memo(({
   const [isLiked, setIsLiked] = useState(false);
   const [hasInteracted, setHasInteracted] = useState(false);
   
-  const x = useMotionValue(0);
+const x = useMotionValue(0);
+  const y = useMotionValue(0);
   
   // Continuous smooth shake animation every 3 seconds until user interacts
   React.useEffect(() => {
@@ -113,19 +114,9 @@ const MiniSwipeCard = memo(({
     handleInteraction();
   }, [handleInteraction]);
 
-  const handleDragEnd = useCallback((_: any, info: PanInfo) => {
-    const threshold = 80;
-    // Any swipe beyond threshold triggers new random product
-    if (Math.abs(info.offset.x) > threshold) {
-      swipeHaptics.selection();
-      onSwipe();
-    }
-    x.set(0);
-  }, [x, onSwipe]);
-
   const handleAddToCloset = useCallback(() => {
     if (!user) {
-      showGuestToast('save to closet', navigate);
+      showGuestToast('add to your closet', navigate);
       return;
     }
     if (isPending || isAdded) return;
@@ -161,6 +152,37 @@ const MiniSwipeCard = memo(({
     onSwipe();
   }, [onSwipe]);
 
+  const handleDragEnd = useCallback((_: any, info: PanInfo) => {
+    const HORIZONTAL_THRESHOLD = 80;
+    const VERTICAL_THRESHOLD = 80;
+    
+    const { offset, velocity } = info;
+    const effectiveX = offset.x + velocity.x * 0.1;
+    const effectiveY = offset.y + velocity.y * 0.1;
+    
+    // Swipe UP = Save/Wishlist (negative Y)
+    if (effectiveY < -VERTICAL_THRESHOLD && Math.abs(effectiveX) < HORIZONTAL_THRESHOLD) {
+      swipeHaptics.selection();
+      handleSave();
+      onSwipe();
+    }
+    // Swipe RIGHT = Like
+    else if (effectiveX > HORIZONTAL_THRESHOLD) {
+      swipeHaptics.like();
+      handleLike();
+      onSwipe();
+    }
+    // Swipe LEFT = Pass
+    else if (effectiveX < -HORIZONTAL_THRESHOLD) {
+      swipeHaptics.selection();
+      onSwipe();
+    }
+    
+    // Reset position
+    x.set(0);
+    y.set(0);
+  }, [x, y, onSwipe, handleSave, handleLike]);
+
   const handleShop = useCallback(() => {
     if (product.external_url) {
       openExternalUrl(product.external_url);
@@ -179,13 +201,14 @@ const MiniSwipeCard = memo(({
   return (
     <div className="relative w-full max-w-[300px] mx-auto">
       <motion.div
-        drag="x"
-        dragConstraints={{ left: 0, right: 0 }}
+        drag={true}
+        dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
+        dragElastic={0.2}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
         onTouchStart={handleInteraction}
         onMouseDown={handleInteraction}
-        style={{ x, rotate, opacity }}
+        style={{ x, y, rotate, opacity }}
         className="cursor-grab active:cursor-grabbing"
       >
         <Card className="overflow-hidden shadow-lg rounded-2xl">
@@ -305,10 +328,15 @@ const MiniSwipeCard = memo(({
         </Card>
       </motion.div>
       
-      {/* AI hint */}
-      <p className="text-center text-[10px] text-muted-foreground/70 mt-3 italic">
-        ✨ AI learns your style
-      </p>
+      {/* Arrow instructions + AI hint */}
+      <div className="mt-3 text-center space-y-1">
+        <p className="text-[10px] text-muted-foreground font-medium">
+          ← Pass • ↑ Wishlist • → Like
+        </p>
+        <p className="text-[10px] text-muted-foreground/70 italic">
+          ✨ AI learns your style
+        </p>
+      </div>
     </div>
   );
 });
