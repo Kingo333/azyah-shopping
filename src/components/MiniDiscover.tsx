@@ -334,7 +334,7 @@ const x = useMotionValue(0);
           ← Pass • ↑ Wishlist • → Like
         </p>
         <p className="text-[10px] text-muted-foreground/70 italic">
-          ✨ AI learns your style
+          ✨ AI learns your style • Add to closet & earn real rewards
         </p>
       </div>
     </div>
