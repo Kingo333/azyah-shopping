@@ -64,8 +64,7 @@ const MiniSwipeCard = memo(({
   const [isLiked, setIsLiked] = useState(false);
   const [hasInteracted, setHasInteracted] = useState(false);
   
-const x = useMotionValue(0);
-  const y = useMotionValue(0);
+  const x = useMotionValue(0);
   
   // Continuous smooth shake animation every 3 seconds until user interacts
   React.useEffect(() => {
@@ -153,35 +152,26 @@ const x = useMotionValue(0);
   }, [onSwipe]);
 
   const handleDragEnd = useCallback((_: any, info: PanInfo) => {
-    const HORIZONTAL_THRESHOLD = 80;
-    const VERTICAL_THRESHOLD = 80;
+    const THRESHOLD = 80;
     
     const { offset, velocity } = info;
     const effectiveX = offset.x + velocity.x * 0.1;
-    const effectiveY = offset.y + velocity.y * 0.1;
     
-    // Swipe UP = Save/Wishlist (negative Y)
-    if (effectiveY < -VERTICAL_THRESHOLD && Math.abs(effectiveX) < HORIZONTAL_THRESHOLD) {
-      swipeHaptics.selection();
-      handleSave();
-      onSwipe();
-    }
     // Swipe RIGHT = Like
-    else if (effectiveX > HORIZONTAL_THRESHOLD) {
+    if (effectiveX > THRESHOLD) {
       swipeHaptics.like();
       handleLike();
       onSwipe();
     }
     // Swipe LEFT = Pass
-    else if (effectiveX < -HORIZONTAL_THRESHOLD) {
+    else if (effectiveX < -THRESHOLD) {
       swipeHaptics.selection();
       onSwipe();
     }
     
-    // Reset position
-    x.set(0);
-    y.set(0);
-  }, [x, y, onSwipe, handleSave, handleLike]);
+    // Smooth spring reset
+    animate(x, 0, { type: "spring", stiffness: 300, damping: 25 });
+  }, [x, onSwipe, handleLike]);
 
   const handleShop = useCallback(() => {
     if (product.external_url) {
@@ -201,15 +191,15 @@ const x = useMotionValue(0);
   return (
     <div className="relative w-full max-w-[300px] mx-auto">
       <motion.div
-        drag={true}
-        dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
+        drag="x"
+        dragConstraints={{ left: 0, right: 0 }}
         dragElastic={0.2}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
         onTouchStart={handleInteraction}
         onMouseDown={handleInteraction}
-        style={{ x, y, rotate, opacity }}
-        className="cursor-grab active:cursor-grabbing"
+        style={{ x, rotate, opacity, willChange: 'transform' }}
+        className="cursor-grab active:cursor-grabbing will-change-transform"
       >
         <Card className="overflow-hidden shadow-lg rounded-2xl">
           {/* Image container with overlay action bar */}
@@ -331,7 +321,7 @@ const x = useMotionValue(0);
       {/* Arrow instructions + AI hint */}
       <div className="mt-3 text-center space-y-1">
         <p className="text-[10px] text-muted-foreground font-medium">
-          ← Pass • ↑ Wishlist • → Like
+          ← Pass • → Like
         </p>
         <p className="text-[10px] text-muted-foreground/70 italic">
           ✨ AI learns your style • Add to closet & earn real rewards
