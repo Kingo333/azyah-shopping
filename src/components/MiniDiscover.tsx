@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback, memo } from 'react';
-import { motion, AnimatePresence, useMotionValue, useTransform, PanInfo } from 'framer-motion';
+import { motion, AnimatePresence, useMotionValue, useTransform, animate, PanInfo } from 'framer-motion';
 import { ArrowRight, Heart, X, Star, ShoppingBag, Check, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -72,30 +72,27 @@ const MiniSwipeCard = memo(({
   
   const x = useMotionValue(0);
   
-  // Continuous shake animation every 3 seconds until user interacts
+  // Continuous smooth shake animation every 3 seconds until user interacts
   React.useEffect(() => {
     if (hasInteracted) return;
     
-    const shakeSequence = () => {
-      if (hasInteracted) return;
-      // Smooth shake: left -> right -> center
-      x.set(-15);
-      setTimeout(() => {
-        if (hasInteracted) return;
-        x.set(15);
-        setTimeout(() => {
-          if (hasInteracted) return;
-          x.set(-8);
-          setTimeout(() => {
-            if (hasInteracted) return;
-            x.set(8);
-            setTimeout(() => {
-              if (hasInteracted) return;
-              x.set(0);
-            }, 150);
-          }, 150);
-        }, 200);
-      }, 200);
+    let isMounted = true;
+    
+    const shakeSequence = async () => {
+      if (!isMounted || hasInteracted) return;
+      
+      try {
+        // Smooth sway animation matching IntroCarousel style
+        await animate(x, -20, { duration: 0.4, ease: "easeInOut" });
+        if (!isMounted || hasInteracted) return;
+        
+        await animate(x, 20, { duration: 0.6, ease: "easeInOut" });
+        if (!isMounted || hasInteracted) return;
+        
+        await animate(x, 0, { duration: 0.4, ease: "easeInOut" });
+      } catch {
+        // Animation was interrupted
+      }
     };
     
     // Initial shake after a short delay
@@ -105,6 +102,7 @@ const MiniSwipeCard = memo(({
     const intervalId = setInterval(shakeSequence, 3000);
     
     return () => {
+      isMounted = false;
       clearTimeout(initialTimer);
       clearInterval(intervalId);
     };
