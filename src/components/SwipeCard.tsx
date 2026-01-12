@@ -141,17 +141,17 @@ const SwipeCard = memo(({
       {...motionProps}
     >
       <Card className="w-full max-w-md mx-auto rounded-3xl overflow-hidden border-0 shadow-2xl shadow-black/10 bg-card flex flex-col">
-        {/* Main image container with aspect ratio */}
-        <div className="relative w-full aspect-[9/16] bg-gradient-to-br from-muted/30 to-background">
+        {/* Main image container - flexible height with max constraint */}
+        <div className="relative w-full min-h-[300px] max-h-[60vh] bg-gradient-to-br from-muted/30 to-background flex items-center justify-center">
           {/* Image with blur-up effect */}
           <div className={cn(
-            "absolute inset-0 transition-opacity duration-300",
+            "w-full h-full flex items-center justify-center transition-opacity duration-300",
             imageLoaded ? "opacity-100" : "opacity-0"
           )}>
             <SmartImage
               src={getPrimaryImageUrl(product)}
               alt={product.title}
-              className="w-full h-full object-cover"
+              className="w-full h-auto max-h-[60vh] object-contain"
               sizes="(max-width: 768px) 100vw, 448px"
               onLoad={handleImageLoadInternal}
             />
@@ -163,7 +163,7 @@ const SwipeCard = memo(({
           )}
 
           {/* Gradient overlay for text readability */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+          <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
 
           {/* Top badges row - all aligned at top */}
           <div className="absolute top-4 left-4 right-4 flex items-start justify-between z-10">
