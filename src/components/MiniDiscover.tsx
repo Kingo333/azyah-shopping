@@ -1,0 +1,474 @@
+import React, { useState, useMemo, useCallback, memo } from 'react';
+import { motion, AnimatePresence, useMotionValue, useTransform, PanInfo } from 'framer-motion';
+import { ArrowRight, Heart, ExternalLink, Check, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
+import { useUnifiedProducts } from '@/hooks/useUnifiedProducts';
+import { useAddProductToWardrobe } from '@/hooks/useAddProductToWardrobe';
+import { useAuth } from '@/contexts/AuthContext';
+import { useWishlist } from '@/hooks/useWishlist';
+import { SmartImage } from '@/components/SmartImage';
+import { HangerIcon } from '@/components/icons/HangerIcon';
+import { openExternalUrl } from '@/lib/openExternalUrl';
+import { swipeHaptics } from '@/utils/haptics';
+
+interface MiniDiscoverProps {
+  limit?: number;
+  excludeProductIds?: string[];
+  title?: string;
+  subtitle?: string;
+}
+
+interface MiniProduct {
+  id: string;
+  title: string;
+  price_cents: number;
+  currency: string;
+  image_url?: string;
+  external_url?: string;
+  brand?: { name: string };
+  brands?: { name: string };
+}
+
+// Swipe card for mini discover
+const MiniSwipeCard = memo(({ 
+  product, 
+  onNext, 
+  onPrev,
+  hasNext,
+  hasPrev 
+}: { 
+  product: MiniProduct;
+  onNext: () => void;
+  onPrev: () => void;
+  hasNext: boolean;
+  hasPrev: boolean;
+}) => {
+  const { user } = useAuth();
+  const { mutate: addToWardrobe, isPending } = useAddProductToWardrobe();
+  const { addToWishlist, isLoading: wishlistLoading } = useWishlist();
+  const [isAdded, setIsAdded] = useState(false);
+  const [isLiked, setIsLiked] = useState(false);
+  
+  const x = useMotionValue(0);
+  const rotate = useTransform(x, [-150, 0, 150], [-10, 0, 10]);
+  const opacity = useTransform(x, [-150, -75, 0, 75, 150], [0.6, 1, 1, 1, 0.6]);
+
+  const handleDragEnd = useCallback((_: any, info: PanInfo) => {
+    const threshold = 80;
+    if (info.offset.x > threshold && hasNext) {
+      swipeHaptics.selection();
+      onNext();
+    } else if (info.offset.x < -threshold && hasPrev) {
+      swipeHaptics.selection();
+      onPrev();
+    }
+    x.set(0);
+  }, [x, onNext, onPrev, hasNext, hasPrev]);
+
+  const handleAddToCloset = useCallback(() => {
+    if (!user || isPending || isAdded) return;
+    swipeHaptics.selection();
+    addToWardrobe(product as any, {
+      onSuccess: () => setIsAdded(true)
+    });
+  }, [user, isPending, isAdded, addToWardrobe, product]);
+
+  const handleLike = useCallback(async () => {
+    if (!user || wishlistLoading || isLiked) return;
+    swipeHaptics.like();
+    await addToWishlist(product.id);
+    setIsLiked(true);
+  }, [user, wishlistLoading, isLiked, addToWishlist, product.id]);
+
+  const handleShop = useCallback(() => {
+    if (product.external_url) {
+      openExternalUrl(product.external_url);
+    }
+  }, [product.external_url]);
+
+  const brandName = product.brand?.name || product.brands?.name;
+  const formatPrice = (cents: number, currency: string) => {
+    const amount = cents / 100;
+    return new Intl.NumberFormat('en-US', { 
+      style: 'currency', 
+      currency: currency || 'USD' 
+    }).format(amount);
+  };
+
+  return (
+    <div className="relative w-full max-w-[280px] mx-auto">
+      <motion.div
+        drag="x"
+        dragConstraints={{ left: 0, right: 0 }}
+        onDragEnd={handleDragEnd}
+        style={{ x, rotate, opacity }}
+        className="cursor-grab active:cursor-grabbing"
+      >
+        <Card className="overflow-hidden shadow-lg">
+          {/* Image */}
+          <div className="relative aspect-[3/4] bg-muted">
+            <SmartImage
+              src={product.image_url || '/placeholder.svg'}
+              alt={product.title}
+              className="w-full h-full object-cover"
+            />
+            
+            {/* Overlay gradient */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+            
+            {/* Product info */}
+            <div className="absolute bottom-0 left-0 right-0 p-3 text-white">
+              {brandName && (
+                <p className="text-[10px] font-medium opacity-80 mb-0.5">{brandName}</p>
+              )}
+              <p className="text-xs font-semibold line-clamp-1">{product.title}</p>
+              <p className="text-sm font-bold mt-0.5">
+                {formatPrice(product.price_cents, product.currency)}
+              </p>
+            </div>
+          </div>
+          
+          {/* Action buttons */}
+          <div className="p-2 flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleLike}
+              disabled={wishlistLoading || isLiked}
+              className={cn(
+                "flex-1 h-8 text-[10px]",
+                isLiked && "bg-pink-50 border-pink-300 text-pink-600"
+              )}
+            >
+              <Heart className={cn("h-3.5 w-3.5 mr-1", isLiked && "fill-current")} />
+              {isLiked ? 'Liked' : 'Like'}
+            </Button>
+            
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleAddToCloset}
+              disabled={isPending || isAdded || !user}
+              className={cn(
+                "flex-1 h-8 text-[10px]",
+                isAdded && "bg-green-50 border-green-300 text-green-600"
+              )}
+            >
+              {isAdded ? (
+                <>
+                  <Check className="h-3.5 w-3.5 mr-1" />
+                  Added
+                </>
+              ) : (
+                <>
+                  <HangerIcon className="h-3.5 w-3.5 mr-1" size={14} />
+                  Closet
+                </>
+              )}
+            </Button>
+            
+            {product.external_url && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleShop}
+                className="h-8 px-2"
+              >
+                <ExternalLink className="h-3.5 w-3.5" />
+              </Button>
+            )}
+          </div>
+        </Card>
+      </motion.div>
+      
+      {/* Navigation arrows */}
+      {hasPrev && (
+        <button
+          onClick={onPrev}
+          className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 z-10 p-1.5 rounded-full bg-background/90 shadow-md hover:bg-background transition-colors"
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </button>
+      )}
+      {hasNext && (
+        <button
+          onClick={onNext}
+          className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 z-10 p-1.5 rounded-full bg-background/90 shadow-md hover:bg-background transition-colors"
+        >
+          <ChevronRight className="h-4 w-4" />
+        </button>
+      )}
+      
+      {/* Swipe hint */}
+      <p className="text-center text-[10px] text-muted-foreground mt-2">
+        Swipe or tap arrows to explore
+      </p>
+    </div>
+  );
+});
+MiniSwipeCard.displayName = 'MiniSwipeCard';
+
+// List item card
+const MiniListCard = memo(({ product }: { product: MiniProduct }) => {
+  const { user } = useAuth();
+  const { mutate: addToWardrobe, isPending } = useAddProductToWardrobe();
+  const [isAdded, setIsAdded] = useState(false);
+
+  const handleAddToCloset = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!user || isPending || isAdded) return;
+    addToWardrobe(product as any, {
+      onSuccess: () => setIsAdded(true)
+    });
+  }, [user, isPending, isAdded, addToWardrobe, product]);
+
+  const handleShop = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (product.external_url) {
+      openExternalUrl(product.external_url);
+    }
+  }, [product.external_url]);
+
+  const brandName = product.brand?.name || product.brands?.name;
+  const formatPrice = (cents: number, currency: string) => {
+    const amount = cents / 100;
+    return new Intl.NumberFormat('en-US', { 
+      style: 'currency', 
+      currency: currency || 'USD' 
+    }).format(amount);
+  };
+
+  return (
+    <Card className="flex-shrink-0 w-32 overflow-hidden group hover:shadow-md transition-shadow">
+      <Link to={`/swipe?product=${product.id}`} className="block">
+        <div className="relative aspect-[3/4] bg-muted">
+          <SmartImage
+            src={product.image_url || '/placeholder.svg'}
+            alt={product.title}
+            className="w-full h-full object-cover"
+          />
+          
+          {/* Hover overlay with actions */}
+          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5">
+            <Button
+              variant="secondary"
+              size="icon"
+              onClick={handleAddToCloset}
+              disabled={isPending || isAdded || !user}
+              className={cn(
+                "h-7 w-7 rounded-full",
+                isAdded && "bg-green-500 text-white"
+              )}
+            >
+              {isAdded ? (
+                <Check className="h-3.5 w-3.5" />
+              ) : (
+                <HangerIcon className="h-3.5 w-3.5" size={14} />
+              )}
+            </Button>
+            
+            {product.external_url && (
+              <Button
+                variant="secondary"
+                size="icon"
+                onClick={handleShop}
+                className="h-7 w-7 rounded-full"
+              >
+                <ExternalLink className="h-3.5 w-3.5" />
+              </Button>
+            )}
+          </div>
+        </div>
+        
+        <div className="p-1.5">
+          {brandName && (
+            <p className="text-[8px] text-muted-foreground truncate">{brandName}</p>
+          )}
+          <p className="text-[9px] font-medium truncate">{product.title}</p>
+          <p className="text-[10px] font-semibold text-foreground">
+            {formatPrice(product.price_cents, product.currency)}
+          </p>
+        </div>
+      </Link>
+    </Card>
+  );
+});
+MiniListCard.displayName = 'MiniListCard';
+
+// Main MiniDiscover component
+const MiniDiscover: React.FC<MiniDiscoverProps> = ({
+  limit = 15,
+  excludeProductIds = [],
+  title = "Discover More",
+  subtitle = "Swipe to explore styles"
+}) => {
+  const [viewMode, setViewMode] = useState<'swipe' | 'list'>('swipe');
+  const [currentIndex, setCurrentIndex] = useState(0);
+  
+  const { products, isLoading } = useUnifiedProducts({
+    category: 'all',
+    limit,
+    priceRange: { min: 0, max: 100000 },
+  });
+  
+  // Filter out excluded products
+  const filteredProducts = useMemo(() => {
+    if (!products?.length) return [];
+    if (!excludeProductIds?.length) return products.slice(0, limit);
+    return products
+      .filter(p => !excludeProductIds.includes(p.id))
+      .slice(0, limit);
+  }, [products, excludeProductIds, limit]);
+  
+  const currentProduct = filteredProducts[currentIndex];
+  const hasNext = currentIndex < filteredProducts.length - 1;
+  const hasPrev = currentIndex > 0;
+  
+  const handleNext = useCallback(() => {
+    if (hasNext) {
+      setCurrentIndex(i => i + 1);
+    }
+  }, [hasNext]);
+  
+  const handlePrev = useCallback(() => {
+    if (hasPrev) {
+      setCurrentIndex(i => i - 1);
+    }
+  }, [hasPrev]);
+
+  if (isLoading) {
+    return (
+      <div className="space-y-3">
+        <div className="h-6 w-32 bg-muted rounded animate-pulse" />
+        <div className="h-[360px] w-full bg-muted rounded-lg animate-pulse" />
+      </div>
+    );
+  }
+
+  if (!filteredProducts.length) {
+    return (
+      <Card className="p-4 text-center bg-gradient-to-br from-primary/5 to-transparent">
+        <p className="text-sm text-muted-foreground mb-3">
+          Discover products that match your style
+        </p>
+        <Button asChild variant="outline" size="sm">
+          <Link to="/swipe">
+            Browse All
+            <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
+          </Link>
+        </Button>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-sm font-semibold">{title}</h3>
+          <p className="text-[10px] text-muted-foreground">{subtitle}</p>
+        </div>
+        
+        <div className="flex items-center gap-2">
+          {/* View Toggle */}
+          <div className="flex bg-muted rounded-full p-0.5">
+            <button
+              onClick={() => setViewMode('swipe')}
+              className={cn(
+                "px-2.5 py-1 rounded-full text-[10px] font-medium transition-colors",
+                viewMode === 'swipe' 
+                  ? "bg-background shadow-sm text-foreground" 
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              Swipe
+            </button>
+            <button
+              onClick={() => setViewMode('list')}
+              className={cn(
+                "px-2.5 py-1 rounded-full text-[10px] font-medium transition-colors",
+                viewMode === 'list' 
+                  ? "bg-background shadow-sm text-foreground" 
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              List
+            </button>
+          </div>
+          
+          {/* Browse All link */}
+          <Button variant="ghost" size="sm" asChild className="text-[hsl(var(--azyah-maroon))] gap-1 h-7 px-2 text-[10px]">
+            <Link to="/swipe">
+              Browse All
+              <ArrowRight className="h-3 w-3" />
+            </Link>
+          </Button>
+        </div>
+      </div>
+      
+      {/* Content */}
+      <AnimatePresence mode="wait">
+        {viewMode === 'swipe' ? (
+          <motion.div
+            key="swipe"
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 10 }}
+            transition={{ duration: 0.2 }}
+            className="py-2"
+          >
+            {currentProduct && (
+              <MiniSwipeCard
+                product={currentProduct}
+                onNext={handleNext}
+                onPrev={handlePrev}
+                hasNext={hasNext}
+                hasPrev={hasPrev}
+              />
+            )}
+            
+            {/* Progress indicator */}
+            <div className="flex justify-center gap-1 mt-3">
+              {filteredProducts.slice(0, 10).map((_, i) => (
+                <div
+                  key={i}
+                  className={cn(
+                    "w-1.5 h-1.5 rounded-full transition-colors",
+                    i === currentIndex ? "bg-primary" : "bg-muted-foreground/30"
+                  )}
+                />
+              ))}
+              {filteredProducts.length > 10 && (
+                <span className="text-[8px] text-muted-foreground ml-1">
+                  +{filteredProducts.length - 10}
+                </span>
+              )}
+            </div>
+          </motion.div>
+        ) : (
+          <motion.div
+            key="list"
+            initial={{ opacity: 0, x: 10 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -10 }}
+            transition={{ duration: 0.2 }}
+          >
+            <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
+              {filteredProducts.map((product) => (
+                <MiniListCard key={product.id} product={product} />
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
+export default MiniDiscover;
