@@ -140,9 +140,9 @@ const SwipeCard = memo(({
       className="absolute inset-0 flex items-center justify-center"
       {...motionProps}
     >
-      <Card className="w-full max-w-md mx-auto max-h-full rounded-3xl overflow-hidden border-0 shadow-2xl shadow-black/10 bg-card flex flex-col">
-        {/* Main image container - flexible height to ensure action bar is always visible */}
-        <div className="relative w-full flex-1 min-h-0 aspect-[9/13] bg-gradient-to-br from-muted/30 to-background">
+      <Card className="w-full max-w-md mx-auto rounded-3xl overflow-hidden border-0 shadow-2xl shadow-black/10 bg-card">
+        {/* Main image container with overlay action bar */}
+        <div className="relative w-full aspect-[9/13] bg-gradient-to-br from-muted/30 to-background">
           {/* Image with blur-up effect */}
           <div className={cn(
             "absolute inset-0 transition-opacity duration-300",
@@ -212,87 +212,92 @@ const SwipeCard = memo(({
             </div>
           </div>
 
-          {/* Bottom content overlay - product info only */}
-          <div className="absolute bottom-0 left-0 right-0 p-6 z-10">
+          {/* Bottom overlay - product info + action bar (always visible) */}
+          <div 
+            className="absolute bottom-0 left-0 right-0 z-10"
+            style={{ paddingBottom: 'var(--safe-bottom, 0px)' }}
+          >
             {/* Product info */}
-            <div className="space-y-1">
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-lg font-bold text-white line-clamp-2 leading-tight">
-                    {product.title}
-                  </h3>
-                  <p className="text-sm text-white/80 line-clamp-1 mt-0.5">
-                    {getBrandDisplayName(product)}
-                  </p>
+            <div className="px-6 pt-6 pb-3">
+              <div className="space-y-1">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-lg font-bold text-white line-clamp-2 leading-tight">
+                      {product.title}
+                    </h3>
+                    <p className="text-sm text-white/80 line-clamp-1 mt-0.5">
+                      {getBrandDisplayName(product)}
+                    </p>
+                  </div>
+                  
+                  {/* Price badge */}
+                  <Badge 
+                    className="px-3 py-1.5 rounded-full bg-white/95 text-foreground backdrop-blur-sm shadow-lg border-0 shrink-0"
+                  >
+                    <span className="font-bold text-base">
+                      {new Intl.NumberFormat('en-US', {
+                        style: 'currency',
+                        currency: product.currency || 'USD',
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 0
+                      }).format(product.price_cents / 100)}
+                    </span>
+                  </Badge>
                 </div>
-                
-                {/* Price badge */}
-                <Badge 
-                  className="px-3 py-1.5 rounded-full bg-white/95 text-foreground backdrop-blur-sm shadow-lg border-0 shrink-0"
-                >
-                  <span className="font-bold text-base">
-                    {new Intl.NumberFormat('en-US', {
-                      style: 'currency',
-                      currency: product.currency || 'USD',
-                      minimumFractionDigits: 0,
-                      maximumFractionDigits: 0
-                    }).format(product.price_cents / 100)}
-                  </span>
-                </Badge>
               </div>
             </div>
-          </div>
-        </div>
 
-        {/* Bottom action bar - matching StyleLinkCard design */}
-        <div className="flex items-center border-t border-border/50 divide-x divide-border/50 bg-background">
-          {/* Pass - smaller */}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onDislike();
-            }}
-            className="flex-1 flex items-center justify-center gap-1 py-2 text-muted-foreground hover:text-destructive hover:bg-destructive/5 transition-colors"
-          >
-            <X className="h-3.5 w-3.5" strokeWidth={2} />
-            <span className="text-[10px] font-medium">Pass</span>
-          </button>
-          
-          {/* Save - smaller */}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onWishlist(product);
-            }}
-            disabled={wishlistLoading}
-            className="flex-1 flex items-center justify-center gap-1 py-2 text-muted-foreground hover:text-primary hover:bg-primary/5 transition-colors disabled:opacity-50"
-          >
-            <Star className="h-3.5 w-3.5" strokeWidth={2} />
-            <span className="text-[10px] font-medium">Save</span>
-          </button>
-          
-          {/* Like - smaller */}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onLike(product);
-            }}
-            className="flex-1 flex items-center justify-center gap-1 py-2 text-muted-foreground hover:text-pink-500 hover:bg-pink-50 transition-colors"
-          >
-            <Heart className="h-3.5 w-3.5" strokeWidth={2} />
-            <span className="text-[10px] font-medium">Like</span>
-          </button>
-          
-          {/* Shop - bigger with accent color */}
-          {product.external_url && (
-            <button
-              onClick={handleShopNow}
-              className="flex items-center justify-center gap-1 px-3 py-2.5 bg-primary/10 text-primary hover:bg-primary/20 transition-colors font-medium"
-            >
-              <ShoppingBag className="h-4 w-4" strokeWidth={2} />
-              <span className="text-[11px] font-semibold">Shop</span>
-            </button>
-          )}
+            {/* Action bar - part of overlay, always visible */}
+            <div className="flex items-center divide-x divide-white/20 bg-background/95 backdrop-blur-sm rounded-b-3xl">
+              {/* Pass */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDislike();
+                }}
+                className="flex-1 flex items-center justify-center gap-1 py-2.5 text-muted-foreground hover:text-destructive hover:bg-destructive/5 transition-colors"
+              >
+                <X className="h-3.5 w-3.5" strokeWidth={2} />
+                <span className="text-[10px] font-medium">Pass</span>
+              </button>
+              
+              {/* Save */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onWishlist(product);
+                }}
+                disabled={wishlistLoading}
+                className="flex-1 flex items-center justify-center gap-1 py-2.5 text-muted-foreground hover:text-primary hover:bg-primary/5 transition-colors disabled:opacity-50"
+              >
+                <Star className="h-3.5 w-3.5" strokeWidth={2} />
+                <span className="text-[10px] font-medium">Save</span>
+              </button>
+              
+              {/* Like */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onLike(product);
+                }}
+                className="flex-1 flex items-center justify-center gap-1 py-2.5 text-muted-foreground hover:text-pink-500 hover:bg-pink-50 transition-colors"
+              >
+                <Heart className="h-3.5 w-3.5" strokeWidth={2} />
+                <span className="text-[10px] font-medium">Like</span>
+              </button>
+              
+              {/* Shop */}
+              {product.external_url && (
+                <button
+                  onClick={handleShopNow}
+                  className="flex items-center justify-center gap-1 px-3 py-3 bg-primary/10 text-primary hover:bg-primary/20 transition-colors font-medium rounded-br-3xl"
+                >
+                  <ShoppingBag className="h-4 w-4" strokeWidth={2} />
+                  <span className="text-[11px] font-semibold">Shop</span>
+                </button>
+              )}
+            </div>
+          </div>
         </div>
       </Card>
     </motion.div>
