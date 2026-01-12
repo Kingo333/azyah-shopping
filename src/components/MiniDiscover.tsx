@@ -68,28 +68,58 @@ const MiniSwipeCard = memo(({
   const { addToWishlist, isLoading: wishlistLoading } = useWishlist();
   const [isAdded, setIsAdded] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
-  const [hasAnimated, setHasAnimated] = useState(false);
+  const [hasInteracted, setHasInteracted] = useState(false);
   
   const x = useMotionValue(0);
   
-  // Demo animation for first card
+  // Continuous shake animation every 3 seconds until user interacts
   React.useEffect(() => {
-    if (isFirstCard && !hasAnimated) {
-      const timer = setTimeout(() => {
-        x.set(-25);
+    if (hasInteracted) return;
+    
+    const shakeSequence = () => {
+      if (hasInteracted) return;
+      // Smooth shake: left -> right -> center
+      x.set(-15);
+      setTimeout(() => {
+        if (hasInteracted) return;
+        x.set(15);
         setTimeout(() => {
-          x.set(25);
+          if (hasInteracted) return;
+          x.set(-8);
           setTimeout(() => {
-            x.set(0);
-            setHasAnimated(true);
-          }, 250);
-        }, 250);
-      }, 600);
-      return () => clearTimeout(timer);
-    }
-  }, [isFirstCard, hasAnimated, x]);
+            if (hasInteracted) return;
+            x.set(8);
+            setTimeout(() => {
+              if (hasInteracted) return;
+              x.set(0);
+            }, 150);
+          }, 150);
+        }, 200);
+      }, 200);
+    };
+    
+    // Initial shake after a short delay
+    const initialTimer = setTimeout(shakeSequence, 800);
+    
+    // Repeat every 3 seconds
+    const intervalId = setInterval(shakeSequence, 3000);
+    
+    return () => {
+      clearTimeout(initialTimer);
+      clearInterval(intervalId);
+    };
+  }, [hasInteracted, x]);
+  
+  // Stop animation on any interaction
+  const handleInteraction = useCallback(() => {
+    setHasInteracted(true);
+  }, []);
   const rotate = useTransform(x, [-150, 0, 150], [-10, 0, 10]);
   const opacity = useTransform(x, [-150, -75, 0, 75, 150], [0.6, 1, 1, 1, 0.6]);
+
+  const handleDragStart = useCallback(() => {
+    handleInteraction();
+  }, [handleInteraction]);
 
   const handleDragEnd = useCallback((_: any, info: PanInfo) => {
     const threshold = 80;
@@ -161,7 +191,10 @@ const MiniSwipeCard = memo(({
       <motion.div
         drag="x"
         dragConstraints={{ left: 0, right: 0 }}
+        onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
+        onTouchStart={handleInteraction}
+        onMouseDown={handleInteraction}
         style={{ x, rotate, opacity }}
         className="cursor-grab active:cursor-grabbing"
       >
