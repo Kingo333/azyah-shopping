@@ -3,10 +3,10 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { motion } from 'framer-motion';
-import { Info, Image, Sparkles, Check } from 'lucide-react';
+import { Info, Image, Sparkles, Check, X, Star, Heart, ShoppingBag } from 'lucide-react';
 import { HangerIcon } from '@/components/icons/HangerIcon';
 import { SmartImage } from '@/components/SmartImage';
-import { SwipeActionBar } from '@/components/SwipeActionBar';
+
 import { getPrimaryImageUrl, hasMultipleImages, getImageCount } from '@/utils/imageHelpers';
 import { getBrandDisplayName } from '@/utils/brandHelpers';
 import { cn } from '@/lib/utils';
@@ -140,7 +140,7 @@ const SwipeCard = memo(({
       className="absolute inset-0 flex items-center justify-center"
       {...motionProps}
     >
-      <Card className="w-full max-w-md mx-auto rounded-3xl overflow-hidden border-0 shadow-2xl shadow-black/10 bg-card">
+      <Card className="w-full max-w-md mx-auto rounded-3xl overflow-hidden border-0 shadow-2xl shadow-black/10 bg-card flex flex-col">
         {/* Main image container with aspect ratio */}
         <div className="relative w-full aspect-[9/16] bg-gradient-to-br from-muted/30 to-background">
           {/* Image with blur-up effect */}
@@ -192,9 +192,12 @@ const SwipeCard = memo(({
               )}
             </div>
 
-            {/* RIGHT: Info + Closet buttons - aligned at same level as left badges */}
-            <div className="flex items-center gap-2">
-              {/* Info button */}
+            {/* RIGHT: Closet + Info buttons - stacked vertically */}
+            <div className="flex flex-col items-end gap-2">
+              {/* Add to Closet button on top */}
+              <AddToClosetButton product={product} />
+              
+              {/* Info button below */}
               <Button
                 variant="ghost"
                 size="icon"
@@ -202,27 +205,11 @@ const SwipeCard = memo(({
                   e.stopPropagation();
                   onProductClick(product);
                 }}
-                className="h-9 w-9 rounded-full bg-background/90 backdrop-blur-sm hover:bg-background shadow-lg"
+                className="h-8 w-8 rounded-full bg-background/90 backdrop-blur-sm hover:bg-background shadow-lg"
               >
                 <Info className="h-4 w-4" strokeWidth={2.5} />
               </Button>
-              
-              {/* Add to Closet button */}
-              <AddToClosetButton product={product} />
             </div>
-          </div>
-
-          {/* Center action bar - StyleLinkCard design */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20">
-            <SwipeActionBar
-              onLike={() => onLike(product)}
-              onDislike={onDislike}
-              onWishlist={() => onWishlist(product)}
-              onShopNow={product.external_url ? handleShopNow : undefined}
-              wishlistLoading={wishlistLoading}
-              hasExternalUrl={!!product.external_url}
-              variant="card"
-            />
           </div>
 
           {/* Bottom content overlay - product info only */}
@@ -255,6 +242,57 @@ const SwipeCard = memo(({
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Bottom action bar - matching StyleLinkCard design */}
+        <div className="flex items-center border-t border-border/50 divide-x divide-border/50 bg-background">
+          {/* Pass - smaller */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onDislike();
+            }}
+            className="flex-1 flex items-center justify-center gap-1 py-2 text-muted-foreground hover:text-destructive hover:bg-destructive/5 transition-colors"
+          >
+            <X className="h-3.5 w-3.5" strokeWidth={2} />
+            <span className="text-[10px] font-medium">Pass</span>
+          </button>
+          
+          {/* Save - smaller */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onWishlist(product);
+            }}
+            disabled={wishlistLoading}
+            className="flex-1 flex items-center justify-center gap-1 py-2 text-muted-foreground hover:text-primary hover:bg-primary/5 transition-colors disabled:opacity-50"
+          >
+            <Star className="h-3.5 w-3.5" strokeWidth={2} />
+            <span className="text-[10px] font-medium">Save</span>
+          </button>
+          
+          {/* Like - smaller */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onLike(product);
+            }}
+            className="flex-1 flex items-center justify-center gap-1 py-2 text-muted-foreground hover:text-pink-500 hover:bg-pink-50 transition-colors"
+          >
+            <Heart className="h-3.5 w-3.5" strokeWidth={2} />
+            <span className="text-[10px] font-medium">Like</span>
+          </button>
+          
+          {/* Shop - bigger with accent color */}
+          {product.external_url && (
+            <button
+              onClick={handleShopNow}
+              className="flex items-center justify-center gap-1 px-3 py-2.5 bg-primary/10 text-primary hover:bg-primary/20 transition-colors font-medium"
+            >
+              <ShoppingBag className="h-4 w-4" strokeWidth={2} />
+              <span className="text-[11px] font-semibold">Shop</span>
+            </button>
+          )}
         </div>
       </Card>
     </motion.div>
