@@ -142,7 +142,7 @@ const SwipeCard = memo(({
     >
       <Card className="w-full max-w-md mx-auto max-h-full rounded-3xl overflow-hidden border-0 shadow-2xl shadow-black/10 bg-card flex flex-col">
         {/* Main image container - flexible height to ensure action bar is always visible */}
-        <div className="relative w-full flex-1 min-h-0 overflow-hidden bg-gradient-to-br from-muted/30 to-background">
+        <div className="relative w-full flex-1 min-h-0 aspect-[9/13] bg-gradient-to-br from-muted/30 to-background">
           {/* Image with blur-up effect */}
           <div className={cn(
             "absolute inset-0 transition-opacity duration-300",
@@ -245,7 +245,7 @@ const SwipeCard = memo(({
         </div>
 
         {/* Bottom action bar - matching StyleLinkCard design */}
-        <div className="flex items-center border-t border-border/50 divide-x divide-border/50 bg-background flex-shrink-0">
+        <div className="flex items-center border-t border-border/50 divide-x divide-border/50 bg-background">
           {/* Pass - smaller */}
           <button
             onClick={(e) => {
