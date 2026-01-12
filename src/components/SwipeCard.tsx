@@ -165,8 +165,9 @@ const SwipeCard = memo(({
           {/* Gradient overlay for text readability */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
 
-          {/* Top badges */}
-          <div className="absolute top-4 left-4 right-4 flex items-start justify-between gap-2 z-10">
+          {/* Top badges row - all aligned at top */}
+          <div className="absolute top-4 left-4 right-4 flex items-start justify-between z-10">
+            {/* LEFT: Image count + AR badges */}
             <div className="flex items-center gap-2">
               {/* Image count badge */}
               {hasMultipleImages(product) && (
@@ -191,8 +192,8 @@ const SwipeCard = memo(({
               )}
             </div>
 
-            {/* Right side action buttons - moved down slightly to avoid gesture conflicts */}
-            <div className="flex flex-col gap-2 mt-8">
+            {/* RIGHT: Info + Closet buttons - aligned at same level as left badges */}
+            <div className="flex items-center gap-2">
               {/* Info button */}
               <Button
                 variant="ghost"
@@ -211,8 +212,21 @@ const SwipeCard = memo(({
             </div>
           </div>
 
-          {/* Bottom content overlay */}
-          <div className="absolute bottom-0 left-0 right-0 p-6 z-10 space-y-4">
+          {/* Center action bar - StyleLinkCard design */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20">
+            <SwipeActionBar
+              onLike={() => onLike(product)}
+              onDislike={onDislike}
+              onWishlist={() => onWishlist(product)}
+              onShopNow={product.external_url ? handleShopNow : undefined}
+              wishlistLoading={wishlistLoading}
+              hasExternalUrl={!!product.external_url}
+              variant="card"
+            />
+          </div>
+
+          {/* Bottom content overlay - product info only */}
+          <div className="absolute bottom-0 left-0 right-0 p-6 z-10">
             {/* Product info */}
             <div className="space-y-1">
               <div className="flex items-start justify-between gap-3">
@@ -240,16 +254,6 @@ const SwipeCard = memo(({
                 </Badge>
               </div>
             </div>
-
-            {/* Action buttons */}
-            <SwipeActionBar
-              onLike={() => onLike(product)}
-              onDislike={onDislike}
-              onWishlist={() => onWishlist(product)}
-              onShopNow={product.external_url ? handleShopNow : undefined}
-              wishlistLoading={wishlistLoading}
-              hasExternalUrl={!!product.external_url}
-            />
           </div>
         </div>
       </Card>
