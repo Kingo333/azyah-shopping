@@ -218,60 +218,61 @@ const MiniSwipeCard = memo(({
             </div>
           </div>
           
-          {/* Action bar - StyleLinkCard design */}
+          {/* Action bar - StyleLinkCard design with smaller buttons */}
           <div className="flex items-center border-t border-border/50 divide-x divide-border/50 bg-background">
-            {/* Pass */}
+            {/* Pass - smaller */}
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 handlePass();
               }}
-              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-muted-foreground hover:text-destructive hover:bg-destructive/5 transition-colors"
+              className="flex-1 flex items-center justify-center gap-1 py-2 text-muted-foreground hover:text-destructive hover:bg-destructive/5 transition-colors"
             >
-              <X className="h-4 w-4" strokeWidth={2} />
-              <span className="text-xs font-medium">Pass</span>
+              <X className="h-3.5 w-3.5" strokeWidth={2} />
+              <span className="text-[10px] font-medium">Pass</span>
             </button>
             
-            {/* Save */}
+            {/* Save - smaller */}
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 handleSave();
               }}
               disabled={wishlistLoading}
-              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-muted-foreground hover:text-primary hover:bg-primary/5 transition-colors disabled:opacity-50"
+              className="flex-1 flex items-center justify-center gap-1 py-2 text-muted-foreground hover:text-primary hover:bg-primary/5 transition-colors disabled:opacity-50"
             >
-              <Star className="h-4 w-4" strokeWidth={2} />
-              <span className="text-xs font-medium">Save</span>
+              <Star className="h-3.5 w-3.5" strokeWidth={2} />
+              <span className="text-[10px] font-medium">Save</span>
             </button>
             
-            {/* Like */}
+            {/* Like - smaller */}
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 handleLike();
               }}
               className={cn(
-                "flex-1 flex items-center justify-center gap-1.5 py-2.5 transition-colors",
+                "flex-1 flex items-center justify-center gap-1 py-2 transition-colors",
                 isLiked 
                   ? "text-pink-500 bg-pink-50" 
                   : "text-muted-foreground hover:text-pink-500 hover:bg-pink-50"
               )}
             >
-              <Heart className={cn("h-4 w-4", isLiked && "fill-current")} strokeWidth={2} />
-              <span className="text-xs font-medium">{isLiked ? 'Liked' : 'Like'}</span>
+              <Heart className={cn("h-3.5 w-3.5", isLiked && "fill-current")} strokeWidth={2} />
+              <span className="text-[10px] font-medium">{isLiked ? 'Liked' : 'Like'}</span>
             </button>
             
-            {/* Shop */}
+            {/* Shop - bigger with accent color */}
             {product.external_url && (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   handleShop();
                 }}
-                className="px-2.5 py-2.5 text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
+                className="flex items-center justify-center gap-1 px-3 py-2.5 bg-primary/10 text-primary hover:bg-primary/20 transition-colors font-medium"
               >
                 <ShoppingBag className="h-4 w-4" strokeWidth={2} />
+                <span className="text-[11px] font-semibold">Shop</span>
               </button>
             )}
           </div>
